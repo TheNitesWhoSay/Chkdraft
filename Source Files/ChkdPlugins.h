@@ -1,7 +1,7 @@
 #ifndef PLUGINS_H
 #define PLUGINS_H
 #include <Windows.h>
-
+// a test change
 #define PLUGIN_MSG_START		(WM_APP+200)
 #define PLUGIN_MSG_END			(WM_APP+204)
 
