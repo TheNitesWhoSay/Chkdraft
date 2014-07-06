@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source Files\Chkdraft.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_DEBUG;CHKDRAFT_DEBUG;_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="Source Files\Clipboard.cpp" />
+    <ClCompile Include="Source Files\Common Files\Constants.cpp" />
+    <ClCompile Include="Source Files\Common Files\Debug.cpp" />
+    <ClCompile Include="Source Files\Common Files\Math.cpp" />
+    <ClCompile Include="Source Files\Graphics.cpp" />
+    <ClCompile Include="Source Files\GuiAccel.cpp" />
+    <ClCompile Include="Source Files\GuiMap.cpp" />
+    <ClCompile Include="Source Files\Location.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\Buffer.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\FileIO.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\MapFile.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\Scenario.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\Basics.cpp" />
+    <ClCompile Include="Source Files\Maps.cpp" />
+    <ClCompile Include="Source Files\MapSettings.cpp" />
+    <ClCompile Include="Source Files\ChkdPlugins.cpp" />
+    <ClCompile Include="Source Files\Selections.cpp" />
+    <ClCompile Include="Source Files\Terrain.cpp" />
+    <ClCompile Include="Source Files\TextTrig.cpp" />
+    <ClCompile Include="Source Files\Data.cpp" />
+    <ClCompile Include="Source Files\Undo.cpp" />
+    <ClCompile Include="Source Files\Unit.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icon.ico" />
+    <None Include="Save-as.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source Files\Clipboard.h" />
+    <ClInclude Include="Source Files\Common Files\CommonFiles.h" />
+    <ClInclude Include="Source Files\Common Files\Constants.h" />
+    <ClInclude Include="Source Files\Common Files\Debug.h" />
+    <ClInclude Include="Source Files\Common Files\Math.h" />
+    <ClInclude Include="Source Files\Common Files\Resource.h" />
+    <ClInclude Include="Source Files\Data.h" />
+    <ClInclude Include="Source Files\Graphics.h" />
+    <ClInclude Include="Source Files\GuiAccel.h" />
+    <ClInclude Include="Source Files\GuiMap.h" />
+    <ClInclude Include="Source Files\Location.h" />
+    <ClInclude Include="Source Files\Mapping Core\Buffer.h" />
+    <ClInclude Include="Source Files\Mapping Core\StringUsage.h" />
+    <ClInclude Include="Source Files\Mapping Core\DefaultCHK.h" />
+    <ClInclude Include="Source Files\Mapping Core\FileIO.h" />
+    <ClInclude Include="Source Files\Mapping Core\MapFile.h" />
+    <ClInclude Include="Source Files\Mapping Core\MappingCore.h" />
+    <ClInclude Include="Source Files\Mapping Core\Scenario.h" />
+    <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h" />
+    <ClInclude Include="Source Files\Mapping Core\Basics.h" />
+    <ClInclude Include="Source Files\Maps.h" />
+    <ClInclude Include="Source Files\MapSettings.h" />
+    <ClInclude Include="Source Files\ChkdPlugins.h" />
+    <ClInclude Include="Source Files\Selections.h" />
+    <ClInclude Include="Source Files\Terrain.h" />
+    <ClInclude Include="Source Files\TextTrig.h" />
+    <ClInclude Include="Source Files\Undo.h" />
+    <ClInclude Include="Source Files\Unit.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6FA09443-A3E6-45DF-AA91-3B93377BF203}</ProjectGuid>
+    <RootNamespace>Chkdraft</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>CHKDRAFT;CHKD_DEBUG;_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Source Files/Mapping Core/SFmpq_MTd.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <HeapReserveSize>
+      </HeapReserveSize>
+      <StackReserveSize>
+      </StackReserveSize>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>CHKDRAFT;_CRT_SECURE_NO_DEPRECATE;_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>Source Files/Mapping Core/SFmpq_MT.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
+      <SubSystem>Windows</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

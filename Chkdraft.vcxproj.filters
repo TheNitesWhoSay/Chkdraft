@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Classes">
+      <UniqueIdentifier>{21d241a0-8444-40ac-8cbf-252185022492}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes">
+      <UniqueIdentifier>{638ac4fc-c7fe-4ceb-a9b2-6bdeec540974}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common Files">
+      <UniqueIdentifier>{0f51c2aa-c14c-4969-b354-b04b84db1dd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Layers">
+      <UniqueIdentifier>{1eaf69b8-0244-4800-8dd9-5c8c579ca8d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Layers">
+      <UniqueIdentifier>{0475b817-ea79-42fe-83d7-bd5ab1bab57c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping Core">
+      <UniqueIdentifier>{987f6155-963b-4647-b613-9428cef2d8f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping Core">
+      <UniqueIdentifier>{c859cbc9-f6ce-421a-8c47-564f200275a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common Files">
+      <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source Files\Clipboard.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Terrain.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Unit.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Undo.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Buffer.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\DefaultCHK.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\FileIO.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Scenario.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\GuiMap.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\Constants.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\Debug.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\Math.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\Resource.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\MappingCore.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\GuiAccel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Selections.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Maps.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\MapFile.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\StringUsage.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Basics.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\CommonFiles.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Location.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MapSettings.h">
+      <Filter>Header Files\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\ChkdPlugins.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Data.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Graphics.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TextTrig.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source Files\Clipboard.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Chkdraft.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Terrain.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Unit.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Undo.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\FileIO.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\MapFile.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Scenario.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\GuiMap.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Common Files\Constants.cpp">
+      <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Common Files\Debug.cpp">
+      <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Common Files\Math.cpp">
+      <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\GuiAccel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Maps.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Selections.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Basics.cpp">
+      <Filter>Source Files\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Location.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MapSettings.cpp">
+      <Filter>Source Files\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\ChkdPlugins.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Data.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Graphics.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TextTrig.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icon.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Save-as.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
