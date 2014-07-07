@@ -1,0 +1,12 @@
+- Create a folder named "Chkdraft"
+
+- To the folder add...
+	- The exe compiled with MSVS 2012 with XP targeting in release mode
+	- The source folder, renamed as "src"
+
+- Within the src folder...
+	- Delete Chkdraft.sdf
+	- Delete Chkdraft.suo
+	- Delete all folders with the name "Debug", "Release", or "ipch"
+
+- Zip or otherwise archive the folder for uploading
