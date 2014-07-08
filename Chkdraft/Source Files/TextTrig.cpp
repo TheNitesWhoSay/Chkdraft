@@ -1183,7 +1183,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								if ( !text.getNext('\15', pos, lineEnd) )
 									text.getNext(NULL, pos, lineEnd);
 
-								conditionEnd = SmallestOf(conditionEnd, lineEnd);
+								conditionEnd = std::min(conditionEnd, lineEnd);
 
 								if ( ParseCondition(text, pos, conditionEnd, true, conditionIndex, flags, argsLeft) )
 								{
@@ -1254,7 +1254,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 							if ( !text.getNext('\15', pos, lineEnd) )
 								text.getNext(NULL, pos, lineEnd);
 
-							conditionEnd = SmallestOf(conditionEnd, lineEnd);
+							conditionEnd = std::min(conditionEnd, lineEnd);
 
 							if ( ParseCondition(text, pos, conditionEnd, false, conditionIndex, flags, argsLeft) )
 							{
@@ -1461,7 +1461,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								if ( !text.getNext('\15', pos, lineEnd) )
 									text.getNext(NULL, pos, lineEnd);
 
-								actionEnd = SmallestOf(actionEnd, lineEnd);
+								actionEnd = std::min(actionEnd, lineEnd);
 
 								if ( ParseAction(text, pos, actionEnd, true, actionIndex, flags, argsLeft) )
 								{
@@ -1505,7 +1505,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 							if ( !text.getNext('\15', pos, lineEnd) )
 								text.getNext(NULL, pos, lineEnd);
 
-							actionEnd = SmallestOf(actionEnd, lineEnd);
+							actionEnd = std::min(actionEnd, lineEnd);
 
 							if ( ParseAction(text, pos, actionEnd, false, actionIndex, flags, argsLeft) )
 							{

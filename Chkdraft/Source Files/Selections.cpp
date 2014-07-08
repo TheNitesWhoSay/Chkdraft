@@ -182,10 +182,10 @@ void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canS
 		{
 			if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && chk->getLocation(loc, i) )
 			{
-				s32 locLeft = SmallestOf(loc->xc1, loc->xc2),
-					locRight = GreatestOf(loc->xc1, loc->xc2),
-					locTop = SmallestOf(loc->yc1, loc->yc2),
-					locBottom = GreatestOf(loc->yc1, loc->yc2);
+				s32 locLeft = std::min(loc->xc1, loc->xc2),
+					locRight = std::max(loc->xc1, loc->xc2),
+					locTop = std::min(loc->yc1, loc->yc2),
+					locBottom = std::max(loc->yc1, loc->yc2);
 
 				if ( clickX >= locLeft && clickX <= locRight &&
 					 clickY >= locTop && clickY <= locBottom    )

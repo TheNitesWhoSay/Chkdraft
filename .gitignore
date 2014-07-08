@@ -34,3 +34,12 @@ Icon
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+
+# Project-related
+*.suo
+*.user
+*.opensdf
+*.sdf
+Debug
+Release
+
