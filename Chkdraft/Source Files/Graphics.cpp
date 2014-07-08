@@ -172,16 +172,16 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 	{
 		if ( MRGN.getPtr<ChkLocation>(loc, locPos, CHK_LOCATION_SIZE) && ( locPos != 63*CHK_LOCATION_SIZE || showAnywhere ) )
 		{
-			s32 leftMost = SmallestOf(loc->xc1, loc->xc2);
+			s32 leftMost = std::min(loc->xc1, loc->xc2);
 			if ( leftMost < screenRight )
 			{
-				s32 rightMost = GreatestOf(loc->xc1, loc->xc2);
+				s32 rightMost = std::max(loc->xc1, loc->xc2);
 				if ( rightMost > screenLeft )
 				{
-					s32 topMost = SmallestOf(loc->yc1, loc->yc2);
+					s32 topMost = std::min(loc->yc1, loc->yc2);
 					if ( topMost < screenBottom )
 					{
-						s32 bottomMost = GreatestOf(loc->yc1, loc->yc2);
+						s32 bottomMost = std::max(loc->yc1, loc->yc2);
 						if ( bottomMost > screenTop )
 						{
 							bool leftMostOnScreen	= true,
@@ -314,10 +314,10 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 	{
 		if ( MRGN.getPtr<ChkLocation>(loc, selectedLoc*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE) )
 		{
-			s32 leftMost = SmallestOf(loc->xc1, loc->xc2);
-			s32 rightMost = GreatestOf(loc->xc1, loc->xc2);
-			s32 topMost = SmallestOf(loc->yc1, loc->yc2);
-			s32 bottomMost = GreatestOf(loc->yc1, loc->yc2);
+			s32 leftMost = std::min(loc->xc1, loc->xc2);
+			s32 rightMost = std::max(loc->xc1, loc->xc2);
+			s32 topMost = std::min(loc->yc1, loc->yc2);
+			s32 bottomMost = std::max(loc->yc1, loc->yc2);
 			if ( leftMost < screenRight && rightMost > screenLeft && topMost < screenBottom && bottomMost > screenTop )
 			{
 				bool leftMostOnScreen	= leftMost >= screenLeft,
@@ -499,16 +499,16 @@ void Graphics::DrawLocationNames(HDC hDC)
 	{
 		if ( MRGN.getPtr<ChkLocation>(loc, locPos, CHK_LOCATION_SIZE) && locPos != 63*CHK_LOCATION_SIZE )
 		{
-			s32 leftMost = SmallestOf(loc->xc1, loc->xc2);
+			s32 leftMost = std::min(loc->xc1, loc->xc2);
 			if ( leftMost < screenRight )
 			{
-				s32 rightMost = GreatestOf(loc->xc1, loc->xc2);
+				s32 rightMost = std::max(loc->xc1, loc->xc2);
 				if ( rightMost > screenLeft )
 				{
-					s32 topMost = SmallestOf(loc->yc1, loc->yc2);
+					s32 topMost = std::min(loc->yc1, loc->yc2);
 					if ( topMost < screenBottom )
 					{
-						s32 bottomMost = GreatestOf(loc->yc1, loc->yc2);
+						s32 bottomMost = std::max(loc->yc1, loc->yc2);
 						if ( bottomMost > screenTop )
 						{
 							std::string str;

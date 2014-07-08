@@ -147,10 +147,10 @@ void GuiMap::viewLocation(u16 index)
 	{
 		s32 width = rect.right - rect.left,
 			height = rect.bottom - rect.top,
-			locLeft = SmallestOf(location->xc1, location->xc2),
-			locRight = GreatestOf(location->xc1, location->xc2),
-			locTop = SmallestOf(location->yc1, location->yc2),
-			locBottom = GreatestOf(location->yc1, location->yc2),
+			locLeft = std::min(location->xc1, location->xc2),
+			locRight = std::max(location->xc1, location->xc2),
+			locTop = std::min(location->yc1, location->yc2),
+			locBottom = std::max(location->yc1, location->yc2),
 			locCenterX = locLeft+(locRight-locLeft)/2,
 			locCenterY = locTop+(locBottom-locTop)/2;
 
@@ -172,10 +172,10 @@ u8 GuiMap::getLocSelFlags(s32 xc, s32 yc)
 			ChkLocation* loc;
 			if ( getLocation(loc, selectedLocation) )
 			{
-				s32 locationLeft = SmallestOf(loc->xc1, loc->xc2),
-					locationRight = GreatestOf(loc->xc1, loc->xc2),
-					locationTop = SmallestOf(loc->yc1, loc->yc2),
-					locationBottom = GreatestOf(loc->yc1, loc->yc2),
+				s32 locationLeft = std::min(loc->xc1, loc->xc2),
+					locationRight = std::max(loc->xc1, loc->xc2),
+					locationTop = std::min(loc->yc1, loc->yc2),
+					locationBottom = std::max(loc->yc1, loc->yc2),
 					leftOuterBound = locationLeft-5,
 					rightOuterBound = locationRight+5,
 					topOuterBound = locationTop-5,
@@ -254,10 +254,10 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 		ChkLocation* locRef;
 		if ( getLocation(locRef, selectedLoc) )
 		{
-			s32 locLeft = SmallestOf(locRef->xc1, locRef->xc2),
-				locRight = GreatestOf(locRef->xc1, locRef->xc2),
-				locTop = SmallestOf(locRef->yc1, locRef->yc2),
-				locBottom = GreatestOf(locRef->yc1, locRef->yc2);
+			s32 locLeft = std::min(locRef->xc1, locRef->xc2),
+				locRight = std::max(locRef->xc1, locRef->xc2),
+				locTop = std::min(locRef->yc1, locRef->yc2),
+				locBottom = std::max(locRef->yc1, locRef->yc2);
 	
 			if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
 			{

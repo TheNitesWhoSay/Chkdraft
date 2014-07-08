@@ -509,10 +509,10 @@ void MAPS::updateCursor(s32 xc, s32 yc)
 			ChkLocation* loc;
 			if ( curr->getLocation(loc, selectedLocation) )
 			{
-				s32 locationLeft = SmallestOf(loc->xc1, loc->xc2),
-					locationRight = GreatestOf(loc->xc1, loc->xc2),
-					locationTop = SmallestOf(loc->yc1, loc->yc2),
-					locationBottom = GreatestOf(loc->yc1, loc->yc2),
+				s32 locationLeft = std::min(loc->xc1, loc->xc2),
+					locationRight = std::max(loc->xc1, loc->xc2),
+					locationTop = std::min(loc->yc1, loc->yc2),
+					locationBottom = std::max(loc->yc1, loc->yc2),
 					leftOuterBound = locationLeft-5,
 					rightOuterBound = locationRight+5,
 					topOuterBound = locationTop-5,
