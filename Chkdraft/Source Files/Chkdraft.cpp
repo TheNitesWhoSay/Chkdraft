@@ -117,11 +117,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	/*
 	{ // On-Load Test
-		if ( hMapSettings == nullptr )
-			hMapSettings = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_MAPSETTINGS), hMain, MapSettingsProc);
 		
-		ShowWindow(hMapSettings, SW_SHOW);
-		ChangeMapSettingsTab(hMapSettings, ID_TAB_FORCES);
 	}//*/
 
 	MSG msg;
@@ -1072,6 +1068,25 @@ LRESULT CALLBACK LeftBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
 							maps.curr->viewLocation(u16(itemData));
 							break;
+					}
+				}
+			}
+			else if ( ((NMHDR*)lParam)->code == NM_DBLCLK )
+			{
+				TVITEM item = { };
+				item.mask = TVIF_PARAM;
+				item.hItem = TreeView_GetSelection(((NMHDR*)lParam)->hwndFrom);
+				if ( item.hItem != NULL && TreeView_GetItem(((NMHDR*)lParam)->hwndFrom, &item) == TRUE )
+				{
+					LPARAM itemType = item.lParam&TREE_ITEM_TYPE;
+					if ( itemType == TREE_TYPE_LOCATION )
+					{
+						if ( hLocation == nullptr )
+							hLocation = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LOCPROP), hMain, LocationPropProc);
+						else
+							SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
+
+						ShowWindow(hLocation, SW_SHOW);
 					}
 				}
 			}
