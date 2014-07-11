@@ -262,8 +262,15 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 			if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
 			{
 				if ( hLocation == nullptr )
+				{
 					hLocation = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LOCPROP), hMain, LocationPropProc);
-				ShowWindow(hLocation, SW_SHOW);
+					ShowWindow(hLocation, SW_SHOWNORMAL);
+				}
+				else
+				{
+					SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
+					ShowWindow(hLocation, SW_SHOW);
+				}
 			}
 		}
 	}

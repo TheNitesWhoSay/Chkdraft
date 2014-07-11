@@ -242,8 +242,12 @@ void KeyListener(HWND hWnd, UINT &msg, WPARAM &wParam, LPARAM &lParam)
 								if ( maps.curr->selections().getSelectedLocation() != NO_LOCATION )
 								{
 									if ( hLocation == nullptr )
+									{
 										hLocation = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LOCPROP), hMain, LocationPropProc);
-									ShowWindow(hLocation, SW_SHOW);
+										ShowWindow(hLocation, SW_SHOWNORMAL);
+									}
+									else
+										ShowWindow(hLocation, SW_SHOW);
 								}
 							}
 						}
@@ -1082,11 +1086,15 @@ LRESULT CALLBACK LeftBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					if ( itemType == TREE_TYPE_LOCATION )
 					{
 						if ( hLocation == nullptr )
+						{
 							hLocation = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LOCPROP), hMain, LocationPropProc);
+							ShowWindow(hLocation, SW_SHOWNORMAL);
+						}
 						else
+						{
 							SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
-
-						ShowWindow(hLocation, SW_SHOW);
+							ShowWindow(hLocation, SW_SHOW);
+						}
 					}
 				}
 			}
