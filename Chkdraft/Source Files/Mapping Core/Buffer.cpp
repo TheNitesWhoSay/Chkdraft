@@ -498,7 +498,7 @@ bool buffer::swap(u32 location1, u32 location2)
 	}
 	return false;
 }
-template bool buffer::swap<ChkUnit&>(u32 location1, u32 location2);
+template bool buffer::swap<ChkUnit>(u32 location1, u32 location2);
 template bool buffer::swap<u16>(u32 location1, u32 location2);
 template bool buffer::swap<u32>(u32 location1, u32 location2);
 
