@@ -554,7 +554,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							{
 								if ( track->index > 0 && !selections.unitIsSelected(track->index-1) )
 								{
-									if ( UNIT.swap<ChkUnit&>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index-1)*UNIT_STRUCT_SIZE) )
+									if ( UNIT.swap<ChkUnit>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index-1)*UNIT_STRUCT_SIZE) )
 									{
 										map->undos().addUndoUnitSwap(track->index, track->index-1);
 										SwapIndexes(hUnitList, track->index, track->index-1);
@@ -587,7 +587,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							{
 								if ( track->index < map->numUnits() && !selections.unitIsSelected(track->index+1) )
 								{
-									if ( UNIT.swap<ChkUnit&>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index+1)*UNIT_STRUCT_SIZE) )
+									if ( UNIT.swap<ChkUnit>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index+1)*UNIT_STRUCT_SIZE) )
 									{
 										map->undos().addUndoUnitSwap(track->index, track->index+1);
 										SwapIndexes(hUnitList, track->index, track->index+1);

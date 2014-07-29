@@ -1,12 +1,34 @@
 #include "MapSettings.h"
 #include "GuiAccel.h"
 #include "Maps.h"
+#include <strsafe.h>
 extern MAPS maps;
 using namespace std;
 
 u32 currTab(0);
 UINT WM_DRAGNOTIFY(WM_NULL);
 u8 playerBeingDragged(255);
+u32 currSelString(0);
+
+WNDPROC wpStringEdit; // Used to redefine default edit window input handling
+LRESULT CALLBACK StringEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch ( msg )
+	{
+		case WM_KEYDOWN:
+			if ( GetKeyState(VK_CONTROL) & 0x8000 && wParam == 'A' ) // Select all
+				SendMessage(hWnd, EM_SETSEL, 0, -1);
+			else if ( wParam == VK_RETURN )
+				SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"\r\n");
+			break;
+
+		case WM_CHAR:
+			if ( (GetKeyState(VK_CONTROL) & 0x8000 && wParam == 1) || wParam == VK_RETURN ) // Prevent ctrl + key from causing beeps
+				return 0;
+			break;
+	}
+	return CallWindowProc(wpStringEdit, hWnd, msg, wParam, lParam);
+}
 
 BOOL CALLBACK MapSettingsProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -83,6 +105,11 @@ BOOL CALLBACK MapSettingsProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				CreateWavEditor(hWnd);
 				RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
 			}
+			break;
+
+		case WM_MOUSEWHEEL:
+			if ( currTab == ID_TAB_STRINGEDITOR )
+				SendMessage(GetDlgItem(hWnd, ID_STRINGEDITOR), WM_MOUSEWHEEL, wParam, lParam);
 			break;
 
 		case WM_COMMAND:
@@ -206,6 +233,7 @@ LRESULT CALLBACK MapPropertiesProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
 				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_COMMAND:
@@ -215,17 +243,16 @@ LRESULT CALLBACK MapPropertiesProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 					case ID_EDIT_MAPTITLE:
 						if ( HIWORD(wParam) == EN_KILLFOCUS )
 						{
-							char* text;
-							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPTITLE), text) )
+							string newMapTitle;
+							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPTITLE), newMapTitle) )
 							{
-								string newMapTitle(text);
 								u16* mapTitleString;
-								if ( maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) )
+								if ( maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
+									 parseEscapedString(newMapTitle) &&
+									 maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
 								{
-									if ( maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
-										maps.curr->notifyChange(false);
+									maps.curr->notifyChange(false);
 								}
-								delete text;
 							}
 						}
 						break;
@@ -233,15 +260,15 @@ LRESULT CALLBACK MapPropertiesProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 					case ID_EDIT_MAPDESCRIPTION:
 						if ( HIWORD(wParam) == EN_KILLFOCUS )
 						{
-							char* text;
-							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPDESCRIPTION), text) )
+							string newMapDescription;
+							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPDESCRIPTION), newMapDescription) )
 							{
-								string newMapDescription(text);
 								u16* mapDescriptionString;
-								if ( maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) )
+								if ( maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
+									 parseEscapedString(newMapDescription) &&
+									 maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
 								{
-									if ( maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
-										maps.curr->notifyChange(false);
+									maps.curr->notifyChange(false);
 								}
 							}
 						}
@@ -625,19 +652,7 @@ LRESULT CALLBACK TechSettingsProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 
 LRESULT CALLBACK StringPreviewProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	switch ( msg )
-	{
-		case WM_PAINT:
-			{
-				return DefWindowProc(hWnd, msg, wParam, lParam);
-			}
-			break;
-
-		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-	}
-	return 0;
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK StringGuideProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -668,7 +683,171 @@ LRESULT CALLBACK StringEditorProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 {
 	switch ( msg )
 	{
+		case WM_SHOWWINDOW:
+			if ( wParam == TRUE )
+				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+			else if ( wParam == FALSE )
+				updateString(GetDlgItem(hWnd, ID_EDIT_STRING), currSelString);
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
+
 		case REFRESH_WINDOW:
+			{
+				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
+				if ( hStringList != NULL && maps.curr != nullptr )
+				{
+					SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
+					bool success = false;
+					StringUsageTable strUse(maps.curr->scenario(), false, success);
+					if ( success )
+					{
+						string str;
+						u32 lastUsed = strUse.lastUsedString();
+						for ( u32 i=0; i<=lastUsed; i++ )
+						{
+							if ( strUse.isUsed(i) && maps.curr->getString(str, i) && str.size() > 0 )
+							{
+								int lbIndex = SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)"");
+								if ( lbIndex != LB_ERR && lbIndex != LB_ERRSPACE )
+									SendMessage(hStringList, LB_SETITEMDATA, lbIndex, i);
+							}
+						}
+					}
+				}
+			}
+			break;
+
+		case WM_MOUSEWHEEL:
+			{
+				int distanceScrolled = int((s16(HIWORD(wParam)))/WHEEL_DELTA);
+				HWND hStringSel = GetDlgItem(hWnd, ID_LB_STRINGS);
+				if ( hStringSel != NULL )
+					ListBox_SetTopIndex(hStringSel, ListBox_GetTopIndex(hStringSel)-distanceScrolled);
+			}
+			break;
+
+		case WM_COMMAND:
+			switch ( HIWORD(wParam) )
+			{
+				case LBN_SELCHANGE:
+					if ( LOWORD(wParam) == ID_LB_STRINGS ) // Change selection, update info boxes and so fourth
+					{
+						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
+						if ( hEditString != NULL && currSelString != 0 )
+							updateString(hEditString, currSelString);
+						HWND hStringUse = GetDlgItem(hWnd, ID_LB_STRINGUSE);
+						if ( hStringUse != NULL )
+							SendMessage(hStringUse, LB_RESETCONTENT, NULL, NULL);
+
+						int lbIndex = SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0);
+						if ( lbIndex != LB_ERR )
+						{
+							string str = "";
+							currSelString = SendMessage((HWND)lParam, LB_GETITEMDATA, lbIndex, NULL);
+							if ( currSelString != 0 && maps.curr != nullptr && maps.curr->getString(str, currSelString) && str.length() > 0 )
+							{
+								if ( hEditString != NULL )
+									SetWindowText(hEditString, str.c_str());
+						
+								if ( hStringUse != NULL )
+								{
+									u32 locs, trigs, briefs, props, forces, wavs, units, switches;
+									maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
+									addUseItem(hStringUse, "Locations", locs);
+									addUseItem(hStringUse, "Triggers", trigs);
+									addUseItem(hStringUse, "Briefing Triggers", briefs);
+									addUseItem(hStringUse, "Map Properties", props);
+									addUseItem(hStringUse, "Forces", forces);
+									addUseItem(hStringUse, "WAVs", wavs);
+									addUseItem(hStringUse, "Units", units);
+									addUseItem(hStringUse, "Switches", switches);
+								}
+								return 0;
+							}
+						}
+						if ( hEditString != NULL )
+							SetWindowText(hEditString, "");
+					}
+					break;
+				case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
+					if ( LOWORD(wParam) == ID_LB_STRINGS )
+					{
+						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
+						if ( hEditString != NULL && currSelString != 0 )
+							updateString(hEditString, currSelString);
+					}
+					break;
+				case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
+					if ( LOWORD(wParam) == ID_EDIT_STRING && currSelString != 0 && updateString((HWND)lParam, currSelString) )
+						maps.curr->refreshScenario();
+					break;
+				case BN_CLICKED:
+					if ( LOWORD(wParam) == ID_DELETE_STRING  &&
+						 MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION|MB_YESNO) == IDYES &&
+						 maps.curr != nullptr && currSelString != 0 && maps.curr->stringExists(currSelString)
+					   )
+					{
+						maps.curr->forceDeleteString(currSelString);
+						maps.curr->refreshScenario();
+					}
+					break;
+			}
+			return 0;
+			break;
+
+		case WM_MEASUREITEM:
+			{
+				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
+				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
+				SIZE strSize;
+				string str;
+
+				if ( hStringList != NULL && maps.curr->getString(str, mis->itemData) && str.size() > 0 )
+				{
+					HDC hDC = GetDC(hStringList);
+					if ( hDC != NULL )
+					{
+						HGDIOBJ sel = SelectObject(hDC, defaultFont);
+						if ( sel != NULL && sel != HGDI_ERROR &&
+							 GetTextExtentPoint32(hDC, (LPCSTR)str.c_str(), str.size(), &strSize) != 0 )
+						{
+							mis->itemWidth = strSize.cx+5;
+							mis->itemHeight = strSize.cy+2;
+							ReleaseDC(hWnd, hDC);
+							return TRUE;
+						}
+						ReleaseDC(hWnd, hDC);
+					}
+				}
+				return DefWindowProc(hWnd, msg, wParam, lParam);
+			}
+			break;
+
+		case WM_DRAWITEM:
+			{
+				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
+
+				if ( pdis->itemID != -1 && pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE )
+				{
+					string str;
+					HBRUSH hBlack = CreateSolidBrush(RGB(0, 0, 0));
+					if ( hBlack != NULL )
+					{
+						FillRect(pdis->hDC, &pdis->rcItem, hBlack);
+						DeleteObject(hBlack);
+					}
+					if ( pdis->itemState & ODS_SELECTED )
+						DrawFocusRect(pdis->hDC, &pdis->rcItem);
+					
+					if ( maps.curr != nullptr && maps.curr->getString(str, pdis->itemData) && str.size() > 0 )
+					{
+						SetBkMode(pdis->hDC, TRANSPARENT);
+						SetTextColor(pdis->hDC, RGB(16, 252, 24));
+						ExtTextOut(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, ETO_CLIPPED, &pdis->rcItem, (LPCSTR)str.c_str(), str.size(), 0);
+					}
+				}
+				return TRUE;
+			}
 			break;
 
 		default:
@@ -716,142 +895,6 @@ void ChangeMapSettingsTab(HWND hWnd, u32 tabID)
 	}
 
 	currTab = tabID;
-}
-
-HWND CreateTabWindow(HWND hParent, LPCSTR className, u32 id)
-{
-	return CreateWindow(className, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)id, GetModuleHandle(NULL), NULL);
-}
-
-HWND CreateEditBox(HWND hParent, int x, int y, int width, int height, const char* initText, bool wordWrap, u32 editID)
-{
-	DWORD style = WS_VISIBLE|WS_CHILD;
-
-	if ( wordWrap )
-		style |= ES_MULTILINE|ES_AUTOVSCROLL;
-	else
-		style |= ES_AUTOHSCROLL;
-
-	HWND hEdit = CreateWindowEx( WS_EX_CLIENTEDGE, "EDIT", initText,
-						   style, x, y, width, height,
-						   hParent, (HMENU)editID, NULL, NULL );
-
-	if ( hEdit != NULL )
-		SendMessage(hEdit, WM_SETFONT, (WPARAM)defaultFont, FALSE);
-
-	return hEdit;
-}
-
-HWND CreateGroupBox(HWND hParent, int x, int y, int width, int height, const char* text)
-{
-	HWND hGroupBox = CreateWindow("Button", text, WS_CHILD|WS_VISIBLE|BS_GROUPBOX, x, y, width, height, hParent, NULL, GetModuleHandle(NULL), NULL);
-
-	if ( hGroupBox != NULL )
-		SendMessage(hGroupBox, WM_SETFONT, (WPARAM)defaultFont, FALSE);
-
-	return hGroupBox;
-}
-
-HWND CreateStaticText(HWND hParent, int x, int y, int width, int height, const char* text, u32 id)
-{
-	HWND hStatic = CreateWindowA("STATIC", text, WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, NULL, NULL);
-
-	if ( hStatic != NULL )
-		SendMessage(hStatic, WM_SETFONT, (WPARAM)defaultFont, FALSE);
-
-	return hStatic;
-}
-
-HWND CreateStaticText(HWND hParent, int x, int y, int width, int height, const char* text)
-{
-	return CreateStaticText(hParent, x, y, width, height, text, NULL);
-}
-
-HWND CreateButton(HWND hParent, int x, int y, int width, int height, const char* text, u32 buttonID)
-{
-	HWND hButton = CreateWindowEx( WS_EX_CLIENTEDGE, "Button", text,
-								   WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON,
-								   x, y, width, height, hParent, (HMENU)buttonID, NULL, NULL );
-
-	if ( hButton != NULL )
-		SendMessage(hButton, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-
-	return hButton;
-}
-
-HWND CreateCheckBox(HWND hParent, int x, int y, int width, int height, bool checked, const char* text, u32 checkID)
-{
-	HWND hCheckBox = CreateWindow( "Button", text,
-								   WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX|BS_VCENTER,
-								   x, y, width, height, hParent, (HMENU)checkID, NULL, NULL );
-
-	if ( hCheckBox != NULL )
-	{
-		SendMessage(hCheckBox, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-
-		if ( checked )
-			SendMessage(hCheckBox, BM_SETCHECK, BST_CHECKED, NULL);
-	}
-
-	return hCheckBox;
-}
-
-HWND CreateDropdownBox(HWND hParent, int x, int y, int width, int height, const char** strings, int numStrings, int curSel, bool editable, u32 dropdownID)
-{
-	DWORD style = CBS_DROPDOWN|WS_CHILD|WS_VSCROLL|WS_VISIBLE|CBS_AUTOHSCROLL|CBS_HASSTRINGS;
-
-	if ( editable )
-		style |= CBS_DROPDOWN;
-	else
-		style |= CBS_SIMPLE;
-
-	HWND hDropdown = CreateWindowExA(WS_EX_CLIENTEDGE, "ComboBox", NULL,
-						style,
-						x, y, width, height,
-						hParent, (HMENU)dropdownID, GetModuleHandle(NULL), NULL);
-
-	if ( hDropdown != nullptr )
-	{
-		for ( int i=0; i<numStrings; i++ )
-			SendMessage(hDropdown, CB_ADDSTRING, NULL, (LPARAM)strings[i]);
-
-		SendMessage(hDropdown, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-		SendMessage(hDropdown, CB_SETCURSEL, curSel, NULL);
-		PostMessage(hDropdown, CB_SETEDITSEL, NULL, (-1, 0));
-	}
-
-	return hDropdown;
-}
-
-HWND CreateListBox(HWND hParent, int x, int y, int width, int height, u32 dropdownID)
-{
-	HWND hListBox = CreateWindowEx( WS_EX_CLIENTEDGE, "ListBox", "", WS_CHILD|WS_TABSTOP|LBS_NOTIFY|LBS_SORT,
-									 x, y, width, height, hParent, (HMENU)dropdownID,
-									 GetModuleHandle(NULL), NULL );
-
-	if ( hListBox != nullptr )
-	{
-		SendMessage(hListBox, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-		ShowWindow(hListBox, SW_SHOWNORMAL);
-	}
-
-	return hListBox;
-}
-
-HWND CreateDragListBox(HWND hParent, int x, int y, int width, int height, u32 dropdownID)
-{
-	HWND hListBox = CreateWindowEx( WS_EX_CLIENTEDGE, "ListBox", "", WS_CHILD|WS_TABSTOP|LBS_NOTIFY|LBS_SORT,
-									 x, y, width, height, hParent, (HMENU)dropdownID,
-									 GetModuleHandle(NULL), NULL );
-
-	if ( hListBox != nullptr )
-	{
-		SendMessage(hListBox, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-		MakeDragList(hListBox);
-		ShowWindow(hListBox, SW_SHOWNORMAL);
-	}
-
-	return hListBox;
 }
 
 void CreateMapProperties(HWND hParent)
@@ -981,13 +1024,15 @@ void CreateStringEditor(HWND hParent)
 	HWND hStringEditor = CreateTabWindow(hParent, "StringEditor", ID_STRINGEDITOR);
 	CreateStaticText(hStringEditor, 5, 5, 100, 20, "String Editor...");
 
-	CreateListBox(hStringEditor, 5, 25, 453, 290, ID_LB_STRINGS);
+	HWND hStringList = CreateListBox(hStringEditor, 5, 25, 453, 262, ID_LB_STRINGS, true);
+
 	CreateButton(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
 	CreateCheckBox(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
 	HWND hEditString = CreateEditBox(hStringEditor, 5, 310, 453, 140, "", true, ID_EDIT_STRING);
+	wpStringEdit = (WNDPROC)SetWindowLong(hEditString, GWL_WNDPROC, (LONG)&StringEditProc);
 
 	CreateStaticText(hStringEditor, 480, 379, 125, 20, "String Usage:");
-	CreateListBox(hStringEditor, 463, 394, 125, 83, ID_LB_STRINGUSE);
+	HWND hStringUse = CreateListBox(hStringEditor, 463, 394, 125, 83, ID_LB_STRINGUSE, false);
 
 	HWND hStringPreview = CreateWindow( "StringPreview", NULL, WS_OVERLAPPED|WS_CHILD|WS_VISIBLE,
 										5, 455, 583, 70, hStringEditor, (HMENU)ID_PREVIEW_STRING, NULL, NULL );
@@ -1005,10 +1050,42 @@ void CreateStringEditor(HWND hParent)
 		CreateStaticText(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], ID_TEXT_COLOR_FIRST+i);
 	}
 	ReleaseDC(hStringGuide, hDC);
+
+	SendMessage(hStringEditor, REFRESH_WINDOW, NULL, NULL);
 }
 
 void CreateWavEditor(HWND hParent)
 {
 	HWND hWavEditor = CreateTabWindow(hParent, "WavEditor", ID_WAVEDITOR);
 	CreateStaticText(hWavEditor, 5, 5, 100, 20, "Wav Editor...");
+}
+
+void addUseItem(HWND hStringUse, const char* title, u32 amount)
+{
+	stringstream ss;
+	if ( amount > 0 )
+	{
+		ss << title << ": " << amount;
+		SendMessage(hStringUse, LB_ADDSTRING, NULL, (LPARAM)ss.str().c_str());
+	}
+}
+
+bool updateString(HWND hEditString, u32 stringNum)
+{
+	string editStr;
+	if ( maps.curr != nullptr && GetEditText(hEditString, editStr) && maps.curr->escStringDifference(editStr, stringNum) )
+	{
+		if ( parseEscapedString(editStr) &&
+			 maps.curr->editString<u32>(editStr, stringNum, maps.curr->isExtendedString(stringNum), false) )
+		{
+			if ( maps.curr->stringUsedWithLocs(currSelString) )
+				BuildLocationTree(maps.curr);
+			RedrawWindow((HWND)hEditString, NULL, NULL, RDW_INVALIDATE);
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+		return false;
 }

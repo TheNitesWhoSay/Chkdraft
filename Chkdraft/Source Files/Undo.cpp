@@ -17,7 +17,6 @@ UndoNode::~UndoNode()
 	}
 }
 
-
 UNDOS::UNDOS() : headUndo(nullptr), lastUndo(nullptr), headRedo(nullptr), upcomingUndo(nullptr), rootTypes(0), mapId(0)
 {
 	startNext(0);
@@ -384,7 +383,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 				while ( currUnit != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
 					next = currUnit->next;
-					if ( UNIT.swap<ChkUnit&>(currUnit->newIndex*UNIT_STRUCT_SIZE, currUnit->oldIndex*UNIT_STRUCT_SIZE) )
+					if ( UNIT.swap<ChkUnit>(currUnit->newIndex*UNIT_STRUCT_SIZE, currUnit->oldIndex*UNIT_STRUCT_SIZE) )
 						sel.sendSwap(currUnit->oldIndex, currUnit->newIndex);
 					node->head = new UndoUnitMove(node->head, currUnit->newIndex, currUnit->oldIndex);
 					delete currUnit;

@@ -229,6 +229,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																			u32 oldStrNum = locRef->stringNum;
 																			locRef->stringNum = u16(newStrNum);
 																			maps.curr->removeUnusedString(oldStrNum);
+																			maps.curr->refreshScenario();
 																		}
 																	}
 																	maps.curr->notifyChange(false);
@@ -282,6 +283,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																			u32 oldStrNum = locRef->stringNum;
 																			locRef->stringNum = u16(newStrNum);
 																			maps.curr->removeUnusedString(oldStrNum);
+																			maps.curr->refreshScenario();
 																		}
 																	}
 																	maps.curr->notifyChange(false);
@@ -420,13 +422,13 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																	
 																		u32 newStringNum;
 																		bool isExtended = (SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_GETCHECK, NULL, NULL) == BST_CHECKED);
-																		if ( maps.curr->addString(newStr, newStringNum, isExtended) )
+																		if ( parseEscapedString(newStr) && maps.curr->addString(newStr, newStringNum, isExtended) )
 																		{
 																			locRef->stringNum = u16(newStringNum);
 																			BuildLocationTree(maps.curr);
 																			maps.curr->removeUnusedString(preservedStat);
-																			maps.curr->Redraw(false);
 																			maps.curr->notifyChange(false);
+																			maps.curr->refreshScenario();
 																		}
 																	}
 																}

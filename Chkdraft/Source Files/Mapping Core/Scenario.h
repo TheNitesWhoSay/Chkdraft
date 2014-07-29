@@ -45,6 +45,7 @@ class Scenario
 					bool getPlayerForce(u8 playerNum, u8 &force); // Attempts to get the force a player belongs to
 
 					u16 numStrings(); // Returns number of strings in the STR section
+					u32 totalStrings(); // Returns number of strings in the STR and KSTR sections
 					bool getString(string &dest, u32 stringNum);
 					bool getRawString(string &dest, u32 stringNum);
 					bool getEscapedString(string &dest, u32 stringNum);
@@ -56,7 +57,12 @@ class Scenario
 					bool stringExists(u32 stringNum); // Checks if a valid string is associated with this stringNum
 					bool stringExists(string str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
 					bool stringExists(string str, u32& stringNum, bool extended); // Checks if string exists in the same table
+					bool escStringDifference(string str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
 					u32 extendedToRegularStr(u32 stringNum); // Returns string number for extended section
+
+					bool stringUsedWithLocs(u32 stringNum); // Returns whether the string is used for a location
+					u32 amountStringUsed(u32 stringNum); // Returns the number of times a string is used
+					void getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u32& props, u32& forces, u32& wavs, u32& units, u32& switches);
 
 					bool isExpansion(); // Check if the map uses expansion settings
 
@@ -87,15 +93,24 @@ class Scenario
 						Returns true and stringNum if string exists or was created successfully */
 					bool addString(string str, u32& stringNum, bool extended);
 
-					/** Attempt to replace a string setting stringNum if successful, if unsuccessful the old string will remain
+					/** Attempt to replace a string (specific instance of string), if unsuccessful the old string will remain
 							(if it is not used elsewhere) based on safeReplace and memory conditions
+						stringNum: if not 0 and only used once, the map calls editString, otherwise stringNum is set if successful
 						safeReplace: if true the function will only attempt to make room for the new string if the old one will not be lost
 									 if false the fuction will always attempt to make room, and may lose the old string in low-mem conditions
 						Returns true if the string exists already or was successfully created */
 					template <typename numType>
 						bool replaceString(string newString, numType& stringNum, bool extended, bool safeReplace);
-					
-					bool replaceStringNum(u32 toReplace, u32 replacement);
+
+					/** Attempts to edit the contents of a string (universal change to string), if unsucessesful the old string will remain
+							(if it is not used elsewhere) based on safeEdit and memory conditions
+						safeEdit: if true the function will only attempt to make room for the new string if the old one will not be lost
+								  if false the function will always attempt to make room, and may lose the old string in low-mem conditions
+						Returns true if the string contents were successfully edited, always false if stringNum is 0 */
+					template <typename numType>
+						bool editString(string newString, numType stringNum, bool extended, bool safeEdit);
+
+					void replaceStringNum(u32 toReplace, u32 replacement);
 
 					void removeMetaStrings(); // Attemps to remove all strings not used in-game
 					bool cleanStringTable(bool extendedTable); // Rebuilds string table with current indexs, removes all unused strings

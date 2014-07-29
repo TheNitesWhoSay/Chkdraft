@@ -25,6 +25,7 @@ void CreateTechSettings(HWND hParent);
 void CreateStringEditor(HWND hParent);
 void CreateWavEditor(HWND hParent);
 
-HWND CreateButton(HWND hParent, int x, int y, int width, int height, const char* text, u32 buttonID);
+void addUseItem(HWND hStringUse, const char* title, u32 amount);
+bool updateString(HWND hEditString, u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
 
 #endif

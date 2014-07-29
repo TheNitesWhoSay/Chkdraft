@@ -11,6 +11,7 @@
 #include "Resource.h"
 
 #include <Windows.h>
+#include <WindowsX.h>
 #include <CommCtrl.h>
 #include <algorithm>
 #include <string>

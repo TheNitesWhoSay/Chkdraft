@@ -22,6 +22,10 @@
 
 void LockCursor(HWND hWnd);
 
+/** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string
+	Returns true and modifies str if successful, str not modified otherwise */
+bool parseEscapedString(string& str);
+
 // MDI-Map-Window(s) stuff
 
 HWND AddMDIChild(HWND hClient, const char* Name);
@@ -31,7 +35,9 @@ LPBITMAPINFO GetPalBMI(s32 width, s32 height);
 
 // Edit control stuff
 
-bool GetEditText(HWND hEdit, char* &dest); // Be sure to delete "dest" if successful
+//bool GetEditText(HWND hEdit, char* &dest); // Be sure to delete "dest" if successful
+
+bool GetEditText(HWND hEdit, string& dest);
 
 template <typename numType>
 	bool GetEditNum(HWND hEdit, numType &dest);
@@ -81,5 +87,16 @@ void BuildMainTree(HWND hWnd);
 void UpdateTreeItemText(HWND hWnd, int UnitID);
 
 void changeDisplayName(HWND hWnd, int UnitID, const char* name);
+
+HWND CreateTabWindow(HWND hParent, LPCSTR className, u32 id);
+HWND CreateEditBox(HWND hParent, int x, int y, int width, int height, const char* initText, bool wordWrap, u32 editID);
+HWND CreateGroupBox(HWND hParent, int x, int y, int width, int height, const char* text);
+HWND CreateStaticText(HWND hParent, int x, int y, int width, int height, const char* text, u32 id);
+HWND CreateStaticText(HWND hParent, int x, int y, int width, int height, const char* text);
+HWND CreateButton(HWND hParent, int x, int y, int width, int height, const char* text, u32 buttonID);
+HWND CreateCheckBox(HWND hParent, int x, int y, int width, int height, bool checked, const char* text, u32 checkID);
+HWND CreateDropdownBox(HWND hParent, int x, int y, int width, int height, const char** strings, int numStrings, int curSel, bool editable, u32 dropdownID);
+HWND CreateListBox(HWND hParent, int x, int y, int width, int height, u32 id, bool ownerDrawn);
+HWND CreateDragListBox(HWND hParent, int x, int y, int width, int height, u32 dropdownID);
 
 #endif

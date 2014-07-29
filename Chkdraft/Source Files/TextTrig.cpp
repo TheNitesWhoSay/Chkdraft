@@ -33,16 +33,21 @@ BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
+		case REFRESH_WINDOW:
+			{
+				TextTrigGenerator textTrigs(maps.curr);
+				buffer output("TeOu");
+				textTrigs.GenerateTextTrigs(maps.curr->TRIG(), output);
+				SetDlgItemText(hWnd, IDC_EDIT_TRIGTEXT, (const char*)output.getPtr(0));
+			}
+			break;
+
 		case WM_INITDIALOG:
 			{
 				HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TRIGTEXT);
 				wpTextTrigEdit = (WNDPROC)SetWindowLong(hEdit, GWL_WNDPROC, (LONG)&TextTrigEditProc);
 				SendMessage(hEdit, EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
-				 
-				TextTrigGenerator textTrigs(maps.curr);
-				buffer output("TeOu");
-				textTrigs.GenerateTextTrigs(maps.curr->TRIG(), output);
-				SetDlgItemText(hWnd, IDC_EDIT_TRIGTEXT, (const char*)output.getPtr(0));
+				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
 			}
 			break;
 

@@ -148,6 +148,7 @@ bool MAPS::OpenMap(HWND hMaps, const char* fileName)
 			Focus(newMap->map.getHandle());
 			curr->Scroll(SCROLL_X|SCROLL_Y);
 			curr->Redraw(true);
+			curr->refreshScenario();
 			return true;
 		} 
 		else
@@ -355,20 +356,14 @@ void MAPS::ChangePlayer(u8 newPlayer)
 
 			if ( hUnit )
 			{
+				string text;
 				HWND hOwner = GetDlgItem(hUnit, IDC_COMBO_PLAYER);
 				HWND hUnitList = GetDlgItem(hUnit, IDC_UNITLIST);
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
-				else
-				{
-					char* text;
-					if ( GetEditText(hPlayer, text) )
-					{
-						SetWindowText(hOwner, text);
-						delete[] text;
-					}
-				
-				}
+				else if ( GetEditText(hPlayer, text) )
+					SetWindowText(hOwner, text.c_str());
+
 				ChangeOwner(hUnitList, currSelUnit->index, newPlayer);
 			}
 

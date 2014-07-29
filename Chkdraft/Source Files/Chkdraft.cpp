@@ -22,7 +22,7 @@ DATA scData;
 
 HWND hMain(nullptr), hTool(nullptr), hPlot(nullptr), hLeft(nullptr), hStatus(nullptr),
 	 hMaps(nullptr), hMini(nullptr), hLayer(nullptr), hZoom(nullptr), hPlayer(nullptr),
-	 hTerrainCombo(nullptr), hTerrainProp(nullptr), hUnit(nullptr), hTrigText(nullptr),
+	 hTerrainCombo(nullptr), hTerrainProp(nullptr), hUnit(nullptr), hTextTrig(nullptr),
 	 hTilePal(nullptr), hWndTV(nullptr), hLocation(nullptr), hMapSettings(nullptr);
 HMENU hMainMenu(nullptr);
 
@@ -117,14 +117,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	/*
 	{ // On-Load Test
-		
-	}//*/
+		while ( true )
+		{
+			string str;
+			getline(cin, str);
+			if ( parseEscapedString(str) )
+				cout << str << endl;
+		}
+	} // */
 
 	MSG msg;
 	while ( GetMessage(&msg, NULL, 0, 0) > 0 )
 	{
 		DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-		if ( !IsDialogMessage(hTrigText, &msg) &&
+		if ( !IsDialogMessage(hTextTrig, &msg) &&
 			 !IsDialogMessage(hTerrainProp, &msg) &&
 			 !IsDialogMessage(hUnit, &msg) &&
 			 !IsDialogMessage(hLocation, &msg) &&
@@ -438,7 +444,7 @@ void ParseCmdLine(LPSTR lpCmdLine)
 	{
 		if ( lpCmdLine[0] == '\"' )
 		{
-			lpCmdLine[length-1] = NULL;
+			lpCmdLine[length-1] = '\0';
 			maps.OpenMap(hMaps, &lpCmdLine[1]);
 		}
 		else
@@ -657,8 +663,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					// Tools
 					case ID_TRIGGERS_TRIGGEREDITOR:
-						if ( hTrigText = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_TEXTTRIG), hMain, TextTrigProc) )
-							ShowWindow(hTrigText, SW_SHOW);
+						if ( hTextTrig = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_TEXTTRIG), hMain, TextTrigProc) )
+							ShowWindow(hTextTrig, SW_SHOW);
 						break;
 
 					// Windows
@@ -1835,7 +1841,7 @@ LRESULT CALLBACK MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam,
 									map->undos().addUndoLocationCreate(locationIndex);
 									map->undos().startNext(0);
 									BuildLocationTree(map);
-									map->Redraw(false);
+									map->refreshScenario();
 								}
 							}
 							else // Move or resize location

@@ -14,6 +14,7 @@ extern HWND hMapSettings;
 extern HWND hMini;
 extern HWND hZoom;
 extern HWND hPlayer;
+extern HWND hTextTrig;
 extern HMENU hMainMenu;
 
 extern bool changeHighlightOnly;
@@ -317,6 +318,7 @@ void GuiMap::refreshScenario()
 {
 	selection.removeTiles();
 	selection.removeUnits();
+	BuildLocationTree(this);
 
 	if ( hUnit != nullptr )
 		SendMessage(hUnit, REPOPULATE_LIST, NULL, NULL);
@@ -324,6 +326,8 @@ void GuiMap::refreshScenario()
 		SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
 	if ( hMapSettings != nullptr )
 		SendMessage(hMapSettings, REFRESH_WINDOW, NULL, NULL);
+	if ( hTextTrig != nullptr )
+		SendMessage(hTextTrig, REFRESH_WINDOW, NULL, NULL);
 
 	Redraw(true);
 }
@@ -484,7 +488,10 @@ void GuiMap::deleteSelection()
 					u16 stringNum = loc->stringNum;
 					loc->stringNum = 0;
 					if ( stringNum > 0 )
+					{
 						removeUnusedString(stringNum);
+						refreshScenario();
+					}
 
 					selections().selectLocation(NO_LOCATION);
 				}
@@ -529,7 +536,7 @@ void GuiMap::undo()
 				undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
 				if ( hLocation != nullptr )
 					SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
-
+				refreshScenario();
 				BuildLocationTree(this);
 			}
 			break;
@@ -552,6 +559,7 @@ void GuiMap::redo()
 			undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
 			if ( hLocation != nullptr )
 				SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
+			refreshScenario();
 			break;
 	}
 }
