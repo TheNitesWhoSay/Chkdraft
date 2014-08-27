@@ -498,7 +498,7 @@ bool buffer::swap(u32 location1, u32 location2)
 	}
 	return false;
 }
-template bool buffer::swap<ChkUnit&>(u32 location1, u32 location2);
+template bool buffer::swap<ChkUnit>(u32 location1, u32 location2);
 template bool buffer::swap<u16>(u32 location1, u32 location2);
 template bool buffer::swap<u32>(u32 location1, u32 location2);
 
@@ -837,23 +837,18 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 	return false;
 }
 
-const char* resizeErrors[] =
-{
-	"could not create a temporary buffer - you may have ran out of memory.",
-	"could not initialize buffer - you may have ran out of memory.",
-	""
-};
-
 const char* BadResize::what() const throw()
 {
 	switch ( exNum )
 	{
 		case 0:
+			return "could not create a temporary buffer - you may have ran out of memory.";
+			break;
 		case 1:
-			return resizeErrors[exNum];
+			return "could not initialize buffer - you may have ran out of memory.";
 			break;
 		default:
-			return resizeErrors[2];
+			return "";
 			break;
 	}
 }

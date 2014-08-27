@@ -4,9 +4,6 @@
 #include "Data.h"
 #include "Clipboard.h"
 
-extern DATA scData;
-extern SELECTIONS selection;
-
 /* Default Draw Order:
 	- Final Tile Data (what MTXM will be)
 	- Units & Sprites, highest YC to lowest YC

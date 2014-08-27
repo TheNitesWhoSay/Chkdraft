@@ -1,16 +1,28 @@
 #include "Location.h"
-#include "Maps.h"
-#include "GuiAccel.h"
+#include "Chkdraft.h"
 
-extern HWND hLocation;
-extern MAPS maps;
+LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
+{
 
-bool initializing(false);
+}
 
-u32 preservedStat(0);
-u16 locProcLocIndex(NO_LOCATION);
+bool LocationWindow::CreateThis(HWND hParent)
+{
+	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent);
+}
 
-void RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)
+bool LocationWindow::DestroyThis()
+{
+	if ( ClassWindow::DestroyDialog() )
+	{
+		locProcLocIndex = NO_LOCATION;
+		return true;
+	}
+	else
+		return false;
+}
+
+void LocationWindow::RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)
 {
 	if ( (locRef->elevation&LOC_ELEVATION_LOWGROUND) == 0)
 		SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_CHECKED, NULL);
@@ -38,11 +50,11 @@ void RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)
 		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_UNCHECKED, NULL);
 }
 
-LRESULT RefreshLocationInfo(HWND hWnd)
+LRESULT LocationWindow::RefreshLocationInfo(HWND hWnd)
 {
 	initializing = true;
 
-	if ( !maps.curr )
+	if ( !chkd.maps.curr )
 	{
 		locProcLocIndex = NO_LOCATION;
 		initializing = false;
@@ -50,9 +62,9 @@ LRESULT RefreshLocationInfo(HWND hWnd)
 		return TRUE;
 	}
 
-	locProcLocIndex = maps.curr->selections().getSelectedLocation();
+	locProcLocIndex = chkd.maps.curr->selections().getSelectedLocation();
 	ChkLocation* locRef;
-	if ( locProcLocIndex != NO_LOCATION && maps.curr->getLocation(locRef, locProcLocIndex) )
+	if ( locProcLocIndex != NO_LOCATION && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 	{
 		char text[20];
 		_itoa_s(locRef->xc1, text, 10);
@@ -76,13 +88,13 @@ LRESULT RefreshLocationInfo(HWND hWnd)
 
 		RefreshLocationElevationFlags(locRef, hWnd);
 
-		if ( maps.curr->isExtendedString(locRef->stringNum) )
+		if ( chkd.maps.curr->isExtendedString(locRef->stringNum) )
 			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_CHECKED, NULL);
 		else
 			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_UNCHECKED, NULL);
 
 		std::string locName;
-		if ( maps.curr->getString(locName, locRef->stringNum) )
+		if ( chkd.maps.curr->getString(locName, locRef->stringNum) )
 			SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), locName.c_str());
 		else
 			SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), "ERROR");
@@ -97,7 +109,7 @@ LRESULT RefreshLocationInfo(HWND hWnd)
 	return TRUE;
 }
 
-BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
@@ -125,14 +137,14 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 						if ( HIWORD(wParam) == BN_CLICKED )
 						{
 							ChkLocation* locRef;
-							if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+							if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 							{
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1);
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2);
-								maps.curr->undos().startNext(0);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2);
+								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->xc1, locRef->xc2);
 								RefreshLocationInfo(hWnd);
-								maps.curr->Redraw(false);
+								chkd.maps.curr->Redraw(false);
 							}
 						}
 						break;
@@ -140,14 +152,14 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 						if ( HIWORD(wParam) == BN_CLICKED )
 						{
 							ChkLocation* locRef;
-							if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+							if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 							{
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1);
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2);
-								maps.curr->undos().startNext(0);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2);
+								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->yc1, locRef->yc2);
 								RefreshLocationInfo(hWnd);
-								maps.curr->Redraw(false);
+								chkd.maps.curr->Redraw(false);
 							}
 						}
 						break;
@@ -155,17 +167,17 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 						if ( HIWORD(wParam) == BN_CLICKED )
 						{
 							ChkLocation* locRef;
-							if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+							if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 							{
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1);
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2);
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1);
-								maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2);
-								maps.curr->undos().startNext(0);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1);
+								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2);
+								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->xc1, locRef->xc2);
 								std::swap(locRef->yc1, locRef->yc2);
 								RefreshLocationInfo(hWnd);
-								maps.curr->Redraw(false);
+								chkd.maps.curr->Redraw(false);
 							}
 						}
 						break;
@@ -178,7 +190,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 									case BN_CLICKED:
 										{
 											ChkLocation* locRef;
-											if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+											if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 											{
 												LRESULT result = SendMessage((HWND)lParam, BM_GETCHECK,  NULL, NULL);
 												if ( result == BST_CHECKED || result == BST_UNCHECKED )
@@ -189,49 +201,50 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 														switch ( LOWORD(wParam) )
 														{
 															case IDC_LOWGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_LOWGROUND);
 																break;
 															case IDC_MEDGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_MEDGROUND);
 																break;
 															case IDC_HIGHGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_HIGHGROUND);
 																break;
 															case IDC_LOWAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_LOWAIR);
 																break;
 															case IDC_MEDAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_MEDAIR);
 																break;
 															case IDC_HIGHAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation &= (~LOC_ELEVATION_HIGHAIR);
 																break;
 															case IDC_EXTLOCNAMESTR:
 																{
 																	string str;
-																	if ( maps.curr->getString(str, locRef->stringNum) )
+																	if ( chkd.maps.curr->getString(str, locRef->stringNum) )
 																	{
 																		u32 newStrNum;
-																		if ( maps.curr->addString(str, newStrNum, true) )
+																		if ( chkd.maps.curr->addString(str, newStrNum, true) )
 																		{
 																			u32 oldStrNum = locRef->stringNum;
 																			locRef->stringNum = u16(newStrNum);
-																			maps.curr->removeUnusedString(oldStrNum);
+																			chkd.maps.curr->removeUnusedString(oldStrNum);
+																			chkd.maps.curr->refreshScenario();
 																		}
 																	}
-																	maps.curr->notifyChange(false);
+																	chkd.maps.curr->notifyChange(false);
 																}
 																break;
 														}
@@ -242,49 +255,50 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 														switch ( LOWORD(wParam) )
 														{
 															case IDC_LOWGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_LOWGROUND;
 																break;
 															case IDC_MEDGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_MEDGROUND;
 																break;
 															case IDC_HIGHGROUND:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_HIGHGROUND;
 																break;
 															case IDC_LOWAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_LOWAIR;
 																break;
 															case IDC_MEDAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_MEDAIR;
 																break;
 															case IDC_HIGHAIR:
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation);
+																chkd.maps.curr->undos().startNext(0);
 																locRef->elevation |= LOC_ELEVATION_HIGHAIR;
 																break;
 															case IDC_EXTLOCNAMESTR:
 																{
 																	string str;
-																	if ( maps.curr->getString(str, locRef->stringNum) )
+																	if ( chkd.maps.curr->getString(str, locRef->stringNum) )
 																	{
 																		u32 newStrNum;
-																		if ( maps.curr->addString(str, newStrNum, false) )
+																		if ( chkd.maps.curr->addString(str, newStrNum, false) )
 																		{
 																			u32 oldStrNum = locRef->stringNum;
 																			locRef->stringNum = u16(newStrNum);
-																			maps.curr->removeUnusedString(oldStrNum);
+																			chkd.maps.curr->removeUnusedString(oldStrNum);
+																			chkd.maps.curr->refreshScenario();
 																		}
 																	}
-																	maps.curr->notifyChange(false);
+																	chkd.maps.curr->notifyChange(false);
 																}
 																break;
 														}
@@ -297,7 +311,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 									case EN_SETFOCUS:
 										{
 											ChkLocation* locRef;
-											if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+											if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 											{
 												switch ( LOWORD(wParam) )
 												{
@@ -314,7 +328,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 									case EN_KILLFOCUS:
 										{
 											ChkLocation* locRef;
-											if ( maps.curr != nullptr && maps.curr->getLocation(locRef, locProcLocIndex) )
+											if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 											{
 												switch ( LOWORD(wParam) )
 												{
@@ -324,8 +338,8 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 															if ( GetEditBinaryNum(hWnd, IDC_RAWFLAGS, newVal) && preservedStat != newVal )
 															{
 																locRef->elevation = newVal;
-																maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat);
-																maps.curr->undos().startNext(0);
+																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat);
+																chkd.maps.curr->undos().startNext(0);
 																RefreshLocationInfo(hWnd);
 															}
 														}
@@ -338,10 +352,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																locRef->xc1 = newVal;
 																if ( newVal != preservedStat )
 																{
-																	maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, preservedStat);
-																	maps.curr->undos().startNext(0);
+																	chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC1, preservedStat);
+																	chkd.maps.curr->undos().startNext(0);
 																}
-																maps.curr->Redraw(false);
+																chkd.maps.curr->Redraw(false);
 															}
 														}
 														break;
@@ -353,10 +367,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																locRef->yc1 = newVal;
 																if ( newVal != preservedStat )
 																{
-																	maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, preservedStat);
-																	maps.curr->undos().startNext(0);
+																	chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC1, preservedStat);
+																	chkd.maps.curr->undos().startNext(0);
 																}
-																maps.curr->Redraw(false);
+																chkd.maps.curr->Redraw(false);
 															}
 														}
 														break;
@@ -368,10 +382,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																locRef->xc2 = newVal;
 																if ( newVal != preservedStat )
 																{
-																	maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, preservedStat);
-																	maps.curr->undos().startNext(0);
+																	chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, preservedStat);
+																	chkd.maps.curr->undos().startNext(0);
 																}
-																maps.curr->Redraw(false);
+																chkd.maps.curr->Redraw(false);
 															}
 														}
 														break;
@@ -383,17 +397,17 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																locRef->yc2 = newVal;
 																if ( newVal != preservedStat )
 																{
-																	maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, preservedStat);
-																	maps.curr->undos().startNext(0);
+																	chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, preservedStat);
+																	chkd.maps.curr->undos().startNext(0);
 																}
-																maps.curr->Redraw(false);
+																chkd.maps.curr->Redraw(false);
 															}
 														}
 														break;
 													case IDC_LOCATION_NAME:
 														{
 															std::string oldString;
-															if ( maps.curr->getString(oldString, preservedStat) )
+															if ( chkd.maps.curr->getString(oldString, preservedStat) )
 															{
 																char* newString;
 																int textLength = GetWindowTextLength(GetDlgItem(hWnd, IDC_LOCATION_NAME))+1;
@@ -420,13 +434,13 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 																	
 																		u32 newStringNum;
 																		bool isExtended = (SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_GETCHECK, NULL, NULL) == BST_CHECKED);
-																		if ( maps.curr->addString(newStr, newStringNum, isExtended) )
+																		if ( parseEscapedString(newStr) && chkd.maps.curr->addString(newStr, newStringNum, isExtended) )
 																		{
 																			locRef->stringNum = u16(newStringNum);
-																			BuildLocationTree(maps.curr);
-																			maps.curr->removeUnusedString(preservedStat);
-																			maps.curr->Redraw(false);
-																			maps.curr->notifyChange(false);
+																			chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+																			chkd.maps.curr->removeUnusedString(preservedStat);
+																			chkd.maps.curr->notifyChange(false);
+																			chkd.maps.curr->refreshScenario();
 																		}
 																	}
 																}
@@ -444,7 +458,7 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 												{
 													ChkLocation* locRef;
 													u16 newVal;
-													if ( maps.curr && maps.curr->getLocation(locRef, locProcLocIndex) &&
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) &&
 														 GetEditBinaryNum(hWnd, IDC_RAWFLAGS, newVal) && preservedStat != newVal )
 													{
 														locRef->elevation = newVal;
@@ -458,10 +472,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( maps.curr && maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCLEFT, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCLEFT, newVal) )
 													{
 														locRef->xc1 = newVal;
-														maps.curr->Redraw(false);
+														chkd.maps.curr->Redraw(false);
 													}
 												}
 												break;
@@ -469,10 +483,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( maps.curr && maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCTOP, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCTOP, newVal) )
 													{
 														locRef->yc1 = newVal;
-														maps.curr->Redraw(false);
+														chkd.maps.curr->Redraw(false);
 													}
 												}
 												break;
@@ -480,10 +494,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( maps.curr && maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCRIGHT, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCRIGHT, newVal) )
 													{
 														locRef->xc2 = newVal;
-														maps.curr->Redraw(false);
+														chkd.maps.curr->Redraw(false);
 													}
 												}
 												break;
@@ -491,10 +505,10 @@ BOOL CALLBACK LocationPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( maps.curr && maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCBOTTOM, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCBOTTOM, newVal) )
 													{
 														locRef->yc2 = newVal;
-														maps.curr->Redraw(false);
+														chkd.maps.curr->Redraw(false);
 													}
 												}
 												break;

@@ -25,4 +25,8 @@ s32 round(T value)
 	return s32(floor(static_cast<double>(value) + 0.5));
 }
 
+bool getOneByteHexVal(char character, u8& value);
+
+bool getTwoByteHexVal(const char* string, u8& value);
+
 #endif

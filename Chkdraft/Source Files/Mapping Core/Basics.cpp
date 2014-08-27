@@ -1,11 +1,5 @@
 #include "Basics.h"
 
-#ifndef CHKDRAFT
-char LastError[512];
-char LastErrorLoc[512];
-void IgnoreErr(const char* file, unsigned int line, const char* msg, ...) { }
-#endif
-
 const char* DefaultUnitDisplayName[233] = 
 {
 	/*  0*/ "Terran Marine",
@@ -479,14 +473,6 @@ const char* LegacyTextTrigDisplayName[233] =
 	/*231*/ "Buildings",
 	/*232*/ "Factories",
 };
-
-GRID::GRID() : red(0), green(0), blue(0)
-{
-	size.x = 0;
-	size.y = 0;
-	offset.x = 0;
-	offset.y = 0;
-}
 
 StringTableNode::StringTableNode() : string(""), stringNum(0), isExtended(false), propStruct(0)
 {

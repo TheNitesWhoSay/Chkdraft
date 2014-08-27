@@ -10,7 +10,7 @@ struct MapNode
 	MapNode* next;
 };
 
-class MAPS
+class MAPS : public MdiFrame
 {
 	public:
 		GuiMap* curr;
@@ -20,16 +20,18 @@ class MAPS
 		MAPS();
 		~MAPS();
 
+		void FocusActive();
 		void Focus(HWND hFocus);
 		GuiMap* GetMap(HWND hMap);
 		GuiMap* GetMap(u16 mapID);
 		u16 GetMapID(GuiMap* map);
 
-		bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers, HWND hMaps);
-		bool OpenMap(HWND hMaps, const char* fileName);
-		bool OpenMap(HWND hMaps); // Accelerator for OpenMap
+		bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
+		bool OpenMap(const char* fileName);
+		bool OpenMap(); // Accelerator for OpenMap
 		bool SaveCurr(bool saveAs);
 		void CloseMap(HWND hMap);
+		void CloseActive();
 
 		void UpdateTreeView();
 		void SetGrid(s16 xSize, s16 ySize);
@@ -52,6 +54,7 @@ class MAPS
 	private:
 		MapNode* firstMap;
 		int UntitledNumber;
+		u16 lastUsedMapID;
 
 		bool nonStandardCursor;
 		HCURSOR* currCursor;

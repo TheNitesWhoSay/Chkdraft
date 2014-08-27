@@ -4,8 +4,6 @@
 #include <iostream>
 using namespace std;
 
-buffer* nullBuffer = nullptr;
-
 section::section(char *title) : buf(title)
 {
 
@@ -94,7 +92,7 @@ std::string Scenario::getForceString(u8 forceNum)
 	else
 	{
 		char num[12];
-		_itoa_s(forceNum, num, 10);
+		_itoa_s(forceNum+1, num, 10);
 		forceString += "Force ";
 		forceString += num;
 	}
@@ -129,6 +127,11 @@ bool Scenario::getPlayerForce(u8 playerNum, u8 &force)
 u16 Scenario::numStrings()
 {
 	return STR().get<u16>(0);
+}
+
+u32 Scenario::totalStrings()
+{
+	return ((u32)STR().get<u16>(0)) + KSTR().get<u32>(4);
 }
 
 bool Scenario::getString(string &dest, u32 stringNum)
@@ -395,9 +398,119 @@ bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 	return false;
 }
 
+bool Scenario::escStringDifference(string str, u32& stringNum)
+{
+	string existing;
+	if ( getEscapedString(existing, stringNum) )
+	{
+		if ( str.compare(existing) == 0 )
+			return false;
+	}
+	return true;
+}
+
 u32 Scenario::extendedToRegularStr(u32 stringNum)
 {
 	return 65536 - stringNum;
+}
+
+bool Scenario::stringUsedWithLocs(u32 stringNum)
+{
+	ChkLocation* loc;
+	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
+	{
+		if ( getLocation(loc, u8(i)) && ((u32)loc->stringNum) == stringNum )
+			return true;
+	}
+	return true;
+}
+
+#define IncrementIfEqual(index, counter) \
+	if ( ((u32)index) == stringNum )	 \
+		counter ++;
+
+u32 Scenario::amountStringUsed(u32 stringNum)
+{
+	u32 amountStringUsed = 0;
+	ChkLocation* loc; // MRGN - location strings
+	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
+	{
+		if ( getLocation(loc, u8(i)) )
+			IncrementIfEqual(loc->stringNum, amountStringUsed);
+	}
+	Trigger* trig; // TRIG - trigger strings
+	int trigNum = 0;
+	while ( getTrigger(trig, trigNum) )
+	{
+		trigNum ++;
+		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
+	}
+	trigNum = 0; // MBRF - briefing strings
+	while ( getBriefingTrigger(trig, trigNum) )
+	{
+		trigNum ++;
+		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
+	}
+	// SPRP - scenario property strings
+	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
+	IncrementIfEqual(strIndex, amountStringUsed);
+	strIndex = SPRP().get<u16>(2); // Scenario Description
+	IncrementIfEqual(strIndex, amountStringUsed);
+	for ( int i=0; i<4; i++ ) // FORC - force strings
+		IncrementIfEqual(getForceStringNum(i), amountStringUsed);
+	for ( u32 i=0; i<WAV().size()/4; i++ ) // WAV  - sound strings
+		IncrementIfEqual(WAV().get<u32>(i*4), amountStringUsed);
+	for ( int i=0; i<228; i++ ) // UNIS - unit settings strings (vanilla)
+		IncrementIfEqual(UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), amountStringUsed);
+	for ( int i=0; i<256; i++ ) // SWNM - switch strings
+		IncrementIfEqual(SWNM().get<u32>(i*4), amountStringUsed);
+	for ( int i=0; i<228; i++ ) // UNIx - unit settings strings (brood war)
+		IncrementIfEqual(UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), amountStringUsed);
+
+	return amountStringUsed;
+}
+
+void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u32& props, u32& forces, u32& wavs, u32& units, u32& switches)
+{
+	locs = trigs = briefs = props = forces = wavs = units = switches = 0;
+	ChkLocation* loc; // MRGN - location strings
+	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
+	{
+		if ( getLocation(loc, u8(i)) )
+			IncrementIfEqual(loc->stringNum, locs);
+	}
+	Trigger* trig; // TRIG - trigger strings
+	int trigNum = 0;
+	while ( getTrigger(trig, trigNum) )
+	{
+		trigNum ++;
+		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			IncrementIfEqual(trig->actions[i].stringNum, trigs);
+	}
+	trigNum = 0; // MBRF - briefing strings
+	while ( getBriefingTrigger(trig, trigNum) )
+	{
+		trigNum ++;
+		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			IncrementIfEqual(trig->actions[i].stringNum, briefs);
+	}
+	// SPRP - scenario property strings
+	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
+	IncrementIfEqual(strIndex, props);
+	strIndex = SPRP().get<u16>(2); // Scenario Description
+	IncrementIfEqual(strIndex, props);
+	for ( int i=0; i<4; i++ ) // FORC - force strings
+		IncrementIfEqual(getForceStringNum(i), forces);
+	for ( u32 i=0; i<WAV().size()/4; i++ ) // WAV  - sound strings
+		IncrementIfEqual(WAV().get<u32>(i*4), wavs);
+	for ( int i=0; i<228; i++ ) // UNIS - unit settings strings (vanilla)
+		IncrementIfEqual(UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), units);
+	for ( int i=0; i<256; i++ ) // SWNM - switch strings
+		IncrementIfEqual(SWNM().get<u32>(i*4), switches);
+	for ( int i=0; i<228; i++ ) // UNIx - unit settings strings (brood war)
+		IncrementIfEqual(UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), units);
 }
 
 bool Scenario::isExpansion()
@@ -832,7 +945,11 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 {
 	u32 newStringNum, oldStringNum = (u32)stringNum;
 
-	if ( stringExists(newString, newStringNum, extended) )
+	if ( stringNum != 0 && amountStringUsed(stringNum) == 1 )
+	{
+		return editString<numType>(newString, stringNum, extended, safeReplace);
+	}
+	else if ( stringExists(newString, newStringNum, extended) )
 	{
 		stringNum = (numType)newStringNum;
 		removeUnusedString(oldStringNum);
@@ -903,7 +1020,40 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 template bool Scenario::replaceString<u16>(string newString, u16& stringNum, bool extended, bool safeReplace);
 template bool Scenario::replaceString<u32>(string newString, u32& stringNum, bool extended, bool safeReplace);
 
-bool Scenario::replaceStringNum(u32 toReplace, u32 replacement)
+template <typename numType>
+bool Scenario::editString(string newString, numType stringNum, bool extended, bool safeEdit)
+{
+	if ( stringNum == 0 )
+		return false;
+
+	u32 newStringNum = 0;
+	if ( stringExists(newString, newStringNum, extended) )
+	{
+		replaceStringNum(stringNum, newStringNum);
+		return true;
+	}
+	else
+	{
+		std::list<StringTableNode> strList;
+		if ( extended == false && addAllUsedStrings(strList, STRADD_INCLUDE_STANDARD) ||
+			 extended == true && addAllUsedStrings(strList, STRADD_INCLUDE_EXTENDED) )
+		{
+			for ( auto it = strList.begin(); it != strList.end(); it ++ )
+			{
+				if ( it->stringNum == stringNum )
+				{
+					it->string = newString; // Replace the old string with the new string
+					return rebuildStringTable(strList, extended); // Attempt rebuilding string table
+				}
+			}
+		}
+	}
+	return false;
+}
+template bool Scenario::editString<u16>(string newString, u16 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u32>(string newString, u32 stringNum, bool extended, bool safeEdit);
+
+void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 {
 	ChkLocation* loc;
 	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
@@ -970,8 +1120,6 @@ bool Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 		if ( SWNM().get<u32>(i*4) == toReplace )
 			SWNM().replace<u32>(i*4, replacement);
 	}
-
-	return true;
 }
 
 void Scenario::removeMetaStrings()
@@ -1272,19 +1420,19 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 	u32 standardNumStrings = numStrings();
 	u32 extendedNumStrings = KSTR().get<u32>(4);
 
-	#define AddStrIfOverZero(index)																				\
-		if ( index > 0 &&																						\
-			 (																									\
-			   ( (flags&STRADD_INCLUDE_STANDARD) > 0 && (u32(index)) <= standardNumStrings ) ||					\
-			   ( (flags&STRADD_INCLUDE_EXTENDED) > 0 && (u32(65536-index)) <= extendedNumStrings )				\
-			 )																									\
-		   )																									\
-		{																										\
-			if ( getRawString(node.string, index) ) {															\
-				node.stringNum = index;																			\
-				if ( std::find(strList.begin(), strList.end(), node) == strList.end() )							\
-					strList.push_back(node); /* add if the string isn't in the list */							\
-			}																									\
+	#define AddStrIfOverZero(index)																		\
+		if ( index > 0 &&																				\
+			 (																							\
+			   ( (flags&STRADD_INCLUDE_STANDARD) > 0 && (u32(index)) <= standardNumStrings ) ||			\
+			   ( (flags&STRADD_INCLUDE_EXTENDED) > 0 && (u32(65536-index)) <= extendedNumStrings )		\
+			 )																							\
+		   )																							\
+		{																								\
+			if ( getRawString(node.string, index) ) {													\
+				node.stringNum = index;																	\
+				if ( std::find(strList.begin(), strList.end(), node) == strList.end() )					\
+					strList.push_back(node); /* add if the string isn't in the list */					\
+			}																							\
 		}
 
 	try
@@ -1806,7 +1954,10 @@ buffer& Scenario::getSection(u32 id)
 	}
 
 	if ( lastInstance == nullptr )
+	{
+		buffer* nullBuffer = nullptr;
 		return *nullBuffer;
+	}
 	else
 		return lastInstance->buf;
 	/** Referances to null buffers are
@@ -1892,11 +2043,17 @@ bool Scenario::MakeStr(string& dest, char* src, u32 srcLen)
 	{
 		for ( u32 i=0; i<srcLen-1; i++ )
 		{
-			if ( (u8)src[i] < 32 )
+			if ( (u8)src[i] < 32 && src[i] != '\n' && src[i] != '\r' )
 			{
 				dest.push_back('<');
-				dest.push_back(src[i]/10+'0');
-				dest.push_back(src[i]%10+'0');
+				if ( src[i]/16 > 9 )
+					dest.push_back(src[i]/16+'A'-10);
+				else
+					dest.push_back(src[i]/16+'0');
+				if ( src[i]%16 > 9 )
+					dest.push_back(src[i]%16+'A'-10);
+				else
+					dest.push_back(src[i]%16+'0');
 				dest.push_back('>');
 			}
 			else

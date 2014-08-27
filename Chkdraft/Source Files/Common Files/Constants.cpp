@@ -1,7 +1,7 @@
 #include "Constants.h"
 #include "CommonFiles.h"
 
-HFONT defaultFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
+const HFONT defaultFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
 
 const double zooms[] =
 {
@@ -75,6 +75,6 @@ const int numDesertInitTerrain = 14;
 const int numIceInitTerrain = 14;
 const int numTwilightInitTerrain = 14;
 
-extern const int numTilesetInitTerrains[] = { numBadlandsInitTerrain, numSpaceInitTerrain, numInstallationInitTerrain,
-											  numAshInitTerrain, numJungInitTerrain, numDesertInitTerrain,
-											  numIceInitTerrain, numTwilightInitTerrain };
+const int numTilesetInitTerrains[] = { numBadlandsInitTerrain, numSpaceInitTerrain, numInstallationInitTerrain,
+									   numAshInitTerrain, numJungInitTerrain, numDesertInitTerrain,
+									   numIceInitTerrain, numTwilightInitTerrain };

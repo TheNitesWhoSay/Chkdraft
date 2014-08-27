@@ -98,7 +98,7 @@ StringUsageTable::StringUsageTable(Scenario* chk, bool extendedTable, bool& succ
 		}
 		else
 		{
-			CHKD_ERR("Failed to allocate string usage table.\n\n%s", LastError);
+			CHKD_ERR("Failed to allocate string usage table.");
 			success = false;
 		}
 	}

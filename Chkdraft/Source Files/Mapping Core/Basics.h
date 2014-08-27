@@ -2,8 +2,6 @@
 #define BASICS_H
 #include <string>
 
-extern char LastError[512];
-extern char LastErrorLoc[512];
 #ifdef CHKDRAFT // Globally defined in project properties if this is used in CHKDraft
 	void mb(const char* text); // Basic message box message
 	void Error(const char* ErrorMessage); // Basic error message box
@@ -91,36 +89,6 @@ extern const char* LegacyTextTrigDisplayName[233];
 #define NUM_UNIT_NAMES 233
 
 #define NUM_REAL_UNITS 227
-
-struct points // Mirrors win32 POINTS
-{
-	s16 x;
-	s16 y;
-};
-struct point // Mirrors win32 POINT
-{
-	s32 x;
-	s32 y;
-};
-struct rect // Mirrors win32 RECT
-{
-	s32 left;
-	s32 top;
-	s32 right;
-	s32 bottom;
-};
-
-class GRID // A simple grid that can be displayed over a map
-{
-	public:
-		points size;
-		point offset;
-		u8 red;
-		u8 green;
-		u8 blue;
-
-		GRID(); // ctor
-};
 
 struct ChkUnit // A unit as found in a scenario.chk's UNIT section
 {
@@ -279,7 +247,6 @@ struct ChkLocation // A location as found in a scenario.chk's MRGN section
 #define LOC_FIELD_ELEVATION	  5
 const u8 locationFieldSize[] = {  4,  4,  4,  4,  2,  2  };
 const u8 locationFieldLoc [] = {  0,  4,  8,  12, 16, 18 };
-
 
 class StringTableNode // An object comprehensively representing a StarCraft string
 {

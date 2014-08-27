@@ -196,7 +196,7 @@ class UndoNode
 {
 	public:
 		void* head; // Stack of items that get replaced with this undo
-		UndoNode* next;
+		UndoNode* next; // The next undo in 
 		UndoNode* prev;
 		u32 flags;
 			// Type of undo contained in this node
@@ -278,10 +278,9 @@ class UNDOS
 		
 		UndoNode* headUndo;
 		UndoNode* lastUndo;
-
 		UndoNode* headRedo;
+		UndoNode* upcomingUndo; // The undo soon to be added
 
-		UndoNode* upcomingUndo;
 		u32 rootTypes;
 		u16 mapId; // Id of the map this instance of UNDOS is attached to
 };

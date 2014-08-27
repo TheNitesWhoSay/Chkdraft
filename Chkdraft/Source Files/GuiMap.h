@@ -1,12 +1,13 @@
 #ifndef GUIMAP_H
 #define GUIMAP_H
 #include "Common Files/CommonFiles.h"
+#include "Windows UI/WindowsUI.h"
 #include "Clipboard.h"
 #include "Undo.h"
 #include "Data.h"
 #include "Graphics.h"
 
-class GuiMap : public MapFile
+class GuiMap : public MapFile, public ClassWindow
 {
 	public:
 
@@ -53,7 +54,6 @@ class GuiMap : public MapFile
 					float MiniMapScale(u16 xSize, u16 ySize);
 				
 					HWND getHandle();
-					bool setHandle(HWND newMapWin);
 
 					void PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard );
 					void PaintMiniMap(HWND hWnd);
@@ -108,8 +108,7 @@ class GuiMap : public MapFile
 					HDC GetMemhDC() { return MemhDC; }
 					HDC GetMemMinihDC() { return MemMinihDC; }
 
-/** Misc */
-					void setMapId(u16 mapId);
+/** Misc */			void setMapId(u16 mapId);
 					u16 getMapId();
 					void notifyChange(bool undoable); // Notifies that a change occured, if it's not undoable changes are locked
 					void changesUndone(); // Notifies that all undoable changes have been undone
@@ -118,6 +117,11 @@ class GuiMap : public MapFile
 					void removeAsterisk(); // Removes an asterix from the map name
 					void updateMenu(); // Updates which items are checked in the main menu
 
+					bool CreateThis(HWND hClient, const char* title);
+					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					static CLIPBOARD* clipboard; // Get this pointing correctly...
+					//static GuiMap** currMap; // Get this pointing correctly...
 
 	private:
 
@@ -140,7 +144,7 @@ class GuiMap : public MapFile
 
 		SELECTIONS selection;
 		UNDOS undoStacks;
-		HWND hMapWindow;
+		//HWND hMapWindow;
 
 		Graphics graphics;
 		POINT displayPivot;

@@ -1,6 +1,7 @@
 #include "Graphics.h"
 #include "Common Files/CommonFiles.h"
 #include "GuiAccel.h"
+#include "Chkdraft.h"
 
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, u8* screenBits,
 					   SELECTIONS& selections, u32 layer, HDC hDC, bool showAnywhere)
@@ -52,7 +53,7 @@ void Graphics::DrawTerrain(u8* screenBits)
 
 	if ( !ERA.get<u16>(tileset, 0) ) return; // Map must have a tileset
 
-	TileSet* tiles = &scData.tilesets.set[tileset];
+	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	if ( screenHeight > u32(mapHeight*32) )
 		maxRowY = mapHeight;
@@ -107,7 +108,7 @@ void Graphics::DrawTileElevations(u8* screenBits)
 
 	u8 tileset;
 	if ( !chk->ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
-	TileSet* tiles = &scData.tilesets.set[tileset];
+	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	for ( yc=screenTop/32; yc<maxRowY; yc++ )
 	{
@@ -400,7 +401,7 @@ void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
 	u8 tileset;
 	if ( !ERA.get<u8>(tileset, 0) ) return; // Map must have a tileset
 
-	buffer* palette = &scData.tilesets.set[tileset].wpe;
+	buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 	ChkUnit* unit;
 
 	for ( s32 pos = 0; pos < UnitTableSize; pos+=UNIT_STRUCT_SIZE )
@@ -447,7 +448,7 @@ void Graphics::DrawSprites(u8* screenBits)
 	u8 tileset;
 	if ( !ERA.get<u8>(tileset, 0) ) return; // Map must have a tileset
 
-	buffer* palette = &scData.tilesets.set[tileset].wpe;
+	buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 	ChkSprite* sprite;
 
 	for ( s32 pos = 0; pos < SpriteTableSize; pos += SPRITE_STRUCT_SIZE )
@@ -790,15 +791,15 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 					{
 						if ( lineDat[pos] < 8 )
 						{
-							screenBits[bitmapIndex  ] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
-							screenBits[bitmapIndex+1] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
-							screenBits[bitmapIndex+2] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
+							screenBits[bitmapIndex  ] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
+							screenBits[bitmapIndex+1] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
+							screenBits[bitmapIndex+2] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
 						}
 						else if ( lineDat[pos] < 16 )
 						{
-							screenBits[bitmapIndex  ] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
-							screenBits[bitmapIndex+1] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
-							screenBits[bitmapIndex+2] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
+							screenBits[bitmapIndex  ] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
+							screenBits[bitmapIndex+1] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
+							screenBits[bitmapIndex+2] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
 						}
 						else
 						{
@@ -820,15 +821,15 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 					{
 						if ( lineDat[pos] < 8 )
 						{
-							screenBits[bitmapIndex  ] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
-							screenBits[bitmapIndex+1] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
-							screenBits[bitmapIndex+2] = scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
+							screenBits[bitmapIndex  ] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
+							screenBits[bitmapIndex+1] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
+							screenBits[bitmapIndex+2] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
 						}
 						else if ( lineDat[pos] < 16 )
 						{
-							screenBits[bitmapIndex  ] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
-							screenBits[bitmapIndex+1] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
-							screenBits[bitmapIndex+2] = scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
+							screenBits[bitmapIndex  ] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
+							screenBits[bitmapIndex+1] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
+							screenBits[bitmapIndex+2] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
 						}
 						else
 						{
@@ -849,20 +850,20 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC,  u16 frame, bool selected )
 {
-	GRP* curr = &scData.grps[scData.SpriteDat(scData.FlingyDat(scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561];
+	GRP* curr = &chkd.scData.grps[chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561];
 	
 	if ( unitID < 228 )
 	{
-		curr = &scData.grps[scData.ImageDat(scData.SpriteDat(scData.FlingyDat(scData.UnitDat(unitID)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
+		curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
 		if ( selected )
 		{
-			GRP* selCirc = &scData.grps[scData.ImageDat(scData.SpriteDat(scData.FlingyDat(scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
-			u16 offsetY = unitYC + scData.SpriteDat(scData.FlingyDat(scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
+			GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
+			u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
 			GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
 		}
 	}
 	else
-		curr = &scData.grps[scData.ImageDat(scData.SpriteDat(scData.FlingyDat(scData.UnitDat(0)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
+		curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
 
 	GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
 }
@@ -870,7 +871,7 @@ void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bi
 void SpriteToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				   s32 &xStart, s32 &yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
 {
-	GRP* curr = &scData.grps[scData.ImageDat(scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1];
+	GRP* curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1];
 	GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
 }
 
@@ -1111,7 +1112,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 
 	u16 tileset;
 	if ( !chk->ERA().get<u16>(tileset, 0) ) return;
-	TileSet* tiles = &scData.tilesets.set[tileset];
+	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	TileNode* track = selections.getFirstTile();
 
@@ -1191,7 +1192,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		RECT rect, rcShade;
 		u16 tileset;
 		if ( !chk->ERA().get<u16>(tileset, 0) ) return;
-		TileSet* tiles = &scData.tilesets.set[tileset];
+		TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 		PasteTileNode* track = clipboard.getFirstTile();
 	
 		BITMAPINFO bmi = GetBMI(32, 32);
@@ -1266,7 +1267,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		u8 tileset;
 		if ( !chk->ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
 
-		buffer* palette = &scData.tilesets.set[tileset].wpe;
+		buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 		s32 sScreenLeft = screenLeft;
 		s32 sScreenTop = screenTop;
 
@@ -1510,9 +1511,9 @@ void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 						   )*3;
 			if ( bitIndex < MINI_MAP_MAXBIT )
 			{
-				minimapBits[bitIndex  ] = scData.tminimap.pcxDat.get<u8>(color*4+2);
-				minimapBits[bitIndex+1] = scData.tminimap.pcxDat.get<u8>(color*4+1);
-				minimapBits[bitIndex+2] = scData.tminimap.pcxDat.get<u8>(color*4  );
+				minimapBits[bitIndex  ] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+2);
+				minimapBits[bitIndex+1] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+1);
+				minimapBits[bitIndex+2] = chkd.scData.tminimap.pcxDat.get<u8>(color*4  );
 			}
 		}
 	}
@@ -1535,9 +1536,9 @@ void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 
 				if ( bitIndex < MINI_MAP_MAXBIT )
 				{
-					minimapBits[bitIndex  ] = scData.tminimap.pcxDat.get<u8>(color*4+2);
-					minimapBits[bitIndex+1] = scData.tminimap.pcxDat.get<u8>(color*4+1);
-					minimapBits[bitIndex+2] = scData.tminimap.pcxDat.get<u8>(color*4  );
+					minimapBits[bitIndex  ] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+2);
+					minimapBits[bitIndex+1] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+1);
+					minimapBits[bitIndex+2] = chkd.scData.tminimap.pcxDat.get<u8>(color*4  );
 				}
 			}
 		}
@@ -1561,7 +1562,7 @@ void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario
 	u16 xOffset = (u16)((128-xSize*scale)/2),
 		yOffset = (u16)((128-ySize*scale)/2);
 
-	tiles = &scData.tilesets.set[tileset];
+	tiles = &chkd.scData.tilesets.set[tileset];
 	DrawMiniMapTiles(minimapBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
 	DrawMiniMapUnits(minimapBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
 	SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, minimapBits, &bmi, DIB_RGB_COLORS);

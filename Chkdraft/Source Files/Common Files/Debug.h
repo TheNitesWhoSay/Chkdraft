@@ -14,6 +14,7 @@ class CLI
 		{ 
 			AllocConsole();
 			freopen_s(&console, "CONOUT$", "w", stdout);
+			freopen_s(&console, "CONIN$", "r", stdin);
 		}
 
 		~CLI()
