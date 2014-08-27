@@ -4,8 +4,6 @@
 #include <iostream>
 using namespace std;
 
-buffer* nullBuffer = nullptr;
-
 section::section(char *title) : buf(title)
 {
 
@@ -1956,7 +1954,10 @@ buffer& Scenario::getSection(u32 id)
 	}
 
 	if ( lastInstance == nullptr )
+	{
+		buffer* nullBuffer = nullptr;
 		return *nullBuffer;
+	}
 	else
 		return lastInstance->buf;
 	/** Referances to null buffers are

@@ -1,107 +1,177 @@
 #include "Unit.h"
-#include "Common Files/CommonFiles.h"
-#include "Maps.h"
-#include "GuiAccel.h"
-using namespace std;
+#include "UnitMoveTo.h"
+#include "Chkdraft.h"
 
-extern HWND hUnit;
-extern MAPS maps;
-BOOL CALLBACK MoveToProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Window for getting position to move selection to
-
-#define UNIT_NAME_COLUMN  0
-#define UNIT_OWNER_COLUMN 1
-#define UNIT_XC_COLUMN	  2
-#define UNIT_YC_COLUMN	  3
-#define UNIT_INDEX_COLUMN 4
-
-u16 columnSortedBy = UNIT_INDEX_COLUMN;
-bool flipSort = false;
-bool initilizing = true;
-bool changeHighlightOnly = false;
-int moveTo(0);
-
-class PreservedStats
+UnitWindow::UnitWindow() : columnSortedBy(UNIT_INDEX_COLUMN), flipSort(false), initilizing(true), changeHighlightOnly(false)
 {
-	public:
-		PreservedStats() : field(0), numUnits(0), values(nullptr) { }
-		void flushStats() { field = 0; numUnits = 0; if ( values != nullptr ) delete[] values; values = nullptr; }
-		void addStats(SELECTIONS &sel, u8 statField)
+
+}
+
+bool UnitWindow::CreateThis(HWND hParent)
+{
+	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_UNITPROPERTIES), hParent);
+}
+
+bool UnitWindow::DestroyThis()
+{
+	return ClassWindow::DestroyDialog();
+}
+
+void UnitWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
+{
+	this->changeHighlightOnly = changeHighlightOnly;
+}
+
+void UnitWindow::ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer)
+{
+	HWND hUnitList = GetDlgItem(hUnitProperties, IDC_UNITLIST);
+	UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
+	ChkUnit* unit;
+
+	while ( currUnit != nullptr )
+	{
+		int index = currUnit->index;
+		if ( chkd.maps.curr->getUnit(unit, index) )
 		{
-			flushStats();
-			field = statField;
-
-			UnitNode* currUnit = sel.getFirstUnit();
-			numUnits = 0;
-			while ( currUnit != nullptr )
-			{
-				numUnits ++;
-				currUnit = currUnit->next;
-			}
-
-			currUnit = sel.getFirstUnit();
-			try { values = new u32[numUnits]; }
-			catch ( std::bad_alloc ) { flushStats(); return; }
-			ChkUnit* unit;
-			buffer& UNITS = maps.curr->UNIT();
-
-			for ( int i=0; currUnit != nullptr; i++ )
-			{
-				u16 index = currUnit->index;
-				u32 pos = index*UNIT_STRUCT_SIZE + unitFieldLoc[field];
-
-				if ( maps.curr->getUnit(unit, index) )
-				{
-					switch ( unitFieldSize[field] )
-					{
-						case 1: values[i] = (u32)UNITS.get<u8 >(pos); break;
-						case 2: values[i] = (u32)UNITS.get<u16>(pos); break;
-						case 4: values[i] =		 UNITS.get<u32>(pos); break;
-					}
-				}
-
-				currUnit = currUnit->next;
-			}
+			ChangeOwner(hUnitList, index, newPlayer);
+			unit->owner = newPlayer;
 		}
-		void convertToUndo()
-		{
-			if ( numUnits > 0 && values != nullptr )
-			{
-				// For each selected unit, add the corresponding undo from values
-				UnitNode* currUnit = maps.curr->selections().getFirstUnit();
-				buffer& units = maps.curr->UNIT();
-				u32 pos = 0;
+		currUnit = currUnit->next;
+	}
+	chkd.maps.curr->Redraw(true);
+}
 
-				for ( int i=0; currUnit != nullptr; i++ )
-				{
-					pos = currUnit->index*UNIT_STRUCT_SIZE + unitFieldLoc[field];
-					switch ( unitFieldSize[field] )
-					{
-						case 1:
-							maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-							break;
-						case 2:
-							maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-							break;
-						case 4:
-							maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-							break;
-					}
-					currUnit = currUnit->next;
-				}
-				maps.curr->undos().startNext(0);
-			}
-			flushStats();
-		}
+void UnitWindow::ChangeOwner(HWND hUnitList, int index, u8 newPlayer)
+{
+	char owner[32], padding[2] = { };
+	if ( newPlayer < 9 )
+		padding[0] = '0';
+	else
+		padding[0] = '\0';
+	sprintf_s(owner, "Player %s%i", padding, newPlayer+1);
 
-	private:
-		u8 field;
-		int numUnits;
-		u32* values;
-};
+	int row = GetItemRow(hUnitList, index);
+	SetItem(hUnitList, row, UNIT_OWNER_COLUMN, owner);
+}
 
-PreservedStats preservedStats;
+void UnitWindow::EnableUnitEditing(HWND hWnd)
+{
+	HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
+	EnableWindow(hItem, TRUE);
 
-void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
+	const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
+							IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
+	for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, buttons[i]);
+		EnableWindow(hItem, TRUE);
+	}
+
+	const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
+							  IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
+	for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, editBoxes[i]);
+		EnableWindow(hItem, TRUE);
+	}
+
+	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
+							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
+	for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, buddyIds[i]);
+		EnableWindow(hItem, TRUE);
+	}
+
+	const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
+							   IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
+	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, checkBoxes[i]);
+		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
+		EnableWindow(hItem, TRUE);
+	}
+}
+
+void UnitWindow::DisableUnitEditing(HWND hWnd)
+{
+	SetWindowText(hWnd, "");
+
+	HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
+	SendMessage(hItem, CB_SETCURSEL, -1, NULL);
+	EnableWindow(hItem, FALSE);
+
+	const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
+							IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
+	for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, buttons[i]);
+		EnableWindow(hItem, FALSE);
+	}
+
+	const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
+							  IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
+	for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, editBoxes[i]);
+		SetWindowText(hItem, "");
+		EnableWindow(hItem, FALSE);
+	}
+
+	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
+							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
+	for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, buddyIds[i]);
+		EnableWindow(hItem, FALSE);
+	}
+
+	const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
+							   IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
+	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
+	{
+		hItem = GetDlgItem(hWnd, checkBoxes[i]);
+		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
+		EnableWindow(hItem, FALSE);
+	}
+}
+
+void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit* unit)
+{
+	initilizing = true;
+	HWND hPlayer   = GetDlgItem(hWnd, IDC_COMBO_PLAYER		), hHp	   = GetDlgItem(hWnd, IDC_EDIT_HP		  ),
+		 hMp	   = GetDlgItem(hWnd, IDC_EDIT_MP			), hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD	  ),
+		 hResource = GetDlgItem(hWnd, IDC_EDIT_RESOURCES	), hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER	  ),
+		 hId	   = GetDlgItem(hWnd, IDC_EDIT_ID			), hInvinc = GetDlgItem(hWnd, IDC_CHECK_INVINCIBLE),
+		 hHallu	   = GetDlgItem(hWnd, IDC_CHECK_HALLUCINATED), hBurrow = GetDlgItem(hWnd, IDC_CHECK_BURROWED  ),
+		 hCloak	   = GetDlgItem(hWnd, IDC_CHECK_CLOAKED		), hLifted = GetDlgItem(hWnd, IDC_CHECK_LIFTED	  ),
+		 hXc	   = GetDlgItem(hWnd, IDC_EDIT_XC			), hYc	   = GetDlgItem(hWnd, IDC_EDIT_YC		  );
+
+	char number[16];
+	if ( unit->owner < 12 )
+		SendMessage(hPlayer, CB_SETCURSEL, unit->owner, NULL);
+	else
+	{
+		_itoa_s(unit->owner+1, number, 10);
+		SetWindowText(hPlayer  , number);
+	}
+	_itoa_s(unit->hitpoints, number, 10); SetWindowText(hHp		, number);
+	_itoa_s(unit->energy   , number, 10); SetWindowText(hMp		, number);
+	_itoa_s(unit->shields  , number, 10); SetWindowText(hShield	, number);
+	_itoa_s(unit->resources, number, 10); SetWindowText(hResource, number);
+	_itoa_s(unit->hanger   , number, 10); SetWindowText(hHanger  , number);
+	_itoa_s(unit->id	   , number, 10); SetWindowText(hId		, number);
+	_itoa_s(unit->xc	   , number, 10); SetWindowText(hXc		, number);
+	_itoa_s(unit->yc	   , number, 10); SetWindowText(hYc		, number);
+	SendMessage(hInvinc, BM_SETCHECK, unit->stateFlags&UNIT_STATE_INVINCIBLE  , NULL);
+	SendMessage(hHallu , BM_SETCHECK, unit->stateFlags&UNIT_STATE_HALLUCINATED, NULL);
+	SendMessage(hBurrow, BM_SETCHECK, unit->stateFlags&UNIT_STATE_BURROWED	  , NULL);
+	SendMessage(hCloak , BM_SETCHECK, unit->stateFlags&UNIT_STATE_CLOAKED	  , NULL);
+	SendMessage(hLifted, BM_SETCHECK, unit->stateFlags&UNIT_STATE_LIFTED	  , NULL);
+	initilizing = false;
+}
+
+void UnitWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 {
 	int row1 = GetItemRow(hListView, index1),
 		row2 = GetItemRow(hListView, index2);
@@ -121,7 +191,7 @@ void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 	SetItem(hListView, row2, UNIT_INDEX_COLUMN, index1);
 }
 
-void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
+void UnitWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 {
 	int row = GetItemRow(hListView, oldLParam);
 
@@ -135,52 +205,19 @@ void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 	SetItem(hListView, row, UNIT_INDEX_COLUMN, newLParam);
 }
 
-void ChangeOwner(HWND hUnitList, int index, u8 newPlayer)
-{
-	char owner[32], padding[2] = { };
-	if ( newPlayer < 9 )
-		padding[0] = '0';
-	else
-		padding[0] = '\0';
-	sprintf_s(owner, "Player %s%i", padding, newPlayer+1);
-
-	int row = GetItemRow(hUnitList, index);
-	SetItem(hUnitList, row, UNIT_OWNER_COLUMN, owner);
-}
-
-void ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer)
-{
-	HWND hUnitList = GetDlgItem(hUnitProperties, IDC_UNITLIST);
-	UnitNode* currUnit = maps.curr->selections().getFirstUnit();
-	ChkUnit* unit;
-
-	while ( currUnit != nullptr )
-	{
-		int index = currUnit->index;
-		if ( maps.curr->getUnit(unit, index) )
-		{
-			ChangeOwner(hUnitList, index, newPlayer);
-			unit->owner = newPlayer;
-		}
-		currUnit = currUnit->next;
-	}
-	maps.curr->Redraw(true);
-}
-
-
-int CALLBACK CompareUnits(LPARAM index1, LPARAM index2, LPARAM lParam)
+int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
 {
 	int sort = 0;
 
-	if ( ::columnSortedBy < 4 )
+	if ( columnSortedBy < 4 )
 	{
 		ChkUnit* unit1,
 			   * unit2;
 
-		if (	maps.curr->getUnit(unit1, u16(index1))
-			 && maps.curr->getUnit(unit2, u16(index2)) )
+		if (	chkd.maps.curr->getUnit(unit1, u16(index1))
+			 && chkd.maps.curr->getUnit(unit2, u16(index2)) )
 		{
-			switch ( ::columnSortedBy )
+			switch ( columnSortedBy )
 			{
 				case 0: // Sort by ID / type
 					if ( unit1->id < unit2->id )
@@ -217,7 +254,7 @@ int CALLBACK CompareUnits(LPARAM index1, LPARAM index2, LPARAM lParam)
 			}
 		}
 	}
-	else if ( ::columnSortedBy == 4 )
+	else if ( columnSortedBy == 4 )
 	{
 		if ( index1 < index2 )
 			sort = -1;
@@ -225,13 +262,13 @@ int CALLBACK CompareUnits(LPARAM index1, LPARAM index2, LPARAM lParam)
 			sort = 1;
 	}
 
-	if ( ::flipSort )
+	if ( flipSort )
 		return -sort;
 	else
 		return sort;
 }
 
-BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
@@ -241,7 +278,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SendMessage(hUnitList, WM_SETREDRAW, wParam, NULL);
 				if ( wParam == TRUE )
 				{
-					ListView_SortItems(hUnitList, CompareUnits, NULL);
+					ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
 					UpdateWindow(hUnitList);
 				}
 			}
@@ -268,7 +305,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				_itoa_s(index, cIndex, 10);
 
 				string unitName;
-				maps.curr->getUnitName(unitName, id);
+				chkd.maps.curr->getUnitName(unitName, id);
 
 				AddRow(hUnitList, 4, index);
 				SetItem(hUnitList, index, UNIT_NAME_COLUMN, unitName.c_str());
@@ -281,7 +318,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case WM_INITDIALOG:
 			{
-				::initilizing = true;
+				initilizing = true;
 				HWND hPlayer = GetDlgItem(hWnd, IDC_COMBO_PLAYER),
 					 hHP = GetDlgItem(hWnd, IDC_EDIT_HP),
 					 hMP = GetDlgItem(hWnd, IDC_EDIT_MP),
@@ -341,22 +378,22 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SendMessage(hWnd, REPOPULATE_LIST, NULL, NULL);
 
 				ShowWindow(hUnitList, SW_SHOW);
-				::initilizing = false;
+				initilizing = false;
 			}
 			break;
 
 		case REPOPULATE_LIST:
 			{
-				::initilizing = true;
+				initilizing = true;
 				HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 				SendMessage(hWnd, SET_LIST_REDRAW, FALSE, NULL);
 
 				ListView_DeleteAllItems(hUnitList);
 
-				if ( maps.curr )
+				if ( chkd.maps.curr )
 				{
 					ChkUnit* unit = nullptr;
-					buffer& units = maps.curr->UNIT();
+					buffer& units = chkd.maps.curr->UNIT();
 
 					int unitTableSize = units.size(),
 						numUnits = unitTableSize/UNIT_STRUCT_SIZE;
@@ -364,10 +401,10 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					for ( int i=0; i<numUnits; i++ )
 						SendMessage(hWnd, ADD_UNIT, i, (LPARAM)units.getPtr(i*UNIT_STRUCT_SIZE));
 
-					bool unitsSelected = maps.curr->selections().hasUnits();
+					bool unitsSelected = chkd.maps.curr->selections().hasUnits();
 					if ( unitsSelected )
 					{
-						UnitNode* curr = maps.curr->selections().getFirstUnit();
+						UnitNode* curr = chkd.maps.curr->selections().getFirstUnit();
 						int index = curr->index;
 						ListView_SetItemState(hUnitList, curr->index, LVIS_FOCUSED, LVIS_FOCUSED);
 						while ( curr != nullptr )
@@ -377,34 +414,34 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						EnableUnitEditing(hWnd);
 						ChkUnit* unit;
-						if ( maps.curr->getUnit(unit, index) )
+						if ( chkd.maps.curr->getUnit(unit, index) )
 						{
 							SetUnitFieldText(hWnd, unit);
 
 							string unitName;
-							maps.curr->getUnitName(unitName, unit->id);
+							chkd.maps.curr->getUnitName(unitName, unit->id);
 							SetWindowText(hWnd, unitName.c_str());
 
-							int row = GetItemRow(hUnitList, maps.curr->selections().getLastUnit()->index);
+							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, maps.curr->selections().getFirstUnit()->index);
+							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
 						}
 					}
 				}
 
 				SendMessage(hWnd, SET_LIST_REDRAW, TRUE, NULL);
-				::initilizing = false;
+				initilizing = false;
 			}
 			break;
 
 		case UPDATE_ENABLED_STATE:
 			{
-				if ( maps.curr->selections().hasUnits() )
+				if ( chkd.maps.curr->selections().hasUnits() )
 				{
 					EnableUnitEditing(hWnd);
 					ChkUnit* unit;
-					if ( maps.curr->getUnit(unit, maps.curr->selections().getFirstUnit()->index) )
+					if ( chkd.maps.curr->getUnit(unit, chkd.maps.curr->selections().getFirstUnit()->index) )
 						SetUnitFieldText(hWnd, unit);
 				}
 				else
@@ -446,7 +483,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					case IDC_BUTTON_MOVETOP:
 						{
-							GuiMap* map = maps.curr;
+							GuiMap* map = chkd.maps.curr;
 							buffer& UNIT = map->UNIT();
 							SELECTIONS&  selections = map->selections();
 							HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -492,7 +529,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					case IDC_BUTTON_MOVEEND:
 						{
-							GuiMap* map = maps.curr;
+							GuiMap* map = chkd.maps.curr;
 							buffer& UNIT = map->UNIT();
 							SELECTIONS& selections = map->selections();
 							HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -542,7 +579,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					case IDC_BUTTON_MOVEUP:
 						{
-							GuiMap* map = maps.curr;
+							GuiMap* map = chkd.maps.curr;
 							buffer& UNIT = map->UNIT();
 							SELECTIONS& selections = map->selections();
 							HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -564,10 +601,10 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								
 								track = track->next;
 							}
-							ListView_SortItems(hUnitList, CompareUnits, NULL);
-							int row = GetItemRow(hUnitList, maps.curr->selections().getLastUnit()->index);
+							ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
+							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, maps.curr->selections().getFirstUnit()->index);
+							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
 							map->undos().startNext(0);
 							SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
@@ -575,7 +612,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						break;
 					case IDC_BUTTON_MOVEDOWN:
 						{
-							GuiMap* map = maps.curr;
+							GuiMap* map = chkd.maps.curr;
 							buffer& UNIT = map->UNIT();
 							SELECTIONS& selections = map->selections();
 							HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -596,10 +633,10 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								}
 								track = track->next;
 							}
-							ListView_SortItems(hUnitList, CompareUnits, NULL);
-							int row = GetItemRow(hUnitList, maps.curr->selections().getLastUnit()->index);
+							ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
+							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, maps.curr->selections().getFirstUnit()->index);
+							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
 							map->undos().startNext(0);
 							SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
@@ -607,20 +644,20 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						break;
 					case IDC_BUTTON_MOVE_TO:
 						{
-							moveTo = -1;
-							DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_MOVETO), hWnd, MoveToProc);
-							if ( moveTo == 0 )
+							UnitMoveTo moveToWindow;
+							int unitMoveTo = (int)moveToWindow.GetMoveToIndex(hWnd);
+							if ( unitMoveTo == 0 )
 								return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), NULL);
-							else
+							else if ( unitMoveTo > 0 )
 							{
-								GuiMap* map = maps.curr;
+								GuiMap* map = chkd.maps.curr;
 								SELECTIONS& selections = map->selections();
 								u16 numUnitsSelected = selections.numUnits();
 								u16 limit = map->numUnits()-1;
 
-								if ( moveTo+numUnitsSelected > limit )
+								if ( unitMoveTo+numUnitsSelected > limit )
 									return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), NULL);
-								else if ( moveTo > 0 )
+								else
 								{
 									buffer& UNIT = map->UNIT();
 									HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -656,7 +693,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 											if ( undos.addUndoUnitDel(track->index, &selectedUnits[shift-i]) )
 												numDeletes ++;
 
-											track->index = moveTo+shift-i;
+											track->index = unitMoveTo+shift-i;
 										}
 
 										track = track->next;
@@ -664,9 +701,9 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 									for ( int i=0; i<numUnits; i++ )
 									{
-										if ( UNIT.insert<ChkUnit&>((moveTo+i)*UNIT_STRUCT_SIZE, selectedUnits[i]) )
+										if ( UNIT.insert<ChkUnit&>((unitMoveTo+i)*UNIT_STRUCT_SIZE, selectedUnits[i]) )
 										{
-											if ( undos.addUndoUnitCreate(moveTo+i) )
+											if ( undos.addUndoUnitCreate(unitMoveTo+i) )
 												numCreates ++;
 										}
 									}
@@ -682,7 +719,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						break;
 					case IDC_BUTTON_DELETE:
 						{
-							GuiMap* map = maps.curr;
+							GuiMap* map = chkd.maps.curr;
 							SELECTIONS& selections = map->selections();
 							HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 							SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
@@ -717,14 +754,14 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								{
 									case IDC_CHECK_INVINCIBLE:
 										{
-											UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+											UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 											ChkUnit* unit;
 											while ( currUnit != nullptr )
 											{
 												int index = currUnit->index;
-												if ( maps.curr->getUnit(unit, index) )
+												if ( chkd.maps.curr->getUnit(unit, index) )
 												{
-													maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+													chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
 													if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 														unit->stateFlags |= UNIT_STATE_INVINCIBLE;
 													else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
@@ -732,19 +769,19 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 												currUnit = currUnit->next;
 											}
-											maps.curr->undos().startNext(0);
+											chkd.maps.curr->undos().startNext(0);
 										}
 										break;
 									case IDC_CHECK_HALLUCINATED:
 										{
-											UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+											UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 											ChkUnit* unit;
 											while ( currUnit != nullptr )
 											{
 												int index = currUnit->index;
-												if ( maps.curr->getUnit(unit, index) )
+												if ( chkd.maps.curr->getUnit(unit, index) )
 												{
-													maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+													chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
 													if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 														unit->stateFlags |= UNIT_STATE_HALLUCINATED;
 													else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
@@ -752,19 +789,19 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 												currUnit = currUnit->next;
 											}
-											maps.curr->undos().startNext(0);
+											chkd.maps.curr->undos().startNext(0);
 										}
 										break;
 									case IDC_CHECK_BURROWED:
 										{
-											UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+											UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 											ChkUnit* unit;
 											while ( currUnit != nullptr )
 											{
 												int index = currUnit->index;
-												if ( maps.curr->getUnit(unit, index) )
+												if ( chkd.maps.curr->getUnit(unit, index) )
 												{
-													maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+													chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
 													if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 														unit->stateFlags |= UNIT_STATE_BURROWED;
 													else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
@@ -772,19 +809,19 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 												currUnit = currUnit->next;
 											}
-											maps.curr->undos().startNext(0);
+											chkd.maps.curr->undos().startNext(0);
 										}
 										break;
 									case IDC_CHECK_CLOAKED:
 										{
-											UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+											UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 											ChkUnit* unit;
 											while ( currUnit != nullptr )
 											{
 												int index = currUnit->index;
-												if ( maps.curr->getUnit(unit, index) )
+												if ( chkd.maps.curr->getUnit(unit, index) )
 												{
-													maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+													chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
 													if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 														unit->stateFlags |= UNIT_STATE_CLOAKED;
 													else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
@@ -792,19 +829,19 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 												currUnit = currUnit->next;
 											}
-											maps.curr->undos().startNext(0);
+											chkd.maps.curr->undos().startNext(0);
 										}
 										break;
 									case IDC_CHECK_LIFTED:
 										{
-											UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+											UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 											ChkUnit* unit;
 											while ( currUnit != nullptr )
 											{
 												int index = currUnit->index;
-												if ( maps.curr->getUnit(unit, index) )
+												if ( chkd.maps.curr->getUnit(unit, index) )
 												{
-													maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+													chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
 													if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 														unit->stateFlags |= UNIT_STATE_LIFTED; // Check lifted state
 													else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
@@ -812,7 +849,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 												currUnit = currUnit->next;
 											}
-											maps.curr->undos().startNext(0);
+											chkd.maps.curr->undos().startNext(0);
 										}
 										break;
 								}
@@ -820,14 +857,14 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							case EN_SETFOCUS:
 								switch ( LOWORD(wParam) )
 								{
-									case IDC_EDIT_HP	   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_HITPOINTS); break;
-									case IDC_EDIT_MP	   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_ENERGY	 ); break;
-									case IDC_EDIT_SHIELD   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_SHIELDS	 ); break;
-									case IDC_EDIT_RESOURCES: preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_RESOURCES); break;
-									case IDC_EDIT_HANGER   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_HANGER	 ); break;
-									case IDC_EDIT_ID	   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_ID		 ); break;
-									case IDC_EDIT_XC	   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_XC		 ); break;
-									case IDC_EDIT_YC	   : preservedStats.addStats(maps.curr->selections(), UNIT_FIELD_YC		 ); break;
+									case IDC_EDIT_HP	   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_HITPOINTS); break;
+									case IDC_EDIT_MP	   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_ENERGY	 ); break;
+									case IDC_EDIT_SHIELD   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_SHIELDS	 ); break;
+									case IDC_EDIT_RESOURCES: preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_RESOURCES); break;
+									case IDC_EDIT_HANGER   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_HANGER	 ); break;
+									case IDC_EDIT_ID	   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_ID		 ); break;
+									case IDC_EDIT_XC	   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_XC		 ); break;
+									case IDC_EDIT_YC	   : preservedStats.addStats(chkd.maps.curr->selections(), UNIT_FIELD_YC		 ); break;
 								}
 								break;
 							case EN_KILLFOCUS:
@@ -851,17 +888,17 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u8 hpPercent;
 												if ( GetEditNum<u8>(hWnd, IDC_EDIT_HP, hpPercent) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 															unit->hitpoints = hpPercent;
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(false);
+													chkd.maps.curr->Redraw(false);
 												}
 											}
 											break;
@@ -870,17 +907,17 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u8 mpPercent;
 												if ( GetEditNum<u8>(hWnd, IDC_EDIT_MP, mpPercent) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 															unit->energy = mpPercent;
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(false);
+													chkd.maps.curr->Redraw(false);
 												}
 											}
 											break;
@@ -889,17 +926,17 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u8 shieldPercent;
 												if ( GetEditNum<u8>(hWnd, IDC_EDIT_SHIELD, shieldPercent) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 															unit->shields = shieldPercent;
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(false);
+													chkd.maps.curr->Redraw(false);
 												}
 											}
 											break;
@@ -908,17 +945,17 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u32 resources;
 												if ( GetEditNum<u32>(hWnd, IDC_EDIT_RESOURCES, resources) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 															unit->resources = resources;
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(false);
+													chkd.maps.curr->Redraw(false);
 												}
 											}
 											break;
@@ -927,17 +964,17 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u16 hanger;
 												if ( GetEditNum<u16>(hWnd, IDC_EDIT_HANGER, hanger) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 															unit->hanger = hanger;
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(true);
+													chkd.maps.curr->Redraw(true);
 												}
 											}
 											break;
@@ -946,28 +983,28 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u16 unitID;
 												if ( GetEditNum<u16>(hWnd, IDC_EDIT_ID, unitID) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->id = unitID;
 															int row = GetItemRow(hUnitList, index);
 
 															string unitName;
-															maps.curr->getUnitName(unitName, unitID);
+															chkd.maps.curr->getUnitName(unitName, unitID);
 															SetItem(hUnitList, row, UNIT_NAME_COLUMN, unitName.c_str());
 														
-															if ( currUnit == maps.curr->selections().getFirstUnit() )
+															if ( currUnit == chkd.maps.curr->selections().getFirstUnit() )
 																SetWindowText(hWnd, unitName.c_str());
 														}
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(true);
-													ListView_SortItems(hUnitList, CompareUnits, NULL);
+													chkd.maps.curr->Redraw(true);
+													ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
 												}
 											}
 											break;
@@ -976,13 +1013,13 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u16 unitXC;
 												if ( GetEditNum<u16>(hWnd, IDC_EDIT_XC, unitXC) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->xc = unitXC;
 															int row = GetItemRow(hUnitList, index);
@@ -990,8 +1027,8 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 														}
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(true);
-													ListView_SortItems(hUnitList, CompareUnits, NULL);
+													chkd.maps.curr->Redraw(true);
+													ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
 												}
 											}
 											break;
@@ -1000,13 +1037,13 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												u16 unitYC;
 												if ( GetEditNum<u16>(hWnd, IDC_EDIT_YC, unitYC) )
 												{
-													UnitNode* currUnit = maps.curr->selections().getFirstUnit();
+													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 													ChkUnit* unit;
 													while ( currUnit != nullptr )
 													{
 														int index = currUnit->index;
-														if ( maps.curr->getUnit(unit, index) )
+														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->yc = unitYC;
 															int row = GetItemRow(hUnitList, index);
@@ -1014,8 +1051,8 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 														}
 														currUnit = currUnit->next;
 													}
-													maps.curr->Redraw(true);
-													ListView_SortItems(hUnitList, CompareUnits, NULL);
+													chkd.maps.curr->Redraw(true);
+													ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
 												}
 											}
 											break;
@@ -1034,13 +1071,13 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					case LVN_COLUMNCLICK:
 						{
 							int newColumn = LPNMLISTVIEW(lParam)->iSubItem;
-							if ( newColumn == ::columnSortedBy )
-								::flipSort = !::flipSort;
+							if ( newColumn == columnSortedBy )
+								flipSort = !flipSort;
 							else
-								::flipSort = false;
+								flipSort = false;
 
-							::columnSortedBy = newColumn;
-							ListView_SortItems(LPNMHDR(lParam)->hwndFrom, CompareUnits, NULL);
+							columnSortedBy = newColumn;
+							ListView_SortItems(LPNMHDR(lParam)->hwndFrom, ForwardCompareLvItems, this);
 						}
 						break;
 					case LVN_ITEMCHANGED:
@@ -1051,32 +1088,32 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								NMLISTVIEW* itemInfo = (NMLISTVIEW*)lParam;
 								u16 index = (u16)itemInfo->lParam;
 
-								if ( itemInfo->uNewState & LVIS_SELECTED && ::initilizing == false ) // Selected
+								if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
 									// Add item to selection
 								{
-									bool firstSelected = !(maps.curr->selections().hasUnits());
-									maps.curr->selections().addUnit(index);
+									bool firstSelected = !(chkd.maps.curr->selections().hasUnits());
+									chkd.maps.curr->selections().addUnit(index);
 
 									if ( firstSelected )
 										EnableUnitEditing(hWnd);
 
 									ChkUnit* unit;
-									if ( maps.curr->getUnit(unit, index) )
+									if ( chkd.maps.curr->getUnit(unit, index) )
 									{
 										string unitName;
-										maps.curr->getUnitName(unitName, unit->id);
+										chkd.maps.curr->getUnitName(unitName, unit->id);
 										SetWindowText(hWnd, unitName.c_str());
 										SetUnitFieldText(hWnd, unit);
 									}
 
-									maps.curr->Redraw(false);
+									chkd.maps.curr->Redraw(false);
 								}
 								else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
 									// Remove item from selection
 								{
-									maps.curr->selections().removeUnit(index);
+									chkd.maps.curr->selections().removeUnit(index);
 
-									if ( !( maps.curr->selections().hasUnits() )
+									if ( !( chkd.maps.curr->selections().hasUnits() )
 										 && !(	  GetKeyState(VK_DOWN)	 &0x8000
 											   || GetKeyState(VK_UP)	 &0x8000
 											   || GetKeyState(VK_LEFT)	 &0x8000
@@ -1085,7 +1122,7 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 											   || GetKeyState(VK_RBUTTON)&0x8000 ) )
 										DisableUnitEditing(hWnd);
 
-									maps.curr->Redraw(false);
+									chkd.maps.curr->Redraw(false);
 								}
 							}
 							return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -1108,15 +1145,13 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case IDCLOSE:
-			::columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
-			hUnit = nullptr;
-			EndDialog(hWnd, IDCLOSE);
+			columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
+			DestroyThis();
 			break;
 
 		case WM_CLOSE:
-			::columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
-			hUnit = nullptr;
-			EndDialog(hWnd, IDCLOSE);
+			columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
+			DestroyThis();
 			break;
 
 		default:
@@ -1124,145 +1159,4 @@ BOOL CALLBACK UnitPropProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 	}
 	return true;
-}
-
-void EnableUnitEditing(HWND hWnd)
-{
-	HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
-	EnableWindow(hItem, TRUE);
-
-	const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
-							IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
-	for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, buttons[i]);
-		EnableWindow(hItem, TRUE);
-	}
-
-	const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
-							  IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
-	for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, editBoxes[i]);
-		EnableWindow(hItem, TRUE);
-	}
-
-	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-	for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, buddyIds[i]);
-		EnableWindow(hItem, TRUE);
-	}
-
-	const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
-							   IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
-	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, checkBoxes[i]);
-		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
-		EnableWindow(hItem, TRUE);
-	}
-}
-
-void DisableUnitEditing(HWND hWnd)
-{
-	SetWindowText(hWnd, "");
-
-	HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
-	SendMessage(hItem, CB_SETCURSEL, -1, NULL);
-	EnableWindow(hItem, FALSE);
-
-	const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
-							IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
-	for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, buttons[i]);
-		EnableWindow(hItem, FALSE);
-	}
-
-	const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
-							  IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
-	for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, editBoxes[i]);
-		SetWindowText(hItem, "");
-		EnableWindow(hItem, FALSE);
-	}
-
-	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-	for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, buddyIds[i]);
-		EnableWindow(hItem, FALSE);
-	}
-
-	const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
-							   IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
-	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
-	{
-		hItem = GetDlgItem(hWnd, checkBoxes[i]);
-		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
-		EnableWindow(hItem, FALSE);
-	}
-}
-
-void SetUnitFieldText(HWND hWnd, ChkUnit* unit)
-{
-	::initilizing = true;
-	HWND hPlayer   = GetDlgItem(hWnd, IDC_COMBO_PLAYER		), hHp	   = GetDlgItem(hWnd, IDC_EDIT_HP		  ),
-		 hMp	   = GetDlgItem(hWnd, IDC_EDIT_MP			), hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD	  ),
-		 hResource = GetDlgItem(hWnd, IDC_EDIT_RESOURCES	), hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER	  ),
-		 hId	   = GetDlgItem(hWnd, IDC_EDIT_ID			), hInvinc = GetDlgItem(hWnd, IDC_CHECK_INVINCIBLE),
-		 hHallu	   = GetDlgItem(hWnd, IDC_CHECK_HALLUCINATED), hBurrow = GetDlgItem(hWnd, IDC_CHECK_BURROWED  ),
-		 hCloak	   = GetDlgItem(hWnd, IDC_CHECK_CLOAKED		), hLifted = GetDlgItem(hWnd, IDC_CHECK_LIFTED	  ),
-		 hXc	   = GetDlgItem(hWnd, IDC_EDIT_XC			), hYc	   = GetDlgItem(hWnd, IDC_EDIT_YC		  );
-
-	char number[16];
-	if ( unit->owner < 12 )
-		SendMessage(hPlayer, CB_SETCURSEL, unit->owner, NULL);
-	else
-	{
-		_itoa_s(unit->owner+1, number, 10);
-		SetWindowText(hPlayer  , number);
-	}
-	_itoa_s(unit->hitpoints, number, 10); SetWindowText(hHp		, number);
-	_itoa_s(unit->energy   , number, 10); SetWindowText(hMp		, number);
-	_itoa_s(unit->shields  , number, 10); SetWindowText(hShield	, number);
-	_itoa_s(unit->resources, number, 10); SetWindowText(hResource, number);
-	_itoa_s(unit->hanger   , number, 10); SetWindowText(hHanger  , number);
-	_itoa_s(unit->id	   , number, 10); SetWindowText(hId		, number);
-	_itoa_s(unit->xc	   , number, 10); SetWindowText(hXc		, number);
-	_itoa_s(unit->yc	   , number, 10); SetWindowText(hYc		, number);
-	SendMessage(hInvinc, BM_SETCHECK, unit->stateFlags&UNIT_STATE_INVINCIBLE  , NULL);
-	SendMessage(hHallu , BM_SETCHECK, unit->stateFlags&UNIT_STATE_HALLUCINATED, NULL);
-	SendMessage(hBurrow, BM_SETCHECK, unit->stateFlags&UNIT_STATE_BURROWED	  , NULL);
-	SendMessage(hCloak , BM_SETCHECK, unit->stateFlags&UNIT_STATE_CLOAKED	  , NULL);
-	SendMessage(hLifted, BM_SETCHECK, unit->stateFlags&UNIT_STATE_LIFTED	  , NULL);
-	::initilizing = false;
-}
-
-BOOL CALLBACK MoveToProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	if ( msg == WM_COMMAND )
-	{
-		switch ( LOWORD(wParam) )
-		{
-			case IDCANCEL:
-				EndDialog(hWnd, IDCANCEL);
-				break;
-
-			case IDOK:
-				if ( !GetEditNum<u32>(hWnd, IDC_EDIT1, (u32&)moveTo) )
-					moveTo = -1;
-				EndDialog(hWnd, IDOK);
-				break;
-		}
-	}
-	else if ( msg == WM_INITDIALOG )
-	{
-		SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
-	}
-	return 0;
 }

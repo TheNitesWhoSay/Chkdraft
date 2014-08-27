@@ -1,10 +1,22 @@
 #ifndef TERRAIN_H
 #define TERRAIN_H
 #include "Common Files/CommonFiles.h"
+#include "Windows UI/WindowsUI.h"
 
-void SetTileDialog(HWND hWnd);
+class TerrainPaletteWindow : public ClassWindow
+{
+	public:
+		TerrainPaletteWindow();
+		bool CreateThis(HWND hParent);
+		bool DestroyThis();
+		void SetTileDialog(HWND hWnd);
 
-BOOL CALLBACK SetTileProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	protected:
+		void DoScroll(HWND hWnd);
+		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	private:
+		u32 tilesetIndexedYC;
+};
 
 #endif

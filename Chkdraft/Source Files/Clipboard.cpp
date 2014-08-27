@@ -1,12 +1,5 @@
 #include "ClipBoard.h"
-#include "Common Files/CommonFiles.h"
-using namespace std;
-
-extern DATA scData;
-extern HWND hTilePal;
-extern HWND hUnit;
-extern HWND hMain;
-extern HWND hLeft;
+#include "Chkdraft.h"
 
 CLIPBOARD::CLIPBOARD() : headCopyTile(nullptr), headQuickTile(nullptr), headCopyUnit(nullptr), headQuickUnit(nullptr), 
 						 pasting(false), quickPaste(false)
@@ -161,15 +154,15 @@ void CLIPBOARD::endPasting()
 			ClearQuickItems();
 			quickPaste = false;
 
-			if ( hLeft != NULL )
+			if ( chkd.mainPlot.leftBar.getHandle() != NULL )
 			{
-				HWND hTree = GetDlgItem(hLeft, IDR_MAIN_TREE);
+				HWND hTree = GetDlgItem(chkd.mainPlot.leftBar.getHandle(), IDR_MAIN_TREE);
 				if ( hTree != NULL )
 					TreeView_SelectItem(hTree, NULL);
 			}
 			
-			if ( hTilePal != nullptr )
-				RedrawWindow(hTilePal, NULL, NULL, RDW_INVALIDATE);
+			if ( chkd.terrainPalWindow.getHandle() != nullptr )
+				RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 		}
 
 		prevPaste.x = -1;
@@ -232,10 +225,10 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 					bool canPaste = true;
 					if ( allowStack == false )
 					{
-						s32 unitLeft   = track->unit.xc - scData.units.UnitDat(track->unit.id)->UnitSizeLeft,
-							unitRight  = track->unit.xc + scData.units.UnitDat(track->unit.id)->UnitSizeRight,
-							unitTop	   = track->unit.yc - scData.units.UnitDat(track->unit.id)->UnitSizeUp,
-							unitBottom = track->unit.yc + scData.units.UnitDat(track->unit.id)->UnitSizeDown;
+						s32 unitLeft   = track->unit.xc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeLeft,
+							unitRight  = track->unit.xc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeRight,
+							unitTop	   = track->unit.yc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeUp,
+							unitBottom = track->unit.yc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeDown;
 
 						ChkUnit* unit;
 						u16 numUnits = chk->numUnits();
@@ -243,10 +236,10 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 						{
 							if ( chk->getUnit(unit, i) )
 							{
-								s32 left   = unit->xc - scData.units.UnitDat(unit->id)->UnitSizeLeft,
-									right  = unit->xc + scData.units.UnitDat(unit->id)->UnitSizeRight,
-									top	   = unit->yc - scData.units.UnitDat(unit->id)->UnitSizeUp,
-									bottom = unit->yc + scData.units.UnitDat(unit->id)->UnitSizeDown;
+								s32 left   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft,
+									right  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight,
+									top	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp,
+									bottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
 
 								if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
 								{
@@ -265,8 +258,8 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 						if ( chk->UNIT().add<ChkUnit&>(track->unit) )
 						{
 							undos.addUndoUnitCreate(numUnits);
-							if ( hUnit != nullptr )
-								SendMessage(hUnit, ADD_UNIT, numUnits, (LPARAM)&track->unit);
+							if ( chkd.unitWindow.getHandle() != nullptr )
+								SendMessage(chkd.unitWindow.getHandle(), ADD_UNIT, numUnits, (LPARAM)&track->unit);
 						}
 					}
 					track = track->next;

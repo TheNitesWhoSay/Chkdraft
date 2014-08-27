@@ -1,52 +1,34 @@
 #include "TextTrig.h"
-#include "Common Files/CommonFiles.h"
-#include "Maps.h"
-
-extern MAPS maps;
-extern HWND hMain;
-
-bool CompareStrTblNode(StringTableNode first, StringTableNode second); // Defined in Structs.h
+#include "Chkdraft.h"
 
 #define MAX_CONDITIONS 16
 #define MAX_ACTIONS	   64
 
-WNDPROC wpTextTrigEdit; // Used to redefine default edit window input handling
-
-LRESULT CALLBACK TextTrigEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+bool TextTrigWindow::CreateThis(HWND hParent)
 {
-	switch ( msg )
-	{
-		case WM_KEYDOWN:
-			if ( GetKeyState(VK_CONTROL) & 0x8000 && wParam == 'A' ) // Select all
-				SendMessage(hWnd, EM_SETSEL, 0, -1);
-			break;
-
-		case WM_CHAR:
-			if ( GetKeyState(VK_CONTROL) & 0x8000 && wParam == 1 ) // Prevent ctrl + key from causing beeps
-				return 0;
-			break;
-	}
-	return CallWindowProc(wpTextTrigEdit, hWnd, msg, wParam, lParam);
+	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent);
 }
 
-BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
 		case REFRESH_WINDOW:
 			{
-				TextTrigGenerator textTrigs(maps.curr);
+				TextTrigGenerator textTrigs(chkd.maps.curr);
 				buffer output("TeOu");
-				textTrigs.GenerateTextTrigs(maps.curr->TRIG(), output);
+				textTrigs.GenerateTextTrigs(chkd.maps.curr->TRIG(), output);
 				SetDlgItemText(hWnd, IDC_EDIT_TRIGTEXT, (const char*)output.getPtr(0));
 			}
 			break;
 
 		case WM_INITDIALOG:
 			{
-				HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TRIGTEXT);
+				editControl.FindThis(hWnd, IDC_EDIT_TRIGTEXT);
+				editControl.MaximizeTextLimit();
+				/*HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TRIGTEXT);
 				wpTextTrigEdit = (WNDPROC)SetWindowLong(hEdit, GWL_WNDPROC, (LONG)&TextTrigEditProc);
-				SendMessage(hEdit, EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
+				SendMessage(hEdit, EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);*/
 				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
 			}
 			break;
@@ -77,16 +59,16 @@ BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			switch ( LOWORD(wParam) )
 			{
 				case IDC_COMPSAVE:
-					if ( maps.curr != nullptr )
+					if ( chkd.maps.curr != nullptr )
 					{
-						if ( CompileEditText(maps.curr, hWnd) )
+						if ( CompileEditText(chkd.maps.curr, hWnd) )
 						{
-							if ( maps.SaveCurr(false) )
+							if ( chkd.maps.SaveCurr(false) )
 								MessageBox(NULL, "Success", "Compiler", MB_OK);
 							else
 							{
 								MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
-								maps.curr->notifyChange(false);
+								chkd.maps.curr->notifyChange(false);
 							}
 						}
 					}
@@ -94,12 +76,12 @@ BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						Error("No map open!");
 					break;
 				case ID_COMPILE_TRIGS:
-					if ( maps.curr != nullptr )
+					if ( chkd.maps.curr != nullptr )
 					{
-						if ( CompileEditText(maps.curr, hWnd) )
+						if ( CompileEditText(chkd.maps.curr, hWnd) )
 						{
 							MessageBox(NULL, "Success", "Compiler", MB_OK);
-							maps.curr->notifyChange(false);
+							chkd.maps.curr->notifyChange(false);
 						}
 					}
 					else
@@ -119,7 +101,7 @@ BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return true;
 }
 
-bool CompileEditText(Scenario* map, HWND hWnd)
+bool TextTrigWindow::CompileEditText(Scenario* map, HWND hWnd)
 {
 	if ( map != nullptr )
 	{

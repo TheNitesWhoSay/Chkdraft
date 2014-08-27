@@ -2,14 +2,24 @@
 #define TEXTTRIG_H
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
+#include "Windows UI/WindowsUI.h"
 #include <unordered_map>
 #include <algorithm>
 
-BOOL CALLBACK TextTrigProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Text trig window
+class TextTrigWindow : public ClassWindow
+{
+	public:
+		bool CreateThis(HWND hParent);
 
-LRESULT CALLBACK TextTrigEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Used to redefine default edit control input handling
+	protected:
+		// Takes the text from the edit control given by hWnd and compiles it into the map
+		bool CompileEditText(Scenario* map, HWND hWnd);
 
-bool CompileEditText(Scenario* map, HWND hWnd); // Takes the text from the edit control given by hWnd and compiles it into the map
+	private:
+		EditControl editControl;
+
+		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+};
 
 // StringTableNode defined in Structs.h
 struct LocationTableNode {
@@ -32,7 +42,6 @@ struct GroupTableNode {
 	std::string groupName;
 	u32 groupID;
 };
-
 
 class StaticTrigComponentParser
 {
@@ -158,8 +167,6 @@ class TextTrigGenerator
 
 		TextTrigGenerator(); // disallow ctor
 };
-
-
 
 #define MAX_ERROR_MESSAGE_SIZE 256
 

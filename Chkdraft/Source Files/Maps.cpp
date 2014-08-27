@@ -1,30 +1,8 @@
 #include "Maps.h"
-#include "Common Files/CommonFiles.h"
-#include "Unit.h"
-#include "Terrain.h"
-#include "GuiAccel.h"
-
-extern HWND hMain;
-extern HWND hPlot;
-extern HWND hMaps;
-extern HWND hMini;
-extern HWND hTool;
-extern HWND hLeft;
-extern HWND hStatus;
-extern HWND hTerrainProp;
-extern HWND hPlayer;
-extern HWND hUnit;
-extern HWND hLayer;
-extern HWND hZoom;
-extern HWND hPlayer;
-extern HWND hTerrainCombo;
-extern HWND hWndTV;
-
-void ChangeOwner(HWND hUnitList, int index, u8 newPlayer);
-
-u16 lastUsedMapID(0);
+#include "Chkdraft.h"
 
 MAPS::MAPS() : UntitledNumber(0),
+			   lastUsedMapID(0),
 			   curr(nullptr), firstMap(nullptr),
 			   currCursor(nullptr),
 			   nonStandardCursor(false)
@@ -42,6 +20,25 @@ MAPS::~MAPS()
 
 }
 
+void MAPS::FocusActive()
+{
+	HWND hFocus = NULL;
+	if ( curr != nullptr )
+		hFocus = curr->getHandle();
+
+	MapNode* currNode = firstMap;
+	while ( currNode != nullptr && currNode->map.getHandle() != hFocus )
+		currNode = currNode->next;
+
+	if ( currNode != nullptr ) // If a corresponding map was found
+	{
+		curr = &currNode->map; // Sets the current map to the map given by the handle
+		// Need to update location tree, menu checkboxes
+		chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+		curr->updateMenu();
+	}
+}
+
 void MAPS::Focus(HWND hFocus)
 {
 	MapNode* currNode = firstMap;
@@ -52,7 +49,7 @@ void MAPS::Focus(HWND hFocus)
 	{
 		curr = &currNode->map; // Sets the current map to the map given by the handle
 		// Need to update location tree, menu checkboxes
-		BuildLocationTree(curr);
+		chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
 		curr->updateMenu();
 	}
 	else
@@ -101,7 +98,7 @@ u16 MAPS::GetMapID(GuiMap* map)
 	return 0;
 }
 
-bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers, HWND hMaps)
+bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 {
 	MapNode* newMap = new MapNode;
 	
@@ -111,7 +108,7 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers,
 		if ( UntitledNumber > 0 )
 			sprintf_s(title, 256, "Untitled %d", UntitledNumber);
 
-		if ( newMap->map.setHandle(AddMDIChild(hMaps, title)) )
+		if ( newMap->map.CreateThis(getHandle(), title) )
 		{
 			curr = &newMap->map;
 			UntitledNumber++;
@@ -135,13 +132,13 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers,
 	return false;
 }
 
-bool MAPS::OpenMap(HWND hMaps, const char* fileName)
+bool MAPS::OpenMap(const char* fileName)
 {
 	MapNode* newMap = new MapNode;
 
 	if ( newMap->map.LoadFile(fileName) )
 	{
-		if ( newMap->map.setHandle( AddMDIChild(hMaps, fileName) ) )
+		if ( newMap->map.CreateThis(getHandle(), fileName) )
 		{
 			SetWindowText(newMap->map.getHandle(), fileName);
 			PushNode(newMap);
@@ -166,9 +163,9 @@ bool MAPS::OpenMap(HWND hMaps, const char* fileName)
 	return false;
 }
 
-bool MAPS::OpenMap(HWND hMaps)
+bool MAPS::OpenMap()
 {
-	return OpenMap(hMaps, nullptr);
+	return OpenMap(nullptr);
 }
 
 bool MAPS::SaveCurr(bool saveAs)
@@ -213,8 +210,8 @@ void MAPS::CloseMap(HWND hMap)
 	{
 		delete deleting;
 		curr = nullptr;
-		Focus((HWND)SendMessage(hMaps, WM_MDIGETACTIVE, 0, 0));
-		RedrawWindow(hMini, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+		FocusActive();
+		RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
 	}
 
 	if ( firstMap == nullptr ) // Disable mapping functionality
@@ -226,23 +223,28 @@ void MAPS::CloseMap(HWND hMap)
 		};
 
 		for ( int i=0; i<sizeof(toolbarItems)/sizeof(int); i++ )
-			SendMessage(hTool, TB_ENABLEBUTTON, toolbarItems[i], false);
+			SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], false);
 
-		ShowWindow(hLayer, false);
-		ShowWindow(hZoom, false);
-		ShowWindow(hPlayer, false);
-		ShowWindow(hTerrainCombo, false);
+		ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.zoomBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
-		HMENU hMenu = GetMenu(hMain);
+		HMENU hMenu = GetMenu(chkd.getHandle());
 
 		for ( int i=0; i<numOnOffMenuItems; i++ )
 			EnableMenuItem(hMenu, onOffMenuItems[i], MF_DISABLED);
 
-		ShowWindow(hLeft, SW_HIDE);
+		ShowWindow(chkd.mainPlot.leftBar.getHandle(), SW_HIDE);
 
-		SendMessage(hStatus, SB_SETTEXT, 0, NULL);
-		SendMessage(hStatus, SB_SETTEXT, 1, NULL);
+		chkd.statusBar.SetText(0, "");
+		chkd.statusBar.SetText(1, "");
 	}
+}
+
+void MAPS::CloseActive()
+{
+	SendMessage(MdiFrame::getHandle(), WM_MDIDESTROY, (WPARAM)MdiFrame::getActive(), NULL);
 }
 
 void MAPS::UpdateTreeView()
@@ -266,36 +268,31 @@ void MAPS::ChangeLayer(u8 newLayer)
 		curr->selections().removeTiles();
 		curr->currLayer() = newLayer;
 
-		HWND hLayerBox = hLayer;
-		if ( SendMessage(hLayerBox, CB_GETCURSEL, 0, 0) != newLayer )
-			SendMessage(hLayerBox, CB_SETCURSEL, newLayer, 0);
+		if ( chkd.mainToolbar.layerBox.GetSel() != newLayer )
+			chkd.mainToolbar.layerBox.SetSel(newLayer);
 
 		if ( newLayer == LAYER_FOG || newLayer == LAYER_UNITS || newLayer == LAYER_SPRITES || newLayer == LAYER_VIEW_FOG )
 			// Layers where player#'s are relevant
 		{
 			ChangePlayer(curr->currPlayer());
-			ShowWindow(hPlayer, SW_SHOW);
+			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_SHOW);
 		}
 		else // Layers where player#'s are irrelevant
 		{
-			SendMessage(hStatus, SB_SETTEXT, 2, NULL);
-			ShowWindow(hPlayer, SW_HIDE);
+			chkd.statusBar.SetText(2, "");
+			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
 		}
 
 		if ( newLayer == LAYER_TERRAIN )
-			ShowWindow(hTerrainCombo, SW_SHOW);
+			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_SHOW);
 		else
-			ShowWindow(hTerrainCombo, SW_HIDE);
+			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
-		if ( hTerrainProp )
-			EndDialog(hTerrainProp, NULL);
-
-		//RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+		chkd.tilePropWindow.DestroyThis();
 		curr->Redraw(false);
-
 		char layerString[32];
-		SendMessage(hLayerBox, CB_GETLBTEXT, newLayer, (INT_PTR)layerString);
-		SendMessage(hStatus, SB_SETTEXT, 1, (INT_PTR)layerString);
+		if ( chkd.mainToolbar.layerBox.GetText(newLayer, layerString, 31) )
+			chkd.statusBar.SetText(1, layerString);
 	}
 }
 
@@ -310,7 +307,7 @@ void MAPS::ChangeZoom(bool increment)
 			if ( zoom == zooms[i] )
 			{
 				curr->setZoom(zooms[i-1]);
-				SendMessage(hZoom, CB_SETCURSEL, i-1, 0);
+				chkd.mainToolbar.zoomBox.SetSel(i-1);
 				break;
 			}
 		}
@@ -322,7 +319,7 @@ void MAPS::ChangeZoom(bool increment)
 			if ( zoom == zooms[i] )
 			{
 				curr->setZoom(zooms[i+1]);
-				SendMessage(hZoom, CB_SETCURSEL, i+1, 0);
+				chkd.mainToolbar.zoomBox.SetSel(i+1);
 				break;
 			}
 		}
@@ -354,17 +351,17 @@ void MAPS::ChangePlayer(u8 newPlayer)
 			if ( curr->getUnit(unit, currSelUnit->index) )
 				unit->owner = newPlayer;
 
-			if ( hUnit )
+			if ( chkd.unitWindow.getHandle() != nullptr )
 			{
 				string text;
-				HWND hOwner = GetDlgItem(hUnit, IDC_COMBO_PLAYER);
-				HWND hUnitList = GetDlgItem(hUnit, IDC_UNITLIST);
+				HWND hOwner = GetDlgItem(chkd.unitWindow.getHandle(), IDC_COMBO_PLAYER);
+				HWND hUnitList = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
-				else if ( GetEditText(hPlayer, text) )
+				else if ( GetEditText(chkd.mainToolbar.playerBox.getHandle(), text) )
 					SetWindowText(hOwner, text.c_str());
 
-				ChangeOwner(hUnitList, currSelUnit->index, newPlayer);
+				chkd.unitWindow.ChangeOwner(hUnitList, currSelUnit->index, newPlayer);
 			}
 
 			currSelUnit = currSelUnit->next;
@@ -377,7 +374,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 	sprintf_s(color, "Red");
 	sprintf_s(race, "Terran");
 	sprintf_s(playerText, "Player %i: %s %s", curr->currPlayer()+1, color, race);
-	SendMessage(hStatus, SB_SETTEXT, 2, (INT_PTR)playerText);
+	chkd.statusBar.SetText(2, playerText);
 }
 
 void MAPS::cut()
@@ -479,11 +476,11 @@ void MAPS::properties()
 			curr->selections().addTile(tile.value, tile.xc, tile.yc, NEIGHBOR_LEFT|NEIGHBOR_TOP|NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM);
 
 			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
-			if ( hTerrainProp )
-				SendMessageA(hTerrainProp, WM_COMMAND, TILE_UPDATE, NULL);
+			if ( chkd.tilePropWindow.getHandle() != NULL )
+				SendMessage(chkd.tilePropWindow.getHandle(), WM_COMMAND, TILE_UPDATE, NULL);
 			else
-				hTerrainProp = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_SETTILE), hMain, SetTileProc);
-			ShowWindow(hTerrainProp, SW_SHOW);
+				chkd.tilePropWindow.CreateThis(chkd.getHandle());
+			ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
 		}
 	}
 }
@@ -578,20 +575,19 @@ void MAPS::PushNode(MapNode* map)
 		};
 
 		for ( int i=0; i<sizeof(toolbarItems)/sizeof(int); i++ )
-			SendMessage(hTool, TB_ENABLEBUTTON, toolbarItems[i], true);
+			SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], true);
 
-		ShowWindow(hLayer, true);
-		ShowWindow(hZoom, true);
-		ShowWindow(hTerrainCombo, true);
+		ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_SHOW);
+		ShowWindow(chkd.mainToolbar.zoomBox.getHandle(), SW_SHOW);
+		ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_SHOW);
 
-		HMENU hMenu = GetMenu(hMain);
+		HMENU hMenu = GetMenu(chkd.getHandle());
 
 		for ( int i=0; i<numOnOffMenuItems; i++ )
 			EnableMenuItem(hMenu, onOffMenuItems[i], MF_ENABLED);
 
-		ShowWindow(hLeft, SW_SHOW);
-
-		SendMessage(hStatus, SB_SETTEXT, 1, (INT_PTR)"Terrain");
+		ShowWindow(chkd.mainPlot.leftBar.getHandle(), SW_SHOW);
+		chkd.statusBar.SetText(1, "Terrain");
 	}
 
 	if ( lastUsedMapID < 65535 )
@@ -626,220 +622,4 @@ void MAPS::PushNode(MapNode* map)
 	
 	map->next = firstMap;
 	firstMap = map;
-}
-
-extern MAPS maps;
-extern HWND hMaps;
-
-#define DIM_ERROR 10
-
-BOOL CALLBACK NewMapProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch ( msg )
-	{
-		case WM_INITDIALOG:
-			{
-				HWND hTrigStatic = GetDlgItem(hWnd, IDC_TRIGGERS_GROUP);
-				RECT rcTrigStatic;
-				GetWindowRect(hTrigStatic, &rcTrigStatic);
-				POINT upperLeft;
-				upperLeft.x = rcTrigStatic.left;
-				upperLeft.y = rcTrigStatic.top;
-				ScreenToClient(hWnd, &upperLeft);
-
-				SendMessage(hWnd, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-				HWND hDefaultTrigs = CreateWindowEx(WS_EX_CLIENTEDGE, "ComboBox", NULL,
-						CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS,
-						upperLeft.x+10, upperLeft.y+20, 305, 200, hWnd, (HMENU)IDD_COMBO_TRIGS, (HINSTANCE)GetModuleHandle(NULL), NULL);
-					// Add the trigger options
-						const char* defaultTriggerTitles[] = { "No triggers", "Default melee triggers", "Melee with observers (2 players)",
-							"Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
-							"Melee with observers (6 players)", "Melee with observers (7 players)"};
-						for ( int i=0; i<8; i++ )
-							SendMessage(hDefaultTrigs, CB_ADDSTRING, NULL, (LPARAM)defaultTriggerTitles[i]);
-					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-					SendMessage(hDefaultTrigs, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-
-				HWND hWidth = GetDlgItem(hWnd, IDC_EDIT_WIDTH);
-				SendMessage(hWidth, EM_SETLIMITTEXT, 10, 0);
-				SetWindowText(hWidth, "128");
-
-				HWND hHeight = GetDlgItem(hWnd, IDC_EDIT_HEIGHT);
-				SendMessage(hHeight, EM_SETLIMITTEXT, 10, 0);
-				SetWindowText(hHeight, "128");
-
-				HWND hTileset = GetDlgItem(hWnd, IDC_LIST_TILESET);
-				for ( int i=0; i<8; i++ )
-					SendMessage(hTileset, LB_ADDSTRING, NULL, (LPARAM)tilesetNames[i]);
-				SendMessage(hTileset, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-				SendMessage(hTileset, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-
-				HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-				for ( int i=0; i<numBadlandsInitTerrain; i++ )
-					SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
-				SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-				SendMessage(hInitialTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-				return true;
-			}
-			break;
-
-		case WM_COMMAND:
-			{
-				switch ( LOWORD(wParam) )
-				{
-					case ID_CREATEMAP:
-						{
-							int width=0, height=0, tileset=0, terrain=0, triggers=0;
-							TCHAR lpszWidth[11], lpszHeight[11];
-							WORD dimLength;
-
-							dimLength = (WORD) SendDlgItemMessage(hWnd, IDC_EDIT_WIDTH, EM_LINELENGTH, 0, 0);
-							*((LPWORD)lpszWidth) = dimLength;
-							SendDlgItemMessage(hWnd, IDC_EDIT_WIDTH, EM_GETLINE, 0, (LPARAM)lpszWidth);	lpszWidth[dimLength] = NULL;
-							width = atoi(lpszWidth);
-	
-							dimLength = (WORD) SendDlgItemMessage(hWnd, IDC_EDIT_HEIGHT, EM_LINELENGTH, 0, 0);	*((LPWORD)lpszHeight) = dimLength;
-							SendDlgItemMessage(hWnd, IDC_EDIT_HEIGHT, EM_GETLINE, 0, (LPARAM)lpszHeight);	lpszHeight[dimLength] = NULL;
-							height = atoi(lpszHeight);
-	
-							tileset = SendDlgItemMessage(hWnd, IDC_LIST_TILESET, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
-							terrain = SendDlgItemMessage(hWnd, IDC_LIST_DEFAULTTERRAIN, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
-							triggers = SendDlgItemMessage(hWnd, IDD_COMBO_TRIGS, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
-	
-							if ( width>0 && height>0 )
-							{
-								if ( width > 65535 ) width %= 65536;
-								if ( height > 65535 ) height %= 65536;
-								if ( (u32)width*height < 429496729 )
-								{
-									if ( maps.NewMap(width, height, tileset, terrain, triggers, hMaps) )
-									{
-										maps.Focus((HWND)SendMessage(hMaps, WM_MDIGETACTIVE, NULL, NULL));
-										maps.curr->Scroll(SCROLL_X|SCROLL_Y);
-	
-										// Tiling Code
-										u16 tilenum = 0;
-										u16 xSize = maps.curr->XSize();
-										for ( u32 xStart=0; xStart<maps.curr->XSize(); xStart+=16)
-										{
-											for ( u16 yc=0; yc<maps.curr->YSize(); yc++ )
-											{
-												for ( u16 xc=(u16)xStart; xc<xStart+16; xc++ )
-												{
-													u32 location = 2*xSize*yc+2*xc; // Down y rows, over x columns
-													maps.curr->TILE().replace<u16>(location, tilenum);
-													maps.curr->MTXM().replace<u16>(location, tilenum);
-													tilenum++;
-												}
-											}
-										}
-
-										maps.curr->Redraw(true);
-									}
-									EndDialog(hWnd, ID_CREATEMAP);
-								}
-								else
-								{
-									Error("Maps cannot be over 2gb");
-									EndDialog(hWnd, DIM_ERROR);
-								}
-							}
-							else
-								EndDialog(hWnd, DIM_ERROR);
-						}
-						break;
-
-					case IDCANCEL:
-						EndDialog(hWnd, IDCANCEL);
-						break;
-
-					default:
-						{
-							if ( HIWORD(wParam) == LBN_SELCHANGE )
-							{
-								int ItemIndex = SendMessage((HWND)lParam, (UINT)LB_GETCURSEL, (WPARAM) 0, (LPARAM)0);
-								switch ( LOWORD(wParam) )
-								{
-									case IDC_LIST_TILESET:
-										{
-											HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-											HWND hDefaultTrigs = GetDlgItem(hWnd, IDD_COMBO_TRIGS);
-											SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
-											switch ( ItemIndex )
-											{
-												case TERRAIN_BADLANDS: // Badlands
-													{
-														for (int i=0; i<numBadlandsInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_SPACE: // Space Platform
-													{
-														for (int i=0; i<numSpaceInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)spaceInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_INSTALLATION: // Installation
-													{
-														for (int i=0; i<numInstallationInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)installInitTerrain[i]);
-														SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_ASH: // Ash World
-													{
-														for (int i=0; i<numAshInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)ashInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_JUNGLE: // Jungle World
-													{
-														for (int i=0; i<numJungInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)jungInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_DESERT: // Desert World
-													{
-														for (int i=0; i<numDesertInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)desertInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_ICE: // Ice World
-													{
-														for (int i=0; i<numIceInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)iceInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_TWILIGHT: // Twilight World
-													{
-														for (int i=0; i<numTwilightInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)twilightInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-											}
-											SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-										}
-										break;
-								}
-							}	
-						}
-						break;
-				}
-				return true;
-			}
-			break;
-
-		default:
-			return false;
-			break;
-	}
-	return 0;
 }

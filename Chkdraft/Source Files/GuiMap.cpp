@@ -1,34 +1,14 @@
 #include "GuiMap.h"
-#include "Common Files/CommonFiles.h"
-#include "Clipboard.h"
-#include "Graphics.h"
-#include "Location.h"
-#include "Terrain.h"
+#include "Chkdraft.h"
 
-extern HWND hMain;
-extern HWND hTerrainProp;
-extern HWND hLayer;
-extern HWND hUnit;
-extern HWND hLocation;
-extern HWND hMapSettings;
-extern HWND hMini;
-extern HWND hZoom;
-extern HWND hPlayer;
-extern HWND hTextTrig;
-extern HMENU hMainMenu;
-
-extern bool changeHighlightOnly;
-
-void BuildLocationTree(GuiMap* map);
-
-GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0), hMapWindow(nullptr),
+GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
 			 layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
 			 dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
 			 snapUnits(true), stackUnits(false),
 			 MemhDC(NULL), MemMinihDC(NULL), mapId(0),
 			 MemBitmap(NULL), MemMiniBitmap(NULL), graphics(this), unsavedChanges(false), changeLock(false)
 {
-	LRESULT layerSel = SendMessage(hLayer, CB_GETCURSEL, NULL, NULL);
+	int layerSel = chkd.mainToolbar.layerBox.GetSel();
 	if ( layerSel != CB_ERR )
 		layer = u8(layerSel);
 
@@ -38,8 +18,7 @@ GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0), hMapWindow
 
 GuiMap::~GuiMap()
 {
-	if ( hTerrainProp )
-		EndDialog(hTerrainProp, NULL);
+	chkd.tilePropWindow.DestroyThis();
 
 	if ( lpvBits != nullptr )
 	{
@@ -91,7 +70,7 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 
 	RedrawMap = true;
 	RedrawMiniMap = true;
-	InvalidateRect(hMapWindow, &rcTile, true);
+	InvalidateRect(getHandle(), &rcTile, true);
 	return true;
 }
 
@@ -110,19 +89,19 @@ void GuiMap::setZoom(double newScale)
 	for ( u32 i=0; i<NUM_ZOOMS; i++ )
 	{
 		if ( newScale == zooms[i] )
-			SendMessage(hZoom, CB_SETCURSEL, i, NULL);
+			chkd.mainToolbar.zoomBox.SetSel(i);
 	}
 	zoom = newScale;
 	RedrawMap = true;
 	RedrawMiniMap = true;
 
 	RECT rect;
-	GetClientRect(hMapWindow, &rect);
+	GetClientRect(getHandle(), &rect);
 	bitMapWidth  = u16( ((rect.right - rect.left+32)/32*32)/zoom )/32*32;
 	bitMapHeight = u16( ((rect.bottom - rect.top+32)/32*32)/zoom )/32*32;
 	Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
 	UpdateZoomMenuItems();
-	RedrawWindow(hMapWindow, NULL, NULL, RDW_INVALIDATE);
+	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 u8& GuiMap::currPlayer()
@@ -144,7 +123,7 @@ void GuiMap::viewLocation(u16 index)
 {
 	ChkLocation* location;
 	RECT rect;
-	if ( getLocation(location, u8(index)) && GetClientRect(hMapWindow, &rect) != 0 )
+	if ( getLocation(location, u8(index)) && GetClientRect(getHandle(), &rect) != 0 )
 	{
 		s32 width = rect.right - rect.left,
 			height = rect.bottom - rect.top,
@@ -242,6 +221,8 @@ bool GuiMap::moveLocation(u32 downX, u32 downY, u32 upX, u32 upY)
 
 void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 {
+	xPos = (s32(((double)xPos)/getZoom()) + display().x),
+	yPos = (s32(((double)yPos)/getZoom()) + display().y);
 	u16 selectedLoc = selections().getSelectedLocation();
 	if ( selectedLoc == NO_LOCATION )
 	{
@@ -262,15 +243,15 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 	
 			if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
 			{
-				if ( hLocation == nullptr )
+				if ( chkd.locationWindow.getHandle() == NULL )
 				{
-					hLocation = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LOCPROP), hMain, LocationPropProc);
-					ShowWindow(hLocation, SW_SHOWNORMAL);
+					chkd.locationWindow.CreateThis(chkd.getHandle());
+					ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
 				}
 				else
 				{
-					SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
-					ShowWindow(hLocation, SW_SHOW);
+					SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+					ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
 				}
 			}
 		}
@@ -289,13 +270,14 @@ void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 							
 		selections().addTile(currTile, u16(xClick/32), u16(yClick/32), -1);
 		RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
-		if ( hTerrainProp )
-			SendMessageA(hTerrainProp, WM_COMMAND, TILE_UPDATE, NULL);
+		if ( chkd.tilePropWindow.getHandle() != NULL )
+			SendMessage(chkd.tilePropWindow.getHandle(), WM_COMMAND, TILE_UPDATE, NULL);
 		else
-			hTerrainProp = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_SETTILE), hMain, SetTileProc);
-		ShowWindow(hTerrainProp, SW_SHOW);
+			chkd.tilePropWindow.CreateThis(chkd.getHandle());
+
+		ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
 	}
-	SetFocus(hMain);
+	SetFocus(chkd.getHandle());
 }
 
 u8 GuiMap::getDisplayOwner(u8 player)
@@ -318,16 +300,16 @@ void GuiMap::refreshScenario()
 {
 	selection.removeTiles();
 	selection.removeUnits();
-	BuildLocationTree(this);
+	chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
 
-	if ( hUnit != nullptr )
-		SendMessage(hUnit, REPOPULATE_LIST, NULL, NULL);
-	if ( hLocation != nullptr )
-		SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
-	if ( hMapSettings != nullptr )
-		SendMessage(hMapSettings, REFRESH_WINDOW, NULL, NULL);
-	if ( hTextTrig != nullptr )
-		SendMessage(hTextTrig, REFRESH_WINDOW, NULL, NULL);
+	if ( chkd.unitWindow.getHandle() != nullptr )
+		SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
+	if ( chkd.locationWindow.getHandle() != NULL )
+		SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+	if ( chkd.mapSettingsWindow.getHandle() != NULL )
+		SendMessage(chkd.mapSettingsWindow.getHandle(), REFRESH_WINDOW, NULL, NULL);
+	if ( chkd.textTrigWindow.getHandle() != NULL )
+		SendMessage(chkd.textTrigWindow.getHandle(), REFRESH_WINDOW, NULL, NULL);
 
 	Redraw(true);
 }
@@ -382,7 +364,7 @@ void GuiMap::selectAll()
 				if ( MTXM().get<u16>(tileValue, ((height-1)*width+width-1)*2 ) )
 					selection.addTile( tileValue, width-1, height-1, NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM );
 
-				RedrawWindow(hMapWindow, NULL, NULL, RDW_INVALIDATE);
+				RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 			}
 			break;
 		case LAYER_UNITS:
@@ -390,17 +372,17 @@ void GuiMap::selectAll()
 				u32 unitTableSize = UNIT().size(),
 					numUnits = unitTableSize/UNIT_STRUCT_SIZE;
 
-				HWND hUnitTree = GetDlgItem(hUnit, IDC_UNITLIST);
+				HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
 				LVFINDINFO findInfo = { };
 				findInfo.flags = LVFI_PARAM;
 
-				changeHighlightOnly = true;
+				chkd.unitWindow.SetChangeHighlightOnly(true);
 				for ( u16 i=0; i<numUnits; i++ )
 				{
 					if ( !selection.unitIsSelected(i) )
 					{
 						selection.addUnit(i);
-						if ( hUnit )
+						if ( chkd.unitWindow.getHandle() != nullptr )
 						{
 							findInfo.lParam = i;
 							s32 lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
@@ -408,8 +390,7 @@ void GuiMap::selectAll()
 						}
 					}
 				}
-				changeHighlightOnly = false;
-
+				chkd.unitWindow.SetChangeHighlightOnly(false);
 				Redraw(true);
 			}
 			break;
@@ -441,8 +422,8 @@ void GuiMap::deleteSelection()
 
 		case LAYER_UNITS:
 			{
-				if ( hUnit != nullptr )
-					SendMessage(hUnit, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), NULL);
+				if ( chkd.unitWindow.getHandle() != nullptr )
+					SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), NULL);
 				else
 				{
 					while ( selection.hasUnits() )
@@ -464,11 +445,9 @@ void GuiMap::deleteSelection()
 
 		case LAYER_LOCATIONS:
 			{
-				if ( hLocation != nullptr )
-				{
-					locProcLocIndex = NO_LOCATION;
-					EndDialog(hLocation, IDCLOSE);
-				}
+				if ( chkd.locationWindow.getHandle() != NULL )
+					chkd.locationWindow.DestroyThis();
+				
 				ChkLocation* loc;
 				u16 index = selection.getSelectedLocation();
 				if ( index != NO_LOCATION && getLocation(loc, index) )
@@ -478,7 +457,7 @@ void GuiMap::deleteSelection()
 					if ( undoStacks.addUndoLocationDel(index, loc, isExtendedString(loc->stringNum), locName) )
 						undoStacks.startNext(UNDO_LOCATION_DEL);
 
-					BuildLocationTree(this);
+					chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
 
 					loc->elevation = 0;
 					loc->xc1 = 0;
@@ -501,12 +480,12 @@ void GuiMap::deleteSelection()
 
 	RedrawMap = true;
 	RedrawMiniMap = true;
-	RedrawWindow(hMapWindow, NULL, NULL, RDW_INVALIDATE);
+	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 void GuiMap::paste(s32 mapClickX, s32 mapClickY, CLIPBOARD &clipboard)
 {
-	SetFocus(hMapWindow);
+	SetFocus(getHandle());
 	s32 xc = mapClickX, yc = mapClickY;
 	if ( layer == LAYER_UNITS )
 	{
@@ -528,16 +507,16 @@ void GuiMap::undo()
 			break;
 		case LAYER_UNITS:
 			undoStacks.doUndo(UNDO_UNIT, scenario(), selections());
-			if ( hUnit != nullptr )
-				SendMessage(hUnit, REPOPULATE_LIST, NULL, NULL);
+			if ( chkd.unitWindow.getHandle() != nullptr )
+				SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
 			break;
 		case LAYER_LOCATIONS:
 			{
 				undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
-				if ( hLocation != nullptr )
-					SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
+				if ( chkd.locationWindow.getHandle() != NULL )
+					SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
 				refreshScenario();
-				BuildLocationTree(this);
+				chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
 			}
 			break;
 	}
@@ -552,13 +531,13 @@ void GuiMap::redo()
 			break;
 		case LAYER_UNITS:
 			undoStacks.doRedo(UNDO_UNIT, scenario(), selections());
-			if ( hUnit != nullptr )
-				SendMessage(hUnit, REPOPULATE_LIST, NULL, NULL);
+			if ( chkd.unitWindow.getHandle() != nullptr )
+				SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
 			break;
 		case LAYER_LOCATIONS:
 			undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
-			if ( hLocation != nullptr )
-				SendMessage(hLocation, REFRESH_LOCATION, NULL, NULL);
+			if ( chkd.locationWindow.getHandle() != NULL )
+				SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
 			refreshScenario();
 			break;
 	}
@@ -585,27 +564,21 @@ float GuiMap::MiniMapScale(u16 xSize, u16 ySize)
 
 HWND GuiMap::getHandle()
 {
-	return hMapWindow;
-}
-
-bool GuiMap::setHandle(HWND newMapWin)
-{
-	return	  ( newMapWin != nullptr )
-		   && ( hMapWindow = newMapWin );
+	return ClassWindow::getHandle();
 }
 
 void GuiMap::PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard )
 {
 	GuiMap* map = this;
-	InvalidateRect(map->hMapWindow, NULL, FALSE);
+	InvalidateRect(map->getHandle(), NULL, FALSE);
 
 	RECT rect;
-	GetClientRect(map->hMapWindow, &rect);
+	GetClientRect(map->getHandle(), &rect);
 	s32 width = (rect.right - rect.left+32)/32*32;
 	s32 height = (rect.bottom - rect.top+32)/32*32;
 
 	PAINTSTRUCT ps;
-	HDC hDC = BeginPaint(map->hMapWindow, &ps);
+	HDC hDC = BeginPaint(map->getHandle(), &ps);
 
 	u16 scaledWidth = (u16(((double)width)/zoom))/32*32,
 		scaledHeight = (u16(((double)height)/zoom))/32*32;
@@ -629,7 +602,7 @@ void GuiMap::PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard )
 		SelectObject(map->MemhDC, map->MemBitmap);
 		
 		if ( currMap == map ) // Only redraw minimap for active window
-			RedrawWindow(hMini, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+			RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
 
 		graphics.DrawMap(
 				 map->bitWidth(),
@@ -673,7 +646,7 @@ void GuiMap::PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard )
 
 	DeleteDC	(TemphDC);
 	DeleteObject(Tempbitmap);
-	EndPaint(hMapWindow, &ps);
+	EndPaint(getHandle(), &ps);
 }
 
 void GuiMap::PaintMiniMap(HWND hWnd)
@@ -703,7 +676,7 @@ void GuiMap::PaintMiniMap(HWND hWnd)
 			SelectObject(this->MemMinihDC, this->MemMiniBitmap);
 
 			DrawMiniMap( this->MemMinihDC,
-						 hMini,
+						 chkd.mainPlot.leftBar.miniMap.getHandle(),
 						 this->XSize(),
 						 this->YSize(),
 						 this->MiniMapScale(this->XSize(), this->YSize()),
@@ -750,7 +723,7 @@ void GuiMap::Redraw(bool includeMiniMap)
 		if ( includeMiniMap )
 			RedrawMiniMap = true;
 
-		RedrawWindow(hMapWindow, NULL, NULL, RDW_INVALIDATE);
+		RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 	}
 }
 
@@ -867,11 +840,7 @@ void GuiMap::ToggleLocationNameClip()
 	if ( this != nullptr )
 	{
 		graphics.ToggleLocationNameClip();
-		if ( graphics.ClippingLocationNames() )
-			CheckMenuItem(hMainMenu, ID_LOCATIONS_CLIPNAMES, MF_CHECKED);
-		else
-			CheckMenuItem(hMainMenu, ID_LOCATIONS_CLIPNAMES, MF_UNCHECKED);
-
+		chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
 		Redraw(false);
 	}
 }
@@ -911,7 +880,7 @@ void GuiMap::ToggleLockAnywhere()
 	UpdateLocationMenuItems();
 	if ( selections().getSelectedLocation() == 63 )
 		selections().selectLocation(NO_LOCATION);
-	BuildLocationTree(this);
+	chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
 	Redraw(false);
 }
 
@@ -979,30 +948,11 @@ bool GuiMap::SnapLocationDimensions(s32& x1, s32& y1, s32& x2, s32& y2, u32 flag
 
 void GuiMap::UpdateLocationMenuItems()
 {
-	if ( graphics.ClippingLocationNames() )
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_CLIPNAMES, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_CLIPNAMES, MF_UNCHECKED);
-
-	if ( snapLocations && locSnapTileOverGrid )
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_SNAPTOTILE, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_SNAPTOTILE, MF_UNCHECKED);
-
-	if ( snapLocations && !locSnapTileOverGrid )
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_SNAPTOACTIVEGRID, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_SNAPTOACTIVEGRID, MF_UNCHECKED);
-
-	if ( !snapLocations )
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_NOSNAP, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_NOSNAP, MF_UNCHECKED);
-
-	if ( lockAnywhere )
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_LOCKANYWHERE, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_LOCATIONS_LOCKANYWHERE, MF_UNCHECKED);
+	chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
+	chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOTILE, snapLocations && locSnapTileOverGrid);
+	chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOACTIVEGRID, snapLocations && !locSnapTileOverGrid);
+	chkd.mainMenu.SetCheck(ID_LOCATIONS_NOSNAP, !snapLocations);
+	chkd.mainMenu.SetCheck(ID_LOCATIONS_LOCKANYWHERE, lockAnywhere);
 }
 
 void GuiMap::UpdateZoomMenuItems()
@@ -1014,118 +964,98 @@ void GuiMap::UpdateZoomMenuItems()
 			break;
 	}
 
-	SendMessage(hZoom, CB_SETCURSEL, zoomNum, 0);
+	chkd.mainToolbar.zoomBox.SetSel(zoomNum);
 
-	if ( zoom == .10 )	CheckMenuItem(hMainMenu, ID_ZOOM_10, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_10, MF_UNCHECKED);
-	if ( zoom == .25 )	CheckMenuItem(hMainMenu, ID_ZOOM_25, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_25, MF_UNCHECKED);
-	if ( zoom == .33 )	CheckMenuItem(hMainMenu, ID_ZOOM_33, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_33, MF_UNCHECKED);
-	if ( zoom == .50 )	CheckMenuItem(hMainMenu, ID_ZOOM_50, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_50, MF_UNCHECKED);
-	if ( zoom == .66 )	CheckMenuItem(hMainMenu, ID_ZOOM_66, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_66, MF_UNCHECKED);
-	if ( zoom == 1.00 )	CheckMenuItem(hMainMenu, ID_ZOOM_100, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_100, MF_UNCHECKED);
-	if ( zoom == 1.50 )	CheckMenuItem(hMainMenu, ID_ZOOM_150, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_150, MF_UNCHECKED);
-	if ( zoom == 2.00 )	CheckMenuItem(hMainMenu, ID_ZOOM_200, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_200, MF_UNCHECKED);
-	if ( zoom == 3.00 )	CheckMenuItem(hMainMenu, ID_ZOOM_300, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_300, MF_UNCHECKED);
-	if ( zoom == 4.00 )	CheckMenuItem(hMainMenu, ID_ZOOM_400, MF_CHECKED);
-	else				CheckMenuItem(hMainMenu, ID_ZOOM_400, MF_UNCHECKED);
+	chkd.mainMenu.SetCheck(ID_ZOOM_10, zoom == .10);
+	chkd.mainMenu.SetCheck(ID_ZOOM_25, zoom == .25);
+	chkd.mainMenu.SetCheck(ID_ZOOM_33, zoom == .33);
+	chkd.mainMenu.SetCheck(ID_ZOOM_50, zoom == .50);
+	chkd.mainMenu.SetCheck(ID_ZOOM_66, zoom == .66);
+	chkd.mainMenu.SetCheck(ID_ZOOM_100, zoom == 1.00);
+	chkd.mainMenu.SetCheck(ID_ZOOM_150, zoom == 1.50);
+	chkd.mainMenu.SetCheck(ID_ZOOM_200, zoom == 2.00);
+	chkd.mainMenu.SetCheck(ID_ZOOM_300, zoom == 3.00);
+	chkd.mainMenu.SetCheck(ID_ZOOM_400, zoom == 4.00);
 }
 
 void GuiMap::UpdateGridSizesMenu()
 {
 	GRID& mainGrid = grid(0);
 
-	CheckMenuItem(hMainMenu, ID_GRID_ULTRAFINE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_FINE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_NORMAL, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_LARGE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_EXTRALARGE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_CUSTOM, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_GRID_DISABLED, MF_UNCHECKED);
-
+	chkd.mainMenu.SetCheck(ID_GRID_ULTRAFINE, false);
+	chkd.mainMenu.SetCheck(ID_GRID_FINE, false);
+	chkd.mainMenu.SetCheck(ID_GRID_NORMAL, false);
+	chkd.mainMenu.SetCheck(ID_GRID_LARGE, false);
+	chkd.mainMenu.SetCheck(ID_GRID_EXTRALARGE, false);
+	chkd.mainMenu.SetCheck(ID_GRID_CUSTOM, false);
+	chkd.mainMenu.SetCheck(ID_GRID_DISABLED, false);
+	
 	if ( mainGrid.size.x == 0 && mainGrid.size.y == 0 )
-		CheckMenuItem(hMainMenu, ID_GRID_DISABLED, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_DISABLED, true);
 	else if ( (mainGrid.offset.x != 0 || mainGrid.offset.y != 0) ||
 			  mainGrid.size.x != mainGrid.size.y					)
-		CheckMenuItem(hMainMenu, ID_GRID_CUSTOM, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_CUSTOM, true);
 	else if ( mainGrid.size.x == 8 && mainGrid.size.y == 8 )
-		CheckMenuItem(hMainMenu, ID_GRID_ULTRAFINE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_ULTRAFINE, true);
 	else if ( mainGrid.size.x == 16 && mainGrid.size.y == 16 )
-		CheckMenuItem(hMainMenu, ID_GRID_FINE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_FINE, true);
 	else if ( mainGrid.size.x == 32 && mainGrid.size.y == 32 )
-		CheckMenuItem(hMainMenu, ID_GRID_NORMAL, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_NORMAL, true);
 	else if ( mainGrid.size.x == 64 && mainGrid.size.y == 64 )
-		CheckMenuItem(hMainMenu, ID_GRID_LARGE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_LARGE, true);
 	else if ( mainGrid.size.x == 128 && mainGrid.size.y == 128 )
-		CheckMenuItem(hMainMenu, ID_GRID_EXTRALARGE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_EXTRALARGE, true);
 	else
-		CheckMenuItem(hMainMenu, ID_GRID_CUSTOM, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_GRID_CUSTOM, true);
 }
 
 void GuiMap::UpdateGridColorMenu()
 {
 	GRID& mainGrid = grid(0);
 
-	CheckMenuItem(hMainMenu, ID_COLOR_BLACK, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_GREY, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_WHITE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_GREEN, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_RED, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_BLUE, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_COLOR_OTHER, MF_UNCHECKED);
-
+	chkd.mainMenu.SetCheck(ID_COLOR_BLACK, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_GREY, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_WHITE, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_GREEN, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_RED, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_BLUE, false);
+	chkd.mainMenu.SetCheck(ID_COLOR_OTHER, false);
+	
 	if ( mainGrid.red == 0 && mainGrid.green == 0 && mainGrid.blue == 0 )
-		CheckMenuItem(hMainMenu, ID_COLOR_BLACK, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_BLACK, true);
 	else if ( mainGrid.red == 72 && mainGrid.green == 72 && mainGrid.blue == 88 )
-		CheckMenuItem(hMainMenu, ID_COLOR_GREY, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_GREY, true);
 	else if ( mainGrid.red == 255 && mainGrid.green == 255 && mainGrid.blue == 255 )
-		CheckMenuItem(hMainMenu, ID_COLOR_WHITE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_WHITE, true);
 	else if ( mainGrid.red == 16 && mainGrid.green == 252 && mainGrid.blue == 24 )
-		CheckMenuItem(hMainMenu, ID_COLOR_GREEN, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_GREEN, true);
 	else if ( mainGrid.red == 244 && mainGrid.green == 4 && mainGrid.blue == 4 )
-		CheckMenuItem(hMainMenu, ID_COLOR_RED, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_RED, true);
 	else if ( mainGrid.red == 36 && mainGrid.green == 36 && mainGrid.blue == 252 )
-		CheckMenuItem(hMainMenu, ID_COLOR_BLUE, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_BLUE, true);
 	else
-		CheckMenuItem(hMainMenu, ID_COLOR_OTHER, MF_CHECKED);
+		chkd.mainMenu.SetCheck(ID_COLOR_OTHER, true);
 }
 
 void GuiMap::UpdateTerrainViewMenuItems()
 {
-	if ( graphics.DisplayingElevations() )
-		CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEELEVATIONS, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEELEVATIONS, MF_UNCHECKED);
+	chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, graphics.DisplayingElevations());
 
-	CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEVALUES, MF_UNCHECKED);
-	CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEVALUESMTXM, MF_UNCHECKED);
+	chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, false);
+	chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, false);
 	if ( graphics.DisplayingTileNums() )
 	{
 		if ( graphics.mtxmOverTile() )
-			CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEVALUESMTXM, MF_CHECKED);
+			chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, true);
 		else
-			CheckMenuItem(hMainMenu, ID_TERRAIN_DISPLAYTILEVALUES, MF_CHECKED);
+			chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, true);
 	}
 }
 
 void GuiMap::UpdateUnitMenuItems()
 {
-	if ( snapUnits )
-		CheckMenuItem(hMainMenu, ID_UNITS_UNITSSNAPTOGRID, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_UNITS_UNITSSNAPTOGRID, MF_UNCHECKED);
-
-	if ( stackUnits )
-		CheckMenuItem(hMainMenu, ID_UNITS_ALLOWSTACK, MF_CHECKED);
-	else
-		CheckMenuItem(hMainMenu, ID_UNITS_ALLOWSTACK, MF_UNCHECKED);
+	chkd.mainMenu.SetCheck(ID_UNITS_UNITSSNAPTOGRID, snapUnits);
+	chkd.mainMenu.SetCheck(ID_UNITS_ALLOWSTACK, stackUnits);
 }
 
 void GuiMap::Scroll(u32 flags)
@@ -1136,7 +1066,7 @@ void GuiMap::Scroll(u32 flags)
 	scrollbars.nMin = 0;
 
 	RECT rcMap;
-	GetClientRect(hMapWindow, &rcMap);
+	GetClientRect(getHandle(), &rcMap);
 	s32 screenWidth  = (s32)((double(rcMap.right-rcMap.left))/zoom),
 		screenHeight = (s32)((double(rcMap.bottom-rcMap.top))/zoom);
 
@@ -1148,14 +1078,14 @@ void GuiMap::Scroll(u32 flags)
 		scrollbars.nPos = displayPivot.x; 
 		scrollbars.nMax = XSize()*32;
 		scrollbars.nPage = screenWidth;
-		SetScrollInfo(hMapWindow, SB_HORZ, &scrollbars, true);
+		SetScrollInfo(getHandle(), SB_HORZ, &scrollbars, true);
 	}
 	if ( (flags&SCROLL_Y) )
 	{
 		scrollbars.nPos = displayPivot.y;
 		scrollbars.nMax = YSize()*32;
 		scrollbars.nPage = screenHeight;
-		SetScrollInfo(hMapWindow, SB_VERT, &scrollbars, true);
+		SetScrollInfo(getHandle(), SB_VERT, &scrollbars, true);
 	}
 	RedrawMap = true;
 }
@@ -1199,36 +1129,36 @@ bool GuiMap::changesLocked()
 
 void GuiMap::addAsterisk()
 {
-	int length = GetWindowTextLength(hMapWindow)+1;
+	int length = GetWindowTextLength(getHandle())+1;
 	if ( length > 0 )
 	{
 		char* text;
 		try { text = new char[length+1]; }
 		catch ( std::bad_alloc ) { return; }
 
-		if ( GetWindowText(hMapWindow, (LPSTR)text, length) > 0 )
+		if ( GetWindowText(getHandle(), (LPSTR)text, length) > 0 )
 		{
 			strcat_s(text, length+1, "*");
-			SetWindowText(hMapWindow, text);
+			SetWindowText(getHandle(), text);
 		}
 	}
 }
 
 void GuiMap::removeAsterisk()
 {
-	int length = GetWindowTextLength(hMapWindow)+1;
+	int length = GetWindowTextLength(getHandle())+1;
 	if ( length > 0 )
 	{
 		char* text;
 		try { text = new char[length]; }
 		catch ( std::bad_alloc ) { return; }
 		
-		if ( GetWindowText(hMapWindow, (LPSTR)text, length) > 0 )
+		if ( GetWindowText(getHandle(), (LPSTR)text, length) > 0 )
 		{
 			if ( text[length-2] == '*' )
 			{
 				text[length-2] = '\0';
-				SetWindowText(hMapWindow, text);
+				SetWindowText(getHandle(), text);
 			}
 		}
 	}
@@ -1237,15 +1167,770 @@ void GuiMap::removeAsterisk()
 void GuiMap::updateMenu()
 {
 	UpdateLocationMenuItems();
-	SendMessage(hLayer, CB_SETCURSEL, (WPARAM)layer, 0);
+	chkd.mainToolbar.layerBox.SetSel(layer);
 	UpdateZoomMenuItems();
-	SendMessage(hPlayer, CB_SETCURSEL, (WPARAM)player, 0);
+	chkd.mainToolbar.playerBox.SetSel(player);
 	UpdateGridSizesMenu();
 	UpdateGridColorMenu();
 	UpdateTerrainViewMenuItems();
 	UpdateUnitMenuItems();
+}
 
-	//int itemId = 0;
-	//CheckMenuItem(hMainMenu, itemId, MF_CHECKED);
-	//CheckMenuItem(hMainMenu, itemId, MF_UNCHECKED);
+bool GuiMap::CreateThis(HWND hClient, const char* title)
+{
+	if ( !WindowClassIsRegistered("MdiChild") )
+	{
+		UINT style = CS_DBLCLKS;
+		HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+		HBRUSH hBackground = (HBRUSH)(COLOR_APPWORKSPACE+1);
+
+		if ( !RegisterWindowClass(CS_DBLCLKS, NULL, hCursor, hBackground, NULL, "MdiChild", NULL, true) )
+			DestroyCursor(hCursor);
+	}
+
+	return CreateMdiChild(title, WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
+}
+
+LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch ( msg )
+	{
+		case WM_PAINT:
+			PaintMap(chkd.maps.curr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);//PaintMap(*currMap, clipboard->isPasting(), *clipboard);
+			break;
+	
+		case WM_HSCROLL:
+			{
+				switch( LOWORD(wParam) )
+				{
+					case SB_LINELEFT:
+						display().x -= 8;
+						break;
+					case SB_LINERIGHT:
+						display().x += 8;
+						break;
+					case SB_PAGELEFT:
+						{
+							RECT rect;
+							GetClientRect(hWnd, &rect);
+							display().x -= (rect.right-rect.left)/2;
+						}
+						break;
+					case SB_PAGERIGHT:
+						{
+							RECT rect;
+							GetClientRect(hWnd, &rect);
+							display().x += (rect.right-rect.left)/2;
+						}
+						break;
+					case SB_THUMBPOSITION:
+						display().x = HIWORD(wParam);
+						break;
+					case SB_THUMBTRACK:
+						display().x = HIWORD(wParam);
+						break;
+					default:
+						return DefMDIChildProc(hWnd, msg, wParam, lParam);
+						break;
+				}
+				Scroll(SCROLL_X|VALIDATE_BORDER);
+				Redraw(true);
+			}
+			break;
+	
+		case WM_VSCROLL:
+			{
+				switch( LOWORD(wParam) )
+				{
+					case SB_LINEUP:
+						display().y -= 8;
+						break;
+					case SB_LINEDOWN:
+						display().y += 8;
+						break;
+					case SB_PAGEUP:
+						{
+							RECT rect;
+							GetClientRect(hWnd, &rect);
+							display().y -= (rect.right-rect.left)/2;
+						}
+						break;
+					case SB_PAGEDOWN:
+						{
+							RECT rect;
+							GetClientRect(hWnd, &rect);
+							display().y += (rect.right-rect.left)/2;
+						}
+						break;
+					case SB_THUMBPOSITION:
+						display().y = HIWORD(wParam);
+						break;
+					case SB_THUMBTRACK:
+						display().y = HIWORD(wParam);
+						break;
+					default:
+						return DefMDIChildProc(hWnd, msg, wParam, lParam);
+						break;
+				}
+				Scroll(SCROLL_Y|VALIDATE_BORDER);
+				Redraw(true);
+			}
+			break;
+	
+		case WM_SIZE:
+			{
+				LRESULT result = DefMDIChildProc(hWnd, msg, wParam, lParam);
+				Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
+				Redraw(false);
+				return result;
+			}
+			break;
+	
+		case WM_ERASEBKGND:
+			break;
+	
+		case WM_MDIACTIVATE:
+			{
+				chkd.tilePropWindow.DestroyThis();
+	
+				if ( chkd.unitWindow.getHandle() != nullptr )
+					chkd.unitWindow.DestroyThis();
+	
+				if ( chkd.locationWindow.getHandle() != NULL )
+					chkd.locationWindow.DestroyThis();
+
+				if ( chkd.mapSettingsWindow.getHandle() != NULL )
+					EndDialog(chkd.mapSettingsWindow.getHandle(), NULL);
+
+				chkd.terrainPalWindow.DestroyThis();
+	
+				if ((HWND)lParam != NULL )
+				{
+					chkd.maps.Focus((HWND)lParam);
+					Redraw(true);
+					chkd.maps.UpdateTreeView();
+				}
+			}
+			break;
+	
+		case WM_RBUTTONUP:
+		case WM_LBUTTONDBLCLK:
+		case WM_LBUTTONDOWN:
+		case WM_MOUSEMOVE:
+		case WM_MOUSEHOVER:
+		case WM_LBUTTONUP:
+			return MapMouseProc(hWnd, msg, wParam, lParam);
+			break;
+
+		case WM_COMMAND:
+			return DefMDIChildProc(hWnd, msg, wParam, lParam);
+			break;
+
+		case WM_DESTROY:
+			chkd.maps.CloseMap(hWnd);
+			chkd.maps.FocusActive();
+			RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
+			SetFocus(chkd.getHandle());
+			return DefMDIChildProc(hWnd, msg, wParam, lParam);
+			break;
+
+		default:
+			return DefMDIChildProc(hWnd, msg, wParam, lParam);
+			break;
+	}
+
+	return 0;
+}
+
+LRESULT GuiMap::MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	u8 layer = currLayer();
+	SELECTIONS& sel = selections();
+	POINT& startDrag = sel.getStartDrag(),
+		 & endDrag	 = sel.getEndDrag();
+
+	switch ( msg )
+	{
+		case WM_RBUTTONUP:
+			chkd.maps.endPaste();
+			ClipCursor(NULL);
+			Redraw(true);
+			break;
+	
+		case WM_LBUTTONDBLCLK:
+			if ( layer == LAYER_LOCATIONS )
+				doubleClickLocation(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			break;
+	
+		case WM_LBUTTONDOWN:
+			{
+				if ( chkd.EditFocused() )
+					SetFocus(chkd.getHandle());
+	
+				sel.resetMoved();
+				POINTS click = MAKEPOINTS(lParam);
+				s32 mapClickX = (s32(((double)click.x)/getZoom()) + display().x),
+					mapClickY = (s32(((double)click.y)/getZoom()) + display().y);
+
+				switch ( wParam )
+				{
+					case MK_SHIFT|MK_LBUTTON: // Shift + LClick
+						if ( layer == LAYER_TERRAIN )
+							openTileProperties(mapClickX, mapClickY);
+						break;
+	
+					case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
+						{
+							chkd.tilePropWindow.DestroyThis();
+							if ( !chkd.maps.clipboard.isPasting() )
+							{
+								if ( layer == LAYER_TERRAIN ) // Ctrl + Click tile
+									sel.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+								else if ( layer == LAYER_DOODADS || layer == LAYER_UNITS || layer == LAYER_SPRITES )
+									sel.setDrags(mapClickX, mapClickY);
+
+								LockCursor(hWnd);
+								TrackMouse(hWnd, DEFAULT_HOVER_TIME);
+								setDragging(true);
+							}
+						}
+						break;
+	
+					case MK_LBUTTON: // LClick
+						{
+							chkd.tilePropWindow.DestroyThis();
+							if ( chkd.maps.clipboard.isPasting() )
+								paste(mapClickX, mapClickY, chkd.maps.clipboard);
+							else
+							{
+								if ( sel.hasTiles() )
+									sel.removeTiles();
+								
+								sel.setDrags(mapClickX, mapClickY);
+								if ( layer == LAYER_TERRAIN )
+									sel.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+								else if ( layer == LAYER_LOCATIONS )
+								{
+									s32 x1 = mapClickX, y1 = mapClickY;
+									if ( SnapLocationDimensions(x1, y1, x1, y1, SNAP_LOC_X1|SNAP_LOC_Y1) )
+										sel.setDrags(x1, y1);
+									sel.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+								}
+
+								SetCapture(hWnd);
+								TrackMouse(hWnd, DEFAULT_HOVER_TIME);
+								setDragging(true);
+								Redraw(false);
+							}
+						}
+						break;
+				}
+			}
+			break;
+	
+		case WM_MOUSEMOVE:
+			{
+				POINTS click = MAKEPOINTS(lParam);
+				if ( click.x < 0 ) click.x = 0;
+				if ( click.y < 0 ) click.y = 0;
+
+				s32 mapHoverX = (s32(((double)click.x)/getZoom())) + display().x,
+					mapHoverY = (s32(((double)click.y)/getZoom())) + display().y;
+
+				if ( wParam & MK_LBUTTON ) // If click and dragging
+				{
+					chkd.maps.stickCursor(); // Stop cursor from reverting
+					sel.setMoved();
+				}
+				else // If not click and dragging
+					chkd.maps.updateCursor(mapHoverX, mapHoverY); // Determine proper hover cursor
+
+				// Set status bar tracking pos
+				char newPos[64];
+				sprintf_s(newPos, 64, "%i, %i (%i, %i)", mapHoverX, mapHoverY, mapHoverX/32, mapHoverY/32);
+				chkd.statusBar.SetText(0, newPos);
+	
+				switch ( wParam )
+				{
+					case MK_CONTROL|MK_LBUTTON:
+						{
+							RECT rcMap;
+							GetClientRect(hWnd, &rcMap);
+
+							if ( click.x == 0 || click.y == 0 || click.x == rcMap.right-2 || click.y == rcMap.bottom-2 )
+								EdgeDrag(hWnd, lParam, layer, sel, this);
+
+							sel.setEndDrag(mapHoverX, mapHoverY);
+							if ( layer == LAYER_TERRAIN )
+								sel.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+							else if ( layer == LAYER_LOCATIONS )
+							{
+								s32 x2 = mapHoverX, y2 = mapHoverY;
+								if ( SnapLocationDimensions(x2, y2, x2, y2, SNAP_LOC_X2|SNAP_LOC_Y2) )
+									sel.setEndDrag(x2, y2);
+							}
+							else if ( layer == LAYER_UNITS )
+							{
+								s32 xc = mapHoverX, yc = mapHoverY;
+								if ( snapUnitCoordinate(xc, yc) )
+									sel.setEndDrag(xc, yc);
+							}
+
+							PaintMap(this, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+						}
+						break;
+
+					case MK_LBUTTON:
+						{
+							// If pasting, move paste
+							if ( chkd.maps.clipboard.isPasting() )
+							{
+								s32 xc = mapHoverX, yc = mapHoverY;
+								if ( layer == LAYER_UNITS )
+									snapUnitCoordinate(xc, yc);
+
+								sel.setEndDrag(xc, yc);
+								if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
+									paste((s16)xc, (s16)yc, chkd.maps.clipboard);
+							}
+
+							if ( isDragging() )
+							{
+								RECT rcMap;
+								GetClientRect(hWnd, &rcMap);
+								if ( click.x == 0 || click.y == 0 || click.x >= rcMap.right-2 || click.y >= rcMap.bottom-2 )
+									EdgeDrag(hWnd, lParam, layer, sel, this);
+
+								sel.setEndDrag( mapHoverX, mapHoverY );
+								if ( layer == LAYER_TERRAIN )
+									sel.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+								else if ( layer == LAYER_LOCATIONS )
+								{
+									s32 x2 = mapHoverX, y2 = mapHoverY;
+									if ( SnapLocationDimensions(x2, y2, x2, y2, SNAP_LOC_X2|SNAP_LOC_Y2) )
+										sel.setEndDrag(x2, y2);
+								}
+								else if ( layer == LAYER_UNITS )
+								{
+									s32 xc = mapHoverX, yc = mapHoverY;
+									if ( snapUnitCoordinate(xc, yc) )
+										sel.setEndDrag(xc, yc);
+								}
+							}
+							PaintMap(this, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+						}
+						break;
+
+					default:
+						{
+							if ( chkd.maps.clipboard.isPasting() == true )
+							{
+								if ( GetKeyState(VK_SPACE) & 0x8000 )
+								{
+									RECT rcMap;
+									GetClientRect(hWnd, &rcMap);
+	
+									if ( click.x == 0 || click.x == rcMap.right-2 || click.y == 0 || click.y == rcMap.bottom-2 )
+									{
+										if		( click.x == 0 )
+											display().x -= 32;
+										else if ( click.x == rcMap.right-2 )
+											display().x += 32;
+										if		( click.y == 0 )
+											display().y -= 32;
+										else if ( click.y == rcMap.bottom-2 )
+											display().y += 32;
+	
+										Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
+									}
+								}
+
+								if ( layer == LAYER_UNITS )
+									snapUnitCoordinate(mapHoverX, mapHoverY);
+
+								sel.setEndDrag(mapHoverX, mapHoverY);
+								PaintMap(this, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+							}
+						}
+						break;
+				}
+			}
+			break;
+	
+		case WM_MOUSEHOVER:
+			{
+				switch ( wParam )
+				{
+					case MK_CONTROL|MK_LBUTTON:
+					case MK_LBUTTON:
+						EdgeDrag(hWnd, lParam, layer, sel, this);
+						break;
+	
+					default:
+						{
+							if ( chkd.maps.clipboard.isPasting() == true )
+							{
+								RECT rcMap;
+								GetClientRect(hWnd, &rcMap);
+								POINTS currPoint = MAKEPOINTS(lParam);
+	
+								if		( currPoint.x == 0				)
+									display().x -= 8;
+								else if ( currPoint.x >= rcMap.right-2	)
+									display().x += 8;
+								if		( currPoint.y == 0				)
+									display().y -= 8;
+								else if ( currPoint.y >= rcMap.bottom-2 )
+									display().y += 8;
+	
+								Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
+								RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+
+								s32 x = (s32(((double)currPoint.x)/getZoom())) + display().x,
+									y = (s32(((double)currPoint.y)/getZoom())) + display().y;
+								sel.setEndDrag(x, y);
+
+								TrackMouse(hWnd, 100);
+							}
+						}
+						break;
+				}
+			}
+			break;
+
+		case WM_LBUTTONUP:
+			{
+				ReleaseCapture();
+				if ( isDragging() )
+				{
+					setDragging(false);
+					POINTS endPoint = MAKEPOINTS(lParam);
+					if ( endPoint.x < 0 )
+						endPoint.x = 0;
+					if ( endPoint.y < 0 )
+						endPoint.y = 0;
+					endPoint.x = s16(endPoint.x/getZoom() + display().x);
+					endPoint.y = s16(endPoint.y/getZoom() + display().y);
+
+					if ( chkd.maps.clipboard.isPasting() )
+						paste((s16)endPoint.x, (s16)endPoint.y, chkd.maps.clipboard);
+	
+					if ( layer == LAYER_TERRAIN )
+					{
+						sel.setEndDrag( (endPoint.x+16)/32, (endPoint.y+16)/32 );
+						sel.setStartDrag( sel.getStartDrag().x/32, sel.getStartDrag().y/32 );
+						u16 width = XSize();
+					
+						if ( wParam == MK_CONTROL && sel.startEqualsEndDrag() )
+						// Add/remove single tile to/front existing selection
+						{
+							sel.setEndDrag( (endPoint.x)/32, (endPoint.y)/32 );
+							
+							u16 tileValue;
+							if ( MTXM().get<u16>(
+												 (u16 &)tileValue,
+												 (u32)((sel.getEndDrag().y*width+sel.getEndDrag().x)*2)
+												)
+							   )
+								sel.addTile(tileValue,
+											(u16)sel.getEndDrag().x,
+											(u16)sel.getEndDrag().y
+										   );
+						}
+						else
+						// Add/remove multiple tiles from selection
+						{
+							sel.sortDragPoints();
+	
+							if ( sel.getStartDrag().y < sel.getEndDrag().y &&
+								 sel.getStartDrag().x < sel.getEndDrag().x )
+							{
+								bool multiAdd = sel.getStartDrag().x + 1 < sel.getEndDrag().x ||
+												sel.getStartDrag().y + 1 < sel.getEndDrag().y;
+	
+								if ( sel.getEndDrag().x > XSize() )
+									sel.setEndDrag(XSize(), sel.getEndDrag().y);
+								if ( sel.getEndDrag().y > YSize() )
+									sel.setEndDrag(sel.getEndDrag().x, YSize());
+	
+								for ( int yRow = sel.getStartDrag().y; yRow < sel.getEndDrag().y; yRow++ )
+								{
+									for ( int xRow = sel.getStartDrag().x; xRow < sel.getEndDrag().x; xRow++ )
+									{
+										u16 tileValue;
+										if ( MTXM().get<u16>((u16 &)tileValue, (u32)((yRow*width+xRow)*2)) )
+											sel.addTile(tileValue, xRow, yRow);
+									}
+								}
+							}
+						}
+					}
+					else if ( layer == LAYER_LOCATIONS )
+					{	
+						if ( sel.hasMoved() ) // attempt to move, resize, or create location
+						{
+							s32 startX = sel.getStartDrag().x,
+								startY = sel.getStartDrag().y,
+								endX = endPoint.x,//sel.getEndDrag().x,
+								endY = endPoint.y;//sel.getEndDrag().y;
+							s32 dragX = endX-startX;
+							s32 dragY = endY-startY;
+
+							if ( sel.getLocationFlags() == LOC_SEL_NOTHING ) // Create location
+							{
+								AscendingOrder(startX, endX);
+								AscendingOrder(startY, endY);
+								SnapLocationDimensions(startX, startY, endX, endY, SNAP_LOC_ALL);
+									
+								u16 locationIndex;
+								if ( createLocation(startX, startY, endX, endY, locationIndex) )
+								{
+									undos().addUndoLocationCreate(locationIndex);
+									undos().startNext(0);
+									chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+									refreshScenario();
+								}
+							}
+							else // Move or resize location
+							{
+								u16 selectedLocation = sel.getSelectedLocation();
+								ChkLocation* loc;
+								if ( selectedLocation != NO_LOCATION && getLocation(loc, selectedLocation) )
+								{
+									u8 selFlags = sel.getLocationFlags();
+									if ( selFlags == LOC_SEL_MIDDLE ) // Move location
+									{
+										bool xInverted = loc->xc2 < loc->xc1,
+											 yInverted = loc->yc2 < loc->yc1;
+
+										loc->xc1 += dragX;
+										loc->xc2 += dragX;
+										loc->yc1 += dragY;
+										loc->yc2 += dragY;
+										s32 xc1Preserve = loc->xc1,
+											yc1Preserve = loc->yc1,
+											xc2Preserve = loc->xc2,
+											yc2Preserve = loc->yc2;
+										
+										if ( xInverted )
+										{
+											if ( SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X2) )
+											{
+												loc->xc1 += loc->xc2 - xc2Preserve; // Maintain location width
+												dragX += loc->xc1 - xc1Preserve;
+											}
+										}
+										else if ( SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X1) )
+										{
+											loc->xc2 += loc->xc1 - xc1Preserve; // Maintain location width
+											dragX += loc->xc2 - xc2Preserve;
+										}
+
+										if ( yInverted )
+										{
+											if ( SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y2) )
+											{
+												loc->yc1 += loc->yc2 - yc2Preserve; // Maintain location height
+												dragY += loc->yc1 - yc1Preserve;
+											}
+										}
+										else if ( SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y1) )
+										{
+											loc->yc2 += loc->yc1 - yc1Preserve; // Maintain location height
+											dragY += loc->yc2 - yc2Preserve;
+										}
+										
+										undos().addUndoLocationMove(selectedLocation, dragX, dragY);
+									}
+									else // Resize location
+									{
+										if ( selFlags & LOC_SEL_NORTH )
+										{
+											if ( loc->yc1 <= loc->yc2 ) // Standard yc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1);
+												loc->yc1 += dragY;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y1);
+											}
+											else // Inverted yc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2);
+												loc->yc2 += dragY;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y2);
+											}
+											
+										}
+										else if ( selFlags & LOC_SEL_SOUTH )
+										{
+											if ( loc->yc1 <= loc->yc2 ) // Standard yc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2);
+												loc->yc2 += dragY;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y2);
+											}
+											else // Inverted yc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1);
+												loc->yc1 += dragY;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y1);
+											}
+										}
+	
+										if ( selFlags & LOC_SEL_WEST )
+										{
+											if ( loc->xc1 <= loc->xc2 ) // Standard xc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1);
+												loc->xc1 += dragX;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X1);
+											}
+											else // Inverted xc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2);
+												loc->xc2 += dragX;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X2);
+											}
+										}
+										else if ( selFlags & LOC_SEL_EAST )
+										{
+											if ( loc->xc1 <= loc->xc2 ) // Standard xc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2);
+												loc->xc2 += dragX;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X2);
+											}
+											else // Inverted xc
+											{
+												undos().addUndoLocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1);
+												loc->xc1 += dragX;
+												SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X1);
+											}
+										}
+									}
+									undos().startNext(0);
+									Redraw(false);
+									if ( chkd.locationWindow.getHandle() != NULL )
+										SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+								}
+							}
+						}
+						else // attempt to select location, if you aren't resizing
+						{
+							sel.selectLocation(sel.getStartDrag().x, sel.getStartDrag().y, this, !LockAnywhere());
+							if ( chkd.locationWindow.getHandle() != NULL )
+								SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+	
+							Redraw(false);
+						}
+						sel.setLocationFlags(LOC_SEL_NOTHING);
+					}
+					else if ( ( layer == LAYER_DOODADS ||
+								layer == LAYER_UNITS ||
+								layer == LAYER_SPRITES ) )
+					{
+						sel.setEndDrag(endPoint.x, endPoint.y);
+						sel.sortDragPoints();
+	
+						if ( layer == LAYER_UNITS )
+						{
+							if ( wParam != MK_CONTROL )
+								// Remove selected units
+							{
+								if ( chkd.unitWindow.getHandle() != nullptr )
+								{
+									chkd.unitWindow.SetChangeHighlightOnly(true);
+									UnitNode* curr = sel.getFirstUnit();
+									HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+									while ( curr != nullptr )
+									{
+										LVFINDINFO findInfo = { };
+										findInfo.flags = LVFI_PARAM;
+										findInfo.lParam = curr->index;
+												
+										int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
+										ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED|LVIS_SELECTED);
+										curr = curr->next;
+									}
+									chkd.unitWindow.SetChangeHighlightOnly(false);
+								}
+								sel.removeUnits();
+								SendMessage(chkd.unitWindow.getHandle(), UPDATE_ENABLED_STATE, NULL, NULL);
+							}
+		
+							u16 numUnits = this->numUnits();
+							for ( int i=0; i<numUnits; i++ )
+							{
+								int unitLeft = 0, unitRight	 = 0,
+									unitTop	 = 0, unitBottom = 0;
+	
+								ChkUnit* unit;
+								if ( getUnit(unit, i) )
+								{
+									if ( unit->id < 228 )
+									{
+										unitLeft   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft;
+										unitRight  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight;
+										unitTop	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp;
+										unitBottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
+									}
+									else
+									{
+										unitLeft   = unit->xc - chkd.scData.units.UnitDat(0)->UnitSizeLeft;
+										unitRight  = unit->xc + chkd.scData.units.UnitDat(0)->UnitSizeRight;
+										unitTop	   = unit->yc - chkd.scData.units.UnitDat(0)->UnitSizeUp;
+										unitBottom = unit->yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
+									}
+	
+									if (	sel.getStartDrag().x <= unitRight  && sel.getEndDrag().x >= unitLeft
+										 && sel.getStartDrag().y <= unitBottom && sel.getEndDrag().y >= unitTop )
+									{
+										bool wasSelected = sel.unitIsSelected(i);
+										if ( wasSelected )
+											sel.removeUnit(i);
+										else
+											sel.addUnit(i);
+		
+										if ( chkd.unitWindow.getHandle() != nullptr )
+										{
+											HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+											LVFINDINFO findInfo = { };
+											findInfo.flags = LVFI_PARAM;
+											findInfo.lParam = i;
+		
+											int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
+											if ( wasSelected )
+											{
+												chkd.unitWindow.SetChangeHighlightOnly(true);
+												ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED|LVIS_SELECTED);
+												chkd.unitWindow.SetChangeHighlightOnly(false);
+											}
+											else
+											{
+												chkd.unitWindow.SetChangeHighlightOnly(true);
+												ListView_SetItemState(hUnitTree, lvIndex, LVIS_FOCUSED|LVIS_SELECTED, LVIS_FOCUSED|LVIS_SELECTED);
+												chkd.unitWindow.SetChangeHighlightOnly(false);
+											}
+										}
+										SendMessage(chkd.unitWindow.getHandle(), UPDATE_ENABLED_STATE, NULL, NULL);
+									}
+								}
+							}
+							Redraw(true);
+						}
+					}
+					sel.setStartDrag(-1, -1);
+					sel.setEndDrag(-1, -1);
+					setDragging(false);
+		
+					RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+				}
+				if ( !chkd.maps.clipboard.isPasting() )
+					ClipCursor(NULL);
+				else
+					nextUndo();
+			}
+			break;
+	}
+
+	return 0;
 }

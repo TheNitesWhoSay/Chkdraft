@@ -1,8 +1,5 @@
 #include "ChkdPlugins.h"
-#include "Maps.h"
-#include "TextTrig.h"
-extern MAPS maps;
-extern HWND hMain;
+#include "Chkdraft.h"
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -20,7 +17,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 				if ( copyID >= PLUGIN_MSG_START && copyID <= PLUGIN_MSG_END )
 				{
-					GuiMap* map = maps.GetMap(mapID);
+					GuiMap* map = chkd.maps.GetMap(mapID);
 					if ( map != nullptr )
 					{
 						switch ( copyID )
@@ -87,21 +84,21 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case SAVE_MAP:
 			{
-				GuiMap* map = maps.GetMap((u16)wParam);
+				GuiMap* map = chkd.maps.GetMap((u16)wParam);
 				if ( map != nullptr )
 				{
 					if ( map->SaveFile(false) )
-						return maps.GetMapID(map);
+						return chkd.maps.GetMapID(map);
 				}
 			}
 			break;
 
 		case COPY_CHK_FILE:
 			{
-				GuiMap* map = maps.GetMap((u16)lParam);
+				GuiMap* map = chkd.maps.GetMap((u16)lParam);
 				if ( map != nullptr )
 				{
-					u16 mapID = maps.GetMapID(map);
+					u16 mapID = chkd.maps.GetMapID(map);
 					COPYDATASTRUCT copyData;
 					copyData.dwData = (ULONG_PTR)MAKELONG(COPY_CHK_FILE, mapID);
 					void* chkFile;

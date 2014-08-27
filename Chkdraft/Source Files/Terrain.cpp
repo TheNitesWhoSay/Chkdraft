@@ -1,147 +1,29 @@
 #include "Terrain.h"
-#include "Common Files/CommonFiles.h"
-#include "Data.h"
-#include "Graphics.h"
-#include "Maps.h"
-#include "GuiAccel.h"
-#include <cstdio>
-#include <iostream>
-using namespace std;
-
-extern Tiles tiles;
-extern MAPS maps;
-extern HWND hTilePal;
-extern HWND hMain;
-
-BOOL CALLBACK SetTileProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch ( msg )
-	{
-		case WM_INITDIALOG:
-			{
-				HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TILEVALUE);
-				SendMessage(hEdit, EM_SETLIMITTEXT, 10, 0);
-				SendMessage(hWnd, WM_COMMAND, TILE_UPDATE, NULL);
-				PostMessage(hWnd, WM_NEXTDLGCTL, (WPARAM)hEdit, true);
-				return true;
-			}
-			break;
-
-		case WM_COMMAND:
-			{
-				switch ( HIWORD(wParam) )
-				{
-					case EN_UPDATE:
-						RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
-						break;
-				}
-				switch ( LOWORD(wParam) )
-				{
-					case IDOK:
-						{
-							TCHAR lpszTile[11];
-							int TextLength = (WORD) SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0);
-							*((LPWORD)lpszTile) = TextLength;
-							SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);	
-							lpszTile[TextLength] = NULL;
-	
-							u16 tile = atoi(lpszTile);
-							if ( tile > 65535 )
-								tile %= 65536;
-							
-							TileNode* headTile = maps.curr->selections().getFirstTile();
-							headTile->value = tile;
-							maps.curr->SetTile(headTile->xc, headTile->yc, tile);
-							maps.curr->nextUndo();
-							EndDialog(hWnd, IDOK);
-							break;
-						}
-
-					case TILE_UPDATE:
-						{
-							char title[256];
-							TileNode* headTile = maps.curr->selections().getFirstTile();
-							sprintf_s(title, 256, "Tile Properties (%d, %d)", headTile->xc, headTile->yc);
-							SetWindowText(hWnd, title);
-
-							HWND hEditTile = GetDlgItem(hWnd, IDC_EDIT_TILEVALUE);
-							u16 currTile = headTile->value;
-							char tileValue[32];
-							_itoa_s(currTile, tileValue, 10);
-							SetWindowText(hEditTile, tileValue);
-						}
-						break;
-
-					case IDCANCEL:
-						EndDialog(hWnd, IDCANCEL);
-						break;
-				}
-			}
-			break;
-
-		case WM_PAINT:
-			{
-				RECT rect;
-				GetClientRect(hWnd, &rect);
-				int width = 32,
-					height = 32;
-				PAINTSTRUCT ps;
-				HDC hDC = BeginPaint(hWnd, &ps),
-					MemhDC = CreateCompatibleDC(hDC);
-				HBITMAP Membitmap = CreateCompatibleBitmap(hDC, width, height);
-				SelectObject(MemhDC, Membitmap);
-
-				TCHAR lpszTile[11];
-				int TextLength = WORD(SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0));
-				*((LPWORD)lpszTile) = TextLength;
-				SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);	
-				lpszTile[TextLength] = NULL;
-
-				u16 tile = atoi(lpszTile), tileset;
-				
-				maps.curr->ERA().get<u16>(tileset, 0);
-				TileSet* tiles = &scData.tilesets.set[tileset];
-
-				HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));
-				FillRect(MemhDC, &rect, brush);
-				DeleteObject(brush);
-
-				BITMAPINFO bmi = GetBMI(32, 32);
-				DrawTile(MemhDC, tiles, 0, 0, tile, bmi, 0, 0, 0);
-				BitBlt(hDC, 55, 50, width, height, MemhDC, 0, 0, SRCCOPY);
-
-				BITMAPINFO bmiMini = GetBMI(8, 8);
-				for ( int yMiniTile=0; yMiniTile<4; yMiniTile++ )
-				{
-					for ( int xMiniTile=0; xMiniTile<4; xMiniTile++ )
-						DrawMiniTileElevation(hDC, tiles, 350+xMiniTile*9, 50+yMiniTile*9, tile, xMiniTile, yMiniTile, bmiMini);
-				}
-				
-				DeleteObject(Membitmap);
-				DeleteDC    (MemhDC);
-				DeleteDC    (hDC);
-			}
-			break;
-
-		case WM_DESTROY:
-			EndDialog(hWnd, IDCANCEL);
-			break;
-
-		default:
-			return false;
-			break;
-	}
-	return 0;
-}
+#include "Chkdraft.h"
 
 #define START_TILES_YC 0
 #define NUM_TILES 26640
 #define TILES_PER_ROW 16
 #define PIXELS_PER_TILE 33
 #define PIXELS_PER_WHEEL 32
-u32 tilesetIndexedYC(0);
 
-void DoScroll(HWND hWnd)
+TerrainPaletteWindow::TerrainPaletteWindow() : tilesetIndexedYC(0)
+{
+
+}
+
+bool TerrainPaletteWindow::CreateThis(HWND hParent)
+{
+	return getHandle() == NULL &&
+		   ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_INDEXED_TILESET), hParent);
+}
+
+bool TerrainPaletteWindow::DestroyThis()
+{
+	return ClassWindow::DestroyDialog();
+}
+
+void TerrainPaletteWindow::DoScroll(HWND hWnd)
 {
 	RECT rect;
 	GetClientRect(hWnd, &rect);
@@ -158,7 +40,7 @@ void DoScroll(HWND hWnd)
 	SetScrollInfo(hWnd, SB_VERT, &scrollbars, TRUE);
 }
 
-BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
@@ -180,9 +62,9 @@ BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 					
 					u16 tileNum = yTileCoord*TILES_PER_ROW + xTileCoord;
 
-					maps.clipboard.endPasting();
-					maps.clipboard.addQuickTile(tileNum, -16, -16);
-					maps.startPaste(true);
+					chkd.maps.clipboard.endPasting();
+					chkd.maps.clipboard.addQuickTile(tileNum, -16, -16);
+					chkd.maps.startPaste(true);
 
 					RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
 				}
@@ -281,7 +163,7 @@ BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 		case WM_PAINT:
 			{
-				if ( maps.curr != nullptr )
+				if ( chkd.maps.curr != nullptr )
 				{
 					RECT rect;
 					GetClientRect(hWnd, &rect);
@@ -300,16 +182,16 @@ BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 					BITMAPINFO bmi = GetBMI(32, 32);
 
 					u16 tileset;
-					maps.curr->ERA().get<u16>(tileset, 0);
-					TileSet* tiles = &scData.tilesets.set[tileset];
+					chkd.maps.curr->ERA().get<u16>(tileset, 0);
+					TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 					u16 tileValue = u16(tilesetIndexedYC/PIXELS_PER_TILE*TILES_PER_ROW);
 					int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
 					int numRows = height/PIXELS_PER_TILE+2;
-					bool tileHighlighted = maps.clipboard.hasQuickTiles();
+					bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
 					u16 numHighlighted = 0;
 					if ( tileHighlighted )
-						numHighlighted = maps.clipboard.getFirstTile()->value;
+						numHighlighted = chkd.maps.clipboard.getFirstTile()->value;
 
 					for ( s32 row = 0; row < numRows; row++ )
 					{
@@ -336,11 +218,11 @@ BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 							}
 							else
 							{
-								if ( maps.curr->DisplayingElevations() )
+								if ( chkd.maps.curr->DisplayingElevations() )
 									DrawTileElevation(MemhDC, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE-yOffset), tileValue, bmi);
 								else
 									DrawTile(MemhDC, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE-yOffset), tileValue, bmi, 0, 0, 0);
-								if ( maps.curr->DisplayingTileNums() )
+								if ( chkd.maps.curr->DisplayingTileNums() )
 								{
 									HFONT NumFont = CreateFont(14, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
 									SelectObject(MemhDC, NumFont);
@@ -405,13 +287,11 @@ BOOL CALLBACK TerrainPaletteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 			break;
 
 		case WM_CLOSE:
-			hTilePal = nullptr;
-			EndDialog(hWnd, IDCANCEL);
+			ClassWindow::DestroyDialog();
 			break;
 
 		case WM_DESTROY:
-			hTilePal = nullptr;
-			EndDialog(hWnd, IDCANCEL);
+			ClassWindow::DestroyDialog();
 			break;
 
 		default:

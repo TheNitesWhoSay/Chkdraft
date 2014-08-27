@@ -21,6 +21,8 @@
 #define TREE_TYPE_DOODAD		(0x60000000)
 
 void LockCursor(HWND hWnd);
+void TrackMouse(HWND hWnd, DWORD hoverTime);
+void EdgeDrag(HWND hWnd, LPARAM lParam, u8 layer, SELECTIONS& sel, GuiMap* map);
 
 /** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string
 	Returns true and modifies str if successful, str not modified otherwise */
@@ -72,19 +74,9 @@ extern TV_INSERTSTRUCT doodads;
 
 extern TreeView DefaultTree;
 
-TV_INSERTSTRUCT InsertUnits(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char** items, int amount);
-
-HTREEITEM InsertUnitGrouping(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, HTREEITEM LastGroup);
-
-TV_INSERTSTRUCT InsertChild(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText);
+TV_INSERTSTRUCT InsertChild(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam);
 
 TV_INSERTSTRUCT InsertParent(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam);
-
-void BuildLocationTree(GuiMap* map);
-
-void BuildMainTree(HWND hWnd);
-
-void UpdateTreeItemText(HWND hWnd, int UnitID);
 
 void changeDisplayName(HWND hWnd, int UnitID, const char* name);
 

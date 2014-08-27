@@ -130,7 +130,6 @@ class buffer
 	0: "could not create a temporary buffer - you may have ran out of memory.",
 	1: "could not initialize buffer - you may have ran out of memory."
 */
-
 class BadResize : public std::bad_alloc
 {
 	public:

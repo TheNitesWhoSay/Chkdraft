@@ -13,23 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Classes">
-      <UniqueIdentifier>{21d241a0-8444-40ac-8cbf-252185022492}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Classes">
-      <UniqueIdentifier>{638ac4fc-c7fe-4ceb-a9b2-6bdeec540974}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Common Files">
       <UniqueIdentifier>{0f51c2aa-c14c-4969-b354-b04b84db1dd0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Layers">
-      <UniqueIdentifier>{1eaf69b8-0244-4800-8dd9-5c8c579ca8d8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Layers">
-      <UniqueIdentifier>{0475b817-ea79-42fe-83d7-bd5ab1bab57c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Mapping Core">
-      <UniqueIdentifier>{987f6155-963b-4647-b613-9428cef2d8f9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Mapping Core">
       <UniqueIdentifier>{c859cbc9-f6ce-421a-8c47-564f200275a9}</UniqueIdentifier>
@@ -37,19 +22,79 @@
     <Filter Include="Header Files\Common Files">
       <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Dialog Windows">
+      <UniqueIdentifier>{0475b817-ea79-42fe-83d7-bd5ab1bab57c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Dialog Windows">
+      <UniqueIdentifier>{1eaf69b8-0244-4800-8dd9-5c8c579ca8d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows UI">
+      <UniqueIdentifier>{72056900-c91c-41a8-a54d-fb6db9958e1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows UI">
+      <UniqueIdentifier>{05cdf24d-a653-4c2a-a71a-fc349d252cfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows UI\Controls">
+      <UniqueIdentifier>{92b2d494-6d61-4be6-9ece-adfb614fe7a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows UI\Controls">
+      <UniqueIdentifier>{a9f99699-244c-4479-9ab2-48721a42b10d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows UI\Windows">
+      <UniqueIdentifier>{a6a13515-7be3-4104-89f0-1abeb83146d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows UI\Windows">
+      <UniqueIdentifier>{eca048c5-0da9-4ff2-b772-01b58c5d6cd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dialog Windows\Map Settings">
+      <UniqueIdentifier>{9eb5dbab-57cf-46ba-850a-8618c5cd1791}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Dialog Windows\Map Settings">
+      <UniqueIdentifier>{05f7a68a-263d-4ca5-9e70-aff8e8c7343c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Dialog Windows\Unit Properties">
+      <UniqueIdentifier>{03b7837e-dd35-49d8-aa47-75221e9e0eae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dialog Windows\Unit Properties">
+      <UniqueIdentifier>{266c6283-1689-4304-a543-f19acd88602a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dialog Windows\Map Settings\String Editor">
+      <UniqueIdentifier>{d6ffb37c-3a1d-411c-bfea-14346bfb96e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Dialog Windows\Map Settings\StringEditor">
+      <UniqueIdentifier>{554c8862-7c11-40b3-8b90-b06db39b6230}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Main Windows">
+      <UniqueIdentifier>{fa7341d2-929e-4b1f-b4e7-194804cfd586}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Main Windows">
+      <UniqueIdentifier>{a8ad0542-6291-4454-b634-f191c0d848b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows UI\Menus">
+      <UniqueIdentifier>{cc594dd6-9193-4b60-8cd2-49b2c85e2f2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows UI\Menus">
+      <UniqueIdentifier>{13d408ff-e41d-46ac-af3f-fa9b8086268c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping Core">
+      <UniqueIdentifier>{987f6155-963b-4647-b613-9428cef2d8f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping">
+      <UniqueIdentifier>{21d241a0-8444-40ac-8cbf-252185022492}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping">
+      <UniqueIdentifier>{638ac4fc-c7fe-4ceb-a9b2-6bdeec540974}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Clipboard.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Terrain.h">
-      <Filter>Header Files\Layers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Unit.h">
-      <Filter>Header Files\Layers</Filter>
+      <Filter>Header Files\Dialog Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Undo.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\Buffer.h">
       <Filter>Header Files\Mapping Core</Filter>
@@ -67,7 +112,7 @@
       <Filter>Header Files\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\GuiMap.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Common Files\Constants.h">
       <Filter>Header Files\Common Files</Filter>
@@ -88,10 +133,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Selections.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Maps.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\MapFile.h">
       <Filter>Header Files\Mapping Core</Filter>
@@ -106,39 +151,150 @@
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Location.h">
-      <Filter>Header Files\Layers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MapSettings.h">
-      <Filter>Header Files\Layers</Filter>
+      <Filter>Header Files\Dialog Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\ChkdPlugins.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Data.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Graphics.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Mapping</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\PreservedUnitStats.h">
+      <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitMoveTo.h">
+      <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TileProp.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\WindowsUI.h">
+      <Filter>Header Files\Windows UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\ClassWindow.h">
+      <Filter>Header Files\Windows UI\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\ButtonControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\CheckBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\DragListControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\DropdownControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\EditControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\GroupBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\ListBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\TextControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\ToolbarControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\TreeViewControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\WindowControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\DataTypes.h">
+      <Filter>Header Files\Windows UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MapSettings.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Unit.h">
+      <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MapProperties.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Forces.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitSettings.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UpgradeSettings.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TechSettings.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\WavEditor.h">
+      <Filter>Header Files\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\StringEditor.h">
+      <Filter>Header Files\Dialog Windows\Map Settings\StringEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\StringGuide.h">
+      <Filter>Header Files\Dialog Windows\Map Settings\StringEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\StringPreview.h">
+      <Filter>Header Files\Dialog Windows\Map Settings\StringEditor</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\TextTrig.h">
-      <Filter>Header Files\Classes</Filter>
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainTree.h">
+      <Filter>Header Files\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MiniMap.h">
+      <Filter>Header Files\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LeftBar.h">
+      <Filter>Header Files\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainPlot.h">
+      <Filter>Header Files\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\NewMap.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\WindowMenu.h">
+      <Filter>Header Files\Windows UI\Menus</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\MdiFrame.h">
+      <Filter>Header Files\Windows UI\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\StatusControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainToolbar.h">
+      <Filter>Header Files\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\DialogWindows.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Common Files\Structs.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Chkdraft.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
-      <Filter>Source Files\Classes</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Chkdraft.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Terrain.cpp">
-      <Filter>Source Files\Layers</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Unit.cpp">
-      <Filter>Source Files\Layers</Filter>
+      <Filter>Source Files\Dialog Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Undo.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
       <Filter>Source Files\Mapping Core</Filter>
@@ -156,7 +312,7 @@
       <Filter>Source Files\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\GuiMap.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Common Files\Constants.cpp">
       <Filter>Source Files\Common Files</Filter>
@@ -171,10 +327,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Maps.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Selections.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp">
       <Filter>Source Files\Mapping Core</Filter>
@@ -183,22 +339,133 @@
       <Filter>Source Files\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Location.cpp">
-      <Filter>Source Files\Layers</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MapSettings.cpp">
-      <Filter>Source Files\Layers</Filter>
+      <Filter>Source Files\Dialog Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\ChkdPlugins.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Data.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Graphics.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Mapping</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\PreservedUnitStats.cpp">
+      <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitMoveTo.cpp">
+      <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TileProp.cpp">
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\ClassWindow.cpp">
+      <Filter>Source Files\Windows UI\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\ButtonControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\CheckBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\DragListControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\DropdownControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\EditControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\GroupBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\ListBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\TextControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\ToolbarControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\TreeViewControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\WindowControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Unit.cpp">
+      <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MapSettings.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MapProperties.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Forces.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitSettings.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UpgradeSettings.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TechSettings.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\WavEditor.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\StringEditor.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings\String Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\StringGuide.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings\String Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\StringPreview.cpp">
+      <Filter>Source Files\Dialog Windows\Map Settings\String Editor</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\TextTrig.cpp">
-      <Filter>Source Files\Classes</Filter>
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainTree.cpp">
+      <Filter>Source Files\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MiniMap.cpp">
+      <Filter>Source Files\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LeftBar.cpp">
+      <Filter>Source Files\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainPlot.cpp">
+      <Filter>Source Files\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\NewMap.cpp">
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\WindowMenu.cpp">
+      <Filter>Source Files\Windows UI\Menus</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\MdiFrame.cpp">
+      <Filter>Source Files\Windows UI\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\StatusControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainToolbar.cpp">
+      <Filter>Source Files\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Common Files\Structs.cpp">
+      <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Chkdraft.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
