@@ -1706,7 +1706,7 @@ bool Scenario::setPlayerForce(u8 player, u8 newForce)
 bool Scenario::setForceAllied(u8 forceNum, bool allied)
 {
 	if ( forceNum < 4 )
-		return FORC().setBit(16+forceNum, BIT_1, allied);
+		return FORC().setBit(16+forceNum, 1, allied);
 	else
 		return false;
 }
@@ -1714,7 +1714,7 @@ bool Scenario::setForceAllied(u8 forceNum, bool allied)
 bool Scenario::setForceVision(u8 forceNum, bool sharedVision)
 {
 	if ( forceNum < 4 )
-		return FORC().setBit(16+forceNum, BIT_3, sharedVision);
+		return FORC().setBit(16+forceNum, 3, sharedVision);
 	else
 		return false;
 }
@@ -1722,7 +1722,7 @@ bool Scenario::setForceVision(u8 forceNum, bool sharedVision)
 bool Scenario::setForceRandom(u8 forceNum, bool randomStartLocs)
 {
 	if ( forceNum < 4 )
-		return FORC().setBit(16+forceNum, BIT_0, randomStartLocs);
+		return FORC().setBit(16+forceNum, 0, randomStartLocs);
 	else
 		return false;
 }
@@ -1730,9 +1730,22 @@ bool Scenario::setForceRandom(u8 forceNum, bool randomStartLocs)
 bool Scenario::setForceAv(u8 forceNum, bool alliedVictory)
 {
 	if ( forceNum < 4 )
-		return FORC().setBit(16+forceNum, BIT_2, alliedVictory);
+		return FORC().setBit(16+forceNum, 2, alliedVictory);
 	else
 		return false;
+}
+
+bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
+{
+	bool setExp = false, setNormal = false;
+	u8 newValue = 0;
+	if ( useDefaults )
+		newValue = 1;
+
+	setExp = TECx().replace<u8>((u32)techNum, newValue);
+	setNormal = TECS().replace<u8>((u32)techNum, newValue);
+	
+	return (isExpansion() && setExp) || (!isExpansion() && setNormal);
 }
 
 bool Scenario::ParseBuffer(buffer &chk)

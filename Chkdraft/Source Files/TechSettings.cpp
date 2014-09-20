@@ -1,5 +1,10 @@
 #include "TechSettings.h"
-#include "GuiAccel.h"
+#include "Chkdraft.h"
+
+TechSettingsWindow::TechSettingsWindow() : selectedTech(0)
+{
+
+}
 
 bool TechSettingsWindow::CreateThis(HWND hParent)
 {
@@ -17,6 +22,38 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 {
 	switch ( msg )
 	{
+		case WM_COMMAND:
+			switch ( HIWORD(wParam) )
+			{
+				case BN_CLICKED:
+					switch ( LOWORD(wParam) )
+					{
+						case ID_CHECK_DEFAULTTECHCOSTS:
+							{
+								LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+								if ( selectedTech != -1 )
+								{
+									if ( state == BST_CHECKED )
+									{
+										DisableTechCosts();
+										chkd.maps.curr->setTechUseDefaults((u8)selectedTech, true);
+									}
+									else
+									{
+										EnableTechCosts();
+										chkd.maps.curr->setTechUseDefaults((u8)selectedTech, false);
+									}
+
+									chkd.maps.curr->notifyChange(false);
+								}
+							}
+							break;
+					}
+					break;
+				
+			}
+			break;
+
 		case REFRESH_WINDOW:
 			break;
 
@@ -61,5 +98,69 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 
 		checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str().c_str(), ID_CHECK_P1TECHDEFAULT);
 		dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, ID_DROP_P1TECHSETTINGS, 3, playerTechSettings, defaultFont);
+	}
+
+	//DisableTechEditing();
+}
+
+void TechSettingsWindow::DisableTechCosts()
+{
+	groupTechCosts.DisableThis();
+	textMineralCosts.DisableThis();
+	editMineralCosts.DisableThis();
+	textGasCosts.DisableThis();
+	editGasCosts.DisableThis();
+	textTimeCosts.DisableThis();
+	editTimeCosts.DisableThis();
+	textEnergyCosts.DisableThis();
+	editEnergyCosts.DisableThis();
+}
+
+void TechSettingsWindow::EnableTechCosts()
+{
+	groupTechCosts.EnableThis();
+	textMineralCosts.EnableThis();
+	editMineralCosts.EnableThis();
+	textGasCosts.EnableThis();
+	editGasCosts.EnableThis();
+	textTimeCosts.EnableThis();
+	editTimeCosts.EnableThis();
+	textEnergyCosts.EnableThis();
+	editEnergyCosts.EnableThis();
+}
+
+void TechSettingsWindow::DisableTechEditing()
+{
+	checkUseDefaultCosts.DisableThis();
+	DisableTechCosts();
+
+	groupDefaultPlayerSettings.DisableThis();
+	radioDisabledByDefault.DisableThis();
+	radioEnabledByDefault.DisableThis();
+	radioResearchedByDefault.DisableThis();
+
+	groupPlayerSettings.DisableThis();
+	for ( int i=0; i<12; i++ )
+	{
+		checkUsePlayerDefaults[i].DisableThis();
+		dropPlayerTechSettings[i].DisableThis();
+	}
+}
+
+void TechSettingsWindow::EnableTechEditing()
+{
+	checkUseDefaultCosts.EnableThis();
+	EnableTechCosts();
+
+	groupDefaultPlayerSettings.EnableThis();
+	radioDisabledByDefault.EnableThis();
+	radioEnabledByDefault.EnableThis();
+	radioResearchedByDefault.EnableThis();
+
+	groupPlayerSettings.EnableThis();
+	for ( int i=0; i<12; i++ )
+	{
+		checkUsePlayerDefaults[i].EnableThis();
+		dropPlayerTechSettings[i].EnableThis();
 	}
 }

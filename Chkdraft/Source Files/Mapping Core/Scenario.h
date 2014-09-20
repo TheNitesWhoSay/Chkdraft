@@ -135,6 +135,8 @@ class Scenario
 					bool setForceRandom(u8 forceNum, bool randomStartLocs); // Specifies whether a force has randomized start locations
 					bool setForceAv(u8 forceNum, bool alliedVictory); // Specifies whether a force's players have allied victory
 
+					bool setTechUseDefaults(u8 techNum, bool useDefaults); // Specifies whether a tech uses default costs
+
 /*   File IO	*/	bool ParseBuffer(buffer &chk); // Parses supplied scenario file data
 					bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
 					bool CreateNew(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);

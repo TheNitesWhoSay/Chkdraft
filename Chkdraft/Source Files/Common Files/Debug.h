@@ -20,7 +20,7 @@ class CLI
 		~CLI()
 		{
 			fclose(console);
-			FreeConsole(console);
+			FreeConsole();
 		}
 
 	private:

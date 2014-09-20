@@ -33,6 +33,16 @@ bool WindowControl::DestroyThis()
 		return false;
 }
 
+void WindowControl::DisableThis()
+{
+	EnableWindow(controlHandle, FALSE);
+}
+
+void WindowControl::EnableThis()
+{
+	EnableWindow(controlHandle, TRUE);
+}
+
 bool WindowControl::CreateControl( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
 								   int x, int y, int nWidth, int nHeight,
 								   HWND hWndParent, HMENU hMenu, bool redirectProc )

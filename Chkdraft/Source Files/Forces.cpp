@@ -115,7 +115,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				case BN_CLICKED:
 					{
 						GuiMap* map = chkd.maps.curr;
-						LRESULT state = SendMessage(hWnd, BM_GETSTATE, NULL, NULL);
+						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
 						if ( map != nullptr )
 						{
 							switch ( LOWORD(wParam) )
@@ -134,7 +134,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 								case ID_CHECK_F1VISION: case ID_CHECK_F2VISION: case ID_CHECK_F3VISION: case ID_CHECK_F4VISION:
 									{
-										int force = LOWORD(wParam)-ID_CHECK_F1ALLIED;
+										int force = LOWORD(wParam)-ID_CHECK_F1VISION;
 										if ( state == BST_CHECKED )
 											map->setForceVision(force, true);
 										else
@@ -146,7 +146,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 								case ID_CHECK_F1RANDOM: case ID_CHECK_F2RANDOM: case ID_CHECK_F3RANDOM: case ID_CHECK_F4RANDOM:
 									{
-										int force = LOWORD(wParam)-ID_CHECK_F1ALLIED;
+										int force = LOWORD(wParam)-ID_CHECK_F1RANDOM;
 										if ( state == BST_CHECKED )
 											map->setForceRandom(force, true);
 										else
@@ -158,7 +158,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 								case ID_CHECK_F1AV: case ID_CHECK_F2AV: case ID_CHECK_F3AV: case ID_CHECK_F4AV:
 									{
-										int force = LOWORD(wParam)-ID_CHECK_F1ALLIED;
+										int force = LOWORD(wParam)-ID_CHECK_F1AV;
 										if ( state == BST_CHECKED )
 											map->setForceAv(force, true);
 										else
