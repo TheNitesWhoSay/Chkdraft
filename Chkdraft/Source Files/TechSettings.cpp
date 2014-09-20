@@ -8,6 +8,9 @@ TechSettingsWindow::TechSettingsWindow() : selectedTech(0)
 
 bool TechSettingsWindow::CreateThis(HWND hParent)
 {
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TechSettings", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "TechSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_TECHSETTINGS) )
 	{
@@ -100,7 +103,8 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 		dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, ID_DROP_P1TECHSETTINGS, 3, playerTechSettings, defaultFont);
 	}
 
-	//DisableTechEditing();
+	buttonResetTechDefaults.DisableThis();
+	DisableTechEditing();
 }
 
 void TechSettingsWindow::DisableTechCosts()

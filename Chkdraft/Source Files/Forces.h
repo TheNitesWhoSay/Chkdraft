@@ -9,12 +9,13 @@ class ForcesWindow : public ClassWindow
 	public:
 		ForcesWindow();
 		bool CreateThis(HWND hParent);
+		bool DestroyThis();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CheckReplaceForceName(int force);
 
-		UINT WM_DRAGNOTIFY;
+		bool possibleForceNameUpdate[4];
 		u8 playerBeingDragged;
 };
 

@@ -1,13 +1,19 @@
 #include "Forces.h"
 #include "Chkdraft.h"
 
-ForcesWindow::ForcesWindow() : WM_DRAGNOTIFY(WM_NULL), playerBeingDragged(255)
-{
+UINT WM_DRAGNOTIFY(WM_NULL);
 
+ForcesWindow::ForcesWindow() : playerBeingDragged(255)
+{
+	for ( int i=0; i<4; i++ )
+		possibleForceNameUpdate[i] = false;
 }
 
 bool ForcesWindow::CreateThis(HWND hParent)
 {
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_FORCES) )
 	{
@@ -39,11 +45,20 @@ bool ForcesWindow::CreateThis(HWND hParent)
 				CreateCheckBox(hForces, 125+293*x, 252+239*y, 150, 20, av, "Enable Allied Victory", ID_CHECK_F1AV+force);
 			}
 		}
-		WM_DRAGNOTIFY = RegisterWindowMessage(DRAGLISTMSGSTRING);
+
+		if ( WM_DRAGNOTIFY == WM_NULL )
+			WM_DRAGNOTIFY = RegisterWindowMessage(DRAGLISTMSGSTRING);
+
 		return true;
 	}
 	else
 		return false;
+}
+
+bool ForcesWindow::DestroyThis()
+{
+	playerBeingDragged = 255;
+	return true;
 }
 
 LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -172,8 +187,13 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					}
 					break;
 
+				case EN_CHANGE:
+					if ( LOWORD(wParam) >= ID_EDIT_F1NAME && LOWORD(wParam) <= ID_EDIT_F4NAME )
+						possibleForceNameUpdate[LOWORD(wParam)-ID_EDIT_F1NAME] = true;
+					break;
+
 				case EN_KILLFOCUS:
-					if ( LOWORD(wParam) >= ID_EDIT_F1NAME && LOWORD(wParam) <= ID_EDIT_F2NAME )
+					if ( LOWORD(wParam) >= ID_EDIT_F1NAME && LOWORD(wParam) <= ID_EDIT_F4NAME )
 						CheckReplaceForceName(LOWORD(wParam)-ID_EDIT_F1NAME);
 					break;
 			}
@@ -269,7 +289,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ForcesWindow::CheckReplaceForceName(int force)
 {
 	string newMapForce;
-	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_F1NAME+force), newMapForce) )
+	if ( force < 4 && possibleForceNameUpdate[force] == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_F1NAME+force), newMapForce) )
 	{
 		u16* mapForceString;
 		if ( chkd.maps.curr->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
@@ -278,5 +298,6 @@ void ForcesWindow::CheckReplaceForceName(int force)
 		{
 			chkd.maps.curr->notifyChange(false);
 		}
+		possibleForceNameUpdate[force] = false;
 	}
 }

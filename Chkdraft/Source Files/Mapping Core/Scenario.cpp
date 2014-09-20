@@ -952,7 +952,11 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 
 	if ( stringNum != 0 && amountStringUsed(stringNum) == 1 )
 	{
-		return editString<numType>(newString, stringNum, extended, safeReplace);
+		string testEqual;
+		if ( getString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
+			return false;
+		else
+			return editString<numType>(newString, stringNum, extended, safeReplace);
 	}
 	else if ( stringExists(newString, newStringNum, extended) )
 	{
