@@ -22,6 +22,9 @@ class WindowControl
 					/** Attempts to destroy this control and reset the associated data */
 					bool DestroyThis();
 
+					void DisableThis();
+					void EnableThis();
+
 
 	protected:
 

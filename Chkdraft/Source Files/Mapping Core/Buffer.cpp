@@ -497,9 +497,9 @@ bool buffer::setBit(u32 location, u32 bitNum, bool bitValue)
 		if ( location < sizeUsed )
 		{
 			if ( bitValue == true )
-				data[location] |= (char(1) << (bitNum%8)); // OR on the bit
+				data[location] |= (u8(1) << (bitNum%8)); // OR on the bit
 			else
-				data[location] &= (~(char(1) << (bitNum%8))); // AND off the bit
+				data[location] &= (~(u8(1) << (bitNum%8))); // AND off the bit
 
 			return true;
 		}

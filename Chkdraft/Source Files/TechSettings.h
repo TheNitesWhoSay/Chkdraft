@@ -7,11 +7,18 @@
 class TechSettingsWindow : public ClassWindow
 {
 	public:
+		TechSettingsWindow();
 		bool CreateThis(HWND hParent);
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CreateSubWindows(HWND hWnd);
+		void DisableTechCosts();
+		void EnableTechCosts();
+		void DisableTechEditing();
+		void EnableTechEditing();
+
+		s32 selectedTech;
 
 		CheckBoxControl checkUseDefaultCosts;
 		ButtonControl buttonResetTechDefaults;
