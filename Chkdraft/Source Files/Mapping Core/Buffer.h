@@ -57,6 +57,8 @@ class buffer
 					// Replaces the specified portion of the buffer
 					template <typename valueType>
 						bool replace(u32 location, valueType value);
+					template <typename valueType>
+						bool replace(u32 location, valueType value, u32 amount);
 					bool replaceStr(u32 startLocation, const char* chunk, u32 chunkSize);
 					bool replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u32 chunkSize);
 					bool setBit(u32 location, u32 bitNum, bool bitValue);
@@ -109,11 +111,10 @@ class buffer
 
 	private:
 
-/*	   Data	    */  char* data; // The actual data contained by the buffer
-					char bufTitle[5]; // Title of the buffer
-					u32 sizeAllotted; // Size allocated for data
+/*	   Data	    */  u32 sizeAllotted; // Size allocated for data
 					u32 sizeUsed; // Size of data being used
-					const double DEFAULT_SIZE_MULTIPLIER; // +20%
+					s8* data; // The actual data contained by the buffer
+					char bufTitle[5]; // Title of the buffer
 
 /* Priv Methods */  /** Called to increase or decrease buffer size
 						If multiplySize is set, it multiplies the size

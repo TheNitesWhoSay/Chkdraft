@@ -1,9 +1,6 @@
 ﻿#ifndef GUIACCEL_H
 #define GUIACCEL_H
-#include <Windows.h>
-#include <CommCtrl.h>
-#include <string>
-#include "GuiMap.h"
+#include "Common Files/CommonFiles.h"
 
 // Generally for trees...
 //	- LPARAM First 4 bits: defines the item type
@@ -20,13 +17,14 @@
 #define TREE_TYPE_SPRITE		(0x50000000)
 #define TREE_TYPE_DOODAD		(0x60000000)
 
+void ReplaceChildFonts(HWND hWnd, HFONT hFont);
+
 void LockCursor(HWND hWnd);
 void TrackMouse(HWND hWnd, DWORD hoverTime);
-void EdgeDrag(HWND hWnd, LPARAM lParam, u8 layer, SELECTIONS& sel, GuiMap* map);
 
 /** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string
 	Returns true and modifies str if successful, str not modified otherwise */
-bool parseEscapedString(string& str);
+bool parseEscapedString(std::string& str);
 
 // MDI-Map-Window(s) stuff
 
@@ -39,7 +37,7 @@ LPBITMAPINFO GetPalBMI(s32 width, s32 height);
 
 //bool GetEditText(HWND hEdit, char* &dest); // Be sure to delete "dest" if successful
 
-bool GetEditText(HWND hEdit, string& dest);
+bool GetEditText(HWND hEdit, std::string& dest);
 
 template <typename numType>
 	bool GetEditNum(HWND hEdit, numType &dest);

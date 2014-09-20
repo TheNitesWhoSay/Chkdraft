@@ -12,6 +12,8 @@ class ForcesWindow : public ClassWindow
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		void CheckReplaceForceName(int force);
+
 		UINT WM_DRAGNOTIFY;
 		u8 playerBeingDragged;
 };

@@ -149,7 +149,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, IDR_MAIN_TREE) )
 				{
 					SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-					chkd.scData.UpdateDisplayNames(DefaultUnitDisplayName);
+					mainTree.UpdateDisplayNames(DefaultUnitDisplayName);
 					mainTree.BuildMainTree();
 				}
 			}

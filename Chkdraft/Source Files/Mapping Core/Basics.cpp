@@ -1,5 +1,10 @@
 #include "Basics.h"
 
+void IgnoreErr(const char* file, unsigned int line, const char* msg, ...)
+{
+
+}
+
 const char* DefaultUnitDisplayName[233] = 
 {
 	/*  0*/ "Terran Marine",

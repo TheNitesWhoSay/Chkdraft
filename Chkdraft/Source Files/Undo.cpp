@@ -1,6 +1,5 @@
 #include "Undo.h"
-#include "Common Files/CommonFiles.h"
-#include "Chkdraft.h"
+#include "GuiMap.h"
 
 UndoNode::~UndoNode()
 {
@@ -15,7 +14,7 @@ UndoNode::~UndoNode()
 	}
 }
 
-UNDOS::UNDOS() : headUndo(nullptr), lastUndo(nullptr), headRedo(nullptr), upcomingUndo(nullptr), rootTypes(0), mapId(0)
+UNDOS::UNDOS(void* thisMap) : headUndo(nullptr), lastUndo(nullptr), headRedo(nullptr), upcomingUndo(nullptr), rootTypes(0), mapPointer(thisMap)
 {
 	startNext(0);
 }
@@ -55,11 +54,12 @@ bool UNDOS::startNext(u32 type)
 			upcomingUndo = nullptr;
 			
 			// ### An undo has been added at this precise moment, flag changes here
-			if ( (rootTypes&(headUndo->flags&UNDO_TYPE)) == 0 && chkd.ChangesLocked(mapId) == false )
+			GuiMap* map = (GuiMap*)mapPointer;
+			if ( (rootTypes&(headUndo->flags&UNDO_TYPE)) == 0 && map->changesLocked() == false )
 			{
 				rootTypes |= (headUndo->flags&UNDO_TYPE);
 				headUndo->flags |= UNDO_CHANGE_ROOT;
-				SendMessage(chkd.getHandle(), FLAG_UNDOABLE_CHANGE, (WPARAM)mapId, NULL); // Notify that there has been a change
+				map->notifyChange(true); // Notify that there has been a change
 			}
 
 			return startNext(type); // Call again to create a new undo
@@ -216,20 +216,21 @@ void UNDOS::doUndo(u32 type, Scenario* chk, SELECTIONS& sel)
 	if ( currNode != nullptr )
 	{
 		// ### An undo is about to be processed
+		GuiMap* map = (GuiMap*)mapPointer;
 		if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT )
 		{
 			currNode->flags &= (~UNDO_CHANGE_ROOT); // Take off the change root flag
 			rootTypes &= (~(currNode->flags&UNDO_TYPE)); // Take off the root type flags
 			if ( rootTypes == 0 )
-				SendMessage(chkd.getHandle(), UNFLAG_UNDOABLE_CHANGES, mapId, NULL); // Notify that there is no longer a net undoable net change
-			else if ( chkd.ChangesLocked(mapId) ) // Changes have been locked, flush
+				map->changesUndone(); // Notify that there is no longer a net undoable net change
+			else if ( map->changesLocked() ) // Changes have been locked, flush
 				flushRoots();
 		}
-		else if ( !chkd.ChangesLocked(mapId) && (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // No roots of this type
+		else if ( !map->changesLocked() && (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // No roots of this type
 		{
 			rootTypes |= (currNode->flags&UNDO_TYPE);
 			currNode->flags |= UNDO_CHANGE_ROOT;
-			SendMessage(chkd.getHandle(), FLAG_UNDOABLE_CHANGE, (WPARAM)mapId, NULL);
+			map->notifyChange(true);
 		}
 
 		flipNode(currNode->flags, chk, sel, currNode);
@@ -249,20 +250,21 @@ void UNDOS::doRedo(u32 type, Scenario* chk, SELECTIONS& sel)
 		headUndo = currNode;
 
 		// ### A redo has been converted to an undo
-		if ( chkd.ChangesLocked(mapId) == false )
+		GuiMap* map = (GuiMap*)mapPointer;
+		if ( map->changesLocked() == false )
 		{
-			if ( (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // The redo is not a root
+			if ( (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // The redo is not one of the rootTypes
 			{
 				rootTypes |= (currNode->flags&UNDO_TYPE);
 				currNode->flags |= UNDO_CHANGE_ROOT;
-				SendMessage(chkd.getHandle(), FLAG_UNDOABLE_CHANGE, (WPARAM)mapId, NULL); // Notify that there has been a change
+				map->notifyChange(true); // Notify that there has been a change
 			}
-			else // matching root types
+			else if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT ) // Matching root types
 			{
 				currNode->flags &= (~UNDO_CHANGE_ROOT);
 				rootTypes &= (~(currNode->flags&UNDO_TYPE));
 				if ( rootTypes == 0 )
-					SendMessage(chkd.getHandle(), UNFLAG_UNDOABLE_CHANGES, (WPARAM)mapId, NULL);
+					map->changesUndone();
 			}
 		}
 	}
@@ -294,11 +296,6 @@ void UNDOS::flushRoots()
 			curr = curr->next;
 		}
 	}
-}
-
-void UNDOS::setMapId(u16 mapId)
-{
-	this->mapId = mapId;
 }
 
 void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)

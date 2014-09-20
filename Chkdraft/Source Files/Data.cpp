@@ -1,5 +1,4 @@
 #include "Data.h"
-#include "Common Files/CommonFiles.h"
 
 bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
 {
@@ -390,14 +389,6 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 	return false;
 }
 
-void DATA::UpdateDisplayNames(const char** nameList)
-{
-	for ( u16 i=0; i<233; i++ )
-	{
-		UnitDisplayName[i] = nameList[i];
-	}
-}
-
 void DATA::Load()
 {
 	MPQHANDLE hStarDat = nullptr,
@@ -436,7 +427,7 @@ void DATA::Load()
 	CloseArchive(hPatchRt);
 }
 
-bool GetCV5sReferences(TileSet* tiles, u32 &cv5Reference, u16 &TileValue)
+bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 &TileValue)
 {
 	cv5Reference = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
 	/** simplified from:

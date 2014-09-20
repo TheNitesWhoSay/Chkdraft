@@ -677,7 +677,7 @@ void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSe
 
 	u8 yMiniTile,  xMiniTile;
 
-	if ( GetCV5sReferences(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
@@ -890,7 +890,7 @@ void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 widt
 
 	s8 negative; // Simplifies calculating flipped tiles
 
-	if ( GetCV5sReferences(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 		
@@ -943,7 +943,7 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 
 	u8 tileBits[192] = { };
 
-	if ( GetCV5sReferences(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
+	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
@@ -990,7 +990,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 	u8 yMiniTile, xMiniTile,
 	   tileBits[3072] = { };
 
-	if ( GetCV5sReferences(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
+	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
@@ -1051,7 +1051,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 
 	s8 negative; // Simplifies calculating flipped tiles
 
-	if ( GetCV5sReferences(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		u8 tileBits[3072] = { };
 		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
@@ -1465,12 +1465,10 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 	
 			if ( MTXM.get<u16>(TileValue, mtxmReference) )
 			{
-				if( GetCV5sReferences(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
+				if( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
 				{
 					GetMegaTileRef(tiles, MegaTileReference, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-	
 					GetMiniTileRef(tiles, MiniTileRef, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
-
 					PixelReference = ((yc+yOffset)*128+(xc+xOffset))*3;
 
 					wpeRef = tiles->vr4.get<u8>(MiniTileRef+6*8+7)*4; // WPE start point for the given pixel

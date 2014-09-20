@@ -4,6 +4,11 @@
 #include <iostream>
 using namespace std;
 
+#define FORCE_RANDOMIZE_START_LOCATION	BIT_0
+#define FORCE_ALLIED					BIT_1
+#define FORCE_ALLIED_VICTORY			BIT_2
+#define FORCE_SHARED_VISION				BIT_3
+
 section::section(char *title) : buf(title)
 {
 

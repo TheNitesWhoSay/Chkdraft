@@ -16,10 +16,12 @@ class MapSettingsWindow : public ClassWindow
 	public:
 		MapSettingsWindow();
 		bool CreateThis(HWND hParent);
+		bool DestroyThis();
 		void ChangeTab(u32 tabID);
 
 	private:
 		u32 currTab;
+		HWND hTabs;
 		MapPropertiesWindow mapPropertiesWindow;
 		ForcesWindow forcesWindow;
 		UnitSettingsWindow unitSettingsWindow;

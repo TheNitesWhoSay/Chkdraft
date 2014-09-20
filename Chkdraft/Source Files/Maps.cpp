@@ -22,20 +22,25 @@ MAPS::~MAPS()
 
 void MAPS::FocusActive()
 {
-	HWND hFocus = NULL;
-	if ( curr != nullptr )
-		hFocus = curr->getHandle();
-
-	MapNode* currNode = firstMap;
-	while ( currNode != nullptr && currNode->map.getHandle() != hFocus )
-		currNode = currNode->next;
-
-	if ( currNode != nullptr ) // If a corresponding map was found
+	if ( firstMap == nullptr )
+		curr = nullptr;
+	else
 	{
-		curr = &currNode->map; // Sets the current map to the map given by the handle
-		// Need to update location tree, menu checkboxes
-		chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
-		curr->updateMenu();
+		HWND hFocus = NULL;
+		if ( curr != nullptr )
+			hFocus = curr->getHandle();
+
+		MapNode* currNode = firstMap;
+		while ( currNode != nullptr && currNode->map.getHandle() != hFocus )
+			currNode = currNode->next;
+
+		if ( currNode != nullptr ) // If a corresponding map was found
+		{
+			curr = &currNode->map; // Sets the current map to the map given by the handle
+			// Need to update location tree, menu checkboxes
+			chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+			curr->updateMenu();
+		}
 	}
 }
 
@@ -49,7 +54,7 @@ void MAPS::Focus(HWND hFocus)
 	{
 		curr = &currNode->map; // Sets the current map to the map given by the handle
 		// Need to update location tree, menu checkboxes
-		chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+		chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
 		curr->updateMenu();
 	}
 	else
@@ -170,6 +175,7 @@ bool MAPS::OpenMap()
 
 bool MAPS::SaveCurr(bool saveAs)
 {
+	FocusActive();
 	if ( curr->SaveFile(saveAs) )
 	{
 		SetWindowText(curr->getHandle(), curr->FilePath());
@@ -263,7 +269,7 @@ void MAPS::SetGrid(s16 xSize, s16 ySize)
 
 void MAPS::ChangeLayer(u8 newLayer)
 {
-	if ( curr && curr->currLayer() != newLayer )
+	if ( curr != nullptr && curr->currLayer() != newLayer )
 	{
 		curr->selections().removeTiles();
 		curr->currLayer() = newLayer;
@@ -379,35 +385,41 @@ void MAPS::ChangePlayer(u8 newPlayer)
 
 void MAPS::cut()
 {
-	if ( curr->isProtected() )
-		Error("Cannot copy from protected maps!");
-	else
+	if ( curr != nullptr )
 	{
-		clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
-		curr->deleteSelection();
-		curr->nextUndo();
-		if ( clipboard.isPasting() )
+		if ( curr->isProtected() )
+			Error("Cannot copy from protected maps!");
+		else
 		{
-			endPaste();
-			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
+			curr->deleteSelection();
+			curr->nextUndo();
+			if ( clipboard.isPasting() )
+			{
+				endPaste();
+				RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			}
+			ClipCursor(NULL);
 		}
-		ClipCursor(NULL);
 	}
 }
 
 void MAPS::copy()
 {
-	if ( curr->isProtected() )
-		Error("Cannot copy from protected maps!");
-	else
+	if ( this != nullptr )
 	{
-		clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
-		if ( clipboard.isPasting() )
+		if ( curr->isProtected() )
+			Error("Cannot copy from protected maps!");
+		else
 		{
-			endPaste();
-			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
+			if ( clipboard.isPasting() )
+			{
+				endPaste();
+				RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			}
+			ClipCursor(NULL);
 		}
-		ClipCursor(NULL);
 	}
 }
 

@@ -2,8 +2,8 @@
 #define CHKDRAFT_H
 #include "Windows UI/WindowsUI.h"
 #include "Common Files/CommonFiles.h"
-#include "ChkdPlugins.h"
 #include "DialogWindows.h"
+#include "ChkdPlugins.h"
 #include "MainToolbar.h"
 #include "MainPlot.h"
 #include "GuiAccel.h"
@@ -13,6 +13,7 @@
 class Chkdraft : public ClassWindow
 {
 	public:
+					void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */	DATA scData; // Main data
 					MAPS maps; // Main map container
@@ -33,28 +34,38 @@ class Chkdraft : public ClassWindow
 
 /* Constructors */	Chkdraft();
 
-/*   Startup	*/	int Run(LPSTR lpCmdLine);
+/*   Startup	*/	int Run(LPSTR lpCmdLine, int nCmdShow);
 
 /* Quick Access */	bool ChangesLocked(u16 mapId);
 					bool EditFocused();
 
+/*	 UI Accel	*/	void SetCurrDialog(HWND hDialog);
+					void SetEditFocused(bool editFocused);
 
 	protected:
 
 /*	  Setup		*/	bool CreateThis();
 					void ParseCmdLine(LPSTR lpCmdLine);
 
-/*  Preprocess	*/	void DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+/*  Preprocess	*/	bool DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 					void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 	private:
 
-/*	   Data     */	bool dlgHotkey;
+/*	   Data     */	HWND currDialog;
 					bool editFocused;
 
 /* Priv Methods */	LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
+					bool CreateSubWindows();
+					void MinimizeDialogs();
+					void RestoreDialogs();
+					void SizeSubWindows();
+					void UseDragFile(const char* fileName);
+					void OpenMapSettings(u16 menuId);
+					void OpenWebPage(const char* address);
+					void ComboEditChanged(HWND hCombo, u16 comboId);
+					void ComboSelChanged(HWND hCombo, u16 comboId);
 };
 
 /** By signaling that chkd is declared externally here,

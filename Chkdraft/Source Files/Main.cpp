@@ -8,5 +8,5 @@ Chkdraft chkd;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	return chkd.Run(lpCmdLine);
+	return chkd.Run(lpCmdLine, nCmdShow);
 }

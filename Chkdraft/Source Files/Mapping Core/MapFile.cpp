@@ -97,7 +97,7 @@ bool MapFile::SaveFile(bool SaveAs)
 					MRGN().add<u8>(0, 5100-MRGN().size()); // Add space for 255
 			}
 
-			if ( SaveType > 0 && SaveType <= 3 ) // Must be packed into an MPQ
+			if ( (SaveType > 0 && SaveType <= 3) || SaveType == 7 ) // Must be packed into an MPQ
 			{
 				fopen_s(&pFile, filePath, "wb");
 				if ( pFile != nullptr )
@@ -250,7 +250,23 @@ bool MapFile::OpenFile()
 	return false;
 }
 
+bool MapFile::SetPath(const char* newPath)
+{
+	if ( strlen(newPath) < FILENAME_MAX )
+	{
+		strcpy_s(filePath, newPath);
+		return true;
+	}
+	else
+		return false;
+}
+
 const char* MapFile::FilePath()
 {
 	return filePath;
+}
+
+void MapFile::SetSaveType(u8 newSaveType)
+{
+	SaveType = newSaveType;
 }

@@ -16,7 +16,7 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 
 		HWND hStringList = CreateListBox(hStringEditor, 5, 25, 453, 262, ID_LB_STRINGS, true);
 
-		CreateButton(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
+		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
 		CreateCheckBox(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
 		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
 
@@ -230,7 +230,7 @@ bool StringEditorWindow::updateString(HWND hEditString, u32 stringNum)
 			 chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
 		{
 			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )
-				chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+				chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
 			RedrawWindow((HWND)hEditString, NULL, NULL, RDW_INVALIDATE);
 			return true;
 		}

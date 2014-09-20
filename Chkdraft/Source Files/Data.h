@@ -206,6 +206,7 @@ class PCX
 class DATA
 {
 	public:
+
 		Tiles tilesets;
 		Units units;
 		Sprites sprites;
@@ -214,8 +215,6 @@ class DATA
 		PCX tselect;
 		GRP* grps;
 		u16 numGrps;
-		const char* UnitDisplayName[233];
-		void UpdateDisplayNames(const char** nameList);
 
 		UNITDAT*   UnitDat	(u16 id) { return units.UnitDat	   (id); }
 		FLINGYDAT* FlingyDat(u32 id) { return sprites.FlingyDat(id); }
@@ -224,14 +223,14 @@ class DATA
 
 		void Load();
 
+
 	private:
+
 		bool LoadGrps(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
-		bool tilesLoaded;
-		bool unitsLoaded;
 };
 
 
-bool GetCV5sReferences(TileSet* tiles, u32 &cv5Reference, u16 &TileValue);
+bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 &TileValue);
 
 void GetMegaTileRef(TileSet* tiles, u32 &MegaTileReference, u32 &cv5Reference);
 

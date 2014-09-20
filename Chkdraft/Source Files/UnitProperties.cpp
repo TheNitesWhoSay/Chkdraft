@@ -1,4 +1,4 @@
-#include "Unit.h"
+#include "UnitProperties.h"
 #include "UnitMoveTo.h"
 #include "Chkdraft.h"
 
@@ -272,6 +272,12 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
+		case WM_ACTIVATE:
+			if ( LOWORD(wParam) != WA_INACTIVE )
+				chkd.SetCurrDialog(hWnd);
+			return FALSE; // Necessary for proper minimize/restore
+			break;
+
 		case SET_LIST_REDRAW:
 			{
 				HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -450,8 +456,13 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_SHOWWINDOW:
-			if ( wParam == TRUE )
-				SetFocus( GetDlgItem(hWnd, IDC_UNITLIST) );
+			{
+				LRESULT result = DefWindowProc(hWnd, msg, wParam, lParam);
+				if ( wParam == TRUE )
+					SetFocus( GetDlgItem(hWnd, IDC_UNITLIST) );
+
+				return result;
+			}
 			break;
 
 		case WM_COMMAND:
@@ -1056,6 +1067,9 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												}
 											}
 											break;
+										default:
+											return DefDlgProc(hWnd, msg, wParam, lParam);
+											break;
 									}
 								}
 								break;
@@ -1155,8 +1169,8 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		default:
-			return false;
+			return FALSE;
 			break;
 	}
-	return true;
+	return TRUE;
 }
