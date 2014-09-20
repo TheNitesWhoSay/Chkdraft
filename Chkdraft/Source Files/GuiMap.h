@@ -15,7 +15,8 @@ class GuiMap : public MapFile, public ClassWindow
 
 /*  Destructor  */	~GuiMap();
 
-/*	  File IO	*/	bool SaveFile(bool saveAs);
+/*	  File IO	*/	bool CanExit();
+					bool SaveFile(bool saveAs);
 
 /*   Chk Accel  */	// Sets the given tile to the given tileNum
 					bool SetTile(s32 x, s32 y, u16 tileNum);
@@ -177,6 +178,7 @@ class GuiMap : public MapFile, public ClassWindow
 					void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					LRESULT ConfirmWindowClose(HWND hWnd);
 
 };
 

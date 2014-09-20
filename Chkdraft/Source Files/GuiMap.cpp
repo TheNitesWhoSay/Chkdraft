@@ -32,6 +32,19 @@ GuiMap::~GuiMap()
 	DeleteDC(MemMinihDC);
 }
 
+bool GuiMap::CanExit()
+{
+	if ( unsavedChanges )
+	{
+		int result = MessageBox(NULL, "Save Changes?", MapFile::FilePath(), MB_YESNOCANCEL);
+		if ( result == IDYES )
+			SaveFile(false);
+		else if ( result == IDCANCEL )
+			return false;
+	}
+	return true;
+}
+
 bool GuiMap::SaveFile(bool saveAs)
 {
 	if ( MapFile::SaveFile(saveAs) )
@@ -1288,6 +1301,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
 		case WM_VSCROLL: return VerticalScroll(hWnd, msg, wParam, lParam); break;
 		case WM_SIZE: return DoSize(hWnd, wParam, lParam); break;
+		case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
 		case WM_DESTROY: return DestroyWindow(hWnd); break;
 		case WM_RBUTTONUP: RButtonUp(); break;
 		case WM_LBUTTONDBLCLK: LButtonDoubleClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
@@ -1947,4 +1961,12 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 		}
 	}
 	Redraw(true);
+}
+
+LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
+{
+	if ( CanExit() )
+		return DefMDIChildProc(hWnd, WM_CLOSE, NULL, NULL);
+	else
+		return 0;
 }

@@ -1,8 +1,16 @@
 #include "MapProperties.h"
 #include "Chkdraft.h"
 
+MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibleDescriptionUpdate(false)
+{
+
+}
+
 bool MapPropertiesWindow::CreateThis(HWND hParent)
 {
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "MapProperties", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_MAPPROPERTIES) )
 	{
@@ -102,6 +110,8 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 					SetWindowText(GetDlgItem(hWnd, ID_EDIT_MAPTITLE), mapTitle.c_str());
 					SetWindowText(GetDlgItem(hWnd, ID_EDIT_MAPDESCRIPTION), mapDescription.c_str());
+					possibleTitleUpdate = false;
+					possibleDescriptionUpdate = false;
 					SendMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_SETCURSEL, tileset, NULL);
 					PostMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_SETEDITSEL, NULL, (-1, 0));
 					SendMessage(GetDlgItem(hWnd, ID_CB_NEWMAPTERRAIN), CB_SETCURSEL, 0, NULL);
@@ -145,12 +155,16 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				switch ( LOWORD(wParam) )
 				{
 					case ID_EDIT_MAPTITLE:
-						if ( HIWORD(wParam) == EN_KILLFOCUS )
+						if ( HIWORD(wParam) == EN_CHANGE )
+							possibleTitleUpdate = true;
+						else if ( HIWORD(wParam) == EN_KILLFOCUS )
 							CheckReplaceMapTitle();
 						break;
 
 					case ID_EDIT_MAPDESCRIPTION:
-						if ( HIWORD(wParam) == EN_KILLFOCUS )
+						if ( HIWORD(wParam) == EN_CHANGE )
+							possibleDescriptionUpdate = true;
+						else if ( HIWORD(wParam) == EN_KILLFOCUS )
 							CheckReplaceMapDescription();
 						break;
 
@@ -278,7 +292,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
 	string newMapTitle;
-	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPTITLE), newMapTitle) )
+	if ( possibleTitleUpdate == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPTITLE), newMapTitle) )
 	{
 		u16* mapTitleString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
@@ -287,13 +301,14 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 		{
 			chkd.maps.curr->notifyChange(false);
 		}
+		possibleTitleUpdate = false;
 	}
 }
 
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
 	string newMapDescription;
-	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPDESCRIPTION), newMapDescription) )
+	if ( possibleDescriptionUpdate == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPDESCRIPTION), newMapDescription) )
 	{
 		u16* mapDescriptionString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
@@ -302,5 +317,6 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
 		{
 			chkd.maps.curr->notifyChange(false);
 		}
+		possibleDescriptionUpdate = false;
 	}
 }

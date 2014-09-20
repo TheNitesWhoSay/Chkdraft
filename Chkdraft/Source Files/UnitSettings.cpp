@@ -2,6 +2,9 @@
 
 bool UnitSettingsWindow::CreateThis(HWND hParent)
 {
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "UnitSettings", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "UnitSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_UNITSETTINGS) )
 	{
@@ -10,6 +13,11 @@ bool UnitSettingsWindow::CreateThis(HWND hParent)
 	}
 	else
 		return false;
+}
+
+bool UnitSettingsWindow::DestroyThis()
+{
+	return true;
 }
 
 LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

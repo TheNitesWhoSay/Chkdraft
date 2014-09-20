@@ -8,6 +8,7 @@ class UnitSettingsWindow : public ClassWindow
 {
 	public:
 		bool CreateThis(HWND hParent);
+		bool DestroyThis();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

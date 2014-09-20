@@ -13,7 +13,10 @@ bool MapSettingsWindow::CreateThis(HWND hParent)
 
 bool MapSettingsWindow::DestroyThis()
 {
-	return ClassWindow::DestroyDialog();
+	currTab = 0;
+	hTabs = NULL;
+	ClassWindow::DestroyDialog();
+	return true;
 }
 
 void MapSettingsWindow::ChangeTab(u32 tabID)

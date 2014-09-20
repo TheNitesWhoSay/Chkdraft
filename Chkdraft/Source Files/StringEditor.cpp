@@ -8,6 +8,9 @@ StringEditorWindow::StringEditorWindow() : currSelString(0)
 
 bool StringEditorWindow::CreateThis(HWND hParent)
 {
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "StringEditor", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_STRINGEDITOR) )
 	{
