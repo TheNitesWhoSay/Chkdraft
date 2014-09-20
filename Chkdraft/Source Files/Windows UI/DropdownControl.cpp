@@ -2,18 +2,18 @@
 
 bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, u32 id, int numItems, const char** items, HFONT font)
 {
-	DWORD style = CBS_DROPDOWN|WS_CHILD|WS_VSCROLL|CBS_AUTOHSCROLL|CBS_HASSTRINGS;
+	DWORD style = CBS_DROPDOWN|WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_AUTOHSCROLL|CBS_HASSTRINGS;
 
 	if ( editable )
 		style |= CBS_DROPDOWN;
 	else
 		style |= CBS_SIMPLE;
 
-	if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false) )
+	if ( WindowControl::CreateControl(0, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false) )
 	{
 		HWND hWnd = getHandle();
 		SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
-		for ( int i=0; i<8; i++ )
+		for ( int i=0; i<numItems; i++ )
 			SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)items[i]);
 		return true;
 	}

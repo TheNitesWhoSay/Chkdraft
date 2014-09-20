@@ -16,9 +16,6 @@
     <Filter Include="Source Files\Common Files">
       <UniqueIdentifier>{0f51c2aa-c14c-4969-b354-b04b84db1dd0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping Core">
-      <UniqueIdentifier>{c859cbc9-f6ce-421a-8c47-564f200275a9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Common Files">
       <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
     </Filter>
@@ -76,40 +73,46 @@
     <Filter Include="Header Files\Windows UI\Menus">
       <UniqueIdentifier>{13d408ff-e41d-46ac-af3f-fa9b8086268c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Mapping Core">
-      <UniqueIdentifier>{987f6155-963b-4647-b613-9428cef2d8f9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Mapping">
       <UniqueIdentifier>{21d241a0-8444-40ac-8cbf-252185022492}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Mapping">
       <UniqueIdentifier>{638ac4fc-c7fe-4ceb-a9b2-6bdeec540974}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Main Windows\Trees">
+      <UniqueIdentifier>{7e8ebb4c-cd44-41aa-b645-4e356c5f104d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Main Windows\Trees">
+      <UniqueIdentifier>{4f4e1987-f9cb-4630-b986-177e294e2f8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\Mapping Core">
+      <UniqueIdentifier>{c859cbc9-f6ce-421a-8c47-564f200275a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\Mapping Core">
+      <UniqueIdentifier>{987f6155-963b-4647-b613-9428cef2d8f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Clipboard.h">
       <Filter>Header Files\Mapping</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Terrain.h">
-      <Filter>Header Files\Dialog Windows</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Undo.h">
       <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\Buffer.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\DefaultCHK.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\FileIO.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\Scenario.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\GuiMap.h">
       <Filter>Header Files\Mapping</Filter>
@@ -127,7 +130,7 @@
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\MappingCore.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\GuiAccel.h">
       <Filter>Header Files</Filter>
@@ -139,19 +142,16 @@
       <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\MapFile.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\StringUsage.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\Basics.h">
-      <Filter>Header Files\Mapping Core</Filter>
+      <Filter>Header Files\Mapping\Mapping Core</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Common Files\CommonFiles.h">
       <Filter>Header Files\Common Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Location.h">
-      <Filter>Header Files\Dialog Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\ChkdPlugins.h">
       <Filter>Header Files</Filter>
@@ -167,9 +167,6 @@
     </ClInclude>
     <ClInclude Include="Source Files\UnitMoveTo.h">
       <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TileProp.h">
-      <Filter>Header Files\Dialog Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Windows UI\WindowsUI.h">
       <Filter>Header Files\Windows UI</Filter>
@@ -216,9 +213,6 @@
     <ClInclude Include="Source Files\MapSettings.h">
       <Filter>Header Files\Dialog Windows\Map Settings</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Unit.h">
-      <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\MapProperties.h">
       <Filter>Header Files\Dialog Windows\Map Settings</Filter>
     </ClInclude>
@@ -248,9 +242,6 @@
     </ClInclude>
     <ClInclude Include="Source Files\TextTrig.h">
       <Filter>Header Files\Dialog Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MainTree.h">
-      <Filter>Header Files\Main Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\MiniMap.h">
       <Filter>Header Files\Main Windows</Filter>
@@ -285,31 +276,49 @@
     <ClInclude Include="Source Files\Chkdraft.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\UnitProperties.h">
+      <Filter>Header Files\Dialog Windows\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationProperties.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TerrainPalette.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TileProperties.h">
+      <Filter>Header Files\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\RadioButtonControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainTree.h">
+      <Filter>Header Files\Main Windows\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitTree.h">
+      <Filter>Header Files\Main Windows\Trees</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
       <Filter>Source Files\Mapping</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Terrain.cpp">
-      <Filter>Source Files\Dialog Windows</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\Undo.cpp">
       <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\FileIO.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\MapFile.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\Scenario.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\GuiMap.cpp">
       <Filter>Source Files\Mapping</Filter>
@@ -333,13 +342,10 @@
       <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\Basics.cpp">
-      <Filter>Source Files\Mapping Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Location.cpp">
-      <Filter>Source Files\Dialog Windows</Filter>
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\ChkdPlugins.cpp">
       <Filter>Source Files</Filter>
@@ -358,9 +364,6 @@
     </ClCompile>
     <ClCompile Include="Source Files\UnitMoveTo.cpp">
       <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TileProp.cpp">
-      <Filter>Source Files\Dialog Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Windows UI\ClassWindow.cpp">
       <Filter>Source Files\Windows UI\Windows</Filter>
@@ -398,9 +401,6 @@
     <ClCompile Include="Source Files\Windows UI\WindowControl.cpp">
       <Filter>Source Files\Windows UI\Controls</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Unit.cpp">
-      <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\MapSettings.cpp">
       <Filter>Source Files\Dialog Windows\Map Settings</Filter>
     </ClCompile>
@@ -434,9 +434,6 @@
     <ClCompile Include="Source Files\TextTrig.cpp">
       <Filter>Source Files\Dialog Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\MainTree.cpp">
-      <Filter>Source Files\Main Windows</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\MiniMap.cpp">
       <Filter>Source Files\Main Windows</Filter>
     </ClCompile>
@@ -466,6 +463,27 @@
     </ClCompile>
     <ClCompile Include="Source Files\Chkdraft.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitProperties.cpp">
+      <Filter>Source Files\Dialog Windows\Unit Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationProperties.cpp">
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TerrainPalette.cpp">
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TileProperties.cpp">
+      <Filter>Source Files\Dialog Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\RadioButtonControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainTree.cpp">
+      <Filter>Source Files\Main Windows\Trees</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitTree.cpp">
+      <Filter>Source Files\Main Windows\Trees</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

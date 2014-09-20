@@ -9,11 +9,13 @@
 #include "EditControl.h"
 #include "GroupBoxControl.h"
 #include "ListBoxControl.h"
+#include "RadioButtonControl.h"
 #include "StatusControl.h"
 #include "TextControl.h"
 #include "ToolbarControl.h"
 #include "TreeViewControl.h"
 #include "WindowControl.h"
+
 
 // Menus
 #include "WindowMenu.h"

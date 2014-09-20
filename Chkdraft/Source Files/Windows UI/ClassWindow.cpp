@@ -148,7 +148,10 @@ INT_PTR ClassWindow::CreateDialogBox(LPCSTR lpTemplateName, HWND hWndParent)
 
 HWND ClassWindow::getHandle()
 {
-	return windowHandle;
+	if ( this != nullptr )
+		return windowHandle;
+	else
+		return NULL;
 }
 
 LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

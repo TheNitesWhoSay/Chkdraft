@@ -21,6 +21,7 @@ class StringEditorWindow : public ClassWindow
 		EditControl editString;
 		StringGuideWindow stringGuide;
 		StringPreviewWindow stringPreviewWindow;
+		ButtonControl buttonDeleteString;
 
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

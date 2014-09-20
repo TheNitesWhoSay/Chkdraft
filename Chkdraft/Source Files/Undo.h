@@ -231,7 +231,7 @@ class UNDOS
 {
 	public:
 
-		UNDOS();
+		UNDOS(void* thisMap);
 		~UNDOS();
 
 		bool clipUndos(u32 type);
@@ -256,7 +256,6 @@ class UNDOS
 		void doRedo(u32 type, Scenario* chk, SELECTIONS& sel);
 
 		void flushRoots();
-		void setMapId(u16 mapId);
 
 
 	protected:
@@ -282,7 +281,7 @@ class UNDOS
 		UndoNode* upcomingUndo; // The undo soon to be added
 
 		u32 rootTypes;
-		u16 mapId; // Id of the map this instance of UNDOS is attached to
+		void* mapPointer; // Pointer to the map this instance of UNDOS belongs to
 };
 
 #endif

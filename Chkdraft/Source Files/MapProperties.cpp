@@ -41,7 +41,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent)
 		CreateEditBox(hMapProperties, 385, 205, 50, 20, sCurrWidth, false, ID_EDIT_NEWMAPWIDTH);
 		CreateStaticText(hMapProperties, 440, 185, 50, 20, "Height");
 		CreateEditBox(hMapProperties, 440, 205, 50, 20, sCurrHeight, false, ID_EDIT_NEWMAPHEIGHT);
-		CreateButton(hMapProperties, 494, 205, 91, 20, "Apply", ID_BUTTON_APPLY);
+		buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", ID_BUTTON_APPLY);
 
 		const char* sPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4",
 								  "Player 5", "Player 6", "Player 7", "Player 8",
@@ -132,6 +132,11 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
 				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+			else
+			{
+				CheckReplaceMapTitle();
+				CheckReplaceMapDescription();
+			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
@@ -141,45 +146,18 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				{
 					case ID_EDIT_MAPTITLE:
 						if ( HIWORD(wParam) == EN_KILLFOCUS )
-						{
-							string newMapTitle;
-							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPTITLE), newMapTitle) )
-							{
-								u16* mapTitleString;
-								if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
-									 parseEscapedString(newMapTitle) &&
-									 chkd.maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
-								{
-									chkd.maps.curr->notifyChange(false);
-								}
-							}
-						}
+							CheckReplaceMapTitle();
 						break;
 
 					case ID_EDIT_MAPDESCRIPTION:
 						if ( HIWORD(wParam) == EN_KILLFOCUS )
-						{
-							string newMapDescription;
-							if ( GetEditText(GetDlgItem(hWnd, ID_EDIT_MAPDESCRIPTION), newMapDescription) )
-							{
-								u16* mapDescriptionString;
-								if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
-									 parseEscapedString(newMapDescription) &&
-									 chkd.maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
-								{
-									chkd.maps.curr->notifyChange(false);
-								}
-							}
-						}
+							CheckReplaceMapDescription();
 						break;
 
 					case ID_BUTTON_APPLY:
 						{
 							if ( HIWORD(wParam) == BN_CLICKED )
 							{
-								HWND hButton = GetDlgItem(hWnd, ID_BUTTON_APPLY);
-								DestroyWindow(hButton); // Seems to be the best way to remove stubborn highlighting
-								CreateButton(hWnd, 494, 205, 91, 20, "Apply", ID_BUTTON_APPLY);
 								LRESULT newTileset = SendMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
 								chkd.maps.curr->setTileset((u16)newTileset);
 								u16 newWidth, newHeight;
@@ -295,4 +273,34 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			break;
 	}
 	return 0;
+}
+
+void MapPropertiesWindow::CheckReplaceMapTitle()
+{
+	string newMapTitle;
+	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPTITLE), newMapTitle) )
+	{
+		u16* mapTitleString;
+		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
+			 parseEscapedString(newMapTitle) &&
+			 chkd.maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
+		{
+			chkd.maps.curr->notifyChange(false);
+		}
+	}
+}
+
+void MapPropertiesWindow::CheckReplaceMapDescription()
+{
+	string newMapDescription;
+	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPDESCRIPTION), newMapDescription) )
+	{
+		u16* mapDescriptionString;
+		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
+			 parseEscapedString(newMapDescription) &&
+			 chkd.maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
+		{
+			chkd.maps.curr->notifyChange(false);
+		}
+	}
 }

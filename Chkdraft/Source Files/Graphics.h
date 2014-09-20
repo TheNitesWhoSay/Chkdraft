@@ -1,15 +1,14 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 #include "Common Files/CommonFiles.h"
-#include "Data.h"
 #include "Clipboard.h"
+#include "Data.h"
 
 /* Default Draw Order:
 	- Final Tile Data (what MTXM will be)
 	- Units & Sprites, highest YC to lowest YC
 	  in the case of a tie, the highest index
-	  is drawn first.
-*/
+	  is drawn first. */
 
 class SpriteNode
 	// Node for unit/sprite graphics

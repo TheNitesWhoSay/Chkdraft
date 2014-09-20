@@ -4,6 +4,7 @@
 void NewMap::CreateThis(HWND hParent)
 {
 	ClassWindow::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_NEW), hParent);
+	//SetFocus(chkd.getHandle());
 }
 
 BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

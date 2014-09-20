@@ -123,53 +123,6 @@ const char* sTreeUndefined[] = { "Independent" };
 const int** TreeUnits[] = { TreeZerg, TreeTerran, TreeProtoss, TreeNeutral, TreeUndefined };
 const char* sTreeUnits[] = { "Zerg", "Terran", "Protoss", "Neutral", "Undefined" };
 
-void MainTree::InsertLocationItem(const char* text, u32 index)
-{
-	if ( index <= TREE_ITEM_DATA )
-		InsertChild(getHandle(), LocationTree, text, index|TREE_TYPE_LOCATION);
-}
-
-void MainTree::BuildLocationTree()
-{
-	GuiMap* map = chkd.maps.curr;
-	HTREEITEM hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
-	while ( hChild != NULL )
-	{
-		TreeView_DeleteItem(getHandle(), hChild);
-		hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
-	}
-
-	buffer& MRGN = map->MRGN();
-	if ( MRGN.exists() )
-	{
-		ChkLocation* loc;
-		std::string locName;
-		for ( u32 i=0; i<MRGN.size()/CHK_LOCATION_SIZE; i++ )
-		{
-			// In general a location must have a string or non-zero coordinates or a specified elevation
-			if ( ( i != 63 || !map->LockAnywhere() ) && map->getLocation(loc, u8(i)) &&
-				 ( loc->stringNum != 0 || loc->xc1 != 0 || loc->xc2 != 0 || loc->yc1 != 0 || loc->xc2 != 0 || loc->elevation != 0 ) )
-			{
-				if ( map->getLocationName(locName, u8(i)) )
-				{
-					InsertLocationItem(locName.c_str(), i);
-				}
-				else
-				{
-					char locationName[20];
-					sprintf_s(locationName, "Location %u", i);
-					InsertLocationItem(locationName, i);
-				}
-			}
-		}
-	}
-
-	if ( map->currLayer() == LAYER_LOCATIONS )
-		TreeView_Expand(getHandle(), hLocationTreeRoot, TVM_EXPAND);
-
-	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
-}
-
 void MainTree::BuildMainTree()
 {
 	HWND hWnd = getHandle();
@@ -226,7 +179,54 @@ void MainTree::BuildMainTree()
 	tvinsert = InsertParent(hWnd, tvinsert, "Doodads", LAYER_DOODADS);
 }
 
-void MainTree::UpdateTreeItemText(HWND hWnd, int UnitID)
+void MainTree::InsertLocationItem(const char* text, u32 index)
+{
+	if ( index <= TREE_ITEM_DATA )
+		InsertChild(getHandle(), LocationTree, text, index|TREE_TYPE_LOCATION);
+}
+
+void MainTree::RebuildLocationTree()
+{
+	GuiMap* map = chkd.maps.curr;
+	HTREEITEM hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
+	while ( hChild != NULL )
+	{
+		TreeView_DeleteItem(getHandle(), hChild);
+		hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
+	}
+
+	buffer& MRGN = map->MRGN();
+	if ( MRGN.exists() )
+	{
+		ChkLocation* loc;
+		std::string locName;
+		for ( u32 i=0; i<MRGN.size()/CHK_LOCATION_SIZE; i++ )
+		{
+			// In general a location must have a string or non-zero coordinates or a specified elevation
+			if ( ( i != 63 || !map->LockAnywhere() ) && map->getLocation(loc, u8(i)) &&
+				 ( loc->stringNum != 0 || loc->xc1 != 0 || loc->xc2 != 0 || loc->yc1 != 0 || loc->xc2 != 0 || loc->elevation != 0 ) )
+			{
+				if ( map->getLocationName(locName, u8(i)) )
+				{
+					InsertLocationItem(locName.c_str(), i);
+				}
+				else
+				{
+					char locationName[20];
+					sprintf_s(locationName, "Location %u", i);
+					InsertLocationItem(locationName, i);
+				}
+			}
+		}
+	}
+
+	if ( map->currLayer() == LAYER_LOCATIONS )
+		TreeView_Expand(getHandle(), hLocationTreeRoot, TVM_EXPAND);
+
+	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+}
+
+void MainTree::UpdateTreeUnitText(HWND hWnd, int UnitID)
 {
 	int treeItemLoc;
 	for ( int i=0; i<227; i++ )
@@ -238,15 +238,15 @@ void MainTree::UpdateTreeItemText(HWND hWnd, int UnitID)
 	item.hItem = DefaultTree.TreePtr[treeItemLoc];
 	item.lParam = UnitID&TREE_TYPE_UNIT;
 	item.mask = TVIF_TEXT|TVIF_PARAM;
-	item.pszText = (LPSTR)chkd.scData.UnitDisplayName[UnitID];
+	item.pszText = (LPSTR)UnitDisplayName[UnitID];
 	HWND hTree = GetDlgItem(hWnd, IDR_MAIN_TREE);
 	TreeView_SetItem(hTree, &item);
 }
 
 void MainTree::ChangeDisplayName(HWND hWnd, int UnitID, const char* name)
 {
-	chkd.scData.UnitDisplayName[UnitID] = name;
-	UpdateTreeItemText(hWnd, UnitID);
+	UnitDisplayName[UnitID] = name;
+	UpdateTreeUnitText(hWnd, UnitID);
 }
 
 TV_INSERTSTRUCT MainTree::InsertUnits(HWND hWnd, TV_INSERTSTRUCT tvinsert, const int* items, int amount)
@@ -254,7 +254,7 @@ TV_INSERTSTRUCT MainTree::InsertUnits(HWND hWnd, TV_INSERTSTRUCT tvinsert, const
 	for ( int i=0; i<amount; i++ )
 	{
 		tvinsert.hInsertAfter = TVI_LAST;
-		tvinsert.item.pszText = LPSTR(chkd.scData.UnitDisplayName[items[i]]);
+		tvinsert.item.pszText = LPSTR(UnitDisplayName[items[i]]);
 		tvinsert.item.mask |= (LVIF_PARAM|TVIF_TEXT);
 		tvinsert.item.lParam = (TREE_TYPE_UNIT|items[i]);
 		DefaultTree.TreePtr[items[i]] = TreeView_InsertItem(hWnd, &tvinsert);
@@ -276,7 +276,7 @@ HTREEITEM MainTree::InsertUnitGrouping(HWND hWnd, TV_INSERTSTRUCT tvinsert, cons
 
 TV_INSERTSTRUCT MainTree::InsertItems(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char** items, int amount)
 {
-	for (int i=0; i<amount; i++)
+	for ( int i=0; i<amount; i++ )
 	{
 		tvinsert.hInsertAfter = TVI_LAST;
 		tvinsert.item.pszText = (LPSTR)items[i];
@@ -285,4 +285,10 @@ TV_INSERTSTRUCT MainTree::InsertItems(HWND hWnd, TV_INSERTSTRUCT tvinsert, const
 		DefaultTree.numItems ++;
 	}
 	return tvinsert;
+}
+
+void MainTree::UpdateDisplayNames(const char** displayNames)
+{
+	for ( int i=0; i<233; i++ )
+		UnitDisplayName[i] = displayNames[i];
 }

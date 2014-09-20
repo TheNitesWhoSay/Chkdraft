@@ -11,6 +11,10 @@ class MapPropertiesWindow : public ClassWindow
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		void CheckReplaceMapTitle();
+		void CheckReplaceMapDescription();
+
+		ButtonControl buttonApply;
 };
 
 #endif

@@ -1,4 +1,4 @@
-#include "Location.h"
+#include "LocationProperties.h"
 #include "Chkdraft.h"
 
 LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
@@ -113,6 +113,11 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
+		case WM_ACTIVATE:
+			if ( LOWORD(wParam) != WA_INACTIVE )
+				chkd.SetCurrDialog(hWnd);
+			break;
+
 		case WM_INITDIALOG:
 			return RefreshLocationInfo(hWnd);
 			break;
@@ -437,7 +442,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 																		if ( parseEscapedString(newStr) && chkd.maps.curr->addString(newStr, newStringNum, isExtended) )
 																		{
 																			locRef->stringNum = u16(newStringNum);
-																			chkd.mainPlot.leftBar.mainTree.BuildLocationTree();
+																			chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
 																			chkd.maps.curr->removeUnusedString(preservedStat);
 																			chkd.maps.curr->notifyChange(false);
 																			chkd.maps.curr->refreshScenario();

@@ -3,17 +3,19 @@
 #include <iostream>
 using namespace std;
 
+#define DEFAULT_SIZE_MULTIPLIER 1.2
+
 //////////////////
 // Constructors //
 //////////////////
 
-buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0), DEFAULT_SIZE_MULTIPLIER(1.2)
+buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
 	for ( int i=0; i<5; i++ ) // NUL fill title
 		bufTitle[0] = '\0';
 }
 
-buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), DEFAULT_SIZE_MULTIPLIER(1.2)
+buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
 	strcpy_s(bufTitle, 5, bufferTitle);
 	bufTitle[4] = '\0';
@@ -401,6 +403,23 @@ template bool buffer::replace<u8>(u32 location, u8 value);
 template bool buffer::replace<u16>(u32 location, u16 value);
 template bool buffer::replace<u32>(u32 location, u32 value);
 
+template <typename valueType>
+bool buffer::replace(u32 location, valueType value, u32 amount)
+{
+	if ( this != nullptr && location+amount*sizeof(value) <= sizeUsed )
+	{
+		for ( u32 i=0; i<amount; i++ )
+			(valueType &)data[location+i*sizeof(value)] = value;
+
+		return true;
+	}
+	return false;
+}
+template bool buffer::replace<char>(u32 location, char value, u32 amount);
+template bool buffer::replace<u8>(u32 location, u8 value, u32 amount);
+template bool buffer::replace<u16>(u32 location, u16 value, u32 amount);
+template bool buffer::replace<u32>(u32 location, u32 value, u32 amount);
+
 bool buffer::replaceStr(u32 startLocation, const char* chunk, u32 chunkSize)
 {
 	if ( this != nullptr && startLocation+chunkSize <= sizeUsed )
@@ -697,7 +716,7 @@ bool buffer::extract(buffer &buf, u32 &position)
 		sizeUsed = 0;
 		sizeAllotted = bufSize;
 
-		addStr(&buf.data[position], bufSize);
+		addStr((const char*)&buf.data[position], bufSize);
 
 		position += bufSize;
 		
@@ -794,9 +813,9 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 
 		if ( sizeUsed > 0 )
 		{
-			char* newBuffer;
+			s8* newBuffer;
 			try {
-				newBuffer = new char[sizeAllotted];
+				newBuffer = new s8[sizeAllotted];
 			} catch ( std::bad_alloc ) {
 				throw( const BadResize(0) );
 			}
@@ -825,7 +844,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 			if ( sizeAllotted > 0 )
 			{
 				try {
-					data = new char[sizeAllotted];
+					data = new s8[sizeAllotted];
 				} catch ( std::bad_alloc ) {
 					sizeAllotted = 0;
 					throw( const BadResize(1) );
@@ -837,18 +856,21 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 	return false;
 }
 
+static const char* errorMessages[] = { 
+	"could not create a temporary buffer - you may have ran out of memory.",
+	"could not initialize buffer - you may have ran out of memory.",
+	""
+};
+
 const char* BadResize::what() const throw()
 {
 	switch ( exNum )
 	{
-		case 0:
-			return "could not create a temporary buffer - you may have ran out of memory.";
-			break;
-		case 1:
-			return "could not initialize buffer - you may have ran out of memory.";
+		case 0: case 1:
+			return errorMessages[exNum];
 			break;
 		default:
-			return "";
+			return errorMessages[2];
 			break;
 	}
 }

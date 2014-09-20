@@ -11,6 +11,25 @@ class WavEditorWindow : public ClassWindow
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		void CreateSubWindows(HWND hWnd);
+
+		TextControl textMapSoundFiles;
+		ButtonControl buttonStopSounds;
+		ButtonControl buttonDeleteSound;
+		ButtonControl buttonExtractSound;
+		ButtonControl buttonPlaySound;
+		ListBoxControl listMapSounds;
+
+		TextControl textAvailableSounds;
+		ButtonControl buttonPreviewPlaySound;
+		ListBoxControl listVirtualSounds;
+		TextControl textFileName;
+		EditControl editFileName;
+		ButtonControl buttonBrowse;
+		TextControl textCompressionLevel;
+		DropdownControl dropCompressionLevel;
+		CheckBoxControl checkVirtualFile;
+		ButtonControl buttonAddFile;
 };
 
 #endif

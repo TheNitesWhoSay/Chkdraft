@@ -1,4 +1,4 @@
-#include "Terrain.h"
+#include "TerrainPalette.h"
 #include "Chkdraft.h"
 
 #define START_TILES_YC 0
@@ -44,6 +44,11 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 {
 	switch ( msg )
 	{
+		case WM_ACTIVATE:
+			if ( LOWORD(wParam) != WA_INACTIVE )
+				chkd.SetCurrDialog(hWnd);
+			break;
+
 		case WM_INITDIALOG:
 			DoScroll(hWnd);
 			break;

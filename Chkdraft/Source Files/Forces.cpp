@@ -102,6 +102,11 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
 				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+			else
+			{
+				for ( int i=0; i<4; i++ )
+					CheckReplaceForceName(i);
+			}
 			break;
 
 		case WM_COMMAND:
@@ -166,10 +171,10 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 					}
 					break;
-				case EN_UPDATE:
-					{
 
-					}
+				case EN_KILLFOCUS:
+					if ( LOWORD(wParam) >= ID_EDIT_F1NAME && LOWORD(wParam) <= ID_EDIT_F2NAME )
+						CheckReplaceForceName(LOWORD(wParam)-ID_EDIT_F1NAME);
 					break;
 			}
 			break;
@@ -259,4 +264,19 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 	}
 	return 0;
+}
+
+void ForcesWindow::CheckReplaceForceName(int force)
+{
+	string newMapForce;
+	if ( GetEditText(GetDlgItem(getHandle(), ID_EDIT_F1NAME+force), newMapForce) )
+	{
+		u16* mapForceString;
+		if ( chkd.maps.curr->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
+			 parseEscapedString(newMapForce) &&
+			 chkd.maps.curr->replaceString(newMapForce, *mapForceString, false, true) )
+		{
+			chkd.maps.curr->notifyChange(false);
+		}
+	}
 }

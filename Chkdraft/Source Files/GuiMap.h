@@ -33,23 +33,24 @@ class GuiMap : public MapFile, public ClassWindow
 
 					void doubleClickLocation(s32 xClick, s32 yClick);
 					void openTileProperties(s32 xClick, s32 yClick);
+					void EdgeDrag(HWND hWnd, int x, int y, u8 layer);
 
 					u8 getDisplayOwner(u8 player); // Returns player owner index for dialogs
 
 					void refreshScenario();
 
-/*  Sel/Paste  */	void clearSelection();
+/*   Sel/Paste  */  void clearSelection();
 					void selectAll();
 					void deleteSelection();
 					SELECTIONS& selections() { return selection; };
 					void paste(s32 mapClickX, s32 mapClickY, CLIPBOARD &clipboard);
 
-/* Undo Redo  */	UNDOS& undos() { return undoStacks; }
+/*   Undo Redo  */  UNDOS& undos() { return undoStacks; }
 					void undo();
 					void redo();
 					void nextUndo() { undoStacks.startNext(0); }
 
-/*  Graphics  */	POINT& display() { return displayPivot; }
+/*   Graphics   */	POINT& display() { return displayPivot; }
 					GRID& grid(u32 gridNum) { return graphics.grid(gridNum); };
 					float MiniMapScale(u16 xSize, u16 ySize);
 				
@@ -108,7 +109,7 @@ class GuiMap : public MapFile, public ClassWindow
 					HDC GetMemhDC() { return MemhDC; }
 					HDC GetMemMinihDC() { return MemMinihDC; }
 
-/** Misc */			void setMapId(u16 mapId);
+/*	   Misc  	*/	void setMapId(u16 mapId);
 					u16 getMapId();
 					void notifyChange(bool undoable); // Notifies that a change occured, if it's not undoable changes are locked
 					void changesUndone(); // Notifies that all undoable changes have been undone
@@ -118,46 +119,65 @@ class GuiMap : public MapFile, public ClassWindow
 					void updateMenu(); // Updates which items are checked in the main menu
 
 					bool CreateThis(HWND hClient, const char* title);
-					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					void ReturnKeyPress();
+
 					static CLIPBOARD* clipboard; // Get this pointing correctly...
 					//static GuiMap** currMap; // Get this pointing correctly...
 
 	private:
 
-		u16 mapId;
-		bool changeLock;
-		bool unsavedChanges;
+/*	   Data  	*/	u16 mapId;
+					bool changeLock;
+					bool unsavedChanges;
 
-		u8 layer;
-		u8 player;
-		double zoom;
+					u8 layer;
+					u8 player;
+					double zoom;
 
-		bool dragging;
+					bool dragging;
 
-		bool snapUnits;
-		bool stackUnits;
+					bool snapUnits;
+					bool stackUnits;
 
-		bool snapLocations;
-		bool locSnapTileOverGrid;
-		bool lockAnywhere;
+					bool snapLocations;
+					bool locSnapTileOverGrid;
+					bool lockAnywhere;
 
-		SELECTIONS selection;
-		UNDOS undoStacks;
-		//HWND hMapWindow;
+					SELECTIONS selection;
+					UNDOS undoStacks;
 
-		Graphics graphics;
-		POINT displayPivot;
+					Graphics graphics;
+					POINT displayPivot;
 
-		u8* lpvBits;
-		u16 bitMapWidth;
-		u16 bitMapHeight;
-		bool RedrawMiniMap;
-		bool RedrawMap;
-		HDC MemhDC;
-		HDC MemMinihDC;
-		HBITMAP MemBitmap;
-		HBITMAP MemMiniBitmap;
+					u8* lpvBits;
+					u16 bitMapWidth;
+					u16 bitMapHeight;
+					bool RedrawMiniMap;
+					bool RedrawMap;
+					HDC MemhDC;
+					HDC MemMinihDC;
+					HBITMAP MemBitmap;
+					HBITMAP MemMiniBitmap;
+
+					LRESULT procResult;
+					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam);
+					void ActivateMap(HWND hWnd);
+					LRESULT DestroyWindow(HWND hWnd);
+
+					void RButtonUp();
+					void LButtonDoubleClick(int x, int y);
+					void LButtonDown(int x, int y, WPARAM wParam);
+					void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
+					void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
+					void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+					void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+
 };
 
 #endif

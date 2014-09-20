@@ -231,12 +231,7 @@ class Scenario
 // Extended sections
 #define HEADER_KSTR 1381258059
 
-// Useful data locations/constants
+// Data locations/constants for time-critical functions
 #define UNIT_SETTINGS_STRING_IDS 3192 // Where strings begin in the UNIS and UNIX sections
-
-#define FORCE_RANDOMIZE_START_LOCATION	BIT_0
-#define FORCE_ALLIED					BIT_1
-#define FORCE_ALLIED_VICTORY			BIT_2
-#define FORCE_SHARED_VISION				BIT_3
 
 #endif

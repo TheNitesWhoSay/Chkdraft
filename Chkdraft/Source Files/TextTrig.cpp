@@ -6,13 +6,24 @@
 
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
-	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent);
+	if ( ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
+	{
+		ShowWindow(getHandle(), SW_SHOW);
+		return true;
+	}
+	else
+		return false;
 }
 
 BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
+		case WM_ACTIVATE:
+			if ( LOWORD(wParam) != WA_INACTIVE )
+				chkd.SetCurrDialog(hWnd);
+			break;
+
 		case REFRESH_WINDOW:
 			{
 				TextTrigGenerator textTrigs(chkd.maps.curr);
@@ -26,9 +37,6 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				editControl.FindThis(hWnd, IDC_EDIT_TRIGTEXT);
 				editControl.MaximizeTextLimit();
-				/*HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TRIGTEXT);
-				wpTextTrigEdit = (WNDPROC)SetWindowLong(hEdit, GWL_WNDPROC, (LONG)&TextTrigEditProc);
-				SendMessage(hEdit, EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);*/
 				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
 			}
 			break;
@@ -91,14 +99,13 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_CLOSE:
-			DestroyWindow(hWnd);
-			return false;
+			EndDialog(hWnd, wParam);
 			break;
 
 		default:
-			return false;
+			return FALSE;
 	}
-	return true;
+	return TRUE;
 }
 
 bool TextTrigWindow::CompileEditText(Scenario* map, HWND hWnd)

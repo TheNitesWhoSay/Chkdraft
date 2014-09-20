@@ -12,9 +12,11 @@ class MapFile : public Scenario // MapFile is a scenario file + the stuff here
 		bool LoadFile();
 
 		bool SaveFile(bool SaveAs);
+
 		bool GetPath();
-		
+		bool SetPath(const char* newPath);
 		const char* FilePath();
+		void SetSaveType(u8 newSaveType);
 
 	protected:
 		bool OpenFile();

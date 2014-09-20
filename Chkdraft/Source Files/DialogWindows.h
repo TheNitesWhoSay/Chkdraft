@@ -2,11 +2,11 @@
 #define DIALOGWINDOWS_H
 
 #include "MapSettings.h"
-#include "Unit.h"
-#include "Location.h"
+#include "UnitProperties.h"
+#include "LocationProperties.h"
 #include "NewMap.h"
-#include "Terrain.h"
+#include "TerrainPalette.h"
 #include "TextTrig.h"
-#include "TileProp.h"
+#include "TileProperties.h"
 
 #endif

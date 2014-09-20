@@ -1,5 +1,5 @@
-#ifndef LOCATION_H
-#define LOCATION_H
+#ifndef LOCATIONPROPERITES_H
+#define LOCATIONPROPERITES_H
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"

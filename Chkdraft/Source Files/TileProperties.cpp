@@ -1,4 +1,4 @@
-#include "TileProp.h"
+#include "TileProperties.h"
 #include "Chkdraft.h"
 
 bool TilePropWindow::CreateThis(HWND hParent)
@@ -15,6 +15,11 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
+		case WM_ACTIVATE:
+			if ( LOWORD(wParam) != WA_INACTIVE )
+				chkd.SetCurrDialog(hWnd);
+			break;
+
 		case WM_INITDIALOG:
 			{
 				HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TILEVALUE);

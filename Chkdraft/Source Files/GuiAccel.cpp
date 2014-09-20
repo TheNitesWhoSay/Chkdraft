@@ -1,5 +1,16 @@
 #include "GuiAccel.h"
 
+BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont)
+{
+	SendMessage(hWnd, WM_SETFONT, hFont, TRUE);
+	return TRUE;
+}
+
+void ReplaceChildFonts(HWND hWnd, HFONT hFont)
+{
+	EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)hFont);
+}
+
 void LockCursor(HWND hWnd)
 {
 	if ( hWnd == NULL )
@@ -37,54 +48,10 @@ void TrackMouse(HWND hWnd, DWORD hoverTime)
 	TrackMouseEvent(&tme);
 }
 
-void EdgeDrag(HWND hWnd, LPARAM lParam, u8 layer, SELECTIONS& sel, GuiMap* map)
-{
-	if ( map->isDragging() )
-	{
-		POINTS currPoint = MAKEPOINTS(lParam);
-		if ( currPoint.x < 0 )
-			currPoint.x = 0;
-		if ( currPoint.y < 0 )
-			currPoint.y = 0;
-
-		RECT rcMap;
-		GetClientRect(hWnd, &rcMap);
-		TrackMouse(hWnd, DEFAULT_HOVER_TIME);
-		if ( currPoint.x == 0 ) // Cursor on the left
-		{
-			if ( (map->display().x+16)/32 > 0 )
-				sel.setEndDrag( ((map->display().x+16)/32-1)*32, sel.getEndDrag().y );
-			if ( map->display().x > 0 )
-				map->display().x = sel.getEndDrag().x;
-		}
-		else if ( currPoint.x >= rcMap.right-2 ) // Cursor on the right
-		{
-			if ( (map->display().x+rcMap.right)/32 < map->XSize() )
-				sel.setEndDrag( ((map->display().x+rcMap.right)/32+1)*32, sel.getEndDrag().y );
-			map->display().x = sel.getEndDrag().x - rcMap.right;
-		}
-		if ( currPoint.y == 0 ) // Cursor on the top
-		{
-			if ( (map->display().y+16)/32 > 0 )
-				sel.setEndDrag( sel.getEndDrag().x, ((map->display().y+16)/32-1)*32 );
-			if ( map->display().y > 0 )
-				map->display().y = sel.getEndDrag().y;
-		}
-		else if ( currPoint.y >= rcMap.bottom-2 ) // Cursor on the bottom
-		{
-			if ( (map->display().y+rcMap.bottom)/32 < map->YSize() )
-				sel.setEndDrag( sel.getEndDrag().x, ((map->display().y+rcMap.bottom)/32+1)*32 );
-			map->display().y = sel.getEndDrag().y - rcMap.bottom;
-		}
-		map->Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
-		map->Redraw(false);
-	}
-}
-
-bool parseEscapedString(string& str)
+bool parseEscapedString(std::string& str)
 {
 	char currChar;
-	string newStr = "";
+	std::string newStr = "";
 	int strLength = str.length();
 	const char* strPtr = str.c_str();
 	try
@@ -162,7 +129,7 @@ bool parseEscapedString(string& str)
 		str = newStr;
 		return true;
 	}
-	catch ( exception ) { return false; } // catches length_error and bad_alloc
+	catch ( std::exception ) { return false; } // catches length_error and bad_alloc
 }
 
 // MDI-Map-Window(s) stuff
@@ -296,12 +263,15 @@ bool GetEditBinaryNum(HWND hDlg, int editNum, u16 &dest)
 	char* editText;
 	if ( GetEditText(hDlg, editNum, editText) )
 	{
+		const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+									 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
+
 		int length = strlen(editText);
 		dest = 0;
 		for ( int i=length-1; i>=0; i-- )
 		{
 			if ( editText[i] == '1' )
-				dest |= u16Bits[(length-1)-i];
+				dest |= u16BitValues[(length-1)-i];
 			else if ( editText[i] != '0' )
 				return false;
 		}
