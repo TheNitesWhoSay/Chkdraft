@@ -15,6 +15,14 @@ bool TextTrigWindow::CreateThis(HWND hParent)
 		return false;
 }
 
+void TextTrigWindow::RefreshWindow()
+{
+	TextTrigGenerator textTrigs(chkd.maps.curr);
+	buffer output("TeOu");
+	textTrigs.GenerateTextTrigs(chkd.maps.curr->TRIG(), output);
+	SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)output.getPtr(0));
+}
+
 BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
@@ -24,21 +32,10 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				chkd.SetCurrDialog(hWnd);
 			break;
 
-		case REFRESH_WINDOW:
-			{
-				TextTrigGenerator textTrigs(chkd.maps.curr);
-				buffer output("TeOu");
-				textTrigs.GenerateTextTrigs(chkd.maps.curr->TRIG(), output);
-				SetDlgItemText(hWnd, IDC_EDIT_TRIGTEXT, (const char*)output.getPtr(0));
-			}
-			break;
-
 		case WM_INITDIALOG:
-			{
-				editControl.FindThis(hWnd, IDC_EDIT_TRIGTEXT);
-				editControl.MaximizeTextLimit();
-				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
-			}
+			editControl.FindThis(hWnd, IDC_EDIT_TRIGTEXT);
+			editControl.MaximizeTextLimit();
+			RefreshWindow();
 			break;
 
 		case WM_MOUSEWHEEL:

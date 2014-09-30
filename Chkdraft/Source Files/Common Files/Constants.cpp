@@ -45,7 +45,6 @@ const COLORREF stringColors[] = { RGB(184, 184, 232), RGB(184, 184, 232), RGB(22
 								  RGB( 16, 252,  24), RGB(112,  48,  20), RGB(204, 224, 208), RGB(252, 252,  56),
 								  RGB(  8, 128,   8), RGB(252, 252, 124), RGB(184, 184, 232), RGB(236, 196, 176),
 								  RGB( 64, 104, 212), RGB(116, 164, 124), RGB(144, 144, 184), RGB(  0, 228, 252) };
-const int numStringColors = sizeof(stringColors)/sizeof(const COLORREF);
 const char* stringColorStrings[] = { " - Use Default", " - Cyan", " - Yellow", " - White", " - Grey", " - Red", " - Green", " - Red (p1)",
 									 " - Invisible", " - Remove beyond", " - Blue (p2)", " - Teal (p3)", " - Purple (p4)", " - Orange (p5)",
 									 " - Right Align", " - Center Align", " - Invisible", " - Brown (p6)", " - White (p7)", " - Yellow (p8)",

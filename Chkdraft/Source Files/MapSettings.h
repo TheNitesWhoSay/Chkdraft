@@ -18,6 +18,7 @@ class MapSettingsWindow : public ClassWindow
 		bool CreateThis(HWND hParent);
 		bool DestroyThis();
 		void ChangeTab(u32 tabID);
+		void RefreshWindow();
 
 	private:
 		u32 currTab;

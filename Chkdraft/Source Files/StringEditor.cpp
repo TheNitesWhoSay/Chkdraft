@@ -15,25 +15,50 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_STRINGEDITOR) )
 	{
 		HWND hStringEditor = getHandle();
-		CreateStaticText(hStringEditor, 5, 5, 100, 20, "String Editor...");
+		textAboutStrings.CreateThis(hStringEditor, 5, 5, 100, 20, "String Editor...", 0);
 
-		HWND hStringList = CreateListBox(hStringEditor, 5, 25, 453, 262, ID_LB_STRINGS, true);
+		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, ID_LB_STRINGS);
 
 		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
-		CreateCheckBox(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
+		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
 		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
 
-		CreateStaticText(hStringEditor, 480, 379, 125, 20, "String Usage:");
-		HWND hStringUse = CreateListBox(hStringEditor, 463, 394, 125, 83, ID_LB_STRINGUSE, false);
+		textStringUsage.CreateThis(hStringEditor, 480, 379, 125, 20, "String Usage:", 0);
+		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, ID_LB_STRINGUSE);
 
 		stringGuide.CreateThis(hStringEditor);
 		stringPreviewWindow.CreateThis(hStringEditor);
 
-		SendMessage(hStringEditor, REFRESH_WINDOW, NULL, NULL);
+		RefreshWindow();
 		return true;
 	}
 	else
 		return false;
+}
+
+void StringEditorWindow::RefreshWindow()
+{
+	HWND hStringList = GetDlgItem(getHandle(), ID_LB_STRINGS);
+	if ( hStringList != NULL && chkd.maps.curr != nullptr )
+	{
+		SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
+		bool success = false;
+		StringUsageTable strUse(chkd.maps.curr->scenario(), false, success);
+		if ( success )
+		{
+			string str;
+			u32 lastUsed = strUse.lastUsedString();
+			for ( u32 i=0; i<=lastUsed; i++ )
+			{
+				if ( strUse.isUsed(i) && chkd.maps.curr->getString(str, i) && str.size() > 0 )
+				{
+					int lbIndex = SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)"");
+					if ( lbIndex != LB_ERR && lbIndex != LB_ERRSPACE )
+						SendMessage(hStringList, LB_SETITEMDATA, lbIndex, i);
+				}
+			}
+		}
+	}
 }
 
 LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -42,36 +67,10 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
-				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+				RefreshWindow();
 			else if ( wParam == FALSE )
-				updateString(GetDlgItem(hWnd, ID_EDIT_STRING), currSelString);
+				updateString(currSelString);
 			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
-		case REFRESH_WINDOW:
-			{
-				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
-				if ( hStringList != NULL && chkd.maps.curr != nullptr )
-				{
-					SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
-					bool success = false;
-					StringUsageTable strUse(chkd.maps.curr->scenario(), false, success);
-					if ( success )
-					{
-						string str;
-						u32 lastUsed = strUse.lastUsedString();
-						for ( u32 i=0; i<=lastUsed; i++ )
-						{
-							if ( strUse.isUsed(i) && chkd.maps.curr->getString(str, i) && str.size() > 0 )
-							{
-								int lbIndex = SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)"");
-								if ( lbIndex != LB_ERR && lbIndex != LB_ERRSPACE )
-									SendMessage(hStringList, LB_SETITEMDATA, lbIndex, i);
-							}
-						}
-					}
-				}
-			}
 			break;
 
 		case WM_MOUSEWHEEL:
@@ -91,7 +90,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
 						if ( hEditString != NULL && currSelString != 0 )
-							updateString(hEditString, currSelString);
+							updateString(currSelString);
 						HWND hStringUse = GetDlgItem(hWnd, ID_LB_STRINGUSE);
 						if ( hStringUse != NULL )
 							SendMessage(hStringUse, LB_RESETCONTENT, NULL, NULL);
@@ -131,11 +130,11 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
 						if ( hEditString != NULL && currSelString != 0 )
-							updateString(hEditString, currSelString);
+							updateString(currSelString);
 					}
 					break;
 				case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == ID_EDIT_STRING && currSelString != 0 && updateString((HWND)lParam, currSelString) )
+					if ( LOWORD(wParam) == ID_EDIT_STRING && currSelString != 0 && updateString(currSelString) )
 						chkd.maps.curr->refreshScenario();
 					break;
 				case BN_CLICKED:
@@ -224,17 +223,17 @@ void StringEditorWindow::addUseItem(HWND hStringUse, const char* title, u32 amou
 	}
 }
 
-bool StringEditorWindow::updateString(HWND hEditString, u32 stringNum)
+bool StringEditorWindow::updateString(u32 stringNum)
 {
 	string editStr;
-	if ( chkd.maps.curr != nullptr && GetEditText(hEditString, editStr) && chkd.maps.curr->escStringDifference(editStr, stringNum) )
+	if ( chkd.maps.curr != nullptr && editString.GetEditText(editStr) && chkd.maps.curr->escStringDifference(editStr, stringNum) )
 	{
 		if ( parseEscapedString(editStr) &&
 			 chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
 		{
 			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )
-				chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
-			RedrawWindow((HWND)hEditString, NULL, NULL, RDW_INVALIDATE);
+				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+			RedrawWindow((HWND)editString.getHandle(), NULL, NULL, RDW_INVALIDATE);
 			return true;
 		}
 		else

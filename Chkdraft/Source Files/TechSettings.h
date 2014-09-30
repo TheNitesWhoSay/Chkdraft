@@ -9,6 +9,7 @@ class TechSettingsWindow : public ClassWindow
 	public:
 		TechSettingsWindow();
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

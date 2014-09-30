@@ -13,6 +13,15 @@ class EditControl : public WindowControl
 		bool SetText(const char* newText); // Sets new text content
 		void MaximizeTextLimit(); // Sets text limit to 0x7FFFFFFF
 
+		bool GetEditText(std::string& dest);
+		bool GetEditBinaryNum(u16 &dest);
+
+		template <typename numType>
+			bool GetEditNum(numType &dest);
+
+	protected:
+		bool GetEditText(char* &dest); // this version isn't public, pass an std::string
+
 	private:
 		bool isMultiLine;
 		LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Used to map Select All to Ctrl+A

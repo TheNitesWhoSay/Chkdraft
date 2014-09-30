@@ -11,6 +11,8 @@ class StringGuideWindow : public ClassWindow
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		TextControl colorPrefix[NUM_STRING_COLORS];
+		TextControl color[NUM_STRING_COLORS];
 };
 
 #endif

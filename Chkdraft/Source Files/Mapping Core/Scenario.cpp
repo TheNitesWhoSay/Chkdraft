@@ -1739,6 +1739,19 @@ bool Scenario::setForceAv(u8 forceNum, bool alliedVictory)
 		return false;
 }
 
+bool Scenario::setUnitUseDefaults(u16 unitID, bool useDefaults)
+{
+	bool setExp = false, setNormal = false;
+	u8 newValue = 0;
+	if ( useDefaults )
+		newValue = 1;
+
+	setExp = UNIx().replace<u8>((u32)unitID, newValue);
+	setNormal = UNIS().replace<u8>((u32)unitID, newValue);
+
+	return (isExpansion() && setExp) || (!isExpansion() && setNormal);
+}
+
 bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
 {
 	bool setExp = false, setNormal = false;

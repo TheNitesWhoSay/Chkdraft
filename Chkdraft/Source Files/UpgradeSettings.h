@@ -7,11 +7,19 @@
 class UpgradeSettingsWindow : public ClassWindow
 {
 	public:
+		UpgradeSettingsWindow();
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CreateSubWindows(HWND hWnd);
+		void DisableUpgradeEditing();
+		void EnableUpgradeEditing();
+		void DisableCostEditing();
+		void EnableCostEditing();
+
+		s32 selectedUpgrade;
 
 		CheckBoxControl checkUseDefaultCosts;
 		ButtonControl buttonResetUpgradeDefaults;

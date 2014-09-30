@@ -191,7 +191,10 @@ BOOL CALLBACK ClassWindow::SetupDialogProc(HWND hWnd, UINT msg, WPARAM wParam, L
 		LONG classPtr = lParam;
 		SetWindowLong(hWnd, DWL_USER, classPtr);
 		if ( GetWindowLong(hWnd, DWL_USER) == classPtr  && classPtr != 0 && SetWindowLong(hWnd, DWL_DLGPROC, (LONG)ForwardDlgProc) != 0 )
+		{
+			((ClassWindow*)classPtr)->windowHandle = hWnd; // Preload the window handle
 			return ((ClassWindow*)classPtr)->DlgProc(hWnd, msg, wParam, lParam);
+		}
 		else
 			return FALSE;
 	}

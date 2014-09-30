@@ -11,6 +11,20 @@ bool TilePropWindow::DestroyThis()
 	return ClassWindow::DestroyDialog();
 }
 
+void TilePropWindow::UpdateTile()
+{
+	char title[256];
+	TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
+	sprintf_s(title, 256, "Tile Properties (%d, %d)", headTile->xc, headTile->yc);
+	SetWindowText(getHandle(), title);
+
+	HWND hEditTile = GetDlgItem(getHandle(), IDC_EDIT_TILEVALUE);
+	u16 currTile = headTile->value;
+	char tileValue[32];
+	_itoa_s(currTile, tileValue, 10);
+	SetWindowText(hEditTile, tileValue);
+}
+
 BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -24,7 +38,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_TILEVALUE);
 				SendMessage(hEdit, EM_SETLIMITTEXT, 10, 0);
-				SendMessage(hWnd, WM_COMMAND, TILE_UPDATE, NULL);
+				UpdateTile();
 				PostMessage(hWnd, WM_NEXTDLGCTL, (WPARAM)hEdit, true);
 				return true;
 			}
@@ -59,21 +73,6 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							EndDialog(hWnd, IDOK);
 							break;
 						}
-
-					case TILE_UPDATE:
-						{
-							char title[256];
-							TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
-							sprintf_s(title, 256, "Tile Properties (%d, %d)", headTile->xc, headTile->yc);
-							SetWindowText(hWnd, title);
-
-							HWND hEditTile = GetDlgItem(hWnd, IDC_EDIT_TILEVALUE);
-							u16 currTile = headTile->value;
-							char tileValue[32];
-							_itoa_s(currTile, tileValue, 10);
-							SetWindowText(hEditTile, tileValue);
-						}
-						break;
 
 					case IDCANCEL:
 						EndDialog(hWnd, IDCANCEL);

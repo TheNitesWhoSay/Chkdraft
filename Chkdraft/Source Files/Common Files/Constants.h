@@ -60,7 +60,7 @@ extern const char* playerColors[];
 extern const int numPlayerColors;
 
 extern const COLORREF stringColors[];
-extern const int numStringColors;
+#define NUM_STRING_COLORS 28
 extern const char* stringColorStrings[];
 extern const char* stringColorPrefixes[];
 
@@ -116,6 +116,20 @@ extern const int numTilesetInitTerrains[];
 #define LAYER_VIEW_FOG                  6
 #define LAYER_COPY_PASTE                7
 
+// Generally for trees...
+//	- LPARAM First 4 bits: defines the item type
+//  - LPARAM Last 28 bits: defines data specific to the type of item
+// 'AND' with the following to retrieve either from the LPARAM
+#define TREE_ITEM_DATA (0x0FFFFFFF)
+#define TREE_ITEM_TYPE (0xF0000000)
+
+#define TREE_TYPE_ROOT			(0x00000000) // Roots are AND'd with an associated layer (found in TREE_ITEM_DATA), must be 0
+#define TREE_TYPE_CATEGORY		(0x10000000) // Categories are AND'd with an associated layer (found in TREE_ITEM_DATA)
+#define TREE_TYPE_ISOM			(0x20000000)
+#define TREE_TYPE_UNIT			(0x30000000)
+#define TREE_TYPE_LOCATION		(0x40000000)
+#define TREE_TYPE_SPRITE		(0x50000000)
+#define TREE_TYPE_DOODAD		(0x60000000)
 
 
 /*###############################*\
@@ -485,21 +499,6 @@ extern const int numTilesetInitTerrains[];
 ## WM_APP through 0xBFFF		 ##
 \*###############################*/
 
-#define TILE_UPDATE                     (WM_APP+1)
-#define DO_SCROLL						(WM_APP+2)
-#define ADD_UNIT						(WM_APP+3)
-#define SET_LIST_REDRAW					(WM_APP+4)
-#define REPOPULATE_LIST					(WM_APP+5)
-#define UPDATE_ENABLED_STATE			(WM_APP+6)
-#define NOTIFY_BUFFER_CHANGE			(WM_APP+7)
-#define NOTIFY_BUFFER_ADDITION			(WM_APP+8)
-#define NOTIFY_BUFFER_DELETIONS			(WM_APP+9)
-#define NOTIFY_BUFFER_MOVEMENT			(WM_APP+10)
-#define NOTIFY_BUFFER_ACCESS			(WM_APP+11)
-#define REFRESH_LOCATION				(WM_APP+12)
-#define REFRESH_WINDOW					(WM_APP+13)
-//#define FLAG_UNDOABLE_CHANGE			(WM_APP+14) // wParam == mapId
-//#define UNFLAG_UNDOABLE_CHANGES			(WM_APP+15) // wParam == mapId
-//#define FLAG_LOCKED_CHANGE				(WM_APP+16) // wParam == mapId
+// All seem adequetly replaced through ClassWindows
 
 #endif

@@ -8,7 +8,18 @@ LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locPro
 
 bool LocationWindow::CreateThis(HWND hParent)
 {
-	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent);
+	if ( ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent) )
+	{
+		editLocName.FindThis(getHandle(), IDC_LOCATION_NAME);
+		editLocLeft.FindThis(getHandle(), IDC_LOCLEFT);
+		editLocTop.FindThis(getHandle(), IDC_LOCTOP);
+		editLocRight.FindThis(getHandle(), IDC_LOCRIGHT);
+		editLocBottom.FindThis(getHandle(), IDC_LOCBOTTOM);
+		editRawFlags.FindThis(getHandle(), IDC_RAWFLAGS);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool LocationWindow::DestroyThis()
@@ -50,16 +61,16 @@ void LocationWindow::RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWn
 		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_UNCHECKED, NULL);
 }
 
-LRESULT LocationWindow::RefreshLocationInfo(HWND hWnd)
+void LocationWindow::RefreshLocationInfo()
 {
 	initializing = true;
 
+	HWND hWnd = getHandle();
 	if ( !chkd.maps.curr )
 	{
 		locProcLocIndex = NO_LOCATION;
 		initializing = false;
 		EndDialog(hWnd, IDCLOSE);
-		return TRUE;
 	}
 
 	locProcLocIndex = chkd.maps.curr->selections().getSelectedLocation();
@@ -106,7 +117,6 @@ LRESULT LocationWindow::RefreshLocationInfo(HWND hWnd)
 		EndDialog(hWnd, IDCLOSE);
 	}
 	initializing = false;
-	return TRUE;
 }
 
 BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -119,11 +129,8 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_INITDIALOG:
-			return RefreshLocationInfo(hWnd);
-			break;
-
-		case REFRESH_LOCATION:
-			return RefreshLocationInfo(hWnd);
+			RefreshLocationInfo();
+			return TRUE;
 			break;
 
 		case WM_COMMAND:
@@ -148,7 +155,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2);
 								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->xc1, locRef->xc2);
-								RefreshLocationInfo(hWnd);
+								RefreshLocationInfo();
 								chkd.maps.curr->Redraw(false);
 							}
 						}
@@ -163,7 +170,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2);
 								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->yc1, locRef->yc2);
-								RefreshLocationInfo(hWnd);
+								RefreshLocationInfo();
 								chkd.maps.curr->Redraw(false);
 							}
 						}
@@ -181,7 +188,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								chkd.maps.curr->undos().startNext(0);
 								std::swap(locRef->xc1, locRef->xc2);
 								std::swap(locRef->yc1, locRef->yc2);
-								RefreshLocationInfo(hWnd);
+								RefreshLocationInfo();
 								chkd.maps.curr->Redraw(false);
 							}
 						}
@@ -253,7 +260,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 																}
 																break;
 														}
-														RefreshLocationInfo(hWnd);
+														RefreshLocationInfo();
 													}
 													else // notChecked
 													{
@@ -307,7 +314,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 																}
 																break;
 														}
-														RefreshLocationInfo(hWnd);
+														RefreshLocationInfo();
 													}
 												}
 											}
@@ -340,19 +347,19 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 													case IDC_RAWFLAGS:
 														{
 															u16 newVal;
-															if ( GetEditBinaryNum(hWnd, IDC_RAWFLAGS, newVal) && preservedStat != newVal )
+															if ( editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
 															{
 																locRef->elevation = newVal;
 																chkd.maps.curr->undos().addUndoLocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat);
 																chkd.maps.curr->undos().startNext(0);
-																RefreshLocationInfo(hWnd);
+																RefreshLocationInfo();
 															}
 														}
 														break;
 													case IDC_LOCLEFT:
 														{
 															int newVal;
-															if ( GetEditNum<int>(hWnd, IDC_LOCLEFT, newVal) )
+															if ( editLocLeft.GetEditNum<int>(newVal) )
 															{
 																locRef->xc1 = newVal;
 																if ( newVal != preservedStat )
@@ -367,7 +374,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 													case IDC_LOCTOP:
 														{
 															int newVal;
-															if ( GetEditNum<int>(hWnd, IDC_LOCTOP, newVal) )
+															if ( editLocTop.GetEditNum<int>(newVal) )
 															{
 																locRef->yc1 = newVal;
 																if ( newVal != preservedStat )
@@ -382,7 +389,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 													case IDC_LOCRIGHT:
 														{
 															int newVal;
-															if ( GetEditNum<int>(hWnd, IDC_LOCRIGHT, newVal) )
+															if ( editLocRight.GetEditNum<int>(newVal) )
 															{
 																locRef->xc2 = newVal;
 																if ( newVal != preservedStat )
@@ -397,7 +404,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 													case IDC_LOCBOTTOM:
 														{
 															int newVal;
-															if ( GetEditNum<int>(hWnd, IDC_LOCBOTTOM, newVal) )
+															if ( editLocBottom.GetEditNum<int>(newVal) )
 															{
 																locRef->yc2 = newVal;
 																if ( newVal != preservedStat )
@@ -442,7 +449,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 																		if ( parseEscapedString(newStr) && chkd.maps.curr->addString(newStr, newStringNum, isExtended) )
 																		{
 																			locRef->stringNum = u16(newStringNum);
-																			chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+																			chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 																			chkd.maps.curr->removeUnusedString(preservedStat);
 																			chkd.maps.curr->notifyChange(false);
 																			chkd.maps.curr->refreshScenario();
@@ -464,7 +471,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 													ChkLocation* locRef;
 													u16 newVal;
 													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) &&
-														 GetEditBinaryNum(hWnd, IDC_RAWFLAGS, newVal) && preservedStat != newVal )
+														 editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
 													{
 														locRef->elevation = newVal;
 														initializing = true;
@@ -477,7 +484,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCLEFT, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && editLocLeft.GetEditNum<int>(newVal) )
 													{
 														locRef->xc1 = newVal;
 														chkd.maps.curr->Redraw(false);
@@ -488,7 +495,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCTOP, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && editLocTop.GetEditNum<int>(newVal) )
 													{
 														locRef->yc1 = newVal;
 														chkd.maps.curr->Redraw(false);
@@ -499,7 +506,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCRIGHT, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && editLocRight.GetEditNum<int>(newVal) )
 													{
 														locRef->xc2 = newVal;
 														chkd.maps.curr->Redraw(false);
@@ -510,7 +517,7 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 												{
 													ChkLocation* locRef;
 													int newVal;
-													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && GetEditNum<int>(hWnd, IDC_LOCBOTTOM, newVal) )
+													if ( chkd.maps.curr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) && editLocBottom.GetEditNum<int>(newVal) )
 													{
 														locRef->yc2 = newVal;
 														chkd.maps.curr->Redraw(false);

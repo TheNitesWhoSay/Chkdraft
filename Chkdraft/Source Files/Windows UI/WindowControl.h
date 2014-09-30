@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <WindowsX.h>
 #include <CommCtrl.h>
+#include <string>
 
 class WindowControl
 {

@@ -8,6 +8,7 @@ class TilePropWindow : public ClassWindow
 	public:
 		bool CreateThis(HWND hParent);
 		bool DestroyThis();
+		void UpdateTile();
 
 	protected:
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

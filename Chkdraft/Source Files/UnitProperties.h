@@ -10,10 +10,15 @@ class UnitWindow : public ClassWindow
 	public:
 		UnitWindow();
 		bool CreateThis(HWND hParent);
+		bool CreateSubWindows(HWND hWnd);
 		bool DestroyThis();
 		void SetChangeHighlightOnly(bool changeHighlightOnly);
 		void ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer);
 		void ChangeOwner(HWND hUnitList, int index, u8 newPlayer);
+		void SetListRedraw(bool redraw);
+		bool AddUnitItem(u16 index, ChkUnit* unit);
+		void UpdateEnabledState();
+		void RepopulateList();
 
 	protected:
 		void EnableUnitEditing(HWND hWnd);
@@ -30,6 +35,18 @@ class UnitWindow : public ClassWindow
 		bool initilizing;
 		bool changeHighlightOnly;
 		PreservedUnitStats preservedStats;
+
+		EditControl editLife;
+		EditControl editMana;
+		EditControl editShield;
+		EditControl editResources;
+		EditControl editHanger;
+		EditControl editUnitId;
+		EditControl editXc;
+		EditControl editYc;
+
+		DropdownControl dropPlayer;
+		ListViewControl listUnits;
 };
 
 #endif

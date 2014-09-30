@@ -27,7 +27,7 @@ class PasteUnitNode
 		s32 yc;
 		PasteUnitNode* next;
 
-		PasteUnitNode(ChkUnit* unitRef) : next(nullptr) { unit = (*unitRef); xc = unit.xc; yc = unit.yc; }
+		PasteUnitNode(ChkUnit* unitRef) : next(nullptr) { memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
 		PasteUnitNode(ChkUnit* unitRef, PasteUnitNode* next) : next(next) { unit = (*unitRef); xc = unit.xc; yc = unit.yc; }
 
 	private:

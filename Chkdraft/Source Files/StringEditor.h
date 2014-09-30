@@ -11,17 +11,23 @@ class StringEditorWindow : public ClassWindow
 	public:
 		StringEditorWindow();
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	protected:
 		void addUseItem(HWND hStringUse, const char* title, u32 amount); // Adds items to StringUse list box
-		bool updateString(HWND hEditString, u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
+		bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
 
 	private:
 		u32 currSelString;
+		TextControl textAboutStrings;
+		TextControl textStringUsage;
 		EditControl editString;
 		StringGuideWindow stringGuide;
 		StringPreviewWindow stringPreviewWindow;
 		ButtonControl buttonDeleteString;
+		CheckBoxControl checkExtendedString;
+		ListBoxControl listboxStrings;
+		ListBoxControl listUsage;
 
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

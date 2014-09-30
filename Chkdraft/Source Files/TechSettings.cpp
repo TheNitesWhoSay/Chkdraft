@@ -1,7 +1,7 @@
 #include "TechSettings.h"
 #include "Chkdraft.h"
 
-TechSettingsWindow::TechSettingsWindow() : selectedTech(0)
+TechSettingsWindow::TechSettingsWindow() : selectedTech(-1)
 {
 
 }
@@ -19,6 +19,11 @@ bool TechSettingsWindow::CreateThis(HWND hParent)
 	}
 	else
 		return false;
+}
+
+void TechSettingsWindow::RefreshWindow()
+{
+
 }
 
 LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -55,9 +60,6 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					break;
 				
 			}
-			break;
-
-		case REFRESH_WINDOW:
 			break;
 
 		default:
@@ -154,7 +156,9 @@ void TechSettingsWindow::DisableTechEditing()
 void TechSettingsWindow::EnableTechEditing()
 {
 	checkUseDefaultCosts.EnableThis();
-	EnableTechCosts();
+
+	if ( SendMessage((HWND)checkUseDefaultCosts.getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+		EnableTechCosts();
 
 	groupDefaultPlayerSettings.EnableThis();
 	radioDisabledByDefault.EnableThis();
@@ -165,6 +169,7 @@ void TechSettingsWindow::EnableTechEditing()
 	for ( int i=0; i<12; i++ )
 	{
 		checkUsePlayerDefaults[i].EnableThis();
-		dropPlayerTechSettings[i].EnableThis();
+		if ( SendMessage(checkUsePlayerDefaults[i].getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+			dropPlayerTechSettings[i].EnableThis();
 	}
 }
