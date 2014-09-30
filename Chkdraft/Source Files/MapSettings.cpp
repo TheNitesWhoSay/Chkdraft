@@ -45,6 +45,17 @@ void MapSettingsWindow::ChangeTab(u32 tabID)
 	currTab = tabID;
 }
 
+void MapSettingsWindow::RefreshWindow()
+{
+	mapPropertiesWindow.RefreshWindow();
+	forcesWindow.RefreshWindow();
+	unitSettingsWindow.RefreshWindow();
+	upgradeSettingsWindow.RefreshWindow();
+	techSettingsWindow.RefreshWindow();
+	stringEditorWindow.RefreshWindow();
+	wavEditorWindow.RefreshWindow();
+}
+
 BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -149,16 +160,6 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 						break;
 				}
 			}
-			break;
-
-		case REFRESH_WINDOW:
-			SendMessage(GetDlgItem(hTabs, ID_MAPPROPERTIES), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_FORCES), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_UNITSETTINGS), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_UPGRADESETTINGS), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_TECHSETTINGS), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_STRINGEDITOR), REFRESH_WINDOW, NULL, NULL);
-			SendMessage(GetDlgItem(hTabs, ID_WAVEDITOR), REFRESH_WINDOW, NULL, NULL);
 			break;
 
 		default:

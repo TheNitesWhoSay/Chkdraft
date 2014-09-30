@@ -1,5 +1,10 @@
 #include "UpgradeSettings.h"
-#include "GuiAccel.h"
+#include "Chkdraft.h"
+
+UpgradeSettingsWindow::UpgradeSettingsWindow() : selectedUpgrade(0)
+{
+
+}
 
 bool UpgradeSettingsWindow::CreateThis(HWND hParent)
 {
@@ -16,11 +21,58 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent)
 		return false;
 }
 
+void UpgradeSettingsWindow::RefreshWindow()
+{
+
+};
+
 LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case REFRESH_WINDOW:
+		case WM_COMMAND:
+			switch ( HIWORD(wParam) )
+			{
+				case BN_CLICKED:
+					switch ( LOWORD(wParam) )
+					{
+						case ID_CHECK_USEDEFAULTCOSTS:
+							{
+								LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+								if ( selectedUpgrade != -1 )
+								{
+									if ( state == BST_CHECKED )
+										DisableCostEditing();
+									else
+										EnableCostEditing();
+
+									chkd.maps.curr->notifyChange(false);
+								}
+							}
+							break;
+						default:
+							if ( selectedUpgrade != -1 && LOWORD(wParam) >= ID_CHECK_DEFAULTUPGRADEP1 && LOWORD(wParam) <= ID_CHECK_DEFAULTUPGRADEP12 )
+							{
+								LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+								int player = LOWORD(wParam)-ID_CHECK_DEFAULTUPGRADEP1;
+								if ( state == BST_CHECKED )
+								{
+									textPlayerStartLevel[player].DisableThis();
+									editPlayerStartLevel[player].DisableThis();
+									textPlayerMaxLevel[player].DisableThis();
+									editPlayerMaxLevel[player].DisableThis();
+								}
+								else
+								{
+									textPlayerStartLevel[player].EnableThis();
+									editPlayerStartLevel[player].EnableThis();
+									textPlayerMaxLevel[player].EnableThis();
+									editPlayerMaxLevel[player].EnableThis();
+								}
+							}
+							break;
+					}
+			}
 			break;
 
 		default:
@@ -75,4 +127,101 @@ void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
 		textPlayerMaxLevel[player].CreateThis(hWnd, 464, 260+21*player, 60, 20, "Max Level", ID_TEXT_P1MAXLEVEL+player);
 		editPlayerMaxLevel[player].CreateThis(hWnd, 525, 260+21*player, 56, 21, false, ID_EDIT_P1MAXLEVEL+player);
 	}
+
+	buttonResetUpgradeDefaults.DisableThis();
+	DisableUpgradeEditing();
+}
+
+void UpgradeSettingsWindow::DisableUpgradeEditing()
+{
+	checkUseDefaultCosts.DisableThis();
+
+	DisableCostEditing();
+
+	groupPlayerSettings.DisableThis();
+	groupDefaultSettings.DisableThis();
+	textDefaultStartLevel.DisableThis();
+	editDefaultStartLevel.DisableThis();
+	textDefaultMaxLevel.DisableThis();
+	editDefaultMaxLevel.DisableThis();
+
+	for ( int i=0; i<12; i++ )
+	{
+		textPlayer[i].DisableThis();
+		checkPlayerDefault[i].DisableThis();
+		textPlayerStartLevel[i].DisableThis();
+		editPlayerStartLevel[i].DisableThis();
+		textPlayerMaxLevel[i].DisableThis();
+		editPlayerMaxLevel[i].DisableThis();
+	}
+}
+
+void UpgradeSettingsWindow::EnableUpgradeEditing()
+{
+	checkUseDefaultCosts.EnableThis();
+
+	if ( SendMessage((HWND)checkUseDefaultCosts.getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+		EnableCostEditing();
+
+	groupPlayerSettings.EnableThis();
+	groupDefaultSettings.EnableThis();
+	textDefaultStartLevel.EnableThis();
+	editDefaultStartLevel.EnableThis();
+	textDefaultMaxLevel.EnableThis();
+	editDefaultMaxLevel.EnableThis();
+
+	for ( int i=0; i<12; i++ )
+	{
+		textPlayer[i].EnableThis();
+		checkPlayerDefault[i].EnableThis();
+		if ( SendMessage((HWND)checkPlayerDefault[i].getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+		{
+			textPlayerStartLevel[i].EnableThis();
+			editPlayerStartLevel[i].EnableThis();
+			textPlayerMaxLevel[i].EnableThis();
+			editPlayerMaxLevel[i].EnableThis();
+		}
+	}
+}
+
+void UpgradeSettingsWindow::DisableCostEditing()
+{
+	groupMineralCosts.DisableThis();
+	textMineralBaseCosts.DisableThis();
+	editMineralBaseCosts.DisableThis();
+	textMineralUpgradeFactor.DisableThis();
+	editMineralUpgradeFactor.DisableThis();
+
+	groupGasCosts.DisableThis();
+	textGasBaseCosts.DisableThis();
+	editGasBaseCosts.DisableThis();
+	textGasUpgradeFactor.DisableThis();
+	editGasUpgradeFactor.DisableThis();
+
+	groupTimeCosts.DisableThis();
+	textTimeBaseCosts.DisableThis();
+	editTimeBaseCosts.DisableThis();
+	textTimeUpgradeFactor.DisableThis();
+	editTimeUpgradeFactor.DisableThis();
+}
+
+void UpgradeSettingsWindow::EnableCostEditing()
+{
+	groupMineralCosts.EnableThis();
+	textMineralBaseCosts.EnableThis();
+	editMineralBaseCosts.EnableThis();
+	textMineralUpgradeFactor.EnableThis();
+	editMineralUpgradeFactor.EnableThis();
+
+	groupGasCosts.EnableThis();
+	textGasBaseCosts.EnableThis();
+	editGasBaseCosts.EnableThis();
+	textGasUpgradeFactor.EnableThis();
+	editGasUpgradeFactor.EnableThis();
+
+	groupTimeCosts.EnableThis();
+	textTimeBaseCosts.EnableThis();
+	editTimeBaseCosts.EnableThis();
+	textTimeUpgradeFactor.EnableThis();
+	editTimeUpgradeFactor.EnableThis();
 }

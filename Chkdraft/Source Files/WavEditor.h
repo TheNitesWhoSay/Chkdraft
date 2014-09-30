@@ -8,10 +8,15 @@ class WavEditorWindow : public ClassWindow
 {
 	public:
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CreateSubWindows(HWND hWnd);
+		void DisableMapSoundEditing();
+		void EnableMapSoundEditing();
+		void DisableSoundCustomization();
+		void EnableSoundCustomization();
 
 		TextControl textMapSoundFiles;
 		ButtonControl buttonStopSounds;

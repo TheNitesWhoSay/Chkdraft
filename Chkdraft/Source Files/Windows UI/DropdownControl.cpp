@@ -45,3 +45,69 @@ bool DropdownControl::GetText(int index, char* dest, int destLength)
 	else
 		return false;
 }
+
+bool DropdownControl::GetEditText(std::string& dest)
+{
+	char* temp;
+	if ( GetEditText(temp) )
+	{
+		try { dest = temp; }
+		catch ( std::exception ) { delete[] temp; return false; }
+		delete[] temp;
+		return true;
+	}
+	else
+		return false;
+}
+
+template <typename numType>
+bool DropdownControl::GetEditNum(numType &dest)
+{
+	bool success = false;
+	char* text;
+	if ( GetEditText(text) )
+	{
+		int temp;
+		if ( temp = atoi(text) )
+		{
+			dest = temp;
+			success = true;
+		}
+		else if ( strlen(text) > 0 && text[0] == '0' )
+		{
+			dest = 0;
+			success = true;
+		}
+		delete[] text;
+	}
+	return success;
+}
+template bool DropdownControl::GetEditNum<u8>(u8 &dest);
+template bool DropdownControl::GetEditNum<u16>(u16 &dest);
+template bool DropdownControl::GetEditNum<s32>(s32 &dest);
+template bool DropdownControl::GetEditNum<u32>(u32 &dest);
+template bool DropdownControl::GetEditNum<int>(int &dest);
+
+bool DropdownControl::GetEditText(char* &dest)
+{
+	bool success = false;
+	int length = GetWindowTextLength(getHandle())+1;
+	if ( length > 1 )
+	{
+		char* text;
+		try {
+			text = new char[length];
+		} catch ( std::bad_alloc ) {
+			return false;
+		}
+		if ( GetWindowText(getHandle(), text, length) )
+		{
+			text[length-1] = '\0';
+			dest = new char[length];
+			strcpy_s(dest, length, text);
+			success = true;
+		}
+		delete[] text;
+	}
+	return success;
+}

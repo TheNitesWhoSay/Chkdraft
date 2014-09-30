@@ -222,44 +222,47 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 				{
 					track->unit.xc = u16(mapClickX + track->xc);
 					track->unit.yc = u16(mapClickY + track->yc);
-					bool canPaste = true;
-					if ( allowStack == false )
+					if ( mapClickX + (s32(track->xc)) >= 0 && mapClickY + (s32(track->yc)) >= 0 )
 					{
-						s32 unitLeft   = track->unit.xc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeLeft,
-							unitRight  = track->unit.xc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeRight,
-							unitTop	   = track->unit.yc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeUp,
-							unitBottom = track->unit.yc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeDown;
-
-						ChkUnit* unit;
-						u16 numUnits = chk->numUnits();
-						for ( u16 i=0; i<numUnits; i++ )
+						bool canPaste = true;
+						if ( allowStack == false )
 						{
-							if ( chk->getUnit(unit, i) )
-							{
-								s32 left   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft,
-									right  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight,
-									top	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp,
-									bottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
+							s32 unitLeft   = track->unit.xc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeLeft,
+								unitRight  = track->unit.xc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeRight,
+								unitTop	   = track->unit.yc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeUp,
+								unitBottom = track->unit.yc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeDown;
 
-								if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
+							ChkUnit* unit;
+							u16 numUnits = chk->numUnits();
+							for ( u16 i=0; i<numUnits; i++ )
+							{
+								if ( chk->getUnit(unit, i) )
 								{
-									canPaste = false;
-									break;
+									s32 left   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft,
+										right  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight,
+										top	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp,
+										bottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
+
+									if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
+									{
+										canPaste = false;
+										break;
+									}
 								}
 							}
 						}
-					}
 
-					if ( canPaste )
-					{
-						prevPaste.x = track->unit.xc;
-						prevPaste.y = track->unit.yc;
-						u16 numUnits = chk->numUnits();
-						if ( chk->UNIT().add<ChkUnit&>(track->unit) )
+						if ( canPaste )
 						{
-							undos.addUndoUnitCreate(numUnits);
-							if ( chkd.unitWindow.getHandle() != nullptr )
-								SendMessage(chkd.unitWindow.getHandle(), ADD_UNIT, numUnits, (LPARAM)&track->unit);
+							prevPaste.x = track->unit.xc;
+							prevPaste.y = track->unit.yc;
+							u16 numUnits = chk->numUnits();
+							if ( chk->UNIT().add<ChkUnit&>(track->unit) )
+							{
+								undos.addUndoUnitCreate(numUnits);
+								if ( chkd.unitWindow.getHandle() != nullptr )
+									chkd.unitWindow.AddUnitItem(numUnits, &track->unit);
+							}
 						}
 					}
 					track = track->next;

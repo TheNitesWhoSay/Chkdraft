@@ -36,6 +36,99 @@ void EditControl::MaximizeTextLimit()
 	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
 }
 
+bool EditControl::GetEditText(std::string& dest)
+{
+	char* temp;
+	if ( GetEditText(temp) )
+	{
+		try { dest = temp; }
+		catch ( std::exception ) { delete[] temp; return false; }
+		delete[] temp;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool EditControl::GetEditBinaryNum(u16 &dest)
+{
+	char* editText;
+	if ( GetEditText(editText) )
+	{
+		const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+									 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
+
+		int length = strlen(editText);
+		dest = 0;
+		for ( int i=length-1; i>=0; i-- )
+		{
+			if ( editText[i] == '1' )
+				dest |= u16BitValues[(length-1)-i];
+			else if ( editText[i] != '0' )
+			{
+				delete[] editText;
+				return false;
+			}
+		}
+		delete[] editText;
+		return true;
+	}
+	else
+		return false;
+}
+
+template <typename numType>
+bool EditControl::GetEditNum(numType &dest)
+{
+	bool success = false;
+	char* text;
+	if ( GetEditText(text) )
+	{
+		int temp;
+		if ( temp = atoi(text) )
+		{
+			dest = temp;
+			success = true;
+		}
+		else if ( strlen(text) > 0 && text[0] == '0' )
+		{
+			dest = 0;
+			success = true;
+		}
+		delete[] text;
+	}
+	return success;
+}
+template bool EditControl::GetEditNum<u8>(u8 &dest);
+template bool EditControl::GetEditNum<u16>(u16 &dest);
+template bool EditControl::GetEditNum<s32>(s32 &dest);
+template bool EditControl::GetEditNum<u32>(u32 &dest);
+template bool EditControl::GetEditNum<int>(int &dest);
+
+bool EditControl::GetEditText(char* &dest)
+{
+	bool success = false;
+	int length = GetWindowTextLength(getHandle())+1;
+	if ( length > 1 )
+	{
+		char* text;
+		try {
+			text = new char[length];
+		} catch ( std::bad_alloc ) {
+			return false;
+		}
+		if ( GetWindowText(getHandle(), text, length) )
+		{
+			text[length-1] = '\0';
+			dest = new char[length];
+			strcpy_s(dest, length, text);
+			success = true;
+		}
+		delete[] text;
+	}
+	return success;
+}
+
 LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if ( msg == WM_KEYDOWN )

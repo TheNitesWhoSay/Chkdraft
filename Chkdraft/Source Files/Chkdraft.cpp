@@ -12,7 +12,7 @@ void Chkdraft::OnLoadTest()
 	OpenMapSettings(ID_SCENARIO_TECHSETTINGS); //*/
 }
 
-Chkdraft::Chkdraft() : editFocused(false)
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
 {
 
 }
@@ -33,13 +33,13 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	MSG msg;
 	while ( GetMessage(&msg, NULL, 0, 0) > 0 )
 	{
-		DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-
+		bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 		if ( IsDialogMessage(currDialog, &msg) == FALSE &&
 			 TranslateMDISysAccel(maps.getHandle(), &msg) == FALSE )
 		{
 			TranslateMessage(&msg);
-			KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+			if ( !isDlgKey )
+				KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 			DispatchMessage(&msg);
 		}
 	}
@@ -127,13 +127,13 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							return true;
 						}
 						break;
-					/*case 'Z': case 'Y': case 'X': case 'C': case 'V':
+					case 'Z': case 'Y': case 'X': case 'C': case 'V':
 						if ( GetKeyState(VK_CONTROL) & 0x8000 )
 						{
 							KeyListener(hWnd, msg, wParam, lParam);
 							return true;
 						}
-						break;*/
+						break;
 				}
 			}
 			break;
@@ -171,21 +171,18 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							case 'S': maps.SaveCurr(true); return; break;
 						}
 					}
-					else // Only control is down
+					else // Only control
 					{
 						switch ( wParam )
 						{
 							case 'A': case 'C': case 'X': case 'V':
 								{
-									if ( currDialog == NULL )
+									switch ( wParam )
 									{
-										switch ( wParam )
-										{
-											case 'A': maps.curr->selectAll(); return; break;
-											case 'C': maps.copy(); return; break;
-											case 'X': maps.cut(); return; break;
-											case 'V': maps.startPaste(false); return; break;
-										}
+										case 'A': maps.curr->selectAll(); return; break;
+										case 'C': maps.copy(); return; break;
+										case 'X': maps.cut(); return; break;
+										case 'V': maps.startPaste(false); return; break;
 									}
 								}
 								break;
@@ -377,8 +374,8 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						{
 							case CBN_SETFOCUS: editFocused = true; break;
 							case CBN_KILLFOCUS: editFocused = false; break;
-							case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); break;
-							case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); break;
+							case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(chkd.getHandle()); break;
+							case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(chkd.getHandle()); break;
 							default: return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam); break;
 						}
 						break;
@@ -422,6 +419,17 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			else if ( wParam == SC_MINIMIZE )
 				MinimizeDialogs();
 			return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam);
+			break;
+
+		case WM_CLOSE:
+			while ( maps.curr != nullptr )
+			{
+				if ( maps.curr->CanExit() )
+					maps.destroyActive();
+				else
+					return 0; // Abort close
+			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_DESTROY:
@@ -488,19 +496,20 @@ void Chkdraft::SizeSubWindows()
 	GetWindowRect(statusBar.getHandle(), &rcStatus);
 	GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
 
-	int border = GetSystemMetrics(SM_CXSIZEFRAME)-1;
+	int xBorder = GetSystemMetrics(SM_CXSIZEFRAME)-1,
+		yBorder = GetSystemMetrics(SM_CYSIZEFRAME)-1;
 
 	// Fit plot to the area between the toolbar and statusbar
 	SetWindowPos( mainPlot.getHandle(), NULL, 0, rcTool.bottom-rcTool.top,
 				  rcMain.right-rcMain.left, rcMain.bottom-rcMain.top+rcTool.top-rcTool.bottom-rcStatus.bottom+rcStatus.top, SWP_NOZORDER );
 
 	// Fit left bar to the area between the toolbar and statusbar without changing width
-	SetWindowPos( mainPlot.leftBar.getHandle(), NULL, -border, -border,
-				  rcLeftBar.right-rcLeftBar.left, rcStatus.top-rcTool.bottom+border*2, SWP_NOZORDER );
+	SetWindowPos( mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
+				  rcLeftBar.right-rcLeftBar.left, rcStatus.top-rcTool.bottom+yBorder*2, SWP_NOZORDER );
 
 	// Fit the map MDI window to the area right of the left bar and between the toolbar and statusbar
-	SetWindowPos( maps.getHandle(), NULL, rcLeftBar.right-rcLeftBar.left-border-2, rcTool.bottom-rcTool.top,
-				  rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+border+2, rcStatus.top-rcTool.bottom+2, SWP_NOZORDER );
+	SetWindowPos( maps.getHandle(), NULL, rcLeftBar.right-rcLeftBar.left-xBorder-2, rcTool.bottom-rcTool.top,
+				  rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder+2, rcStatus.top-rcTool.bottom, SWP_NOZORDER );
 
 	RedrawWindow(statusBar.getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
@@ -542,7 +551,7 @@ void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 	if ( comboId == ID_COMBOBOX_PLAYER )
 	{
 		u8 newPlayer;
-		if ( GetPlayerNum(hCombo, newPlayer) )
+		if ( GetPlayerNum(mainToolbar.playerBox, newPlayer) )
 			maps.ChangePlayer(newPlayer);
 	}
 }

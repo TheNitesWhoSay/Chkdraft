@@ -297,6 +297,12 @@
     <ClInclude Include="Source Files\UnitTree.h">
       <Filter>Header Files\Main Windows\Trees</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\ListViewControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationTree.h">
+      <Filter>Header Files\Main Windows\Trees</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
@@ -483,6 +489,12 @@
       <Filter>Source Files\Main Windows\Trees</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\UnitTree.cpp">
+      <Filter>Source Files\Main Windows\Trees</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\ListViewControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationTree.cpp">
       <Filter>Source Files\Main Windows\Trees</Filter>
     </ClCompile>
   </ItemGroup>

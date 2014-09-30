@@ -12,6 +12,77 @@ bool UnitWindow::CreateThis(HWND hParent)
 	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_UNITPROPERTIES), hParent);
 }
 
+bool UnitWindow::CreateSubWindows(HWND hWnd)
+{
+	editLife.FindThis(hWnd, IDC_EDIT_HP);
+	editMana.FindThis(hWnd, IDC_EDIT_MP);
+	editShield.FindThis(hWnd, IDC_EDIT_SHIELD);
+	editResources.FindThis(hWnd, IDC_EDIT_RESOURCES);
+	editHanger.FindThis(hWnd, IDC_EDIT_HANGER);
+	editUnitId.FindThis(hWnd, IDC_EDIT_ID);
+	editXc.FindThis(hWnd, IDC_EDIT_XC);
+	editYc.FindThis(hWnd, IDC_EDIT_YC);
+	dropPlayer.FindThis(hWnd, IDC_COMBO_PLAYER);
+
+	initilizing = true;
+	HWND hPlayer = GetDlgItem(hWnd, IDC_COMBO_PLAYER),
+		 hHP = GetDlgItem(hWnd, IDC_EDIT_HP),
+		 hMP = GetDlgItem(hWnd, IDC_EDIT_MP),
+		 hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD),
+		 hResources = GetDlgItem(hWnd, IDC_EDIT_RESOURCES),
+		 hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER),
+		 hID = GetDlgItem(hWnd, IDC_EDIT_ID);
+
+	char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
+							  "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
+	for ( int i=0; i<12; i++ )
+		SendMessage(hPlayer, CB_ADDSTRING, 0, (LPARAM)playerStrings[i]);
+	SendMessage(hPlayer, CB_LIMITTEXT, 0, NULL);
+
+	HWND hBuddy[6];
+	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
+							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
+	for ( int i=0; i<6; i++ )
+	{
+		hBuddy[i] = CreateWindowExA(NULL, UPDOWN_CLASS, NULL,
+									WS_CHILDWINDOW|WS_VISIBLE|WS_DISABLED|
+									UDS_SETBUDDYINT|UDS_ALIGNRIGHT|UDS_ARROWKEYS|UDS_HOTTRACK,
+									0, 0, 0, 0,
+									hWnd, (HMENU)buddyIds[i], NULL, NULL);
+	}
+	SendMessage(hBuddy[0], UDM_SETBUDDY, (WPARAM)hHP, NULL);
+	SendMessage(hBuddy[0], UDM_SETRANGE32, 0, 100);
+	SendMessage(hBuddy[1], UDM_SETBUDDY, (WPARAM)hMP, NULL);
+	SendMessage(hBuddy[1], UDM_SETRANGE32, 0, 100);
+	SendMessage(hBuddy[2], UDM_SETBUDDY, (WPARAM)hShield, NULL);
+	SendMessage(hBuddy[2], UDM_SETRANGE32, 0, 100);
+	SendMessage(hBuddy[3], UDM_SETBUDDY, (WPARAM)hResources, NULL);
+	SendMessage(hBuddy[3], UDM_SETRANGE32, 0, 50000);
+	SendMessage(hBuddy[4], UDM_SETBUDDY, (WPARAM)hHanger, NULL);
+	SendMessage(hBuddy[4], UDM_SETRANGE32, 0, 8);
+	SendMessage(hBuddy[5], UDM_SETBUDDY, (WPARAM)hID, NULL);
+	SendMessage(hBuddy[5], UDM_SETRANGE32, 0, 65535);
+
+	listUnits.CreateThis(hWnd, 9, 10, 549, 449, IDC_UNITLIST);
+	listUnits.EnableFullRowSelect();
+
+	HFONT hListFont = CreateFont(13, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tahoma");
+	SendMessage(listUnits.getHandle(), WM_SETFONT, (WPARAM)hListFont, 0);
+
+	listUnits.AddColumn(0, "Unit type", 200, LVCFMT_LEFT);
+	listUnits.AddColumn(1, "Owner", 100, LVCFMT_LEFT);
+	listUnits.AddColumn(2, "X", 75, LVCFMT_RIGHT);
+	listUnits.AddColumn(3, "Y", 75, LVCFMT_RIGHT);
+	listUnits.AddColumn(4, "Index", 75, LVCFMT_RIGHT);
+
+	RepopulateList();
+
+	ShowWindow(listUnits.getHandle(), SW_SHOW);
+	initilizing = false;
+	
+	return true;
+}
+
 bool UnitWindow::DestroyThis()
 {
 	return ClassWindow::DestroyDialog();
@@ -24,7 +95,7 @@ void UnitWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void UnitWindow::ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer)
 {
-	HWND hUnitList = GetDlgItem(hUnitProperties, IDC_UNITLIST);
+	HWND hUnitList = listUnits.getHandle();
 	UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 	ChkUnit* unit;
 
@@ -50,8 +121,116 @@ void UnitWindow::ChangeOwner(HWND hUnitList, int index, u8 newPlayer)
 		padding[0] = '\0';
 	sprintf_s(owner, "Player %s%i", padding, newPlayer+1);
 
-	int row = GetItemRow(hUnitList, index);
-	SetItem(hUnitList, row, UNIT_OWNER_COLUMN, owner);
+	int row = listUnits.GetItemRow(index);
+	listUnits.SetItem(row, UNIT_OWNER_COLUMN, owner);
+}
+
+void UnitWindow::SetListRedraw(bool allowRedraw)
+{
+	HWND hUnitList = listUnits.getHandle();
+	
+	if ( allowRedraw )
+	{
+		SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
+		ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
+		UpdateWindow(hUnitList);
+	}
+	else
+		SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
+}
+
+bool UnitWindow::AddUnitItem(u16 index, ChkUnit* unit)
+{
+	HWND hUnitList = listUnits.getHandle();
+	char owner[32], padding[2] = { }, xc[32], yc[32], cIndex[32];;
+
+	u16 id = unit->id;
+
+	if ( unit->owner+1 < 10 )
+		padding[0] = '0';
+	else
+		padding[0] = '\0';
+	sprintf_s(owner, "Player %s%i", padding, unit->owner+1);
+						
+	_itoa_s(unit->xc, xc, 10);
+	_itoa_s(unit->yc, yc, 10);
+	_itoa_s(index, cIndex, 10);
+
+	string unitName;
+	chkd.maps.curr->getUnitName(unitName, id);
+
+	listUnits.AddRow(4, index);
+	listUnits.SetItem(index, UNIT_NAME_COLUMN, unitName.c_str());
+	listUnits.SetItem(index, UNIT_OWNER_COLUMN, owner);
+	listUnits.SetItem(index, UNIT_XC_COLUMN, xc);
+	listUnits.SetItem(index, UNIT_YC_COLUMN, yc);
+	listUnits.SetItem(index, UNIT_INDEX_COLUMN, index);
+	return true;
+}
+
+void UnitWindow::UpdateEnabledState()
+{
+	if ( chkd.maps.curr->selections().hasUnits() )
+	{
+		EnableUnitEditing(getHandle());
+		ChkUnit* unit;
+		if ( chkd.maps.curr->getUnit(unit, chkd.maps.curr->selections().getFirstUnit()->index) )
+			SetUnitFieldText(getHandle(), unit);
+	}
+	else
+		DisableUnitEditing(getHandle());
+}
+
+void UnitWindow::RepopulateList()
+{
+	initilizing = true;
+	HWND hUnitList = GetDlgItem(getHandle(), IDC_UNITLIST);
+	SetListRedraw(false);
+
+	ListView_DeleteAllItems(hUnitList);
+
+	if ( chkd.maps.curr )
+	{
+		ChkUnit* unit = nullptr;
+		buffer& units = chkd.maps.curr->UNIT();
+
+		int unitTableSize = units.size(),
+			numUnits = unitTableSize/UNIT_STRUCT_SIZE;
+
+		for ( int i=0; i<numUnits; i++ )
+			AddUnitItem(i, (ChkUnit*)units.getPtr(i*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE));
+
+		bool unitsSelected = chkd.maps.curr->selections().hasUnits();
+		if ( unitsSelected )
+		{
+			UnitNode* curr = chkd.maps.curr->selections().getFirstUnit();
+			int index = curr->index;
+			ListView_SetItemState(hUnitList, curr->index, LVIS_FOCUSED, LVIS_FOCUSED);
+			while ( curr != nullptr )
+			{
+				ListView_SetItemState(hUnitList, curr->index, LVIS_SELECTED, LVIS_SELECTED);
+				curr = curr->next;
+			}
+			EnableUnitEditing(getHandle());
+			ChkUnit* unit;
+			if ( chkd.maps.curr->getUnit(unit, index) )
+			{
+				SetUnitFieldText(getHandle(), unit);
+
+				string unitName;
+				chkd.maps.curr->getUnitName(unitName, unit->id);
+				SetWindowText(getHandle(), unitName.c_str());
+
+				int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
+				ListView_EnsureVisible(hUnitList, row, FALSE);
+				row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
+				ListView_EnsureVisible(hUnitList, row, FALSE);
+			}
+		}
+	}
+
+	SetListRedraw(true);
+	initilizing = false;
 }
 
 void UnitWindow::EnableUnitEditing(HWND hWnd)
@@ -173,8 +352,8 @@ void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit* unit)
 
 void UnitWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 {
-	int row1 = GetItemRow(hListView, index1),
-		row2 = GetItemRow(hListView, index2);
+	int row1 = listUnits.GetItemRow(index1),
+		row2 = listUnits.GetItemRow(index2);
 
 	LVITEM item = { };
 	item.mask = LVIF_PARAM;
@@ -182,18 +361,18 @@ void UnitWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 	item.lParam = index2;
 
 	ListView_SetItem(hListView, &item);
-	SetItem(hListView, row1, UNIT_INDEX_COLUMN, index2);
+	listUnits.SetItem(row1, UNIT_INDEX_COLUMN, index2);
 
 	item.iItem = row2;
 	item.lParam = index1;
 
 	ListView_SetItem(hListView, &item);
-	SetItem(hListView, row2, UNIT_INDEX_COLUMN, index1);
+	listUnits.SetItem(row2, UNIT_INDEX_COLUMN, index1);
 }
 
 void UnitWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 {
-	int row = GetItemRow(hListView, oldLParam);
+	int row = listUnits.GetItemRow(oldLParam);
 
 	LVITEM item = { };
 	item.mask = LVIF_PARAM;
@@ -202,7 +381,7 @@ void UnitWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 
 	ListView_SetItem(hListView, &item);
 
-	SetItem(hListView, row, UNIT_INDEX_COLUMN, newLParam);
+	listUnits.SetItem(row, UNIT_INDEX_COLUMN, newLParam);
 }
 
 int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
@@ -278,181 +457,8 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return FALSE; // Necessary for proper minimize/restore
 			break;
 
-		case SET_LIST_REDRAW:
-			{
-				HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-				SendMessage(hUnitList, WM_SETREDRAW, wParam, NULL);
-				if ( wParam == TRUE )
-				{
-					ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-					UpdateWindow(hUnitList);
-				}
-			}
-			break;
-
-		case ADD_UNIT:
-			{
-				ChkUnit* unit = (ChkUnit*)lParam;
-				u16 index = (u16)wParam;
-
-				HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-				char owner[32], padding[2] = { }, xc[32], yc[32], cIndex[32];;
-
-				u16 id = unit->id;
-
-				if ( unit->owner+1 < 10 )
-					padding[0] = '0';
-				else
-					padding[0] = '\0';
-				sprintf_s(owner, "Player %s%i", padding, unit->owner+1);
-						
-				_itoa_s(unit->xc, xc, 10);
-				_itoa_s(unit->yc, yc, 10);
-				_itoa_s(index, cIndex, 10);
-
-				string unitName;
-				chkd.maps.curr->getUnitName(unitName, id);
-
-				AddRow(hUnitList, 4, index);
-				SetItem(hUnitList, index, UNIT_NAME_COLUMN, unitName.c_str());
-				SetItem(hUnitList, index, UNIT_OWNER_COLUMN, owner);
-				SetItem(hUnitList, index, UNIT_XC_COLUMN, xc);
-				SetItem(hUnitList, index, UNIT_YC_COLUMN, yc);
-				SetItem(hUnitList, index, UNIT_INDEX_COLUMN, index);
-			}
-			break;
-
 		case WM_INITDIALOG:
-			{
-				initilizing = true;
-				HWND hPlayer = GetDlgItem(hWnd, IDC_COMBO_PLAYER),
-					 hHP = GetDlgItem(hWnd, IDC_EDIT_HP),
-					 hMP = GetDlgItem(hWnd, IDC_EDIT_MP),
-					 hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD),
-					 hResources = GetDlgItem(hWnd, IDC_EDIT_RESOURCES),
-					 hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER),
-					 hID = GetDlgItem(hWnd, IDC_EDIT_ID);
-
-				char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
-										  "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
-				for ( int i=0; i<12; i++ )
-					SendMessage(hPlayer, CB_ADDSTRING, 0, (LPARAM)playerStrings[i]);
-				SendMessage(hPlayer, CB_LIMITTEXT, 0, NULL);
-
-				HWND hBuddy[6];
-				const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-										  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-				for ( int i=0; i<6; i++ )
-				{
-					hBuddy[i] = CreateWindowExA(NULL, UPDOWN_CLASS, NULL,
-												WS_CHILDWINDOW|WS_VISIBLE|WS_DISABLED|
-												UDS_SETBUDDYINT|UDS_ALIGNRIGHT|UDS_ARROWKEYS|UDS_HOTTRACK,
-												0, 0, 0, 0,
-												hWnd, (HMENU)buddyIds[i], NULL, NULL);
-				}
-				SendMessage(hBuddy[0], UDM_SETBUDDY, (WPARAM)hHP, NULL);
-				SendMessage(hBuddy[0], UDM_SETRANGE32, 0, 100);
-				SendMessage(hBuddy[1], UDM_SETBUDDY, (WPARAM)hMP, NULL);
-				SendMessage(hBuddy[1], UDM_SETRANGE32, 0, 100);
-				SendMessage(hBuddy[2], UDM_SETBUDDY, (WPARAM)hShield, NULL);
-				SendMessage(hBuddy[2], UDM_SETRANGE32, 0, 100);
-				SendMessage(hBuddy[3], UDM_SETBUDDY, (WPARAM)hResources, NULL);
-				SendMessage(hBuddy[3], UDM_SETRANGE32, 0, 50000);
-				SendMessage(hBuddy[4], UDM_SETBUDDY, (WPARAM)hHanger, NULL);
-				SendMessage(hBuddy[4], UDM_SETRANGE32, 0, 8);
-				SendMessage(hBuddy[5], UDM_SETBUDDY, (WPARAM)hID, NULL);
-				SendMessage(hBuddy[5], UDM_SETRANGE32, 0, 65535);
-
-				HWND hUnitList = CreateWindowExA(WS_EX_CLIENTEDGE, WC_LISTVIEW, "List View",
-												 WS_CHILD|LVS_REPORT|LVS_SHOWSELALWAYS,
-												 9, 10, 549, 449,
-												 hWnd, (HMENU)IDC_UNITLIST, GetModuleHandle(NULL), NULL);
-
-				// Select all of the row when selecting a unit
-				SendMessage(hUnitList, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT);
-
-				HFONT hListFont = CreateFontA(13, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tahoma");
-				SendMessage(hUnitList, WM_SETFONT, (WPARAM)hListFont, 0);
-
-				LV_COLUMN lvCol = { };
-				AddColumn(hUnitList, 0, "Unit type", 200, LVCFMT_LEFT);
-				AddColumn(hUnitList, 1, "Owner", 100, LVCFMT_LEFT);
-				AddColumn(hUnitList, 2, "X", 75, LVCFMT_RIGHT);
-				AddColumn(hUnitList, 3, "Y", 75, LVCFMT_RIGHT);
-				AddColumn(hUnitList, 4, "Index", 75, LVCFMT_RIGHT);
-
-				SendMessage(hWnd, REPOPULATE_LIST, NULL, NULL);
-
-				ShowWindow(hUnitList, SW_SHOW);
-				initilizing = false;
-			}
-			break;
-
-		case REPOPULATE_LIST:
-			{
-				initilizing = true;
-				HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-				SendMessage(hWnd, SET_LIST_REDRAW, FALSE, NULL);
-
-				ListView_DeleteAllItems(hUnitList);
-
-				if ( chkd.maps.curr )
-				{
-					ChkUnit* unit = nullptr;
-					buffer& units = chkd.maps.curr->UNIT();
-
-					int unitTableSize = units.size(),
-						numUnits = unitTableSize/UNIT_STRUCT_SIZE;
-
-					for ( int i=0; i<numUnits; i++ )
-						SendMessage(hWnd, ADD_UNIT, i, (LPARAM)units.getPtr(i*UNIT_STRUCT_SIZE));
-
-					bool unitsSelected = chkd.maps.curr->selections().hasUnits();
-					if ( unitsSelected )
-					{
-						UnitNode* curr = chkd.maps.curr->selections().getFirstUnit();
-						int index = curr->index;
-						ListView_SetItemState(hUnitList, curr->index, LVIS_FOCUSED, LVIS_FOCUSED);
-						while ( curr != nullptr )
-						{
-							ListView_SetItemState(hUnitList, curr->index, LVIS_SELECTED, LVIS_SELECTED);
-							curr = curr->next;
-						}
-						EnableUnitEditing(hWnd);
-						ChkUnit* unit;
-						if ( chkd.maps.curr->getUnit(unit, index) )
-						{
-							SetUnitFieldText(hWnd, unit);
-
-							string unitName;
-							chkd.maps.curr->getUnitName(unitName, unit->id);
-							SetWindowText(hWnd, unitName.c_str());
-
-							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
-							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
-							ListView_EnsureVisible(hUnitList, row, FALSE);
-						}
-					}
-				}
-
-				SendMessage(hWnd, SET_LIST_REDRAW, TRUE, NULL);
-				initilizing = false;
-			}
-			break;
-
-		case UPDATE_ENABLED_STATE:
-			{
-				if ( chkd.maps.curr->selections().hasUnits() )
-				{
-					EnableUnitEditing(hWnd);
-					ChkUnit* unit;
-					if ( chkd.maps.curr->getUnit(unit, chkd.maps.curr->selections().getFirstUnit()->index) )
-						SetUnitFieldText(hWnd, unit);
-				}
-				else
-					DisableUnitEditing(hWnd);
-			}
+			CreateSubWindows(hWnd);
 			break;
 
 		case WM_SHOWWINDOW:
@@ -475,7 +481,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							case CBN_EDITCHANGE:
 								{
 									u8 newPlayer;
-									if ( GetPlayerNum((HWND)lParam, newPlayer) )
+									if ( GetPlayerNum(dropPlayer, newPlayer) )
 										ChangeCurrOwner(hWnd, newPlayer);
 								}
 								break;
@@ -534,7 +540,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							}
 							undos.startNext(0);
 							selections.ensureFirst(unitStackTopIndex);
-							SendMessage(hWnd, REPOPULATE_LIST, NULL, NULL);
+							RepopulateList();
 						}
 						break;
 
@@ -584,7 +590,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							}
 							undos.startNext(0);
 							selections.ensureFirst(unitStackTopIndex);
-							SendMessage(hWnd, REPOPULATE_LIST, NULL, NULL);
+							RepopulateList();
 						}
 						break;
 
@@ -613,9 +619,9 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								track = track->next;
 							}
 							ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
+							int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
+							row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
 							map->undos().startNext(0);
 							SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
@@ -645,9 +651,9 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								track = track->next;
 							}
 							ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-							int row = GetItemRow(hUnitList, chkd.maps.curr->selections().getLastUnit()->index);
+							int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
-							row = GetItemRow(hUnitList, chkd.maps.curr->selections().getFirstUnit()->index);
+							row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
 							ListView_EnsureVisible(hUnitList, row, FALSE);
 							map->undos().startNext(0);
 							SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
@@ -723,7 +729,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									selections.ensureFirst(unitStackTopIndex);
 									undos.addUndoUnitMoveToHeader(numDeletes, numCreates);
 									undos.startNext(0);
-									SendMessage(hWnd, REPOPULATE_LIST, NULL, NULL);
+									RepopulateList();
 								}
 							}
 						}
@@ -738,10 +744,10 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							{
 								u16 index = selections.getHighestIndex();
 								selections.removeUnit(index);
-								RemoveRow(hUnitList, index);
+								listUnits.RemoveRow(index);
 
 								HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-								int row = GetItemRow(hUnitList, index);
+								int row = listUnits.GetItemRow(index);
 
 								ChkUnit* delUnit;
 								if ( map->getUnit(delUnit, index) )
@@ -897,7 +903,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_HP:
 											{
 												u8 hpPercent;
-												if ( GetEditNum<u8>(hWnd, IDC_EDIT_HP, hpPercent) )
+												if ( editLife.GetEditNum<u8>(hpPercent) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -916,7 +922,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_MP:
 											{
 												u8 mpPercent;
-												if ( GetEditNum<u8>(hWnd, IDC_EDIT_MP, mpPercent) )
+												if ( editMana.GetEditNum<u8>(mpPercent) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -935,7 +941,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_SHIELD:
 											{
 												u8 shieldPercent;
-												if ( GetEditNum<u8>(hWnd, IDC_EDIT_SHIELD, shieldPercent) )
+												if ( editShield.GetEditNum<u8>(shieldPercent) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -954,7 +960,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_RESOURCES:
 											{
 												u32 resources;
-												if ( GetEditNum<u32>(hWnd, IDC_EDIT_RESOURCES, resources) )
+												if ( editResources.GetEditNum<u32>(resources) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -973,7 +979,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_HANGER:
 											{
 												u16 hanger;
-												if ( GetEditNum<u16>(hWnd, IDC_EDIT_HANGER, hanger) )
+												if ( editHanger.GetEditNum<u16>(hanger) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -992,7 +998,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_ID:
 											{
 												u16 unitID;
-												if ( GetEditNum<u16>(hWnd, IDC_EDIT_ID, unitID) )
+												if ( editUnitId.GetEditNum<u16>(unitID) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -1003,11 +1009,11 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->id = unitID;
-															int row = GetItemRow(hUnitList, index);
+															int row = listUnits.GetItemRow(index);
 
 															string unitName;
 															chkd.maps.curr->getUnitName(unitName, unitID);
-															SetItem(hUnitList, row, UNIT_NAME_COLUMN, unitName.c_str());
+															listUnits.SetItem(row, UNIT_NAME_COLUMN, unitName.c_str());
 														
 															if ( currUnit == chkd.maps.curr->selections().getFirstUnit() )
 																SetWindowText(hWnd, unitName.c_str());
@@ -1022,7 +1028,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_XC:
 											{
 												u16 unitXC;
-												if ( GetEditNum<u16>(hWnd, IDC_EDIT_XC, unitXC) )
+												if ( editXc.GetEditNum<u16>(unitXC) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -1033,8 +1039,8 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->xc = unitXC;
-															int row = GetItemRow(hUnitList, index);
-															SetItem(hUnitList, row, UNIT_XC_COLUMN, unitXC);
+															int row = listUnits.GetItemRow(index);
+															listUnits.SetItem(row, UNIT_XC_COLUMN, unitXC);
 														}
 														currUnit = currUnit->next;
 													}
@@ -1046,7 +1052,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										case IDC_EDIT_YC:
 											{
 												u16 unitYC;
-												if ( GetEditNum<u16>(hWnd, IDC_EDIT_YC, unitYC) )
+												if ( editYc.GetEditNum<u16>(unitYC) )
 												{
 													UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 													HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
@@ -1057,8 +1063,8 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 														if ( chkd.maps.curr->getUnit(unit, index) )
 														{
 															unit->yc = unitYC;
-															int row = GetItemRow(hUnitList, index);
-															SetItem(hUnitList, row, UNIT_YC_COLUMN, unitYC);
+															int row = listUnits.GetItemRow(index);
+															listUnits.SetItem(row, UNIT_YC_COLUMN, unitYC);
 														}
 														currUnit = currUnit->next;
 													}

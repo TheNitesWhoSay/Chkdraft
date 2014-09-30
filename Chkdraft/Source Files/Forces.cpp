@@ -19,8 +19,8 @@ bool ForcesWindow::CreateThis(HWND hParent)
 	{
 		GuiMap* map = chkd.maps.curr;
 		HWND hForces = getHandle();
-		CreateStaticText(hForces, 5, 10, 587, 20,
-			"Designate player forces, set force names, and force properties. It is recommended to separate computer and human players");
+		textAboutForces.CreateThis(hForces, 5, 10, 587, 20,
+			"Designate player forces, set force names, and force properties. It is recommended to separate computer and human players", 0);
 
 		const char* forceGroups[] = { "Force 1", "Force 2", "Force 3", "Force 4" };
 		for ( int y=0; y<2; y++ )
@@ -36,13 +36,14 @@ bool ForcesWindow::CreateThis(HWND hParent)
 					map->getForceInfo(force, allied, vision, random, av);
 				}
 
-				CreateGroupBox(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force]);
-				CreateEditBox(hForces, 20+293*x, 70+239*y, 268, 20, forceName.c_str(), false, ID_EDIT_F1NAME+force);
-				CreateDragListBox(hForces, 20+293*x, 95+239*y, 268, 121, ID_LB_F1PLAYERS+force);
-				CreateCheckBox(hForces, 15+293*x, 232+239*y, 100, 20, allied, "Allied", ID_CHECK_F1ALLIED+force);
-				CreateCheckBox(hForces, 15+293*x, 252+239*y, 100, 20, vision, "Share Vision", ID_CHECK_F1VISION+force);
-				CreateCheckBox(hForces, 125+293*x, 232+239*y, 150, 20, random, "Randomize Start Location", ID_CHECK_F1RANDOM+force);
-				CreateCheckBox(hForces, 125+293*x, 252+239*y, 150, 20, av, "Enable Allied Victory", ID_CHECK_F1AV+force);
+				groupForce[force].CreateThis(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force], 0);
+				editForceName[force].CreateThis(hForces, 20+293*x, 70+239*y, 268, 20, false, ID_EDIT_F1NAME+force);
+				editForceName[force].SetText(forceName.c_str());
+				dragForces[force].CreateThis(hForces, 20+293*x, 95+239*y, 268, 121, ID_LB_F1PLAYERS+force);
+				checkAllied[force].CreateThis(hForces, 15+293*x, 232+239*y, 100, 20, allied, "Allied", ID_CHECK_F1ALLIED+force);
+				checkSharedVision[force].CreateThis(hForces, 15+293*x, 252+239*y, 100, 20, vision, "Share Vision", ID_CHECK_F1VISION+force);
+				checkRandomizeStart[force].CreateThis(hForces, 125+293*x, 232+239*y, 150, 20, random, "Randomize Start Location", ID_CHECK_F1RANDOM+force);
+				checkAlliedVictory[force].CreateThis(hForces, 125+293*x, 252+239*y, 150, 20, av, "Enable Allied Victory", ID_CHECK_F1AV+force);
 			}
 		}
 
@@ -61,62 +62,62 @@ bool ForcesWindow::DestroyThis()
 	return true;
 }
 
+void ForcesWindow::RefreshWindow()
+{
+	HWND hWnd = getHandle();
+	GuiMap* map = chkd.maps.curr;
+	if ( map != nullptr )
+	{
+		for ( int force=0; force<4; force++ )
+		{
+			string forceName;
+			bool allied = false, vision = false, random = false, av = false;
+			forceName = map->getForceString(force);
+			map->getForceInfo(force, allied, vision, random, av);
+
+			SetWindowText(GetDlgItem(hWnd, ID_EDIT_F1NAME+force), forceName.c_str());
+			if ( allied ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , NULL);
+			else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, NULL);
+			if ( vision ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , NULL);
+			else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1VISION+force), BM_SETCHECK, BST_UNCHECKED, NULL);
+			if ( random ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1RANDOM+force), BM_SETCHECK, BST_CHECKED  , NULL);
+			else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1RANDOM+force), BM_SETCHECK, BST_UNCHECKED, NULL);
+			if ( av		) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1AV	   +force), BM_SETCHECK, BST_CHECKED  , NULL);
+			else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1AV	   +force), BM_SETCHECK, BST_UNCHECKED, NULL);
+		}
+
+		for ( int i=0; i<4; i++ )
+		{
+			HWND hListBox = GetDlgItem(hWnd, ID_LB_F1PLAYERS+i);
+			if ( hListBox != NULL )
+				while ( SendMessage(hListBox, LB_DELETESTRING, 0, NULL) != LB_ERR );
+		}
+
+		for ( int player=0; player<8; player++ )
+		{
+			u8 force(0), color(0), race(0), displayOwner(map->getDisplayOwner(player));
+			if ( map->getPlayerForce(player, force) )
+			{
+				map->getPlayerColor(player, color);
+				map->getPlayerRace(player, race);
+				stringstream ssplayer;
+				ssplayer << "Player " << player+1 << " - " << playerColors[color] << " - "
+						 << playerRaces[race] << " (" << playerOwners[displayOwner] << ")";
+				HWND hListBox = GetDlgItem(hWnd, ID_LB_F1PLAYERS+force);
+				if ( hListBox != NULL )
+					SendMessage(hListBox, LB_ADDSTRING, NULL, (LPARAM)ssplayer.str().c_str());
+			}
+		}
+	}
+}
+
 LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case REFRESH_WINDOW:
-			{
-				GuiMap* map = chkd.maps.curr;
-				if ( map != nullptr )
-				{
-					for ( int force=0; force<4; force++ )
-					{
-						string forceName;
-						bool allied = false, vision = false, random = false, av = false;
-						forceName = map->getForceString(force);
-						map->getForceInfo(force, allied, vision, random, av);
-
-						SetWindowText(GetDlgItem(hWnd, ID_EDIT_F1NAME+force), forceName.c_str());
-						if ( allied ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , NULL);
-						else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-						if ( vision ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , NULL);
-						else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1VISION+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-						if ( random ) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1RANDOM+force), BM_SETCHECK, BST_CHECKED  , NULL);
-						else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1RANDOM+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-						if ( av		) SendMessage(GetDlgItem(hWnd, ID_CHECK_F1AV	   +force), BM_SETCHECK, BST_CHECKED  , NULL);
-						else		  SendMessage(GetDlgItem(hWnd, ID_CHECK_F1AV	   +force), BM_SETCHECK, BST_UNCHECKED, NULL);
-					}
-
-					for ( int i=0; i<4; i++ )
-					{
-						HWND hListBox = GetDlgItem(hWnd, ID_LB_F1PLAYERS+i);
-						if ( hListBox != NULL )
-							while ( SendMessage(hListBox, LB_DELETESTRING, 0, NULL) != LB_ERR );
-					}
-
-					for ( int player=0; player<8; player++ )
-					{
-						u8 force(0), color(0), race(0), displayOwner(map->getDisplayOwner(player));
-						if ( map->getPlayerForce(player, force) )
-						{
-							map->getPlayerColor(player, color);
-							map->getPlayerRace(player, race);
-							stringstream ssplayer;
-							ssplayer << "Player " << player+1 << " - " << playerColors[color] << " - "
-									 << playerRaces[race] << " (" << playerOwners[displayOwner] << ")";
-							HWND hListBox = GetDlgItem(hWnd, ID_LB_F1PLAYERS+force);
-							if ( hListBox != NULL )
-								SendMessage(hListBox, LB_ADDSTRING, NULL, (LPARAM)ssplayer.str().c_str());
-						}
-					}
-				}
-			}
-			break;
-
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
-				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+				RefreshWindow();
 			else
 			{
 				for ( int i=0; i<4; i++ )
@@ -260,7 +261,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										if ( map != nullptr )
 										{
 											map->setPlayerForce(playerBeingDragged, force);
-											SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+											RefreshWindow();
 											stringstream ssPlayer;
 											ssPlayer << "Player " << playerBeingDragged+1;
 											SendMessage(GetDlgItem(hWnd, ID_LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
@@ -289,7 +290,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ForcesWindow::CheckReplaceForceName(int force)
 {
 	string newMapForce;
-	if ( force < 4 && possibleForceNameUpdate[force] == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_F1NAME+force), newMapForce) )
+	if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
 	{
 		u16* mapForceString;
 		if ( chkd.maps.curr->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&

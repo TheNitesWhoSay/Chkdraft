@@ -38,7 +38,7 @@ void MAPS::FocusActive()
 		{
 			curr = &currNode->map; // Sets the current map to the map given by the handle
 			// Need to update location tree, menu checkboxes
-			chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+			chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 			curr->updateMenu();
 		}
 	}
@@ -54,7 +54,7 @@ void MAPS::Focus(HWND hFocus)
 	{
 		curr = &currNode->map; // Sets the current map to the map given by the handle
 		// Need to update location tree, menu checkboxes
-		chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+		chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 		curr->updateMenu();
 	}
 	else
@@ -241,7 +241,8 @@ void MAPS::CloseMap(HWND hMap)
 		for ( int i=0; i<numOnOffMenuItems; i++ )
 			EnableMenuItem(hMenu, onOffMenuItems[i], MF_DISABLED);
 
-		ShowWindow(chkd.mainPlot.leftBar.getHandle(), SW_HIDE);
+		HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
+		ShowWindow(hLeftBar, SW_HIDE);
 
 		chkd.statusBar.SetText(0, "");
 		chkd.statusBar.SetText(1, "");
@@ -364,7 +365,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 				HWND hUnitList = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
-				else if ( GetEditText(chkd.mainToolbar.playerBox.getHandle(), text) )
+				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
 					SetWindowText(hOwner, text.c_str());
 
 				chkd.unitWindow.ChangeOwner(hUnitList, currSelUnit->index, newPlayer);
@@ -406,7 +407,7 @@ void MAPS::cut()
 
 void MAPS::copy()
 {
-	if ( this != nullptr )
+	if ( curr != nullptr )
 	{
 		if ( curr->isProtected() )
 			Error("Cannot copy from protected maps!");
@@ -489,7 +490,7 @@ void MAPS::properties()
 
 			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
 			if ( chkd.tilePropWindow.getHandle() != NULL )
-				SendMessage(chkd.tilePropWindow.getHandle(), WM_COMMAND, TILE_UPDATE, NULL);
+				chkd.tilePropWindow.UpdateTile();
 			else
 				chkd.tilePropWindow.CreateThis(chkd.getHandle());
 			ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
@@ -598,7 +599,9 @@ void MAPS::PushNode(MapNode* map)
 		for ( int i=0; i<numOnOffMenuItems; i++ )
 			EnableMenuItem(hMenu, onOffMenuItems[i], MF_ENABLED);
 
-		ShowWindow(chkd.mainPlot.leftBar.getHandle(), SW_SHOW);
+		HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
+		ShowWindow(hLeftBar, SW_SHOW);
+
 		chkd.statusBar.SetText(1, "Terrain");
 	}
 

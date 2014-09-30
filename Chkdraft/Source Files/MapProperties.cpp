@@ -31,29 +31,33 @@ bool MapPropertiesWindow::CreateThis(HWND hParent)
 			currHeight = map->YSize();
 		}
 
-		CreateStaticText(hMapProperties, 5, 5, 50, 20, "Map Title");
-		CreateEditBox(hMapProperties, 5, 25, 582, 20, mapTitle.c_str(), false, ID_EDIT_MAPTITLE);
+		textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
+		editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, ID_EDIT_MAPTITLE);
+		editMapTitle.SetText(mapTitle.c_str());
 
-		CreateStaticText(hMapProperties, 5, 60, 100, 20, "Map Description");
-		CreateEditBox(hMapProperties, 5, 80, 582, 100, mapDescription.c_str(), true, ID_EDIT_MAPDESCRIPTION);
+		textMapDescription.CreateThis(hMapProperties, 5, 60, 100, 20, "Map Description", 0);
+		editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, ID_EDIT_MAPDESCRIPTION);
+		editMapDescription.SetText(mapDescription.c_str());
 
 		char sCurrWidth[12], sCurrHeight[12];
 		_itoa_s(currWidth, sCurrWidth, 10);
 		_itoa_s(currHeight, sCurrHeight, 10);
 
-		CreateStaticText(hMapProperties, 5, 185, 100, 20, "Map Tileset");
-		CreateDropdownBox(hMapProperties, 5, 205, 185, 400, (const char**)tilesetNames, NUM_TILESETS, currTileset, false, ID_CB_MAPTILESET);
-		CreateStaticText(hMapProperties, 195, 185, 100, 20, "[New] Terrain");
-		CreateDropdownBox(hMapProperties, 195, 205, 185, 400, (const char**)initTerrains[currTileset], numTilesetInitTerrains[currTileset], 0, false, ID_CB_NEWMAPTERRAIN);
-		CreateStaticText(hMapProperties, 385, 185, 50, 20, "Width");
-		CreateEditBox(hMapProperties, 385, 205, 50, 20, sCurrWidth, false, ID_EDIT_NEWMAPWIDTH);
-		CreateStaticText(hMapProperties, 440, 185, 50, 20, "Height");
-		CreateEditBox(hMapProperties, 440, 205, 50, 20, sCurrHeight, false, ID_EDIT_NEWMAPHEIGHT);
+		textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
+		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, ID_CB_MAPTILESET, NUM_TILESETS, (const char**)tilesetNames, defaultFont);
+		textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
+		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, ID_CB_NEWMAPTERRAIN, numTilesetInitTerrains[currTileset], (const char**)initTerrains[currTileset], defaultFont);
+		textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
+		editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, ID_EDIT_NEWMAPWIDTH);
+		editMapWidth.SetText(sCurrWidth);
+		textNewMapHeight.CreateThis(hMapProperties, 440, 185, 50, 20, "Height", 0);
+		editMapHeight.CreateThis(hMapProperties, 440, 205, 50, 20, false, ID_EDIT_NEWMAPHEIGHT);
+		editMapHeight.SetText(sCurrHeight);
 		buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", ID_BUTTON_APPLY);
 
-		const char* sPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4",
-								  "Player 5", "Player 6", "Player 7", "Player 8",
-								  "Player 9", "Player 10", "Player 11", "Player 12" };
+		const char* sPlayers[] = { "Player 1", "Player 2" , "Player 3" , "Player 4",
+								   "Player 5", "Player 6" , "Player 7" , "Player 8",
+								   "Player 9", "Player 10", "Player 11", "Player 12" };
 
 		for ( int yBox=0; yBox<3; yBox++ )
 		{
@@ -67,18 +71,19 @@ bool MapPropertiesWindow::CreateThis(HWND hParent)
 					map->getPlayerRace((u8)player, race);
 				}
 
-				CreateGroupBox(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox]);
-				CreateStaticText(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner");
-				CreateDropdownBox(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, playerOwners, numPlayerOwners, displayOwner, false, ID_CB_P1OWNER+player);
-				CreateStaticText(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race");
-				CreateDropdownBox(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, playerRaces, numPlayerRaces, race, false, ID_CB_P1RACE+player);
+				groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
+				textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
+				dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, ID_CB_P1OWNER+player, numPlayerOwners, playerOwners, defaultFont);
+				textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
+				dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, ID_CB_P1RACE+player, numPlayerRaces, playerRaces, defaultFont);
 
 				if ( yBox < 2 )
 				{
 					if ( map != nullptr )
 						map->getPlayerColor((u8)player, color);
-					CreateStaticText(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color");
-					CreateDropdownBox(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, playerColors, numPlayerColors, color, true, ID_CB_P1COLOR+player);
+
+					textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
+					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, ID_CB_P1COLOR+player, numPlayerColors, playerColors, defaultFont);
 				}
 			}
 		}
@@ -88,60 +93,59 @@ bool MapPropertiesWindow::CreateThis(HWND hParent)
 		return false;
 }
 
+void MapPropertiesWindow::RefreshWindow()
+{
+	GuiMap* map = chkd.maps.curr;
+	if ( map != nullptr )
+	{
+		string mapTitle, mapDescription;
+		map->getMapTitle(mapTitle);
+		map->getMapDescription(mapDescription);
+		u16 tileset = map->getTileset(),
+			currWidth = map->XSize(),
+			currHeight = map->YSize();
+
+		char sCurrWidth[12], sCurrHeight[12];
+		_itoa_s(currWidth, sCurrWidth, 10);
+		_itoa_s(currHeight, sCurrHeight, 10);
+		
+		editMapTitle.SetText(mapTitle.c_str());
+		editMapDescription.SetText(mapDescription.c_str());
+		possibleTitleUpdate = false;
+		possibleDescriptionUpdate = false;
+		dropMapTileset.SetSel(tileset);
+		dropMapTileset.ClearEditSel();
+		dropNewMapTerrain.SetSel(0);
+		dropNewMapTerrain.ClearEditSel();
+		editMapWidth.SetText(sCurrWidth);
+		editMapHeight.SetText(sCurrHeight);
+					
+		for ( int player=0; player<12; player++ )
+		{
+			u8 displayOwner(map->getDisplayOwner(player)), race(0), color(0);
+			map->getPlayerRace(player, race);
+			dropPlayerOwner[player].SetSel(displayOwner);
+			dropPlayerOwner[player].ClearEditSel();
+			dropPlayerRaces[player].SetSel(race);
+			dropPlayerRaces[player].ClearEditSel();
+
+			if ( player < 8 )
+			{
+				map->getPlayerColor(player, color);
+				dropPlayerColor[player].SetSel(0);
+				dropPlayerColor[player].ClearEditSel();
+			}
+		}
+	}
+}
+
 LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case REFRESH_WINDOW:
-			{
-				GuiMap* map = chkd.maps.curr;
-				if ( map != nullptr )
-				{
-					string mapTitle, mapDescription;
-					map->getMapTitle(mapTitle);
-					map->getMapDescription(mapDescription);
-					u16 tileset = map->getTileset(),
-						currWidth = map->XSize(),
-						currHeight = map->YSize();
-
-					char sCurrWidth[12], sCurrHeight[12];
-					_itoa_s(currWidth, sCurrWidth, 10);
-					_itoa_s(currHeight, sCurrHeight, 10);
-
-					SetWindowText(GetDlgItem(hWnd, ID_EDIT_MAPTITLE), mapTitle.c_str());
-					SetWindowText(GetDlgItem(hWnd, ID_EDIT_MAPDESCRIPTION), mapDescription.c_str());
-					possibleTitleUpdate = false;
-					possibleDescriptionUpdate = false;
-					SendMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_SETCURSEL, tileset, NULL);
-					PostMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_SETEDITSEL, NULL, (-1, 0));
-					SendMessage(GetDlgItem(hWnd, ID_CB_NEWMAPTERRAIN), CB_SETCURSEL, 0, NULL);
-					PostMessage(GetDlgItem(hWnd, ID_CB_NEWMAPTERRAIN), CB_SETEDITSEL, NULL, (-1, 0));
-					SetWindowText(GetDlgItem(hWnd, ID_EDIT_NEWMAPWIDTH), sCurrWidth);
-					SetWindowText(GetDlgItem(hWnd, ID_EDIT_NEWMAPHEIGHT), sCurrHeight);
-					
-					for ( int player=0; player<12; player++ )
-					{
-						u8 displayOwner(map->getDisplayOwner(player)), race(0), color(0);
-						map->getPlayerRace(player, race);
-						SendMessage(GetDlgItem(hWnd, ID_CB_P1OWNER+player), CB_SETCURSEL, displayOwner, NULL);
-						PostMessage(GetDlgItem(hWnd, ID_CB_P1OWNER+player), CB_SETEDITSEL, NULL, (-1, 0));
-						SendMessage(GetDlgItem(hWnd, ID_CB_P1RACE+player), CB_SETCURSEL, race, NULL);
-						PostMessage(GetDlgItem(hWnd, ID_CB_P1RACE+player), CB_SETEDITSEL, NULL, (-1, 0));
-
-						if ( player < 8 )
-						{
-							map->getPlayerColor(player, color);
-							SendMessage(GetDlgItem(hWnd, ID_CB_P1COLOR+player), CB_SETCURSEL, 0, NULL);
-							PostMessage(GetDlgItem(hWnd, ID_CB_P1COLOR+player), CB_SETEDITSEL, NULL, (-1, 0));
-						}
-					}
-				}
-			}
-			break;
-
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
-				SendMessage(hWnd, REFRESH_WINDOW, NULL, NULL);
+				RefreshWindow();
 			else
 			{
 				CheckReplaceMapTitle();
@@ -175,7 +179,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 								LRESULT newTileset = SendMessage(GetDlgItem(hWnd, ID_CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
 								chkd.maps.curr->setTileset((u16)newTileset);
 								u16 newWidth, newHeight;
-								if ( GetEditNum<u16>(hWnd, ID_EDIT_NEWMAPWIDTH, newWidth) && GetEditNum<u16>(hWnd, ID_EDIT_NEWMAPHEIGHT, newHeight) )
+								if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
 									chkd.maps.curr->setDimensions((u16)newWidth, (u16)newHeight);
 
 								// Apply new terrain...
@@ -267,7 +271,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 								{
 									u32 player = LOWORD(wParam)-ID_CB_P1COLOR; // 0 based player
 									u8 newColor;
-									if ( GetEditNum<u8>((HWND)lParam, newColor) )
+									if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
 									{
 										if ( chkd.maps.curr->setPlayerColor((u8)player, newColor) )
 											chkd.maps.curr->Redraw(true);
@@ -292,7 +296,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
 	string newMapTitle;
-	if ( possibleTitleUpdate == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPTITLE), newMapTitle) )
+	if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
 	{
 		u16* mapTitleString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
@@ -308,7 +312,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
 	string newMapDescription;
-	if ( possibleDescriptionUpdate == true && GetEditText(GetDlgItem(getHandle(), ID_EDIT_MAPDESCRIPTION), newMapDescription) )
+	if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
 	{
 		u16* mapDescriptionString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&

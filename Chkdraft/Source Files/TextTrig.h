@@ -10,6 +10,7 @@ class TextTrigWindow : public ClassWindow
 {
 	public:
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	protected:
 		// Takes the text from the edit control given by hWnd and compiles it into the map

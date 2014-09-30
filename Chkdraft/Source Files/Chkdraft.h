@@ -6,7 +6,6 @@
 #include "ChkdPlugins.h"
 #include "MainToolbar.h"
 #include "MainPlot.h"
-#include "GuiAccel.h"
 #include "NewMap.h"
 #include "Maps.h"
 

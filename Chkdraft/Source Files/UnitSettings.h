@@ -7,13 +7,21 @@
 class UnitSettingsWindow : public ClassWindow
 {
 	public:
+		UnitSettingsWindow();
 		bool CreateThis(HWND hParent);
 		bool DestroyThis();
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CreateSubWindows(HWND hParent);
 		void CreateUnitTree(HWND hParent);
+		void DisableUnitEditing();
+		void EnableUnitEditing();
+		void DisableUnitProperties();
+		void EnableUnitProperties();
+
+		s32 selectedUnit;
 
 		CheckBoxControl checkUseUnitDefaults;
 		CheckBoxControl checkEnabledByDefault;

@@ -36,7 +36,12 @@ bool GuiMap::CanExit()
 {
 	if ( unsavedChanges )
 	{
-		int result = MessageBox(NULL, "Save Changes?", MapFile::FilePath(), MB_YESNOCANCEL);
+		int result = IDCANCEL;
+		if ( MapFile::FilePath() == nullptr || strcmp(MapFile::FilePath(), "") == 0 )
+			result = MessageBox(NULL, "Save Changes?", "Untitled", MB_YESNOCANCEL);
+		else
+			result = MessageBox(NULL, "Save Changes?", MapFile::FilePath(), MB_YESNOCANCEL);
+
 		if ( result == IDYES )
 			SaveFile(false);
 		else if ( result == IDCANCEL )
@@ -263,7 +268,7 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 				}
 				else
 				{
-					SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+					chkd.locationWindow.RefreshLocationInfo();
 					ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
 				}
 			}
@@ -284,7 +289,7 @@ void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 		selections().addTile(currTile, u16(xClick/32), u16(yClick/32), -1);
 		RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 		if ( chkd.tilePropWindow.getHandle() != NULL )
-			SendMessage(chkd.tilePropWindow.getHandle(), WM_COMMAND, TILE_UPDATE, NULL);
+			chkd.tilePropWindow.UpdateTile();
 		else
 			chkd.tilePropWindow.CreateThis(chkd.getHandle());
 
@@ -355,16 +360,16 @@ void GuiMap::refreshScenario()
 {
 	selection.removeTiles();
 	selection.removeUnits();
-	chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+	chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
 	if ( chkd.unitWindow.getHandle() != nullptr )
-		SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
+		chkd.unitWindow.RepopulateList();
 	if ( chkd.locationWindow.getHandle() != NULL )
-		SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+		chkd.locationWindow.RefreshLocationInfo();
 	if ( chkd.mapSettingsWindow.getHandle() != NULL )
-		SendMessage(chkd.mapSettingsWindow.getHandle(), REFRESH_WINDOW, NULL, NULL);
+		chkd.mapSettingsWindow.RefreshWindow();
 	if ( chkd.textTrigWindow.getHandle() != NULL )
-		SendMessage(chkd.textTrigWindow.getHandle(), REFRESH_WINDOW, NULL, NULL);
+		chkd.textTrigWindow.RefreshWindow();
 
 	Redraw(true);
 }
@@ -520,7 +525,7 @@ void GuiMap::deleteSelection()
 						if ( undoStacks.addUndoLocationDel(index, loc, isExtendedString(loc->stringNum), locName) )
 							undoStacks.startNext(UNDO_LOCATION_DEL);
 
-						chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+						chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
 						loc->elevation = 0;
 						loc->xc1 = 0;
@@ -572,15 +577,15 @@ void GuiMap::undo()
 		case LAYER_UNITS:
 			undoStacks.doUndo(UNDO_UNIT, scenario(), selections());
 			if ( chkd.unitWindow.getHandle() != nullptr )
-				SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
+				chkd.unitWindow.RepopulateList();
 			break;
 		case LAYER_LOCATIONS:
 			{
 				undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
 				if ( chkd.locationWindow.getHandle() != NULL )
-					SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+					chkd.locationWindow.RefreshLocationInfo();
 				refreshScenario();
-				chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 			}
 			break;
 	}
@@ -597,12 +602,12 @@ void GuiMap::redo()
 		case LAYER_UNITS:
 			undoStacks.doRedo(UNDO_UNIT, scenario(), selections());
 			if ( chkd.unitWindow.getHandle() != nullptr )
-				SendMessage(chkd.unitWindow.getHandle(), REPOPULATE_LIST, NULL, NULL);
+				chkd.unitWindow.RepopulateList();
 			break;
 		case LAYER_LOCATIONS:
 			undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
 			if ( chkd.locationWindow.getHandle() != NULL )
-				SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+				chkd.locationWindow.RefreshLocationInfo();
 			refreshScenario();
 			break;
 	}
@@ -952,7 +957,7 @@ void GuiMap::ToggleLockAnywhere()
 	UpdateLocationMenuItems();
 	if ( selections().getSelectedLocation() == 63 )
 		selections().selectLocation(NO_LOCATION);
-	chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+	chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 	Redraw(false);
 }
 
@@ -1296,10 +1301,11 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch ( msg )
 	{
 		case WM_PAINT: PaintMap(chkd.maps.curr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard); break;
-		case WM_MDIACTIVATE: ActivateMap((HWND)lParam); break;
+		case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
 		case WM_ERASEBKGND: return 0; break; // Prevent background from showing
 		case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
 		case WM_VSCROLL: return VerticalScroll(hWnd, msg, wParam, lParam); break;
+		case WM_CHAR: return 0; break;
 		case WM_SIZE: return DoSize(hWnd, wParam, lParam); break;
 		case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
 		case WM_DESTROY: return DestroyWindow(hWnd); break;
@@ -1736,7 +1742,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 			{
 				undos().addUndoLocationCreate(locationIndex);
 				undos().startNext(0);
-				chkd.mainPlot.leftBar.mainTree.RebuildLocationTree();
+				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 				refreshScenario();
 			}
 		}
@@ -1859,7 +1865,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 				undos().startNext(0);
 				Redraw(false);
 				if ( chkd.locationWindow.getHandle() != NULL )
-					SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+					chkd.locationWindow.RefreshLocationInfo();
 			}
 		}
 	}
@@ -1867,7 +1873,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 	{
 		selection.selectLocation(selection.getStartDrag().x, selection.getStartDrag().y, this, !LockAnywhere());
 		if ( chkd.locationWindow.getHandle() != NULL )
-			SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+			chkd.locationWindow.RefreshLocationInfo();
 	
 		Redraw(false);
 	}
@@ -1899,7 +1905,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 			chkd.unitWindow.SetChangeHighlightOnly(false);
 		}
 		selection.removeUnits();
-		SendMessage(chkd.unitWindow.getHandle(), UPDATE_ENABLED_STATE, NULL, NULL);
+		chkd.unitWindow.UpdateEnabledState();
 	}
 		
 	u16 numUnits = this->numUnits();
@@ -1956,7 +1962,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 						chkd.unitWindow.SetChangeHighlightOnly(false);
 					}
 				}
-				SendMessage(chkd.unitWindow.getHandle(), UPDATE_ENABLED_STATE, NULL, NULL);
+				chkd.unitWindow.UpdateEnabledState();
 			}
 		}
 	}

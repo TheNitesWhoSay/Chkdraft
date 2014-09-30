@@ -24,14 +24,17 @@ BOOL UnitMoveTo::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 
 			case IDOK:
-				if ( !GetEditNum<s32>(hWnd, IDC_EDIT1, unitMoveTo) )
+				if ( !editMoveTo.GetEditNum<s32>(unitMoveTo) )
 					unitMoveTo = -1;
 				EndDialog(hWnd, IDOK);
 				break;
 		}
 	}
 	else if ( msg == WM_INITDIALOG )
+	{
+		editMoveTo.FindThis(hWnd, IDC_EDIT1);
 		SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
+	}
 
 	return 0;
 }

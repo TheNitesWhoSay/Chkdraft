@@ -10,11 +10,11 @@ bool StringGuideWindow::CreateThis(HWND hParent)
 		HDC hDC = GetDC(hStringGuide);
 		SelectObject(hDC, defaultFont);
 		SIZE strSize = { };
-		for ( int i=0; i<numStringColors; i++ )
+		for ( int i=0; i<NUM_STRING_COLORS; i++ )
 		{
 			GetTextExtentPoint32(hDC, stringColorPrefixes[i], strlen(stringColorPrefixes[i]), &strSize);
-			CreateStaticText(hStringGuide, 2, i*13, strSize.cx, 13, stringColorPrefixes[i]);
-			CreateStaticText(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], ID_TEXT_COLOR_FIRST+i);
+			colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, stringColorPrefixes[i], 0);
+			color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], ID_TEXT_COLOR_FIRST+i);
 		}
 		ReleaseDC(hStringGuide, hDC);
 		return true;

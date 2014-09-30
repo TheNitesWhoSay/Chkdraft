@@ -1278,8 +1278,11 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 			{
 				u8 color = track->unit.owner;
 				chk->getPlayerColor(track->unit.owner, color);
-				UnitToBits( screenBits, palette, color, width, height, sScreenLeft, sScreenTop,
-							track->unit.id, u16(cursor.x+track->xc), u16(cursor.y+track->yc), 0, false );
+				if ( cursor.y+track->yc >= 0 )
+				{
+					UnitToBits( screenBits, palette, color, width, height, sScreenLeft, sScreenTop,
+								track->unit.id, u16(cursor.x+track->xc), u16(cursor.y+track->yc), 0, false );
+				}
 
 				track = track->next;
 			}

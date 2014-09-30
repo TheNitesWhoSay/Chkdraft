@@ -10,6 +10,7 @@ class ForcesWindow : public ClassWindow
 		ForcesWindow();
 		bool CreateThis(HWND hParent);
 		bool DestroyThis();
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -17,6 +18,15 @@ class ForcesWindow : public ClassWindow
 
 		bool possibleForceNameUpdate[4];
 		u8 playerBeingDragged;
+
+		EditControl editForceName[4];
+		GroupBoxControl groupForce[4];
+		TextControl textAboutForces;
+		CheckBoxControl checkAllied[4];
+		CheckBoxControl checkSharedVision[4];
+		CheckBoxControl checkRandomizeStart[4];
+		CheckBoxControl checkAlliedVictory[4];
+		DragListControl dragForces[4];
 };
 
 #endif

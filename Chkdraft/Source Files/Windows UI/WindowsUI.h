@@ -9,6 +9,7 @@
 #include "EditControl.h"
 #include "GroupBoxControl.h"
 #include "ListBoxControl.h"
+#include "ListViewControl.h"
 #include "RadioButtonControl.h"
 #include "StatusControl.h"
 #include "TextControl.h"

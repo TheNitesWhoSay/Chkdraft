@@ -9,6 +9,7 @@ class MapPropertiesWindow : public ClassWindow
 	public:
 		MapPropertiesWindow();
 		bool CreateThis(HWND hParent);
+		void RefreshWindow();
 
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -19,6 +20,25 @@ class MapPropertiesWindow : public ClassWindow
 		bool possibleDescriptionUpdate;
 
 		ButtonControl buttonApply;
+		EditControl editMapTitle;
+		EditControl editMapDescription;
+		EditControl editMapWidth;
+		EditControl editMapHeight;
+		GroupBoxControl groupMapPlayers[12];
+		TextControl textMapTitle;
+		TextControl textMapDescription;
+		TextControl textMapTileset;
+		DropdownControl dropMapTileset;
+		TextControl textNewMapTerrain;
+		DropdownControl dropNewMapTerrain;
+		TextControl textNewMapWidth;
+		TextControl textNewMapHeight;
+		TextControl textPlayerOwner[12];
+		DropdownControl dropPlayerOwner[12];
+		TextControl textPlayerRace[12];
+		DropdownControl dropPlayerRaces[12];
+		TextControl textPlayerColor[8];
+		DropdownControl dropPlayerColor[8];
 };
 
 #endif

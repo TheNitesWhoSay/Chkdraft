@@ -10,6 +10,13 @@ class DropdownControl : public WindowControl
 		void ClearEditSel();
 		int GetSel();
 		bool GetText(int index, char* dest, int destLength);
+		bool GetEditText(std::string& dest);
+
+		template <typename numType>
+			bool GetEditNum(numType &dest);
+
+	protected:
+		bool GetEditText(char* &dest);
 };
 
 #endif

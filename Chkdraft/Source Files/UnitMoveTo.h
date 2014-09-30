@@ -15,6 +15,7 @@ class UnitMoveTo : public ClassWindow
 
 	private:
 		s32 unitMoveTo;
+		EditControl editMoveTo;
 };
 
 #endif

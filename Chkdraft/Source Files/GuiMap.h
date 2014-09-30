@@ -6,6 +6,7 @@
 #include "Undo.h"
 #include "Data.h"
 #include "Graphics.h"
+#include "GuiAccel.h"
 
 class GuiMap : public MapFile, public ClassWindow
 {

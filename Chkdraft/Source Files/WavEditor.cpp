@@ -16,11 +16,17 @@ bool WavEditorWindow::CreateThis(HWND hParent)
 		return false;
 }
 
+void WavEditorWindow::RefreshWindow()
+{
+
+}
+
 LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case REFRESH_WINDOW:
+		case WM_COMMAND:
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
@@ -50,4 +56,50 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
 	dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, ID_DROP_COMPRESSIONQUALITY, 4, compressionLevels, defaultFont);
 	checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", ID_CHECK_VIRTUALFILE);
 	buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", ID_BUTTON_ADDFILE);
+
+	DisableMapSoundEditing();
+	DisableSoundCustomization();
+	buttonPreviewPlaySound.DisableThis();
+
+	textAvailableSounds.DisableThis();
+	listVirtualSounds.DisableThis();
+	textFileName.DisableThis();
+	editFileName.DisableThis();
+	buttonBrowse.DisableThis();
+}
+
+void WavEditorWindow::DisableMapSoundEditing()
+{
+	textMapSoundFiles.DisableThis();
+	buttonStopSounds.DisableThis();
+	buttonDeleteSound.DisableThis();
+	buttonExtractSound.DisableThis();
+	buttonPlaySound.DisableThis();
+	listMapSounds.DisableThis();
+}
+
+void WavEditorWindow::EnableMapSoundEditing()
+{
+	textMapSoundFiles.EnableThis();
+	buttonStopSounds.EnableThis();
+	buttonDeleteSound.EnableThis();
+	buttonExtractSound.EnableThis();
+	buttonPlaySound.EnableThis();
+	listMapSounds.EnableThis();
+}
+
+void WavEditorWindow::DisableSoundCustomization()
+{
+	textCompressionLevel.DisableThis();
+	dropCompressionLevel.DisableThis();
+	checkVirtualFile.DisableThis();
+	buttonAddFile.DisableThis();
+}
+
+void WavEditorWindow::EnableSoundCustomization()
+{
+	textCompressionLevel.EnableThis();
+	dropCompressionLevel.EnableThis();
+	checkVirtualFile.EnableThis();
+	buttonAddFile.EnableThis();
 }

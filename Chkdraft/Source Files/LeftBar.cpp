@@ -59,13 +59,14 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								unit.yc = 0;
 								chkd.maps.clipboard.addQuickUnit(&unit);
 								chkd.maps.startPaste(true);
+								SetFocus(chkd.maps.curr->getHandle());
 							}
 							break;
 
 						case TREE_TYPE_LOCATION: // itemData = location index
 							chkd.maps.curr->selections().selectLocation(u16(itemData));
 							if ( chkd.locationWindow.getHandle() != nullptr )
-								SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+								chkd.locationWindow.RefreshLocationInfo();
 							chkd.maps.curr->viewLocation(u16(itemData));
 							break;
 					}
@@ -88,12 +89,14 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						else
 						{
-							SendMessage(chkd.locationWindow.getHandle(), REFRESH_LOCATION, NULL, NULL);
+							chkd.locationWindow.RefreshLocationInfo();
 							ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
 						}
 					}
 				}
 			}
+			else if ( ((NMHDR*)lParam)->code == NM_RETURN )
+				return 1;
 			break;
 
 		case WM_SIZE:
@@ -149,7 +152,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, IDR_MAIN_TREE) )
 				{
 					SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-					mainTree.UpdateDisplayNames(DefaultUnitDisplayName);
+					mainTree.unitTree.UpdateDisplayNames(DefaultUnitDisplayName);
 					mainTree.BuildMainTree();
 				}
 			}
