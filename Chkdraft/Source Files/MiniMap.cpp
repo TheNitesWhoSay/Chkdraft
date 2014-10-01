@@ -61,7 +61,7 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_LBUTTONDOWN:
 			MiniMapClick(lParam);
-			LockCursor(hWnd);
+			LockCursor();
 			break;
 
 		case WM_LBUTTONUP:

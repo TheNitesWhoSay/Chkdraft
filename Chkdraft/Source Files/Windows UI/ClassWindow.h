@@ -20,6 +20,10 @@ class ClassWindow
 
 /*  Accessors   */	HWND getHandle(); // Accessor for the window handle
 
+/*	 Mutators	*/	void ReplaceChildFonts(HFONT hFont);
+					void LockCursor(); // Prevents cursor from leaving this window
+					void UnlockCursor(); // Globally unlocks the cursor
+					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
 
 	protected:
 

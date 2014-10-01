@@ -3682,57 +3682,54 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 			return true;
 		}
 	}
-	/*else*/ // Might be a defined group name
-	{
-		char* groupStrPtr;
-		bool success = false;
+	
+	// Might be a defined group name
+	char* groupStrPtr;
+	bool success = false;
 
-		if ( text.getPtr<char>(groupStrPtr, pos, size+1) )
-		{ // At least one character must come after the group string
-			// Temporarily replace next char with NUL char
-			char temp = groupStrPtr[size];
-			groupStrPtr[size] = '\0';
+	if ( text.getPtr<char>(groupStrPtr, pos, size+1) )
+	{ // At least one character must come after the group string
+		// Temporarily replace next char with NUL char
+		char temp = groupStrPtr[size];
+		groupStrPtr[size] = '\0';
 
-			// Grab the string hash
-			std::string str(groupStrPtr);
-			u32 hash = strHash(str);
-			int numMatching = groupTable.count(hash);
-			if ( numMatching == 1 )
-			{ // Should guarentee that you can find at least one entry
-				GroupTableNode &node = groupTable.find(hash)->second;
+		// Grab the string hash
+		std::string str(groupStrPtr);
+		u32 hash = strHash(str);
+		int numMatching = groupTable.count(hash);
+		if ( numMatching == 1 )
+		{ // Should guarentee that you can find at least one entry
+			GroupTableNode &node = groupTable.find(hash)->second;
+			if ( node.groupName.compare(groupStrPtr) == 0 )
+			{
+				dest = node.groupID;
+				success = true;
+			}
+		}
+		else if ( numMatching > 1 )
+		{
+			auto range = groupTable.equal_range(hash);
+			for ( auto it = range.first; it != range.second; it ++ )
+			{
+				GroupTableNode &node = it->second;
 				if ( node.groupName.compare(groupStrPtr) == 0 )
 				{
-					dest = node.groupID;
-					success = true;
-				}
-			}
-			else if ( numMatching > 1 )
-			{
-				auto range = groupTable.equal_range(hash);
-				for ( auto it = range.first; it != range.second; it ++ )
-				{
-					GroupTableNode &node = it->second;
-					if ( node.groupName.compare(groupStrPtr) == 0 )
+					if ( success == false ) // If no matches have previously been found
 					{
-						if ( success == false ) // If no matches have previously been found
-						{
-							dest = node.groupID;
-							success = true;
-						}
-						else // If matches have previously been found
-						{
-							if ( u32(node.groupID) < dest )
-								dest = node.groupID; // Replace if groupID < previous groupID
-						}
+						dest = node.groupID;
+						success = true;
+					}
+					else // If matches have previously been found
+					{
+						if ( u32(node.groupID) < dest )
+							dest = node.groupID; // Replace if groupID < previous groupID
 					}
 				}
 			}
-			groupStrPtr[size] = temp;
 		}
-		return success;
+		groupStrPtr[size] = temp;
 	}
-	
-	return false;
+	return success;
 }
 
 bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)

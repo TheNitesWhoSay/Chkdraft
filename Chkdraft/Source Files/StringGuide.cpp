@@ -1,5 +1,4 @@
 #include "StringGuide.h"
-#include "GuiAccel.h"
 
 bool StringGuideWindow::CreateThis(HWND hParent)
 {

@@ -21,7 +21,6 @@
     <ClCompile Include="Source Files\Common Files\Structs.cpp" />
     <ClCompile Include="Source Files\Forces.cpp" />
     <ClCompile Include="Source Files\Graphics.cpp" />
-    <ClCompile Include="Source Files\GuiAccel.cpp" />
     <ClCompile Include="Source Files\GuiMap.cpp" />
     <ClCompile Include="Source Files\LeftBar.cpp" />
     <ClCompile Include="Source Files\LocationProperties.cpp" />
@@ -43,6 +42,7 @@
     <ClCompile Include="Source Files\ChkdPlugins.cpp" />
     <ClCompile Include="Source Files\MiniMap.cpp" />
     <ClCompile Include="Source Files\NewMap.cpp" />
+    <ClCompile Include="Source Files\PlayerDropdown.cpp" />
     <ClCompile Include="Source Files\PreservedUnitStats.cpp" />
     <ClCompile Include="Source Files\Selections.cpp" />
     <ClCompile Include="Source Files\StringEditor.cpp" />
@@ -95,7 +95,6 @@
     <ClInclude Include="Source Files\DialogWindows.h" />
     <ClInclude Include="Source Files\Forces.h" />
     <ClInclude Include="Source Files\Graphics.h" />
-    <ClInclude Include="Source Files\GuiAccel.h" />
     <ClInclude Include="Source Files\GuiMap.h" />
     <ClInclude Include="Source Files\LeftBar.h" />
     <ClInclude Include="Source Files\LocationProperties.h" />
@@ -118,6 +117,7 @@
     <ClInclude Include="Source Files\ChkdPlugins.h" />
     <ClInclude Include="Source Files\MiniMap.h" />
     <ClInclude Include="Source Files\NewMap.h" />
+    <ClInclude Include="Source Files\PlayerDropdown.h" />
     <ClInclude Include="Source Files\PreservedUnitStats.h" />
     <ClInclude Include="Source Files\Selections.h" />
     <ClInclude Include="Source Files\StringEditor.h" />

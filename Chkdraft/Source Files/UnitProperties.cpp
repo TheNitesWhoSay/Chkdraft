@@ -102,13 +102,15 @@ void UnitWindow::ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer)
 	while ( currUnit != nullptr )
 	{
 		int index = currUnit->index;
-		if ( chkd.maps.curr->getUnit(unit, index) )
+		if ( chkd.maps.curr->getUnit(unit, index) && newPlayer != unit->owner )
 		{
+			chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_OWNER, unit->owner);
 			ChangeOwner(hUnitList, index, newPlayer);
 			unit->owner = newPlayer;
 		}
 		currUnit = currUnit->next;
 	}
+	chkd.maps.curr->undos().startNext(0);
 	chkd.maps.curr->Redraw(true);
 }
 
@@ -481,7 +483,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							case CBN_EDITCHANGE:
 								{
 									u8 newPlayer;
-									if ( GetPlayerNum(dropPlayer, newPlayer) )
+									if ( dropPlayer.GetPlayerNum(newPlayer) )
 										ChangeCurrOwner(hWnd, newPlayer);
 								}
 								break;

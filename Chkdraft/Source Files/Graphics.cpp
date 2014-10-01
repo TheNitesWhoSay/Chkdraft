@@ -1,6 +1,5 @@
 #include "Graphics.h"
 #include "Common Files/CommonFiles.h"
-#include "GuiAccel.h"
 #include "Chkdraft.h"
 
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, u8* screenBits,
@@ -667,6 +666,21 @@ GRID& Graphics::grid(u32 gridNum)
 		return grids[gridNum];
 	else
 		return grids[0];
+}
+
+BITMAPINFO GetBMI(s32 width, s32 height)
+{
+	BITMAPINFOHEADER bmiH = { };
+	bmiH.biSize = sizeof(BITMAPINFOHEADER);
+	bmiH.biWidth = width; bmiH.biHeight = -height;
+	bmiH.biPlanes = 1;
+	bmiH.biBitCount = 24;
+	bmiH.biCompression = BI_RGB;
+	bmiH.biXPelsPerMeter = 1; bmiH.biYPelsPerMeter = 1;
+					
+	BITMAPINFO bmi = { };
+	bmi.bmiHeader = bmiH;
+	return bmi;
 }
 
 void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,

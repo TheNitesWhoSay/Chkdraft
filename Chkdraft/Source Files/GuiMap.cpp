@@ -308,7 +308,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y, u8 layer)
 
 		RECT rcMap;
 		GetClientRect(hWnd, &rcMap);
-		TrackMouse(hWnd, DEFAULT_HOVER_TIME);
+		TrackMouse(DEFAULT_HOVER_TIME);
 		if ( x == 0 ) // Cursor on the left
 		{
 			if ( (display().x+16)/32 > 0 )
@@ -1441,8 +1441,8 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 					else if ( layer == LAYER_DOODADS || layer == LAYER_UNITS || layer == LAYER_SPRITES )
 						selection.setDrags(mapClickX, mapClickY);
 
-					LockCursor(getHandle());
-					TrackMouse(getHandle(), DEFAULT_HOVER_TIME);
+					LockCursor();
+					TrackMouse(DEFAULT_HOVER_TIME);
 					setDragging(true);
 				}
 			}
@@ -1470,7 +1470,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 					}
 
 					SetCapture(getHandle());
-					TrackMouse(getHandle(), DEFAULT_HOVER_TIME);
+					TrackMouse(DEFAULT_HOVER_TIME);
 					setDragging(true);
 					Redraw(false);
 				}
@@ -1637,8 +1637,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 					x = (s32(((double)x)/getZoom())) + display().x,
 					y = (s32(((double)y)/getZoom())) + display().y;
 					selection.setEndDrag(x, y);
-
-					TrackMouse(hWnd, 100);
+					TrackMouse(100);
 				}
 			}
 			break;
@@ -1975,4 +1974,88 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 		return DefMDIChildProc(hWnd, WM_CLOSE, NULL, NULL);
 	else
 		return 0;
+}
+
+bool parseEscapedString(std::string& str)
+{
+	char currChar;
+	std::string newStr = "";
+	int strLength = str.length();
+	const char* strPtr = str.c_str();
+	try
+	{
+		u8 value;
+		for ( int i=0; i<strLength; i++ )
+		{
+			currChar = strPtr[i];
+			switch ( currChar )
+			{
+				case '\\':
+					if ( i+1 < strLength )
+					{
+						i ++;
+						currChar = strPtr[i];
+						if ( currChar == 'X' || currChar == 'x' )
+						{
+							if ( i+3 < strLength && strPtr[i+1] >= '0' && strPtr[i+1] <= '9' && getTwoByteHexVal(&strPtr[i+2], value) )
+							{
+								newStr.push_back(value);
+								i += 3;
+							}
+							else if ( i+2 < strLength && getTwoByteHexVal(&strPtr[i+1], value) )
+							{
+								newStr.push_back(value);
+								i += 2;
+							}
+							else if ( i+1 < strLength && getOneByteHexVal(strPtr[i+1], value) )
+							{
+								newStr.push_back(value);
+								i ++;
+							}
+							else
+							{
+								newStr.push_back('\\');
+								newStr.push_back(currChar);
+							}
+						}
+						else if ( currChar == 'n' )
+							newStr.push_back('\n');
+						else if ( currChar == 'r' )
+							newStr.push_back('\r');
+						else
+							newStr.push_back(currChar);
+					}
+					else
+						newStr.push_back(currChar);
+					break;
+
+				case '<':
+					if ( i+2 < strLength )
+					{
+						if ( strPtr[i+2] == '>' && getOneByteHexVal(strPtr[i+1], value) )
+						{
+							newStr.push_back(value);
+							i += 2;
+						}
+						else if ( i+3 < strLength && strPtr[i+3] == '>' && getTwoByteHexVal(&strPtr[i+1], value) )
+						{
+							newStr.push_back(value);
+							i += 3;
+						}
+						else
+							newStr.push_back(currChar);
+					}
+					else
+						newStr.push_back(currChar);
+					break;
+
+				default:
+					newStr.push_back(currChar);
+					break;
+			}
+		}
+		str = newStr;
+		return true;
+	}
+	catch ( std::exception ) { return false; } // catches length_error and bad_alloc
 }

@@ -1,5 +1,4 @@
 #include "UnitMoveTo.h"
-#include "GuiAccel.h"
 
 UnitMoveTo::UnitMoveTo() : unitMoveTo(0)
 {
