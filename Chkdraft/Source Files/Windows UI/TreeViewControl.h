@@ -5,13 +5,16 @@
 class TreeViewControl : public WindowControl
 {
 	public:
-		bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id);
-		TV_INSERTSTRUCT InsertChild(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam);
-		TV_INSERTSTRUCT InsertParent(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam);
+		bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u32 id);
+		HTREEITEM InsertTreeItem(HTREEITEM hParentItem, const char* text, LPARAM lParam);
 		bool SetHandle(HWND hWnd);
+		bool SetItemText(HTREEITEM hItem, const char* newText);
+		bool ExpandItem(HTREEITEM hItem);
+		void EmptySubTree(HTREEITEM hRoot);
 
 	private:
 		LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		HTREEITEM InsertParent(const char* text, LPARAM lParam);
 };
 
 #endif

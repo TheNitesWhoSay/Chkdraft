@@ -6,7 +6,6 @@
 #include "Undo.h"
 #include "Data.h"
 #include "Graphics.h"
-#include "GuiAccel.h"
 
 class GuiMap : public MapFile, public ClassWindow
 {
@@ -182,5 +181,9 @@ class GuiMap : public MapFile, public ClassWindow
 					LRESULT ConfirmWindowClose(HWND hWnd);
 
 };
+
+/** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string
+	Returns true and modifies str if successful, str not modified otherwise */
+bool parseEscapedString(std::string& str);
 
 #endif

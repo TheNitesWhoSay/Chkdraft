@@ -29,7 +29,6 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						case TREE_TYPE_SPRITE: if ( chkd.maps.curr->currLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
 						case TREE_TYPE_DOODAD: if ( chkd.maps.curr->currLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
 					}
-
 				
 					switch ( itemType )
 					{
@@ -149,10 +148,10 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				miniMap.CreateThis(hWnd);
 
-				if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, IDR_MAIN_TREE) )
+				if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, IDR_MAIN_TREE) )
 				{
 					SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-					mainTree.unitTree.UpdateDisplayNames(DefaultUnitDisplayName);
+					mainTree.unitTree.UpdateUnitNames(DefaultUnitDisplayName);
 					mainTree.BuildMainTree();
 				}
 			}
@@ -160,7 +159,6 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
-			//return DefFrameProc(hWnd, chkd.maps.getHandle(), msg, wParam, lParam);
 			break;
 	}
 	return 0;

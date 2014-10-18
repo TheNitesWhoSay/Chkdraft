@@ -43,6 +43,16 @@ void WindowControl::EnableThis()
 	EnableWindow(controlHandle, TRUE);
 }
 
+bool WindowControl::isEnabled()
+{
+	return IsWindowEnabled(controlHandle) != 0;
+}
+
+void WindowControl::RedrawThis()
+{
+	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+}
+
 bool WindowControl::CreateControl( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
 								   int x, int y, int nWidth, int nHeight,
 								   HWND hWndParent, HMENU hMenu, bool redirectProc )

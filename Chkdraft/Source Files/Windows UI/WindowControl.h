@@ -25,6 +25,8 @@ class WindowControl
 
 					void DisableThis();
 					void EnableThis();
+					bool isEnabled();
+					void RedrawThis();
 
 
 	protected:

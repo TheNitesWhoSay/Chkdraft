@@ -95,7 +95,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				techSettingsWindow.CreateThis(hTabs);
 				stringEditorWindow.CreateThis(hTabs);
 				wavEditorWindow.CreateThis(hTabs);
-				ReplaceChildFonts(hWnd, defaultFont);
+				ReplaceChildFonts(defaultFont);
 				RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
 			}
 			break;

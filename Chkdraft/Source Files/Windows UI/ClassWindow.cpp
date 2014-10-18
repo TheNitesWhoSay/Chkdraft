@@ -154,6 +154,59 @@ HWND ClassWindow::getHandle()
 		return NULL;
 }
 
+BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont) // Callback function for ReplaceChildFonts
+{
+	SendMessage(hWnd, WM_SETFONT, hFont, TRUE);
+	return TRUE;
+}
+
+void ClassWindow::ReplaceChildFonts(HFONT hFont)
+{
+	EnumChildWindows(getHandle(), (WNDENUMPROC)SetFont, (LPARAM)hFont);
+}
+
+void ClassWindow::LockCursor()
+{
+	if ( windowHandle == NULL )
+		ClipCursor(NULL);
+	else
+	{
+		RECT rcMap, rcClip;
+		POINT upperLeft, lowerRight;
+		upperLeft.x = 0;
+		upperLeft.y = 0;
+
+		GetClientRect(windowHandle, &rcMap);
+		lowerRight.x = rcMap.right-1;
+		lowerRight.y = rcMap.bottom-1;
+
+		ClientToScreen(windowHandle, &upperLeft);
+		ClientToScreen(windowHandle, &lowerRight);
+
+		rcClip.left = upperLeft.x;
+		rcClip.top = upperLeft.y;
+		rcClip.bottom = lowerRight.y;
+		rcClip.right = lowerRight.x;
+
+		ClipCursor(&rcClip);
+	}
+}
+
+void ClassWindow::UnlockCursor()
+{
+	ClipCursor(NULL);
+}
+
+void ClassWindow::TrackMouse(DWORD hoverTime)
+{
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(TRACKMOUSEEVENT);
+	tme.dwFlags = TME_HOVER;
+	tme.hwndTrack = getHandle();
+	tme.dwHoverTime = hoverTime;
+	TrackMouseEvent(&tme);
+}
+
 LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if ( msg == WM_NCCREATE )

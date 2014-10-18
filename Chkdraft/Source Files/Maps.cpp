@@ -355,8 +355,11 @@ void MAPS::ChangePlayer(u8 newPlayer)
 		while ( currSelUnit != nullptr )
 		{
 			ChkUnit* unit;
-			if ( curr->getUnit(unit, currSelUnit->index) )
+			if ( curr->getUnit(unit, currSelUnit->index) && newPlayer != unit->owner )
+			{
+				curr->undos().addUndoUnitChange(currSelUnit->index, UNIT_FIELD_OWNER, unit->owner);
 				unit->owner = newPlayer;
+			}
 
 			if ( chkd.unitWindow.getHandle() != nullptr )
 			{
@@ -374,6 +377,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 			currSelUnit = currSelUnit->next;
 		}
 
+		curr->undos().startNext(0);
 		curr->Redraw(true);
 	}
 

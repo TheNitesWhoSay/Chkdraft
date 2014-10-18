@@ -94,6 +94,8 @@ class Graphics
 		// Utility Methods...
 };
 
+BITMAPINFO GetBMI(s32 width, s32 height);
+
 void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart, GRP* grp,
 				u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped );
 

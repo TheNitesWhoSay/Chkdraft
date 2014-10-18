@@ -1,31 +1,22 @@
 #include "LocationTree.h"
 #include "Chkdraft.h"
 
-bool LocationTree::CreateThis(HWND hParent)
+bool LocationTree::AddThis(HWND hTree, HTREEITEM hParent)
 {
-	TreeViewControl::SetHandle(hParent);
-
-	locationInsert = InsertParent(hParent, locationInsert, "Locations", LAYER_LOCATIONS);
-	hLocationTreeRoot = locationInsert.hParent;
-
-	return true;
+	hLocationRoot = hParent;
+	return TreeViewControl::SetHandle(hTree);
 }
 
 void LocationTree::InsertLocationItem(const char* text, u32 index)
 {
 	if ( index <= TREE_ITEM_DATA )
-		InsertChild(getHandle(), locationInsert, text, index|TREE_TYPE_LOCATION);
+		InsertTreeItem(hLocationRoot, text, index|TREE_TYPE_LOCATION);
 }
 
 void LocationTree::RebuildLocationTree()
 {
 	GuiMap* map = chkd.maps.curr;
-	HTREEITEM hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
-	while ( hChild != NULL )
-	{
-		TreeView_DeleteItem(getHandle(), hChild);
-		hChild = TreeView_GetChild(getHandle(), hLocationTreeRoot);
-	}
+	EmptySubTree(hLocationRoot);
 
 	buffer& MRGN = map->MRGN();
 	if ( MRGN.exists() )
@@ -51,7 +42,7 @@ void LocationTree::RebuildLocationTree()
 	}
 
 	if ( map->currLayer() == LAYER_LOCATIONS )
-		TreeView_Expand(getHandle(), hLocationTreeRoot, TVM_EXPAND);
+		ExpandItem(hLocationRoot);
 
-	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+	RedrawThis();
 }

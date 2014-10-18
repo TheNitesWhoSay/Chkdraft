@@ -3,10 +3,13 @@
 #include <string>
 
 #ifdef CHKDRAFT // Globally defined in project properties if this is used in CHKDraft
+	void Debug();
+	void DebugIf(bool condition);
+	void NoDebug();
 	void mb(const char* text); // Basic message box message
 	void Error(const char* ErrorMessage); // Basic error message box
 	bool RetryError(const char* text); // Error box with yes/no confirm
-	void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
+	extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
 	#define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__)
 #else
 	void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message

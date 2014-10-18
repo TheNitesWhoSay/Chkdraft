@@ -67,9 +67,10 @@ class Chkdraft : public ClassWindow
 					void ComboSelChanged(HWND hCombo, u16 comboId);
 };
 
-/** By signaling that chkd is declared externally here,
+/** The main instance of Chkdraft.
+	By signaling that chkd is declared externally here,
 	arbitrary .cpp files can include this header and
 	access various parts of the program as needed */
-extern Chkdraft chkd;
+extern Chkdraft chkd; // The main instance of Chkdraft
 
 #endif

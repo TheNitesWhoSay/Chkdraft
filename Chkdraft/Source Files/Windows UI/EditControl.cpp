@@ -31,6 +31,30 @@ bool EditControl::SetText(const char* newText)
 	return SetWindowText(getHandle(), newText) != 0;
 }
 
+template <typename numType>
+bool EditControl::SetEditNum(numType num)
+{
+	if ( num < 0 ) // Signed
+	{
+		s32 temp = (s32)num;
+		char newText[12];
+		_itoa_s(temp, newText, 10);
+		return SetText(newText);
+	}
+	else // Unsigned or irrelevantly signed
+	{
+		u32 temp = (u32)num;
+		char newText[12];
+		_itoa_s(temp, newText, 10);
+		return SetText(newText);
+	}
+}
+template bool EditControl::SetEditNum<u8>(u8 num);
+template bool EditControl::SetEditNum<u16>(u16 num);
+template bool EditControl::SetEditNum<s32>(s32 num);
+template bool EditControl::SetEditNum<u32>(u32 num);
+template bool EditControl::SetEditNum<int>(int num);
+
 void EditControl::MaximizeTextLimit()
 {
 	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);

@@ -56,11 +56,7 @@ bool MainToolbar::CreateThis(HWND hParent)
 		ShowWindow(zoomBox.getHandle(), SW_HIDE); // Hide until a map is open
 
 		// Add player ComboBox to toolbar
-		const char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
-										"Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
-		playerBox.CreateThis(hTool, 483, 2, 75, 200, true, ID_COMBOBOX_PLAYER, 12, playerStrings, defaultFont);
-		playerBox.SetSel(0);
-		playerBox.ClearEditSel();
+		playerBox.CreateThis(hTool, 483, 2, 75, 200, ID_COMBOBOX_PLAYER);
 		ShowWindow(playerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
 		// Add terrain ComboBox to toolbar			

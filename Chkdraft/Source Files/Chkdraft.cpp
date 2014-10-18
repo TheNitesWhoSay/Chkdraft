@@ -9,7 +9,7 @@ void Chkdraft::OnLoadTest()
 	// End Standard Map Open
 
 	ShowWindow(getHandle(), SW_MAXIMIZE);
-	OpenMapSettings(ID_SCENARIO_TECHSETTINGS); //*/
+	OpenMapSettings(ID_SCENARIO_UNITSETTINGS); //*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
@@ -140,7 +140,7 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_KEYUP:
 			if ( wParam == VK_SPACE && maps.curr && maps.clipboard.isPasting() )
 			{
-				LockCursor(NULL);
+				UnlockCursor();
 				return true;
 			}
 			break;
@@ -156,7 +156,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				switch ( wParam )
 				{
-					case VK_SPACE: LockCursor(maps.curr->getHandle()); return; break;
+					case VK_SPACE: maps.curr->LockCursor(); return; break;
 					case VK_DELETE: maps.curr->deleteSelection(); return; break;
 					case VK_ESCAPE: maps.endPaste(); return; break;
 					case VK_RETURN: maps.curr->ReturnKeyPress(); return; break;
@@ -227,7 +227,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					case VK_SPACE:
 						if ( !maps.clipboard.isPasting() )
-							LockCursor(NULL);
+							UnlockCursor();
 						return; break;
 				}
 			}
@@ -374,8 +374,8 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						{
 							case CBN_SETFOCUS: editFocused = true; break;
 							case CBN_KILLFOCUS: editFocused = false; break;
-							case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(chkd.getHandle()); break;
-							case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(chkd.getHandle()); break;
+							case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
+							case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
 							default: return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam); break;
 						}
 						break;
@@ -551,7 +551,7 @@ void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 	if ( comboId == ID_COMBOBOX_PLAYER )
 	{
 		u8 newPlayer;
-		if ( GetPlayerNum(mainToolbar.playerBox, newPlayer) )
+		if ( mainToolbar.playerBox.GetPlayerNum(newPlayer) )
 			maps.ChangePlayer(newPlayer);
 	}
 }

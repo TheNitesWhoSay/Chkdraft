@@ -3,6 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
+#include "UnitTree.h"
 
 class UnitSettingsWindow : public ClassWindow
 {
@@ -15,13 +16,20 @@ class UnitSettingsWindow : public ClassWindow
 	private:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CreateSubWindows(HWND hParent);
-		void CreateUnitTree(HWND hParent);
 		void DisableUnitEditing();
 		void EnableUnitEditing();
 		void DisableUnitProperties();
 		void EnableUnitProperties();
+		void CheckReplaceUnitName();
+		void SetDefaultUnitProperties();
+		void ClearDefaultUnitProperties();
 
 		s32 selectedUnit;
+		bool possibleUnitNameUpdate;
+		bool isDisabled;
+		bool refreshing;
+
+		UnitTree unitTree;
 
 		CheckBoxControl checkUseUnitDefaults;
 		CheckBoxControl checkEnabledByDefault;
@@ -59,30 +67,8 @@ class UnitSettingsWindow : public ClassWindow
 		EditControl editUnitName;
 
 		GroupBoxControl groupUnitAvailability;
-		TextControl textP1Availability;
-		DropdownControl dropP1Availability;
-		TextControl textP2Availability;
-		DropdownControl dropP2Availability;
-		TextControl textP3Availability;
-		DropdownControl dropP3Availability;
-		TextControl textP4Availability;
-		DropdownControl dropP4Availability;
-		TextControl textP5Availability;
-		DropdownControl dropP5Availability;
-		TextControl textP6Availability;
-		DropdownControl dropP6Availability;
-		TextControl textP7Availability;
-		DropdownControl dropP7Availability;
-		TextControl textP8Availability;
-		DropdownControl dropP8Availability;
-		TextControl textP9Availability;
-		DropdownControl dropP9Availability;
-		TextControl textP10Availability;
-		DropdownControl dropP10Availability;
-		TextControl textP11Availability;
-		DropdownControl dropP11Availability;
-		TextControl textP12Availability;
-		DropdownControl dropP12Availability;
+		TextControl textPlayerAvailability[12];
+		DropdownControl dropPlayerAvailability[12];
 };
 
 #endif

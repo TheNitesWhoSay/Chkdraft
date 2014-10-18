@@ -4,12 +4,11 @@
 void MainTree::BuildMainTree()
 {
 	HWND hWnd = getHandle();
-	TV_INSERTSTRUCT tvinsert = { };
 
-	tvinsert = InsertParent(hWnd, tvinsert, "Terrain", LAYER_TERRAIN);
-	locTree.CreateThis(hWnd);
-	unitTree.CreateThis(hWnd);
+	InsertTreeItem(NULL, "Terrain", LAYER_TERRAIN);
+	locTree.AddThis(hWnd, InsertTreeItem(NULL, "Locations", LAYER_LOCATIONS));
+	unitTree.AddThis(hWnd, InsertTreeItem(NULL, "Units", LAYER_UNITS));
 	
-	tvinsert = InsertParent(hWnd, tvinsert, "Sprites", LAYER_SPRITES);
-	tvinsert = InsertParent(hWnd, tvinsert, "Doodads", LAYER_DOODADS);
+	InsertTreeItem(NULL, "Sprites", LAYER_SPRITES);
+	InsertTreeItem(NULL, "Doodads", LAYER_DOODADS);
 }

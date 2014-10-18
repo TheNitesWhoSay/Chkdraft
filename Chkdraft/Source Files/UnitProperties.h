@@ -4,6 +4,7 @@
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
 #include "PreservedUnitStats.h"
+#include "PlayerDropdown.h"
 
 class UnitWindow : public ClassWindow
 {
@@ -45,7 +46,7 @@ class UnitWindow : public ClassWindow
 		EditControl editXc;
 		EditControl editYc;
 
-		DropdownControl dropPlayer;
+		PlayerDropdown dropPlayer;
 		ListViewControl listUnits;
 };
 

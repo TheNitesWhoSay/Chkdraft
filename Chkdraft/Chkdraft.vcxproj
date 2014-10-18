@@ -21,7 +21,6 @@
     <ClCompile Include="Source Files\Common Files\Structs.cpp" />
     <ClCompile Include="Source Files\Forces.cpp" />
     <ClCompile Include="Source Files\Graphics.cpp" />
-    <ClCompile Include="Source Files\GuiAccel.cpp" />
     <ClCompile Include="Source Files\GuiMap.cpp" />
     <ClCompile Include="Source Files\LeftBar.cpp" />
     <ClCompile Include="Source Files\LocationProperties.cpp" />
@@ -43,12 +42,14 @@
     <ClCompile Include="Source Files\ChkdPlugins.cpp" />
     <ClCompile Include="Source Files\MiniMap.cpp" />
     <ClCompile Include="Source Files\NewMap.cpp" />
+    <ClCompile Include="Source Files\PlayerDropdown.cpp" />
     <ClCompile Include="Source Files\PreservedUnitStats.cpp" />
     <ClCompile Include="Source Files\Selections.cpp" />
     <ClCompile Include="Source Files\StringEditor.cpp" />
     <ClCompile Include="Source Files\StringGuide.cpp" />
     <ClCompile Include="Source Files\StringPreview.cpp" />
     <ClCompile Include="Source Files\TechSettings.cpp" />
+    <ClCompile Include="Source Files\TechTree.cpp" />
     <ClCompile Include="Source Files\TerrainPalette.cpp" />
     <ClCompile Include="Source Files\TextTrig.cpp" />
     <ClCompile Include="Source Files\Data.cpp" />
@@ -59,6 +60,7 @@
     <ClCompile Include="Source Files\UnitSettings.cpp" />
     <ClCompile Include="Source Files\UnitTree.cpp" />
     <ClCompile Include="Source Files\UpgradeSettings.cpp" />
+    <ClCompile Include="Source Files\UpgradeTree.cpp" />
     <ClCompile Include="Source Files\WavEditor.cpp" />
     <ClCompile Include="Source Files\Windows UI\ButtonControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\CheckBoxControl.cpp" />
@@ -95,7 +97,6 @@
     <ClInclude Include="Source Files\DialogWindows.h" />
     <ClInclude Include="Source Files\Forces.h" />
     <ClInclude Include="Source Files\Graphics.h" />
-    <ClInclude Include="Source Files\GuiAccel.h" />
     <ClInclude Include="Source Files\GuiMap.h" />
     <ClInclude Include="Source Files\LeftBar.h" />
     <ClInclude Include="Source Files\LocationProperties.h" />
@@ -118,12 +119,14 @@
     <ClInclude Include="Source Files\ChkdPlugins.h" />
     <ClInclude Include="Source Files\MiniMap.h" />
     <ClInclude Include="Source Files\NewMap.h" />
+    <ClInclude Include="Source Files\PlayerDropdown.h" />
     <ClInclude Include="Source Files\PreservedUnitStats.h" />
     <ClInclude Include="Source Files\Selections.h" />
     <ClInclude Include="Source Files\StringEditor.h" />
     <ClInclude Include="Source Files\StringGuide.h" />
     <ClInclude Include="Source Files\StringPreview.h" />
     <ClInclude Include="Source Files\TechSettings.h" />
+    <ClInclude Include="Source Files\TechTree.h" />
     <ClInclude Include="Source Files\TerrainPalette.h" />
     <ClInclude Include="Source Files\TextTrig.h" />
     <ClInclude Include="Source Files\TileProperties.h" />
@@ -133,6 +136,7 @@
     <ClInclude Include="Source Files\UnitSettings.h" />
     <ClInclude Include="Source Files\UnitTree.h" />
     <ClInclude Include="Source Files\UpgradeSettings.h" />
+    <ClInclude Include="Source Files\UpgradeTree.h" />
     <ClInclude Include="Source Files\WavEditor.h" />
     <ClInclude Include="Source Files\Windows UI\ButtonControl.h" />
     <ClInclude Include="Source Files\Windows UI\CheckBoxControl.h" />

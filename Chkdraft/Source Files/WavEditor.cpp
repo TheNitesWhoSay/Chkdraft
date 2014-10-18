@@ -1,5 +1,4 @@
 #include "WavEditor.h"
-#include "GuiAccel.h"
 
 bool WavEditorWindow::CreateThis(HWND hParent)
 {
