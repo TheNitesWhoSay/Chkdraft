@@ -1,7 +1,7 @@
 #include "Chkdraft.h"
 
 void Chkdraft::OnLoadTest()
-{
+{/*
 	// Standard Map Open
 	maps.NewMap(128, 128, 0, 0, 0);
 	maps.FocusActive();

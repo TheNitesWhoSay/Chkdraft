@@ -47,6 +47,9 @@ extern const int numOnOffMenuItems;
 
 #define DEFAULT_HOVER_TIME 10
 
+extern const char* weaponNames[];
+extern const int numWeaponNames;
+
 extern const char* upgradeNames[];
 extern const int numUpgradeNames;
 

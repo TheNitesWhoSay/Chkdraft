@@ -693,7 +693,7 @@ void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSe
 
 	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
-		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
 		for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
 		{
@@ -914,7 +914,7 @@ void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 widt
 
 	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
-		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 		
 		for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 MiniTile rows
 		{
@@ -932,7 +932,7 @@ void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 widt
 					negative =  1;
 				}
 
-				GetMiniTileRef(tiles, MiniTileRef, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+				MiniTileRef = GetMiniTileRef(tiles, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
 
 				for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
 				{
@@ -967,7 +967,7 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 
 	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
-		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
 		u8 miniFlags = 0;
 		if ( tiles->vf4.get<u8>(miniFlags, MegaTileRef+2*(4*miniTileY+miniTileX)) )
@@ -1014,7 +1014,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 
 	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
-		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
 		for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
 		{
@@ -1076,7 +1076,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
 		u8 tileBits[3072] = { };
-		GetMegaTileRef(tiles, MegaTileRef, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
 		for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
 		{
@@ -1094,7 +1094,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 					negative =  1;
 				}
 
-				GetMiniTileRef(tiles, MiniTileRef, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+				MiniTileRef = GetMiniTileRef(tiles, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
 
 				for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
 				{
@@ -1492,8 +1492,8 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 			{
 				if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
 				{
-					GetMegaTileRef(tiles, MegaTileReference, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-					GetMiniTileRef(tiles, MiniTileRef, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+					MegaTileReference = GetMegaTileRef(tiles, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+					MiniTileRef = GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
 					PixelReference = ((yc+yOffset)*128+(xc+xOffset))*3;
 
 					wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel

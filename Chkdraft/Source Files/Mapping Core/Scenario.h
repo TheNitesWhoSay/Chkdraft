@@ -158,6 +158,7 @@ class Scenario
 					bool setUnitEnabled(u16 unitId, bool enabled);
 					bool setUnitEnabledState(u16 unitId, u8 player, u8 enabledState);
 
+					bool setUnitSettingsCompleteHitpoints(u16 unitId, u32 completeHitpoints);
 					bool setUnitSettingsHitpoints(u16 unitId, u32 hitpoints);
 					bool setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte);
 					bool setUnitSettingsShieldPoints(u16 unitId, u16 shieldPoints);
@@ -271,7 +272,7 @@ class Scenario
 #define UNIT_SETTINGS_GASCOST		2736
 #define UNIT_SETTINGS_STRING_IDS	3192 // Where strings begin in the UNIS and UNIX sections
 #define UNIT_SETTINGS_BASEWEAPON	3648
-#define UNIT_SETTINGS_BONUSWEAPON(isExpansion) (isExpansion?3778:3748)
+#define UNIT_SETTINGS_BONUSWEAPON(isExpansion) (isExpansion?3908:3848)
 #define PTEC_GLOBAL_AVAILABILITY	2736
 #define PTEC_PLAYERUSESDEFAULT		2964
 

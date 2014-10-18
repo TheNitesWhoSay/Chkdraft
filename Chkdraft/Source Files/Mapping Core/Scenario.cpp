@@ -1876,13 +1876,22 @@ bool Scenario::setUnitEnabledState(u16 unitId, u8 player, u8 unitEnabledState)
 	return false;
 }
 
+bool Scenario::setUnitSettingsCompleteHitpoints(u16 unitId, u32 completeHitpoints)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
+		 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+	
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
 bool Scenario::setUnitSettingsHitpoints(u16 unitId, u32 hitpoints)
 {
 	u32 completeHitpoints;
 	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
 	{
 		u32 hitpointsByte = completeHitpoints%256;
-		completeHitpoints = hitpointsByte+hitpoints*256;
+		completeHitpoints = hitpoints*256+(u32)hitpointsByte;
 
 		bool expansion = isExpansion(),
 			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
@@ -1899,7 +1908,7 @@ bool Scenario::setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte)
 	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
 	{
 		u32 hitpoints = completeHitpoints/256;
-		completeHitpoints = hitpointByte+hitpoints;
+		completeHitpoints = 256*hitpoints+(u32)hitpointByte;
 
 		bool expansion = isExpansion(),
 			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),

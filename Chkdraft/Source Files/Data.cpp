@@ -507,7 +507,7 @@ void DATA::Load()
 	CloseArchive(hPatchRt);
 }
 
-bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 &TileValue)
+bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue)
 {
 	cv5Reference = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
 	/** simplified from:
@@ -516,14 +516,4 @@ bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 &TileValue)
 				tile  = TileValue & 0xF = low 4 bits   */
 
 	return cv5Reference < tiles->cv5.size();
-}
-
-void GetMegaTileRef(TileSet* tiles, u32 &MegaTileReference, u32 &cv5Reference)
-{
-	MegaTileReference = tiles->cv5.get<u16>(cv5Reference)*32;
-}
-
-void GetMiniTileRef(TileSet* tiles, u32 &MiniTileReference, u32 &MegaTileReference, u8 &xMiniTile, u8 &yMiniTile)
-{
-	MiniTileReference = (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64;
 }

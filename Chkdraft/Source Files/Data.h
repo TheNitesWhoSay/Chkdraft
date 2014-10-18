@@ -215,25 +215,25 @@ class Sprites
 		buffer iscriptBin;
 };
 
-#define PCX_MANUFACTURER 0x00
-#define PCX_VER_INFO 0x01
-#define PCX_ENCODING 0x02
-#define PCX_BIT_COUNT 0x03
-#define PCX_LEFT_MARGIN 0x04
-#define PCX_UPPER_MARGIN 0x06
-#define PCX_RIGHT_MARGIN 0x08
-#define PCX_LOWER_MARGIN 0x0A
-#define PCX_HOZ_DPI 0x0C
-#define PCX_VERT_DPI 0x0E
-#define PCX_PALETTE 0x10
-#define PCX_RESERVED 0x40
-#define PCX_NCP 0x41
-#define PCX_NBS 0x42
-#define PCX_PAL_INFO 0x44
-#define PCX_HOZ_SCREEN_SIZE 0x46
+#define PCX_MANUFACTURER	 0x00
+#define PCX_VER_INFO		 0x01
+#define PCX_ENCODING		 0x02
+#define PCX_BIT_COUNT		 0x03
+#define PCX_LEFT_MARGIN		 0x04
+#define PCX_UPPER_MARGIN	 0x06
+#define PCX_RIGHT_MARGIN	 0x08
+#define PCX_LOWER_MARGIN	 0x0A
+#define PCX_HOZ_DPI			 0x0C
+#define PCX_VERT_DPI		 0x0E
+#define PCX_PALETTE			 0x10
+#define PCX_RESERVED		 0x40
+#define PCX_NCP				 0x41
+#define PCX_NBS				 0x42
+#define PCX_PAL_INFO		 0x44
+#define PCX_HOZ_SCREEN_SIZE	 0x46
 #define PCX_VERT_SCREEN_SIZE 0x48
-#define PCX_RESERVED2 0x4A
-#define PCX_DATA 0x80
+#define PCX_RESERVED2		 0x4A
+#define PCX_DATA			 0x80
 
 class PCX
 {
@@ -271,10 +271,10 @@ class DATA
 };
 
 
-bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 &TileValue);
+bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
 
-void GetMegaTileRef(TileSet* tiles, u32 &MegaTileReference, u32 &cv5Reference);
+#define GetMegaTileRef(tiles, cv5Reference) tiles->cv5.get<u16>(cv5Reference)*32
 
-void GetMiniTileRef(TileSet* tiles, u32 &MiniTileReference, u32 &MegaTileReference, u8 &xMiniTile, u8 &yMiniTile);
+#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64
 
 #endif

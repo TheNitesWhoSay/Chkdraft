@@ -80,13 +80,21 @@ void UnitSettingsWindow::RefreshWindow()
 		else
 		{
 			stringstream newGroundGroupText;
-			newGroundGroupText << "Ground Weapon [NAME]";
+			newGroundGroupText << "Ground Weapon [" << weaponNames[groundWeapon] << "]";
 			groupGroundWeapon.SetText(newGroundGroupText.str().c_str());
 		}
 
-		if ( airWeapon == 130 )
+		if ( airWeapon == 130 || airWeapon == groundWeapon )
 		{
-			groupAirWeapon.SetText("No Air Weapon");
+			if ( airWeapon != 130 && airWeapon == groundWeapon )
+			{
+				stringstream newAirGroupText;
+				newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
+				groupAirWeapon.SetText(newAirGroupText.str().c_str());
+			}
+			else
+				groupAirWeapon.SetText("No Air Weapon");
+
 			groupAirWeapon.DisableThis();
 			editAirDamage.SetText("");
 			editAirDamage.DisableThis();
@@ -98,7 +106,7 @@ void UnitSettingsWindow::RefreshWindow()
 		else
 		{
 			stringstream newAirGroupText;
-			newAirGroupText << "Air Weapon [NAME]";
+			newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
 			groupAirWeapon.SetText(newAirGroupText.str().c_str());
 		}
 
@@ -116,7 +124,7 @@ void UnitSettingsWindow::RefreshWindow()
 				editGroundDamage.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageAmount);
 				editGroundBonus.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageBonus);
 			}
-			if ( airWeapon != 130 )
+			if ( airWeapon != 130 && airWeapon != groundWeapon )
 			{
 				editAirDamage.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageAmount);
 				editAirBonus.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageBonus);
@@ -142,9 +150,9 @@ void UnitSettingsWindow::RefreshWindow()
 				editGroundDamage.SetEditNum<u16>(baseGroundWeapon);
 			if ( chk->getUnitSettingsBonusWeapon(groundWeapon, bonusGroundWeapon) )
 				editGroundBonus.SetEditNum<u16>(bonusGroundWeapon);
-			if ( chk->getUnitSettingsBaseWeapon(airWeapon, baseAirWeapon) )
+			if ( airWeapon != groundWeapon && chk->getUnitSettingsBaseWeapon(airWeapon, baseAirWeapon) )
 				editAirDamage.SetEditNum<u16>(baseAirWeapon);
-			if ( chk->getUnitSettingsBonusWeapon(airWeapon, bonusAirWeapon) )
+			if ( airWeapon != groundWeapon && chk->getUnitSettingsBonusWeapon(airWeapon, bonusAirWeapon) )
 				editAirBonus.SetEditNum<u16>(bonusAirWeapon);
 		}
 
@@ -201,6 +209,24 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			
 			switch ( LOWORD(wParam) )
 			{
+				case ID_BUTTON_RESETALLUNITDEFAULTS:
+					if ( HIWORD(wParam) == BN_CLICKED )
+					{
+						if ( MessageBox(hWnd, "Are you sure you want to reset all unit settings?", "Confirm", MB_YESNO) == IDYES )
+						{
+							buffer newUNIS, newUNIx;
+							Get_UNIS(newUNIS);
+							Get_UNIx(newUNIx);
+							chkd.maps.curr->UNIS().takeAllData(newUNIS);
+							chkd.maps.curr->UNIx().takeAllData(newUNIx);
+							chkd.maps.curr->cleanStringTable(false);
+							chkd.maps.curr->cleanStringTable(true);
+							DisableUnitEditing();
+							RefreshWindow();
+						}
+					}
+					break;
+
 				case ID_CHECK_USEUNITDEFAULTS:
 					if ( HIWORD(wParam) == BN_CLICKED )
 					{
@@ -271,9 +297,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u32 newHitPoints;
 						if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
-						{
-							
-						}
+							chkd.maps.curr->setUnitSettingsHitpoints((u16)selectedUnit, newHitPoints);
 					}
 					break;
 				case ID_EDIT_UNITHITPOINTSBYTE:
@@ -281,9 +305,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u8 newHitPointByte;
 						if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsHitpointByte((u16)selectedUnit, newHitPointByte);
 					}
 					break;
 				case ID_EDIT_UNITSHIELDPOINTS:
@@ -291,9 +313,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newShieldPoints;
 						if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsShieldPoints((u16)selectedUnit, newShieldPoints);
 					}
 					break;
 				case ID_EDIT_UNITARMOR:
@@ -301,9 +321,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u8 newArmorByte;
 						if ( editArmor.GetEditNum<u8>(newArmorByte) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsArmor((u16)selectedUnit, newArmorByte);
 					}
 					break;
 				case ID_EDIT_UNITBUILDTIME:
@@ -311,9 +329,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newBuildTime;
 						if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsBuildTime((u16)selectedUnit, newBuildTime);
 					}
 					break;
 				case ID_EDIT_UNITMINERALCOST:
@@ -321,9 +337,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newMineralCost;
 						if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsMineralCost((u16)selectedUnit, newMineralCost);
 					}
 					break;
 				case ID_EDIT_UNITGASCOST:
@@ -331,9 +345,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newGasCost;
 						if ( editGasCost.GetEditNum<u16>(newGasCost) )
-						{
-
-						}
+							chkd.maps.curr->setUnitSettingsGasCost((u16)selectedUnit, newGasCost);
 					}
 					break;
 				case ID_EDIT_UNITGROUNDDAMAGE:
@@ -342,7 +354,13 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						u16 newGroundDamage;
 						if ( editGroundDamage.GetEditNum<u16>(newGroundDamage) )
 						{
-
+							u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
+							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+		
+							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+							if ( groundWeapon < 130 )
+								chkd.maps.curr->setUnitSettingsBaseWeapon(groundWeapon, newGroundDamage);
 						}
 					}
 					break;
@@ -352,7 +370,13 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						u16 newGroundBonus;
 						if ( editGroundBonus.GetEditNum<u16>(newGroundBonus) )
 						{
-
+							u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
+							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+		
+							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+							if ( groundWeapon < 130 )
+								chkd.maps.curr->setUnitSettingsBonusWeapon(groundWeapon, newGroundBonus);
 						}
 					}
 					break;
@@ -362,7 +386,13 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						u16 newAirDamage;
 						if ( editAirDamage.GetEditNum<u16>(newAirDamage) )
 						{
-
+							u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
+							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+		
+							if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
+							if ( airWeapon < 130 )
+								chkd.maps.curr->setUnitSettingsBaseWeapon(airWeapon, newAirDamage);
 						}
 					}
 					break;
@@ -372,7 +402,13 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						u16 newAirBonus;
 						if ( editAirBonus.GetEditNum<u16>(newAirBonus) )
 						{
+							u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
+							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+		
+							if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
 
+							chkd.maps.curr->setUnitSettingsBonusWeapon(airWeapon, newAirBonus);
 						}
 					}
 					break;
@@ -485,7 +521,6 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 	groupUnitAvailability.CreateThis(hParent, 210, 321, 372, 198, "Unit Availability", ID_GROUP_UNITAVAILABILITY);
 
 	DisableUnitEditing();
-	buttonResetUnitDefaults.DisableThis();
 }
 
 void UnitSettingsWindow::DisableUnitEditing()
@@ -660,8 +695,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 				airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon;
 		}
 		
-		chk->setUnitSettingsHitpoints(unitId, chkd.scData.UnitDat(unitId)->HitPoints);
-		chk->setUnitSettingsHitpointByte(unitId, 0);
+		chk->setUnitSettingsCompleteHitpoints(unitId, chkd.scData.UnitDat(unitId)->HitPoints);
 		chk->setUnitSettingsShieldPoints(unitId, chkd.scData.UnitDat(unitId)->ShieldAmount);
 		chk->setUnitSettingsArmor(unitId, chkd.scData.UnitDat(unitId)->Armor);
 		chk->setUnitSettingsBuildTime(unitId, chkd.scData.UnitDat(unitId)->BuildTime);
@@ -705,8 +739,7 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 		chk->removeUnusedString(origName);
 		chk->removeUnusedString(expName);
 
-		chk->setUnitSettingsHitpoints(unitId, 0);
-		chk->setUnitSettingsHitpointByte(unitId, 0);
+		chk->setUnitSettingsCompleteHitpoints(unitId, 0);
 		chk->setUnitSettingsShieldPoints(unitId, 0);
 		chk->setUnitSettingsArmor(unitId, 0);
 		chk->setUnitSettingsBuildTime(unitId, 0);
