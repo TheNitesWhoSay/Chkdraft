@@ -47,6 +47,12 @@ extern const int numOnOffMenuItems;
 
 #define DEFAULT_HOVER_TIME 10
 
+extern const char* upgradeNames[];
+extern const int numUpgradeNames;
+
+extern const char* techNames[];
+extern const int numTechNames;
+
 extern const char* tilesetNames[];
 #define NUM_TILESETS 8
 
@@ -130,6 +136,8 @@ extern const int numTilesetInitTerrains[];
 #define TREE_TYPE_LOCATION		(0x40000000)
 #define TREE_TYPE_SPRITE		(0x50000000)
 #define TREE_TYPE_DOODAD		(0x60000000)
+#define TREE_TYPE_UPGRADE		(0x70000000)
+#define TREE_TYPE_TECH			(0x80000000)
 
 
 /*###############################*\

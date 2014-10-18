@@ -85,6 +85,34 @@ struct UNITDAT
 	u16 StarEditAvailabilityFlags;
 };
 
+struct WEAPONDAT
+{
+	u16 Label;
+	u32 Graphics;
+	u8 Unused;
+	u16 TargetFlags;
+	u32 MinimumRange;
+	u32 MaximumRange;
+	u8 DamageUpgrade;
+	u8 WeaponType;
+	u8 WeaponBehavior;
+	u8 RemoveAfter;
+	u8 WeaponEffect;
+	u16 InnerSplashRadius;
+	u16 MediumSplashRadius;
+	u16 OuterSplashRadius;
+	u16 DamageAmount;
+	u16 DamageBonus;
+	u8 WeaponCooldown;
+	u8 DamageFactor;
+	u8 AttackAngle;
+	u8 LaunchSpin;
+	u8 ForwardOffset;
+	u8 UpwardOffset;
+	u16 TargetErrorMessage;
+	u16 Icon;
+};
+
 struct FLINGYDAT
 {
 	u16 Sprite;
@@ -160,6 +188,17 @@ class Units
 		UNITDAT unit[228];
 };
 
+class Weapons
+{
+	public:
+		Weapons();
+		bool LoadWeapons(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
+		WEAPONDAT* WeaponDat(u32 weaponId);
+
+	private:
+		WEAPONDAT weapons[130];
+};
+
 class Sprites
 {
 	public:
@@ -209,6 +248,7 @@ class DATA
 
 		Tiles tilesets;
 		Units units;
+		Weapons weapons;
 		Sprites sprites;
 		PCX tminimap;
 		PCX tunit;
@@ -217,6 +257,7 @@ class DATA
 		u16 numGrps;
 
 		UNITDAT*   UnitDat	(u16 id) { return units.UnitDat	   (id); }
+		WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
 		FLINGYDAT* FlingyDat(u32 id) { return sprites.FlingyDat(id); }
 		SPRITEDAT* SpriteDat(u32 id) { return sprites.SpriteDat(id); }
 		IMAGEDAT*  ImageDat	(u32 id) { return sprites.ImageDat (id); }

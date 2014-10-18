@@ -3,6 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
+#include "TechTree.h"
 
 class TechSettingsWindow : public ClassWindow
 {
@@ -20,6 +21,8 @@ class TechSettingsWindow : public ClassWindow
 		void EnableTechEditing();
 
 		s32 selectedTech;
+
+		TechTree treeTechs;
 
 		CheckBoxControl checkUseDefaultCosts;
 		ButtonControl buttonResetTechDefaults;

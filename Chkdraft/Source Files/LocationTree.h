@@ -5,13 +5,12 @@
 class LocationTree : public TreeViewControl
 {
 	public:
-		bool CreateThis(HWND hParent);
+		bool AddThis(HWND hTree, HTREEITEM hParent);
 		void InsertLocationItem(const char* text, u32 index);
 		void RebuildLocationTree();
 
 	private:
-		HTREEITEM hLocationTreeRoot;
-		TV_INSERTSTRUCT locationInsert;
+		HTREEITEM hLocationRoot;
 };
 
 #endif

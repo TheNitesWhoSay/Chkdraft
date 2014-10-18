@@ -3,6 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
+#include "UpgradeTree.h"
 
 class UpgradeSettingsWindow : public ClassWindow
 {
@@ -20,6 +21,8 @@ class UpgradeSettingsWindow : public ClassWindow
 		void EnableCostEditing();
 
 		s32 selectedUpgrade;
+
+		UpgradeTree treeUpgrades;
 
 		CheckBoxControl checkUseDefaultCosts;
 		ButtonControl buttonResetUpgradeDefaults;

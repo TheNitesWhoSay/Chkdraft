@@ -1,7 +1,7 @@
 #include "UnitSettings.h"
 #include "Chkdraft.h"
 
-UnitSettingsWindow::UnitSettingsWindow() : selectedUnit(-1)
+UnitSettingsWindow::UnitSettingsWindow() : selectedUnit(-1), possibleUnitNameUpdate(false), isDisabled(true), refreshing(false)
 {
 
 }
@@ -28,62 +28,385 @@ bool UnitSettingsWindow::DestroyThis()
 
 void UnitSettingsWindow::RefreshWindow()
 {
+	refreshing = true;
+	if ( selectedUnit >= 0 && selectedUnit < 228 && chkd.maps.curr != nullptr )
+	{
+		u16 unitId = (u16)selectedUnit;
+		if ( isDisabled )
+			EnableUnitEditing();
 
+		Scenario* chk = chkd.maps.curr;
+
+		bool useDefaultSettings = chk->unitUsesDefaultSettings(unitId);
+		if ( useDefaultSettings )
+		{
+			checkUseUnitDefaults.SetCheck(true);
+			DisableUnitProperties();
+		}
+		else
+		{
+			checkUseUnitDefaults.SetCheck(false);
+			EnableUnitProperties();
+		}
+
+		UNITDAT* unitDat = chkd.scData.UnitDat(unitId);
+		u32 hitpoints,
+			groundWeapon = (u32)unitDat->GroundWeapon,
+			airWeapon	 = (u32)unitDat->AirWeapon;
+		u16 shieldPoints, buildTime, mineralCost, gasCost, baseGroundWeapon, bonusGroundWeapon,
+			baseAirWeapon, bonusAirWeapon,
+			subUnitId = unitDat->Subunit1;
+		u8 armor, hitpointsByte;
+		
+		if ( subUnitId != 228 ) // If unit has a subunit
+		{
+			if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
+				groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon;
+			if ( airWeapon == 130 ) // If unit might have a subunit air attack
+				airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon;
+		}
+
+		if ( groundWeapon == 130 )
+		{
+			groupGroundWeapon.SetText("No Ground Weapon");
+			groupGroundWeapon.DisableThis();
+			editGroundDamage.SetText("");
+			editGroundDamage.DisableThis();
+			editGroundBonus.SetText("");
+			editGroundBonus.DisableThis();
+			textGroundDamage.DisableThis();
+			textGroundBonus.DisableThis();
+		}
+		else
+		{
+			stringstream newGroundGroupText;
+			newGroundGroupText << "Ground Weapon [NAME]";
+			groupGroundWeapon.SetText(newGroundGroupText.str().c_str());
+		}
+
+		if ( airWeapon == 130 )
+		{
+			groupAirWeapon.SetText("No Air Weapon");
+			groupAirWeapon.DisableThis();
+			editAirDamage.SetText("");
+			editAirDamage.DisableThis();
+			editAirBonus.SetText("");
+			editAirBonus.DisableThis();
+			textAirDamage.DisableThis();
+			textAirBonus.DisableThis();
+		}
+		else
+		{
+			stringstream newAirGroupText;
+			newAirGroupText << "Air Weapon [NAME]";
+			groupAirWeapon.SetText(newAirGroupText.str().c_str());
+		}
+
+		if ( useDefaultSettings )
+		{
+			editHitPoints.SetEditNum<u32>(unitDat->HitPoints/256);
+			editHitPointsByte.SetEditNum<u32>(0);
+			editShieldPoints.SetEditNum<u16>(unitDat->ShieldAmount);
+			editArmor.SetEditNum<u8>(unitDat->Armor);
+			editBuildTime.SetEditNum<u16>(unitDat->BuildTime);
+			editMineralCost.SetEditNum<u16>(unitDat->MineralCost);
+			editGasCost.SetEditNum<u16>(unitDat->VespeneCost);
+			if ( groundWeapon != 130 )
+			{
+				editGroundDamage.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageAmount);
+				editGroundBonus.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageBonus);
+			}
+			if ( airWeapon != 130 )
+			{
+				editAirDamage.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageAmount);
+				editAirBonus.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageBonus);
+			}
+		}
+		else // Not default settings
+		{
+			if ( chk->getUnitSettingsHitpoints(unitId, hitpoints) )
+				editHitPoints.SetEditNum<u32>(hitpoints);
+			if ( chk->getUnitSettingsHitpointByte(unitId, hitpointsByte) )
+				editHitPointsByte.SetEditNum<u8>(hitpointsByte);
+			if ( chk->getUnitSettingsShieldPoints(unitId, shieldPoints) )
+				editShieldPoints.SetEditNum<u16>(shieldPoints);
+			if ( chk->getUnitSettingsArmor(unitId, armor) )
+				editArmor.SetEditNum<u8>(armor);
+			if ( chk->getUnitSettingsBuildTime(unitId, buildTime) )
+				editBuildTime.SetEditNum<u16>(buildTime);
+			if ( chk->getUnitSettingsMineralCost(unitId, mineralCost) )
+				editMineralCost.SetEditNum<u16>(mineralCost);
+			if ( chk->getUnitSettingsGasCost(unitId, gasCost) )
+				editGasCost.SetEditNum<u16>(gasCost);
+			if ( chk->getUnitSettingsBaseWeapon(groundWeapon, baseGroundWeapon) )
+				editGroundDamage.SetEditNum<u16>(baseGroundWeapon);
+			if ( chk->getUnitSettingsBonusWeapon(groundWeapon, bonusGroundWeapon) )
+				editGroundBonus.SetEditNum<u16>(bonusGroundWeapon);
+			if ( chk->getUnitSettingsBaseWeapon(airWeapon, baseAirWeapon) )
+				editAirDamage.SetEditNum<u16>(baseAirWeapon);
+			if ( chk->getUnitSettingsBonusWeapon(airWeapon, bonusAirWeapon) )
+				editAirBonus.SetEditNum<u16>(bonusAirWeapon);
+		}
+
+		checkEnabledByDefault.SetCheck(chk->unitIsEnabled(unitId));
+
+		for ( int i=0; i<12; i++ )
+		{
+			u8 enabledState = chk->getUnitEnabledState(unitId, (u8)i);
+			if ( enabledState == UNIT_STATE_DEFAULTFORPLAYER )
+				dropPlayerAvailability[i].SetSel(0);
+			else if ( enabledState == UNIT_STATE_ENABLEDFORPLAYER )
+				dropPlayerAvailability[i].SetSel(1);
+			else if ( enabledState == UNIT_STATE_DISABLEDFORPLAYER )
+				dropPlayerAvailability[i].SetSel(2);
+		}
+
+		u16 unitStringNum = 0;
+		if ( chk->getUnitStringNum(unitId, unitStringNum) && unitStringNum == 0 )
+		{
+			editUnitName.DisableThis();
+			checkUseDefaultName.SetCheck(true);
+		}
+		else
+		{
+			if ( !useDefaultSettings )
+				editUnitName.EnableThis();
+			checkUseDefaultName.SetCheck(false);
+		}
+			
+		std::string unitName;
+		chk->getUnitName(unitName, unitId);
+		editUnitName.SetText(unitName.c_str());
+	}
+	else
+		DisableUnitEditing();
+
+	refreshing = false;
 }
 
 LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
+		case WM_SHOWWINDOW:
+			if ( wParam == TRUE )
+				RefreshWindow();
+			else
+				CheckReplaceUnitName();
+			break;
+
 		case WM_COMMAND:
-			switch ( HIWORD(wParam) )
+			if ( refreshing )
+				return DefWindowProc(hWnd, msg, wParam, lParam);
+			
+			switch ( LOWORD(wParam) )
 			{
-				case BN_CLICKED:
-					switch ( LOWORD(wParam) )
+				case ID_CHECK_USEUNITDEFAULTS:
+					if ( HIWORD(wParam) == BN_CLICKED )
 					{
-						case ID_CHECK_USEUNITDEFAULTS:
+						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+						if ( selectedUnit != -1 )
+						{
+							if ( state == BST_CHECKED )
 							{
-								LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-								if ( selectedUnit != -1 )
-								{
-									if ( state == BST_CHECKED )
-									{
-										DisableUnitProperties();
-										chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, true);
-									}
-									else
-									{
-										EnableUnitProperties();
-										chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, false);
-									}
-
-									chkd.maps.curr->notifyChange(false);
-								}
+								ClearDefaultUnitProperties();
+								DisableUnitProperties();
+								chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, true);
+								RefreshWindow();
 							}
-							break;
-
-						case ID_CHECK_USEDEFAULTUNITNAME:
+							else
 							{
-								LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-								if ( selectedUnit != -1 )
-								{
-									if ( state == BST_CHECKED )
-									{
-										editUnitName.DisableThis();
-										// Set unit name to 0
-									}
-									else
-										editUnitName.EnableThis();
-
-									chkd.maps.curr->notifyChange(false);
-								}
+								SetDefaultUnitProperties();
+								EnableUnitProperties();
+								chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, false);
+								RefreshWindow();
 							}
-							break;
+
+							chkd.unitWindow.RepopulateList();
+							RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
-				
+				case ID_CHECK_USEDEFAULTUNITNAME:
+					if ( HIWORD(wParam) == BN_CLICKED )
+					{
+						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+						if ( selectedUnit != -1 )
+						{
+							if ( state == BST_CHECKED )
+							{
+								editUnitName.DisableThis();
+								chkd.maps.curr->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+								chkd.maps.curr->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+								std::string unitName;
+								chkd.maps.curr->getUnitName(unitName, (u16)selectedUnit);
+								editUnitName.SetText(unitName.c_str());
+								chkd.unitWindow.RepopulateList();
+								RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+							}
+							else
+								editUnitName.EnableThis();
+
+							chkd.maps.curr->notifyChange(false);
+						}
+					}
+					break;
+				case ID_CHECK_ENABLEDBYDEFAULT:
+					if ( HIWORD(wParam) == BN_CLICKED )
+					{
+						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+						if ( selectedUnit != -1 )
+							chkd.maps.curr->setUnitEnabled((u16)selectedUnit, state == BST_CHECKED );
+					}
+					break;
+				case ID_EDIT_UNITNAME:
+					if ( HIWORD(wParam) == EN_CHANGE )
+						possibleUnitNameUpdate = true;
+					else if ( HIWORD(wParam) == EN_KILLFOCUS )
+						CheckReplaceUnitName();
+					break;
+				case ID_EDIT_UNITHITPOINTS:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u32 newHitPoints;
+						if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
+						{
+							
+						}
+					}
+					break;
+				case ID_EDIT_UNITHITPOINTSBYTE:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u8 newHitPointByte;
+						if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITSHIELDPOINTS:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newShieldPoints;
+						if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITARMOR:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u8 newArmorByte;
+						if ( editArmor.GetEditNum<u8>(newArmorByte) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITBUILDTIME:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newBuildTime;
+						if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITMINERALCOST:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newMineralCost;
+						if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITGASCOST:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newGasCost;
+						if ( editGasCost.GetEditNum<u16>(newGasCost) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITGROUNDDAMAGE:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newGroundDamage;
+						if ( editGroundDamage.GetEditNum<u16>(newGroundDamage) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITGROUNDBONUS:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newGroundBonus;
+						if ( editGroundBonus.GetEditNum<u16>(newGroundBonus) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITAIRDAMAGE:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newAirDamage;
+						if ( editAirDamage.GetEditNum<u16>(newAirDamage) )
+						{
+
+						}
+					}
+					break;
+				case ID_EDIT_UNITAIRBONUS:
+					if ( HIWORD(wParam) == EN_CHANGE )
+					{
+						u16 newAirBonus;
+						if ( editAirBonus.GetEditNum<u16>(newAirBonus) )
+						{
+
+						}
+					}
+					break;
+				case ID_DROP_P1UNITAVAILABILITY: case ID_DROP_P2UNITAVAILABILITY: case ID_DROP_P3UNITAVAILABILITY:
+				case ID_DROP_P4UNITAVAILABILITY: case ID_DROP_P5UNITAVAILABILITY: case ID_DROP_P6UNITAVAILABILITY:
+				case ID_DROP_P7UNITAVAILABILITY: case ID_DROP_P8UNITAVAILABILITY: case ID_DROP_P9UNITAVAILABILITY:
+				case ID_DROP_P10UNITAVAILABILITY: case ID_DROP_P11UNITAVAILABILITY: case ID_DROP_P12UNITAVAILABILITY:
+					if ( HIWORD(wParam) == CBN_SELCHANGE )
+					{
+						u32 player = LOWORD(wParam)-ID_DROP_P1UNITAVAILABILITY;
+						if ( chkd.maps.curr->setUnitEnabledState((u16)selectedUnit, (u8)player, dropPlayerAvailability[player].GetSel()) )
+							chkd.maps.curr->notifyChange(false);
+						else
+							RefreshWindow();
+					}
+															 
+					break;
 			}
 			break;
+
+		case WM_NOTIFY:
+			if ( ((NMHDR*)lParam)->code == TVN_SELCHANGED && ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )
+			{
+				LPARAM itemType = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_TYPE,
+					   itemData = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_DATA;
+
+				u16 unitId = (u16)itemData;
+				if ( itemType == TREE_TYPE_UNIT && unitId < 228 )
+				{
+					CheckReplaceUnitName();
+					selectedUnit = unitId;
+					RefreshWindow();
+				}
+			}
 
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -94,7 +417,8 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
-	CreateUnitTree(hParent);
+	unitTree.UpdateUnitNames(DefaultUnitDisplayName);
+	unitTree.CreateThis(hParent, 5, 5, 200, 489, false, ID_UNITSETTINGSTREE);
 	buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", ID_BUTTON_RESETALLUNITDEFAULTS);
 	checkUseUnitDefaults.CreateThis(hParent, 210, 5, 100, 20, false, "Use Unit Defaults", ID_CHECK_USEUNITDEFAULTS);
 	checkEnabledByDefault.CreateThis(hParent, 403, 5, 120, 20, false, "Enabled by Default", ID_CHECK_ENABLEDBYDEFAULT);
@@ -130,35 +454,33 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 	checkUseDefaultName.CreateThis(hParent, 220, 269, 75, 20, false, "Use Default", ID_CHECK_USEDEFAULTUNITNAME);
 	editUnitName.CreateThis(hParent, 342, 269, 234, 20, false, ID_EDIT_UNITNAME);
 
-	// 215, 403
-	//   +27
+	for ( int y=0; y<6; y++ )
+	{
+		for ( int x=0; x<2; x++ )
+		{
+			int player = y*2+x;
+			stringstream ssPlayer;
+			if ( player < 9 )
+				ssPlayer << "Player 0" << player+1;
+			else
+				ssPlayer << "Player " << player+1;
+
+			textPlayerAvailability[player].CreateThis(hParent, 215+188*x, 336+27*y, 75, 20, ssPlayer.str().c_str(), ID_TEXT_P1UNITAVAILABILITY+player);
+		}
+	}
+
 	const char* items[] = { "Default", "Yes", "No" };
 	int numItems = sizeof(items)/sizeof(const char*);
-	textP1Availability.CreateThis(hParent, 215, 336, 75, 20, "Player 01", ID_TEXT_P1UNITAVAILABILITY);
-	textP2Availability.CreateThis(hParent, 403, 336, 75, 20, "Player 02", ID_TEXT_P2UNITAVAILABILITY);
-	textP3Availability.CreateThis(hParent, 215, 363, 75, 20, "Player 03", ID_TEXT_P3UNITAVAILABILITY);
-	textP4Availability.CreateThis(hParent, 403, 363, 75, 20, "Player 04", ID_TEXT_P4UNITAVAILABILITY);
-	textP5Availability.CreateThis(hParent, 215, 390, 75, 20, "Player 05", ID_TEXT_P5UNITAVAILABILITY);
-	textP6Availability.CreateThis(hParent, 403, 390, 75, 20, "Player 06", ID_TEXT_P6UNITAVAILABILITY);
-	textP7Availability.CreateThis(hParent, 215, 417, 75, 20, "Player 07", ID_TEXT_P7UNITAVAILABILITY);
-	textP8Availability.CreateThis(hParent, 403, 417, 75, 20, "Player 08", ID_TEXT_P8UNITAVAILABILITY);
-	textP9Availability.CreateThis(hParent, 215, 444, 75, 20, "Player 09", ID_TEXT_P9UNITAVAILABILITY);
-	textP10Availability.CreateThis(hParent, 403, 444, 75, 20, "Player 10", ID_TEXT_P10UNITAVAILABILITY);
-	textP11Availability.CreateThis(hParent, 215, 471, 75, 20, "Player 11", ID_TEXT_P11UNITAVAILABILITY);
-	textP12Availability.CreateThis(hParent, 403, 471, 75, 20, "Player 12", ID_TEXT_P12UNITAVAILABILITY);
 
-	dropP1Availability.CreateThis(hParent, 304, 336, 84, 100, false, ID_DROP_P1UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP2Availability.CreateThis(hParent, 492, 336, 84, 100, false, ID_DROP_P2UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP3Availability.CreateThis(hParent, 304, 363, 84, 100, false, ID_DROP_P3UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP4Availability.CreateThis(hParent, 492, 363, 84, 100, false, ID_DROP_P4UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP5Availability.CreateThis(hParent, 304, 390, 84, 100, false, ID_DROP_P5UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP6Availability.CreateThis(hParent, 492, 390, 84, 100, false, ID_DROP_P6UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP7Availability.CreateThis(hParent, 304, 417, 84, 100, false, ID_DROP_P7UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP8Availability.CreateThis(hParent, 492, 417, 84, 100, false, ID_DROP_P8UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP9Availability.CreateThis(hParent, 304, 444, 84, 100, false, ID_DROP_P9UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP10Availability.CreateThis(hParent, 492, 444, 84, 100, false, ID_DROP_P10UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP11Availability.CreateThis(hParent, 304, 471, 84, 100, false, ID_DROP_P11UNITAVAILABILITY, numItems, items, defaultFont);
-	dropP12Availability.CreateThis(hParent, 492, 471, 84, 100, false, ID_DROP_P12UNITAVAILABILITY, numItems, items, defaultFont);
+	for ( int y=0; y<6; y++ )
+	{
+		for ( int x=0; x<2; x++ )
+		{
+			int player = y*2+x;
+			dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, ID_DROP_P1UNITAVAILABILITY+player,
+													   numItems, items, defaultFont );
+		}
+	}
 
 	groupUnitAvailability.CreateThis(hParent, 210, 321, 372, 198, "Unit Availability", ID_GROUP_UNITAVAILABILITY);
 
@@ -166,46 +488,24 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 	buttonResetUnitDefaults.DisableThis();
 }
 
-void UnitSettingsWindow::CreateUnitTree(HWND hParent)
-{
-
-}
-
 void UnitSettingsWindow::DisableUnitEditing()
 {
+	isDisabled = true;
 	DisableUnitProperties();
 	checkUseUnitDefaults.DisableThis();
 	checkEnabledByDefault.DisableThis();
 
 	groupUnitAvailability.DisableThis();
-	textP1Availability.DisableThis();
-	dropP1Availability.DisableThis();
-	textP2Availability.DisableThis();
-	dropP2Availability.DisableThis();
-	textP3Availability.DisableThis();
-	dropP3Availability.DisableThis();
-	textP4Availability.DisableThis();
-	dropP4Availability.DisableThis();
-	textP5Availability.DisableThis();
-	dropP5Availability.DisableThis();
-	textP6Availability.DisableThis();
-	dropP6Availability.DisableThis();
-	textP7Availability.DisableThis();
-	dropP7Availability.DisableThis();
-	textP8Availability.DisableThis();
-	dropP8Availability.DisableThis();
-	textP9Availability.DisableThis();
-	dropP9Availability.DisableThis();
-	textP10Availability.DisableThis();
-	dropP10Availability.DisableThis();
-	textP11Availability.DisableThis();
-	dropP11Availability.DisableThis();
-	textP12Availability.DisableThis();
-	dropP12Availability.DisableThis();
+	for ( int i=0; i<12; i++ )
+	{
+		textPlayerAvailability[i].DisableThis();
+		dropPlayerAvailability[i].DisableThis();
+	}
 }
 
 void UnitSettingsWindow::EnableUnitEditing()
 {
+	isDisabled = false;
 	if ( SendMessage((HWND)checkUseUnitDefaults.getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 		EnableUnitProperties();
 
@@ -213,30 +513,11 @@ void UnitSettingsWindow::EnableUnitEditing()
 	checkEnabledByDefault.EnableThis();
 
 	groupUnitAvailability.EnableThis();
-	textP1Availability.EnableThis();
-	dropP1Availability.EnableThis();
-	textP2Availability.EnableThis();
-	dropP2Availability.EnableThis();
-	textP3Availability.EnableThis();
-	dropP3Availability.EnableThis();
-	textP4Availability.EnableThis();
-	dropP4Availability.EnableThis();
-	textP5Availability.EnableThis();
-	dropP5Availability.EnableThis();
-	textP6Availability.EnableThis();
-	dropP6Availability.EnableThis();
-	textP7Availability.EnableThis();
-	dropP7Availability.EnableThis();
-	textP8Availability.EnableThis();
-	dropP8Availability.EnableThis();
-	textP9Availability.EnableThis();
-	dropP9Availability.EnableThis();
-	textP10Availability.EnableThis();
-	dropP10Availability.EnableThis();
-	textP11Availability.EnableThis();
-	dropP11Availability.EnableThis();
-	textP12Availability.EnableThis();
-	dropP12Availability.EnableThis();
+	for ( int i=0; i<12; i++ )
+	{
+		textPlayerAvailability[i].EnableThis();
+		dropPlayerAvailability[i].EnableThis();
+	}
 }
 
 void UnitSettingsWindow::DisableUnitProperties()
@@ -307,4 +588,129 @@ void UnitSettingsWindow::EnableUnitProperties()
 
 	if ( SendMessage((HWND)checkUseDefaultName.getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 		editUnitName.EnableThis();
+}
+
+void UnitSettingsWindow::CheckReplaceUnitName()
+{
+	if ( possibleUnitNameUpdate && checkUseDefaultName.isChecked() )
+		possibleUnitNameUpdate = false;
+
+	Scenario* chk = chkd.maps.curr;
+	string newUnitName;
+	if ( possibleUnitNameUpdate && selectedUnit >= 0 && selectedUnit < 228 && editUnitName.GetEditText(newUnitName) )
+	{
+		u16* originalNameString = nullptr;
+		u16* expansionNameString = nullptr;
+		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
+		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
+		if ( ( (chk->isExpansion() && gotExp) || (!chk->isExpansion() && gotOrig) ) &&
+			 parseEscapedString(newUnitName) )
+		{
+			bool replacedOrig = false, replacedExp = false;
+			if ( gotOrig )
+				replacedOrig = chk->replaceString(newUnitName, *originalNameString, false, true);
+			if ( gotExp )
+				replacedExp = chk->replaceString(newUnitName, *expansionNameString, false, true);
+
+			if ( replacedOrig || replacedExp )
+			{
+				chkd.maps.curr->notifyChange(false);
+				chkd.unitWindow.RepopulateList();
+				RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+			}
+			else
+				RefreshWindow();
+		}
+		possibleUnitNameUpdate = false;
+	}
+}
+
+void UnitSettingsWindow::SetDefaultUnitProperties()
+{
+	refreshing = true;
+	if ( selectedUnit >= 0 )
+	{
+		Scenario* chk = chkd.maps.curr;
+		u16 unitId = (u16)selectedUnit;
+
+		// Remove Custom Unit Name
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
+		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		std::string unitName;
+		chk->getUnitName(unitName, (u16)selectedUnit);
+		editUnitName.SetText(unitName.c_str());
+		checkUseDefaultName.DisableThis();
+		editUnitName.DisableThis();
+		chk->removeUnusedString(origName);
+		chk->removeUnusedString(expName);
+		chkd.unitWindow.RepopulateList();
+		RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+
+		u32 groundWeapon = (u32)chkd.scData.UnitDat(unitId)->GroundWeapon,
+			airWeapon	 = (u32)chkd.scData.UnitDat(unitId)->AirWeapon;
+
+		u16 subUnitId = chkd.scData.UnitDat(unitId)->Subunit1;
+		if ( subUnitId != 228 ) // If unit has a subunit
+		{
+			if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
+				groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon;
+			if ( airWeapon == 130 ) // If unit might have a subunit air attack
+				airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon;
+		}
+		
+		chk->setUnitSettingsHitpoints(unitId, chkd.scData.UnitDat(unitId)->HitPoints);
+		chk->setUnitSettingsHitpointByte(unitId, 0);
+		chk->setUnitSettingsShieldPoints(unitId, chkd.scData.UnitDat(unitId)->ShieldAmount);
+		chk->setUnitSettingsArmor(unitId, chkd.scData.UnitDat(unitId)->Armor);
+		chk->setUnitSettingsBuildTime(unitId, chkd.scData.UnitDat(unitId)->BuildTime);
+		chk->setUnitSettingsMineralCost(unitId, chkd.scData.UnitDat(unitId)->MineralCost);
+		chk->setUnitSettingsGasCost(unitId, chkd.scData.UnitDat(unitId)->VespeneCost);
+
+		if ( groundWeapon != 130 )
+		{
+			u16 defaultBaseDamage = chkd.scData.WeaponDat(groundWeapon)->DamageAmount,
+				defaultBonusDamage = chkd.scData.WeaponDat(groundWeapon)->DamageBonus;
+
+			chk->setUnitSettingsBaseWeapon(groundWeapon, defaultBaseDamage);
+			chk->setUnitSettingsBonusWeapon(groundWeapon, defaultBonusDamage);
+		}
+
+		if ( airWeapon != 130 )
+		{
+			u16 defaultBaseDamage = chkd.scData.WeaponDat(airWeapon)->DamageAmount,
+				defaultBonusDamage = chkd.scData.WeaponDat(airWeapon)->DamageBonus;
+
+			chk->setUnitSettingsBaseWeapon(airWeapon, defaultBaseDamage);
+			chk->setUnitSettingsBonusWeapon(airWeapon, defaultBonusDamage);
+		}
+	}
+	refreshing = false;
+}
+
+void UnitSettingsWindow::ClearDefaultUnitProperties()
+{
+	if ( selectedUnit >= 0 )
+	{
+		Scenario* chk = chkd.maps.curr;
+		u16 unitId = (u16)selectedUnit;
+		u32 groundWeapon = (u32)chkd.scData.UnitDat(unitId)->GroundWeapon,
+			airWeapon	 = (u32)chkd.scData.UnitDat(unitId)->AirWeapon;
+
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
+		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		chk->removeUnusedString(origName);
+		chk->removeUnusedString(expName);
+
+		chk->setUnitSettingsHitpoints(unitId, 0);
+		chk->setUnitSettingsHitpointByte(unitId, 0);
+		chk->setUnitSettingsShieldPoints(unitId, 0);
+		chk->setUnitSettingsArmor(unitId, 0);
+		chk->setUnitSettingsBuildTime(unitId, 0);
+		chk->setUnitSettingsMineralCost(unitId, 0);
+		chk->setUnitSettingsGasCost(unitId, 0);
+	}
 }

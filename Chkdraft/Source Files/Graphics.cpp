@@ -876,8 +876,16 @@ void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bi
 			GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
 		}
 	}
-	else
+	else // Extended unit, use ID:0's graphics (for now)
+	{
 		curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
+		if ( selected )
+		{
+			GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
+			u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleOffset;
+			GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
+		}
+	}
 
 	GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
 }
@@ -1482,13 +1490,13 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 	
 			if ( MTXM.get<u16>(TileValue, mtxmReference) )
 			{
-				if( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
+				if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
 				{
 					GetMegaTileRef(tiles, MegaTileReference, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 					GetMiniTileRef(tiles, MiniTileRef, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
 					PixelReference = ((yc+yOffset)*128+(xc+xOffset))*3;
 
-					wpeRef = tiles->vr4.get<u8>(MiniTileRef+6*8+7)*4; // WPE start point for the given pixel
+					wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
 					minimapBits[PixelReference  ] = tiles->wpe.get<u8>(wpeRef+2); // Blue
 					minimapBits[PixelReference+1] = tiles->wpe.get<u8>(wpeRef+1); // Green
 					minimapBits[PixelReference+2] = tiles->wpe.get<u8>(wpeRef  ); // Red

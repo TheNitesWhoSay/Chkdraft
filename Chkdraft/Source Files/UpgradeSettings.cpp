@@ -1,7 +1,7 @@
 #include "UpgradeSettings.h"
 #include "Chkdraft.h"
 
-UpgradeSettingsWindow::UpgradeSettingsWindow() : selectedUpgrade(0)
+UpgradeSettingsWindow::UpgradeSettingsWindow() : selectedUpgrade(-1)
 {
 
 }
@@ -23,7 +23,12 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent)
 
 void UpgradeSettingsWindow::RefreshWindow()
 {
+	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
+	{
 
+	}
+	else
+		DisableUpgradeEditing();
 };
 
 LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -75,6 +80,19 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			}
 			break;
 
+		case WM_NOTIFY:
+			if ( ((NMHDR*)lParam)->code == TVN_SELCHANGED && ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )
+			{
+				LPARAM itemType = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_TYPE,
+					   itemData = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_DATA;
+
+				u16 upgradeId = (u16)itemData;
+				if ( itemType == TREE_TYPE_UPGRADE && upgradeId < 61 )
+				{
+					cout << upgradeId << endl;
+				}
+			}
+
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
@@ -84,6 +102,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 
 void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
 {
+	treeUpgrades.CreateThis(hWnd, 5, 5, 200, 489, false, ID_TREE_UPGRADES);
 	checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 120, 20, false, "Use Default Costs", ID_CHECK_USEDEFAULTCOSTS);
 	buttonResetUpgradeDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Upgrades To Default", ID_BUTTON_RESETUPGRADEDEFAULTS);
 

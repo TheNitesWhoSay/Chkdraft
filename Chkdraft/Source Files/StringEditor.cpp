@@ -21,6 +21,7 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 
 		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
 		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
+		checkExtendedString.DisableThis();
 		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
 
 		textStringUsage.CreateThis(hStringEditor, 480, 379, 125, 20, "String Usage:", 0);

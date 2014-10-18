@@ -4046,9 +4046,11 @@ bool TextTrigCompiler::PrepStringTable(Scenario* chk)
 		for ( u32 i=0; i<chk->WAV().size()/4; i++ )
 			AddStrIffOverZero( chk->WAV().get<u32>(i*4) );
 
-		buffer &unitSettings = chk->unitSettings();
 		for ( int i=0; i<228; i++ )
-			AddStrIffOverZero( unitSettings.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+		{
+			AddStrIffOverZero( chk->UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+			AddStrIffOverZero( chk->UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+		}
 
 		for ( int i=0; i<256; i++ )
 			AddStrIffOverZero( chk->SWNM().get<u32>(i*4) );

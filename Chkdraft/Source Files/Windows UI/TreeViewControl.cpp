@@ -1,36 +1,72 @@
 #include "TreeViewControl.h"
 
-bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id)
+bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u32 id)
 {
+	DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES;
+	if ( hasButtons )
+		dwStyle |= TVS_HASBUTTONS|TVS_LINESATROOT;
+
 	return WindowControl::CreateControl( WS_EX_CLIENTEDGE, WC_TREEVIEW, "", 
-										 WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES|TVS_LINESATROOT|TVS_HASBUTTONS,
+										 dwStyle,
 										 x, y, width, height, hParent, (HMENU)id, true );
 }
 
-TV_INSERTSTRUCT TreeViewControl::InsertChild(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam)
+HTREEITEM TreeViewControl::InsertTreeItem(HTREEITEM hParentItem, const char* text, LPARAM lParam)
 {
-	tvinsert.hInsertAfter = TVI_LAST;
-	tvinsert.item.mask |= LVIF_PARAM;
-	tvinsert.item.pszText = (LPSTR)pszText;
-	tvinsert.item.lParam = lParam;
-	tvinsert.hParent = TreeView_InsertItem(hWnd, &tvinsert);
-	return tvinsert;
+	if ( hParentItem == NULL )
+		return InsertParent(text, lParam);
+	else
+	{
+		TVINSERTSTRUCT tvinsert = { };
+		tvinsert.hParent = hParentItem;
+		tvinsert.hInsertAfter = TVI_LAST;
+		tvinsert.item.mask = TVIF_TEXT|LVIF_PARAM;
+		tvinsert.item.pszText = (LPSTR)text;
+		tvinsert.item.lParam = lParam;
+		return TreeView_InsertItem(getHandle(), &tvinsert);
+	}
 }
 
-TV_INSERTSTRUCT TreeViewControl::InsertParent(HWND hWnd, TV_INSERTSTRUCT tvinsert, const char* pszText, LPARAM lParam)
+HTREEITEM TreeViewControl::InsertParent(const char* text, LPARAM lParam)
 {
+	TVINSERTSTRUCT tvinsert = { };
 	tvinsert.hParent = NULL;
 	tvinsert.hInsertAfter = TVI_ROOT;
-	tvinsert.item.mask |= (TVIF_TEXT|TVIF_PARAM);
-	tvinsert.item.pszText = (LPSTR)pszText;
+	tvinsert.item.mask = TVIF_TEXT|TVIF_PARAM;
+	tvinsert.item.pszText = (LPSTR)text;
 	tvinsert.item.lParam = lParam;
-	tvinsert.hParent = TreeView_InsertItem(hWnd, &tvinsert);
-	return tvinsert;
+	return TreeView_InsertItem(getHandle(), &tvinsert);
 }
 
 bool TreeViewControl::SetHandle(HWND hWnd)
 {
+	/** By doing this in a slightly circruitous manner WindowControls
+		in general don't have to allow easy handle changes */
 	return WindowControl::FindThis(GetParent(hWnd), GetDlgCtrlID(hWnd));
+}
+
+bool TreeViewControl::SetItemText(HTREEITEM hItem, const char* newText)
+{
+	TVITEM item = { };
+	item.mask = TVIF_TEXT;
+	item.hItem = hItem;
+	item.pszText = (LPSTR)newText;
+	return SendMessage(getHandle(), TVM_SETITEM, 0, (LPARAM)&item) == TRUE;
+}
+
+bool TreeViewControl::ExpandItem(HTREEITEM hItem)
+{
+	return SendMessage(getHandle(), TVM_EXPAND, TVE_EXPAND, (LPARAM)hItem) != 0;
+}
+
+void TreeViewControl::EmptySubTree(HTREEITEM hRoot)
+{
+	HTREEITEM hChild = TreeView_GetChild(getHandle(), hRoot);
+	while ( hChild != NULL )
+	{
+		TreeView_DeleteItem(getHandle(), hChild);
+		hChild = TreeView_GetChild(getHandle(), hRoot);
+	}
 }
 
 LRESULT TreeViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

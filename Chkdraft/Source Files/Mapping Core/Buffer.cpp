@@ -282,6 +282,9 @@ template bool buffer::add<u32>(u32 value, u32 amount);
 
 bool buffer::addStr(const char* chunk, u32 chunkSize)
 {
+	if ( chunkSize == 0 )
+		return true; // Successful at adding nothing
+
 	if ( this != nullptr && sizeUsed+chunkSize > sizeUsed )
 	{
 		if ( sizeUsed+chunkSize >= sizeAllotted )

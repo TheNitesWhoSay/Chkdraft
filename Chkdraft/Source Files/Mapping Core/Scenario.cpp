@@ -129,6 +129,14 @@ bool Scenario::getPlayerForce(u8 playerNum, u8 &force)
 		return false;
 }
 
+bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
+{
+	if ( isExpansion() )
+		return UNIx().get<u16>(stringNum, unitId*2+UNIT_SETTINGS_STRING_IDS);
+	else
+		return UNIS().get<u16>(stringNum, unitId*2+UNIT_SETTINGS_STRING_IDS);
+}
+
 u16 Scenario::numStrings()
 {
 	return STR().get<u16>(0);
@@ -520,7 +528,7 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 
 bool Scenario::isExpansion()
 {
-	return VER().get<u16>(0) >= 205;
+	return VER().get<u16>(0) >= 63;
 }
 
 buffer& Scenario::unitSettings()
@@ -598,6 +606,88 @@ bool Scenario::getPlayerRace(u8 player, u8& race)
 bool Scenario::getPlayerColor(u8 player, u8& color)
 {
 	return COLR().get<u8>(color, (u32)player);
+}
+
+bool Scenario::unitUsesDefaultSettings(u16 unitId)
+{
+	return unitSettings().get<u8>((u32)unitId) == 1;
+}
+
+bool Scenario::unitIsEnabled(u16 unitId)
+{
+	return PUNI().get<u8>(PTEC_GLOBAL_AVAILABILITY+unitId) != 0;
+}
+
+u8 Scenario::getUnitEnabledState(u16 unitId, u8 player)
+{
+	if ( PUNI().get<u8>(PTEC_PLAYERUSESDEFAULT+unitId+player*228) == 0 ) // Override
+	{
+		if ( PUNI().get<u8>((u32)unitId+228*(u32)player) == 0 )
+			return UNIT_STATE_DISABLEDFORPLAYER;
+		else
+			return UNIT_STATE_ENABLEDFORPLAYER;
+	}
+	else
+		return UNIT_STATE_DEFAULTFORPLAYER;
+}
+
+bool Scenario::getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints)
+{
+	u32 untrimmedHitpoints;
+	if ( unitSettings().get<u32>(untrimmedHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	{
+		hitpoints = untrimmedHitpoints/256;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool Scenario::getUnitSettingsHitpointByte(u16 unitId, u8 &hitpointByte)
+{
+	u32 untrimmedHitpoints;
+	if ( unitSettings().get<u32>(untrimmedHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	{
+		hitpointByte = untrimmedHitpoints%256;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool Scenario::getUnitSettingsShieldPoints(u16 unitId, u16 &shieldPoints)
+{
+	return unitSettings().get<u16>(shieldPoints, UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId);
+}
+
+bool Scenario::getUnitSettingsArmor(u16 unitId, u8 &armor)
+{
+	return unitSettings().get<u8>(armor, UNIT_SETTINGS_ARMOR+(u32)unitId);
+}
+
+bool Scenario::getUnitSettingsBuildTime(u16 unitId, u16 &buildTime)
+{
+	return unitSettings().get<u16>(buildTime, UNIT_SETTINGS_BUILDTIME+2*(u32)unitId);
+}
+
+bool Scenario::getUnitSettingsMineralCost(u16 unitId, u16 &mineralCost)
+{
+	return unitSettings().get<u16>(mineralCost, UNIT_SETTINGS_MINERALCOST+2*(u32)unitId);
+}
+
+bool Scenario::getUnitSettingsGasCost(u16 unitId, u16 &gasCost)
+{
+	return unitSettings().get<u16>(gasCost, UNIT_SETTINGS_GASCOST+2*(u32)unitId);
+}
+
+bool Scenario::getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage)
+{
+	return weaponId < 130 && unitSettings().get<u16>(baseDamage, UNIT_SETTINGS_BASEWEAPON+2*weaponId);
+}
+
+bool Scenario::getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage)
+{
+	return weaponId < 130 && unitSettings().get<u16>(bonusDamage, UNIT_SETTINGS_BONUSWEAPON(isExpansion())+2*weaponId);
 }
 
 bool Scenario::setTileset(u16 newTileset)
@@ -1483,7 +1573,10 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 
 		buffer &unitSettings = this->unitSettings();
 		for ( int i=0; i<228; i++ )
-			AddStrIfOverZero( unitSettings.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+		{
+			AddStrIfOverZero( UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+			AddStrIfOverZero( UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+		}
 
 		for ( int i=0; i<256; i++ )
 			AddStrIfOverZero( SWNM().get<u32>(i*4) );
@@ -1752,6 +1845,134 @@ bool Scenario::setUnitUseDefaults(u16 unitID, bool useDefaults)
 	return (isExpansion() && setExp) || (!isExpansion() && setNormal);
 }
 
+bool Scenario::setUnitEnabled(u16 unitId, bool enabled)
+{
+	if ( enabled )
+		return PUNI().replace<u8>(PTEC_GLOBAL_AVAILABILITY+unitId, 1);
+	else
+		return PUNI().replace<u8>(PTEC_GLOBAL_AVAILABILITY+unitId, 0);
+}
+
+bool Scenario::setUnitEnabledState(u16 unitId, u8 player, u8 unitEnabledState)
+{
+	if ( unitEnabledState == UNIT_STATE_DEFAULTFORPLAYER )
+	{
+		if ( PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 1) ) // Make player use default for this unit
+		{
+			PUNI().replace<u8>((u32)unitId+228*(u32)player, 0); // Clear player's unit enabled state (for compression, not necessary)
+			return true;
+		}
+	}
+	else if ( unitEnabledState == UNIT_STATE_ENABLEDFORPLAYER )
+	{
+		return PUNI().replace<u8>((u32)unitId+228*(u32)player, 1) && // Set player's unit enabled state to enabled
+			   PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 0); // Make player override this unit's default
+	}
+	else if ( unitEnabledState == UNIT_STATE_DISABLEDFORPLAYER )
+	{
+		return PUNI().replace<u8>((u32)unitId+228*(u32)player, 0) && // Set player's unit enabled state to disabed
+			   PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 0); // Make player override this unit's default
+	}
+	return false;
+}
+
+bool Scenario::setUnitSettingsHitpoints(u16 unitId, u32 hitpoints)
+{
+	u32 completeHitpoints;
+	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	{
+		u32 hitpointsByte = completeHitpoints%256;
+		completeHitpoints = hitpointsByte+hitpoints*256;
+
+		bool expansion = isExpansion(),
+			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
+			 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+		return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+	}
+	else
+		return false;
+}
+
+bool Scenario::setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte)
+{
+	u32 completeHitpoints;
+	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	{
+		u32 hitpoints = completeHitpoints/256;
+		completeHitpoints = hitpointByte+hitpoints;
+
+		bool expansion = isExpansion(),
+			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
+			 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+		return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+	}
+	else
+		return false;
+}
+
+bool Scenario::setUnitSettingsShieldPoints(u16 unitId, u16 shieldPoints)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId, shieldPoints),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId, shieldPoints);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsArmor(u16 unitId, u8 armor)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u8>(UNIT_SETTINGS_ARMOR+(u32)unitId, armor),
+		 replacedUNIx = UNIx().replace<u8>(UNIT_SETTINGS_ARMOR+(u32)unitId, armor);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsBuildTime(u16 unitId, u16 buildTime)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BUILDTIME+2*(u32)unitId, buildTime),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BUILDTIME+2*(u32)unitId, buildTime);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsMineralCost(u16 unitId, u16 mineralCost)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_MINERALCOST+2*(u32)unitId, mineralCost),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_MINERALCOST+2*(u32)unitId, mineralCost);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsGasCost(u16 unitId, u16 gasCost)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_GASCOST+2*(u32)unitId, gasCost),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_GASCOST+2*(u32)unitId, gasCost);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BASEWEAPON+2*weaponId, baseDamage),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BASEWEAPON+2*weaponId, baseDamage);
+	
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage)
+{
+	bool expansion = isExpansion(),
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(expansion)+2*weaponId, bonusDamage),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(expansion)+2*weaponId, bonusDamage);
+
+	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
 bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
 {
 	bool setExp = false, setNormal = false;
@@ -1844,7 +2065,7 @@ bool Scenario::ToSingleBuffer(buffer& chk)
 		{
 			if ( !( chk.add<u32>((u32&)curr->buf.title()[0]) &&
 					chk.add<u32>(curr->buf.size()) &&
-					chk.addStr((const char*)curr->buf.getPtr(0), curr->buf.size()) ) )
+					( curr->buf.size() == 0 || chk.addStr((const char*)curr->buf.getPtr(0), curr->buf.size()) ) ) )
 			{
 				return false;
 			}

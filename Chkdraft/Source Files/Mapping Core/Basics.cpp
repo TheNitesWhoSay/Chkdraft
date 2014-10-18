@@ -2,7 +2,7 @@
 
 void IgnoreErr(const char* file, unsigned int line, const char* msg, ...)
 {
-
+	mb("igerr");
 }
 
 const char* DefaultUnitDisplayName[233] = 

@@ -23,7 +23,12 @@ bool TechSettingsWindow::CreateThis(HWND hParent)
 
 void TechSettingsWindow::RefreshWindow()
 {
+	if ( selectedTech >= 0 && selectedTech < 44 && chkd.maps.curr != nullptr )
+	{
 
+	}
+	else
+		DisableTechEditing();
 }
 
 LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -62,6 +67,19 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			}
 			break;
 
+		case WM_NOTIFY:
+			if ( ((NMHDR*)lParam)->code == TVN_SELCHANGED && ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )
+			{
+				LPARAM itemType = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_TYPE,
+					   itemData = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_DATA;
+
+				u16 techId = (u16)itemData;
+				if ( itemType == TREE_TYPE_TECH && techId < 44 )
+				{
+					cout << techId << endl;
+				}
+			}
+
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
@@ -71,6 +89,7 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 {
+	treeTechs.CreateThis(hWnd, 5, 5, 200, 489, false, ID_TREE_TECHS);
 	checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 110, 20, false, "Use Default Costs", ID_CHECK_DEFAULTTECHCOSTS);
 	buttonResetTechDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Techs To Default", ID_BUTTON_RESETTECHDEFAULTS);
 

@@ -209,6 +209,83 @@ UNITDAT* Units::UnitDat(u16 id)
 		return &unit[0];
 }
 
+Weapons::Weapons()
+{
+	for ( u32 i=0; i<130; i++ )
+	{
+		weapons[i].Label = 0;
+		weapons[i].Graphics = 0;
+		weapons[i].Unused = 0;
+		weapons[i].TargetFlags = 0;
+		weapons[i].MinimumRange = 0;
+		weapons[i].MaximumRange = 0;
+		weapons[i].DamageUpgrade = 0;
+		weapons[i].WeaponType = 0;
+		weapons[i].WeaponBehavior = 0;
+		weapons[i].RemoveAfter = 0;
+		weapons[i].WeaponEffect = 0;
+		weapons[i].InnerSplashRadius = 0;
+		weapons[i].MediumSplashRadius = 0;
+		weapons[i].OuterSplashRadius = 0;
+		weapons[i].DamageAmount = 0;
+		weapons[i].DamageBonus = 0;
+		weapons[i].WeaponCooldown = 0;
+		weapons[i].DamageFactor = 0;
+		weapons[i].AttackAngle = 0;
+		weapons[i].LaunchSpin = 0;
+		weapons[i].ForwardOffset = 0;
+		weapons[i].UpwardOffset = 0;
+		weapons[i].TargetErrorMessage = 0;
+		weapons[i].Icon = 0;
+	}
+}
+
+bool Weapons::LoadWeapons(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
+{
+	buffer weaponDat("wDat");
+
+	if (	!FileToBuffer(hStarDat, hBrooDat, hPatchRt, "arr\\weapons.dat", weaponDat)
+		 || weaponDat.size() != 5460 )
+		return false;
+
+	u32 pos, i;
+
+	pos = 0x0000; for ( i=0; i<130; i++ ) weapons[i].Label				= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0104; for ( i=0; i<130; i++ ) weapons[i].Graphics			= weaponDat.get<u32>(pos+i*4);
+	pos = 0x030C; for ( i=0; i<130; i++ ) weapons[i].Unused				= weaponDat.get<u8 >(pos+i	);
+	pos = 0x038E; for ( i=0; i<130; i++ ) weapons[i].TargetFlags		= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0492; for ( i=0; i<130; i++ ) weapons[i].MinimumRange		= weaponDat.get<u32>(pos+i*4);
+	pos = 0x069A; for ( i=0; i<130; i++ ) weapons[i].MaximumRange		= weaponDat.get<u32>(pos+i*4);
+	pos = 0x08A2; for ( i=0; i<130; i++ ) weapons[i].DamageUpgrade		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x0924; for ( i=0; i<130; i++ ) weapons[i].WeaponType			= weaponDat.get<u8 >(pos+i	);
+	pos = 0x09A6; for ( i=0; i<130; i++ ) weapons[i].WeaponBehavior		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x0A28; for ( i=0; i<130; i++ ) weapons[i].RemoveAfter		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x0AAA; for ( i=0; i<130; i++ ) weapons[i].WeaponEffect		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x0B2C; for ( i=0; i<130; i++ ) weapons[i].InnerSplashRadius	= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0C30; for ( i=0; i<130; i++ ) weapons[i].MediumSplashRadius	= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0D34; for ( i=0; i<130; i++ ) weapons[i].OuterSplashRadius	= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0E38; for ( i=0; i<130; i++ ) weapons[i].DamageAmount		= weaponDat.get<u16>(pos+i*2);
+	pos = 0x0F3C; for ( i=0; i<130; i++ ) weapons[i].DamageBonus		= weaponDat.get<u16>(pos+i*2);
+	pos = 0x1040; for ( i=0; i<130; i++ ) weapons[i].WeaponCooldown		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x10C2; for ( i=0; i<130; i++ ) weapons[i].DamageFactor		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x1144; for ( i=0; i<130; i++ ) weapons[i].AttackAngle		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x11C6; for ( i=0; i<130; i++ ) weapons[i].LaunchSpin			= weaponDat.get<u8 >(pos+i	);
+	pos = 0x1248; for ( i=0; i<130; i++ ) weapons[i].ForwardOffset		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x12CA; for ( i=0; i<130; i++ ) weapons[i].UpwardOffset		= weaponDat.get<u8 >(pos+i	);
+	pos = 0x134C; for ( i=0; i<130; i++ ) weapons[i].TargetErrorMessage = weaponDat.get<u16>(pos+i*2);
+	pos = 0x1450; for ( i=0; i<130; i++ ) weapons[i].Icon				= weaponDat.get<u16>(pos+i*2);
+
+	return true;
+}
+
+WEAPONDAT* Weapons::WeaponDat(u32 weaponId)
+{
+	if ( weaponId < 130 )
+		return &weapons[weaponId];
+	else
+		return nullptr;
+}
+
 Sprites::Sprites()
 {
 	for ( u32 i=0; i<209; i++ )
@@ -407,6 +484,9 @@ void DATA::Load()
 
 	if ( !units.LoadUnits(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load Units.dat");
+
+	if ( !weapons.LoadWeapons(hStarDat, hBrooDat, hPatchRt) )
+		Error("Failed to load Weapons.dat");
 
 	if ( sprites.LoadSprites(hStarDat, hBrooDat, hPatchRt) )
 		LoadGrps(hPatchRt, hBrooDat, hStarDat);

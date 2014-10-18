@@ -2,30 +2,28 @@
 #define UNITTREE_H
 #include "Windows UI/WindowsUI.h"
 
-struct UnitTreeView
-{
-	int numItems;
-	HTREEITEM TreePtr[228];
-	int UnitID[228];
-};
-
 class UnitTree : public TreeViewControl
 {
 	public:
-		UnitTree();
-		bool CreateThis(HWND parentTree);
-		bool CreateThis(TreeViewControl parentTree);
+		bool AddThis(HWND hTree, HTREEITEM hRoot);
+		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id);
 
-		void UpdateDisplayNames(const char** displayNames);
+		void UpdateUnitNames(const char** displayNames);
+		void UpdateUnitName(int UnitID);
 
 	protected:
-		HTREEITEM InsertUnitGrouping(TV_INSERTSTRUCT tvinsert, const char* pszText, HTREEITEM LastGroup);
-		void UpdateTreeUnitText(int UnitID);
-		TV_INSERTSTRUCT InsertUnits(TV_INSERTSTRUCT tvinsert, const int* items, int amount);
+		void InsertAllUnits(HTREEITEM hParent);
+		void InsertZergItems(HTREEITEM hParent);
+		void InsertTerranItems(HTREEITEM hParent);
+		void InsertProtossItems(HTREEITEM hParent);
+		void InsertNeutralItems(HTREEITEM hParent);
+		void InsertUndefinedItems(HTREEITEM hParent);
 
 	private:
-		UnitTreeView DefaultTree;
+		HTREEITEM UnitItems[228];
 		const char* UnitDisplayName[233];
+
+		void InsertUnits(HTREEITEM hParent, const int* items, int amount);
 };
 
 #endif

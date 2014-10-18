@@ -91,6 +91,12 @@
     <Filter Include="Header Files\Windows\Chkd Controls">
       <UniqueIdentifier>{7e8ebb4c-cd44-41aa-b645-4e356c5f104d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Windows\Main Windows">
+      <UniqueIdentifier>{1619b740-4854-4945-a7db-74e64efbceca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Main Windows">
+      <UniqueIdentifier>{f00801b9-cc14-4686-8a0d-dc9709a2053a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Clipboard.h">
@@ -282,18 +288,6 @@
     <ClInclude Include="Source Files\LocationTree.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\MiniMap.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MainToolbar.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MainPlot.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\LeftBar.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Chkdraft.h">
       <Filter>Header Files\Windows</Filter>
     </ClInclude>
@@ -301,6 +295,24 @@
       <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\PlayerDropdown.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LeftBar.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainPlot.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MainToolbar.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\MiniMap.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UpgradeTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TechTree.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
   </ItemGroup>
@@ -476,18 +488,6 @@
     <ClCompile Include="Source Files\LocationTree.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\MiniMap.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MainToolbar.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MainPlot.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LeftBar.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\Chkdraft.cpp">
       <Filter>Source Files\Windows</Filter>
     </ClCompile>
@@ -495,6 +495,24 @@
       <Filter>Source Files\Mapping</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\PlayerDropdown.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainPlot.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MainToolbar.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MiniMap.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LeftBar.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UpgradeTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TechTree.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
   </ItemGroup>

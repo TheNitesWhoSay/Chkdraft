@@ -11,7 +11,7 @@ void PrintError(const char* file, unsigned int line, const char* msg, ...)
 {
 	va_list args;
 	va_start(args, msg);
-	sprintf_s(LastError, MAX_ERROR_LENGTH, msg, args);
+	vsprintf_s(LastError, MAX_ERROR_LENGTH, msg, args);
 	sprintf_s(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
 	va_end(args);
 }

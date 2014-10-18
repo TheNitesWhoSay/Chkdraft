@@ -44,6 +44,8 @@ class Scenario
 					bool getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &random, bool &av); // Attempts to get info for given force num
 					bool getPlayerForce(u8 playerNum, u8 &force); // Attempts to get the force a player belongs to
 
+					bool getUnitStringNum(u16 unitId, u16 &stringNum);
+
 					u16 numStrings(); // Returns number of strings in the STR section
 					u32 totalStrings(); // Returns number of strings in the STR and KSTR sections
 					bool getString(string &dest, u32 stringNum);
@@ -77,6 +79,23 @@ class Scenario
 					bool getPlayerOwner(u8 player, u8& owner); // Gets the current owner of a player
 					bool getPlayerRace(u8 player, u8& race); // Gets the players current race
 					bool getPlayerColor(u8 player, u8& color); // Gets the players current color
+
+					bool unitUsesDefaultSettings(u16 unitId);
+					bool unitIsEnabled(u16 unitId);
+					u8 getUnitEnabledState(u16 unitId, u8 player);
+						#define UNIT_STATE_DEFAULTFORPLAYER 0
+						#define UNIT_STATE_ENABLEDFORPLAYER 1
+						#define UNIT_STATE_DISABLEDFORPLAYER 2
+
+					bool getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints);
+					bool getUnitSettingsHitpointByte(u16 unitId, u8 &hitpointByte);
+					bool getUnitSettingsShieldPoints(u16 unitId, u16 &shieldPoints);
+					bool getUnitSettingsArmor(u16 unitId, u8 &armor);
+					bool getUnitSettingsBuildTime(u16 unitId, u16 &buildTime);
+					bool getUnitSettingsMineralCost(u16 unitId, u16 &mineralCost);
+					bool getUnitSettingsGasCost(u16 unitId, u16 &gasCost);
+					bool getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage);
+					bool getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage);
 
 /*   Editing    */	bool setTileset(u16 newTileset); // Sets a new value for the maps tileset
 					bool setDimensions(u16 newWidth, u16 newHeight); // Sets new dimensions for the map
@@ -136,6 +155,19 @@ class Scenario
 					bool setForceAv(u8 forceNum, bool alliedVictory); // Specifies whether a force's players have allied victory
 
 					bool setUnitUseDefaults(u16 unitID, bool useDefaults); // Specifies whether a unit uses default settings
+					bool setUnitEnabled(u16 unitId, bool enabled);
+					bool setUnitEnabledState(u16 unitId, u8 player, u8 enabledState);
+
+					bool setUnitSettingsHitpoints(u16 unitId, u32 hitpoints);
+					bool setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte);
+					bool setUnitSettingsShieldPoints(u16 unitId, u16 shieldPoints);
+					bool setUnitSettingsArmor(u16 unitId, u8 armor);
+					bool setUnitSettingsBuildTime(u16 unitId, u16 buildTime);
+					bool setUnitSettingsMineralCost(u16 unitId, u16 mineralCost);
+					bool setUnitSettingsGasCost(u16 unitId, u16 gasCost);
+					bool setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage);
+					bool setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage);
+
 					bool setTechUseDefaults(u8 techNum, bool useDefaults); // Specifies whether a tech uses default costs
 
 /*   File IO	*/	bool ParseBuffer(buffer &chk); // Parses supplied scenario file data
@@ -175,13 +207,9 @@ class Scenario
 	protected:
 
 		bool GetStrInfo(char* &ptr, u32 &length, u32 stringNum); // Gets a pointer to the string and its length if successful
-
 		bool MakeStr(string& dest, char* src, u32 srcLen); // Makes a C++ string from a C string
-
 		bool MakeEscapedStr(string& dest, char* src, u32 srcLen); // Makes a C++ string with escaped characters from a C string
-
 		bool ZeroOutString(u32 stringNum); // returns false if stringNum is not a string in any sense
-
 		bool RepairString(u32& stringNum, bool extended); // Ensures that the string would not be considered corrupted by Scmdraft
 
 
@@ -234,7 +262,17 @@ class Scenario
 // Extended sections
 #define HEADER_KSTR 1381258059
 
-// Data locations/constants for time-critical functions
-#define UNIT_SETTINGS_STRING_IDS 3192 // Where strings begin in the UNIS and UNIX sections
+// Data locations/constants
+#define UNIT_SETTINGS_HITPOINTS		228
+#define UNIT_SETTINGS_SHIELDPOINTS	1140
+#define UNIT_SETTINGS_ARMOR			1596
+#define UNIT_SETTINGS_BUILDTIME		1824
+#define UNIT_SETTINGS_MINERALCOST	2280
+#define UNIT_SETTINGS_GASCOST		2736
+#define UNIT_SETTINGS_STRING_IDS	3192 // Where strings begin in the UNIS and UNIX sections
+#define UNIT_SETTINGS_BASEWEAPON	3648
+#define UNIT_SETTINGS_BONUSWEAPON(isExpansion) (isExpansion?3778:3748)
+#define PTEC_GLOBAL_AVAILABILITY	2736
+#define PTEC_PLAYERUSESDEFAULT		2964
 
 #endif
