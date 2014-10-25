@@ -50,6 +50,79 @@ u8* GRP::data(u32 frame, u32 line)
 	return false;
 }
 
+Upgrades::Upgrades()
+{
+	for ( u8 i=0; i<61; i++ )
+	{
+		upgrade[i].MineralCost = 0;
+		upgrade[i].MineralFactor = 0;
+		upgrade[i].VespeneCost = 0;
+		upgrade[i].VespeneFactor = 0;
+		upgrade[i].TimeCost = 0;
+		upgrade[i].TimeFactor = 0;
+		upgrade[i].Unknown = 0;
+		upgrade[i].Icon = 0;
+		upgrade[i].Label = 0;
+		upgrade[i].Race = 0;
+		upgrade[i].MaxRepeats = 0;
+		upgrade[i].BroodWarSpecific = 0;
+	}
+}
+
+bool Upgrades::LoadUpgrades(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
+{
+	buffer upgradeDat("dDat");
+
+	if (	!FileToBuffer(hStarDat, hBrooDat, hPatchRt, "arr\\upgrades.dat", upgradeDat)
+		 || !( upgradeDat.size() == 1281 || upgradeDat.size() == 920 ) )
+		return false;
+
+	u32 pos, i, numUpgrades = 46;
+	bool isExpansion = (upgradeDat.size() == 1281);
+	if ( isExpansion )
+		numUpgrades = 61;
+
+	if ( isExpansion )
+	{
+		pos = 0x000; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MineralCost		 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x07A; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MineralFactor	 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x0F4; for ( i=0; i<numUpgrades; i++ ) upgrade[i].VespeneCost		 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x16E; for ( i=0; i<numUpgrades; i++ ) upgrade[i].VespeneFactor	 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x1E8; for ( i=0; i<numUpgrades; i++ ) upgrade[i].TimeCost		 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x262; for ( i=0; i<numUpgrades; i++ ) upgrade[i].TimeFactor		 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x2DC; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Unknown			 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x356; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Icon			 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x3D0; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Label			 = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x44A; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Race			 = upgradeDat.get< u8>(pos+  i);
+		pos = 0x487; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MaxRepeats		 = upgradeDat.get< u8>(pos+  i);
+		pos = 0x4C4; for ( i=0; i<numUpgrades; i++ ) upgrade[i].BroodWarSpecific = upgradeDat.get< u8>(pos+  i);
+	}
+	else // Original
+	{
+		pos = 0x000; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MineralCost   = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x05C; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MineralFactor = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x0B8; for ( i=0; i<numUpgrades; i++ ) upgrade[i].VespeneCost   = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x114; for ( i=0; i<numUpgrades; i++ ) upgrade[i].VespeneFactor = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x170; for ( i=0; i<numUpgrades; i++ ) upgrade[i].TimeCost	  = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x1CC; for ( i=0; i<numUpgrades; i++ ) upgrade[i].TimeFactor	  = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x228; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Unknown		  = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x284; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Icon		  = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x2E0; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Label		  = upgradeDat.get<u16>(pos+2*i);
+		pos = 0x33C; for ( i=0; i<numUpgrades; i++ ) upgrade[i].Race		  = upgradeDat.get< u8>(pos+  i);
+		pos = 0x36A; for ( i=0; i<numUpgrades; i++ ) upgrade[i].MaxRepeats	  = upgradeDat.get< u8>(pos+  i);
+	}
+
+	return true;
+}
+
+UPGRADEDAT* Upgrades::UpgradeDat(u8 id)
+{
+	if ( id < 61 )
+		return &upgrade[id];
+	else
+		return &upgrade[0];
+}
+
 Units::Units()
 {
 	for ( u16 i=0; i<228; i++ )
@@ -481,6 +554,9 @@ void DATA::Load()
 
 	if ( !tilesets.LoadSets(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load tilesets");
+
+	if ( !upgrades.LoadUpgrades(hStarDat, hBrooDat, hPatchRt) )
+		Error("Failed to load upgrades");
 
 	if ( !units.LoadUnits(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load Units.dat");

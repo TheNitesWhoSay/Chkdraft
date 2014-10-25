@@ -539,6 +539,22 @@ buffer& Scenario::unitSettings()
 		return this->UNIS();
 }
 
+buffer& Scenario::upgradeSettings()
+{
+	if ( isExpansion() )
+		return this->UPGx();
+	else
+		return this->UPGS();
+}
+
+buffer& Scenario::upgradeRestrictions()
+{
+	if ( isExpansion() )
+		return this->PUPx();
+	else
+		return this->UPGR();
+}
+
 bool Scenario::GoodVCOD()
 {
 	buffer defaultVCOD("vcod");
@@ -682,12 +698,78 @@ bool Scenario::getUnitSettingsGasCost(u16 unitId, u16 &gasCost)
 
 bool Scenario::getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage)
 {
-	return weaponId < 130 && unitSettings().get<u16>(baseDamage, UNIT_SETTINGS_BASEWEAPON+2*weaponId);
+	return unitSettings().get<u16>(baseDamage, UNIT_SETTINGS_BASEWEAPON+2*weaponId);
 }
 
 bool Scenario::getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage)
 {
-	return weaponId < 130 && unitSettings().get<u16>(bonusDamage, UNIT_SETTINGS_BONUSWEAPON(isExpansion())+2*weaponId);
+	return unitSettings().get<u16>(bonusDamage, UNIT_SETTINGS_BONUSWEAPON(isExpansion())+2*weaponId);
+}
+
+bool Scenario::upgradeUsesDefaultCosts(u8 upgradeId)
+{
+	return upgradeSettings().get<u8>((u32)upgradeId) == 1;
+}
+
+bool Scenario::getUpgradeMineralCost(u8 upgradeId, u16 &mineralCost)
+{
+	return upgradeSettings().get<u16>(mineralCost,
+		UPGRADE_SETTINGS_MINERALCOST(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeMineralFactor(u8 upgradeId, u16 &mineralFactor)
+{
+	return upgradeSettings().get<u16>(mineralFactor,
+		UPGRADE_SETTINGS_MINERALFACTOR(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeGasCost(u8 upgradeId, u16 &gasCost)
+{
+	return upgradeSettings().get<u16>(gasCost,
+		UPGRADE_SETTINGS_GASCOST(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeGasFactor(u8 upgradeId, u16 &gasFactor)
+{
+	return upgradeSettings().get<u16>(gasFactor,
+		UPGRADE_SETTINGS_GASFACTOR(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeTimeCost(u8 upgradeId, u16 &timeCost)
+{
+	return upgradeSettings().get<u16>(timeCost,
+		UPGRADE_SETTINGS_TIMECOST(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeTimeFactor(u8 upgradeId, u16 &timeFactor)
+{
+	return upgradeSettings().get<u16>(timeFactor,
+		UPGRADE_SETTINGS_TIMEFACTOR(isExpansion())+2*(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeDefaultStartLevel(u8 upgradeId, u8 &startLevel)
+{
+	return upgradeRestrictions().get<u8>(startLevel, UPGRADE_DEFAULTSTARTLEVEL(isExpansion())+(u32)upgradeId);
+}
+
+bool Scenario::getUpgradeDefaultMaxLevel(u8 upgradeId, u8 &maxLevel)
+{
+	return upgradeRestrictions().get<u8>(maxLevel, UPGRADE_DEFAULTMAXLEVEL(isExpansion())+(u32)upgradeId);
+}
+
+bool Scenario::playerUsesDefaultUpgradeLevels(u8 upgradeId, u8 player)
+{
+	return upgradeRestrictions().get<u8>(UPGRADE_PLAYERUSESDEFAULT(isExpansion(), player)+(u32)upgradeId) == 1;
+}
+
+bool Scenario::getUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 &startLevel)
+{
+	return upgradeRestrictions().get<u8>(startLevel, UPGRADE_PLAYERSTARTLEVEL(isExpansion(), player)+(u32)upgradeId);
+}
+
+bool Scenario::getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel)
+{
+	return upgradeRestrictions().get<u8>(maxLevel, UPGRADE_PLAYERMAXLEVEL(isExpansion(), player)+(u32)upgradeId);
 }
 
 bool Scenario::setTileset(u16 newTileset)
@@ -1976,10 +2058,126 @@ bool Scenario::setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage)
 bool Scenario::setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(expansion)+2*weaponId, bonusDamage),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(expansion)+2*weaponId, bonusDamage);
+		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(false)+2*weaponId, bonusDamage),
+		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(true)+2*weaponId, bonusDamage);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUpgradeUseDefaults(u8 upgradeNum, bool useDefaults)
+{
+	bool setExp = false, setNormal = false;
+	u8 newValue = 0;
+	if ( useDefaults )
+		newValue = 1;
+
+	setExp = UPGx().replace<u8>((u32)upgradeNum, newValue);
+	setNormal = UPGS().replace<u8>((u32)upgradeNum, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setUpgradeMineralCost(u8 upgradeId, u16 mineralCost)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_MINERALCOST(false)+2*(u32)upgradeId, mineralCost),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_MINERALCOST(true)+2*(u32)upgradeId, mineralCost);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradeMineralFactor(u8 upgradeId, u16 mineralFactor)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_MINERALFACTOR(false)+2*(u32)upgradeId, mineralFactor),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_MINERALFACTOR(true)+2*(u32)upgradeId, mineralFactor);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradeGasCost(u8 upgradeId, u16 gasCost)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_GASCOST(false)+2*(u32)upgradeId, gasCost),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_GASCOST(true)+2*(u32)upgradeId, gasCost);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradeGasFactor(u8 upgradeId, u16 gasFactor)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_GASFACTOR(false)+2*(u32)upgradeId, gasFactor),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_GASFACTOR(true)+2*(u32)upgradeId, gasFactor);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradeTimeCost(u8 upgradeId, u16 timeCost)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_TIMECOST(false)+2*(u32)upgradeId, timeCost),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_TIMECOST(true)+2*(u32)upgradeId, timeCost);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradeTimeFactor(u8 upgradeId, u16 timeFactor)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_TIMEFACTOR(false)+2*(u32)upgradeId, timeFactor),
+		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_TIMEFACTOR(true)+2*(u32)upgradeId, timeFactor);
+
+	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
+}
+
+bool Scenario::setUpgradePlayerDefaults(u8 upgradeId, u8 player, bool usesDefaultLevels)
+{
+	u8 newValue = 0;
+	if ( usesDefaultLevels )
+		newValue = 1;
+
+	bool expansion = isExpansion(),
+		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERUSESDEFAULT(false, player)+(u32)upgradeId, newValue),
+		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERUSESDEFAULT(true, player)+(u32)upgradeId, newValue);
+
+	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
+}
+
+bool Scenario::setUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 newStartLevel)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERSTARTLEVEL(false, player)+(u32)upgradeId, newStartLevel),
+		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERSTARTLEVEL(true, player)+(u32)upgradeId, newStartLevel);
+
+	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
+}
+
+bool Scenario::setUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 newMaxLevel)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERMAXLEVEL(false, player)+(u32)upgradeId, newMaxLevel),
+		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERMAXLEVEL(true, player)+(u32)upgradeId, newMaxLevel);
+
+	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
+}
+
+bool Scenario::setUpgradeDefaultStartLevel(u8 upgradeId, u8 newStartLevel)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGR = UPGR().replace<u8>(UPGRADE_DEFAULTSTARTLEVEL(false)+(u32)upgradeId, newStartLevel),
+		 replacedPUPx = PUPx().replace<u8>(UPGRADE_DEFAULTSTARTLEVEL(true)+(u32)upgradeId, newStartLevel);
+
+	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
+}
+
+bool Scenario::setUpgradeDefaultMaxLevel(u8 upgradeId, u8 newMaxLevel)
+{
+	bool expansion = isExpansion(),
+		 replacedUPGR = UPGR().replace<u8>(UPGRADE_DEFAULTMAXLEVEL(false)+(u32)upgradeId, newMaxLevel),
+		 replacedPUPx = PUPx().replace<u8>(UPGRADE_DEFAULTMAXLEVEL(true)+(u32)upgradeId, newMaxLevel);
+
+	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
 
 bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
@@ -1992,7 +2190,7 @@ bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
 	setExp = TECx().replace<u8>((u32)techNum, newValue);
 	setNormal = TECS().replace<u8>((u32)techNum, newValue);
 	
-	return (isExpansion() && setExp) || (!isExpansion() && setNormal);
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
 
 bool Scenario::ParseBuffer(buffer &chk)

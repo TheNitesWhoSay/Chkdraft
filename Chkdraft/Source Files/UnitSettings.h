@@ -13,8 +13,7 @@ class UnitSettingsWindow : public ClassWindow
 		bool DestroyThis();
 		void RefreshWindow();
 
-	private:
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	protected:
 		void CreateSubWindows(HWND hParent);
 		void DisableUnitEditing();
 		void EnableUnitEditing();
@@ -23,6 +22,9 @@ class UnitSettingsWindow : public ClassWindow
 		void CheckReplaceUnitName();
 		void SetDefaultUnitProperties();
 		void ClearDefaultUnitProperties();
+
+	private:
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 		s32 selectedUnit;
 		bool possibleUnitNameUpdate;

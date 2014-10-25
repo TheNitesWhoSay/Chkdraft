@@ -5,6 +5,11 @@
 #include "Windows UI/WindowsUI.h"
 #include "TechTree.h"
 
+/**
+	TECS/TECx - tech uses default costs & all costs
+	PTEC/PTEx - tech availability (global and player based)
+*/
+
 class TechSettingsWindow : public ClassWindow
 {
 	public:

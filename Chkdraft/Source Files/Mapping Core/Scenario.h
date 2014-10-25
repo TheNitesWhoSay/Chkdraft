@@ -69,6 +69,8 @@ class Scenario
 					bool isExpansion(); // Check if the map uses expansion settings
 
 					buffer& unitSettings(); // Gets settings from UNIS/UNIx based on whether the map is expansion
+					buffer& upgradeSettings(); // Gets settings from UPGS/UPGx based on whether the map is expansion
+					buffer& upgradeRestrictions(); // Gets upgradeAvailability from UPGR/PUPx based on whether the map is expansion
 
 					bool GoodVCOD(); // Check if VCOD is valid
 					bool isProtected(); // Checks if map is protected
@@ -96,6 +98,22 @@ class Scenario
 					bool getUnitSettingsGasCost(u16 unitId, u16 &gasCost);
 					bool getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage);
 					bool getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage);
+
+					bool upgradeUsesDefaultCosts(u8 upgradeId);
+					bool getUpgradeMineralCost(u8 upgradeId, u16 &mineralCost);
+					bool getUpgradeMineralFactor(u8 upgradeId, u16 &mineralFactor);
+					bool getUpgradeGasCost(u8 upgradeId, u16 &gasCost);
+					bool getUpgradeGasFactor(u8 upgradeId, u16 &gasFactor);
+					bool getUpgradeTimeCost(u8 upgradeId, u16 &timeCost);
+					bool getUpgradeTimeFactor(u8 upgradeId, u16 &timeFactor);
+
+					bool getUpgradeDefaultStartLevel(u8 upgradeId, u8 &startLevel);
+					bool getUpgradeDefaultMaxLevel(u8 upgradeId, u8 &maxLevel);
+
+					bool playerUsesDefaultUpgradeLevels(u8 upgradeId, u8 player);
+					bool getUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 &startLevel);
+					bool getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel);
+					
 
 /*   Editing    */	bool setTileset(u16 newTileset); // Sets a new value for the maps tileset
 					bool setDimensions(u16 newWidth, u16 newHeight); // Sets new dimensions for the map
@@ -168,6 +186,21 @@ class Scenario
 					bool setUnitSettingsGasCost(u16 unitId, u16 gasCost);
 					bool setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage);
 					bool setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage);
+
+					bool setUpgradeUseDefaults(u8 upgradeNum, bool useDefaults); // Specifies whether an upgrade uses default costs
+					bool setUpgradeMineralCost(u8 upgradeId, u16 mineralCost);
+					bool setUpgradeMineralFactor(u8 upgradeId, u16 mineralFactor);
+					bool setUpgradeGasCost(u8 upgradeId, u16 gasCost);
+					bool setUpgradeGasFactor(u8 upgradeId, u16 gasFactor);
+					bool setUpgradeTimeCost(u8 upgradeId, u16 timeCost);
+					bool setUpgradeTimeFactor(u8 upgradeId, u16 timeFactor);
+
+					bool setUpgradePlayerDefaults(u8 upgradeId, u8 player, bool usesDefaultLevels);
+					bool setUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 newStartLevel);
+					bool setUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 newMaxLevel);
+
+					bool setUpgradeDefaultStartLevel(u8 upgradeId, u8 newStartLevel);
+					bool setUpgradeDefaultMaxLevel(u8 upgradeId, u8 newMaxLevel);
 
 					bool setTechUseDefaults(u8 techNum, bool useDefaults); // Specifies whether a tech uses default costs
 
@@ -275,5 +308,19 @@ class Scenario
 #define UNIT_SETTINGS_BONUSWEAPON(isExpansion) (isExpansion?3908:3848)
 #define PTEC_GLOBAL_AVAILABILITY	2736
 #define PTEC_PLAYERUSESDEFAULT		2964
+
+#define UPGRADE_SETTINGS_MINERALCOST(isExpansion) (isExpansion?62:46)
+#define UPGRADE_SETTINGS_MINERALFACTOR(isExpansion) (isExpansion?184:138)
+#define UPGRADE_SETTINGS_GASCOST(isExpansion) (isExpansion?306:230)
+#define UPGRADE_SETTINGS_GASFACTOR(isExpansion) (isExpansion?428:322)
+#define UPGRADE_SETTINGS_TIMECOST(isExpansion) (isExpansion?550:414)
+#define UPGRADE_SETTINGS_TIMEFACTOR(isExpansion) (isExpansion?672:506)
+
+#define UPGRADE_PLAYERMAXLEVEL(isExpansion, player) (isExpansion?(61*(u32)player):(46*(u32)player))
+#define UPGRADE_PLAYERSTARTLEVEL(isExpansion, player) (isExpansion?(732+61*(u32)player):(552+46*(u32)player))
+#define UPGRADE_DEFAULTMAXLEVEL(isExpansion) (isExpansion?1464:1104)
+#define UPGRADE_DEFAULTSTARTLEVEL(isExpansion) (isExpansion?1525:1150)
+#define UPGRADE_PLAYERUSESDEFAULT(isExpansion, player) (isExpansion?(1586+61*(u32)player):(1196+46*(u32)player))
+
 
 #endif

@@ -183,7 +183,7 @@ bool Get_UNIS(buffer &c)
 		&& c.add<u8>(0, 3820);
 }
 
-bool Get_UPGS(buffer &c)
+bool Get_UPGS(buffer &c) // 606
 {
 	return c.addStr("UPGSV\2\0\0", 8)
 		&& c.add<u8>(1, 46)
@@ -227,7 +227,7 @@ bool Get_UNIx(buffer &c)
 		&& c.add<u8>(0, 3940);
 }
 
-bool Get_UPGx(buffer &c)
+bool Get_UPGx(buffer &c) // 794
 {
 	return c.addStr("UPGx\32\3\0\0", 8)
 		&& c.add<u8>(1, 61)

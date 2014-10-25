@@ -22,6 +22,22 @@ class Tiles
 		bool LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* name, u8 num);
 };
 
+struct UPGRADEDAT
+{
+	u16 MineralCost;
+	u16 MineralFactor;
+	u16 VespeneCost;
+	u16 VespeneFactor;
+	u16 TimeCost;
+	u16 TimeFactor;
+	u16 Unknown;
+	u16 Icon;
+	u16 Label;
+	u8 Race;
+	u8 MaxRepeats;
+	u8 BroodWarSpecific;
+};
+
 struct UNITDAT
 {
 	u8 Graphics;
@@ -177,6 +193,17 @@ class GRP
 		u8* data(u32 frame, u32 line);
 };
 
+class Upgrades
+{
+	public:
+		Upgrades();
+		bool LoadUpgrades(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
+		UPGRADEDAT* UpgradeDat(u8 id);
+
+	private:
+		UPGRADEDAT upgrade[61];
+};
+
 class Units
 {
 	public:
@@ -247,6 +274,7 @@ class DATA
 	public:
 
 		Tiles tilesets;
+		Upgrades upgrades;
 		Units units;
 		Weapons weapons;
 		Sprites sprites;
