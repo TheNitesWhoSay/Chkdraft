@@ -410,15 +410,27 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						{
 							if ( MessageBox(hWnd, "Are you sure you want to reset all ugprade settings?", "Confirm", MB_YESNO) == IDYES )
 							{
-								buffer newUNIS, newUNIx, newUPGR, newPUPx;
-								if ( Get_UNIS(newUNIS) )
-									chkd.maps.curr->UNIS().takeAllData(newUNIS);
-								if ( Get_UNIx(newUNIx) )
-									chkd.maps.curr->UNIx().takeAllData(newUNIx);
+								buffer newUPGS("UPGS"), newUPGx("UPGx"), newUPGR("UPGR"), newPUPx("PUPx");
+								if ( Get_UPGS(newUPGS) )
+								{
+									newUPGS.del(0, 8);
+									chkd.maps.curr->UPGS().takeAllData(newUPGS);
+								}
+								if ( Get_UPGx(newUPGx) )
+								{
+									newUPGx.del(0, 8);
+									chkd.maps.curr->UPGx().takeAllData(newUPGx);
+								}
 								if ( Get_UPGR(newUPGR) )
+								{
+									newUPGR.del(0, 8);
 									chkd.maps.curr->UPGR().takeAllData(newUPGR);
+								}
 								if ( Get_PUPx(newPUPx) )
+								{
+									newPUPx.del(0, 8);
 									chkd.maps.curr->PUPx().takeAllData(newPUPx);
+								}
 
 								DisableCostEditing();
 								RefreshWindow();

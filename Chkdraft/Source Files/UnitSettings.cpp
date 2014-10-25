@@ -511,13 +511,22 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						if ( MessageBox(hWnd, "Are you sure you want to reset all unit settings?", "Confirm", MB_YESNO) == IDYES )
 						{
-							buffer newUNIS, newUNIx, newPUNI;
+							buffer newUNIS("UNIS"), newUNIx("UNIx"), newPUNI("PUNI");
 							if ( Get_UNIS(newUNIS) )
+							{
+								newUNIS.del(0, 8);
 								chkd.maps.curr->UNIS().takeAllData(newUNIS);
+							}
 							if ( Get_UNIx(newUNIx) )
+							{
+								newUNIx.del(0, 8);
 								chkd.maps.curr->UNIx().takeAllData(newUNIx);
+							}
 							if ( Get_PUNI(newPUNI) )
+							{
+								newPUNI.del(0, 8);
 								chkd.maps.curr->PUNI().takeAllData(newPUNI);
+							}
 
 							chkd.maps.curr->cleanStringTable(false);
 							chkd.maps.curr->cleanStringTable(true);
