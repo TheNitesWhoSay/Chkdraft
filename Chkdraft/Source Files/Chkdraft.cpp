@@ -1,7 +1,7 @@
 #include "Chkdraft.h"
 
 void Chkdraft::OnLoadTest()
-{/*
+{
 	// Standard Map Open
 	maps.NewMap(128, 128, 0, 0, 0);
 	maps.FocusActive();
@@ -9,7 +9,7 @@ void Chkdraft::OnLoadTest()
 	// End Standard Map Open
 
 	ShowWindow(getHandle(), SW_MAXIMIZE);
-	OpenMapSettings(ID_SCENARIO_UNITSETTINGS); //*/
+	OpenMapSettings(ID_SCENARIO_UPGRADESETTINGS); //*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)

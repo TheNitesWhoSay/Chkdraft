@@ -5,6 +5,11 @@
 #include "Windows UI/WindowsUI.h"
 #include "UpgradeTree.h"
 
+/*
+	UPGS/UPGx - upgrade uses deafult costs & all costs
+	UPGR/PUPx - upgrade max levels (global and player based)
+*/
+
 class UpgradeSettingsWindow : public ClassWindow
 {
 	public:
@@ -12,15 +17,23 @@ class UpgradeSettingsWindow : public ClassWindow
 		bool CreateThis(HWND hParent);
 		void RefreshWindow();
 
-	private:
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	protected:
 		void CreateSubWindows(HWND hWnd);
 		void DisableUpgradeEditing();
 		void EnableUpgradeEditing();
 		void DisableCostEditing();
 		void EnableCostEditing();
+		void DisablePlayerEditing(u8 player);
+		void EnablePlayerEditing(u8 player);
+		void SetDefaultUpgradeCosts();
+		void ClearDefaultUpgradeCosts();
+
+	private:
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 		s32 selectedUpgrade;
+		bool isDisabled;
+		bool refreshing;
 
 		UpgradeTree treeUpgrades;
 
