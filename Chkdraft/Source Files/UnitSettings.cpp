@@ -460,6 +460,8 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 			chk->setUnitSettingsBaseWeapon(airWeapon, defaultBaseDamage);
 			chk->setUnitSettingsBonusWeapon(airWeapon, defaultBonusDamage);
 		}
+
+		chkd.maps.curr->notifyChange(false);
 	}
 	refreshing = false;
 }
@@ -486,6 +488,7 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 		chk->setUnitSettingsBuildTime(unitId, 0);
 		chk->setUnitSettingsMineralCost(unitId, 0);
 		chk->setUnitSettingsGasCost(unitId, 0);
+		chkd.maps.curr->notifyChange(false);
 	}
 }
 
@@ -532,6 +535,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 							chkd.maps.curr->cleanStringTable(true);
 							DisableUnitEditing();
 							RefreshWindow();
+							chkd.maps.curr->notifyChange(false);
 						}
 					}
 					break;
@@ -591,7 +595,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
 						if ( selectedUnit != -1 )
+						{
 							chkd.maps.curr->setUnitEnabled((u16)selectedUnit, state == BST_CHECKED );
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITNAME:
@@ -605,7 +612,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u32 newHitPoints;
 						if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
+						{
 							chkd.maps.curr->setUnitSettingsHitpoints((u16)selectedUnit, newHitPoints);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITHITPOINTSBYTE:
@@ -613,7 +623,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u8 newHitPointByte;
 						if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
+						{
 							chkd.maps.curr->setUnitSettingsHitpointByte((u16)selectedUnit, newHitPointByte);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITSHIELDPOINTS:
@@ -621,7 +634,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newShieldPoints;
 						if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
+						{
 							chkd.maps.curr->setUnitSettingsShieldPoints((u16)selectedUnit, newShieldPoints);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITARMOR:
@@ -629,7 +645,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u8 newArmorByte;
 						if ( editArmor.GetEditNum<u8>(newArmorByte) )
+						{
 							chkd.maps.curr->setUnitSettingsArmor((u16)selectedUnit, newArmorByte);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITBUILDTIME:
@@ -637,7 +656,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newBuildTime;
 						if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
+						{
 							chkd.maps.curr->setUnitSettingsBuildTime((u16)selectedUnit, newBuildTime);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITMINERALCOST:
@@ -645,7 +667,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newMineralCost;
 						if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
+						{
 							chkd.maps.curr->setUnitSettingsMineralCost((u16)selectedUnit, newMineralCost);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITGASCOST:
@@ -653,7 +678,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						u16 newGasCost;
 						if ( editGasCost.GetEditNum<u16>(newGasCost) )
+						{
 							chkd.maps.curr->setUnitSettingsGasCost((u16)selectedUnit, newGasCost);
+							chkd.maps.curr->notifyChange(false);
+						}
 					}
 					break;
 				case ID_EDIT_UNITGROUNDDAMAGE:
@@ -668,7 +696,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
 								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
 							if ( groundWeapon < 130 )
+							{
 								chkd.maps.curr->setUnitSettingsBaseWeapon(groundWeapon, newGroundDamage);
+								chkd.maps.curr->notifyChange(false);
+							}
 						}
 					}
 					break;
@@ -684,7 +715,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
 								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
 							if ( groundWeapon < 130 )
+							{
 								chkd.maps.curr->setUnitSettingsBonusWeapon(groundWeapon, newGroundBonus);
+								chkd.maps.curr->notifyChange(false);
+							}
 						}
 					}
 					break;
@@ -700,7 +734,10 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 							if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
 								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
 							if ( airWeapon < 130 )
+							{
 								chkd.maps.curr->setUnitSettingsBaseWeapon(airWeapon, newAirDamage);
+								chkd.maps.curr->notifyChange(false);
+							}
 						}
 					}
 					break;
@@ -717,6 +754,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
 
 							chkd.maps.curr->setUnitSettingsBonusWeapon(airWeapon, newAirBonus);
+							chkd.maps.curr->notifyChange(false);
 						}
 					}
 					break;

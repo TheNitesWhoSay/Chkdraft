@@ -123,6 +123,73 @@ UPGRADEDAT* Upgrades::UpgradeDat(u8 id)
 		return &upgrade[0];
 }
 
+Techs::Techs()
+{
+	for ( u8 i=0; i<44; i++ )
+	{
+		tech[i].MineralCost = 0;
+		tech[i].VespeneCost = 0;
+		tech[i].ResearchTime = 0;
+		tech[i].EnergyCost = 0;
+		tech[i].Unknown = 0;
+		tech[i].Icon = 0;
+		tech[i].Label = 0;
+		tech[i].Race = 0;
+		tech[i].Unused = 0;
+		tech[i].BroodWar = 0;
+	}
+}
+
+bool Techs::LoadTechs(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
+{
+	buffer techDat("tDat");
+
+	if (	!FileToBuffer(hStarDat, hBrooDat, hPatchRt, "arr\\techdata.dat", techDat)
+		 || !( techDat.size() == 836 || techDat.size() == 432 ) )
+		return false;
+
+	u32 pos, i, numTechs = 24;
+	bool isExpansion = (techDat.size() == 836);
+	if ( isExpansion )
+		numTechs = 44;
+
+	if ( isExpansion )
+	{
+		pos = 0x000; for ( i=0; i<numTechs; i++ ) tech[i].MineralCost  = techDat.get<u16>(pos+2*i);
+		pos = 0x058; for ( i=0; i<numTechs; i++ ) tech[i].VespeneCost  = techDat.get<u16>(pos+2*i);
+		pos = 0x0B0; for ( i=0; i<numTechs; i++ ) tech[i].ResearchTime = techDat.get<u16>(pos+2*i);
+		pos = 0x108; for ( i=0; i<numTechs; i++ ) tech[i].EnergyCost   = techDat.get<u16>(pos+2*i);
+		pos = 0x160; for ( i=0; i<numTechs; i++ ) tech[i].Unknown	   = techDat.get<u32>(pos+4*i);
+		pos = 0x210; for ( i=0; i<numTechs; i++ ) tech[i].Icon		   = techDat.get<u16>(pos+2*i);
+		pos = 0x268; for ( i=0; i<numTechs; i++ ) tech[i].Label		   = techDat.get<u16>(pos+2*i);
+		pos = 0x2C0; for ( i=0; i<numTechs; i++ ) tech[i].Race		   = techDat.get< u8>(pos+	i);
+		pos = 0x2EC; for ( i=0; i<numTechs; i++ ) tech[i].Unused	   = techDat.get< u8>(pos+	i);
+		pos = 0x318; for ( i=0; i<numTechs; i++ ) tech[i].BroodWar	   = techDat.get< u8>(pos+	i);
+	}
+	else // Original
+	{
+		pos = 0x000; for ( i=0; i<numTechs; i++ ) tech[i].MineralCost  = techDat.get<u16>(pos+2*i);
+		pos = 0x030; for ( i=0; i<numTechs; i++ ) tech[i].VespeneCost  = techDat.get<u16>(pos+2*i);
+		pos = 0x060; for ( i=0; i<numTechs; i++ ) tech[i].ResearchTime = techDat.get<u16>(pos+2*i);
+		pos = 0x090; for ( i=0; i<numTechs; i++ ) tech[i].EnergyCost   = techDat.get<u16>(pos+2*i);
+		pos = 0x0C0; for ( i=0; i<numTechs; i++ ) tech[i].Unknown	   = techDat.get<u32>(pos+4*i);
+		pos = 0x120; for ( i=0; i<numTechs; i++ ) tech[i].Icon		   = techDat.get<u16>(pos+2*i);
+		pos = 0x150; for ( i=0; i<numTechs; i++ ) tech[i].Label		   = techDat.get<u16>(pos+2*i);
+		pos = 0x180; for ( i=0; i<numTechs; i++ ) tech[i].Race		   = techDat.get< u8>(pos+  i);
+		pos = 0x198; for ( i=0; i<numTechs; i++ ) tech[i].Unused	   = techDat.get< u8>(pos+  i);
+	}
+
+	return true;
+}
+
+TECHDAT* Techs::TechDat(u8 id)
+{
+	if ( id < 44 )
+		return &tech[id];
+	else
+		return &tech[0];
+}
+
 Units::Units()
 {
 	for ( u16 i=0; i<228; i++ )
@@ -557,6 +624,9 @@ void DATA::Load()
 
 	if ( !upgrades.LoadUpgrades(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load upgrades");
+
+	if ( !techs.LoadTechs(hStarDat, hBrooDat, hPatchRt) )
+		Error("Failed to load techs");
 
 	if ( !units.LoadUnits(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load Units.dat");

@@ -38,6 +38,20 @@ struct UPGRADEDAT
 	u8 BroodWarSpecific;
 };
 
+struct TECHDAT
+{
+	u16 MineralCost;
+	u16 VespeneCost;
+	u16 ResearchTime;
+	u16 EnergyCost;
+	u32 Unknown;
+	u16 Icon;
+	u16 Label;
+	u8 Race;
+	u8 Unused;
+	u8 BroodWar;
+};
+
 struct UNITDAT
 {
 	u8 Graphics;
@@ -204,6 +218,17 @@ class Upgrades
 		UPGRADEDAT upgrade[61];
 };
 
+class Techs
+{
+	public:
+		Techs();
+		bool LoadTechs(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
+		TECHDAT* TechDat(u8 id);
+
+	private:
+		TECHDAT tech[44];
+};
+
 class Units
 {
 	public:
@@ -275,6 +300,7 @@ class DATA
 
 		Tiles tilesets;
 		Upgrades upgrades;
+		Techs techs;
 		Units units;
 		Weapons weapons;
 		Sprites sprites;
