@@ -71,6 +71,8 @@ class Scenario
 					buffer& unitSettings(); // Gets settings from UNIS/UNIx based on whether the map is expansion
 					buffer& upgradeSettings(); // Gets settings from UPGS/UPGx based on whether the map is expansion
 					buffer& upgradeRestrictions(); // Gets upgradeAvailability from UPGR/PUPx based on whether the map is expansion
+					buffer& techSettings(); // Gets settings from TECS/TECx based on whether the map is expansion
+					buffer& techRestrictions(); // Gets PTEC/PTEx based on whether the map is expansion
 
 					bool GoodVCOD(); // Check if VCOD is valid
 					bool isProtected(); // Checks if map is protected
@@ -113,7 +115,18 @@ class Scenario
 					bool playerUsesDefaultUpgradeLevels(u8 upgradeId, u8 player);
 					bool getUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 &startLevel);
 					bool getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel);
-					
+
+					bool techUsesDefaultCosts(u8 techId);
+					bool getTechMineralCost(u8 techId, u16 &mineralCost);
+					bool getTechGasCost(u8 techId, u16 &gasCost);
+					bool getTechTimeCost(u8 techId, u16 &timeCost);
+					bool getTechEnergyCost(u8 techId, u16 &energyCost);
+
+					bool techAvailableForPlayer(u8 techId, u8 player);
+					bool techResearchedForPlayer(u8 techId, u8 player);
+					bool techAvailableByDefault(u8 techId);
+					bool techResearchedByDefault(u8 techId);
+					bool playerUsesDefaultTechSettings(u8 techId, u8 player);
 
 /*   Editing    */	bool setTileset(u16 newTileset); // Sets a new value for the maps tileset
 					bool setDimensions(u16 newWidth, u16 newHeight); // Sets new dimensions for the map
@@ -202,7 +215,17 @@ class Scenario
 					bool setUpgradeDefaultStartLevel(u8 upgradeId, u8 newStartLevel);
 					bool setUpgradeDefaultMaxLevel(u8 upgradeId, u8 newMaxLevel);
 
-					bool setTechUseDefaults(u8 techNum, bool useDefaults); // Specifies whether a tech uses default costs
+					bool setTechUseDefaults(u8 techNum, bool useDefaultCosts); // Specifies whether a tech uses default costs
+					bool setTechMineralCost(u8 techId, u16 newMineralCost);
+					bool setTechGasCost(u8 techId, u16 newGasCost);
+					bool setTechTimeCost(u8 techId, u16 newTimeCost);
+					bool setTechEnergyCost(u8 techId, u16 newEnergyCost);
+
+					bool setTechAvailableForPlayer(u8 techId, u8 player, bool availableForPlayer);
+					bool setTechResearchedForPlayer(u8 techId, u8 player, bool researchedForPlayer);
+					bool setTechDefaultAvailability(u8 techId, bool availableByDefault);
+					bool setTechDefaultResearched(u8 techId, bool researchedByDefault);
+					bool setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playerUsesDefaultSettings);
 
 /*   File IO	*/	bool ParseBuffer(buffer &chk); // Parses supplied scenario file data
 					bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
@@ -322,5 +345,15 @@ class Scenario
 #define UPGRADE_DEFAULTSTARTLEVEL(isExpansion) (isExpansion?1525:1150)
 #define UPGRADE_PLAYERUSESDEFAULT(isExpansion, player) (isExpansion?(1586+61*(u32)player):(1196+46*(u32)player))
 
+#define TECH_COST_MINERALS(isExpansion) (isExpansion?44:24)
+#define TECH_COST_GAS(isExpansion) (isExpansion?132:72)
+#define TECH_COST_TIME(isExpansion) (isExpansion?220:120)
+#define TECH_COST_ENERGY(isExpansion) (isExpansion?308:168)
+
+#define TECH_AVAILABLEFORPLAYER(isExpansion, player) (isExpansion?(44*(u32)player):(24*(u32)player))
+#define TECH_RESERACHEDFORPLAYER(isExpansion, player) (isExpansion?(528+44*(u32)player):(288+24*(u32)player))
+#define TECH_DEFAULTAVAILABILITY(isExpansion) (isExpansion?1056:576)
+#define TECH_DEFAULTRESERACHED(isExpansion) (isExpansion?1100:600)
+#define TECH_PLAYERUSESDEFAULT(isExpansion, player) (isExpansion?(1144+44*(u32)player):(624+24*(u32)player))
 
 #endif

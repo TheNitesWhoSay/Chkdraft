@@ -17,15 +17,21 @@ class TechSettingsWindow : public ClassWindow
 		bool CreateThis(HWND hParent);
 		void RefreshWindow();
 
-	private:
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	protected:
 		void CreateSubWindows(HWND hWnd);
 		void DisableTechCosts();
 		void EnableTechCosts();
 		void DisableTechEditing();
 		void EnableTechEditing();
+		void SetDefaultTechCosts();
+		void ClearDefaultTechCosts();
+
+	private:
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 		s32 selectedTech;
+		bool refreshing;
+		bool isDisabled;
 
 		TechTree treeTechs;
 

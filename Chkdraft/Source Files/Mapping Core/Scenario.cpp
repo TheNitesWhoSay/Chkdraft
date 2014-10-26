@@ -555,6 +555,22 @@ buffer& Scenario::upgradeRestrictions()
 		return this->UPGR();
 }
 
+buffer& Scenario::techSettings()
+{
+	if ( isExpansion() )
+		return this->TECx();
+	else
+		return this->TECS();
+}
+
+buffer& Scenario::techRestrictions()
+{
+	if ( isExpansion() )
+		return this->PTEx();
+	else
+		return this->PTEC();
+}
+
 bool Scenario::GoodVCOD()
 {
 	buffer defaultVCOD("vcod");
@@ -770,6 +786,56 @@ bool Scenario::getUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 &startLeve
 bool Scenario::getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel)
 {
 	return upgradeRestrictions().get<u8>(maxLevel, UPGRADE_PLAYERMAXLEVEL(isExpansion(), player)+(u32)upgradeId);
+}
+
+bool Scenario::techUsesDefaultCosts(u8 techId)
+{
+	return techSettings().get<u8>((u32)techId) == 1;
+}
+
+bool Scenario::getTechMineralCost(u8 techId, u16 &mineralCost)
+{
+	return techSettings().get<u16>(mineralCost, TECH_COST_MINERALS(isExpansion())+2*(u32)techId);
+}
+
+bool Scenario::getTechGasCost(u8 techId, u16 &gasCost)
+{
+	return techSettings().get<u16>(gasCost, TECH_COST_GAS(isExpansion())+2*(u32)techId);
+}
+
+bool Scenario::getTechTimeCost(u8 techId, u16 &timeCost)
+{
+	return techSettings().get<u16>(timeCost, TECH_COST_TIME(isExpansion())+2*(u32)techId);
+}
+
+bool Scenario::getTechEnergyCost(u8 techId, u16 &energyCost)
+{
+	return techSettings().get<u16>(energyCost, TECH_COST_ENERGY(isExpansion())+2*(u32)techId);
+}
+
+bool Scenario::techAvailableForPlayer(u8 techId, u8 player)
+{
+	return techRestrictions().get<u8>(TECH_AVAILABLEFORPLAYER(isExpansion(), player)+(u32)techId) == 1;
+}
+
+bool Scenario::techResearchedForPlayer(u8 techId, u8 player)
+{
+	return techRestrictions().get<u8>(TECH_RESERACHEDFORPLAYER(isExpansion(), player)+(u32)techId) == 1;
+}
+
+bool Scenario::techAvailableByDefault(u8 techId)
+{
+	return techRestrictions().get<u8>(TECH_DEFAULTAVAILABILITY(isExpansion())+(u32)techId) == 1;
+}
+
+bool Scenario::techResearchedByDefault(u8 techId)
+{
+	return techRestrictions().get<u8>(TECH_DEFAULTRESERACHED(isExpansion())+(u32)techId) == 1;
+}
+
+bool Scenario::playerUsesDefaultTechSettings(u8 techId, u8 player)
+{
+	return techRestrictions().get<u8>(TECH_PLAYERUSESDEFAULT(isExpansion(), player)+(u32)techId) == 1;
 }
 
 bool Scenario::setTileset(u16 newTileset)
@@ -2189,6 +2255,102 @@ bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
 
 	setExp = TECx().replace<u8>((u32)techNum, newValue);
 	setNormal = TECS().replace<u8>((u32)techNum, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setTechMineralCost(u8 techId, u16 newMineralCost)
+{
+	bool expansion = isExpansion(),
+		 replacedTECS = TECS().replace<u16>(TECH_COST_MINERALS(false)+2*(u32)techId, newMineralCost),
+		 replacedTECx = TECx().replace<u16>(TECH_COST_MINERALS(true)+2*(u32)techId, newMineralCost);
+	
+	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
+}
+
+bool Scenario::setTechGasCost(u8 techId, u16 newGasCost)
+{
+	bool expansion = isExpansion(),
+		 replacedTECS = TECS().replace<u16>(TECH_COST_GAS(false)+2*(u32)techId, newGasCost),
+		 replacedTECx = TECx().replace<u16>(TECH_COST_GAS(true)+2*(u32)techId, newGasCost);
+	
+	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
+}
+
+bool Scenario::setTechTimeCost(u8 techId, u16 newTimeCost)
+{
+	bool expansion = isExpansion(),
+		 replacedTECS = TECS().replace<u16>(TECH_COST_TIME(false)+2*(u32)techId, newTimeCost),
+		 replacedTECx = TECx().replace<u16>(TECH_COST_TIME(true)+2*(u32)techId, newTimeCost);
+	
+	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
+}
+
+bool Scenario::setTechEnergyCost(u8 techId, u16 newEnergyCost)
+{
+	bool expansion = isExpansion(),
+		 replacedTECS = TECS().replace<u16>(TECH_COST_ENERGY(false)+2*(u32)techId, newEnergyCost),
+		 replacedTECx = TECx().replace<u16>(TECH_COST_ENERGY(true)+2*(u32)techId, newEnergyCost);
+	
+	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
+}
+
+bool Scenario::setTechAvailableForPlayer(u8 techId, u8 player, bool availableForPlayer)
+{
+	u8 newValue = 0;
+	if ( availableForPlayer )
+		newValue = 1;
+
+	bool setExp = PTEx().replace<u8>(TECH_AVAILABLEFORPLAYER(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(TECH_AVAILABLEFORPLAYER(false, player)+(u32)techId, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setTechResearchedForPlayer(u8 techId, u8 player, bool researchedForPlayer)
+{
+	u8 newValue = 0;
+	if ( researchedForPlayer )
+		newValue = 1;
+
+	bool setExp = PTEx().replace<u8>(TECH_RESERACHEDFORPLAYER(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(TECH_RESERACHEDFORPLAYER(false, player)+(u32)techId, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setTechDefaultAvailability(u8 techId, bool availableByDefault)
+{
+	u8 newValue = 0;
+	if ( availableByDefault )
+		newValue = 1;
+
+	bool setExp = PTEx().replace<u8>(TECH_DEFAULTAVAILABILITY(true)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(TECH_DEFAULTAVAILABILITY(false)+(u32)techId, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setTechDefaultResearched(u8 techId, bool researchedByDefault)
+{
+	u8 newValue = 0;
+	if ( researchedByDefault )
+		newValue = 1;
+
+	bool setExp = PTEx().replace<u8>(TECH_DEFAULTRESERACHED(true)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(TECH_DEFAULTRESERACHED(false)+(u32)techId, newValue);
+	
+	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playerUsesDefaultSettings)
+{
+	u8 newValue = 0;
+	if ( playerUsesDefaultSettings )
+		newValue = 1;
+
+	bool setExp = PTEx().replace<u8>(TECH_PLAYERUSESDEFAULT(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(TECH_PLAYERUSESDEFAULT(false, player)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }

@@ -428,7 +428,7 @@ extern const int numTilesetInitTerrains[];
 
 #define ID_GROUP_TECHCOSTS				41244
 #define ID_TEXT_MINERALCOSTS			41245
-#define ID_EDIT_MIENRALCOSTS			41246
+#define ID_EDIT_MINERALCOSTS			41246
 #define ID_TEXT_GASCOSTS				41247
 #define ID_EDIT_GASCOSTS				41248
 #define ID_TEXT_TIMECOSTS				41249

@@ -1,7 +1,7 @@
 #include "Chkdraft.h"
 
 void Chkdraft::OnLoadTest()
-{
+{/*
 	// Standard Map Open
 	maps.NewMap(128, 128, 0, 0, 0);
 	maps.FocusActive();
@@ -9,7 +9,7 @@ void Chkdraft::OnLoadTest()
 	// End Standard Map Open
 
 	ShowWindow(getHandle(), SW_MAXIMIZE);
-	OpenMapSettings(ID_SCENARIO_UPGRADESETTINGS); //*/
+	OpenMapSettings(ID_SCENARIO_TECHSETTINGS);//*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
@@ -367,6 +367,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					// Help
 					case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/starcraft/Main_Page"); break;
 					case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
+					case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
 					case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;
 
 					default:
