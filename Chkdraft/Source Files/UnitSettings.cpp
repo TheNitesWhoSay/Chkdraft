@@ -788,6 +788,12 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					selectedUnit = unitId;
 					RefreshWindow();
 				}
+				else
+				{
+					CheckReplaceUnitName();
+					selectedUnit = -1;
+					DisableUnitEditing();
+				}
 			}
 
 		default:

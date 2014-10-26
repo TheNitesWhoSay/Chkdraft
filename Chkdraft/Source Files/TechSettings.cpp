@@ -160,7 +160,6 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 		dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, ID_DROP_P1TECHSETTINGS+player, 3, playerTechSettings, defaultFont);
 	}
 
-	buttonResetTechDefaults.DisableThis();
 	DisableTechEditing();
 }
 
@@ -269,6 +268,39 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				switch ( LOWORD(wParam) )
 				{
+					case ID_BUTTON_RESETTECHDEFAULTS:
+						if ( HIWORD(wParam) == BN_CLICKED )
+						{
+							if ( MessageBox(hWnd, "Are you sure you want to reset all tech settings?", "Confirm", MB_YESNO) == IDYES )
+							{
+								buffer newTECS("TECS"), newTECx("TECx"), newPTEC("PTEC"), newPTEx("PTEx");
+								if ( Get_TECS(newTECS) )
+								{
+									newTECS.del(0, 8);
+									chkd.maps.curr->TECS().takeAllData(newTECS);
+								}
+								if ( Get_TECx(newTECx) )
+								{
+									newTECx.del(0, 8);
+									chkd.maps.curr->TECx().takeAllData(newTECx);
+								}
+								if ( Get_PTEC(newPTEC) )
+								{
+									newPTEC.del(0, 8);
+									chkd.maps.curr->PTEC().takeAllData(newPTEC);
+								}
+								if ( Get_PTEx(newPTEx) )
+								{
+									newPTEx.del(0, 8);
+									chkd.maps.curr->PTEx().takeAllData(newPTEx);
+								}
+
+								chkd.maps.curr->notifyChange(false);
+								RefreshWindow();
+							}
+						}
+						break;
+
 					case ID_CHECK_DEFAULTTECHCOSTS:
 						if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 )
 						{

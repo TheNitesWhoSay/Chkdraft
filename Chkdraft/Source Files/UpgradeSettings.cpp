@@ -521,6 +521,11 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 					selectedUpgrade = upgradeId;
 					RefreshWindow();
 				}
+				else
+				{
+					selectedUpgrade = -1;
+					DisableUpgradeEditing();
+				}
 			}
 			else
 				return DefWindowProc(hWnd, msg, wParam, lParam);
