@@ -61,7 +61,7 @@ class ClassWindow
 						This should be passed as the proc to window's built in sort items functions */
 					static int CALLBACK ForwardCompareLvItems(LPARAM index1, LPARAM index2, LPARAM lParam);
 
-					/** This method attempts to destroy an encapsulated modeless dialog dialog */
+					/** This method attempts to destroy an encapsulated modeless dialog */
 					bool DestroyDialog();
 
 

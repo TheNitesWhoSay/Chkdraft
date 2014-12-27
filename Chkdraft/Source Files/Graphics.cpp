@@ -1635,3 +1635,221 @@ void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16
 
 	DeleteObject(pen);
 }
+
+UINT GetStringDrawWidth(HDC hDC, string str)
+{
+	return LOWORD(GetTabbedTextExtent(hDC, (LPCSTR)str.c_str(), str.size(), 0, NULL));
+}
+
+bool GetLineDrawSize(HDC hDC, SIZE* strSize, string str)
+{
+	DWORD result = GetTabbedTextExtent(hDC, (LPCSTR)str.c_str(), str.size(), 0, NULL);
+	if ( result != 0 )
+	{
+		strSize->cx = LOWORD(result);
+		strSize->cy = HIWORD(result);
+		return true;
+	}
+	else
+		return false;
+}
+
+void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, string str)
+{
+	TabbedTextOut(hDC, xPos, yPos, (LPCSTR)str.c_str(), str.size(), 0, NULL, 0);
+}
+
+void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, string str)
+{
+	//DrawStringChunk(hDC, rcItem.left+3, yPos, str);
+	const char* cStr = str.c_str();
+	int size = str.size();
+	int chunkStartChar = 0;
+	for ( int i=0; i<size; i++ )
+	{
+		if ( u8(cStr[i]) < 32 && cStr[i] != '\11' ) // Not tab, must be color
+		{
+			if ( i > chunkStartChar ) // Output everything prior to this...
+			{
+				string chunk = str.substr(chunkStartChar, i-chunkStartChar);
+				DrawStringChunk(hDC, xPos, yPos, chunk); // Output everything before the color
+				xPos += GetStringDrawWidth(hDC, chunk);
+				chunkStartChar = i+1;
+			}
+			else if ( i == chunkStartChar )
+				chunkStartChar ++;
+
+			if ( i+1 < size && (cStr[i+1] > '\37' || cStr[i+1] == '\11') ) // Followed by a visible character, change color
+			{
+				switch ( ((u8)cStr[i]) )
+				{
+					case 0x01: SetTextColor(hDC, RGB(184, 184, 232)); break;
+					case 0x02: SetTextColor(hDC, RGB(184, 184, 232)); break;
+					case 0x03: SetTextColor(hDC, RGB(220, 220,  60)); break;
+					case 0x04: SetTextColor(hDC, RGB(255, 255, 255)); break;
+					case 0x05: SetTextColor(hDC, RGB(132, 116, 116)); break;
+					case 0x06: SetTextColor(hDC, RGB(200,  24,  24)); break;
+					case 0x07: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x08: SetTextColor(hDC, RGB(244,   4,   4)); break;
+					case 0x0B: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x0C: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x0E: SetTextColor(hDC, RGB( 12,  72, 204)); break;
+					case 0x0F: SetTextColor(hDC, RGB( 44, 180, 148)); break;
+					case 0x10: SetTextColor(hDC, RGB(136,  64, 156)); break;
+					case 0x11: SetTextColor(hDC, RGB(248, 140,  20)); break;
+					case 0x12: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x13: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x14: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x15: SetTextColor(hDC, RGB(112,  48,  20)); break;
+					case 0x16: SetTextColor(hDC, RGB(204, 224, 208)); break;
+					case 0x17: SetTextColor(hDC, RGB(252, 252,  56)); break;
+					case 0x18: SetTextColor(hDC, RGB(  8, 128,   8)); break;
+					case 0x19: SetTextColor(hDC, RGB(252, 252, 124)); break;
+					case 0x1A: SetTextColor(hDC, RGB(184, 184, 232)); break;
+					case 0x1B: SetTextColor(hDC, RGB(236, 196, 176)); break;
+					case 0x1C: SetTextColor(hDC, RGB( 64, 104, 212)); break;
+					case 0x1D: SetTextColor(hDC, RGB(116, 164, 124)); break;
+					case 0x1E: SetTextColor(hDC, RGB(144, 144, 184)); break;
+					case 0x1F: SetTextColor(hDC, RGB(  0, 228, 252)); break;
+				}
+			}
+		}
+	}
+
+	if ( chunkStartChar < size )
+		DrawStringChunk(hDC, xPos, yPos, str.substr(chunkStartChar, size-chunkStartChar));
+}
+
+bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
+{
+	SIZE strSize;
+	HGDIOBJ sel = SelectObject(hDC, defaultFont);
+	if ( sel != NULL && sel != HGDI_ERROR )
+	{
+		height = 0;
+
+		size_t start = 0,
+			   loc,
+			   max = str.size(),
+			   npos = string::npos;
+
+		loc = str.find("\r\n");
+		if ( loc != npos ) // Has new lines
+		{
+			// Do first line
+			string firstLine = str.substr(0, loc);
+			if ( GetLineDrawSize(hDC, &strSize, firstLine) )
+			{
+				start = loc+2;
+				height += strSize.cy;
+				if ( strSize.cx > LONG(width) )
+					width = UINT(strSize.cx);
+
+				do // Do subsequent lines
+				{
+					loc = str.find("\r\n", start);
+					if ( loc != npos )
+					{
+						string line = " ";
+						if ( loc-start > 0 )
+							line = str.substr(start, loc-start);
+						start = loc+2;
+						if ( GetLineDrawSize(hDC, &strSize, line) )
+						{
+							height += strSize.cy;
+							if ( strSize.cx > LONG(width) )
+								width = UINT(strSize.cx);
+						}
+						else
+							break;
+					}
+					else
+					{
+						// Do last line
+						string lastLine = str.substr(start, max-start);
+						if ( GetLineDrawSize(hDC, &strSize, lastLine) )
+						{
+							height += strSize.cy;
+							if ( strSize.cx > LONG(width) )
+								width = UINT(strSize.cx);
+						}
+						break;
+					}
+				} while ( start < max );
+
+				return true;
+			}
+		}
+		else if ( GetLineDrawSize(hDC, &strSize, str) )
+		{
+			height += strSize.cy;
+			if ( strSize.cx > LONG(width) )
+				width = UINT(strSize.cx);
+
+			return true;
+		}
+	}
+	return false;
+}
+
+void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
+{
+	SIZE strSize;
+	HGDIOBJ sel = SelectObject(hDC, defaultFont);
+	if ( sel != NULL && sel != HGDI_ERROR )
+	{
+		size_t start = 0,
+			   loc,
+			   max = str.size(),
+			   npos = string::npos;
+
+		loc = str.find("\r\n");
+		if ( loc != npos ) // Has new lines
+		{
+			// Do first line
+			string firstLine = str.substr(0, loc);
+			DrawStringLine(hDC, xPos, yPos, firstLine);
+			if ( GetLineDrawSize(hDC, &strSize, firstLine) )
+			{
+				start = loc+2;
+				yPos += strSize.cy;
+
+				do // Do subsequent lines
+				{
+					loc = str.find("\r\n", start);
+					if ( loc != npos )
+					{
+						string line = " ";
+						if ( loc-start > 0 )
+						{
+							line = str.substr(start, loc-start);
+							DrawStringLine(hDC, xPos, yPos, line);
+						}
+
+						start = loc+2;
+						if ( GetLineDrawSize(hDC, &strSize, line) )
+							yPos += strSize.cy;
+						else
+							break;
+					}
+					else
+					{
+						// Do last line
+						string lastLine = str.substr(start, max-start);
+						if ( GetLineDrawSize(hDC, &strSize, lastLine) )
+						{
+							DrawStringLine(hDC, xPos, yPos, lastLine);
+							yPos += strSize.cy;
+						}
+						break;
+					}
+				} while ( start < max );
+			}
+		}
+		else if ( GetLineDrawSize(hDC, &strSize, str) )
+		{
+			DrawStringLine(hDC, xPos, yPos, str);
+			yPos += strSize.cy;
+		}
+	}
+}

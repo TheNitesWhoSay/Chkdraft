@@ -1,7 +1,7 @@
 #include "MapSettings.h"
 #include "Chkdraft.h"
 
-MapSettingsWindow::MapSettingsWindow() : currTab(0)
+MapSettingsWindow::MapSettingsWindow() : currTab(0), hTabs(NULL)
 {
 
 }
@@ -81,7 +81,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				item.mask = TCIF_TEXT;
 				item.iImage = -1;
 				
-				for ( int i=0; i<7; i++ )
+				for ( int i=0; i<sizeof(tabs)/sizeof(const char*); i++ )
 				{
 					item.pszText = (LPSTR)tabs[i];
 					item.cchTextMax = strlen(tabs[i]);

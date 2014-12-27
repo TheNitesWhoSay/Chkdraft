@@ -1,6 +1,11 @@
 #include "StringUsage.h"
 
-StringUsageTable::StringUsageTable(Scenario* chk, bool extendedTable, bool& success)
+StringUsageTable::StringUsageTable()
+{
+
+}
+
+bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 {
 	buffer* strings = &chk->STR();
 	if ( extendedTable )
@@ -94,33 +99,40 @@ StringUsageTable::StringUsageTable(Scenario* chk, bool extendedTable, bool& succ
 			for ( int i=0; i<228; i++ )
 				MarkIfOverZero( UNIx.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
 
-			success = true;
+			return true;
 		}
 		else
 		{
 			CHKD_ERR("Failed to allocate string usage table.");
-			success = false;
+			return false;
 		}
 	}
 	else // The string section did not exist, convey that information
 	{
-		if ( stringUsed.add<u8>(1) )// Mark the unused byte as a 'used' string
-			success = true;
+		if ( stringUsed.add<u8>(1) ) // Mark the unused byte as a 'used' string
+			return true;
 		else
-			success = false;
+			return false;
 	}
 }
 
-StringUsageTable::StringUsageTable(std::list<StringTableNode> strList, u32 numStrs, bool& success)
+bool StringUsageTable::populateTable(std::list<StringTableNode> strList, u32 numStrs)
 {
-	if ( !stringUsed.add<u8>(0, numStrs+1) ) // Room for all strings + first unused byte
-		success = false;
-	else
-		success = true;
+	if ( stringUsed.add<u8>(0, numStrs+1) ) // Room for all strings + first unused byte
+	{
+		strList.sort(CompareStrTblNode);
+		for ( auto it = strList.begin(); it != strList.end(); it++ )
+			stringUsed.replace<u8>(it->stringNum, 1);
 
-	strList.sort(CompareStrTblNode);
-	for ( auto it = strList.begin(); it != strList.end(); it++ )
-		stringUsed.replace<u8>(it->stringNum, 1);
+		return true;
+	}
+	else
+		return false;
+}
+
+void StringUsageTable::clearTable()
+{
+	stringUsed.flush();
 }
 
 bool StringUsageTable::useNext(u32 &index)

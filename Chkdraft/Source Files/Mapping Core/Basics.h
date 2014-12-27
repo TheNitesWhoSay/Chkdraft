@@ -207,6 +207,7 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
 			#define ACTION_FLAG_UNKNOWN_7			 BIT_7
 
 			#define ACTION_FLAG_DONT_ALWAYS_DISPLAY (~ACTION_FLAG_ALWAYS_DISPLAY)
+
 		u8 internalData[3]; // Number of actions to process next?
 };
 

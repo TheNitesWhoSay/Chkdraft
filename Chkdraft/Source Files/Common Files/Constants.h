@@ -499,9 +499,22 @@ extern const int numTilesetInitTerrains[];
 #define ID_CHECK_VIRTUALFILE			41333
 #define ID_BUTTON_ADDFILE				41334
 
+// Trig Editor
+#define ID_NEWTABTAB					41335
+#define ID_TRIGGERS						41336
+#define ID_TEMPLATES					41337
+#define ID_COUNTERS						41338
+#define ID_CUWPS						41339
+#define ID_SWITCHES						41340
+
+#define ID_TAB_TRIGGERS					0
+#define ID_TAB_TEMPLATES				1
+#define ID_TAB_COUNTERS					2
+#define ID_TAB_CUWPS					3
+#define ID_TAB_SWITCHES					4
 
 // MDI Window
-#define ID_MDI_FIRSTCHILD               41300 // Should be higher than any other identifiers
+#define ID_MDI_FIRSTCHILD               41800 // Should be higher than any other identifiers
 
 
 

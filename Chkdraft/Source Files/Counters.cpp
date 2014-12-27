@@ -1,0 +1,41 @@
+#include "Counters.h"
+
+bool CountersWindow::CreateThis(HWND hParent)
+{
+	if ( getHandle() != NULL )
+		return SetParent(getHandle(), hParent) != NULL;
+
+	RECT rcCli;
+	if ( GetWindowRect(hParent, &rcCli) &&
+		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Counters", NULL, false) &&
+		 ClassWindow::CreateClassWindow(NULL, "Counters", WS_CHILD,
+			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
+			hParent, (HMENU)ID_COUNTERS) )
+	{
+		CreateSubWindows(getHandle());
+		return true;
+	}
+	else
+		return false;
+}
+
+bool CountersWindow::DestroyThis()
+{
+	return false;
+}
+
+void CountersWindow::RefreshWindow()
+{
+
+}
+
+void CountersWindow::DoSize()
+{
+	
+}
+
+void CountersWindow::CreateSubWindows(HWND hWnd)
+{
+	TextControl text;
+	text.CreateThis(hWnd, 0, 0, 200, 20, "Counters...", 0);
+}

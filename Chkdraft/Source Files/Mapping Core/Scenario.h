@@ -35,7 +35,9 @@ class Scenario
 
 					bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
 
+					u32 numTriggers(); // Returns the number of triggers in this scenario
 					bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index
+					bool getActiveComment(Trigger* trigger, string &comment);
 
 					bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
 
