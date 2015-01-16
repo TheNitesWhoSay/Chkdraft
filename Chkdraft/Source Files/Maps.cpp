@@ -161,10 +161,7 @@ bool MAPS::OpenMap(const char* fileName)
 		}
 	}
 	else
-	{
 		delete newMap;
-		Error(LastError);
-	}
 
 	return false;
 }

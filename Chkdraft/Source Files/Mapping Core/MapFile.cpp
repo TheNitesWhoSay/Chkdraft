@@ -14,8 +14,6 @@ bool MapFile::LoadFile(const char* &path)
 		strcpy_s(filePath, MAX_PATH, path); // Copy the given path to the map's stored filePath
 	else if ( GetPath() )
 		path = filePath; // Have the pointer point to the new filePath
-	else
-		CHKD_ERR("Error Retrieving File Name."); // Couldn't get a path
 
 	return filePath != nullptr && OpenFile();
 }
@@ -166,13 +164,15 @@ bool MapFile::GetPath()
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 
-	if ( GetOpenFileName(&ofn) )
+	if ( GetOpenFileName(&ofn) == TRUE )
 	{
 		strcpy_s(filePath, MAX_PATH, szFileName);
 		return true;
 	}
-	else
-		return false;
+	else if ( CommDlgExtendedError() != 0 )
+		Error("Error Retrieving File Name.");
+
+	return false;
 }
 
 bool MapFile::OpenFile()
