@@ -14,6 +14,7 @@ class ListBoxControl : public WindowControl
 		int ColumnWidth();
 		int GetNumSel();
 		bool GetSelString(int n, std::string &str); // Attempts to get the nth selected item's string
+		bool GetSelItem(int n, int &itemData);
 };
 
 #endif

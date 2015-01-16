@@ -1659,27 +1659,51 @@ void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, string str)
 	TabbedTextOut(hDC, xPos, yPos, (LPCSTR)str.c_str(), str.size(), 0, NULL, 0);
 }
 
-void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, string str)
+void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str)
 {
 	//DrawStringChunk(hDC, rcItem.left+3, yPos, str);
 	const char* cStr = str.c_str();
 	int size = str.size();
 	int chunkStartChar = 0;
+	bool center = false,
+		 right = false;
 	for ( int i=0; i<size; i++ )
 	{
-		if ( u8(cStr[i]) < 32 && cStr[i] != '\11' ) // Not tab, must be color
+		if ( u8(cStr[i]) < 32 && cStr[i] != '\11' ) // Not tab, must be color or alignment
 		{
 			if ( i > chunkStartChar ) // Output everything prior to this...
 			{
 				string chunk = str.substr(chunkStartChar, i-chunkStartChar);
-				DrawStringChunk(hDC, xPos, yPos, chunk); // Output everything before the color
+				if ( center )
+				{
+					UINT chunkWidth, chunkHeight;
+					if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+					{
+						xPos = UINT(width)/2-chunkWidth/2;
+						if ( xPos >= UINT(width) )
+							xPos = 0;
+					}
+					center = false;
+				}
+				else if ( right )
+				{
+					UINT chunkWidth, chunkHeight;
+					if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+					{
+						xPos = UINT(width)-chunkWidth-1;
+						if ( xPos >= UINT(width) )
+							xPos = 0;
+					}
+					right = false;
+				}
+				DrawStringChunk(hDC, xPos, yPos, chunk); // Output everything before the color/alignment
 				xPos += GetStringDrawWidth(hDC, chunk);
 				chunkStartChar = i+1;
 			}
 			else if ( i == chunkStartChar )
 				chunkStartChar ++;
 
-			if ( i+1 < size && (cStr[i+1] > '\37' || cStr[i+1] == '\11') ) // Followed by a visible character, change color
+			if ( (i+1 < size && (cStr[i+1] > '\37' || cStr[i+1] == '\11')) || (i+1 == size) ) // Followed by a visible character, change color/alignmnet
 			{
 				switch ( ((u8)cStr[i]) )
 				{
@@ -1691,15 +1715,15 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, string str)
 					case 0x06: SetTextColor(hDC, RGB(200,  24,  24)); break;
 					case 0x07: SetTextColor(hDC, RGB( 16, 252,  24)); break;
 					case 0x08: SetTextColor(hDC, RGB(244,   4,   4)); break;
-					case 0x0B: SetTextColor(hDC, RGB( 16, 252,  24)); break;
-					case 0x0C: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x0B: SetTextColor(hDC, defaultColor); break;
+					case 0x0C: SetTextColor(hDC, defaultColor); break;
 					case 0x0E: SetTextColor(hDC, RGB( 12,  72, 204)); break;
 					case 0x0F: SetTextColor(hDC, RGB( 44, 180, 148)); break;
 					case 0x10: SetTextColor(hDC, RGB(136,  64, 156)); break;
 					case 0x11: SetTextColor(hDC, RGB(248, 140,  20)); break;
-					case 0x12: SetTextColor(hDC, RGB( 16, 252,  24)); break;
-					case 0x13: SetTextColor(hDC, RGB( 16, 252,  24)); break;
-					case 0x14: SetTextColor(hDC, RGB( 16, 252,  24)); break;
+					case 0x12: right = true; break;
+					case 0x13: center = true; break;
+					case 0x14: SetTextColor(hDC, defaultColor); break;
 					case 0x15: SetTextColor(hDC, RGB(112,  48,  20)); break;
 					case 0x16: SetTextColor(hDC, RGB(204, 224, 208)); break;
 					case 0x17: SetTextColor(hDC, RGB(252, 252,  56)); break;
@@ -1717,7 +1741,32 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, string str)
 	}
 
 	if ( chunkStartChar < size )
-		DrawStringChunk(hDC, xPos, yPos, str.substr(chunkStartChar, size-chunkStartChar));
+	{
+		string chunk = str.substr(chunkStartChar, size-chunkStartChar);
+		if ( center )
+		{
+			UINT chunkWidth, chunkHeight;
+			if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+			{
+				xPos = UINT(width)/2-chunkWidth/2;
+				if ( xPos >= UINT(width) )
+					xPos = 0;
+			}
+			center = false;
+		}
+		else if ( right )
+		{
+			UINT chunkWidth, chunkHeight;
+			if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+			{
+				xPos = UINT(width)-chunkWidth-1;
+				if ( xPos >= UINT(width) )
+					xPos = 0;
+			}
+			right = false;
+		}
+		DrawStringChunk(hDC, xPos, yPos, chunk);
+	}
 }
 
 bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
@@ -1792,8 +1841,9 @@ bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 	return false;
 }
 
-void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
+void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str)
 {
+	SetTextColor(hDC, defaultColor);
 	SIZE strSize;
 	HGDIOBJ sel = SelectObject(hDC, defaultFont);
 	if ( sel != NULL && sel != HGDI_ERROR )
@@ -1808,7 +1858,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
 		{
 			// Do first line
 			string firstLine = str.substr(0, loc);
-			DrawStringLine(hDC, xPos, yPos, firstLine);
+			DrawStringLine(hDC, xPos, yPos, width, defaultColor, firstLine);
 			if ( GetLineDrawSize(hDC, &strSize, firstLine) )
 			{
 				start = loc+2;
@@ -1823,7 +1873,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
 						if ( loc-start > 0 )
 						{
 							line = str.substr(start, loc-start);
-							DrawStringLine(hDC, xPos, yPos, line);
+							DrawStringLine(hDC, xPos, yPos, width, defaultColor, line);
 						}
 
 						start = loc+2;
@@ -1838,7 +1888,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
 						string lastLine = str.substr(start, max-start);
 						if ( GetLineDrawSize(hDC, &strSize, lastLine) )
 						{
-							DrawStringLine(hDC, xPos, yPos, lastLine);
+							DrawStringLine(hDC, xPos, yPos, width, defaultColor, lastLine);
 							yPos += strSize.cy;
 						}
 						break;
@@ -1848,7 +1898,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, string str)
 		}
 		else if ( GetLineDrawSize(hDC, &strSize, str) )
 		{
-			DrawStringLine(hDC, xPos, yPos, str);
+			DrawStringLine(hDC, xPos, yPos, width, defaultColor, str);
 			yPos += strSize.cy;
 		}
 	}

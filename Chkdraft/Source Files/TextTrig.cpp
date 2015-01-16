@@ -113,7 +113,6 @@ bool TextTrigWindow::CompileEditText(Scenario* map, HWND hWnd)
 		std::string trigText;
 		if ( editControl.GetEditText(trigText) )
 		{
-			mb(trigText.c_str());
 			TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
 			if ( compiler.CompileTriggers(trigText, map) )
 				return true;

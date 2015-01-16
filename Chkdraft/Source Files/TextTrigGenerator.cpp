@@ -7,7 +7,7 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 
 bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
 {
-	if ( !LoadScenario(map) )
+	if ( !LoadScenario(map, true, false) )
 		return false;
 
 	buffer& TRIG = map->TRIG();
@@ -623,21 +623,264 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
 	CorrectLineEndings(output);
 
 	trigString = (const char*)output.getPtr(0);
+	ClearScenario();
 	return true;
+}
+
+bool TextTrigGenerator::LoadScenario(Scenario* map)
+{
+	return LoadScenario(map, false, true);
+}
+
+void TextTrigGenerator::ClearScenario()
+{
+	stringTable.clear();
+	extendedStringTable.clear();
+	locationTable.clear();
+	unitTable.clear();
+	switchTable.clear();
+	wavTable.clear();
+	groupTable.clear();
+}
+
+string TextTrigGenerator::GetTrigLocation(u32 locationNum)
+{
+	char number[12];
+	if ( locationNum >= 0 && locationNum < locationTable.size() )
+		return string(locationTable[locationNum]);
+	else
+	{
+		_itoa_s(locationNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigString(u32 stringNum)
+{
+	char number[12];
+	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
+	{
+		if ( stringNum < stringTable.size() )
+			return stringTable[stringNum];
+		else
+			return string("k" + extendedStringTable[65536-stringNum]);
+	}
+	else
+	{
+		_itoa_s(stringNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
+{
+	char number[12];
+	if ( groupNum >= 0 && groupNum < groupTable.size() )
+		return groupTable[groupNum].c_str();
+	else
+	{
+		_itoa_s(groupNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigUnit(u16 unitId)
+{
+	char number[12];
+	if ( unitId >= 0 && unitId < unitTable.size() )
+		return unitTable[unitId];
+	else
+	{
+		_itoa_s(unitId, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
+{
+	char number[12];
+	if ( switchNum >= 0 && switchNum < switchTable.size() )
+		return switchTable[switchNum];
+	else
+	{
+		_itoa_s(switchNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
+{
+	char number[12];
+	const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
+	if ( scoreType >= 0 && scoreType < sizeof(scoreTypes)/sizeof(const char*) )
+		return scoreTypes[scoreType];
+	else
+	{
+		_itoa_s(scoreType, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
+{
+	char number[12];
+	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
+	if ( resourceType >= 0 && resourceType < sizeof(resourceTypes)/sizeof(const char*) )
+		return resourceTypes[resourceType];
+	else
+	{
+		_itoa_s(resourceType, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigOrder(u8 order)
+{
+	char number[12];
+	const char* orderTypes[] = { "move", "patrol", "attack" };
+	if ( order >= 0 && order < sizeof(orderTypes)/sizeof(const char*) )
+		return orderTypes[order];
+	else
+	{
+		_itoa_s(order, number, 10);
+		return number;
+	}
+}
+
+string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
+{
+	char number[12];
+	const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
+	if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers)/sizeof(const char*) )
+		return string(stateModifiers[stateModifier]);
+	else
+	{
+		_itoa_s(stateModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
+{
+	char number[12];
+	const char* switchStates[] = { "0", "1", "Set", "Cleared" };
+	if ( switchState >= 0 && switchState < sizeof(switchStates)/sizeof(const char*) )
+		return string(switchStates[switchState]);
+	else
+	{
+		_itoa_s(switchState, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
+{
+	char number[12];
+	const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
+	if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers)/sizeof(const char*) )
+		return string(switchModifiers[switchModifier]);
+	else
+	{
+		_itoa_s(switchModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigAllyState(u16 allyState)
+{
+	char number[12];
+	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
+	if ( allyState >= 0 && allyState < sizeof(allyStates)/sizeof(const char*) )
+		return string(allyStates[allyState]);
+	else
+	{
+		_itoa_s(allyState, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
+{
+	char number[12];
+	const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
+	if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons)/sizeof(const char*) )
+		return string(numericComparisons[numericComparison]);
+	else
+	{
+		_itoa_s(numericComparison, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
+{
+	char number[12];
+	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
+	if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers)/sizeof(const char*) )
+		return string(numericModifiers[numericModifier]);
+	else
+	{
+		_itoa_s(numericModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigScript(u32 scriptNum)
+{
+	char script[7];
+	script[0] = '\"';
+	(u32&)script[1] = scriptNum;
+	script[5] = '\"';
+	script[6] = '\0';
+	return string(script);
+}
+
+string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
+{
+	char number[12];
+	if ( numUnits == 0 )
+		return string("All");
+	else
+	{
+		_itoa_s(numUnits, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumber(u32 number)
+{
+	char cNumber[12];
+	_itoa_s((int)number, cNumber, 10);
+	return string(cNumber);
+}
+
+string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
+{
+	char number[12];
+	const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
+	if		( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )
+		return string(cTextFlags[0]);
+	else if ( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )
+		return string(cTextFlags[1]);
+	else
+	{
+		_itoa_s(textFlags, number, 10);
+		return string(number);
+	}
 }
 
 // protected
 
-bool TextTrigGenerator::LoadScenario(Scenario* map)
+bool TextTrigGenerator::LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames)
 {
 	return PrepConditionTable() &&
 		   PrepActionTable() &&
-		   PrepLocationTable(map) &&
-		   PrepUnitTable(map) &&
-		   PrepSwitchTable(map) &&
-		   PrepWavTable(map) &&
-		   PrepGroupTable(map) &&
-		   PrepStringTable(map);
+		   PrepLocationTable(map, quoteArgs) &&
+		   PrepUnitTable(map, quoteArgs, useCustomNames) &&
+		   PrepSwitchTable(map, quoteArgs) &&
+		   PrepWavTable(map, quoteArgs) &&
+		   PrepGroupTable(map, quoteArgs) &&
+		   PrepStringTable(map, quoteArgs);
 }
 
 bool TextTrigGenerator::CorrectLineEndings(buffer& buf)
@@ -730,8 +973,10 @@ bool TextTrigGenerator::PrepActionTable()
 	return true;
 }
 
-bool TextTrigGenerator::PrepLocationTable(Scenario* map)
+bool TextTrigGenerator::PrepLocationTable(Scenario* map, bool quoteArgs)
 {
+	locationTable.clear();
+	
 	ChkLocation* loc;
 	u16 stringNum;
 	string locationName;
@@ -752,12 +997,19 @@ bool TextTrigGenerator::PrepLocationTable(Scenario* map)
 
 				if ( i == 63 )
 				{
-					locationName = "\"Anywhere\"";
+					if ( quoteArgs )
+						locationName = "\"Anywhere\"";
+					else
+						locationName = "Anywhere";
+
 					locationTable.push_back( locationName );
 				}
 				else if ( loc->stringNum > 0 && map->getEscapedString(locationName, loc->stringNum) )
 				{
-					locationTable.push_back( "\"" + locationName + "\"" );
+					if ( quoteArgs )
+						locationTable.push_back( "\"" + locationName + "\"" );
+					else
+						locationTable.push_back(locationName);
 				}
 			}
 
@@ -773,8 +1025,10 @@ bool TextTrigGenerator::PrepLocationTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigGenerator::PrepUnitTable(Scenario* map)
+bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCustomNames)
 {
+	unitTable.clear();
+
 	string unitName;
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
@@ -782,15 +1036,35 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map)
 		for ( int unitID=0; unitID<232; unitID++ )
 		{
 			Invariant( unitTable.size() == unitID );
-			unitName = "\"" + string(LegacyTextTrigDisplayName[unitID]) + "\"";
+			if ( quoteArgs )
+			{
+				if ( useCustomNames )
+				{
+					string unquotedName;
+					map->getUnitName(unquotedName, unitID);
+					unitName = "\"" + unquotedName + "\"";
+				}
+				else
+					unitName = "\"" + string(LegacyTextTrigDisplayName[unitID]) + "\"";
+			}
+			else
+			{
+				if ( useCustomNames )
+					map->getUnitName(unitName, unitID);
+				else
+					unitName = string(LegacyTextTrigDisplayName[unitID]);
+			}
+
 			unitTable.push_back( unitName );
 		}
 	}
 	return true;
 }
 
-bool TextTrigGenerator::PrepSwitchTable(Scenario* map)
+bool TextTrigGenerator::PrepSwitchTable(Scenario* map, bool quoteArgs)
 {
+	switchTable.clear();
+
 	string switchName;
 	buffer& SWNM = map->SWNM();
 	if ( SWNM.exists() && map->STR().exists() )
@@ -803,12 +1077,19 @@ bool TextTrigGenerator::PrepSwitchTable(Scenario* map)
 				 stringID > 0 &&
 				 map->getEscapedString(switchName, stringID) )
 			{
-				switchTable.push_back( "\"" + switchName + "\"" );				
+				if ( quoteArgs )
+					switchTable.push_back( "\"" + switchName + "\"" );
+				else
+					switchTable.push_back(switchName);
 			}
 			else
 			{
 				char swDefault[20];
-				sprintf_s(swDefault, 20, "\"Switch%i\"", switchID+1);
+				if ( quoteArgs )
+					sprintf_s(swDefault, 20, "\"Switch%i\"", switchID+1);
+				else
+					sprintf_s(swDefault, 20, "Switch%i", switchID+1);
+
 				switchName = swDefault;
 				switchTable.push_back( switchName );
 			}
@@ -817,8 +1098,10 @@ bool TextTrigGenerator::PrepSwitchTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigGenerator::PrepWavTable(Scenario* map)
+bool TextTrigGenerator::PrepWavTable(Scenario* map, bool quoteArgs)
 {
+	wavTable.clear();
+
 	string wavName;
 	buffer& WAV = map->WAV();
 	if ( WAV.exists() && map->STR().exists() )
@@ -831,7 +1114,10 @@ bool TextTrigGenerator::PrepWavTable(Scenario* map)
 				 stringID > 0 &&
 				 map->getEscapedString(wavName, stringID) )
 			{
-				wavTable.push_back( "\"" + wavName + "\"" );
+				if ( quoteArgs )
+					wavTable.push_back( "\"" + wavName + "\"" );
+				else
+					wavTable.push_back(wavName);
 			}
 			else
 			{
@@ -845,21 +1131,44 @@ bool TextTrigGenerator::PrepWavTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigGenerator::PrepGroupTable(Scenario* map)
+bool TextTrigGenerator::PrepGroupTable(Scenario* map, bool quoteArgs)
 {
+	groupTable.clear();
+
 	string groupName;
 	buffer& FORC = map->FORC();
 	bool hasForcStrings = FORC.exists() && map->STR().exists();
 
-	const char* legacyLowerGroups[] = { "\"Player 1\"", "\"Player 2\"", "\"Player 3\"", "\"Player 4\"", "\"Player 5\"", "\"Player 6\"",
-										"\"Player 7\"", "\"Player 8\"", "\"Player 9\"", "\"Player 10\"", "\"Player 11\"", "\"Player 12\"",
-										"\"unknown/unused\"", "\"Current Player\"", "\"Foes\"", "\"Allies\"", "\"Neutral Players\"",
-										"\"All players\"" };
-	const char* legacyUpperGroups[] = { "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"",
-										"\"Non Allied Victory Players\"", "\"unknown/unused\"" };
+	const char** legacyLowerGroupNames;
+	const char** legacyUpperGroupNames;
 
-	const char** lowerGroups = legacyLowerGroups;
-	const char** upperGroups = legacyUpperGroups;
+	if ( quoteArgs )
+	{
+		const char* legacyLowerGroups[] = { "\"Player 1\"", "\"Player 2\"", "\"Player 3\"", "\"Player 4\"", "\"Player 5\"", "\"Player 6\"",
+											"\"Player 7\"", "\"Player 8\"", "\"Player 9\"", "\"Player 10\"", "\"Player 11\"", "\"Player 12\"",
+											"\"unknown/unused\"", "\"Current Player\"", "\"Foes\"", "\"Allies\"", "\"Neutral Players\"",
+											"\"All players\"" };
+		const char* legacyUpperGroups[] = { "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"",
+											"\"Non Allied Victory Players\"", "\"unknown/unused\"" };
+
+		legacyLowerGroupNames = legacyLowerGroups;
+		legacyUpperGroupNames = legacyUpperGroups;
+	}
+	else
+	{
+		const char* legacyLowerGroups[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
+											"Player 7", "Player 8", "Player 9", "Player 10", "Player 11", "Player 12",
+											"unknown/unused", "Current Player", "Foes", "Allies", "Neutral Players",
+											"All players" };
+		const char* legacyUpperGroups[] = { "unknown/unused", "unknown/unused", "unknown/unused", "unknown/unused",
+											"Non Allied Victory Players", "unknown/unused" };
+
+		legacyLowerGroupNames = legacyLowerGroups;
+		legacyUpperGroupNames = legacyUpperGroups;
+	}
+
+	const char** lowerGroups = legacyLowerGroupNames;
+	const char** upperGroups = legacyUpperGroupNames;
 
 	for ( u32 i=0; i<18; i++ )
 	{
@@ -877,13 +1186,19 @@ bool TextTrigGenerator::PrepGroupTable(Scenario* map)
 			 stringID > 0 &&
 			 map->getEscapedString(groupName, stringID) )
 		{
-			groupName = "\"" + groupName + "\"";
+			if ( quoteArgs )
+				groupName = "\"" + groupName + "\"";
+
 			groupTable.push_back( groupName );
 		}
 		else
 		{
 			char forceName[12];
-			sprintf_s(forceName, 12, "\"Force %i\"", i);
+			if ( quoteArgs )
+				sprintf_s(forceName, 12, "\"Force %i\"", i);
+			else
+				sprintf_s(forceName, 12, "Force %i", i);
+
 			groupName = forceName;
 			groupTable.push_back( groupName );
 		}
@@ -898,8 +1213,11 @@ bool TextTrigGenerator::PrepGroupTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigGenerator::PrepStringTable(Scenario* map)
+bool TextTrigGenerator::PrepStringTable(Scenario* map, bool quoteArgs)
 {
+	stringTable.clear();
+	extendedStringTable.clear();
+
 	if ( map->STR().exists() || map->KSTR().exists() )
 	{
 		StringUsageTable standardStringUsage;
@@ -916,7 +1234,10 @@ bool TextTrigGenerator::PrepStringTable(Scenario* map)
 				if ( standardStringUsage.isUsed(i) )
 					map->getEscapedString(str, i);
 
-				stringTable.push_back( "\"" + str + "\"" );
+				if ( quoteArgs )
+					stringTable.push_back( "\"" + str + "\"" );
+				else
+					stringTable.push_back(str);
 			}
 
 			numStrings = extendedStringUsage.numStrings();
@@ -927,7 +1248,10 @@ bool TextTrigGenerator::PrepStringTable(Scenario* map)
 				if ( extendedStringUsage.isUsed(i) )
 					map->getEscapedString(str, (65536-i));
 
-				extendedStringTable.push_back( "\"" + str + "\"" );
+				if ( quoteArgs )
+					extendedStringTable.push_back( "\"" + str + "\"" );
+				else
+					extendedStringTable.push_back(str);
 			}
 
 			return true;

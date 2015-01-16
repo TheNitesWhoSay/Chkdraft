@@ -3,12 +3,11 @@
 bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, u32 id)
 {
 	u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
-	if ( ownerDrawn )
-	{
+	if ( ownerDrawn && multiColumn )
+		style |= LBS_OWNERDRAWFIXED|LBS_MULTICOLUMN|LBS_EXTENDEDSEL;
+	else if ( ownerDrawn )
 		style |= LBS_OWNERDRAWVARIABLE|WS_VSCROLL;
-		style &= (~LBS_SORT);
-	}
-	if ( multiColumn )
+	else if ( multiColumn )
 		style |= LBS_MULTICOLUMN|LBS_EXTENDEDSEL;
 
 	return WindowControl::CreateControl( WS_EX_CLIENTEDGE, "LISTBOX", NULL, style,
@@ -98,6 +97,31 @@ bool ListBoxControl::GetSelString(int index, std::string &str)
 					else
 						delete[] text;
 				}
+			}
+			else
+				delete[] selections;
+		}
+	}
+	return false;
+}
+
+bool ListBoxControl::GetSelItem(int index, int &itemData)
+{
+	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, NULL, NULL);
+	if ( numSel != LB_ERR && numSel > 0 )
+	{
+		if ( index < numSel ) // Index must be within the amount of items selected
+		{
+			int arraySize = index+1;
+			int* selections = nullptr;
+			try { selections = new int[arraySize]; } // Need space for this index and all items before
+			catch ( std::bad_alloc ) { return false; }
+			LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
+			if ( result != LB_ERR )
+			{
+				itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], NULL));
+				delete[] selections;
+				return true;
 			}
 			else
 				delete[] selections;

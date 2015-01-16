@@ -176,7 +176,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
 
-				if ( pdis->itemID != -1 && pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE )
+				if ( pdis->itemID != -1 && (pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE) )
 				{
 					string str;
 					HBRUSH hBlack = CreateSolidBrush(RGB(0, 0, 0));
@@ -191,8 +191,8 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getRawString(str, pdis->itemData) && str.size() > 0 )
 					{
 						SetBkMode(pdis->hDC, TRANSPARENT);
-						SetTextColor(pdis->hDC, RGB(16, 252, 24));
-						DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, str);
+						DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+							RGB(16, 252, 24), str);
 					}
 				}
 				return TRUE;
