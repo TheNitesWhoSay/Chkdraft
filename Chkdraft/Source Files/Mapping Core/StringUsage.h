@@ -9,11 +9,15 @@ class StringUsageTable
 {
 	public:
 
+		StringUsageTable();
+
 		// Populates stringUsed table using the map, success if table could be populated
-		StringUsageTable(Scenario* chk, bool extendedTable, bool& success);
+		bool populateTable(Scenario* chk, bool extendedTable);
 
 		// Populates the stringUsed table using a list of strings, success if table could be populated
-		StringUsageTable(std::list<StringTableNode> strList, u32 numStrs, bool& sucess);
+		bool populateTable(std::list<StringTableNode> strList, u32 numStrs);
+
+		void clearTable(); // Clears the table if populated
 
 		bool useNext(u32 &index); /** Next avaliable string index stored in 'index', marking 'index' as unavaliable
 										returns false if no index can plausibly be used. */

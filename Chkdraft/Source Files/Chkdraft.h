@@ -30,6 +30,7 @@ class Chkdraft : public ClassWindow
 					TilePropWindow tilePropWindow; // Modeless tile properties
 					TextTrigWindow textTrigWindow; // Modeless text triggers
 					MapSettingsWindow mapSettingsWindow; // Modeless map settings
+					TrigEditorWindow trigEditorWindow; // Modeless trig editor
 
 /* Constructors */	Chkdraft();
 

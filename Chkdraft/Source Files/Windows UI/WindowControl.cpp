@@ -50,7 +50,63 @@ bool WindowControl::isEnabled()
 
 void WindowControl::RedrawThis()
 {
-	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+	RedrawWindow(controlHandle, NULL, NULL, RDW_INVALIDATE);
+}
+
+void WindowControl::MoveTo(int x, int y)
+{
+	SetWindowPos(controlHandle, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE);
+}
+
+void WindowControl::SetPos(int x, int y, int width, int height)
+{
+	SetWindowPos(controlHandle, NULL, x, y, width, height, SWP_NOACTIVATE|SWP_NOZORDER);
+}
+
+int WindowControl::Width()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	return rcControl.right - rcControl.left;
+}
+
+int WindowControl::Height()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	return rcControl.bottom - rcControl.top;
+}
+
+int WindowControl::Left()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
+	return rcControl.left;
+}
+
+int WindowControl::Top()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
+	return rcControl.top;
+}
+
+int WindowControl::Right()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
+	return rcControl.right;
+}
+
+int WindowControl::Bottom()
+{
+	RECT rcControl = { };
+	GetWindowRect(controlHandle, &rcControl);
+	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
+	return rcControl.bottom;
 }
 
 bool WindowControl::CreateControl( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,

@@ -17,7 +17,7 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 		HWND hStringEditor = getHandle();
 		textAboutStrings.CreateThis(hStringEditor, 5, 5, 100, 20, "String Editor...", 0);
 
-		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, ID_LB_STRINGS);
+		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, false, ID_LB_STRINGS);
 
 		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
 		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
@@ -25,7 +25,7 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
 
 		textStringUsage.CreateThis(hStringEditor, 480, 379, 125, 20, "String Usage:", 0);
-		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, ID_LB_STRINGUSE);
+		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, false, ID_LB_STRINGUSE);
 
 		stringGuide.CreateThis(hStringEditor);
 		stringPreviewWindow.CreateThis(hStringEditor);
@@ -43,20 +43,15 @@ void StringEditorWindow::RefreshWindow()
 	if ( hStringList != NULL && chkd.maps.curr != nullptr )
 	{
 		SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
-		bool success = false;
-		StringUsageTable strUse(chkd.maps.curr->scenario(), false, success);
-		if ( success )
+		StringUsageTable strUse;
+		if ( strUse.populateTable(chkd.maps.curr->scenario(), false) )
 		{
 			string str;
 			u32 lastUsed = strUse.lastUsedString();
 			for ( u32 i=0; i<=lastUsed; i++ )
 			{
-				if ( strUse.isUsed(i) && chkd.maps.curr->getString(str, i) && str.size() > 0 )
-				{
-					int lbIndex = SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)"");
-					if ( lbIndex != LB_ERR && lbIndex != LB_ERRSPACE )
-						SendMessage(hStringList, LB_SETITEMDATA, lbIndex, i);
-				}
+				if ( strUse.isUsed(i) && chkd.maps.curr->getRawString(str, i) && str.size() > 0 )
+					SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)i);
 			}
 		}
 	}
@@ -156,24 +151,21 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
 				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
-				SIZE strSize;
 				string str;
 
-				if ( hStringList != NULL && chkd.maps.curr->getString(str, mis->itemData) && str.size() > 0 )
+				if ( hStringList != NULL && chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 )
 				{
 					HDC hDC = GetDC(hStringList);
 					if ( hDC != NULL )
 					{
-						HGDIOBJ sel = SelectObject(hDC, defaultFont);
-						if ( sel != NULL && sel != HGDI_ERROR &&
-							 GetTextExtentPoint32(hDC, (LPCSTR)str.c_str(), str.size(), &strSize) != 0 )
+						if ( GetStringDrawSize(hDC, mis->itemWidth, mis->itemHeight, str) )
 						{
-							mis->itemWidth = strSize.cx+5;
-							mis->itemHeight = strSize.cy+2;
-							ReleaseDC(hWnd, hDC);
+							mis->itemWidth += 5;
+							mis->itemHeight += 2;
+							ReleaseDC(hStringList, hDC);
 							return TRUE;
 						}
-						ReleaseDC(hWnd, hDC);
+						ReleaseDC(hStringList, hDC);
 					}
 				}
 				return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -184,7 +176,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
 
-				if ( pdis->itemID != -1 && pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE )
+				if ( pdis->itemID != -1 && (pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE) )
 				{
 					string str;
 					HBRUSH hBlack = CreateSolidBrush(RGB(0, 0, 0));
@@ -196,11 +188,11 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					if ( pdis->itemState & ODS_SELECTED )
 						DrawFocusRect(pdis->hDC, &pdis->rcItem);
 					
-					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getString(str, pdis->itemData) && str.size() > 0 )
+					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getRawString(str, pdis->itemData) && str.size() > 0 )
 					{
 						SetBkMode(pdis->hDC, TRANSPARENT);
-						SetTextColor(pdis->hDC, RGB(16, 252, 24));
-						ExtTextOut(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, ETO_CLIPPED, &pdis->rcItem, (LPCSTR)str.c_str(), str.size(), 0);
+						DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+							RGB(16, 252, 24), str);
 					}
 				}
 				return TRUE;
@@ -232,6 +224,7 @@ bool StringEditorWindow::updateString(u32 stringNum)
 		if ( parseEscapedString(editStr) &&
 			 chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
 		{
+			chkd.maps.curr->notifyChange(false);
 			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )
 				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 			RedrawWindow((HWND)editString.getHandle(), NULL, NULL, RDW_INVALIDATE);

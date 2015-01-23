@@ -19,6 +19,8 @@
     <ClCompile Include="Source Files\Common Files\Debug.cpp" />
     <ClCompile Include="Source Files\Common Files\Math.cpp" />
     <ClCompile Include="Source Files\Common Files\Structs.cpp" />
+    <ClCompile Include="Source Files\Counters.cpp" />
+    <ClCompile Include="Source Files\CUWPs.cpp" />
     <ClCompile Include="Source Files\Forces.cpp" />
     <ClCompile Include="Source Files\Graphics.cpp" />
     <ClCompile Include="Source Files\GuiMap.cpp" />
@@ -45,15 +47,22 @@
     <ClCompile Include="Source Files\PlayerDropdown.cpp" />
     <ClCompile Include="Source Files\PreservedUnitStats.cpp" />
     <ClCompile Include="Source Files\Selections.cpp" />
+    <ClCompile Include="Source Files\StaticTrigComponentParser.cpp" />
     <ClCompile Include="Source Files\StringEditor.cpp" />
     <ClCompile Include="Source Files\StringGuide.cpp" />
     <ClCompile Include="Source Files\StringPreview.cpp" />
+    <ClCompile Include="Source Files\Switches.cpp" />
     <ClCompile Include="Source Files\TechSettings.cpp" />
     <ClCompile Include="Source Files\TechTree.cpp" />
+    <ClCompile Include="Source Files\Templates.cpp" />
     <ClCompile Include="Source Files\TerrainPalette.cpp" />
     <ClCompile Include="Source Files\TextTrig.cpp" />
     <ClCompile Include="Source Files\Data.cpp" />
+    <ClCompile Include="Source Files\TextTrigCompiler.cpp" />
+    <ClCompile Include="Source Files\TextTrigGenerator.cpp" />
     <ClCompile Include="Source Files\TileProperties.cpp" />
+    <ClCompile Include="Source Files\TrigEditor.cpp" />
+    <ClCompile Include="Source Files\Triggers.cpp" />
     <ClCompile Include="Source Files\Undo.cpp" />
     <ClCompile Include="Source Files\UnitProperties.cpp" />
     <ClCompile Include="Source Files\UnitMoveTo.cpp" />
@@ -93,6 +102,8 @@
     <ClInclude Include="Source Files\Common Files\Math.h" />
     <ClInclude Include="Source Files\Common Files\Resource.h" />
     <ClInclude Include="Source Files\Common Files\Structs.h" />
+    <ClInclude Include="Source Files\Counters.h" />
+    <ClInclude Include="Source Files\CUWPs.h" />
     <ClInclude Include="Source Files\Data.h" />
     <ClInclude Include="Source Files\DialogWindows.h" />
     <ClInclude Include="Source Files\Forces.h" />
@@ -122,14 +133,21 @@
     <ClInclude Include="Source Files\PlayerDropdown.h" />
     <ClInclude Include="Source Files\PreservedUnitStats.h" />
     <ClInclude Include="Source Files\Selections.h" />
+    <ClInclude Include="Source Files\StaticTrigComponentParser.h" />
     <ClInclude Include="Source Files\StringEditor.h" />
     <ClInclude Include="Source Files\StringGuide.h" />
     <ClInclude Include="Source Files\StringPreview.h" />
+    <ClInclude Include="Source Files\Switches.h" />
     <ClInclude Include="Source Files\TechSettings.h" />
     <ClInclude Include="Source Files\TechTree.h" />
+    <ClInclude Include="Source Files\Templates.h" />
     <ClInclude Include="Source Files\TerrainPalette.h" />
     <ClInclude Include="Source Files\TextTrig.h" />
+    <ClInclude Include="Source Files\TextTrigCompiler.h" />
+    <ClInclude Include="Source Files\TextTrigGenerator.h" />
     <ClInclude Include="Source Files\TileProperties.h" />
+    <ClInclude Include="Source Files\TrigEditor.h" />
+    <ClInclude Include="Source Files\Triggers.h" />
     <ClInclude Include="Source Files\Undo.h" />
     <ClInclude Include="Source Files\UnitProperties.h" />
     <ClInclude Include="Source Files\UnitMoveTo.h" />
@@ -160,6 +178,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="New Tab.bmp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6FA09443-A3E6-45DF-AA91-3B93377BF203}</ProjectGuid>

@@ -70,9 +70,31 @@ bool Scenario::getLocation(ChkLocation* &locRef, u16 index)
 	return MRGN().getPtr(locRef, (u32(index))*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE);
 }
 
+u32 Scenario::numTriggers()
+{
+	return u32(TRIG().size()/TRIG_STRUCT_SIZE);
+}
+
 bool Scenario::getTrigger(Trigger* &trigRef, u32 index)
 {
 	return TRIG().getPtr(trigRef, index*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE);
+}
+
+bool Scenario::getActiveComment(Trigger* trigger, string &comment)
+{
+	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
+	{
+		Action action = trigger->actions[i];
+		if ( action.action == AID_COMMENT &&
+			 (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED &&
+			 action.stringNum != 0 &&
+			 getRawString(comment, action.stringNum) )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool Scenario::getBriefingTrigger(Trigger* &trigRef, u32 index)
@@ -1098,9 +1120,8 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 	}
 	else if ( cleanStringTable(extended) )
 	{
-		bool gotUsageTable;
-		StringUsageTable stringTable(this, extended, gotUsageTable);
-		if ( gotUsageTable )
+		StringUsageTable stringTable;
+		if ( stringTable.populateTable(this, extended) )
 		{
 			if ( stringTable.useNext(stringNum) ) // Get an unused entry if possible
 			{
@@ -1433,9 +1454,8 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 	else
 		flags = STRADD_INCLUDE_STANDARD;
 
-	bool gotUsageTable = false;
-	StringUsageTable strUsage(this, extendedTable, gotUsageTable);
-	if ( gotUsageTable && addAllUsedStrings(strList, flags) )
+	StringUsageTable strUsage;
+	if ( strUsage.populateTable(this, extendedTable) && addAllUsedStrings(strList, flags) )
 	{
 		u32 firstEmpty, lastFragmented;
 		while ( strUsage.popFragmentedString(firstEmpty, lastFragmented) )
@@ -1508,8 +1528,8 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 			}
 		}
 
-		StringUsageTable altStrUsage(this, extendedTable, gotUsageTable);
-		if ( gotUsageTable )
+		StringUsageTable altStrUsage;
+		if ( altStrUsage.populateTable(this, extendedTable) )
 		{
 			u32 lastUsed = altStrUsage.lastUsedString();
 			if ( lastUsed <= 1024 && STR().get<u16>(0) > 1024 )
@@ -2668,7 +2688,7 @@ bool Scenario::MakeStr(string& dest, char* src, u32 srcLen)
 	{
 		for ( u32 i=0; i<srcLen-1; i++ )
 		{
-			if ( (u8)src[i] < 32 && src[i] != '\n' && src[i] != '\r' )
+			if ( (u8)src[i] < 32 && src[i] != '\n' && src[i] != '\r' && src[i] != '\11' )
 			{
 				dest.push_back('<');
 				if ( src[i]/16 > 9 )
@@ -2703,7 +2723,7 @@ bool Scenario::MakeEscapedStr(string& dest, char* src, u32 srcLen)
 				dest.append("\\n");
 			else if ( src[i] == '\r' )
 				dest.append("\\r");
-			else if ( src[i] < 32 )
+			else if ( src[i] < 32 && src[i] != '\11')
 			{
 				dest.push_back('\\');
 				dest.push_back('x');

@@ -151,6 +151,7 @@ bool MAPS::OpenMap(const char* fileName)
 			curr->Scroll(SCROLL_X|SCROLL_Y);
 			curr->Redraw(true);
 			curr->refreshScenario();
+			FocusActive();
 			return true;
 		} 
 		else
@@ -160,10 +161,7 @@ bool MAPS::OpenMap(const char* fileName)
 		}
 	}
 	else
-	{
 		delete newMap;
-		Error(LastError);
-	}
 
 	return false;
 }

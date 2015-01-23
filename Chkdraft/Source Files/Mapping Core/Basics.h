@@ -207,6 +207,7 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
 			#define ACTION_FLAG_UNKNOWN_7			 BIT_7
 
 			#define ACTION_FLAG_DONT_ALWAYS_DISPLAY (~ACTION_FLAG_ALWAYS_DISPLAY)
+
 		u8 internalData[3]; // Number of actions to process next?
 };
 
@@ -222,6 +223,9 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 		u8 players[NUM_TRIG_PLAYERS];
 			#define EXECUTED_BY_PLAYER	   1
 			#define NOT_EXECUTED_BY_PLAYER 0
+
+		u8 numUsedConditions();
+		u8 numUsedActions();
 };
 #define TRIG_STRUCT_SIZE 2400
 

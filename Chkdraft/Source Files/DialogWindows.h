@@ -8,5 +8,6 @@
 #include "TerrainPalette.h"
 #include "TextTrig.h"
 #include "TileProperties.h"
+#include "TrigEditor.h"
 
 #endif

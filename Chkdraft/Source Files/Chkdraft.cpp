@@ -1,15 +1,13 @@
 #include "Chkdraft.h"
 
 void Chkdraft::OnLoadTest()
-{/*
-	// Standard Map Open
-	maps.NewMap(128, 128, 0, 0, 0);
-	maps.FocusActive();
-	maps.curr->Scroll(SCROLL_X|SCROLL_Y);
-	// End Standard Map Open
+{
+	//maps.OpenMap("C:\\Users\\Justin\\Desktop\\trigs.scm");
 
-	ShowWindow(getHandle(), SW_MAXIMIZE);
-	OpenMapSettings(ID_SCENARIO_TECHSETTINGS);//*/
+	//ShowWindow(getHandle(), SW_MAXIMIZE);
+	
+	//OpenMapSettings(ID_SCENARIO_STRINGS);
+	//trigEditorWindow.CreateThis(getHandle());//*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
@@ -22,13 +20,13 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	if ( !CreateThis() )
 		return 1;
 
-	this->OnLoadTest();
-
 	scData.Load();
 	InitCommonControls();
 	ShowWindow(getHandle(), nCmdShow);
     UpdateWindow(getHandle());
 	ParseCmdLine(lpCmdLine);
+
+	this->OnLoadTest();
 
 	MSG msg;
 	while ( GetMessage(&msg, NULL, 0, 0) > 0 )
@@ -351,6 +349,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							case ID_LOCATIONS_CLIPNAMES: maps.curr->ToggleLocationNameClip(); break;
 
 					// Scenario
+							case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
 							case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
 							case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
 							case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
@@ -474,6 +473,7 @@ void Chkdraft::MinimizeDialogs()
 	ShowWindow(locationWindow.getHandle(), SW_HIDE);
 	ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
 	ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
+	ShowWindow(trigEditorWindow.getHandle(), SW_HIDE);
 }
 
 void Chkdraft::RestoreDialogs()
@@ -482,6 +482,7 @@ void Chkdraft::RestoreDialogs()
 	ShowWindow(locationWindow.getHandle(), SW_SHOW);
 	ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
 	ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
+	ShowWindow(trigEditorWindow.getHandle(), SW_SHOW);
 }
 
 void Chkdraft::SizeSubWindows()

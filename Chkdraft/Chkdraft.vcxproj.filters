@@ -97,6 +97,24 @@
     <Filter Include="Source Files\Windows\Main Windows">
       <UniqueIdentifier>{f00801b9-cc14-4686-8a0d-dc9709a2053a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Triggers">
+      <UniqueIdentifier>{d8396fd4-f49d-4141-aa0c-9e8f4d0a1e29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Triggers">
+      <UniqueIdentifier>{ee8c65bf-c0b3-4723-8d00-069c3bf180cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Layers">
+      <UniqueIdentifier>{5b7b8260-93fb-46b3-a9bb-4ba8c503745b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Layers">
+      <UniqueIdentifier>{1cc66991-7769-44c8-9fb7-959aa83a2ae1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\Trigger Text">
+      <UniqueIdentifier>{552b33f5-4fa8-4473-90f5-5f2383d66738}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\Trigger Text">
+      <UniqueIdentifier>{c9cf20fc-eabc-4d33-b65f-a64bbb89f3a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Clipboard.h">
@@ -264,15 +282,6 @@
     <ClInclude Include="Source Files\UnitProperties.h">
       <Filter>Header Files\Windows\Dialog Windows\Unit Properties</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\LocationProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TerrainPalette.h">
-      <Filter>Header Files\Windows\Dialog Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TileProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Windows UI\RadioButtonControl.h">
       <Filter>Header Files\Windows\Windows UI\Controls</Filter>
     </ClInclude>
@@ -314,6 +323,42 @@
     </ClInclude>
     <ClInclude Include="Source Files\TechTree.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TrigEditor.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Triggers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Switches.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Templates.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\CUWPs.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Counters.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TerrainPalette.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TileProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TextTrigCompiler.h">
+      <Filter>Header Files\Mapping\Trigger Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\StaticTrigComponentParser.h">
+      <Filter>Header Files\Mapping\Trigger Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TextTrigGenerator.h">
+      <Filter>Header Files\Mapping\Trigger Text</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -464,15 +509,6 @@
     <ClCompile Include="Source Files\UnitProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Unit Properties</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\LocationProperties.cpp">
-      <Filter>Source Files\Windows\Dialog Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TerrainPalette.cpp">
-      <Filter>Source Files\Windows\Dialog Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TileProperties.cpp">
-      <Filter>Source Files\Windows\Dialog Windows</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\Windows UI\RadioButtonControl.cpp">
       <Filter>Source Files\Windows\Windows UI\Controls</Filter>
     </ClCompile>
@@ -515,6 +551,42 @@
     <ClCompile Include="Source Files\TechTree.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
+    <ClCompile Include="Source Files\TrigEditor.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Triggers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Counters.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\CUWPs.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Switches.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Templates.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationProperties.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TerrainPalette.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TileProperties.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TextTrigCompiler.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\StaticTrigComponentParser.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TextTrigGenerator.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Icon.ico">
@@ -528,5 +600,10 @@
     <ResourceCompile Include="Resource.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="New Tab.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

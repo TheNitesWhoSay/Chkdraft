@@ -1,5 +1,6 @@
 #include "ChkdPlugins.h"
 #include "Chkdraft.h"
+#include "TextTrigCompiler.h"
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -48,32 +49,28 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								break;
 							case REPLACE_TRIGGERS_TEXT:
 								{
-									char* trigText = nullptr;
-									try { trigText = new char[length+1]; }
+									char* inputText = nullptr;
+									try { inputText = new char[length+1]; }
 									catch ( std::bad_alloc ) {
 										MessageBox(NULL, "Compilation failed, couldn't allocate space for input text.", "Error!", MB_OK);
 										return FALSE;
 									}
-									memcpy(trigText, copyData, length);
-									if ( trigText[length-2] != '\0' ) // Ensure NUL-terminated
-										trigText[length-1] = '\0';
+									memcpy(inputText, copyData, length);
+									if ( inputText[length-2] != '\0' ) // Ensure NUL-terminated
+										inputText[length-1] = '\0';
 	
-									buffer text("TxTr"), output("TRIG");
-									text.addStr(trigText, length);
-									delete[] trigText;
+									buffer textBuf("TxTr");
+									textBuf.addStr(inputText, length);
+									delete[] inputText;
 
-									bool success;
-									TextTrigCompiler compiler(map, success);
-									if ( success == true )
+									TextTrigCompiler compiler;
+									if ( compiler.CompileTriggers(textBuf, map) )
 									{
-										if ( compiler.CompileText(text, map) )
-										{
-											map->notifyChange(false);
-											return TRUE;
-										}
+										map->notifyChange(false);
+										return TRUE;
 									}
 									else
-										MessageBox(NULL, "Compilation failed, couldn't allocate space for metadata.", "Error!", MB_OK);
+										MessageBox(NULL, "Compilation failed.", "Error!", MB_OK);
 								}
 								break;
 						}

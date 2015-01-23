@@ -27,6 +27,14 @@ class WindowControl
 					void EnableThis();
 					bool isEnabled();
 					void RedrawThis();
+					void MoveTo(int x, int y);
+					void SetPos(int x, int y, int width, int height);
+					int Width();
+					int Height();
+					int Left();
+					int Top();
+					int Right();
+					int Bottom();
 
 
 	protected:

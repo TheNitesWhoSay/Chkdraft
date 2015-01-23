@@ -138,6 +138,16 @@ void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario
 
 void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
 
+bool GetLineDrawSize(HDC hDC, SIZE* strSize, string str);
+
+void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, string str);
+
+void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str);
+
+bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str);
+
+void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str);
+
 #define MAX_UNIT_LEFT 128
 #define MAX_UNIT_RIGHT 127
 #define MAX_UNIT_UP 80
