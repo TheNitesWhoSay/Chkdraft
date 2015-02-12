@@ -50,9 +50,11 @@ bool EditControl::SetEditNum(numType num)
 	}
 }
 template bool EditControl::SetEditNum<u8>(u8 num);
+template bool EditControl::SetEditNum<s8>(s8 num);
 template bool EditControl::SetEditNum<u16>(u16 num);
-template bool EditControl::SetEditNum<s32>(s32 num);
+template bool EditControl::SetEditNum<s16>(s16 num);
 template bool EditControl::SetEditNum<u32>(u32 num);
+template bool EditControl::SetEditNum<s32>(s32 num);
 template bool EditControl::SetEditNum<int>(int num);
 
 void EditControl::MaximizeTextLimit()
@@ -124,9 +126,11 @@ bool EditControl::GetEditNum(numType &dest)
 	return success;
 }
 template bool EditControl::GetEditNum<u8>(u8 &dest);
+template bool EditControl::GetEditNum<s8>(s8 &dest);
 template bool EditControl::GetEditNum<u16>(u16 &dest);
-template bool EditControl::GetEditNum<s32>(s32 &dest);
+template bool EditControl::GetEditNum<s16>(s16 &dest);
 template bool EditControl::GetEditNum<u32>(u32 &dest);
+template bool EditControl::GetEditNum<s32>(s32 &dest);
 template bool EditControl::GetEditNum<int>(int &dest);
 
 bool EditControl::GetEditText(char* &dest)

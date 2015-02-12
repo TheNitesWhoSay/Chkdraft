@@ -1,13 +1,11 @@
 #include "Buffer.h"
 #include "Basics.h"
 #include <iostream>
+#include <utility>
 using namespace std;
-
 #define DEFAULT_SIZE_MULTIPLIER 1.2
 
-//////////////////
-// Constructors //
-//////////////////
+/* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
 buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
@@ -21,19 +19,11 @@ buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllott
 	bufTitle[4] = '\0';
 }
 
-////////////////
-// Destructor //
-////////////////
-
 buffer::~buffer()
 {
 	if ( this != nullptr && data != nullptr )
 		delete[] data;
 }
-
-///////////////
-// Accessors //
-///////////////
 
 u32 buffer::size()
 {
@@ -51,6 +41,8 @@ const char* buffer::title()
 		return 0;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::get(valueType &dest, u32 location)
 {
@@ -64,11 +56,7 @@ bool buffer::get(valueType &dest, u32 location)
 	}
 	return false;
 }
-template bool buffer::get<u8>(u8 &dest, u32 location);
-template bool buffer::get<u16>(u16 &dest, u32 location);
-template bool buffer::get<u32>(u32 &dest, u32 location);
-template bool buffer::get<s32>(s32 &dest, u32 location);
-template bool buffer::get<ChkUnit>(ChkUnit &dest, u32 location);
+/* End templates */ #else
 
 bool buffer::getBit(bool &dest, u32 location, u32 bitNum)
 {
@@ -117,6 +105,8 @@ const void* buffer::getPtr(u32 location, u32 sizeRequested)
 		return nullptr;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::getPtr(valueType* &dest, u32 location, u32 sizeRequested)
 {
@@ -127,14 +117,6 @@ bool buffer::getPtr(valueType* &dest, u32 location, u32 sizeRequested)
 	}
 	return false;
 }
-template bool buffer::getPtr<char>(char* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<u8>(u8* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<u16>(u16* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<u32>(u32* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<ChkUnit>(ChkUnit* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<ChkSprite>(ChkSprite* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<ChkLocation>(ChkLocation* &dest, u32 location, u32 sizeRequested);
-template bool buffer::getPtr<Trigger>(Trigger* &dest, u32 location, u32 sizeRequested);
 
 template <typename valueType>
 valueType buffer::get(u32 location)
@@ -144,9 +126,7 @@ valueType buffer::get(u32 location)
 
 	return 0;
 }
-template u8 buffer::get<u8>(u32 location);
-template u16 buffer::get<u16>(u32 location);
-template u32 buffer::get<u32>(u32 location);
+/* End templates */ #else
 
 bool buffer::getBit(u32 location, u32 bitNum)
 {
@@ -162,10 +142,6 @@ bool buffer::getBit(u32 location, u32 bitNum)
 	}
 	return false;
 }
-
-///////////////
-// Searching //
-///////////////
 
 bool buffer::has(char character, u32 location)
 {
@@ -220,10 +196,8 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
 	return false;
 }
 
-//////////////
-// Mutators //
-//////////////
-
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::add(valueType value)
 {
@@ -246,12 +220,6 @@ bool buffer::add(valueType value)
 	}
 	return false;
 }
-template bool buffer::add<char>(char value);
-template bool buffer::add<u8>(u8 value);
-template bool buffer::add<u16>(u16 value);
-template bool buffer::add<u32>(u32 value);
-template bool buffer::add<ChkUnit&>(ChkUnit &value);
-template bool buffer::add<Trigger&>(Trigger &value);
 
 template <typename valueType>
 bool buffer::add(valueType value, u32 amount)
@@ -276,9 +244,7 @@ bool buffer::add(valueType value, u32 amount)
 	}
 	return false;
 }
-template bool buffer::add<u8>(u8 value, u32 amount);
-template bool buffer::add<u16>(u16 value, u32 amount);
-template bool buffer::add<u32>(u32 value, u32 amount);
+/* End templates */ #else
 
 bool buffer::addStr(const char* chunk, u32 chunkSize)
 {
@@ -303,6 +269,8 @@ bool buffer::addStr(const char* chunk, u32 chunkSize)
 	return false;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::insert(u32 location, valueType value)
 {
@@ -328,10 +296,6 @@ bool buffer::insert(u32 location, valueType value)
 	}
 	return false;
 }
-template bool buffer::insert<char>(u32 location, char value);
-template bool buffer::insert<u16>(u32 location, u16 value);
-template bool buffer::insert<u32>(u32 location, u32 value);
-template bool buffer::insert<ChkUnit&>(u32 location, ChkUnit& unit);
 
 template <typename valueType>
 bool buffer::insert(u32 location, valueType value, u32 amount)
@@ -360,8 +324,7 @@ bool buffer::insert(u32 location, valueType value, u32 amount)
 	}
 	return false;
 }
-template bool buffer::insert<u8>(u32 location, u8 value, u32 amount);
-template bool buffer::insert<u16>(u32 location, u16 value, u32 amount);
+/* End templates */ #else
 
 bool buffer::insertStr(u32 startLocation, const char* chunk, u32 chunkSize)
 {
@@ -391,6 +354,8 @@ bool buffer::insertStr(u32 startLocation, const char* chunk, u32 chunkSize)
 	return false;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::replace(u32 location, valueType value)
 {
@@ -401,10 +366,6 @@ bool buffer::replace(u32 location, valueType value)
 	}
 	return false;
 }
-template bool buffer::replace<char>(u32 location, char value);
-template bool buffer::replace<u8>(u32 location, u8 value);
-template bool buffer::replace<u16>(u32 location, u16 value);
-template bool buffer::replace<u32>(u32 location, u32 value);
 
 template <typename valueType>
 bool buffer::replace(u32 location, valueType value, u32 amount)
@@ -418,10 +379,7 @@ bool buffer::replace(u32 location, valueType value, u32 amount)
 	}
 	return false;
 }
-template bool buffer::replace<char>(u32 location, char value, u32 amount);
-template bool buffer::replace<u8>(u32 location, u8 value, u32 amount);
-template bool buffer::replace<u16>(u32 location, u16 value, u32 amount);
-template bool buffer::replace<u32>(u32 location, u32 value, u32 amount);
+/* End templates */ #else
 
 bool buffer::replaceStr(u32 startLocation, const char* chunk, u32 chunkSize)
 {
@@ -510,20 +468,20 @@ bool buffer::setBit(u32 location, u32 bitNum, bool bitValue)
 	return false;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::swap(u32 location1, u32 location2)
 {
 	if ( this != nullptr && location1+sizeof(valueType) <= sizeUsed && location2+sizeof(valueType) <= sizeUsed )
 	{
-		std::swap<valueType>((valueType &)data[location1], (valueType &)data[location2]);
+		// Explictly specifying the template type in std::swap causes errors
+		std::swap((valueType &)data[location1], (valueType &)data[location2]);
 		return true;
 	}
 	return false;
 }
-template bool buffer::swap<ChkUnit>(u32 location1, u32 location2);
-template bool buffer::swap<u16>(u32 location1, u32 location2);
-template bool buffer::swap<u32>(u32 location1, u32 location2);
-
+/* End templates */ #else
 
 bool buffer::swapStr(u32 location1, u32 location2, u32 swapSize)
 {
@@ -601,6 +559,8 @@ bool buffer::setTitle(u32 newTitle)
 		return false;
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
 bool buffer::del(u32 location)
 {
@@ -627,8 +587,7 @@ bool buffer::del(u32 location)
 	}
 	return false;
 }
-template bool buffer::del<u8>(u32 location);
-template bool buffer::del<ChkUnit>(u32 location);
+/* End templates */ #else
 
 bool buffer::delRange(u32 startLocation, u32 endLocation)
 {
@@ -675,10 +634,6 @@ bool buffer::del(u32 startLocation, u32 size)
 	}
 	return false;
 }
-
-////////////////
-// IO Methods //
-////////////////
 
 void buffer::write(FILE* pFile)
 {
@@ -762,10 +717,6 @@ bool buffer::deserialize(const void* incomingData)
 	return false;
 }
 
-//////////
-// Misc //
-//////////
-
 bool buffer::exists()
 {
 	return this != nullptr;	
@@ -800,10 +751,6 @@ void buffer::flush()
 		sizeAllotted = 0;
 	}
 }
-
-//////////////////
-// Priv Methods //
-//////////////////
 
 bool buffer::resize(s64 sizeChange, bool multiplySize)
 {
@@ -877,3 +824,5 @@ const char* BadResize::what() const throw()
 			break;
 	}
 }
+
+/* End file partitioning */ #endif

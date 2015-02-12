@@ -2,6 +2,16 @@
 #include "Debug.h"
 #include "CommonFiles.h"
 
+/* Allow file to be partitioned along templates */ #ifdef INCLUDE_TEMPLATES_ONLY
+
+template <typename valueType>
+void AscendingOrder(valueType &low, valueType &high)
+{
+	if ( low > high )
+		std::swap(low, high);
+}
+/* End templates */ #else
+
 u32 SmallestOf(u32 &first, u32 &second, u32 &third)
 {
 	if ( first < second )
@@ -45,6 +55,15 @@ s32 TripletToInt(byte* triplet)
 		   triplet[0];
 }
 
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
+template <typename T>
+s32 round(T value)
+{    
+	return s32(floor(static_cast<double>(value) + 0.5));
+}
+/* End templates */ #else
+
 bool getOneByteHexVal(char character, u8& value)
 {
 	if		( character >= '0' && character <= '9' )
@@ -81,3 +100,5 @@ bool getTwoByteHexVal(const char* string, u8& value)
 	
 	return true;
 }
+
+/* End file partitioning */ #endif

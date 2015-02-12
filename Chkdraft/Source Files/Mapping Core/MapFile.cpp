@@ -170,7 +170,7 @@ bool MapFile::GetPath()
 		return true;
 	}
 	else if ( CommDlgExtendedError() != 0 )
-		Error("Error Retrieving File Name.");
+		CHKD_ERR("Error Retrieving File Name.");
 
 	return false;
 }

@@ -1661,7 +1661,7 @@ void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, string str)
 
 void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str)
 {
-	//DrawStringChunk(hDC, rcItem.left+3, yPos, str);
+	COLORREF lastColor = defaultColor;
 	const char* cStr = str.c_str();
 	int size = str.size();
 	int chunkStartChar = 0;
@@ -1683,7 +1683,6 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 						if ( xPos >= UINT(width) )
 							xPos = 0;
 					}
-					center = false;
 				}
 				else if ( right )
 				{
@@ -1694,7 +1693,6 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 						if ( xPos >= UINT(width) )
 							xPos = 0;
 					}
-					right = false;
 				}
 				DrawStringChunk(hDC, xPos, yPos, chunk); // Output everything before the color/alignment
 				xPos += GetStringDrawWidth(hDC, chunk);
@@ -1703,39 +1701,40 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 			else if ( i == chunkStartChar )
 				chunkStartChar ++;
 
-			if ( (i+1 < size && (cStr[i+1] > '\37' || cStr[i+1] == '\11')) || (i+1 == size) ) // Followed by a visible character, change color/alignmnet
+			if ( cStr[i] < '\x20' ) // Possible special character, change color/alignment
 			{
 				switch ( ((u8)cStr[i]) )
 				{
-					case 0x01: SetTextColor(hDC, RGB(184, 184, 232)); break;
-					case 0x02: SetTextColor(hDC, RGB(184, 184, 232)); break;
-					case 0x03: SetTextColor(hDC, RGB(220, 220,  60)); break;
-					case 0x04: SetTextColor(hDC, RGB(255, 255, 255)); break;
-					case 0x05: SetTextColor(hDC, RGB(132, 116, 116)); break;
-					case 0x06: SetTextColor(hDC, RGB(200,  24,  24)); break;
-					case 0x07: SetTextColor(hDC, RGB( 16, 252,  24)); break;
-					case 0x08: SetTextColor(hDC, RGB(244,   4,   4)); break;
-					case 0x0B: SetTextColor(hDC, defaultColor); break;
-					case 0x0C: SetTextColor(hDC, defaultColor); break;
-					case 0x0E: SetTextColor(hDC, RGB( 12,  72, 204)); break;
-					case 0x0F: SetTextColor(hDC, RGB( 44, 180, 148)); break;
-					case 0x10: SetTextColor(hDC, RGB(136,  64, 156)); break;
-					case 0x11: SetTextColor(hDC, RGB(248, 140,  20)); break;
-					case 0x12: right = true; break;
-					case 0x13: center = true; break;
-					case 0x14: SetTextColor(hDC, defaultColor); break;
-					case 0x15: SetTextColor(hDC, RGB(112,  48,  20)); break;
-					case 0x16: SetTextColor(hDC, RGB(204, 224, 208)); break;
-					case 0x17: SetTextColor(hDC, RGB(252, 252,  56)); break;
-					case 0x18: SetTextColor(hDC, RGB(  8, 128,   8)); break;
-					case 0x19: SetTextColor(hDC, RGB(252, 252, 124)); break;
-					case 0x1A: SetTextColor(hDC, RGB(184, 184, 232)); break;
-					case 0x1B: SetTextColor(hDC, RGB(236, 196, 176)); break;
-					case 0x1C: SetTextColor(hDC, RGB( 64, 104, 212)); break;
-					case 0x1D: SetTextColor(hDC, RGB(116, 164, 124)); break;
-					case 0x1E: SetTextColor(hDC, RGB(144, 144, 184)); break;
-					case 0x1F: SetTextColor(hDC, RGB(  0, 228, 252)); break;
+					case 0x01: lastColor = RGB(184, 184, 232); break;
+					case 0x02: lastColor = RGB(184, 184, 232); break;
+					case 0x03: lastColor = RGB(220, 220,  60); break;
+					case 0x04: lastColor = RGB(255, 255, 255); break;
+					case 0x05: lastColor = RGB(132, 116, 116); break;
+					case 0x06: lastColor = RGB(200,  24,  24); break;
+					case 0x07: lastColor = RGB( 16, 252,  24); break;
+					case 0x08: lastColor = RGB(244,   4,   4); break;
+					case 0x0B: lastColor = defaultColor; break;
+					case 0x0C: lastColor = defaultColor; break;
+					case 0x0E: lastColor = RGB( 12,  72, 204); break;
+					case 0x0F: lastColor = RGB( 44, 180, 148); break;
+					case 0x10: lastColor = RGB(136,  64, 156); break;
+					case 0x11: lastColor = RGB(248, 140,  20); break;
+					case 0x12: right = true; center = false; break;
+					case 0x13: if ( !right ) center = true; break;
+					case 0x14: lastColor = defaultColor; break;
+					case 0x15: lastColor = RGB(112,  48,  20); break;
+					case 0x16: lastColor = RGB(204, 224, 208); break;
+					case 0x17: lastColor = RGB(252, 252,  56); break;
+					case 0x18: lastColor = RGB(  8, 128,   8); break;
+					case 0x19: lastColor = RGB(252, 252, 124); break;
+					case 0x1A: lastColor = RGB(184, 184, 232); break;
+					case 0x1B: lastColor = RGB(236, 196, 176); break;
+					case 0x1C: lastColor = RGB( 64, 104, 212); break;
+					case 0x1D: lastColor = RGB(116, 164, 124); break;
+					case 0x1E: lastColor = RGB(144, 144, 184); break;
+					case 0x1F: lastColor = RGB(  0, 228, 252); break;
 				}
+				SetTextColor(hDC, lastColor);
 			}
 		}
 	}
@@ -1752,18 +1751,16 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 				if ( xPos >= UINT(width) )
 					xPos = 0;
 			}
-			center = false;
 		}
 		else if ( right )
 		{
 			UINT chunkWidth, chunkHeight;
 			if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
 			{
-				xPos = UINT(width)-chunkWidth-1;
-				if ( xPos >= UINT(width) )
+				xPos = (UINT(width))-chunkWidth-1;
+				if ( (LONG(xPos)) >= width )
 					xPos = 0;
 			}
-			right = false;
 		}
 		DrawStringChunk(hDC, xPos, yPos, chunk);
 	}
@@ -1771,72 +1768,72 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 
 bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 {
+	// This method is very time sensative and should be optimized as much as possible
+	width = 0;
+	height = 0;
+
 	SIZE strSize;
-	HGDIOBJ sel = SelectObject(hDC, defaultFont);
-	if ( sel != NULL && sel != HGDI_ERROR )
-	{
 		height = 0;
 
-		size_t start = 0,
-			   loc,
-			   max = str.size(),
-			   npos = string::npos;
+	size_t start = 0,
+		   loc,
+		   max = str.size(),
+		   npos = string::npos;
 
-		loc = str.find("\r\n");
-		if ( loc != npos ) // Has new lines
+	loc = str.find("\r\n");
+	if ( loc != npos ) // Has new lines
+	{
+		// Do first line
+		string firstLine = str.substr(0, loc);
+		if ( GetLineDrawSize(hDC, &strSize, firstLine) )
 		{
-			// Do first line
-			string firstLine = str.substr(0, loc);
-			if ( GetLineDrawSize(hDC, &strSize, firstLine) )
-			{
-				start = loc+2;
-				height += strSize.cy;
-				if ( strSize.cx > LONG(width) )
-					width = UINT(strSize.cx);
-
-				do // Do subsequent lines
-				{
-					loc = str.find("\r\n", start);
-					if ( loc != npos )
-					{
-						string line = " ";
-						if ( loc-start > 0 )
-							line = str.substr(start, loc-start);
-						start = loc+2;
-						if ( GetLineDrawSize(hDC, &strSize, line) )
-						{
-							height += strSize.cy;
-							if ( strSize.cx > LONG(width) )
-								width = UINT(strSize.cx);
-						}
-						else
-							break;
-					}
-					else
-					{
-						// Do last line
-						string lastLine = str.substr(start, max-start);
-						if ( GetLineDrawSize(hDC, &strSize, lastLine) )
-						{
-							height += strSize.cy;
-							if ( strSize.cx > LONG(width) )
-								width = UINT(strSize.cx);
-						}
-						break;
-					}
-				} while ( start < max );
-
-				return true;
-			}
-		}
-		else if ( GetLineDrawSize(hDC, &strSize, str) )
-		{
+			start = loc+2;
 			height += strSize.cy;
 			if ( strSize.cx > LONG(width) )
 				width = UINT(strSize.cx);
 
+			do // Do subsequent lines
+			{
+				loc = str.find("\r\n", start);
+				if ( loc != npos )
+				{
+					string line = " ";
+					if ( loc-start > 0 )
+						line = str.substr(start, loc-start);
+					start = loc+2;
+					if ( GetLineDrawSize(hDC, &strSize, line) )
+					{
+						height += strSize.cy;
+						if ( strSize.cx > LONG(width) )
+							width = UINT(strSize.cx);
+					}
+					else
+						break;
+				}
+				else
+				{
+					// Do last line
+					string lastLine = str.substr(start, max-start);
+					if ( GetLineDrawSize(hDC, &strSize, lastLine) )
+					{
+						height += strSize.cy;
+						if ( strSize.cx > LONG(width) )
+							width = UINT(strSize.cx);
+					}
+					break;
+				}
+			} while ( start < max );
+
 			return true;
 		}
+	}
+	else if ( GetLineDrawSize(hDC, &strSize, str) )
+	{
+		height += strSize.cy;
+		if ( strSize.cx > LONG(width) )
+			width = UINT(strSize.cx);
+
+		return true;
 	}
 	return false;
 }

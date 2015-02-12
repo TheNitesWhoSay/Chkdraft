@@ -2,12 +2,12 @@
 
 void Chkdraft::OnLoadTest()
 {
-	//maps.OpenMap("C:\\Users\\Justin\\Desktop\\trigs.scm");
+	/*maps.OpenMap("C:\\Users\\Justin\\Desktop\\trigs.scm");
 
-	//ShowWindow(getHandle(), SW_MAXIMIZE);
+	ShowWindow(getHandle(), SW_MAXIMIZE);
 	
 	//OpenMapSettings(ID_SCENARIO_STRINGS);
-	//trigEditorWindow.CreateThis(getHandle());//*/
+	trigEditorWindow.CreateThis(getHandle());//*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
