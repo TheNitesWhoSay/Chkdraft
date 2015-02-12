@@ -115,6 +115,18 @@
     <Filter Include="Header Files\Mapping\Trigger Text">
       <UniqueIdentifier>{c9cf20fc-eabc-4d33-b65f-a64bbb89f3a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Mapping\Mapping Core\Structs">
+      <UniqueIdentifier>{ee09440a-be31-4f60-b5c3-f2fcec28487d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\Mapping Core\Structs">
+      <UniqueIdentifier>{12577036-587a-4372-8f0c-8e905a067b01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Triggers\Triggers">
+      <UniqueIdentifier>{b9cb4278-d777-4a14-9738-5156e4d736df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Triggers\Triggers">
+      <UniqueIdentifier>{9552cb5f-55d9-40c2-a781-100da94e2be2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Clipboard.h">
@@ -181,9 +193,6 @@
       <Filter>Header Files\Mapping</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\PreservedUnitStats.h">
-      <Filter>Header Files\Windows\Dialog Windows\Unit Properties</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UnitMoveTo.h">
       <Filter>Header Files\Windows\Dialog Windows\Unit Properties</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Windows UI\WindowsUI.h">
@@ -327,9 +336,6 @@
     <ClInclude Include="Source Files\TrigEditor.h">
       <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Triggers.h">
-      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Switches.h">
       <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
     </ClInclude>
@@ -360,6 +366,42 @@
     <ClInclude Include="Source Files\TextTrigGenerator.h">
       <Filter>Header Files\Mapping\Trigger Text</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\MoveTo.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkUnit.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkSprite.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Condition.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Action.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Trigger.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkLocation.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\StringTableNode.h">
+      <Filter>Header Files\Mapping\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\PeerListBox.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Triggers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TrigModify.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
@@ -367,9 +409,6 @@
     </ClCompile>
     <ClCompile Include="Source Files\Undo.cpp">
       <Filter>Source Files\Mapping</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
-      <Filter>Source Files\Mapping\Mapping Core</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp">
       <Filter>Source Files\Mapping\Mapping Core</Filter>
@@ -417,9 +456,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\PreservedUnitStats.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Unit Properties</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitMoveTo.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Unit Properties</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Windows UI\ClassWindow.cpp">
@@ -554,9 +590,6 @@
     <ClCompile Include="Source Files\TrigEditor.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Triggers.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\Counters.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
     </ClCompile>
@@ -586,6 +619,45 @@
     </ClCompile>
     <ClCompile Include="Source Files\TextTrigGenerator.cpp">
       <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\MoveTo.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
+      <Filter>Source Files\Mapping\Mapping Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkUnit.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkSprite.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkDoodad.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Condition.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Action.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Trigger.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkLocation.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\StringTableNode.cpp">
+      <Filter>Source Files\Mapping\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\PeerListBox.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Triggers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TrigModify.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

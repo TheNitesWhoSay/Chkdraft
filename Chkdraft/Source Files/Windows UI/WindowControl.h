@@ -15,6 +15,8 @@ class WindowControl
 /*  Destructor  */	~WindowControl(); // This will NOT remove the control, use "DestroyThis" or destroy the parent window to do so
 
 /*  Accessors   */	HWND getHandle(); // Accessor for the control handle
+					HDC getDC(); // Gets the current device context
+					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 
 /*  Universal   */	/** Finds and encapsulates a control within an existing window
 						This may be useful for controls in resource-based dialogs */
@@ -23,9 +25,12 @@ class WindowControl
 					/** Attempts to destroy this control and reset the associated data */
 					bool DestroyThis();
 
+					bool ReleaseDC(HDC hDC);
+					void FocusThis();
 					void DisableThis();
 					void EnableThis();
 					bool isEnabled();
+					void SetRedraw(bool autoRedraw);
 					void RedrawThis();
 					void MoveTo(int x, int y);
 					void SetPos(int x, int y, int width, int height);

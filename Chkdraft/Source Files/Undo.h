@@ -196,7 +196,7 @@ class UndoNode
 {
 	public:
 		void* head; // Stack of items that get replaced with this undo
-		UndoNode* next; // The next undo in 
+		UndoNode* next; // The next undo in this list
 		UndoNode* prev;
 		u32 flags;
 			// Type of undo contained in this node

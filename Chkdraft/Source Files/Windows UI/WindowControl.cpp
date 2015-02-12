@@ -15,6 +15,16 @@ HWND WindowControl::getHandle()
 	return controlHandle;
 }
 
+HDC WindowControl::getDC()
+{
+	return ::GetDC(controlHandle);
+}
+
+bool WindowControl::operator==(HWND hWnd)
+{
+	return controlHandle == hWnd;
+}
+
 bool WindowControl::FindThis(HWND hParent, u32 controlId)
 {
 	controlHandle = GetDlgItem(hParent, controlId);
@@ -33,6 +43,16 @@ bool WindowControl::DestroyThis()
 		return false;
 }
 
+bool WindowControl::ReleaseDC(HDC hDC)
+{
+	return ::ReleaseDC(controlHandle, hDC) != 0;
+}
+
+void WindowControl::FocusThis()
+{
+	SetFocus(controlHandle);
+}
+
 void WindowControl::DisableThis()
 {
 	EnableWindow(controlHandle, FALSE);
@@ -46,6 +66,14 @@ void WindowControl::EnableThis()
 bool WindowControl::isEnabled()
 {
 	return IsWindowEnabled(controlHandle) != 0;
+}
+
+void WindowControl::SetRedraw(bool autoRedraw)
+{
+	if ( autoRedraw )
+		SendMessage(controlHandle, WM_SETREDRAW, TRUE, NULL);
+	else
+		SendMessage(controlHandle, WM_SETREDRAW, FALSE, NULL);
 }
 
 void WindowControl::RedrawThis()

@@ -86,10 +86,17 @@ bool Scenario::getActiveComment(Trigger* trigger, string &comment)
 	{
 		Action action = trigger->actions[i];
 		if ( action.action == AID_COMMENT &&
-			 (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED &&
-			 action.stringNum != 0 &&
-			 getRawString(comment, action.stringNum) )
+			 (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
 		{
+			if ( !( action.stringNum != 0 && getRawString(comment, action.stringNum) ) )
+			{
+				try {
+					comment = " ";
+				} catch ( std::exception ) { // Catch bad_alloc and length_error
+					return false;
+				}
+			}
+
 			return true;
 		}
 	}
@@ -2373,6 +2380,63 @@ bool Scenario::setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playe
 		 setNormal = PTEC().replace<u8>(TECH_PLAYERUSESDEFAULT(false, player)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
+}
+
+bool Scenario::addTrigger(Trigger &trigger)
+{
+	return TRIG().add<Trigger>(trigger);
+}
+
+bool Scenario::insertTrigger(u32 triggerId, Trigger &trigger)
+{
+	return TRIG().insert<Trigger>(triggerId*TRIG_STRUCT_SIZE, trigger);
+}
+
+bool Scenario::deleteTrigger(u32 triggerId)
+{
+	return TRIG().del(triggerId*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE);
+}
+
+bool Scenario::copyTrigger(u32 triggerId)
+{
+	Trigger trig;
+	return TRIG().get<Trigger>(trig, triggerId*TRIG_STRUCT_SIZE) &&
+		   TRIG().insert<Trigger&>(triggerId*TRIG_STRUCT_SIZE+TRIG_STRUCT_SIZE, trig);
+}
+
+bool Scenario::moveTriggerUp(u32 triggerId)
+{
+	return triggerId > 0 && // Not already first trigger
+		   TRIG().swap<Trigger>(triggerId*TRIG_STRUCT_SIZE, (triggerId-1)*TRIG_STRUCT_SIZE);
+}
+
+bool Scenario::moveTriggerDown(u32 triggerId)
+{
+	return triggerId < ((TRIG().size()/TRIG_STRUCT_SIZE)-1) && // Not already the last trigger
+		   TRIG().swap<Trigger>(triggerId*TRIG_STRUCT_SIZE, (triggerId+1)*TRIG_STRUCT_SIZE);
+}
+
+bool Scenario::moveTrigger(u32 triggerId, u32 destId)
+{
+	if ( destId == triggerId-1 )
+		return moveTriggerUp(triggerId);
+	else if ( destId == triggerId+1 )
+		return moveTriggerDown(triggerId);
+	else
+	{
+		Trigger trigger;
+		if ( triggerId != destId && // Not equivilant ids
+			 destId < (TRIG().size()/TRIG_STRUCT_SIZE) && // Destination less than num trigs
+			 TRIG().get<Trigger>(trigger, triggerId*TRIG_STRUCT_SIZE) && // Get contents of trigger
+			 TRIG().del<Trigger>(triggerId*TRIG_STRUCT_SIZE) ) // Delete trigger from old position
+		{
+			if ( TRIG().insert<Trigger&>(destId*TRIG_STRUCT_SIZE, trigger) ) // Attempt to insert at new position
+				return true;
+			else
+				TRIG().insert<Trigger&>(triggerId*TRIG_STRUCT_SIZE, trigger); // Attempt to recover old position
+		}
+	}
+	return false;
 }
 
 bool Scenario::ParseBuffer(buffer &chk)

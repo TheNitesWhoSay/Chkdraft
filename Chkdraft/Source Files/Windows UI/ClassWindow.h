@@ -19,11 +19,15 @@ class ClassWindow
 /*  Destructor  */	~ClassWindow(); 
 
 /*  Accessors   */	HWND getHandle(); // Accessor for the window handle
+					bool getWindowRect(RECT &rect);
+					bool getClientRect(RECT &rect);
+					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 
 /*	 Mutators	*/	void ReplaceChildFonts(HFONT hFont);
 					void LockCursor(); // Prevents cursor from leaving this window
 					void UnlockCursor(); // Globally unlocks the cursor
 					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
+					bool SetParent(HWND hParent);
 
 	protected:
 

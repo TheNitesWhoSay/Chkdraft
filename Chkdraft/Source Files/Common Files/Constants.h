@@ -523,6 +523,7 @@ extern const int numTilesetInitTerrains[];
 ## WM_APP through 0xBFFF		 ##
 \*###############################*/
 
-// All seem adequetly replaced through ClassWindows
+// From ListBoxControl.h
+// #define LBN_DBLCLKITEM (WM_APP+1) (WM_APP+1)
 
 #endif

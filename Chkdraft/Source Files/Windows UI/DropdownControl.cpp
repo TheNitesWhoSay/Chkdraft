@@ -83,9 +83,11 @@ bool DropdownControl::GetEditNum(numType &dest)
 	return success;
 }
 template bool DropdownControl::GetEditNum<u8>(u8 &dest);
+template bool DropdownControl::GetEditNum<s8>(s8 &dest);
 template bool DropdownControl::GetEditNum<u16>(u16 &dest);
-template bool DropdownControl::GetEditNum<s32>(s32 &dest);
+template bool DropdownControl::GetEditNum<s16>(s16 &dest);
 template bool DropdownControl::GetEditNum<u32>(u32 &dest);
+template bool DropdownControl::GetEditNum<s32>(s32 &dest);
 template bool DropdownControl::GetEditNum<int>(int &dest);
 
 bool DropdownControl::GetEditText(char* &dest)

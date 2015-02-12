@@ -3,7 +3,7 @@
 bool SwitchesWindow::CreateThis(HWND hParent)
 {
 	if ( getHandle() != NULL )
-		return SetParent(getHandle(), hParent) != NULL;
+		return SetParent(hParent);
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&

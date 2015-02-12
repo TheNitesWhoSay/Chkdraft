@@ -2,6 +2,14 @@
 #define SCENARIO_H
 #include "Buffer.h"
 #include "Basics.h"
+#include "ChkDoodad.h"
+#include "ChkLocation.h"
+#include "ChkUnit.h"
+#include "ChkSprite.h"
+#include "Trigger.h"
+#include "Condition.h"
+#include "Action.h"
+#include "StringTableNode.h"
 #include <list>
 using namespace std;
 
@@ -151,7 +159,7 @@ class Scenario
 						safeReplace: if true the function will only attempt to make room for the new string if the old one will not be lost
 									 if false the fuction will always attempt to make room, and may lose the old string in low-mem conditions
 						Returns true if the string exists already or was successfully created */
-					template <typename numType>
+					template <typename numType> // Strings can, and can only be u16 or u32
 						bool replaceString(string newString, numType& stringNum, bool extended, bool safeReplace);
 
 					/** Attempts to edit the contents of a string (universal change to string), if unsucessesful the old string will remain
@@ -159,7 +167,7 @@ class Scenario
 						safeEdit: if true the function will only attempt to make room for the new string if the old one will not be lost
 								  if false the function will always attempt to make room, and may lose the old string in low-mem conditions
 						Returns true if the string contents were successfully edited, always false if stringNum is 0 */
-					template <typename numType>
+					template <typename numType> // Strings can, and can only be u16 or u32
 						bool editString(string newString, numType stringNum, bool extended, bool safeEdit);
 
 					void replaceStringNum(u32 toReplace, u32 replacement);
@@ -228,6 +236,14 @@ class Scenario
 					bool setTechDefaultAvailability(u8 techId, bool availableByDefault);
 					bool setTechDefaultResearched(u8 techId, bool researchedByDefault);
 					bool setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playerUsesDefaultSettings);
+
+					bool addTrigger(Trigger &trigger);
+					bool insertTrigger(u32 triggerId, Trigger &trigger);
+					bool deleteTrigger(u32 triggerId);
+					bool copyTrigger(u32 triggerId);
+					bool moveTriggerUp(u32 triggerId); // Moves the given trigger up one absolute index
+					bool moveTriggerDown(u32 triggerId); // Moves the given trigger down one absolute index
+					bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
 
 /*   File IO	*/	bool ParseBuffer(buffer &chk); // Parses supplied scenario file data
 					bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer

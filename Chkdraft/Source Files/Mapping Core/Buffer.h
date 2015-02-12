@@ -142,4 +142,8 @@ class BadResize : public std::bad_alloc
 		int exNum;
 };
 
+#define INCLUDE_TEMPLATES_ONLY
+#include "Buffer.cpp"
+#undef INCLUDE_TEMPLATES_ONLY
+
 #endif

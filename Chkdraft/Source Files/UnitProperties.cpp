@@ -1,5 +1,5 @@
 #include "UnitProperties.h"
-#include "UnitMoveTo.h"
+#include "MoveTo.h"
 #include "Chkdraft.h"
 
 UnitWindow::UnitWindow() : columnSortedBy(UNIT_INDEX_COLUMN), flipSort(false), initilizing(true), changeHighlightOnly(false)
@@ -643,7 +643,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							{
 								if ( track->index < map->numUnits() && !selections.unitIsSelected(track->index+1) )
 								{
-									if ( UNIT.swap<ChkUnit>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index+1)*UNIT_STRUCT_SIZE) )
+									if ( UNIT.swap<ChkUnit>((u32(track->index))*UNIT_STRUCT_SIZE, ((u32)track->index+1)*UNIT_STRUCT_SIZE) )
 									{
 										map->undos().addUndoUnitSwap(track->index, track->index+1);
 										SwapIndexes(hUnitList, track->index, track->index+1);
@@ -663,75 +663,77 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						break;
 					case IDC_BUTTON_MOVE_TO:
 						{
-							UnitMoveTo moveToWindow;
-							int unitMoveTo = (int)moveToWindow.GetMoveToIndex(hWnd);
-							if ( unitMoveTo == 0 )
-								return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), NULL);
-							else if ( unitMoveTo > 0 )
+							u32 unitMoveTo;
+							if ( MoveToDialog<u32>::GetIndex(unitMoveTo, hWnd) && unitMoveTo < u32(chkd.maps.curr->numUnits()) )
 							{
-								GuiMap* map = chkd.maps.curr;
-								SELECTIONS& selections = map->selections();
-								u16 numUnitsSelected = selections.numUnits();
-								u16 limit = map->numUnits()-1;
-
-								if ( unitMoveTo+numUnitsSelected > limit )
-									return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), NULL);
-								else
+								if ( unitMoveTo == 0 )
+									return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), NULL);
+								else if ( unitMoveTo > 0 )
 								{
-									buffer& UNIT = map->UNIT();
-									HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-									UNDOS& undos = map->undos();
-									undos.startNext(UNDO_UNIT_MOVETO);
+									GuiMap* map = chkd.maps.curr;
+									SELECTIONS& selections = map->selections();
+									u16 numUnitsSelected = selections.numUnits();
+									u16 limit = map->numUnits()-1;
 
-									u16 unitStackTopIndex = selections.getFirstUnit()->index;
-									u16 numUnits = selections.numUnits(),
-										   shift = numUnits-1;
-									selections.sortUnits(false); // Highest First
-									UnitNode* track = selections.getFirstUnit();
-
-									SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
-
-									ChkUnit* selectedUnits;
-									try {
-										selectedUnits = new ChkUnit[numUnits];
-									} catch ( std::bad_alloc ) {
-										Error("'Move To' failed.\n\nCould not allocate temporary storage, you may have run out of memory");
-										return 0;
-									}
-
-									u16 numDeletes = 0,
-										numCreates = 0;
-
-									for ( int i=0; track != nullptr; i++ )
-									{ // Remove each selected unit from the map, store in selectedUnits
-										u32 loc = track->index*UNIT_STRUCT_SIZE;
-
-										if ( UNIT.get<ChkUnit>(selectedUnits[shift-i], loc) &&
-											 UNIT.del<ChkUnit>(loc) )
-										{
-											if ( undos.addUndoUnitDel(track->index, &selectedUnits[shift-i]) )
-												numDeletes ++;
-
-											track->index = unitMoveTo+shift-i;
-										}
-
-										track = track->next;
-									}
-
-									for ( int i=0; i<numUnits; i++ )
+									if ( unitMoveTo+numUnitsSelected > limit )
+										return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), NULL);
+									else
 									{
-										if ( UNIT.insert<ChkUnit&>((unitMoveTo+i)*UNIT_STRUCT_SIZE, selectedUnits[i]) )
-										{
-											if ( undos.addUndoUnitCreate(unitMoveTo+i) )
-												numCreates ++;
+										buffer& UNIT = map->UNIT();
+										HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
+										UNDOS& undos = map->undos();
+										undos.startNext(UNDO_UNIT_MOVETO);
+
+										u16 unitStackTopIndex = selections.getFirstUnit()->index;
+										u16 numUnits = selections.numUnits(),
+											   shift = numUnits-1;
+										selections.sortUnits(false); // Highest First
+										UnitNode* track = selections.getFirstUnit();
+
+										SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
+
+										ChkUnit* selectedUnits;
+										try {
+											selectedUnits = new ChkUnit[numUnits];
+										} catch ( std::bad_alloc ) {
+											Error("'Move To' failed.\n\nCould not allocate temporary storage, you may have run out of memory");
+											return 0;
 										}
-									}
+
+										u16 numDeletes = 0,
+											numCreates = 0;
+
+										for ( int i=0; track != nullptr; i++ )
+										{ // Remove each selected unit from the map, store in selectedUnits
+											u32 loc = track->index*UNIT_STRUCT_SIZE;
+
+											if ( UNIT.get<ChkUnit>(selectedUnits[shift-i], loc) &&
+												 UNIT.del<ChkUnit>(loc) )
+											{
+												if ( undos.addUndoUnitDel(track->index, &selectedUnits[shift-i]) )
+													numDeletes ++;
+
+												track->index = u16(unitMoveTo+shift-i);
+											}
+
+											track = track->next;
+										}
+
+										for ( int i=0; i<numUnits; i++ )
+										{
+											if ( UNIT.insert<ChkUnit&>((unitMoveTo+i)*UNIT_STRUCT_SIZE, selectedUnits[i]) )
+											{
+												if ( undos.addUndoUnitCreate(u16(unitMoveTo+i)) )
+													numCreates ++;
+											}
+										}
 									
-									selections.finishMove();
-									selections.ensureFirst(unitStackTopIndex);
-									undos.addUndoUnitMoveToHeader(numDeletes, numCreates);
-									undos.startNext(0);
-									RepopulateList();
+										selections.finishMove();
+										selections.ensureFirst(unitStackTopIndex);
+										undos.addUndoUnitMoveToHeader(numDeletes, numCreates);
+										undos.startNext(0);
+										RepopulateList();
+									}
 								}
 							}
 						}

@@ -15,32 +15,85 @@ ClassWindow::~ClassWindow()
 		DestroyWindow(windowHandle);
 }
 
-bool ClassWindow::CreateThis()
+HWND ClassWindow::getHandle()
 {
-	return false;
-}
-
-bool ClassWindow::DestroyThis()
-{
-	return false;
-}
-
-LRESULT ClassWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	if ( windowType == WindowTypes::MDIChild )
-		return DefMDIChildProc(hWnd, msg, wParam, lParam);
+	if ( this != nullptr )
+		return windowHandle;
 	else
-		return DefWindowProc(hWnd, msg, wParam, lParam);
+		return NULL;
 }
 
-BOOL ClassWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+bool ClassWindow::getWindowRect(RECT &rect)
 {
-	return DefDlgProc(hWnd, msg, wParam, lParam);
+	return ::GetWindowRect(windowHandle, &rect) != 0;
 }
 
-int ClassWindow::CompareLvItems(LPARAM index1, LPARAM index2)
+bool ClassWindow::getClientRect(RECT &rect)
 {
-	return 0; // No sort unless this method is overridden
+	return ::GetClientRect(windowHandle, &rect) != 0;
+}
+
+bool ClassWindow::operator==(HWND hWnd)
+{
+	return windowHandle == hWnd;
+}
+
+BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont) // Callback function for ReplaceChildFonts
+{
+	SendMessage(hWnd, WM_SETFONT, hFont, TRUE);
+	return TRUE;
+}
+
+void ClassWindow::ReplaceChildFonts(HFONT hFont)
+{
+	EnumChildWindows(getHandle(), (WNDENUMPROC)SetFont, (LPARAM)hFont);
+}
+
+void ClassWindow::LockCursor()
+{
+	if ( windowHandle == NULL )
+		ClipCursor(NULL);
+	else
+	{
+		RECT rcMap, rcClip;
+		POINT upperLeft, lowerRight;
+		upperLeft.x = 0;
+		upperLeft.y = 0;
+
+		GetClientRect(windowHandle, &rcMap);
+		lowerRight.x = rcMap.right-1;
+		lowerRight.y = rcMap.bottom-1;
+
+		ClientToScreen(windowHandle, &upperLeft);
+		ClientToScreen(windowHandle, &lowerRight);
+
+		rcClip.left = upperLeft.x;
+		rcClip.top = upperLeft.y;
+		rcClip.bottom = lowerRight.y;
+		rcClip.right = lowerRight.x;
+
+		ClipCursor(&rcClip);
+	}
+}
+
+void ClassWindow::UnlockCursor()
+{
+	ClipCursor(NULL);
+}
+
+void ClassWindow::TrackMouse(DWORD hoverTime)
+{
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(TRACKMOUSEEVENT);
+	tme.dwFlags = TME_HOVER;
+	tme.hwndTrack = getHandle();
+	tme.dwHoverTime = hoverTime;
+	TrackMouseEvent(&tme);
+}
+
+bool ClassWindow::SetParent(HWND hParent)
+{
+	return ::SetParent(windowHandle, hParent) != NULL;
 }
 
 bool ClassWindow::RegisterWindowClass( UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
@@ -146,65 +199,48 @@ INT_PTR ClassWindow::CreateDialogBox(LPCSTR lpTemplateName, HWND hWndParent)
 	return DialogBoxParam(GetModuleHandle(NULL), lpTemplateName, hWndParent, SetupDialogProc, (LPARAM)this);
 }
 
-HWND ClassWindow::getHandle()
+int CALLBACK ClassWindow::ForwardCompareLvItems(LPARAM index1, LPARAM index2, LPARAM lParam)
 {
-	if ( this != nullptr )
-		return windowHandle;
-	else
-		return NULL;
+	return ((ClassWindow*)lParam)->CompareLvItems(index1, index2);
 }
 
-BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont) // Callback function for ReplaceChildFonts
+bool ClassWindow::DestroyDialog()
 {
-	SendMessage(hWnd, WM_SETFONT, hFont, TRUE);
-	return TRUE;
-}
-
-void ClassWindow::ReplaceChildFonts(HFONT hFont)
-{
-	EnumChildWindows(getHandle(), (WNDENUMPROC)SetFont, (LPARAM)hFont);
-}
-
-void ClassWindow::LockCursor()
-{
-	if ( windowHandle == NULL )
-		ClipCursor(NULL);
-	else
+	if ( windowHandle != NULL && EndDialog(windowHandle, IDCLOSE) != 0 )
 	{
-		RECT rcMap, rcClip;
-		POINT upperLeft, lowerRight;
-		upperLeft.x = 0;
-		upperLeft.y = 0;
-
-		GetClientRect(windowHandle, &rcMap);
-		lowerRight.x = rcMap.right-1;
-		lowerRight.y = rcMap.bottom-1;
-
-		ClientToScreen(windowHandle, &upperLeft);
-		ClientToScreen(windowHandle, &lowerRight);
-
-		rcClip.left = upperLeft.x;
-		rcClip.top = upperLeft.y;
-		rcClip.bottom = lowerRight.y;
-		rcClip.right = lowerRight.x;
-
-		ClipCursor(&rcClip);
+		windowHandle = NULL;
+		return true;
 	}
+	else
+		return false;
 }
 
-void ClassWindow::UnlockCursor()
+bool ClassWindow::CreateThis()
 {
-	ClipCursor(NULL);
+	return false;
 }
 
-void ClassWindow::TrackMouse(DWORD hoverTime)
+bool ClassWindow::DestroyThis()
 {
-	TRACKMOUSEEVENT tme;
-	tme.cbSize = sizeof(TRACKMOUSEEVENT);
-	tme.dwFlags = TME_HOVER;
-	tme.hwndTrack = getHandle();
-	tme.dwHoverTime = hoverTime;
-	TrackMouseEvent(&tme);
+	return false;
+}
+
+LRESULT ClassWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if ( windowType == WindowTypes::MDIChild )
+		return DefMDIChildProc(hWnd, msg, wParam, lParam);
+	else
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+BOOL ClassWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	return FALSE;
+}
+
+int ClassWindow::CompareLvItems(LPARAM index1, LPARAM index2)
+{
+	return 0; // No sort unless this method is overridden
 }
 
 LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -243,7 +279,7 @@ BOOL CALLBACK ClassWindow::SetupDialogProc(HWND hWnd, UINT msg, WPARAM wParam, L
 	{
 		LONG classPtr = lParam;
 		SetWindowLong(hWnd, DWL_USER, classPtr);
-		if ( GetWindowLong(hWnd, DWL_USER) == classPtr  && classPtr != 0 && SetWindowLong(hWnd, DWL_DLGPROC, (LONG)ForwardDlgProc) != 0 )
+		if ( GetWindowLong(hWnd, DWL_USER) == classPtr && classPtr != 0 && SetWindowLong(hWnd, DWL_DLGPROC, (LONG)ForwardDlgProc) != 0 )
 		{
 			((ClassWindow*)classPtr)->windowHandle = hWnd; // Preload the window handle
 			return ((ClassWindow*)classPtr)->DlgProc(hWnd, msg, wParam, lParam);
@@ -263,20 +299,4 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
 BOOL CALLBACK ClassWindow::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	return ((ClassWindow*)GetWindowLong(hWnd, DWL_USER))->DlgProc(hWnd, msg, wParam, lParam);
-}
-
-int CALLBACK ClassWindow::ForwardCompareLvItems(LPARAM index1, LPARAM index2, LPARAM lParam)
-{
-	return ((ClassWindow*)lParam)->CompareLvItems(index1, index2);
-}
-
-bool ClassWindow::DestroyDialog()
-{
-	if ( windowHandle != NULL && EndDialog(windowHandle, IDCLOSE) != 0 )
-	{
-		windowHandle = NULL;
-		return true;
-	}
-	else
-		return false;
 }

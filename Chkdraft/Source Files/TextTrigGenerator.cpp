@@ -873,7 +873,8 @@ string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
 
 bool TextTrigGenerator::LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames)
 {
-	return PrepConditionTable() &&
+	return map != nullptr &&
+		   PrepConditionTable() &&
 		   PrepActionTable() &&
 		   PrepLocationTable(map, quoteArgs) &&
 		   PrepUnitTable(map, quoteArgs, useCustomNames) &&
