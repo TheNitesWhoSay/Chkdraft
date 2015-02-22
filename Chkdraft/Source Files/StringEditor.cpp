@@ -1,34 +1,48 @@
 #include "StringEditor.h"
 #include "Chkdraft.h"
 
+enum ID {
+	DELETE_STRING = ID_FIRST,
+	CHECK_EXTENDEDSTRING,
+	SAVE_TO,
+	COMPRESS_STRINGS,
+	REPAIR_STRINGS,
+	LB_STRINGS,
+	STRING_GUIDE,
+	EDIT_STRING,
+	PREVIEW_STRING,
+	LB_STRINGUSE
+};
+
 StringEditorWindow::StringEditorWindow() : currSelString(0)
 {
 
 }
 
-bool StringEditorWindow::CreateThis(HWND hParent)
+bool StringEditorWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "StringEditor", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_STRINGEDITOR) )
+		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		HWND hStringEditor = getHandle();
 		textAboutStrings.CreateThis(hStringEditor, 5, 5, 100, 20, "String Editor...", 0);
 
-		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, false, ID_LB_STRINGS);
+		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, false, LB_STRINGS);
 
-		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
-		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
+		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", DELETE_STRING);
+		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", CHECK_EXTENDEDSTRING);
 		checkExtendedString.DisableThis();
-		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
+		buttonSaveString.CreateThis(hStringEditor, 340, 290, 75, 20, "Save to...", SAVE_TO);
+		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, EDIT_STRING);
 
 		textStringUsage.CreateThis(hStringEditor, 480, 379, 125, 20, "String Usage:", 0);
-		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, false, ID_LB_STRINGUSE);
+		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, false, LB_STRINGUSE);
 
 		stringGuide.CreateThis(hStringEditor);
-		stringPreviewWindow.CreateThis(hStringEditor);
+		stringPreviewWindow.CreateThis(hStringEditor, PREVIEW_STRING);
 
 		RefreshWindow();
 		return true;
@@ -39,7 +53,7 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 
 void StringEditorWindow::RefreshWindow()
 {
-	HWND hStringList = GetDlgItem(getHandle(), ID_LB_STRINGS);
+	HWND hStringList = GetDlgItem(getHandle(), LB_STRINGS);
 	if ( hStringList != NULL && chkd.maps.curr != nullptr )
 	{
 		SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
@@ -72,7 +86,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_MOUSEWHEEL:
 			{
 				int distanceScrolled = int((s16(HIWORD(wParam)))/WHEEL_DELTA);
-				HWND hStringSel = GetDlgItem(hWnd, ID_LB_STRINGS);
+				HWND hStringSel = GetDlgItem(hWnd, LB_STRINGS);
 				if ( hStringSel != NULL )
 					ListBox_SetTopIndex(hStringSel, ListBox_GetTopIndex(hStringSel)-distanceScrolled);
 			}
@@ -82,12 +96,12 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			switch ( HIWORD(wParam) )
 			{
 				case LBN_SELCHANGE:
-					if ( LOWORD(wParam) == ID_LB_STRINGS ) // Change selection, update info boxes and so fourth
+					if ( LOWORD(wParam) == LB_STRINGS ) // Change selection, update info boxes and so fourth
 					{
-						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
+						HWND hEditString = GetDlgItem(hWnd, EDIT_STRING);
 						if ( hEditString != NULL && currSelString != 0 )
 							updateString(currSelString);
-						HWND hStringUse = GetDlgItem(hWnd, ID_LB_STRINGUSE);
+						HWND hStringUse = GetDlgItem(hWnd, LB_STRINGUSE);
 						if ( hStringUse != NULL )
 							SendMessage(hStringUse, LB_RESETCONTENT, NULL, NULL);
 
@@ -122,19 +136,19 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					}
 					break;
 				case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == ID_LB_STRINGS )
+					if ( LOWORD(wParam) == LB_STRINGS )
 					{
-						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
+						HWND hEditString = GetDlgItem(hWnd, EDIT_STRING);
 						if ( hEditString != NULL && currSelString != 0 )
 							updateString(currSelString);
 					}
 					break;
 				case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == ID_EDIT_STRING && currSelString != 0 && updateString(currSelString) )
+					if ( LOWORD(wParam) == EDIT_STRING && currSelString != 0 && updateString(currSelString) )
 						chkd.maps.curr->refreshScenario();
 					break;
 				case BN_CLICKED:
-					if ( LOWORD(wParam) == ID_DELETE_STRING  &&
+					if ( LOWORD(wParam) == DELETE_STRING  &&
 						 MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION|MB_YESNO) == IDYES &&
 						 chkd.maps.curr != nullptr && currSelString != 0 && chkd.maps.curr->stringExists(currSelString)
 					   )
@@ -142,6 +156,8 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						chkd.maps.curr->forceDeleteString(currSelString);
 						chkd.maps.curr->refreshScenario();
 					}
+					else if ( LOWORD(wParam) == SAVE_TO && chkd.maps.curr != nullptr )
+						saveStrings();
 					break;
 			}
 			return 0;
@@ -150,22 +166,21 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_MEASUREITEM:
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
 				string str;
 
-				if ( hStringList != NULL && chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 )
+				if ( chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 )
 				{
-					HDC hDC = GetDC(hStringList);
+					HDC hDC = listboxStrings.getDC();
 					if ( hDC != NULL )
 					{
 						if ( GetStringDrawSize(hDC, mis->itemWidth, mis->itemHeight, str) )
 						{
 							mis->itemWidth += 5;
 							mis->itemHeight += 2;
-							ReleaseDC(hStringList, hDC);
+							listboxStrings.ReleaseDC(hDC);
 							return TRUE;
 						}
-						ReleaseDC(hStringList, hDC);
+						listboxStrings.ReleaseDC(hDC);
 					}
 				}
 				return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -204,6 +219,46 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			break;
 	}
 	return 0;
+}
+
+void StringEditorWindow::saveStrings()
+{
+	Scenario* chk = chkd.maps.curr;
+	char filePath[MAX_PATH] = { };
+	OPENFILENAME ofn = { };
+	ofn.lStructSize = sizeof(ofn);
+	ofn.lpstrFilter = "Text Documents(*.txt)\0*.txt\0All Files\0*\0";
+	ofn.lpstrFile = filePath;
+	ofn.nFilterIndex = 0;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	if ( GetSaveFileName(&ofn) )
+	{
+		if ( ofn.nFilterIndex == 1 && strstr(filePath, ".txt") == nullptr )
+			strcat_s(filePath, ".txt");
+
+		FILE* pFile(nullptr);
+		DeleteFileA(filePath);
+		fopen_s(&pFile, filePath, "wb");
+		if ( pFile != nullptr )
+		{
+			for ( u32 i=0; i<chk->numStrings(); i++ )
+			{
+				stringstream ssNum;
+				string str;
+				if ( chk->getString(str, i) )
+				{
+					if ( str.size() > 0 )
+					{
+						ssNum << i << ": ";
+						str = (ssNum.str() + str + "\r\n");
+						fwrite(str.c_str(), str.size(), 1, pFile);
+					}
+				}
+			}
+			fclose(pFile);
+		}
+	}
 }
 
 void StringEditorWindow::addUseItem(HWND hStringUse, const char* title, u32 amount)

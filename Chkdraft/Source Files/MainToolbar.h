@@ -12,7 +12,7 @@ class MainToolbar : public ToolbarControl
 		PlayerDropdown playerBox;
 		DropdownControl terrainBox;
 
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		void AutoSize();
 
 	private:

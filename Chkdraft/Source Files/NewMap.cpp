@@ -1,6 +1,10 @@
 #include "NewMap.h"
 #include "Chkdraft.h"
 
+enum ID {
+	COMBO_TRIGS = ID_FIRST
+};
+
 void NewMap::CreateThis(HWND hParent)
 {
 	ClassWindow::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_NEW), hParent);
@@ -24,7 +28,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SendMessage(hWnd, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 				HWND hDefaultTrigs = CreateWindowEx(WS_EX_CLIENTEDGE, "ComboBox", NULL,
 						CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS,
-						upperLeft.x+10, upperLeft.y+20, 305, 200, hWnd, (HMENU)IDD_COMBO_TRIGS, (HINSTANCE)GetModuleHandle(NULL), NULL);
+						upperLeft.x+10, upperLeft.y+20, 305, 200, hWnd, (HMENU)COMBO_TRIGS, (HINSTANCE)GetModuleHandle(NULL), NULL);
 					// Add the trigger options
 						const char* defaultTriggerTitles[] = { "No triggers", "Default melee triggers", "Melee with observers (2 players)",
 							"Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
@@ -78,7 +82,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	
 							tileset = SendDlgItemMessage(hWnd, IDC_LIST_TILESET, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
 							terrain = SendDlgItemMessage(hWnd, IDC_LIST_DEFAULTTERRAIN, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
-							triggers = SendDlgItemMessage(hWnd, IDD_COMBO_TRIGS, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
+							triggers = SendDlgItemMessage(hWnd, COMBO_TRIGS, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0 );
 	
 							if ( width>0 && height>0 )
 							{
@@ -137,7 +141,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									case IDC_LIST_TILESET:
 										{
 											HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-											HWND hDefaultTrigs = GetDlgItem(hWnd, IDD_COMBO_TRIGS);
+											HWND hDefaultTrigs = GetDlgItem(hWnd, COMBO_TRIGS);
 											SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
 											switch ( ItemIndex )
 											{

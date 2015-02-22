@@ -12,6 +12,7 @@
 #include "ListViewControl.h"
 #include "RadioButtonControl.h"
 #include "StatusControl.h"
+#include "TabControl.h"
 #include "TextControl.h"
 #include "ToolbarControl.h"
 #include "TreeViewControl.h"

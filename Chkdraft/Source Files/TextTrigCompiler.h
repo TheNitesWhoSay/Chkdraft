@@ -54,7 +54,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool ParseString(buffer &text, u32& dest, u32 pos, u32 end); // Find a given string in the map, prepare to add it if necessary
 		bool ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 end); // Find a location in the map by its string
 		bool ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end); // Get a unitID using a unit name
-		bool ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end); // Find a wav in the map by its string
+		bool ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end); // Find a wav in the map by its string, redundant? remove me?
 		bool ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end); // Get a groupID using a group/player name
 		bool ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end); // Find a switch in the map by name (or standard name)
 
@@ -74,7 +74,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		std::unordered_multimap<u32, LocationTableNode> locationTable; // Binary tree of the maps locations
 		std::unordered_multimap<u32, UnitTableNode> unitTable; // Binary tree of the maps untis
 		std::unordered_multimap<u32, SwitchTableNode> switchTable; // Binary tree of the maps switches
-		std::unordered_multimap<u32, WavTableNode> wavTable; // Binary tree of the maps wavs
+		std::unordered_multimap<u32, WavTableNode> wavTable; // Binary tree of the maps wavs, redundant? remove me?
 		std::unordered_multimap<u32, GroupTableNode> groupTable; // Binary tree of the maps groups
 		std::list<StringTableNode> addedStrings; // Forward list of strings added during compilation
 		StringUsageTable strUsage; // Table of strings currently used in the map
@@ -83,7 +83,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool PrepLocationTable(Scenario* map); // Fills locationTable
 		bool PrepUnitTable(Scenario* map); // Fills unitTable
 		bool PrepSwitchTable(Scenario* map); // Fills switchTable
-		bool PrepWavTable(Scenario* map); // Fills wavTable
+		bool PrepWavTable(Scenario* map); // Fills wavTable, redundant? remove me?
 		bool PrepGroupTable(Scenario* map); // Fills groupTable
 		bool PrepStringTable(Scenario* map); // Fills stringTable
 

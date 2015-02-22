@@ -1,18 +1,57 @@
 #include "UpgradeSettings.h"
 #include "Chkdraft.h"
 
+enum ID {
+	TREE_UPGRADES = ID_FIRST,
+	CHECK_USEDEFAULTCOSTS,
+	BUTTON_RESETUPGRADEDEFAULTS,
+	GROUP_MINERALCOSTS,
+	TEXT_MINERALBASECOST,
+	EDIT_MINERALBASECOST,
+	TEXT_MINERALUPGRADEFACTOR,
+	EDIT_MINERALUPGRADEFACTOR,
+	GROUP_GASCOSTS,
+	TEXT_GASBASECOST,
+	EDIT_GASBASECOST,
+	TEXT_GASUPGRADEFACTOR,
+	EDIT_GASUPGRADEFACTOR,
+	GROUP_TIMECOSTS,
+	TEXT_TIMEBASECOST,
+	EDIT_TIMEBASECOST,
+	TEXT_TIMEUPGRADEFACTOR,
+	EDIT_TIMEUPGRADEFACTOR,
+	GROUP_PLAYERSETTINGS,
+	GROUP_DEFAULTSETTINGS,
+	TEXT_DEFAULTSTARTLEVEL,
+	EDIT_DEFAULTSTARTLEVEL,
+	TEXT_DEFAULTMAXLEVEL,
+	EDIT_DEFAULTMAXLEVEL,
+	ID_TEXT_UPGRADEP1,
+	ID_TEXT_UPGRADEP12 = (ID_TEXT_UPGRADEP1+11),
+	ID_CHECK_DEFAULTUPGRADEP1,
+	ID_CHECK_DEFAULTUPGRADEP12 = (ID_CHECK_DEFAULTUPGRADEP1+11),
+	ID_TEXT_P1STARTLEVEL,
+	ID_TEXT_P12STARTLEVEL = (ID_TEXT_P1STARTLEVEL+11),
+	ID_EDIT_P1STARTLEVEL,
+	ID_EDIT_P12STARTLEVEL = (ID_EDIT_P1STARTLEVEL+11),
+	ID_TEXT_P1MAXLEVEL,
+	ID_TEXT_P12MAXLEVEL = (ID_TEXT_P1MAXLEVEL+11),
+	ID_EDIT_P1MAXLEVEL,
+	ID_EDIT_P12MAXLEVEL = (ID_EDIT_P1MAXLEVEL+11)
+};
+
 UpgradeSettingsWindow::UpgradeSettingsWindow() : selectedUpgrade(-1), isDisabled(true), refreshing(false)
 {
 
 }
 
-bool UpgradeSettingsWindow::CreateThis(HWND hParent)
+bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "UpgradeSettings", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "UpgradeSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_UPGRADESETTINGS) )
+		 ClassWindow::CreateClassWindow(NULL, "UpgradeSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -100,34 +139,34 @@ void UpgradeSettingsWindow::RefreshWindow()
 
 void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
 {
-	treeUpgrades.CreateThis(hWnd, 5, 5, 200, 489, false, ID_TREE_UPGRADES);
-	checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 120, 20, false, "Use Default Costs", ID_CHECK_USEDEFAULTCOSTS);
-	buttonResetUpgradeDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Upgrades To Default", ID_BUTTON_RESETUPGRADEDEFAULTS);
+	treeUpgrades.CreateThis(hWnd, 5, 5, 200, 489, false, TREE_UPGRADES);
+	checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 120, 20, false, "Use Default Costs", CHECK_USEDEFAULTCOSTS);
+	buttonResetUpgradeDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Upgrades To Default", BUTTON_RESETUPGRADEDEFAULTS);
 
-	groupMineralCosts.CreateThis(hWnd, 210, 25, 377, 45, "Mineral Costs", ID_GROUP_MINERALCOSTS);
-	textMineralBaseCosts.CreateThis(hWnd, 215, 45, 75, 20, "Base Cost", ID_TEXT_MINERALBASECOST);
-	editMineralBaseCosts.CreateThis(hWnd, 304, 45, 84, 20, false, ID_EDIT_MINERALBASECOST);
-	textMineralUpgradeFactor.CreateThis(hWnd, 408, 45, 75, 20, "Upgrade Factor", ID_TEXT_MINERALUPGRADEFACTOR);
-	editMineralUpgradeFactor.CreateThis(hWnd, 497, 45, 84, 20, false, ID_EDIT_MINERALUPGRADEFACTOR);
+	groupMineralCosts.CreateThis(hWnd, 210, 25, 377, 45, "Mineral Costs", GROUP_MINERALCOSTS);
+	textMineralBaseCosts.CreateThis(hWnd, 215, 45, 75, 20, "Base Cost", TEXT_MINERALBASECOST);
+	editMineralBaseCosts.CreateThis(hWnd, 304, 45, 84, 20, false, EDIT_MINERALBASECOST);
+	textMineralUpgradeFactor.CreateThis(hWnd, 408, 45, 75, 20, "Upgrade Factor", TEXT_MINERALUPGRADEFACTOR);
+	editMineralUpgradeFactor.CreateThis(hWnd, 497, 45, 84, 20, false, EDIT_MINERALUPGRADEFACTOR);
 
-	groupGasCosts.CreateThis(hWnd, 210, 75, 377, 45, "Gas Costs", ID_GROUP_GASCOSTS);
-	textGasBaseCosts.CreateThis(hWnd, 215, 95, 75, 20, "Base Cost", ID_TEXT_GASBASECOST);
-	editGasBaseCosts.CreateThis(hWnd, 304, 95, 84, 20, false, ID_EDIT_GASBASECOST);
-	textGasUpgradeFactor.CreateThis(hWnd, 408, 95, 75, 20, "Upgrade Factor", ID_TEXT_GASUPGRADEFACTOR);
-	editGasUpgradeFactor.CreateThis(hWnd, 497, 95, 84, 20, false, ID_EDIT_GASUPGRADEFACTOR);
+	groupGasCosts.CreateThis(hWnd, 210, 75, 377, 45, "Gas Costs", GROUP_GASCOSTS);
+	textGasBaseCosts.CreateThis(hWnd, 215, 95, 75, 20, "Base Cost", TEXT_GASBASECOST);
+	editGasBaseCosts.CreateThis(hWnd, 304, 95, 84, 20, false, EDIT_GASBASECOST);
+	textGasUpgradeFactor.CreateThis(hWnd, 408, 95, 75, 20, "Upgrade Factor", TEXT_GASUPGRADEFACTOR);
+	editGasUpgradeFactor.CreateThis(hWnd, 497, 95, 84, 20, false, EDIT_GASUPGRADEFACTOR);
 
-	groupTimeCosts.CreateThis(hWnd, 210, 125, 377, 45, "Time Costs", ID_GROUP_TIMECOSTS);
-	textTimeBaseCosts.CreateThis(hWnd, 215, 145, 75, 20, "Base Cost", ID_TEXT_TIMEBASECOST);
-	editTimeBaseCosts.CreateThis(hWnd, 304, 145, 84, 20, false, ID_EDIT_TIMEBASECOST);
-	textTimeUpgradeFactor.CreateThis(hWnd, 408, 145, 75, 20, "Upgrade Factor", ID_TEXT_TIMEUPGRADEFACTOR);
-	editTimeUpgradeFactor.CreateThis(hWnd, 497, 145, 84, 20, false, ID_EDIT_TIMEUPGRADEFACTOR);
+	groupTimeCosts.CreateThis(hWnd, 210, 125, 377, 45, "Time Costs", GROUP_TIMECOSTS);
+	textTimeBaseCosts.CreateThis(hWnd, 215, 145, 75, 20, "Base Cost", TEXT_TIMEBASECOST);
+	editTimeBaseCosts.CreateThis(hWnd, 304, 145, 84, 20, false, EDIT_TIMEBASECOST);
+	textTimeUpgradeFactor.CreateThis(hWnd, 408, 145, 75, 20, "Upgrade Factor", TEXT_TIMEUPGRADEFACTOR);
+	editTimeUpgradeFactor.CreateThis(hWnd, 497, 145, 84, 20, false, EDIT_TIMEUPGRADEFACTOR);
 
-	groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 329, "Player Settings", ID_GROUP_PLAYERSETTINGS);
-	groupDefaultSettings.CreateThis(hWnd, 215, 205, 367, 45, "Default Settings", ID_GROUP_DEFAULTSETTINGS);
-	textDefaultStartLevel.CreateThis(hWnd, 220, 225, 75, 20, "Start Level", ID_TEXT_DEFAULTSTARTLEVEL);
-	editDefaultStartLevel.CreateThis(hWnd, 306, 225, 81, 20, false, ID_EDIT_DEFAULTSTARTLEVEL);
-	textDefaultMaxLevel.CreateThis(hWnd, 407, 225, 75, 20, "Max Level", ID_TEXT_DEFAULTMAXLEVEL);
-	editDefaultMaxLevel.CreateThis(hWnd, 493, 225, 81, 20, false, ID_EDIT_DEFAULTMAXLEVEL);
+	groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 329, "Player Settings", GROUP_PLAYERSETTINGS);
+	groupDefaultSettings.CreateThis(hWnd, 215, 205, 367, 45, "Default Settings", GROUP_DEFAULTSETTINGS);
+	textDefaultStartLevel.CreateThis(hWnd, 220, 225, 75, 20, "Start Level", TEXT_DEFAULTSTARTLEVEL);
+	editDefaultStartLevel.CreateThis(hWnd, 306, 225, 81, 20, false, EDIT_DEFAULTSTARTLEVEL);
+	textDefaultMaxLevel.CreateThis(hWnd, 407, 225, 75, 20, "Max Level", TEXT_DEFAULTMAXLEVEL);
+	editDefaultMaxLevel.CreateThis(hWnd, 493, 225, 81, 20, false, EDIT_DEFAULTMAXLEVEL);
 
 	for ( int player=0; player<12; player++ )
 	{
@@ -298,7 +337,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			{
 				switch ( LOWORD(wParam) )
 				{
-					case ID_EDIT_MINERALBASECOST:
+					case EDIT_MINERALBASECOST:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newMineralCost;
@@ -310,7 +349,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_MINERALUPGRADEFACTOR:
+					case EDIT_MINERALUPGRADEFACTOR:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newMineralFactor;
@@ -322,7 +361,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_GASBASECOST:
+					case EDIT_GASBASECOST:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newGasCost;
@@ -334,7 +373,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_GASUPGRADEFACTOR:
+					case EDIT_GASUPGRADEFACTOR:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newGasFactor;
@@ -346,7 +385,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_TIMEBASECOST:
+					case EDIT_TIMEBASECOST:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newTimeCost;
@@ -362,7 +401,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_TIMEUPGRADEFACTOR:
+					case EDIT_TIMEUPGRADEFACTOR:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u16 newTimeFactor;
@@ -378,7 +417,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_DEFAULTSTARTLEVEL:
+					case EDIT_DEFAULTSTARTLEVEL:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u8 newStartLevel;
@@ -390,7 +429,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_EDIT_DEFAULTMAXLEVEL:
+					case EDIT_DEFAULTMAXLEVEL:
 						if ( HIWORD(wParam) == EN_CHANGE )
 						{
 							u8 newMaxLevel;
@@ -402,7 +441,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 						}
 						break;
 
-					case ID_CHECK_USEDEFAULTCOSTS:
+					case CHECK_USEDEFAULTCOSTS:
 						if ( HIWORD(wParam) == BN_CLICKED )
 						{
 							LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
@@ -426,7 +465,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 							}
 						}
 						break;
-					case ID_BUTTON_RESETUPGRADEDEFAULTS:
+					case BUTTON_RESETUPGRADEDEFAULTS:
 						if ( HIWORD(wParam) == BN_CLICKED )
 						{
 							if ( MessageBox(hWnd, "Are you sure you want to reset all ugprade settings?", "Confirm", MB_YESNO) == IDYES )
@@ -507,7 +546,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 				return DefWindowProc(hWnd, msg, wParam, lParam);
 
 		case WM_NOTIFY:
-			if ( wParam == ID_TREE_UPGRADES && 
+			if ( wParam == TREE_UPGRADES && 
 				 refreshing == false &&
 				 ((NMHDR*)lParam)->code == TVN_SELCHANGED &&
 				 ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )

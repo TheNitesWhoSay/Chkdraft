@@ -1,5 +1,8 @@
 #include "StringGuide.h"
 
+#define ID_TEXT_COLOR_FIRST	41288
+#define ID_TEXT_COLOR_LAST 41315
+
 bool StringGuideWindow::CreateThis(HWND hParent)
 {
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, CreateSolidBrush(RGB(0, 0, 0)), NULL, "StringGuide", NULL, false) &&

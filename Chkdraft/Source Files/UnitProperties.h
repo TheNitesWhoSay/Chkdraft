@@ -9,6 +9,9 @@
 class UnitWindow : public ClassWindow
 {
 	public:
+		ListViewControl listUnits; // Make me private eventually
+		PlayerDropdown dropPlayer; // Make me private eventually
+
 		UnitWindow();
 		bool CreateThis(HWND hParent);
 		bool CreateSubWindows(HWND hWnd);
@@ -45,9 +48,6 @@ class UnitWindow : public ClassWindow
 		EditControl editUnitId;
 		EditControl editXc;
 		EditControl editYc;
-
-		PlayerDropdown dropPlayer;
-		ListViewControl listUnits;
 };
 
 #endif

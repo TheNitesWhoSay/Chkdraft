@@ -2,6 +2,14 @@
 #include "Chkdraft.h"
 #include "MoveTo.h"
 
+/**
+	Possible performance issue:
+	10,000 some uncommented triggers with 12 some actions leads to...
+		~6 Second Trigger Text Generation
+		~6 Second Trigger Measure Time
+		(real time when most are commented)
+*/
+
 #define TRIGGER_TOP_PADDING 1
 #define TRIGGER_LEFT_PADDING 1
 #define TRIGGER_RIGHT_PADDING 1
@@ -14,27 +22,19 @@
 
 #define NO_TRIGGER (u32(-1))
 
-#define BUTTON_NEW 41001
-#define BUTTON_MODIFY 41002
-#define BUTTON_DELETE 41003
-#define BUTTON_COPY 41004
-#define BUTTON_MOVEUP 41005
-#define BUTTON_MOVEDOWN 41006
-#define BUTTON_MOVETO 41007
-#define LIST_GROUPS 41008
-#define LIST_TRIGGERS 41009
-
 #define TRIGGER_NUM_PREFACE "\x12\x1A#"
 
-/**
-	Max triggers (assuming 4gb sections are possible): 1,789,569 (2,400 bytes per trigger; 2^32 max size)
-
-	Possible performance issue:
-	10,000 some uncommented triggers with 12 some actions leads to...
-		~6 Second Trigger Text Generation
-		~6 Second Trigger Measure Time
-		(real time when most are commented)
-*/
+enum ID { 
+	BUTTON_NEW = ID_FIRST,
+	BUTTON_MODIFY,
+	BUTTON_DELETE,
+	BUTTON_COPY,
+	BUTTON_MOVEUP,
+	BUTTON_MOVEDOWN,
+	BUTTON_MOVETO,
+	LIST_GROUPS,
+	LIST_TRIGGERS
+};
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
 	changeGroupHighlightOnly(false), trigListDC(NULL)
@@ -43,7 +43,7 @@ TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), nu
 		groupSelected[i] = false;
 }
 
-bool TriggersWindow::CreateThis(HWND hParent)
+bool TriggersWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -53,7 +53,7 @@ bool TriggersWindow::CreateThis(HWND hParent)
 		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Triggers", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Triggers", WS_VISIBLE|WS_CHILD,
 			5, 22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
-			hParent, (HMENU)ID_TRIGGERS) )
+			hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -210,7 +210,7 @@ void TriggersWindow::MoveDown()
 	}
 }
 
-void TriggersWindow::MoveTo()
+void TriggersWindow::MoveTrigTo()
 {
 	int sel;
 	u32 targetTrigIndex;
@@ -781,7 +781,7 @@ string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger)
 		case AID_GIVE_UNITS_TO_PLAYER: // Type2, Type, Players, Location, Number
 			ssAction << "Give \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
 				<< "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
-				<< "\x0C\' to \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
+				<< "\x0C\' to \x08" << tt.GetTrigPlayer(action.number) << "\x0C.";
 			break;
 		case AID_KILL_UNIT: // Type, Players
 			ssAction << "Kill all \x08" << tt.GetTrigUnit(action.type) << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
@@ -1272,7 +1272,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					else if ( LOWORD(wParam) == BUTTON_MOVEDOWN )
 						MoveDown();
 					else if ( LOWORD(wParam) == BUTTON_MOVETO )
-						MoveTo();
+						MoveTrigTo();
 					break;
 			}
 			break;

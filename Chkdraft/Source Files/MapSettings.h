@@ -34,4 +34,14 @@ class MapSettingsWindow : public ClassWindow
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
+enum MapSettings {
+	TAB_MAPPROPERTIES,
+	TAB_FORCES,
+	TAB_UNITSETTINGS,
+	TAB_UPGRADESETTINGS,
+	TAB_TECHSETTINGS,
+	TAB_STRINGEDITOR,
+	TAB_WAVEDITOR
+};
+
 #endif

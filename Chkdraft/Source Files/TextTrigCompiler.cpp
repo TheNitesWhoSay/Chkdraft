@@ -27,7 +27,7 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, Scenario* chk)
 	if ( ParseTriggers(text, output, error) )
 	{
 		if ( BuildNewStringTable(chk) )
-		{
+		{			
 			if ( !chk->TRIG().exists() )
 			{
 				output.setTitle("TRIG");
@@ -154,13 +154,13 @@ void TextTrigCompiler::CleanText(buffer &text)
 				dest.add<u8>('\12');
 				pos ++;
 				break;
-			
+
 			case '\"': // Found a string
 				dest.add<u8>('\"');
 				pos ++;
 
 				u32 skipTo;
-				if ( text.getNext('\"', pos, skipTo) )
+				if ( text.getNextUnescaped('\"', pos, skipTo) )
 				{
 					for ( pos; pos<skipTo; pos++ )
 					{
@@ -197,10 +197,8 @@ void TextTrigCompiler::CleanText(buffer &text)
 							{
 								dest.add<u8>('\n');
 							}
-							else if ( text.get<u8>(pos) == '\\' )
-							{
-								dest.add<u8>('\\');
-							}
+							else if ( text.get<char>(curr, pos) )
+								dest.add<u8>(curr);
 						}
 						else
 							dest.add<u8>(curr);
@@ -1850,7 +1848,7 @@ ParseActionTextField: // 4 bytes
 			   "Expected: String or stringNum" );
 
 ParseActionWavField: // 4 bytes
-	returnMsg( ParseWavName(text, currAction.wavID, pos, end) ||
+	returnMsg( ParseString(text, currAction.wavID, pos, end) ||
 			   ParseLong(textPtr, currAction.wavID, pos, end),
 			   "Expected: Wav name or 4-byte wavID" );
 
@@ -2723,6 +2721,7 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
 
 bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
 {
+	// Redundant? Remove me?
 	int size = end-pos;
 	if ( text.get<u8>(pos) == '\"' )
 	{
@@ -2746,33 +2745,33 @@ bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
 
 		// Grab the string hash
 		u32 hash = strHash(str);
-		int numMatching = wavTable.count(hash);
+		int numMatching = stringTable.count(hash);
 		if ( numMatching == 1 )
 		{ // Should guarentee that you can find at least one entry
-			WavTableNode &node = wavTable.find(hash)->second;
-			if ( node.wavName.compare(wavStringPtr) == 0 )
+			StringTableNode &node = stringTable.find(hash)->second;
+			if ( node.string.compare(wavStringPtr) == 0 )
 			{
-				dest = node.wavID;
+				dest = node.stringNum;
 				success = true;
 			}
 		}
 		else if ( numMatching > 1 )
 		{
-			auto range = wavTable.equal_range(hash);
+			auto range = stringTable.equal_range(hash);
 			for ( auto it = range.first; it != range.second; it ++ )
 			{
-				WavTableNode &node = it->second;
-				if ( node.wavName.compare(wavStringPtr) == 0 )
+				StringTableNode &node = it->second;
+				if ( node.string.compare(wavStringPtr) == 0 )
 				{
 					if ( success == false ) // If no matches have previously been found
 					{
-						dest = node.wavID;
+						dest = node.stringNum;
 						success = true;
 					}
 					else // If matches have previously been found
 					{
-						if ( u32(node.wavID) < dest )
-							dest = node.wavID; // Replace if wavNum < previous wavNum
+						if ( u32(node.stringNum) < dest )
+							dest = node.stringNum; // Replace if wavNum < previous wavNum
 					}
 				}
 			}
@@ -3322,8 +3321,11 @@ bool TextTrigCompiler::PrepStringTable(Scenario* chk)
 		while ( chk->getTrigger(trig, trigNum) )
 		{
 			for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			{
 				AddStrIffOverZero( trig->actions[i].stringNum );
-			
+				AddStrIffOverZero( trig->actions[i].wavID );
+			}
+
 			trigNum ++;
 		}
 
@@ -3331,7 +3333,10 @@ bool TextTrigCompiler::PrepStringTable(Scenario* chk)
 		while ( chk->getBriefingTrigger(trig, trigNum) )
 		{
 			for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			{
 				AddStrIffOverZero( trig->actions[i].stringNum );
+				AddStrIffOverZero( trig->actions[i].wavID );
+			}
 
 			trigNum ++;
 		}

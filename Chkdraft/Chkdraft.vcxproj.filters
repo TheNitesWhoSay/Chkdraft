@@ -121,11 +121,11 @@
     <Filter Include="Source Files\Mapping\Mapping Core\Structs">
       <UniqueIdentifier>{12577036-587a-4372-8f0c-8e905a067b01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Windows\Dialog Windows\Triggers\Triggers">
-      <UniqueIdentifier>{b9cb4278-d777-4a14-9738-5156e4d736df}</UniqueIdentifier>
+    <Filter Include="Header Files\Windows\Dialog Windows\Triggers\TrigModify">
+      <UniqueIdentifier>{ed31c6e0-d017-40d6-a502-717b99cd2bb0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Windows\Dialog Windows\Triggers\Triggers">
-      <UniqueIdentifier>{9552cb5f-55d9-40c2-a781-100da94e2be2}</UniqueIdentifier>
+    <Filter Include="Source Files\Windows\Dialog Windows\Triggers\TrigModify">
+      <UniqueIdentifier>{1d087de4-9101-4cd6-ad4b-286d6eb90e7a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -397,10 +397,13 @@
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Triggers.h">
-      <Filter>Header Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+      <Filter>Header Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\TabControl.h">
+      <Filter>Header Files\Windows\Windows UI\Controls</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\TrigModify.h">
-      <Filter>Header Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+      <Filter>Header Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -654,10 +657,13 @@
       <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Triggers.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\TabControl.cpp">
+      <Filter>Source Files\Windows\Windows UI\Controls</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\TrigModify.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Triggers\Triggers</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

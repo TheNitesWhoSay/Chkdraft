@@ -1,6 +1,6 @@
 #include "Counters.h"
 
-bool CountersWindow::CreateThis(HWND hParent)
+bool CountersWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -10,7 +10,7 @@ bool CountersWindow::CreateThis(HWND hParent)
 		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Counters", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Counters", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
-			hParent, (HMENU)ID_COUNTERS) )
+			hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;

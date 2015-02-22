@@ -10,10 +10,11 @@ class StringEditorWindow : public ClassWindow
 {
 	public:
 		StringEditorWindow();
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		void RefreshWindow();
 
 	protected:
+		void saveStrings();
 		void addUseItem(HWND hStringUse, const char* title, u32 amount); // Adds items to StringUse list box
 		bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
 
@@ -24,6 +25,7 @@ class StringEditorWindow : public ClassWindow
 		EditControl editString;
 		StringGuideWindow stringGuide;
 		StringPreviewWindow stringPreviewWindow;
+		ButtonControl buttonSaveString;
 		ButtonControl buttonDeleteString;
 		CheckBoxControl checkExtendedString;
 		ListBoxControl listboxStrings;

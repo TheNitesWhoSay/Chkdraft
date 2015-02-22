@@ -196,6 +196,23 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
 	return false;
 }
 
+bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
+{
+	if ( this != nullptr )
+	{
+		for ( u32 i=start; i<sizeUsed; i++ )
+		{
+			if ( data[i] == character &&
+				 ( i == start || data[i-1] != '\\' ) )
+			{
+				dest = i;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 /* Templates */ #endif
 				#ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>

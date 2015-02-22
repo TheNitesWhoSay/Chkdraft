@@ -362,8 +362,8 @@ void MAPS::ChangePlayer(u8 newPlayer)
 			if ( chkd.unitWindow.getHandle() != nullptr )
 			{
 				string text;
-				HWND hOwner = GetDlgItem(chkd.unitWindow.getHandle(), IDC_COMBO_PLAYER);
-				HWND hUnitList = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+				HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
+				HWND hUnitList = chkd.unitWindow.listUnits.getHandle();
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
 				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )

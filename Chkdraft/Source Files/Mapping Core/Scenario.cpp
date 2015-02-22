@@ -318,6 +318,8 @@ bool Scenario::stringIsUsed(u32 stringNum)
 		{
 			if ( trig->actions[i].stringNum == stringNum )
 				return true;
+			if ( trig->actions[i].wavID == stringNum )
+				return true;
 		}
 			
 		trigNum ++;
@@ -331,6 +333,8 @@ bool Scenario::stringIsUsed(u32 stringNum)
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
 			if ( trig->actions[i].stringNum == stringNum )
+				return true;
+			if ( trig->actions[i].wavID == stringNum )
 				return true;
 		}
 
@@ -486,14 +490,20 @@ u32 Scenario::amountStringUsed(u32 stringNum)
 	{
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+		{
 			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].wavID, amountStringUsed);
+		}
 	}
 	trigNum = 0; // MBRF - briefing strings
 	while ( getBriefingTrigger(trig, trigNum) )
 	{
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+		{
 			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].wavID, amountStringUsed);
+		}
 	}
 	// SPRP - scenario property strings
 	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
@@ -529,14 +539,20 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 	{
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+		{
 			IncrementIfEqual(trig->actions[i].stringNum, trigs);
+			IncrementIfEqual(trig->actions[i].wavID, trigs);
+		}
 	}
 	trigNum = 0; // MBRF - briefing strings
 	while ( getBriefingTrigger(trig, trigNum) )
 	{
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+		{
 			IncrementIfEqual(trig->actions[i].stringNum, briefs);
+			IncrementIfEqual(trig->actions[i].wavID, briefs);
+		}
 	}
 	// SPRP - scenario property strings
 	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
@@ -1046,6 +1062,8 @@ void Scenario::forceDeleteString(u32 stringNum)
 		{
 			if ( trig->actions[i].stringNum == stringNum )
 				trig->actions[i].stringNum = 0;
+			if ( trig->actions[i].wavID == stringNum )
+				trig->actions[i].wavID = 0;
 		}
 			
 		trigNum ++;
@@ -1060,6 +1078,8 @@ void Scenario::forceDeleteString(u32 stringNum)
 		{
 			if ( trig->actions[i].stringNum == stringNum )
 				trig->actions[i].stringNum = 0;
+			if ( trig->actions[i].wavID == stringNum )
+				trig->actions[i].wavID = 0;
 		}
 
 		trigNum ++;
@@ -1348,6 +1368,8 @@ void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 		{
 			if ( trig->actions[i].stringNum == toReplace )
 				trig->actions[i].stringNum = replacement;
+			if ( trig->actions[i].wavID == toReplace )
+				trig->actions[i].wavID = replacement;
 		}
 			
 		trigNum ++;
@@ -1360,6 +1382,8 @@ void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 		{
 			if ( trig->actions[i].stringNum == toReplace )
 				trig->actions[i].stringNum = replacement;
+			if ( trig->actions[i].wavID == toReplace )
+				trig->actions[i].wavID = replacement;
 		}
 
 		trigNum ++;
@@ -1485,6 +1509,8 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 					{
 						if ( trig->actions[i].stringNum == lastFragmented )
 							trig->actions[i].stringNum = firstEmpty;
+						if ( trig->actions[i].wavID == lastFragmented )
+							trig->actions[i].wavID = firstEmpty;
 					}
 			
 					trigNum ++;
@@ -1497,6 +1523,8 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 					{
 						if ( trig->actions[i].stringNum == lastFragmented )
 							trig->actions[i].stringNum = firstEmpty;
+						if ( trig->actions[i].wavID == lastFragmented )
+							trig->actions[i].wavID = firstEmpty;
 					}
 
 					trigNum ++;
@@ -1596,6 +1624,19 @@ bool Scenario::repairStringTable(bool extendedTable)
 				trig->actions[i].stringNum = 0;
 				removeUnusedString(stringNum);
 			}
+
+			stringNum = trig->actions[i].wavID;
+			action = trig->actions[i].action;
+			if ( action == AID_PLAY_WAV || action == AID_TRANSMISSION )
+			{
+				if ( RepairString(stringNum, false) )
+					trig->actions[i].wavID = stringNum;
+			}
+			else if ( stringNum != 0 ) // Shouldn't have a wav string
+			{
+				trig->actions[i].wavID = 0;
+				removeUnusedString(stringNum);
+			}
 		}
 		trigNum ++;
 	}
@@ -1615,7 +1656,20 @@ bool Scenario::repairStringTable(bool extendedTable)
 			else if ( stringNum != 0 ) // Shouldn't have a string
 			{
 				trig->actions[i].stringNum = 0;
-				removeUnusedString(trig->actions[i].stringNum);
+				removeUnusedString(stringNum);
+			}
+
+			stringNum = trig->actions[i].wavID;
+			action = trig->actions[i].action;
+			if ( action == 2 || action == 8 )
+			{
+				if ( RepairString(stringNum, false) )
+					trig->actions[i].wavID = stringNum;
+			}
+			else if ( stringNum != 0 ) // Shouldn't have a wav string
+			{
+				trig->actions[i].wavID = 0;
+				removeUnusedString(stringNum);
 			}
 		}
 		trigNum ++;
@@ -1723,7 +1777,10 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 		while ( getTrigger(trig, trigNum) )
 		{
 			for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			{
 				AddStrIfOverZero( trig->actions[i].stringNum );
+				AddStrIfOverZero( trig->actions[i].wavID );
+			}
 			
 			trigNum ++;
 		}
@@ -1732,7 +1789,10 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 		while ( getBriefingTrigger(trig, trigNum) )
 		{
 			for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+			{
 				AddStrIfOverZero( trig->actions[i].stringNum );
+				AddStrIfOverZero( trig->actions[i].wavID );
+			}
 
 			trigNum ++;
 		}
@@ -2787,6 +2847,8 @@ bool Scenario::MakeEscapedStr(string& dest, char* src, u32 srcLen)
 				dest.append("\\n");
 			else if ( src[i] == '\r' )
 				dest.append("\\r");
+			else if ( src[i] == '\"' )
+				dest.append("\\\"");
 			else if ( src[i] < 32 && src[i] != '\11')
 			{
 				dest.push_back('\\');

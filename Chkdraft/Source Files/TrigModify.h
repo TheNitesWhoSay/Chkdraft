@@ -16,6 +16,7 @@ class TrigModifyWindow : public ClassWindow
 
 	private:
 		u32 trigIndex;
+		TabControl tabs;
 
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

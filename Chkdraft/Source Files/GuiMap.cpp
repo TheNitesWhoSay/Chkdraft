@@ -439,7 +439,7 @@ void GuiMap::selectAll()
 					u32 unitTableSize = UNIT().size(),
 						numUnits = unitTableSize/UNIT_STRUCT_SIZE;
 
-					HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+					HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
 					LVFINDINFO findInfo = { };
 					findInfo.flags = LVFI_PARAM;
 
@@ -1893,7 +1893,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 		{
 			chkd.unitWindow.SetChangeHighlightOnly(true);
 			UnitNode* curr = selection.getFirstUnit();
-			HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+			HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
 			while ( curr != nullptr )
 			{
 				LVFINDINFO findInfo = { };
@@ -1945,7 +1945,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 		
 				if ( chkd.unitWindow.getHandle() != nullptr )
 				{
-					HWND hUnitTree = GetDlgItem(chkd.unitWindow.getHandle(), IDC_UNITLIST);
+					HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
 					LVFINDINFO findInfo = { };
 					findInfo.flags = LVFI_PARAM;
 					findInfo.lParam = i;
@@ -2026,7 +2026,10 @@ bool parseEscapedString(std::string& str)
 						else if ( currChar == 'r' )
 							newStr.push_back('\r');
 						else
+						{
+							newStr.push_back('\\');
 							newStr.push_back(currChar);
+						}
 					}
 					else
 						newStr.push_back(currChar);

@@ -93,6 +93,7 @@
     <ClCompile Include="Source Files\Windows UI\MdiFrame.cpp" />
     <ClCompile Include="Source Files\Windows UI\RadioButtonControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\StatusControl.cpp" />
+    <ClCompile Include="Source Files\Windows UI\TabControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\TextControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ToolbarControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\TreeViewControl.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="Source Files\Windows UI\MdiFrame.h" />
     <ClInclude Include="Source Files\Windows UI\RadioButtonControl.h" />
     <ClInclude Include="Source Files\Windows UI\StatusControl.h" />
+    <ClInclude Include="Source Files\Windows UI\TabControl.h" />
     <ClInclude Include="Source Files\Windows UI\TextControl.h" />
     <ClInclude Include="Source Files\Windows UI\ToolbarControl.h" />
     <ClInclude Include="Source Files\Windows UI\TreeViewControl.h" />
@@ -263,6 +265,7 @@
       </AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>CHKDRAFT;_CRT_SECURE_NO_DEPRECATE;_USING_V110_SDK71_;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -272,6 +275,7 @@
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

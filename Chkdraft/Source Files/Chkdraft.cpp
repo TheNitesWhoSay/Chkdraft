@@ -455,7 +455,7 @@ bool Chkdraft::CreateSubWindows()
 		int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
 		return mainMenu.FindThis(hWnd) &&
-			   mainToolbar.CreateThis(hWnd) &&
+			   mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
 			   statusBar.CreateThis( sizeof(statusWidths)/sizeof(int), statusWidths, NULL,
 									 WS_CHILD|WS_VISIBLE|SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS ) &&
 			   maps.CreateMdiFrame( GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD, NULL, NULL,
@@ -488,7 +488,7 @@ void Chkdraft::RestoreDialogs()
 void Chkdraft::SizeSubWindows()
 {
 	RECT rcMain, rcTool, rcStatus, rcLeftBar;
-				
+	
 	mainToolbar.AutoSize();
 	statusBar.AutoSize();
 
@@ -531,13 +531,13 @@ void Chkdraft::OpenMapSettings(u16 menuId)
 	{
 		switch ( menuId )
 		{
-			case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(ID_TAB_MAPPROPERTIES); break;
-			case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(ID_TAB_FORCES); break;
-			case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(ID_TAB_UNITSETTINGS); break;
-			case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(ID_TAB_UPGRADESETTINGS); break;
-			case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(ID_TAB_TECHSETTINGS); break;
-			case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(ID_TAB_STRINGEDITOR); break;
-			case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(ID_TAB_WAVEDITOR); break;
+			case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(TAB_MAPPROPERTIES); break;
+			case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(TAB_FORCES); break;
+			case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(TAB_UNITSETTINGS); break;
+			case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(TAB_UPGRADESETTINGS); break;
+			case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(TAB_TECHSETTINGS); break;
+			case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(TAB_STRINGEDITOR); break;
+			case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(TAB_WAVEDITOR); break;
 		}
 		ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
 	}

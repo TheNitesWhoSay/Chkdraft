@@ -11,7 +11,7 @@ class TriggersWindow : public ClassWindow
 {
 	public:
 		TriggersWindow();
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
 		void RefreshWindow();
 		void DoSize();
@@ -20,7 +20,7 @@ class TriggersWindow : public ClassWindow
 		void CopySelection();
 		void MoveUp();
 		void MoveDown();
-		void MoveTo();
+		void MoveTrigTo();
 
 	protected:
 		bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger

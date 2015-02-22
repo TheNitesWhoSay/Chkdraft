@@ -2,6 +2,24 @@
 #include "MoveTo.h"
 #include "Chkdraft.h"
 
+enum ListColumns {
+	UNIT_NAME_COLUMN,
+	UNIT_OWNER_COLUMN,
+	UNIT_XC_COLUMN,
+	UNIT_YC_COLUMN,
+	UNIT_INDEX_COLUMN
+};
+
+enum ID {
+	IDC_UNITLIST = ID_FIRST,
+	IDC_HP_BUDDY,
+	IDC_MP_BUDDY,
+	IDC_SHIELD_BUDDY,
+	IDC_RESOURCES_BUDDY,
+	IDC_HANGER_BUDDY,
+	IDC_ID_BUDDY
+};
+
 UnitWindow::UnitWindow() : columnSortedBy(UNIT_INDEX_COLUMN), flipSort(false), initilizing(true), changeHighlightOnly(false)
 {
 

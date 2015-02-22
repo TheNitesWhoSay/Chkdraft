@@ -16,6 +16,7 @@ bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 		{
 			CreateSubWindows(getHandle());
 			ReplaceChildFonts(defaultFont);
+			DoSize();
 			RefreshWindow(trigIndex);
 			ShowWindow(getHandle(), SW_SHOWNORMAL);
 			return true;
@@ -39,13 +40,14 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 
 void TrigModifyWindow::DoSize()
 {
-	
+	RECT rcCli;
+	if ( getClientRect(rcCli) )
+		tabs.SetPos(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
 }
 
 void TrigModifyWindow::CreateSubWindows(HWND hWnd)
 {
-	TextControl text;
-	text.CreateThis(hWnd, 5, 5, 100, 23, "(Coming soon)", 0);
+
 }
 
 BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -53,6 +55,21 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	switch ( msg )
 	{
 		case WM_INITDIALOG:
+			{
+				SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0 ));
+				tabs.FindThis(hWnd, IDC_TRIGMODIFYTABS);
+				const char* tabLabels[] = { "Meta", "Players", "Conditions", "Actions" };
+				for ( int i=0; i<sizeof(tabLabels)/sizeof(const char*); i++ )
+					tabs.InsertTab(i, tabLabels[i]);
+				CreateSubWindows(hWnd);
+
+				ReplaceChildFonts(defaultFont);
+				RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+			}
+			break;
+
+		case WM_SIZE:
+			DoSize();
 			break;
 
 		case WM_CLOSE:
