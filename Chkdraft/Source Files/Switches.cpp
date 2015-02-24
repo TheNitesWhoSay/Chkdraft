@@ -1,6 +1,6 @@
 #include "Switches.h"
 
-bool SwitchesWindow::CreateThis(HWND hParent)
+bool SwitchesWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -10,7 +10,7 @@ bool SwitchesWindow::CreateThis(HWND hParent)
 		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Switches", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Switches", WS_CHILD,
 			5, 22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
-			hParent, (HMENU)ID_SWITCHES) )
+			hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;

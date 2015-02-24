@@ -96,6 +96,41 @@ bool ClassWindow::SetParent(HWND hParent)
 	return ::SetParent(windowHandle, hParent) != NULL;
 }
 
+void ClassWindow::MoveTo(int x, int y)
+{
+	SetWindowPos(windowHandle, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE);
+}
+
+void ClassWindow::SetPos(int x, int y, int width, int height)
+{
+	SetWindowPos(windowHandle, NULL, x, y, width, height, SWP_NOACTIVATE|SWP_NOZORDER);
+}
+
+void ClassWindow::ShowNormal()
+{
+	ShowWindow(windowHandle, SW_SHOWNORMAL);
+}
+
+void ClassWindow::Show()
+{
+	ShowWindow(windowHandle, SW_SHOW);
+}
+
+void ClassWindow::Hide()
+{
+	ShowWindow(windowHandle, SW_HIDE);
+}
+
+void ClassWindow::SetSmallIcon(HANDLE hIcon)
+{
+	SendMessage(windowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+}
+
+bool ClassWindow::SetTitle(const char* newTitle)
+{
+	return SetWindowText(windowHandle, newTitle) != 0;
+}
+
 bool ClassWindow::RegisterWindowClass( UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
 									   LPCTSTR lpszMenuName, LPCTSTR lpszClassName, HICON hIconSm, bool isMDIChild )
 {

@@ -7,7 +7,7 @@
 class CountersWindow : public ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
 		void RefreshWindow();
 		void DoSize();

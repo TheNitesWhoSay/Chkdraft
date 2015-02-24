@@ -156,7 +156,7 @@ void CLIPBOARD::endPasting()
 
 			if ( chkd.mainPlot.leftBar.getHandle() != NULL )
 			{
-				HWND hTree = GetDlgItem(chkd.mainPlot.leftBar.getHandle(), IDR_MAIN_TREE);
+				HWND hTree = chkd.mainPlot.leftBar.mainTree.getHandle();
 				if ( hTree != NULL )
 					TreeView_SelectItem(hTree, NULL);
 			}

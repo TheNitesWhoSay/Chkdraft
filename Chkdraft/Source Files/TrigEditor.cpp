@@ -1,7 +1,23 @@
 #include "TrigEditor.h"
 #include "Chkdraft.h"
+#include "Windows UI/WindowsUI.h"
 
-TrigEditorWindow::TrigEditorWindow() : currTab(0), hTabs(NULL)
+enum ID {
+	TAB_TRIGGERS = 0,
+	TAB_TEMPLATES,
+	TAB_COUNTERS,
+	TAB_CUWPS,
+	TAB_SWITCHES,
+
+	WIN_NETTABTAB = ID_FIRST,
+	WIN_TRIGGERS,
+	WIN_TEMPLATES,
+	WIN_COUNTERS,
+	WIN_CUWPS,
+	WIN_SWITCHES
+};
+
+TrigEditorWindow::TrigEditorWindow() : currTab(0)
 {
 
 }
@@ -11,7 +27,7 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
 	if ( getHandle() == NULL &&
 		 ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TRIGEDIT), hParent) )
 	{
-		ShowWindow(getHandle(), SW_SHOWNORMAL);
+		ShowNormal();
 		ChangeTab(currTab);
 		return true;
 	}
@@ -24,32 +40,27 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
 
 bool TrigEditorWindow::DestroyThis()
 {
-	if ( ClassWindow::DestroyDialog() )
-	{
-		hTabs = NULL;
-		return true;
-	}
-	else
-		return false;
+	triggersWindow.trigModifyWindow.Hide();
+	return ClassWindow::DestroyDialog();
 }
 
 void TrigEditorWindow::ChangeTab(u32 tabId)
 {
-	TabCtrl_SetCurSel(hTabs, tabId);
+	tabs.SetCurSel(tabId);
 
-	ShowWindow(GetDlgItem(hTabs, ID_TRIGGERS), SW_HIDE);
-	ShowWindow(GetDlgItem(hTabs, ID_TEMPLATES), SW_HIDE);
-	ShowWindow(GetDlgItem(hTabs, ID_COUNTERS), SW_HIDE);
-	ShowWindow(GetDlgItem(hTabs, ID_CUWPS), SW_HIDE);
-	ShowWindow(GetDlgItem(hTabs, ID_SWITCHES), SW_HIDE);
+	tabs.HideTab(WIN_TRIGGERS);
+	tabs.HideTab(WIN_TEMPLATES);
+	tabs.HideTab(WIN_COUNTERS);
+	tabs.HideTab(WIN_CUWPS);
+	tabs.HideTab(WIN_SWITCHES);
 
 	switch ( tabId )
 	{
-		case ID_TAB_TRIGGERS: ShowWindow(GetDlgItem(hTabs, ID_TRIGGERS), SW_SHOW); break;
-		case ID_TAB_TEMPLATES: ShowWindow(GetDlgItem(hTabs, ID_TEMPLATES), SW_SHOW); break;
-		case ID_TAB_COUNTERS: ShowWindow(GetDlgItem(hTabs, ID_COUNTERS), SW_SHOW); break;
-		case ID_TAB_CUWPS: ShowWindow(GetDlgItem(hTabs, ID_CUWPS), SW_SHOW); break;
-		case ID_TAB_SWITCHES: ShowWindow(GetDlgItem(hTabs, ID_SWITCHES), SW_SHOW); break;
+		case TAB_TRIGGERS : tabs.ShowTab(WIN_TRIGGERS ); break;
+		case TAB_TEMPLATES: tabs.ShowTab(WIN_TEMPLATES); break;
+		case TAB_COUNTERS : tabs.ShowTab(WIN_COUNTERS ); break;
+		case TAB_CUWPS	  : tabs.ShowTab(WIN_CUWPS	  ); break;
+		case TAB_SWITCHES : tabs.ShowTab(WIN_SWITCHES ); break;
 	}
 
 	currTab = tabId;
@@ -64,27 +75,33 @@ void TrigEditorWindow::RefreshWindow()
 	switchesWindow.RefreshWindow();
 }
 
-void TrigEditorWindow::CreateSubWindows()
+void TrigEditorWindow::CreateSubWindows(HWND hWnd)
 {
-	triggersWindow.CreateThis(hTabs);
-	templatesWindow.CreateThis(hTabs);
-	countersWindow.CreateThis(hTabs);
-	cuwpsWindow.CreateThis(hTabs);
-	switchesWindow.CreateThis(hTabs);
+	tabs.FindThis(hWnd, IDC_TRIGEDITTABS);
+	const char* tabLabels[] = { "Triggers", "Templates", "Counters", "CUWPs", "Switches" };
+	for ( int i=0; i<sizeof(tabLabels)/sizeof(const char*); i++ )
+		tabs.InsertTab(i, tabLabels[i]);
+
+	triggersWindow.CreateThis(tabs.getHandle(), WIN_TRIGGERS);
+	templatesWindow.CreateThis(tabs.getHandle(), WIN_TEMPLATES);
+	countersWindow.CreateThis(tabs.getHandle(), WIN_COUNTERS);
+	cuwpsWindow.CreateThis(tabs.getHandle(), WIN_CUWPS);
+	switchesWindow.CreateThis(tabs.getHandle(), WIN_SWITCHES);
 	DoSize();
 }
 
 void TrigEditorWindow::DoSize()
 {
 	RECT rcCli;
-	GetClientRect(getHandle(), &rcCli);
-	MoveWindow(hTabs, rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, TRUE);	
-	GetClientRect(hTabs, &rcCli);
-	MoveWindow(triggersWindow.getHandle(), rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22, FALSE);
-	MoveWindow(templatesWindow.getHandle(), rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22, FALSE);
-	MoveWindow(countersWindow.getHandle(), rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22, FALSE);
-	MoveWindow(cuwpsWindow.getHandle(), rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22, FALSE);
-	MoveWindow(switchesWindow.getHandle(), rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22, FALSE);
+	getClientRect(rcCli);
+	tabs.SetPos(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
+	tabs.getClientRect(rcCli);
+	
+	triggersWindow.SetPos(rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22);
+	templatesWindow.SetPos(rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22);
+	countersWindow.SetPos(rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22);
+	cuwpsWindow.SetPos(rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22);
+	switchesWindow.SetPos(rcCli.left, rcCli.top+22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top-22);
 
 	triggersWindow.DoSize();
 	templatesWindow.DoSize();
@@ -103,49 +120,14 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			break;
 
 		case WM_INITDIALOG:
-			{
-				hTabs = GetDlgItem(hWnd, IDC_TRIGEDITTABS);
-				CreateSubWindows();
-
-				LPARAM icon = (LPARAM)LoadImage( GetModuleHandle(NULL),
-												 MAKEINTRESOURCE(IDI_PROGRAM_ICON),
-												 IMAGE_ICON, 16, 16, 0 );
-				SendMessage(hTabs, WM_SETFONT, (WPARAM)defaultFont, FALSE);
-				SendMessage(hWnd, WM_SETICON, ICON_SMALL, icon);
-
-				const char* tabs[] = {
-					"Triggers", "Templates", "Counters", "CUWPs", "Switches"
-				};
-
-				HBITMAP newTabImage = (HBITMAP)LoadImage( GetModuleHandle(NULL),
-														  MAKEINTRESOURCE(IDB_NEWTAB),
-														  IMAGE_BITMAP, 16, 16, 0 );
-				HIMAGELIST hImages = ImageList_Create(16, 16, 0, 1, 1);
-				ImageList_Add(hImages, newTabImage, NULL);
-				TabCtrl_SetImageList(hTabs, hImages);
-				TabCtrl_SetMinTabWidth(hTabs, 5);
-
-				TCITEM item = { };
-				item.mask = TCIF_TEXT;
-				item.iImage = -1;
-				
-				for ( int i=0; i<sizeof(tabs)/sizeof(const char*); i++ )
-				{
-					item.pszText = (LPSTR)tabs[i];
-					item.cchTextMax = strlen(tabs[i]);
-					TabCtrl_InsertItem(hTabs, i, &item);
-				}
-				ReplaceChildFonts(defaultFont);
-				RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
-			}
+			SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0));
+			CreateSubWindows(hWnd);
+			ReplaceChildFonts(defaultFont);
+			RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
 			break;
 
 		case WM_SIZE:
 			DoSize();
-			break;
-
-		case WM_SIZING:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_NOTIFY:
@@ -155,28 +137,28 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 				{
 					case TCN_SELCHANGE:
 						{
-							u32 selectedTab = TabCtrl_GetCurSel(hTabs);
+							u32 selectedTab = tabs.GetCurSel();
 							switch ( selectedTab )
 							{
-								case ID_TAB_TRIGGERS: ShowWindow(GetDlgItem(hTabs, ID_TRIGGERS), SW_SHOW); break;
-								case ID_TAB_TEMPLATES: ShowWindow(GetDlgItem(hTabs, ID_TEMPLATES), SW_SHOW); break;
-								case ID_TAB_COUNTERS: ShowWindow(GetDlgItem(hTabs, ID_COUNTERS), SW_SHOW); break;
-								case ID_TAB_CUWPS: ShowWindow(GetDlgItem(hTabs, ID_CUWPS), SW_SHOW); break;
-								case ID_TAB_SWITCHES: ShowWindow(GetDlgItem(hTabs, ID_SWITCHES), SW_SHOW); break;
+								case TAB_TRIGGERS: tabs.ShowTab(WIN_TRIGGERS); break;
+								case TAB_TEMPLATES: tabs.ShowTab(WIN_TEMPLATES);break;
+								case TAB_COUNTERS: tabs.ShowTab(WIN_COUNTERS); break;
+								case TAB_CUWPS: tabs.ShowTab(WIN_CUWPS); break;
+								case TAB_SWITCHES: tabs.ShowTab(WIN_SWITCHES); break;
 							}
 							currTab = selectedTab;
 						}
 						break;
 					case TCN_SELCHANGING:
 						{
-							u32 selectedTab = TabCtrl_GetCurSel(hTabs);
+							u32 selectedTab = tabs.GetCurSel();
 							switch ( selectedTab )
 							{
-								case ID_TAB_TRIGGERS: ShowWindow(GetDlgItem(hTabs, ID_TRIGGERS), SW_HIDE); break;
-								case ID_TAB_TEMPLATES: ShowWindow(GetDlgItem(hTabs, ID_TEMPLATES), SW_HIDE); break;
-								case ID_TAB_COUNTERS: ShowWindow(GetDlgItem(hTabs, ID_COUNTERS), SW_HIDE); break;
-								case ID_TAB_CUWPS: ShowWindow(GetDlgItem(hTabs, ID_CUWPS), SW_HIDE); break;
-								case ID_TAB_SWITCHES: ShowWindow(GetDlgItem(hTabs, ID_SWITCHES), SW_HIDE); break;
+								case TAB_TRIGGERS: tabs.HideTab(WIN_TRIGGERS); break;
+								case TAB_TEMPLATES: tabs.HideTab(WIN_TEMPLATES); break;
+								case TAB_COUNTERS: tabs.HideTab(WIN_COUNTERS); break;
+								case TAB_CUWPS: tabs.HideTab(WIN_CUWPS); break;
+								case TAB_SWITCHES: tabs.HideTab(WIN_SWITCHES); break;
 							}
 						}
 						break;
@@ -188,6 +170,7 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			break;
 
 		case WM_CLOSE:
+			triggersWindow.trigModifyWindow.Hide();
 			ClassWindow::DestroyDialog();
 			break;
 

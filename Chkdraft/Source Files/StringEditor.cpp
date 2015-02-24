@@ -1,35 +1,33 @@
 #include "StringEditor.h"
 #include "Chkdraft.h"
 
-StringEditorWindow::StringEditorWindow() : currSelString(0)
+enum ID {
+	DELETE_STRING = ID_FIRST,
+	CHECK_EXTENDEDSTRING,
+	SAVE_TO,
+	COMPRESS_STRINGS,
+	REPAIR_STRINGS,
+	LB_STRINGS,
+	STRING_GUIDE,
+	EDIT_STRING,
+	PREVIEW_STRING,
+	LB_STRINGUSE
+};
+
+StringEditorWindow::StringEditorWindow() : currSelString(0), numVisibleStrings(0), stringListDC(NULL)
 {
 
 }
 
-bool StringEditorWindow::CreateThis(HWND hParent)
+bool StringEditorWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "StringEditor", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)ID_STRINGEDITOR) )
+		 ClassWindow::CreateClassWindow(NULL, "", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
-		HWND hStringEditor = getHandle();
-		textAboutStrings.CreateThis(hStringEditor, 5, 5, 100, 20, "String Editor...", 0);
-
-		listboxStrings.CreateThis(hStringEditor, 5, 25, 453, 262, true, false, ID_LB_STRINGS);
-
-		buttonDeleteString.CreateThis(hStringEditor, 130, 290, 200, 20, "Delete String", ID_DELETE_STRING);
-		checkExtendedString.CreateThis(hStringEditor, 20, 294, 100, 10, false, "Extended", ID_CHECK_EXTENDEDSTRING);
-		checkExtendedString.DisableThis();
-		editString.CreateThis(hStringEditor, 5, 310, 453, 140, true, ID_EDIT_STRING);
-
-		textStringUsage.CreateThis(hStringEditor, 480, 379, 125, 20, "String Usage:", 0);
-		listUsage.CreateThis(hStringEditor, 463, 394, 125, 83, false, false, ID_LB_STRINGUSE);
-
-		stringGuide.CreateThis(hStringEditor);
-		stringPreviewWindow.CreateThis(hStringEditor);
-
+		CreateSubWindows(getHandle());
 		RefreshWindow();
 		return true;
 	}
@@ -39,10 +37,12 @@ bool StringEditorWindow::CreateThis(HWND hParent)
 
 void StringEditorWindow::RefreshWindow()
 {
-	HWND hStringList = GetDlgItem(getHandle(), ID_LB_STRINGS);
-	if ( hStringList != NULL && chkd.maps.curr != nullptr )
+	if ( chkd.maps.curr != nullptr )
 	{
-		SendMessage(hStringList, LB_RESETCONTENT, NULL, NULL);
+		listStrings.SetRedraw(false);
+		listStrings.ClearItems();
+		numVisibleStrings = 0;
+		int toSelect = -1;
 		StringUsageTable strUse;
 		if ( strUse.populateTable(chkd.maps.curr->scenario(), false) )
 		{
@@ -51,10 +51,46 @@ void StringEditorWindow::RefreshWindow()
 			for ( u32 i=0; i<=lastUsed; i++ )
 			{
 				if ( strUse.isUsed(i) && chkd.maps.curr->getRawString(str, i) && str.size() > 0 )
-					SendMessage(hStringList, LB_ADDSTRING, NULL, (LPARAM)i);
+				{
+					int newListIndex = listStrings.AddItem(i);
+					if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
+					{
+						numVisibleStrings ++;
+						if ( currSelString == i ) // This string is the currSelString
+							toSelect = newListIndex; // Mark position for selection
+					}
+				}
 			}
 		}
+		listStrings.SetRedraw(true);
+		if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
+			chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
+		else
+		{
+			currSelString = 0; // Clear currSelString if selection fails
+			editString.SetText("");
+			chkd.mapSettingsWindow.SetTitle("Map Settings");
+		}
 	}
+}
+
+void StringEditorWindow::CreateSubWindows(HWND hWnd)
+{
+	textAboutStrings.CreateThis(hWnd, 5, 5, 100, 20, "String Editor...", 0);
+
+	listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, LB_STRINGS);
+
+	buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", DELETE_STRING);
+	checkExtendedString.CreateThis(hWnd, 20, 294, 100, 10, false, "Extended", CHECK_EXTENDEDSTRING);
+	checkExtendedString.DisableThis();
+	buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", SAVE_TO);
+	editString.CreateThis(hWnd, 5, 310, 453, 140, true, EDIT_STRING);
+
+	textStringUsage.CreateThis(hWnd, 480, 379, 125, 20, "String Usage:", 0);
+	listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, LB_STRINGUSE);
+
+	stringGuide.CreateThis(hWnd);
+	stringPreviewWindow.CreateThis(hWnd, PREVIEW_STRING);
 }
 
 LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -66,75 +102,64 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				RefreshWindow();
 			else if ( wParam == FALSE )
 				updateString(currSelString);
-			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_MOUSEWHEEL:
-			{
-				int distanceScrolled = int((s16(HIWORD(wParam)))/WHEEL_DELTA);
-				HWND hStringSel = GetDlgItem(hWnd, ID_LB_STRINGS);
-				if ( hStringSel != NULL )
-					ListBox_SetTopIndex(hStringSel, ListBox_GetTopIndex(hStringSel)-distanceScrolled);
-			}
+			listStrings.SetTopIndex(listStrings.GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
 			break;
 
 		case WM_COMMAND:
 			switch ( HIWORD(wParam) )
 			{
 				case LBN_SELCHANGE:
-					if ( LOWORD(wParam) == ID_LB_STRINGS ) // Change selection, update info boxes and so fourth
+					if ( LOWORD(wParam) == LB_STRINGS ) // Change selection, update info boxes and so fourth
 					{
-						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
-						if ( hEditString != NULL && currSelString != 0 )
+						if ( currSelString != 0 )
 							updateString(currSelString);
-						HWND hStringUse = GetDlgItem(hWnd, ID_LB_STRINGUSE);
-						if ( hStringUse != NULL )
-							SendMessage(hStringUse, LB_RESETCONTENT, NULL, NULL);
-
-						int lbIndex = SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0);
-						if ( lbIndex != LB_ERR )
+						
+						currSelString = 0;
+						listUsage.ClearItems();
+						int lbIndex;
+						if ( listStrings.GetCurSel(lbIndex) )
 						{
 							string str = "";
-							currSelString = SendMessage((HWND)lParam, LB_GETITEMDATA, lbIndex, NULL);
-							if ( currSelString != 0 && chkd.maps.curr != nullptr && chkd.maps.curr->getString(str, currSelString) && str.length() > 0 )
+							if ( listStrings.GetItemData(lbIndex, currSelString) && chkd.maps.curr != nullptr &&
+								 chkd.maps.curr->getString(str, currSelString) && str.length() > 0 )
 							{
-								if ( hEditString != NULL )
-									SetWindowText(hEditString, str.c_str());
+								editString.SetText(str.c_str());
 						
-								if ( hStringUse != NULL )
-								{
-									u32 locs, trigs, briefs, props, forces, wavs, units, switches;
-									chkd.maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
-									addUseItem(hStringUse, "Locations", locs);
-									addUseItem(hStringUse, "Triggers", trigs);
-									addUseItem(hStringUse, "Briefing Triggers", briefs);
-									addUseItem(hStringUse, "Map Properties", props);
-									addUseItem(hStringUse, "Forces", forces);
-									addUseItem(hStringUse, "WAVs", wavs);
-									addUseItem(hStringUse, "Units", units);
-									addUseItem(hStringUse, "Switches", switches);
-								}
-								return 0;
+								u32 locs, trigs, briefs, props, forces, wavs, units, switches;
+								chkd.maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
+								addUseItem("Locations", locs);
+								addUseItem("Triggers", trigs);
+								addUseItem("Briefing Triggers", briefs);
+								addUseItem("Map Properties", props);
+								addUseItem("Forces", forces);
+								addUseItem("WAVs", wavs);
+								addUseItem("Units", units);
+								addUseItem("Switches", switches);
+								chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") +
+									std::to_string(currSelString) + ']').c_str());
 							}
+							else
+								chkd.mapSettingsWindow.SetTitle("Map Settings");
+							return 0;
 						}
-						if ( hEditString != NULL )
-							SetWindowText(hEditString, "");
+						else
+							chkd.mapSettingsWindow.SetTitle("Map Settings");
+						editString.SetText("");
 					}
 					break;
 				case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == ID_LB_STRINGS )
-					{
-						HWND hEditString = GetDlgItem(hWnd, ID_EDIT_STRING);
-						if ( hEditString != NULL && currSelString != 0 )
-							updateString(currSelString);
-					}
+					if ( LOWORD(wParam) == LB_STRINGS && currSelString != 0 && updateString(currSelString) )
+						chkd.maps.curr->refreshScenario();
 					break;
 				case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == ID_EDIT_STRING && currSelString != 0 && updateString(currSelString) )
+					if ( LOWORD(wParam) == EDIT_STRING && currSelString != 0 && updateString(currSelString) )
 						chkd.maps.curr->refreshScenario();
 					break;
 				case BN_CLICKED:
-					if ( LOWORD(wParam) == ID_DELETE_STRING  &&
+					if ( LOWORD(wParam) == DELETE_STRING  &&
 						 MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION|MB_YESNO) == IDYES &&
 						 chkd.maps.curr != nullptr && currSelString != 0 && chkd.maps.curr->stringExists(currSelString)
 					   )
@@ -142,61 +167,71 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 						chkd.maps.curr->forceDeleteString(currSelString);
 						chkd.maps.curr->refreshScenario();
 					}
+					else if ( LOWORD(wParam) == SAVE_TO && chkd.maps.curr != nullptr )
+						saveStrings();
 					break;
 			}
 			return 0;
 			break;
 
+		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
+			stringListDC = listStrings.getDC();
+			break;
+
 		case WM_MEASUREITEM:
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-				HWND hStringList = GetDlgItem(hWnd, ID_LB_STRINGS);
 				string str;
 
-				if ( hStringList != NULL && chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 )
+				if ( chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 &&
+					 GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, str) )
 				{
-					HDC hDC = GetDC(hStringList);
-					if ( hDC != NULL )
-					{
-						if ( GetStringDrawSize(hDC, mis->itemWidth, mis->itemHeight, str) )
-						{
-							mis->itemWidth += 5;
-							mis->itemHeight += 2;
-							ReleaseDC(hStringList, hDC);
-							return TRUE;
-						}
-						ReleaseDC(hStringList, hDC);
-					}
+					mis->itemWidth += 5;
+					mis->itemHeight += 2;
 				}
-				return DefWindowProc(hWnd, msg, wParam, lParam);
+				return TRUE;
 			}
+			break;
+
+		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
+			listStrings.ReleaseDC(stringListDC);
+			stringListDC = NULL;
+			break;
+
+		case WM_PREDRAWITEMS:
 			break;
 
 		case WM_DRAWITEM:
 			{
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
+				bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
+					 drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
+					 drawEntire = ((pdis->itemAction&ODA_DRAWENTIRE) == ODA_DRAWENTIRE);
 
-				if ( pdis->itemID != -1 && (pdis->itemAction == ODA_SELECT || pdis->itemAction == ODA_DRAWENTIRE) )
-				{
+				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
+				{	
 					string str;
-					HBRUSH hBlack = CreateSolidBrush(RGB(0, 0, 0));
-					if ( hBlack != NULL )
-					{
-						FillRect(pdis->hDC, &pdis->rcItem, hBlack);
-						DeleteObject(hBlack);
-					}
-					if ( pdis->itemState & ODS_SELECTED )
-						DrawFocusRect(pdis->hDC, &pdis->rcItem);
-					
 					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getRawString(str, pdis->itemData) && str.size() > 0 )
 					{
+						HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
+						if ( hBackground != NULL )
+						{
+							FillRect(pdis->hDC, &pdis->rcItem, hBackground); // Draw far background
+							DeleteObject(hBackground);
+							hBackground = NULL;
+						}
 						SetBkMode(pdis->hDC, TRANSPARENT);
 						DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
 							RGB(16, 252, 24), str);
 					}
+					if ( isSelected )
+						DrawFocusRect(pdis->hDC, &pdis->rcItem);
 				}
 				return TRUE;
 			}
+			break;
+
+		case WM_POSTDRAWITEMS:
 			break;
 
 		default:
@@ -206,14 +241,35 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	return 0;
 }
 
-void StringEditorWindow::addUseItem(HWND hStringUse, const char* title, u32 amount)
+void StringEditorWindow::saveStrings()
 {
-	stringstream ss;
-	if ( amount > 0 )
+	char filePath[MAX_PATH] = { };
+	OPENFILENAME ofn = GetOfn(filePath, "Text Documents(*.txt)\0*.txt\0All Files\0*\0", 0);
+	if ( GetSaveFileName(&ofn) )
 	{
-		ss << title << ": " << amount;
-		SendMessage(hStringUse, LB_ADDSTRING, NULL, (LPARAM)ss.str().c_str());
+		if ( ofn.nFilterIndex == 1 && strstr(filePath, ".txt") == nullptr )
+			strcat_s(filePath, ".txt");
+
+		DeleteFileA(filePath);
+
+		ofstream outFile(filePath, std::ofstream::out);
+		if ( outFile.is_open() )
+		{
+			string str;
+			for ( u32 i=0; i<chkd.maps.curr->numStrings(); i++ )
+			{
+				if ( chkd.maps.curr->getString(str, i) && str.size() > 0 )
+					outFile << i << ": " << str << "\r\n";
+			}
+			outFile.close();
+		}
 	}
+}
+
+void StringEditorWindow::addUseItem(string str, u32 amount)
+{
+	if ( amount > 0 )
+		listUsage.AddString((str + ": " + std::to_string(amount)).c_str());
 }
 
 bool StringEditorWindow::updateString(u32 stringNum)
@@ -227,7 +283,7 @@ bool StringEditorWindow::updateString(u32 stringNum)
 			chkd.maps.curr->notifyChange(false);
 			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )
 				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-			RedrawWindow((HWND)editString.getHandle(), NULL, NULL, RDW_INVALIDATE);
+			editString.RedrawThis();
 			return true;
 		}
 		else

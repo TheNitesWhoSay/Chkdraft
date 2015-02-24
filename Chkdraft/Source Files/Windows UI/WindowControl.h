@@ -15,6 +15,7 @@ class WindowControl
 /*  Destructor  */	~WindowControl(); // This will NOT remove the control, use "DestroyThis" or destroy the parent window to do so
 
 /*  Accessors   */	HWND getHandle(); // Accessor for the control handle
+					bool getClientRect(RECT &rect);
 					HDC getDC(); // Gets the current device context
 					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 

@@ -2,6 +2,17 @@
 #include <iostream>
 using namespace std;
 
+ListBoxControl::ListBoxControl() : autoRedraw(true)
+{
+
+}
+
+ListBoxControl::~ListBoxControl()
+{
+	while ( !itemsToAdd.empty() )
+		itemsToAdd.pop();
+}
+
 bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, u32 id)
 {
 	u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
@@ -235,15 +246,51 @@ int ListBoxControl::GetTopIndex()
 
 LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if ( msg == WM_MOUSEWHEEL )
+	switch ( msg )
 	{
-		SetTopIndex(GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
-		return 0;
+		case LB_ADDSTRING:
+			if ( !autoRedraw )
+			{
+				try {
+					itemsToAdd.push((u32)lParam);
+					return itemsToAdd.size()-1;
+				} catch ( std::exception ) { return -1; }
+			}
+			break;
+		case WM_SETREDRAW:
+			if ( wParam == TRUE && autoRedraw == false )
+			{
+				SendMessage(GetParent(hWnd), WM_PREMEASUREITEMS, NULL, (LPARAM)hWnd);
+				while ( !itemsToAdd.empty() )
+				{
+					CallDefaultProc(hWnd, LB_ADDSTRING, NULL, (LPARAM)itemsToAdd.front());
+					itemsToAdd.pop();
+				}
+				SendMessage(GetParent(hWnd), WM_POSTMEASUREITEMS, NULL, (LPARAM)hWnd);
+				autoRedraw = true;
+			}
+			else if ( wParam == FALSE && autoRedraw == true )
+				autoRedraw = false;
+			break;
+		case WM_PAINT:
+			{
+				SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
+				LRESULT result = CallDefaultProc(hWnd, msg, wParam, lParam);
+				// Could replace default drawing with double buffering
+				SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
+				return result;
+			}
+			break;
+		case WM_MOUSEWHEEL:
+			SetTopIndex(GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
+			return 0;
+			break;
+		case WM_LBUTTONDBLCLK:
+			SendMessage(GetParent(hWnd), WM_DBLCLKITEM, 0, (LPARAM)hWnd);
+			break;
+		default:
+			return CallDefaultProc(hWnd, msg, wParam, lParam);
+			break;
 	}
-	if ( msg == WM_LBUTTONDBLCLK )
-	{
-		SendMessage(GetParent(hWnd), LBN_DBLCLKITEM, 0, (LPARAM)hWnd);
-	}
-		
 	return CallDefaultProc(hWnd, msg, wParam, lParam);
 }

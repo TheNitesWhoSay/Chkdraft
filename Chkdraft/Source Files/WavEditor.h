@@ -7,7 +7,7 @@
 class WavEditorWindow : public ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		void RefreshWindow();
 
 	private:

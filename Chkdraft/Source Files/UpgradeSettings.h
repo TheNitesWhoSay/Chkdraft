@@ -14,7 +14,7 @@ class UpgradeSettingsWindow : public ClassWindow
 {
 	public:
 		UpgradeSettingsWindow();
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		void RefreshWindow();
 
 	protected:

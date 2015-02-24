@@ -29,6 +29,14 @@ class ClassWindow
 					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
 					bool SetParent(HWND hParent);
 
+					void MoveTo(int x, int y);
+					void SetPos(int x, int y, int width, int height);
+					void ShowNormal();
+					void Show();
+					void Hide();
+					void SetSmallIcon(HANDLE hIcon);
+					bool SetTitle(const char* newTitle);
+
 	protected:
 
 /*   Setup    */	/** Attempts to register a class for creating the window

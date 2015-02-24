@@ -70,9 +70,13 @@
     <ClCompile Include="Source Files\TextTrigCompiler.cpp" />
     <ClCompile Include="Source Files\TextTrigGenerator.cpp" />
     <ClCompile Include="Source Files\TileProperties.cpp" />
+    <ClCompile Include="Source Files\TrigActions.cpp" />
+    <ClCompile Include="Source Files\TrigConditions.cpp" />
     <ClCompile Include="Source Files\TrigEditor.cpp" />
     <ClCompile Include="Source Files\Triggers.cpp" />
+    <ClCompile Include="Source Files\TrigMeta.cpp" />
     <ClCompile Include="Source Files\TrigModify.cpp" />
+    <ClCompile Include="Source Files\TrigPlayers.cpp" />
     <ClCompile Include="Source Files\Undo.cpp" />
     <ClCompile Include="Source Files\UnitProperties.cpp" />
     <ClCompile Include="Source Files\MoveTo.cpp" />
@@ -93,6 +97,7 @@
     <ClCompile Include="Source Files\Windows UI\MdiFrame.cpp" />
     <ClCompile Include="Source Files\Windows UI\RadioButtonControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\StatusControl.cpp" />
+    <ClCompile Include="Source Files\Windows UI\TabControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\TextControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ToolbarControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\TreeViewControl.cpp" />
@@ -165,9 +170,13 @@
     <ClInclude Include="Source Files\TextTrigCompiler.h" />
     <ClInclude Include="Source Files\TextTrigGenerator.h" />
     <ClInclude Include="Source Files\TileProperties.h" />
+    <ClInclude Include="Source Files\TrigActions.h" />
+    <ClInclude Include="Source Files\TrigConditions.h" />
     <ClInclude Include="Source Files\TrigEditor.h" />
     <ClInclude Include="Source Files\Triggers.h" />
+    <ClInclude Include="Source Files\TrigMeta.h" />
     <ClInclude Include="Source Files\TrigModify.h" />
+    <ClInclude Include="Source Files\TrigPlayers.h" />
     <ClInclude Include="Source Files\Undo.h" />
     <ClInclude Include="Source Files\UnitProperties.h" />
     <ClInclude Include="Source Files\MoveTo.h" />
@@ -189,6 +198,7 @@
     <ClInclude Include="Source Files\Windows UI\MdiFrame.h" />
     <ClInclude Include="Source Files\Windows UI\RadioButtonControl.h" />
     <ClInclude Include="Source Files\Windows UI\StatusControl.h" />
+    <ClInclude Include="Source Files\Windows UI\TabControl.h" />
     <ClInclude Include="Source Files\Windows UI\TextControl.h" />
     <ClInclude Include="Source Files\Windows UI\ToolbarControl.h" />
     <ClInclude Include="Source Files\Windows UI\TreeViewControl.h" />
@@ -263,6 +273,7 @@
       </AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>CHKDRAFT;_CRT_SECURE_NO_DEPRECATE;_USING_V110_SDK71_;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -272,6 +283,7 @@
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -10,8 +10,10 @@
 class TriggersWindow : public ClassWindow
 {
 	public:
+		TrigModifyWindow trigModifyWindow;
+
 		TriggersWindow();
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
 		void RefreshWindow();
 		void DoSize();
@@ -20,7 +22,7 @@ class TriggersWindow : public ClassWindow
 		void CopySelection();
 		void MoveUp();
 		void MoveDown();
-		void MoveTo();
+		void MoveTrigTo();
 
 	protected:
 		bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger
@@ -61,8 +63,6 @@ class TriggersWindow : public ClassWindow
 		bool displayAll;
 		u32 numVisibleTrigs;
 		bool changeGroupHighlightOnly;
-
-		TrigModifyWindow trigModifyWindow;
 
 		ButtonControl buttonNew, buttonModify, buttonDelete, buttonCopy,
 					  buttonMoveUp, buttonMoveDown, buttonMoveTo;

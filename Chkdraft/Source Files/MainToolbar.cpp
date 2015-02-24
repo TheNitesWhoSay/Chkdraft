@@ -1,10 +1,10 @@
 #include "MainToolbar.h"
 
-bool MainToolbar::CreateThis(HWND hParent)
+bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
 {
 	// Initilize primary toolbar
 	if ( WindowControl::CreateControl( NULL, TOOLBARCLASSNAME, NULL, WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS,
-									   0, 0, 0, 0, hParent, (HMENU)IDR_MAIN_TOOLBAR, false ) )
+									   0, 0, 0, 0, hParent, (HMENU)windowId, false ) )
 	{
 		HWND hTool = getHandle();
 		SendMessage(hTool, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);

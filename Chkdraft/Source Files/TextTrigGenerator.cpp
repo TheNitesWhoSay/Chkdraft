@@ -1039,7 +1039,7 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCus
 			Invariant( unitTable.size() == unitID );
 			if ( quoteArgs )
 			{
-				if ( useCustomNames )
+				if ( useCustomNames && unitID < 228 )
 				{
 					string unquotedName;
 					map->getUnitName(unquotedName, unitID);
@@ -1050,7 +1050,7 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCus
 			}
 			else
 			{
-				if ( useCustomNames )
+				if ( useCustomNames && unitID < 228 )
 					map->getUnitName(unitName, unitID);
 				else
 					unitName = string(LegacyTextTrigDisplayName[unitID]);

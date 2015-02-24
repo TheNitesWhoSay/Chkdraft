@@ -57,7 +57,10 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 			while ( chk->getTrigger(trig, trigNum) )
 			{
 				for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+				{
 					MarkIfOverZero( trig->actions[i].stringNum );
+					MarkIfOverZero( trig->actions[i].wavID );
+				}
 			
 				trigNum ++;
 			}
@@ -68,7 +71,10 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 			while ( chk->getBriefingTrigger(trig, trigNum) )
 			{
 				for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+				{
 					MarkIfOverZero( trig->actions[i].stringNum );
+					MarkIfOverZero( trig->actions[i].wavID );
+				}
 
 				trigNum ++;
 			}

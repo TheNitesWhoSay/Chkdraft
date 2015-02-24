@@ -1,15 +1,42 @@
 #ifndef LISTBOXCONTROL_H
 #define LISTBOXCONTROL_H
 #include "WindowControl.h"
+#include <queue>
 
-/** Sent to the parent window when an item is double clicked
-	The WPARAM specifies the item index that was double clicked
-	The LPARAM is the list box's handle */
-#define LBN_DBLCLKITEM (WM_APP+1)
+enum LB
+{
+	/** Sent to the parent when an item is double clicked
+		The WPARAM specifies the item index that was double clicked
+		The LPARAM is the list box's handle */
+	WM_DBLCLKITEM = (WM_APP+1), 
+
+	/** Sent to the parent before several items are measured
+		The WPARAM is NULL
+		The LPARAM is the list box's handle */
+	WM_PREMEASUREITEMS,
+
+	/** Sent to the parent after several items are measured
+		The WPARAM is NULL
+		The LPARAM is the list box's handle */
+	WM_POSTMEASUREITEMS,
+
+	/** Sent to the parent before several items are drawn
+		The WPARAM is NULL
+		The LPARAM is the list box's handle */
+	WM_PREDRAWITEMS,
+
+	/** Sent to the parent after several items are drawn
+		The WPARAM is NULL
+		The LPARAM is the list box's handle */
+	WM_POSTDRAWITEMS
+};
 
 class ListBoxControl : public WindowControl
 {
 	public:
+		ListBoxControl();
+		~ListBoxControl();
+
 		// Attempts to create a list box
 		bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, u32 id);
 		void ClearItems();
@@ -36,6 +63,10 @@ class ListBoxControl : public WindowControl
 		bool GetItemData(int index, u32 &data);
 		int GetTopIndex();
 		virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	private:
+		bool autoRedraw;
+		std::queue<u32> itemsToAdd;
 };
 
 #endif

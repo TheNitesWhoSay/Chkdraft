@@ -15,6 +15,11 @@ HWND WindowControl::getHandle()
 	return controlHandle;
 }
 
+bool WindowControl::getClientRect(RECT &rect)
+{
+	return ::GetClientRect(controlHandle, &rect) != 0;
+}
+
 HDC WindowControl::getDC()
 {
 	return ::GetDC(controlHandle);

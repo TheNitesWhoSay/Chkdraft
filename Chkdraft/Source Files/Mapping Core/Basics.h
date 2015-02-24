@@ -7,6 +7,7 @@
 	void DebugIf(bool condition);
 	void NoDebug();
 	void mb(const char* text); // Basic message box message
+	void mb(int i, const char* text);
 	void Error(const char* ErrorMessage); // Basic error message box
 	bool RetryError(const char* text); // Error box with yes/no confirm
 	extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc

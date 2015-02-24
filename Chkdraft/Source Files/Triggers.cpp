@@ -2,6 +2,14 @@
 #include "Chkdraft.h"
 #include "MoveTo.h"
 
+/**
+	Possible performance issue:
+	10,000 some uncommented triggers with 12 some actions leads to...
+		~6 Second Trigger Text Generation
+		~6 Second Trigger Measure Time
+		(real time when most are commented)
+*/
+
 #define TRIGGER_TOP_PADDING 1
 #define TRIGGER_LEFT_PADDING 1
 #define TRIGGER_RIGHT_PADDING 1
@@ -14,27 +22,19 @@
 
 #define NO_TRIGGER (u32(-1))
 
-#define BUTTON_NEW 41001
-#define BUTTON_MODIFY 41002
-#define BUTTON_DELETE 41003
-#define BUTTON_COPY 41004
-#define BUTTON_MOVEUP 41005
-#define BUTTON_MOVEDOWN 41006
-#define BUTTON_MOVETO 41007
-#define LIST_GROUPS 41008
-#define LIST_TRIGGERS 41009
-
 #define TRIGGER_NUM_PREFACE "\x12\x1A#"
 
-/**
-	Max triggers (assuming 4gb sections are possible): 1,789,569 (2,400 bytes per trigger; 2^32 max size)
-
-	Possible performance issue:
-	10,000 some uncommented triggers with 12 some actions leads to...
-		~6 Second Trigger Text Generation
-		~6 Second Trigger Measure Time
-		(real time when most are commented)
-*/
+enum ID { 
+	BUTTON_NEW = ID_FIRST,
+	BUTTON_MODIFY,
+	BUTTON_DELETE,
+	BUTTON_COPY,
+	BUTTON_MOVEUP,
+	BUTTON_MOVEDOWN,
+	BUTTON_MOVETO,
+	LIST_GROUPS,
+	LIST_TRIGGERS
+};
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
 	changeGroupHighlightOnly(false), trigListDC(NULL)
@@ -43,7 +43,7 @@ TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), nu
 		groupSelected[i] = false;
 }
 
-bool TriggersWindow::CreateThis(HWND hParent)
+bool TriggersWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -53,7 +53,7 @@ bool TriggersWindow::CreateThis(HWND hParent)
 		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Triggers", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Triggers", WS_VISIBLE|WS_CHILD,
 			5, 22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
-			hParent, (HMENU)ID_TRIGGERS) )
+			hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -210,7 +210,7 @@ void TriggersWindow::MoveDown()
 	}
 }
 
-void TriggersWindow::MoveTo()
+void TriggersWindow::MoveTrigTo()
 {
 	int sel;
 	u32 targetTrigIndex;
@@ -362,14 +362,13 @@ void TriggersWindow::RefreshTrigList()
 		}
 	}
 
+	listTriggers.SetRedraw(true);
 	if ( toSelect == -1 || !listTriggers.SetCurSel(toSelect) ) // Attempt selection
 	{
 		currTrigger = NO_TRIGGER; // Clear currTrigger if selection fails
 		if ( trigModifyWindow.getHandle() != NULL )
 			trigModifyWindow.DestroyThis();
 	}
-
-	listTriggers.SetRedraw(true);
 }
 
 void TriggersWindow::ButtonNew()
@@ -387,7 +386,11 @@ void TriggersWindow::ButtonNew()
 	if ( listTriggers.GetCurSel(sel) )
 	{
 		if ( listTriggers.GetItemData(sel, newTrigId) )
+		{
 			insertedTrigger = chkd.maps.curr->insertTrigger(newTrigId, trigger);
+			if ( insertedTrigger )
+				newTrigId ++;
+		}
 	}
 	else if ( chkd.maps.curr->addTrigger(trigger) )
 	{
@@ -781,7 +784,7 @@ string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger)
 		case AID_GIVE_UNITS_TO_PLAYER: // Type2, Type, Players, Location, Number
 			ssAction << "Give \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
 				<< "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
-				<< "\x0C\' to \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
+				<< "\x0C\' to \x08" << tt.GetTrigPlayer(action.number) << "\x0C.";
 			break;
 		case AID_KILL_UNIT: // Type, Players
 			ssAction << "Kill all \x08" << tt.GetTrigUnit(action.type) << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
@@ -1066,13 +1069,11 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scen
 	string str;
 	if ( chk->getActiveComment(trigger, str) )
 	{
-		char num[12] = { };
-		_itoa_s(triggerNum, num, 10);
 		size_t endOfLine = str.find("\r\n");
 		if ( endOfLine != string::npos )
-			str.insert(endOfLine, (string(TRIGGER_NUM_PREFACE) + num + '\x0C'));
+			str.insert(endOfLine, (string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 		else
-			str.append((string(TRIGGER_NUM_PREFACE) + num + '\x0C'));
+			str.append((string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
 		if ( GetStringDrawSize(hDC, width, height, str) )
 		{
@@ -1209,7 +1210,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			}
 			break;
 
-		case LBN_DBLCLKITEM:
+		case WM_DBLCLKITEM:
 			if ( listTriggers == (HWND)lParam )
 				ButtonModify();
 			break;
@@ -1272,7 +1273,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					else if ( LOWORD(wParam) == BUTTON_MOVEDOWN )
 						MoveDown();
 					else if ( LOWORD(wParam) == BUTTON_MOVETO )
-						MoveTo();
+						MoveTrigTo();
 					break;
 			}
 			break;
@@ -1281,27 +1282,21 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			SendMessage(listTriggers.getHandle(), WM_MOUSEWHEEL, wParam, lParam);
 			break;
 
+		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
+			tt.LoadScenario(chkd.maps.curr);
+			trigListDC = listTriggers.getDC();
+			break;
+
 		case WM_MEASUREITEM:
-			if ( this != nullptr && wParam == LIST_TRIGGERS )
+			if ( wParam == LIST_TRIGGERS )
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
 				Trigger* trigger;
 				u32 triggerNum = (u32)mis->itemData;
-				
-				if ( mis->itemID == 0 ) // Measuring is time sensative, load necessary items for measuring all triggers once
-				{
-					tt.LoadScenario(chkd.maps.curr);
-					trigListDC = listTriggers.getDC();
-				}
 
-				if ( trigListDC != NULL && chkd.maps.curr->getTrigger(trigger, triggerNum) )
+				if ( chkd.maps.curr->getTrigger(trigger, triggerNum) )
 					GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, chkd.maps.curr, triggerNum, trigger);
 				
-				if ( mis->itemID == numVisibleTrigs-1 ) // Release items loaded for measurement
-				{
-					listTriggers.ReleaseDC(trigListDC);
-					tt.ClearScenario();
-				}
 				return TRUE;
 			}
 			else if ( wParam == LIST_GROUPS )
@@ -1313,6 +1308,12 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			}
 			break;
 
+		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
+			listTriggers.ReleaseDC(trigListDC);
+			trigListDC = NULL;
+			tt.ClearScenario();
+			break;
+
 		case WM_CTLCOLORLISTBOX:
 			if ( listTriggers == (HWND)lParam )
 			{
@@ -1321,6 +1322,10 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					return (LPARAM)hBrush;
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
+
+		case WM_PREDRAWITEMS:
+			tt.LoadScenario(chkd.maps.curr);
 			break;
 
 		case WM_DRAWITEM:
@@ -1337,11 +1342,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					u32 triggerNum = (u32)pdis->itemData;
 					
 					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getTrigger(trigger, triggerNum) )
-					{
-						tt.LoadScenario(chkd.maps.curr);
 						DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, chkd.maps.curr, triggerNum, trigger);
-						tt.ClearScenario();
-					}
 				}
 
 				return TRUE;
@@ -1356,6 +1357,10 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
 					DrawGroup(pdis->hDC, pdis->rcItem, isSelected, u8(u32(pdis->itemData)));
 			}
+			break;
+
+		case WM_POSTDRAWITEMS:
+			tt.ClearScenario();
 			break;
 
 		default:

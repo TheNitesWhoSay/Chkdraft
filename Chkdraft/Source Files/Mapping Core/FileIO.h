@@ -2,6 +2,7 @@
 #define FILEIO_H
 #include "Buffer.h"
 #include "SFmpqapi.h"
+#include <fstream>
 
 // MPQ handling
 
@@ -16,6 +17,8 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* fileName, buffer& buf);
 
 // General program IO
+
+OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter);
 
 OPENFILENAME GetScSaveOfn(char* szFileName);
 

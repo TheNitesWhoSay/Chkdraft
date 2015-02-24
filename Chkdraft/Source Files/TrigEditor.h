@@ -19,12 +19,12 @@ class TrigEditorWindow : public ClassWindow
 		void RefreshWindow();
 
 	protected:
-		void CreateSubWindows();
+		void CreateSubWindows(HWND hWnd);
 		void DoSize();
 
 	private:
 		u32 currTab;
-		HWND hTabs;
+		TabControl tabs;
 
 		TriggersWindow triggersWindow;
 		TemplatesWindow templatesWindow;

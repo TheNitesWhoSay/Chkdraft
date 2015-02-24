@@ -1,6 +1,6 @@
 #include "Templates.h"
 
-bool TemplatesWindow::CreateThis(HWND hParent)
+bool TemplatesWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -10,7 +10,7 @@ bool TemplatesWindow::CreateThis(HWND hParent)
 		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Templates", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Templates", WS_CHILD,
 			5, 22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
-			hParent, (HMENU)ID_TEMPLATES) )
+			hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
