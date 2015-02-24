@@ -123,7 +123,12 @@ void ClassWindow::Hide()
 
 void ClassWindow::SetSmallIcon(HANDLE hIcon)
 {
-	SendMessage(getHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+	SendMessage(windowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+}
+
+bool ClassWindow::SetTitle(const char* newTitle)
+{
+	return SetWindowText(windowHandle, newTitle) != 0;
 }
 
 bool ClassWindow::RegisterWindowClass( UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,

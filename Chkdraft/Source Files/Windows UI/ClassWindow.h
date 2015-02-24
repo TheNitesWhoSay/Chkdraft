@@ -35,6 +35,7 @@ class ClassWindow
 					void Show();
 					void Hide();
 					void SetSmallIcon(HANDLE hIcon);
+					bool SetTitle(const char* newTitle);
 
 	protected:
 

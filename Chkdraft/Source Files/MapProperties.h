@@ -12,6 +12,7 @@ class MapPropertiesWindow : public ClassWindow
 		void RefreshWindow();
 
 	private:
+		bool refreshing;
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CheckReplaceMapTitle();
 		void CheckReplaceMapDescription();

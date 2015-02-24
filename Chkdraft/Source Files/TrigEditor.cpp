@@ -40,6 +40,7 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
 
 bool TrigEditorWindow::DestroyThis()
 {
+	triggersWindow.trigModifyWindow.Hide();
 	return ClassWindow::DestroyDialog();
 }
 
@@ -169,6 +170,7 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			break;
 
 		case WM_CLOSE:
+			triggersWindow.trigModifyWindow.Hide();
 			ClassWindow::DestroyDialog();
 			break;
 

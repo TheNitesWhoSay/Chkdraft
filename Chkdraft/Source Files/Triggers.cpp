@@ -362,14 +362,13 @@ void TriggersWindow::RefreshTrigList()
 		}
 	}
 
+	listTriggers.SetRedraw(true);
 	if ( toSelect == -1 || !listTriggers.SetCurSel(toSelect) ) // Attempt selection
 	{
 		currTrigger = NO_TRIGGER; // Clear currTrigger if selection fails
 		if ( trigModifyWindow.getHandle() != NULL )
 			trigModifyWindow.DestroyThis();
 	}
-
-	listTriggers.SetRedraw(true);
 }
 
 void TriggersWindow::ButtonNew()
@@ -387,7 +386,11 @@ void TriggersWindow::ButtonNew()
 	if ( listTriggers.GetCurSel(sel) )
 	{
 		if ( listTriggers.GetItemData(sel, newTrigId) )
+		{
 			insertedTrigger = chkd.maps.curr->insertTrigger(newTrigId, trigger);
+			if ( insertedTrigger )
+				newTrigId ++;
+		}
 	}
 	else if ( chkd.maps.curr->addTrigger(trigger) )
 	{
@@ -1066,13 +1069,11 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scen
 	string str;
 	if ( chk->getActiveComment(trigger, str) )
 	{
-		char num[12] = { };
-		_itoa_s(triggerNum, num, 10);
 		size_t endOfLine = str.find("\r\n");
 		if ( endOfLine != string::npos )
-			str.insert(endOfLine, (string(TRIGGER_NUM_PREFACE) + num + '\x0C'));
+			str.insert(endOfLine, (string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 		else
-			str.append((string(TRIGGER_NUM_PREFACE) + num + '\x0C'));
+			str.append((string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
 		if ( GetStringDrawSize(hDC, width, height, str) )
 		{
@@ -1209,7 +1210,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			}
 			break;
 
-		case LBN_DBLCLKITEM:
+		case WM_DBLCLKITEM:
 			if ( listTriggers == (HWND)lParam )
 				ButtonModify();
 			break;
@@ -1281,27 +1282,21 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			SendMessage(listTriggers.getHandle(), WM_MOUSEWHEEL, wParam, lParam);
 			break;
 
+		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
+			tt.LoadScenario(chkd.maps.curr);
+			trigListDC = listTriggers.getDC();
+			break;
+
 		case WM_MEASUREITEM:
-			if ( this != nullptr && wParam == LIST_TRIGGERS )
+			if ( wParam == LIST_TRIGGERS )
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
 				Trigger* trigger;
 				u32 triggerNum = (u32)mis->itemData;
-				
-				if ( mis->itemID == 0 ) // Measuring is time sensative, load necessary items for measuring all triggers once
-				{
-					tt.LoadScenario(chkd.maps.curr);
-					trigListDC = listTriggers.getDC();
-				}
 
-				if ( trigListDC != NULL && chkd.maps.curr->getTrigger(trigger, triggerNum) )
+				if ( chkd.maps.curr->getTrigger(trigger, triggerNum) )
 					GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, chkd.maps.curr, triggerNum, trigger);
 				
-				if ( mis->itemID == numVisibleTrigs-1 ) // Release items loaded for measurement
-				{
-					listTriggers.ReleaseDC(trigListDC);
-					tt.ClearScenario();
-				}
 				return TRUE;
 			}
 			else if ( wParam == LIST_GROUPS )
@@ -1313,6 +1308,12 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			}
 			break;
 
+		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
+			listTriggers.ReleaseDC(trigListDC);
+			trigListDC = NULL;
+			tt.ClearScenario();
+			break;
+
 		case WM_CTLCOLORLISTBOX:
 			if ( listTriggers == (HWND)lParam )
 			{
@@ -1321,6 +1322,10 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					return (LPARAM)hBrush;
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
+
+		case WM_PREDRAWITEMS:
+			tt.LoadScenario(chkd.maps.curr);
 			break;
 
 		case WM_DRAWITEM:
@@ -1337,11 +1342,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					u32 triggerNum = (u32)pdis->itemData;
 					
 					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getTrigger(trigger, triggerNum) )
-					{
-						tt.LoadScenario(chkd.maps.curr);
 						DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, chkd.maps.curr, triggerNum, trigger);
-						tt.ClearScenario();
-					}
 				}
 
 				return TRUE;
@@ -1356,6 +1357,10 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
 					DrawGroup(pdis->hDC, pdis->rcItem, isSelected, u8(u32(pdis->itemData)));
 			}
+			break;
+
+		case WM_POSTDRAWITEMS:
+			tt.ClearScenario();
 			break;
 
 		default:

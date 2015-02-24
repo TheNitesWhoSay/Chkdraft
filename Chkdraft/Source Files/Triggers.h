@@ -10,6 +10,8 @@
 class TriggersWindow : public ClassWindow
 {
 	public:
+		TrigModifyWindow trigModifyWindow;
+
 		TriggersWindow();
 		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
@@ -61,8 +63,6 @@ class TriggersWindow : public ClassWindow
 		bool displayAll;
 		u32 numVisibleTrigs;
 		bool changeGroupHighlightOnly;
-
-		TrigModifyWindow trigModifyWindow;
 
 		ButtonControl buttonNew, buttonModify, buttonDelete, buttonCopy,
 					  buttonMoveUp, buttonMoveDown, buttonMoveTo;

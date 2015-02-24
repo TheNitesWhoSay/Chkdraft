@@ -109,16 +109,24 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 		   || FileToBuffer(hStarDat, fileName, buf);
 }
 
-OPENFILENAME GetScSaveOfn(char* szFileName)
+OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter)
 {
 	OPENFILENAME ofn = { };
 	ofn.lStructSize = sizeof(ofn);
-	ofn.lpstrFilter = "Starcraft Map(*.scm)\0*.scm\0Starcraft Hybrid Map(*.scm)\0*.scm\0Broodwar Map(*.scx)\0*.scx\0Raw Starcraft Map(*.chk)\0*.chk\0Raw Starcraft Hybrid Map(*.chk)\0*.chk\0Raw Broodwar Map(*.chk)\0*.chk\0All Maps\0*.scm;*.scx;*.chk\0";
+	ofn.lpstrFilter = filter;
 	ofn.lpstrFile = szFileName;
-	ofn.nFilterIndex = 7;
+	ofn.nFilterIndex = initFilter;
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	return ofn;
+}
+
+OPENFILENAME GetScSaveOfn(char* szFileName)
+{
+	return GetOfn(
+		szFileName,
+		"Starcraft Map(*.scm)\0*.scm\0Starcraft Hybrid Map(*.scm)\0*.scm\0Broodwar Map(*.scx)\0*.scx\0Raw Starcraft Map(*.chk)\0*.chk\0Raw Starcraft Hybrid Map(*.chk)\0*.chk\0Raw Broodwar Map(*.chk)\0*.chk\0All Maps\0*.scm;*.scx;*.chk\0",
+		7 );
 }
 
 bool FileToBuffer(const char* FileName, buffer &buf)

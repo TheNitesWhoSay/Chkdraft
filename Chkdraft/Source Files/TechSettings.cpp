@@ -52,6 +52,8 @@ void TechSettingsWindow::RefreshWindow()
 	if ( selectedTech >= 0 && selectedTech < 44 && chk != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
+		if ( selectedTech != -1 )
+			chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
 
 		if ( isDisabled )
 			EnableTechEditing();
@@ -216,6 +218,7 @@ void TechSettingsWindow::EnableTechCosts()
 void TechSettingsWindow::DisableTechEditing()
 {
 	isDisabled = true;
+	chkd.mapSettingsWindow.SetTitle("Map Settings");
 	checkUseDefaultCosts.DisableThis();
 	DisableTechCosts();
 
@@ -287,6 +290,18 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 {
 	switch ( msg )
 	{
+		case WM_SHOWWINDOW:
+			if ( wParam == TRUE )
+			{
+				RefreshWindow();
+				if ( selectedTech != -1 )
+					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
+				else
+					chkd.mapSettingsWindow.SetTitle("Map Settings");
+			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
+
 		case WM_COMMAND:
 			if ( refreshing == false )
 			{

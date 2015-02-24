@@ -140,7 +140,10 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
+			{
 				RefreshWindow();
+				chkd.mapSettingsWindow.SetTitle("Map Settings");
+			}
 			else
 			{
 				for ( int i=0; i<4; i++ )

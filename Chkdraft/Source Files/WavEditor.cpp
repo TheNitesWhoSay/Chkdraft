@@ -1,4 +1,5 @@
 #include "WavEditor.h"
+#include "Chkdraft.h"
 
 enum ID {
 	TEXT_MAPSOUNDFILES = ID_FIRST,
@@ -43,6 +44,14 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 {
 	switch ( msg )
 	{
+		case WM_SHOWWINDOW:
+			if ( wParam == TRUE )
+			{
+				RefreshWindow();
+				chkd.mapSettingsWindow.SetTitle("Map Settings");
+			}
+			break;
+
 		case WM_COMMAND:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;

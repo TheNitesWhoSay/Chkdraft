@@ -43,7 +43,7 @@ enum ID {
 	CB_P8COLOR
 };
 
-MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibleDescriptionUpdate(false)
+MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibleDescriptionUpdate(false), refreshing(false)
 {
 
 }
@@ -56,6 +56,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "MapProperties", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
+		refreshing = true;
 		GuiMap* map = chkd.maps.curr;
 		HWND hMapProperties = getHandle();
 
@@ -129,6 +130,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 				}
 			}
 		}
+		refreshing = false;
 		return true;
 	}
 	else
@@ -137,6 +139,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 
 void MapPropertiesWindow::RefreshWindow()
 {
+	refreshing = true;
 	GuiMap* map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
@@ -179,6 +182,7 @@ void MapPropertiesWindow::RefreshWindow()
 			}
 		}
 	}
+	refreshing = false;
 }
 
 LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -187,8 +191,11 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
+			{
 				RefreshWindow();
-			else
+				chkd.mapSettingsWindow.SetTitle("Map Settings");
+			}
+			else if ( !refreshing )
 			{
 				CheckReplaceMapTitle();
 				CheckReplaceMapDescription();
@@ -201,14 +208,14 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				switch ( LOWORD(wParam) )
 				{
 					case EDIT_MAPTITLE:
-						if ( HIWORD(wParam) == EN_CHANGE )
+						if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
 							possibleTitleUpdate = true;
 						else if ( HIWORD(wParam) == EN_KILLFOCUS )
 							CheckReplaceMapTitle();
 						break;
 
 					case EDIT_MAPDESCRIPTION:
-						if ( HIWORD(wParam) == EN_CHANGE )
+						if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
 							possibleDescriptionUpdate = true;
 						else if ( HIWORD(wParam) == EN_KILLFOCUS )
 							CheckReplaceMapDescription();

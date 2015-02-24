@@ -85,22 +85,24 @@ bool Scenario::getActiveComment(Trigger* trigger, string &comment)
 	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
 	{
 		Action action = trigger->actions[i];
-		if ( action.action == AID_COMMENT &&
-			 (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
+		if ( action.action == AID_COMMENT )
 		{
-			if ( !( action.stringNum != 0 && getRawString(comment, action.stringNum) ) )
+			if ( (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
 			{
-				try {
-					comment = " ";
-				} catch ( std::exception ) { // Catch bad_alloc and length_error
-					return false;
+				if ( action.stringNum != 0 && getRawString(comment, action.stringNum) )
+					return true;
+				else
+				{
+					try {
+						comment = " ";
+						return true;
+					} catch ( std::exception ) { return false; } // Catch bad_alloc and length_error
 				}
 			}
-
-			return true;
 		}
+		else if ( action.action == AID_NO_ACTION )
+			break;
 	}
-
 	return false;
 }
 
@@ -1239,7 +1241,7 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 	if ( stringNum != 0 && amountStringUsed(stringNum) == 1 )
 	{
 		string testEqual;
-		if ( getString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
+		if ( getRawString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
 			return false;
 		else
 			return editString<numType>(newString, stringNum, extended, safeReplace);
@@ -1318,8 +1320,11 @@ template bool Scenario::replaceString<u32>(string newString, u32& stringNum, boo
 template <typename numType>
 bool Scenario::editString(string newString, numType stringNum, bool extended, bool safeEdit)
 {
-	if ( stringNum == 0 )
+	string testEqual;
+	if ( stringNum == 0 || (getRawString(testEqual, stringNum) && testEqual.compare(newString) == 0) )
 		return false;
+	else if ( stringNum != 0 )
+		testEqual.clear();
 
 	u32 newStringNum = 0;
 	if ( stringExists(newString, newStringNum, extended) )

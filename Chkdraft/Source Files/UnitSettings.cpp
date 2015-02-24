@@ -225,6 +225,7 @@ void UnitSettingsWindow::RefreshWindow()
 		std::string unitName;
 		chk->getUnitName(unitName, unitId);
 		editUnitName.SetText(unitName.c_str());
+		chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + DefaultUnitDisplayName[unitId] + ']').c_str());
 	}
 	else
 		DisableUnitEditing();
@@ -307,6 +308,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 void UnitSettingsWindow::DisableUnitEditing()
 {
 	isDisabled = true;
+	chkd.mapSettingsWindow.SetTitle("Map Settings");
 	DisableUnitProperties();
 	checkUseUnitDefaults.DisableThis();
 	checkEnabledByDefault.DisableThis();
@@ -538,7 +540,13 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
+			{
 				RefreshWindow();
+				if ( selectedUnit != -1 )
+					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + DefaultUnitDisplayName[selectedUnit] + ']').c_str());
+				else
+					chkd.mapSettingsWindow.SetTitle("Map Settings");
+			}
 			else
 				CheckReplaceUnitName();
 			break;
