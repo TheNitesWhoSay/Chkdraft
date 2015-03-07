@@ -63,6 +63,7 @@ class TriggersWindow : public ClassWindow
 		bool displayAll;
 		u32 numVisibleTrigs;
 		bool changeGroupHighlightOnly;
+		bool drawingAll;
 
 		ButtonControl buttonNew, buttonModify, buttonDelete, buttonCopy,
 					  buttonMoveUp, buttonMoveDown, buttonMoveTo;

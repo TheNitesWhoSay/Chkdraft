@@ -37,7 +37,7 @@ enum ID {
 };
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-	changeGroupHighlightOnly(false), trigListDC(NULL)
+	changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false)
 {
 	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
 		groupSelected[i] = false;
@@ -1330,11 +1330,15 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 		case WM_PREDRAWITEMS:
 			tt.LoadScenario(chkd.maps.curr);
+			drawingAll = true;
 			break;
 
 		case WM_DRAWITEM:
 			if ( wParam == LIST_TRIGGERS )
 			{
+				if ( !drawingAll )
+					tt.LoadScenario(chkd.maps.curr);
+
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
 				bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
 					 drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
@@ -1348,6 +1352,9 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getTrigger(trigger, triggerNum) )
 						DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, chkd.maps.curr, triggerNum, trigger);
 				}
+
+				if ( !drawingAll )
+					tt.ClearScenario();
 
 				return TRUE;
 			}
@@ -1364,6 +1371,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 
 		case WM_POSTDRAWITEMS:
+			drawingAll = false;
 			tt.ClearScenario();
 			break;
 
