@@ -5,6 +5,7 @@
 #include "TrigPlayers.h"
 #include "TrigConditions.h"
 #include "TrigActions.h"
+#include "TrigModifyText.h"
 
 class TrigModifyWindow : public ClassWindow
 {
@@ -28,6 +29,7 @@ class TrigModifyWindow : public ClassWindow
 		TrigPlayersWindow playersWindow;
 		TrigConditionsWindow conditionsWindow;
 		TrigActionsWindow actionsWindow;
+		TrigModifyTextWindow trigModifyTextWindow;
 
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

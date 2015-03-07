@@ -1,4 +1,4 @@
-#include "Chkdraft.h" // Under 'Windows' filter
+#include "Chkdraft.h"
 
 #ifdef CHKD_DEBUG // If compiling in Debug mode...
 CLI cli; // Open a command line interface that works with cin and cout

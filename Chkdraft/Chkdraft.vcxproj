@@ -76,6 +76,7 @@
     <ClCompile Include="Source Files\Triggers.cpp" />
     <ClCompile Include="Source Files\TrigMeta.cpp" />
     <ClCompile Include="Source Files\TrigModify.cpp" />
+    <ClCompile Include="Source Files\TrigModifyText.cpp" />
     <ClCompile Include="Source Files\TrigPlayers.cpp" />
     <ClCompile Include="Source Files\Undo.cpp" />
     <ClCompile Include="Source Files\UnitProperties.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="Source Files\Triggers.h" />
     <ClInclude Include="Source Files\TrigMeta.h" />
     <ClInclude Include="Source Files\TrigModify.h" />
+    <ClInclude Include="Source Files\TrigModifyText.h" />
     <ClInclude Include="Source Files\TrigPlayers.h" />
     <ClInclude Include="Source Files\Undo.h" />
     <ClInclude Include="Source Files\UnitProperties.h" />

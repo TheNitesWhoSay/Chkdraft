@@ -10,8 +10,11 @@ class TextTrigGenerator
 		
 		TextTrigGenerator();
 
-		// Places text trigs representative of the given TRIG section in output if successful
+		// Places text trigs representative of the given TRIG section in trigString if successful
 		bool GenerateTextTrigs(Scenario* map, string &trigString);
+
+		// Places text trigs representative of the given trigger in trigString if successful
+		bool GenerateTextTrigs(Scenario* map, u32 trigId, string &trigString);
 
 		bool LoadScenario(Scenario* map); // Loads data about the given scenario for use outside text trigs
 		void ClearScenario(); // Clears loaded scenario data
@@ -37,6 +40,7 @@ class TextTrigGenerator
 	
 	protected:
 
+		bool GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString);
 		bool LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames);
 		bool CorrectLineEndings(buffer& buf); // Corrects any improperly formatted line endings
 
