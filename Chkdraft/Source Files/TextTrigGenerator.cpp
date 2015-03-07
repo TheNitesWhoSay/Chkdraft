@@ -7,10 +7,251 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 
 bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
 {
+	return GenerateTextTrigs(map, map->TRIG(), trigString);
+}
+
+bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, u32 trigId, string &trigString)
+{
+	Trigger* trig;
+	buffer trigBuff("TRIG");
+	return map->getTrigger(trig, trigId) &&
+		   trigBuff.add<Trigger>(*trig) &&
+		   GenerateTextTrigs(map, trigBuff, trigString);
+}
+
+bool TextTrigGenerator::LoadScenario(Scenario* map)
+{
+	return LoadScenario(map, false, true);
+}
+
+void TextTrigGenerator::ClearScenario()
+{
+	stringTable.clear();
+	extendedStringTable.clear();
+	locationTable.clear();
+	unitTable.clear();
+	switchTable.clear();
+	wavTable.clear();
+	groupTable.clear();
+}
+
+string TextTrigGenerator::GetTrigLocation(u32 locationNum)
+{
+	char number[12];
+	if ( locationNum >= 0 && locationNum < locationTable.size() )
+		return string(locationTable[locationNum]);
+	else
+	{
+		_itoa_s(locationNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigString(u32 stringNum)
+{
+	char number[12];
+	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
+	{
+		if ( stringNum < stringTable.size() )
+			return stringTable[stringNum];
+		else
+			return string("k" + extendedStringTable[65536-stringNum]);
+	}
+	else
+	{
+		_itoa_s(stringNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
+{
+	char number[12];
+	if ( groupNum >= 0 && groupNum < groupTable.size() )
+		return groupTable[groupNum].c_str();
+	else
+	{
+		_itoa_s(groupNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigUnit(u16 unitId)
+{
+	char number[12];
+	if ( unitId >= 0 && unitId < unitTable.size() )
+		return unitTable[unitId];
+	else
+	{
+		_itoa_s(unitId, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
+{
+	char number[12];
+	if ( switchNum >= 0 && switchNum < switchTable.size() )
+		return switchTable[switchNum];
+	else
+	{
+		_itoa_s(switchNum, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
+{
+	char number[12];
+	const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
+	if ( scoreType >= 0 && scoreType < sizeof(scoreTypes)/sizeof(const char*) )
+		return scoreTypes[scoreType];
+	else
+	{
+		_itoa_s(scoreType, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
+{
+	char number[12];
+	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
+	if ( resourceType >= 0 && resourceType < sizeof(resourceTypes)/sizeof(const char*) )
+		return resourceTypes[resourceType];
+	else
+	{
+		_itoa_s(resourceType, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigOrder(u8 order)
+{
+	char number[12];
+	const char* orderTypes[] = { "move", "patrol", "attack" };
+	if ( order >= 0 && order < sizeof(orderTypes)/sizeof(const char*) )
+		return orderTypes[order];
+	else
+	{
+		_itoa_s(order, number, 10);
+		return number;
+	}
+}
+
+string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
+{
+	char number[12];
+	const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
+	if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers)/sizeof(const char*) )
+		return string(stateModifiers[stateModifier]);
+	else
+	{
+		_itoa_s(stateModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
+{
+	char number[12];
+	const char* switchStates[] = { "0", "1", "Set", "Cleared" };
+	if ( switchState >= 0 && switchState < sizeof(switchStates)/sizeof(const char*) )
+		return string(switchStates[switchState]);
+	else
+	{
+		_itoa_s(switchState, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
+{
+	char number[12];
+	const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
+	if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers)/sizeof(const char*) )
+		return string(switchModifiers[switchModifier]);
+	else
+	{
+		_itoa_s(switchModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigAllyState(u16 allyState)
+{
+	char number[12];
+	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
+	if ( allyState >= 0 && allyState < sizeof(allyStates)/sizeof(const char*) )
+		return string(allyStates[allyState]);
+	else
+	{
+		_itoa_s(allyState, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
+{
+	char number[12];
+	const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
+	if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons)/sizeof(const char*) )
+		return string(numericComparisons[numericComparison]);
+	else
+	{
+		_itoa_s(numericComparison, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
+{
+	char number[12];
+	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
+	if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers)/sizeof(const char*) )
+		return string(numericModifiers[numericModifier]);
+	else
+	{
+		_itoa_s(numericModifier, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigScript(u32 scriptNum)
+{
+	char script[7];
+	script[0] = '\"';
+	(u32&)script[1] = scriptNum;
+	script[5] = '\"';
+	script[6] = '\0';
+	return string(script);
+}
+
+string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
+{
+	char number[12];
+	if ( numUnits == 0 )
+		return string("All");
+	else
+	{
+		_itoa_s(numUnits, number, 10);
+		return string(number);
+	}
+}
+
+string TextTrigGenerator::GetTrigNumber(u32 number)
+{
+	char cNumber[12];
+	_itoa_s((int)number, cNumber, 10);
+	return string(cNumber);
+}
+
+bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString)
+{
 	if ( !LoadScenario(map, true, false) )
 		return false;
 
-	buffer& TRIG = map->TRIG();
+	buffer& TRIG = triggers;
 	buffer output("TeOu");
 
 	u32 numTrigs = TRIG.size()/TRIG_STRUCT_SIZE;
@@ -625,233 +866,6 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
 	trigString = (const char*)output.getPtr(0);
 	ClearScenario();
 	return true;
-}
-
-bool TextTrigGenerator::LoadScenario(Scenario* map)
-{
-	return LoadScenario(map, false, true);
-}
-
-void TextTrigGenerator::ClearScenario()
-{
-	stringTable.clear();
-	extendedStringTable.clear();
-	locationTable.clear();
-	unitTable.clear();
-	switchTable.clear();
-	wavTable.clear();
-	groupTable.clear();
-}
-
-string TextTrigGenerator::GetTrigLocation(u32 locationNum)
-{
-	char number[12];
-	if ( locationNum >= 0 && locationNum < locationTable.size() )
-		return string(locationTable[locationNum]);
-	else
-	{
-		_itoa_s(locationNum, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigString(u32 stringNum)
-{
-	char number[12];
-	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
-	{
-		if ( stringNum < stringTable.size() )
-			return stringTable[stringNum];
-		else
-			return string("k" + extendedStringTable[65536-stringNum]);
-	}
-	else
-	{
-		_itoa_s(stringNum, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
-{
-	char number[12];
-	if ( groupNum >= 0 && groupNum < groupTable.size() )
-		return groupTable[groupNum].c_str();
-	else
-	{
-		_itoa_s(groupNum, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigUnit(u16 unitId)
-{
-	char number[12];
-	if ( unitId >= 0 && unitId < unitTable.size() )
-		return unitTable[unitId];
-	else
-	{
-		_itoa_s(unitId, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
-{
-	char number[12];
-	if ( switchNum >= 0 && switchNum < switchTable.size() )
-		return switchTable[switchNum];
-	else
-	{
-		_itoa_s(switchNum, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
-{
-	char number[12];
-	const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
-	if ( scoreType >= 0 && scoreType < sizeof(scoreTypes)/sizeof(const char*) )
-		return scoreTypes[scoreType];
-	else
-	{
-		_itoa_s(scoreType, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
-{
-	char number[12];
-	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
-	if ( resourceType >= 0 && resourceType < sizeof(resourceTypes)/sizeof(const char*) )
-		return resourceTypes[resourceType];
-	else
-	{
-		_itoa_s(resourceType, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigOrder(u8 order)
-{
-	char number[12];
-	const char* orderTypes[] = { "move", "patrol", "attack" };
-	if ( order >= 0 && order < sizeof(orderTypes)/sizeof(const char*) )
-		return orderTypes[order];
-	else
-	{
-		_itoa_s(order, number, 10);
-		return number;
-	}
-}
-
-string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
-{
-	char number[12];
-	const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
-	if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers)/sizeof(const char*) )
-		return string(stateModifiers[stateModifier]);
-	else
-	{
-		_itoa_s(stateModifier, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
-{
-	char number[12];
-	const char* switchStates[] = { "0", "1", "Set", "Cleared" };
-	if ( switchState >= 0 && switchState < sizeof(switchStates)/sizeof(const char*) )
-		return string(switchStates[switchState]);
-	else
-	{
-		_itoa_s(switchState, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
-{
-	char number[12];
-	const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
-	if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers)/sizeof(const char*) )
-		return string(switchModifiers[switchModifier]);
-	else
-	{
-		_itoa_s(switchModifier, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigAllyState(u16 allyState)
-{
-	char number[12];
-	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
-	if ( allyState >= 0 && allyState < sizeof(allyStates)/sizeof(const char*) )
-		return string(allyStates[allyState]);
-	else
-	{
-		_itoa_s(allyState, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
-{
-	char number[12];
-	const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
-	if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons)/sizeof(const char*) )
-		return string(numericComparisons[numericComparison]);
-	else
-	{
-		_itoa_s(numericComparison, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
-{
-	char number[12];
-	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
-	if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers)/sizeof(const char*) )
-		return string(numericModifiers[numericModifier]);
-	else
-	{
-		_itoa_s(numericModifier, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigScript(u32 scriptNum)
-{
-	char script[7];
-	script[0] = '\"';
-	(u32&)script[1] = scriptNum;
-	script[5] = '\"';
-	script[6] = '\0';
-	return string(script);
-}
-
-string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
-{
-	char number[12];
-	if ( numUnits == 0 )
-		return string("All");
-	else
-	{
-		_itoa_s(numUnits, number, 10);
-		return string(number);
-	}
-}
-
-string TextTrigGenerator::GetTrigNumber(u32 number)
-{
-	char cNumber[12];
-	_itoa_s((int)number, cNumber, 10);
-	return string(cNumber);
 }
 
 string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)

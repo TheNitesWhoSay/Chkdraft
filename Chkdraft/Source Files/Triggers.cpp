@@ -411,11 +411,15 @@ void TriggersWindow::ButtonModify()
 	if ( currTrigger != NO_TRIGGER )
 	{
 		if ( trigModifyWindow.getHandle() == NULL )
+		{
 			trigModifyWindow.CreateThis(getHandle(), currTrigger);
+			SetFocus(trigModifyWindow.getHandle());
+		}
 		else
 		{
 			trigModifyWindow.RefreshWindow(currTrigger);
 			ShowWindow(trigModifyWindow.getHandle(), SW_SHOW);
+			SetFocus(trigModifyWindow.getHandle());
 		}
 	}
 }

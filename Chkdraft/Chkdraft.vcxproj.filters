@@ -417,6 +417,9 @@
     <ClInclude Include="Source Files\TrigPlayers.h">
       <Filter>Header Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\TrigModifyText.h">
+      <Filter>Header Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
@@ -687,6 +690,9 @@
       <Filter>Source Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\TrigPlayers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TrigModifyText.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
     </ClCompile>
   </ItemGroup>
