@@ -770,7 +770,7 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 		x;
 
 	if ( line + yOffset < 0 ) // Prevent writing before the first line
-		line = (s16)-yOffset;
+		line = (s16)(-yOffset);
 
 	if ( yOffset+frameHeight > bitHeight ) // Prevent writing past the last line
 		frameHeight -= (s16)yOffset+frameHeight-bitHeight;

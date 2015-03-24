@@ -42,6 +42,7 @@ class Scenario
 					bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
 
 					bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
+					u8 numLocations(); // Gets the current amount of locations in the map
 
 					u32 numTriggers(); // Returns the number of triggers in this scenario
 					bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index

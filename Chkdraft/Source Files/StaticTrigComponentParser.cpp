@@ -567,6 +567,43 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u16 &dest, u32 pos, u
 	return success;
 }
 
+bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32& dest, u32 pos, u32 end)
+{
+	int size = end - pos;
+	if ( size < 33 )
+	{
+		if ( size == 0 )
+		{
+			dest = 0;
+			return true;
+		}
+		else
+		{
+			bool allZero = true;
+			for ( int i=0; i<size; i++ )
+			{
+				if ( text[pos+i] != '0' )
+					allZero = false;
+			}
+
+			if ( allZero )
+			{
+				dest = 0;
+				return true;
+			}
+			else
+			{
+				char potentialLong[36] = { };
+				memcpy(potentialLong, &text[pos], size);
+				potentialLong[size] = '\0';
+				dest = strtol(potentialLong, nullptr, 2);
+				return dest > 0;
+			}
+		}
+	}
+	return false;
+}
+
 bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, u32 pos, u32 end)
 {
 	int size = end - pos;

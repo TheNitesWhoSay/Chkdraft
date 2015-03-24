@@ -1,7 +1,7 @@
 #ifndef TRIGMODIFY_H
 #define TRIGMODIFY_H
 #include "Windows UI/WindowsUI.h"
-#include "TrigMeta.h"
+#include "TrigGeneral.h"
 #include "TrigPlayers.h"
 #include "TrigConditions.h"
 #include "TrigActions.h"
@@ -16,6 +16,7 @@ class TrigModifyWindow : public ClassWindow
 		void ChangeTab(u32 tabId);
 		void RefreshWindow(u32 trigIndex);
 		void DoSize();
+		bool onTrigTextTab();
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
@@ -25,7 +26,7 @@ class TrigModifyWindow : public ClassWindow
 		u32 trigIndex;
 		TabControl tabs;
 
-		TrigMetaWindow metaWindow;
+		TrigGeneralWindow generalWindow;
 		TrigPlayersWindow playersWindow;
 		TrigConditionsWindow conditionsWindow;
 		TrigActionsWindow actionsWindow;

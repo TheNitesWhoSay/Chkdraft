@@ -19,6 +19,21 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 
 		u8 numUsedConditions();
 		u8 numUsedActions();
+		bool preserveTriggerFlagged();
+		bool disabled();
+		bool ignoreConditionsOnce();
+		bool ignoreWaitSkipOnce();
+		bool ignoreMiscActionsOnce();
+		bool ignoreDefeatDraw();
+		bool flagPaused();
+
+		void setPreserveTriggerFlagged(bool preserved);
+		void setDisabled(bool disabled);
+		void setIgnoreConditionsOnce(bool ignoreConditionsOnce);
+		void setIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce);
+		void setIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce);
+		void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
+		void setFlagPaused(bool flagPaused);
 };
 #define TRIG_STRUCT_SIZE 2400
 

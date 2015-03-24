@@ -24,7 +24,7 @@
 
 #define TRIGGER_NUM_PREFACE "\x12\x1A#"
 
-enum ID { 
+enum ID {
 	BUTTON_NEW = ID_FIRST,
 	BUTTON_MODIFY,
 	BUTTON_DELETE,
@@ -400,6 +400,7 @@ void TriggersWindow::ButtonNew()
 
 	if ( insertedTrigger )
 	{
+		chkd.maps.curr->notifyChange(false);
 		currTrigger = newTrigId;
 		RefreshWindow();
 		ButtonModify();
@@ -408,6 +409,7 @@ void TriggersWindow::ButtonNew()
 
 void TriggersWindow::ButtonModify()
 {
+	//mb(currTrigger, "Curr trigger");
 	if ( currTrigger != NO_TRIGGER )
 	{
 		if ( trigModifyWindow.getHandle() == NULL )
@@ -426,17 +428,14 @@ void TriggersWindow::ButtonModify()
 
 bool TriggersWindow::SelectTrigListItem(int item)
 {
-	if ( listTriggers.SetCurSel(item) )
+	if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, currTrigger) )
+		return true;
+	else
 	{
-		if ( listTriggers.GetItemData(item, currTrigger) )
-			return true;
-		else
-		{
-			currTrigger = NO_TRIGGER;
-			listTriggers.ClearSel();
-		}
+		listTriggers.ClearSel();
+		currTrigger = NO_TRIGGER;
+		return false;
 	}
-	return false;
 }
 
 bool TriggersWindow::DeleteTrigListItem(int item)
@@ -1287,8 +1286,11 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 
 		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-			tt.LoadScenario(chkd.maps.curr);
-			trigListDC = listTriggers.getDC();
+			if ( this != nullptr )
+			{
+				tt.LoadScenario(chkd.maps.curr);
+				trigListDC = listTriggers.getDC();
+			}
 			break;
 
 		case WM_MEASUREITEM:

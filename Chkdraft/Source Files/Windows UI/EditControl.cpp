@@ -15,7 +15,7 @@ bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, 
 {
 	DWORD dwStyle = WS_VISIBLE|WS_CHILD;
 	if ( multiLine )
-		dwStyle |= ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN;
+		dwStyle |= ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL|ES_WANTRETURN|WS_VSCROLL;
 	else
 		dwStyle |= ES_AUTOHSCROLL;
 
@@ -57,6 +57,30 @@ template bool EditControl::SetEditNum<u32>(u32 num);
 template bool EditControl::SetEditNum<s32>(s32 num);
 template bool EditControl::SetEditNum<int>(int num);
 
+template <typename numType>
+bool EditControl::SetEditBinaryNum(numType num)
+{
+	char newText[36] = { };
+	u32 temp = (u32)num;
+	u8 numBits = (sizeof(numType)*8);
+	_itoa_s(temp, newText, 2);
+	size_t length = strlen(newText);
+	if ( length > 0 && length < numBits )
+	{
+		memmove(&newText[numBits-length], newText, length);
+		memset(newText, '0', numBits-length);
+		newText[numBits] = '\0';
+	}
+	return SetText(newText);
+}
+template bool EditControl::SetEditBinaryNum<u8>(u8 num);
+template bool EditControl::SetEditBinaryNum<s8>(s8 num);
+template bool EditControl::SetEditBinaryNum<u16>(u16 num);
+template bool EditControl::SetEditBinaryNum<s16>(s16 num);
+template bool EditControl::SetEditBinaryNum<u32>(u32 num);
+template bool EditControl::SetEditBinaryNum<s32>(s32 num);
+template bool EditControl::SetEditBinaryNum<int>(int num);
+
 void EditControl::MaximizeTextLimit()
 {
 	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
@@ -78,6 +102,7 @@ bool EditControl::GetEditText(std::string& dest)
 
 bool EditControl::GetEditBinaryNum(u16 &dest)
 {
+	u16 temp = 0;
 	char* editText;
 	if ( GetEditText(editText) )
 	{
@@ -85,11 +110,10 @@ bool EditControl::GetEditBinaryNum(u16 &dest)
 									 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
 		int length = strlen(editText);
-		dest = 0;
 		for ( int i=length-1; i>=0; i-- )
 		{
 			if ( editText[i] == '1' )
-				dest |= u16BitValues[(length-1)-i];
+				temp |= u16BitValues[(length-1)-i];
 			else if ( editText[i] != '0' )
 			{
 				delete[] editText;
@@ -97,6 +121,37 @@ bool EditControl::GetEditBinaryNum(u16 &dest)
 			}
 		}
 		delete[] editText;
+		dest = temp;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool EditControl::GetEditBinaryNum(u32 &dest)
+{
+	u32 temp = 0;
+	char* editText;
+	if ( GetEditText(editText) )
+	{
+		const u32 u32BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+									 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+									 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
+									 0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
+
+		int length = strlen(editText);
+		for ( int i=length-1; i>=0; i-- )
+		{
+			if ( editText[i] == '1' )
+				temp |= u32BitValues[(length-1)-i];
+			else if ( editText[i] != '0' )
+			{
+				delete[] editText;
+				return false;
+			}
+		}
+		delete[] editText;
+		dest = temp;
 		return true;
 	}
 	else

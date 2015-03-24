@@ -11,14 +11,18 @@ class EditControl : public WindowControl
 		bool FindThis(HWND hParent, u32 controlId); // Attempts to encapsulate an edit control and enable Select All
 		bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, u32 id); // Attempts to create an edit control
 		bool SetText(const char* newText); // Sets new text content
-		
+
 		template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
 			bool SetEditNum(numType num);
+
+		template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+			bool SetEditBinaryNum(numType num);
 
 		void MaximizeTextLimit(); // Sets text limit to 0x7FFFFFFF
 
 		bool GetEditText(std::string& dest);
 		bool GetEditBinaryNum(u16 &dest);
+		bool GetEditBinaryNum(u32 &dest);
 
 		template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
 			bool GetEditNum(numType &dest);
