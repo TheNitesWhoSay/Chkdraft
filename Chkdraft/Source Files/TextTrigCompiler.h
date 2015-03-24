@@ -50,6 +50,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, u32& ID, u8& flags, u32& argsLeft); // Find the equivilant actionID
 		bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, u32 CID, u32 argsLeft, char* error); // Parse an argument belonging to a condition
 		bool ParseActionArg(buffer& text, Action& currAction, u32 pos, u32 end, u32 AID, u32 argsLeft, char* error); // Parse an argument belonging to an action
+		bool ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags);
 
 		bool ParseString(buffer &text, u32& dest, u32 pos, u32 end); // Find a given string in the map, prepare to add it if necessary
 		bool ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 end); // Find a location in the map by its string

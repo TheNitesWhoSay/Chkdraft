@@ -70,6 +70,26 @@ bool Scenario::getLocation(ChkLocation* &locRef, u16 index)
 	return MRGN().getPtr(locRef, (u32(index))*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE);
 }
 
+u8 Scenario::numLocations()
+{
+	u8 numLocs = 0;
+	ChkLocation* locRef;
+	for ( u16 i=0; i<256; i++ )
+	{
+		if ( getLocation(locRef, i) )
+		{
+			if ( locRef->elevation != 0 || locRef->stringNum != 0 ||
+				 locRef->xc1 != 0 || locRef->xc2 != 0 || locRef->yc1 != 0 || locRef->yc2 != 0 )
+			{
+				numLocs ++;
+			}
+		}
+		else
+			break;
+	}
+	return numLocs;
+}
+
 u32 Scenario::numTriggers()
 {
 	return u32(TRIG().size()/TRIG_STRUCT_SIZE);

@@ -12,17 +12,22 @@ class TrigModifyTextWindow : public ClassWindow
 		bool DestroyThis();
 		void RefreshWindow(u32 trigIndex);
 		void DoSize();
+		void ParentHidden();
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
+		bool unsavedChanges();
 		void Compile(bool silent, bool saveAfter);
 		bool CompileEditText(std::string &newText);
-
+		void OnLeave();
+		
 	private:
 		EditControl editText;
+		CheckBoxControl checkAutoCompile;
 		ButtonControl buttonCompile, buttonCompileAndSave, buttonReload;
 		u32 trigIndex;
 		std::string trigText;
+		bool autoCompile;
 
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

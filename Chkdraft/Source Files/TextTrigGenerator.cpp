@@ -2,26 +2,38 @@
 
 TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTable(false)
 {
-
+	stringTable.clear();
+	extendedStringTable.clear();
+	locationTable.clear();
+	unitTable.clear();
+	switchTable.clear();
+	wavTable.clear();
+	groupTable.clear();
+	conditionTable.clear();
+	actionTable.clear();
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
 {
-	return GenerateTextTrigs(map, map->TRIG(), trigString);
+	return this != nullptr && map != nullptr && GenerateTextTrigs(map, map->TRIG(), trigString);
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, u32 trigId, string &trigString)
 {
 	Trigger* trig;
 	buffer trigBuff("TRIG");
-	return map->getTrigger(trig, trigId) &&
+	return this != nullptr &&
+		   map != nullptr &&
+		   map->getTrigger(trig, trigId) &&
 		   trigBuff.add<Trigger>(*trig) &&
 		   GenerateTextTrigs(map, trigBuff, trigString);
 }
 
 bool TextTrigGenerator::LoadScenario(Scenario* map)
 {
-	return LoadScenario(map, false, true);
+	return this != nullptr &&
+		   map != nullptr &&
+		   LoadScenario(map, false, true);
 }
 
 void TextTrigGenerator::ClearScenario()
@@ -286,7 +298,7 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 	const char* numericComparisons[] = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
 	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 
-	char number[12] = { };
+	char number[36] = { };
 
 	#define ADD_TEXTTRIG_LOCATION(src) {											\
 		if ( src >= 0 && src < locationTable.size() )								\
@@ -854,6 +866,17 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 
 					output.addStr(");", 2);
 				}
+			}
+
+			// Add Flags
+			if ( currTrig->internalData > 0 )
+			{
+				output.addStr("\n\nFlags:\n", 9);
+				_itoa_s(currTrig->internalData, number, 2);
+				size_t length = strlen(number);
+				output.addStr("00000000000000000000000000000000", (32-length));
+				output.addStr(number, length);
+				output.add<char>(';');
 			}
 
 			output.addStr("\n}\n\n//-----------------------------------------------------------------//\n\n", 75);

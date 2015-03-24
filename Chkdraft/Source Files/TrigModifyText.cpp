@@ -9,12 +9,13 @@ enum ID {
 	TAB_TEXT,
 
 	EDIT_TRIGMODIFYTEXT = ID_FIRST,
+	CHECK_AUTOCOMPILE,
 	BUTTON_COMPILE,
 	BUTTON_COMPILEANDSAVE,
 	BUTTON_RELOAD
 };
 
-TrigModifyTextWindow::TrigModifyTextWindow() : trigIndex(0)
+TrigModifyTextWindow::TrigModifyTextWindow() : trigIndex(0), autoCompile(false)
 {
 
 }
@@ -22,7 +23,10 @@ TrigModifyTextWindow::TrigModifyTextWindow() : trigIndex(0)
 bool TrigModifyTextWindow::CreateThis(HWND hParent, u32 windowId)
 {
 	if ( getHandle() != NULL )
+	{
+		trigIndex = 0;
 		return SetParent(hParent);
+	}
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
@@ -50,7 +54,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 	if ( textTrigs.GenerateTextTrigs(chkd.maps.curr, trigIndex, trigText) )
 		editText.SetText(trigText.c_str());
 	else
-		Error("Failed to generate text triggers.");
+		mb(trigIndex, "Failed to generate text triggers.");
 }
 
 void TrigModifyTextWindow::DoSize()
@@ -61,31 +65,40 @@ void TrigModifyTextWindow::DoSize()
 		int width = rect.right-rect.left,
 			height = rect.bottom-rect.top;
 		
-		buttonReload.SetPos(
-			width-buttonReload.Width()-10,
-			rect.bottom-buttonCompileAndSave.Height()-10,
-			buttonReload.Width(),
-			buttonReload.Height());
-		buttonCompileAndSave.SetPos(
-			width-buttonCompileAndSave.Width()-10-(buttonReload.Width()+5),
-			rect.bottom-buttonCompileAndSave.Height()-10,
-			buttonCompileAndSave.Width(),
-			buttonCompileAndSave.Height());
-		buttonCompile.SetPos(
-			width-buttonReload.Width()-10-(buttonCompileAndSave.Width()+5)-(buttonCompile.Width()+5),
-			rect.bottom-buttonCompile.Height()-10,
-			buttonCompile.Width(),
-			buttonCompile.Height());
+		buttonReload.MoveTo(rect.right-buttonReload.Width()-10,
+			rect.bottom-buttonCompileAndSave.Height()-10);
+		buttonCompileAndSave.MoveTo(buttonReload.Left()-buttonCompileAndSave.Width()-5,
+			rect.bottom-buttonCompileAndSave.Height()-10);
+		buttonCompile.MoveTo(buttonCompileAndSave.Left()-buttonCompile.Width()-5,
+			rect.bottom-buttonCompile.Height()-10);
+		checkAutoCompile.MoveTo(buttonCompile.Left()-checkAutoCompile.Width()-5,
+			rect.bottom-checkAutoCompile.Height()-10);
 		editText.SetPos(3, 1, width-5, rect.bottom-buttonCompile.Height()-20);
 	}
+}
+
+void TrigModifyTextWindow::ParentHidden()
+{
+	OnLeave();
 }
 
 void TrigModifyTextWindow::CreateSubWindows(HWND hWnd)
 {
 	editText.CreateThis(hWnd, 0, 0, 100, 100, true, EDIT_TRIGMODIFYTEXT);
+	checkAutoCompile.CreateThis(hWnd, 0, 0, 85, 20, false, "Auto-compile", CHECK_AUTOCOMPILE);
+	
 	buttonReload.CreateThis(hWnd, 0, 0, 75, 23, "Reset", BUTTON_RELOAD);
 	buttonCompile.CreateThis(hWnd, 20, 105, 75, 23, "Compile", BUTTON_COMPILE);
 	buttonCompileAndSave.CreateThis(hWnd, 75, 105, 93, 23, "Compile && Save", BUTTON_COMPILEANDSAVE);
+}
+
+bool TrigModifyTextWindow::unsavedChanges()
+{
+	std::string newText;
+	if ( editText.GetEditText(newText) )
+		return trigText.compare(newText) != 0;
+	else
+		return false;
 }
 
 void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
@@ -111,6 +124,8 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
 					}
 					else if ( !silent )
 						MessageBox(NULL, "Success", "Compiler", MB_OK);
+
+					RefreshWindow(trigIndex);
 				}
 			}
 			else if ( !silent )
@@ -142,34 +157,55 @@ bool TrigModifyTextWindow::CompileEditText(std::string &newText)
 	return false;
 }
 
+void TrigModifyTextWindow::OnLeave()
+{
+	if ( autoCompile )
+		Compile(true, false);
+	else if ( unsavedChanges() )
+	{
+		int result = MessageBox(NULL, "Compile changes?", "Message", MB_YESNO);
+		if ( result == IDYES )
+			Compile(false, false);
+	}
+}
+
 LRESULT TrigModifyTextWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == FALSE )
-				Compile(true, false);
+				OnLeave();
+			else if ( wParam == TRUE )
+				RefreshWindow(trigIndex);
 			break;
 
 		case WM_COMMAND:
+			switch ( LOWORD(wParam) )
 			{
-				switch ( LOWORD(wParam) )
-				{
-					case BUTTON_RELOAD:
-						if ( HIWORD(wParam) == BN_CLICKED )
-							RefreshWindow(trigIndex);
-						break;
-					case BUTTON_COMPILE:
-						if ( HIWORD(wParam) == BN_CLICKED )
-							Compile(false, false);
-						break;
-					case BUTTON_COMPILEANDSAVE:
-						if ( HIWORD(wParam) == BN_CLICKED )
-							Compile(false, true);
-						break;
-				}
-				return DefWindowProc(hWnd, msg, wParam, lParam);
+				case CHECK_AUTOCOMPILE:
+					if ( HIWORD(wParam) == BN_CLICKED )
+						autoCompile = checkAutoCompile.isChecked();
+					break;
+				case BUTTON_RELOAD:
+					if ( HIWORD(wParam) == BN_CLICKED )
+						RefreshWindow(trigIndex);
+					break;
+				case BUTTON_COMPILE:
+					if ( HIWORD(wParam) == BN_CLICKED )
+					Compile(false, false);
+					break;
+				case BUTTON_COMPILEANDSAVE:
+					if ( HIWORD(wParam) == BN_CLICKED )
+						Compile(false, true);
+					break;
 			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
+
+		case WM_CLOSE:
+			OnLeave();
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:

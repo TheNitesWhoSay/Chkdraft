@@ -254,6 +254,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 		playerEnd, endPlayers,
 		conditionEnd, conditionIndex,
 		actionEnd, actionIndex,
+		flagsEnd,
 		argEnd, argsLeft = 0,
 		lineEnd,
 		numConditions = 0, numActions = 0;
@@ -416,6 +417,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 	
 				case 3: //		conditions:
 						// or	actions:
+						// or	flags:
 						// or	}
 					{
 						if ( text.has("CONDITIONS:", pos, 11) )
@@ -428,10 +430,15 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 							pos += 8;
 							expecting += 4;
 						}
+						else if ( text.has("FLAGS:", pos, 6) )
+						{
+							pos += 6;
+							expecting += 7;
+						}
 						else if ( text.has('}', pos ) )
 						{
 							pos ++;
-							expecting = 10;
+							expecting = 12;
 						}
 						else
 						{
@@ -446,7 +453,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 							}
 							else
-								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \'}\'", line);
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
 
 							return false;
 						}
@@ -456,6 +463,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 				case 4:	//		%ConditionName(
 						// or	;%ConditionName(
 						// or	actions:
+						// or	flags:
 						// or	}
 					{
 						if ( text.has(';', pos) ) // Disabled condition
@@ -482,7 +490,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 									}
 									currCondition = &currTrig.conditions[numConditions];
 									currCondition->flags = flags | CONDITION_FLAG_DISABLED;
-									if ( conditionIndex < 0 )
+									if ( ((s32)conditionIndex) < 0 )
 										currCondition->condition = ExtendedToRegularCID(conditionIndex);
 									else
 										currCondition->condition = u8(conditionIndex);
@@ -521,7 +529,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 						else if ( text.has('}', pos ) ) // End trigger
 						{
 							pos ++;
-							expecting = 10;
+							expecting = 12;
 						}
 						else if ( text.has("ACTIONS", pos, 7 ) ) // End conditions
 						{
@@ -530,6 +538,20 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 							{
 								pos ++;
 								expecting = 7;
+							}
+							else
+							{
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+								return false;
+							}
+						}
+						else if ( text.has("FLAGS", pos, 5) ) // End conditions, no actions
+						{
+							pos += 5;
+							if ( text.has(':', pos) )
+							{
+								pos ++;
+								expecting = 10;
 							}
 							else
 							{
@@ -553,7 +575,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								}
 								currCondition = &currTrig.conditions[numConditions];
 								currCondition->flags = flags;
-								if ( conditionIndex < 0 )
+								if ( ((s32)conditionIndex) < 0 )
 									currCondition->condition = ExtendedToRegularCID(conditionIndex);
 								else
 									currCondition->condition = u8(conditionIndex);
@@ -649,48 +671,6 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								return false;
 							}
 						}
-						else if ( text.has('\"', pos) ) // Quoted Argument
-						{
-							pos ++;
-							if ( text.getNext('\"', pos, argEnd) )
-							{
-								if ( !text.getNext('\15', pos, lineEnd) )
-									text.getNext(NULL, pos, lineEnd);
-
-								if ( argEnd < lineEnd )
-								{
-									if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionIndex, argsLeft, error) )
-									{
-										pos = argEnd+1;
-										while ( text.has('\15', pos) )
-										{
-											pos += 2;
-											line ++;
-										}
-
-										if ( text.has(',', pos) )
-											pos ++;
-
-										argsLeft --;
-									}
-									else
-									{
-										sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\n%s", line, LastError);
-										return false;
-									}
-								}
-								else
-								{
-									sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Closing \'\"\'", line);
-									return false;
-								}
-							}
-							else
-							{
-								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Closing '\"'", line);
-								return false;
-							}
-						}
 						else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
 						{
 							if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionIndex, argsLeft, error) )
@@ -714,24 +694,30 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 					break;
 	
 				case 6: //		actions:
+						// or	flags:
 						// or	}
 					{
 						if ( text.has('}', pos) )
 						{
 							pos ++;
-							expecting = 10;
+							expecting = 12;
 						}
 						else if ( text.has("ACTIONS:", pos, 8) )
 						{
 							pos += 8;
 							expecting ++;
 						}
+						else if ( text.has("FLAGS:", pos, 6) )
+						{
+							pos += 6;
+							expecting = 10;
+						}
 						else
 						{
-							if ( text.has("ACTIONS", pos, 7) )
+							if ( text.has("ACTIONS", pos, 7) || text.has("FLAGS", pos, 5) )
 								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 							else
-								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Actions\" or '}'", line);
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Actions\" or \"Flags\" or '}'", line);
 							return false;
 						}
 					}
@@ -739,6 +725,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 	
 				case 7: //		%ActionName(
 						// or	;%ActionName(
+						// or	flags:
 						// or	}
 					{
 						if ( text.has(';', pos ) )
@@ -761,7 +748,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 
 									currAction = &currTrig.actions[numActions];
 									currAction->flags = flags | ACTION_FLAG_DISABLED;
-									if ( actionIndex < 0 )
+									if ( ((s32)actionIndex) < 0 )
 										currAction->action = ExtendedToRegularAID(actionIndex);
 									else
 										currAction->action = u8(actionIndex);
@@ -786,7 +773,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 						else if ( text.has('}', pos) )
 						{
 							pos ++;
-							expecting = 10;
+							expecting = 12;
 						}
 						else if ( text.getNext('(', pos, actionEnd) )
 						{
@@ -804,7 +791,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 								}
 								currAction = &currTrig.actions[numActions];
 								currAction->flags = flags;
-								if ( actionIndex < 0 )
+								if ( ((s32)actionIndex) < 0 )
 									currAction->action = ExtendedToRegularAID(actionIndex);
 								else
 									currAction->action = u8(actionIndex);
@@ -816,6 +803,20 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 							else
 							{
 								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
+								return false;
+							}
+						}
+						else if ( text.has("FLAGS", pos, 5) ) // End actions
+						{
+							pos += 5;
+							if ( text.has(':', pos) )
+							{
+								pos ++;
+								expecting = 10;
+							}
+							else
+							{
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 								return false;
 							}
 						}
@@ -902,11 +903,64 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 					break;
 	
 				case 9: //		}
+						// or	flags:,
 					{
 						if ( text.has('}', pos) )
 						{
 							pos ++;
-							expecting = 10;
+							expecting = 12;
+						}
+						else if ( text.has("FLAGS:", pos, 6) )
+						{
+							pos += 6;
+							expecting ++;
+						}
+						else
+						{
+							if ( text.has("FLAGS", pos, 5) )
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+							else
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Flags\" or \'}\'", line);
+							return false;
+						}
+					}
+					break;
+
+				case 10: //		;
+						 //	or	%32BitFlags;
+					{
+						if ( text.has(';', pos) )
+						{
+							pos ++;
+							expecting ++;
+						}
+						else if ( text.getNext(';', pos, flagsEnd) )
+						{
+							if ( ParseExecutionFlags(text, pos, flagsEnd, currTrig.internalData) )
+							{
+								pos = flagsEnd+1;
+								expecting ++;
+							}
+							else
+							{
+								sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Binary Execution Flags (32-bit max).", line);
+								return false;
+							}
+						}
+						else
+						{
+							sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
+							return false;
+						}
+					}
+					break;
+
+				case 11: //		}
+					{
+						if ( text.has('}', pos) )
+						{
+							pos ++;
+							expecting ++;
 						}
 						else
 						{
@@ -916,7 +970,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 					}
 					break;
 
-				case 10: // Trigger end was found, reset
+				case 12: // Trigger end was found, reset
 					{
 						numConditions = 0;
 						numActions = 0;
@@ -1977,6 +2031,32 @@ ParseActionDeathOffsetField: // 4 bytes
 			   "Expected: 4-byte death table offset" );
 }
 
+bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags)
+{
+	flags = 0;
+
+	u32 size = end - pos;
+	buffer arg;
+
+	for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
+	{
+		arg.add<u8>(text.get<u8>(i+pos));
+		if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
+			arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
+	}
+
+	for ( u32 i=0; i<arg.size(); i++ )
+	{
+		if ( arg.get<u8>(i) == ' ' ) // Del spacing
+			arg.del<u8>(i);
+		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+			arg.del<u8>(i);
+	}
+
+	char* argData = (char*)arg.getPtr(0);
+	return ParseBinaryLong(argData, flags, 0, arg.size());
+}
+
 bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 {
 	bool isExtended = false; // Will need to do something with this for extended strings
@@ -1996,10 +2076,10 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 			isExtended = true;
 		}
 		else
-			return false;
+			return ParseLong((char*)text.getPtr(0), dest, pos, end);
 	}
 	else
-		return false;
+		return ParseLong((char*)text.getPtr(0), dest, pos, end);
 
 	int size = end-pos;
 
@@ -2085,6 +2165,8 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
 		end --;
 		size -= 2;
 	}
+	else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+		return true;
 
 	if ( size < 1 )
 		return false;
@@ -2144,6 +2226,8 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
 		pos ++;
 		end --;
 	}
+	else if ( ParseShort((char*)text.getPtr(0), dest, pos, end) )
+		return true;
 	
 	int size = end-pos;
 	char* unitNamePtr;
@@ -2729,6 +2813,8 @@ bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
 		end --;
 		size -= 2;
 	}
+	else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+		return true;
 
 	if ( size < 1 )
 		return false;
@@ -2792,6 +2878,8 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 		end --;
 		size -= 2;
 	}
+	else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+		return true;
 
 	if ( size < 1 )
 		return false;
@@ -3037,6 +3125,8 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
 		pos ++;
 		end --;
 	}
+	else if ( ParseByte((char*)text.getPtr(0), dest, pos, end) )
+		return true;
 	
 	int size = end-pos;
 	char* switchNamePtr;

@@ -365,7 +365,12 @@ void GuiMap::refreshScenario()
 	if ( chkd.unitWindow.getHandle() != nullptr )
 		chkd.unitWindow.RepopulateList();
 	if ( chkd.locationWindow.getHandle() != NULL )
-		chkd.locationWindow.RefreshLocationInfo();
+	{
+		if ( chkd.maps.curr->numLocations() == 0 )
+			chkd.locationWindow.DestroyThis();
+		else
+			chkd.locationWindow.RefreshLocationInfo();
+	}
 	if ( chkd.mapSettingsWindow.getHandle() != NULL )
 		chkd.mapSettingsWindow.RefreshWindow();
 	if ( chkd.textTrigWindow.getHandle() != NULL )
@@ -585,7 +590,12 @@ void GuiMap::undo()
 			{
 				undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
 				if ( chkd.locationWindow.getHandle() != NULL )
-					chkd.locationWindow.RefreshLocationInfo();
+				{
+					if ( chkd.maps.curr->numLocations() == 0 )
+						chkd.locationWindow.RefreshLocationInfo();
+					else
+						chkd.locationWindow.DestroyThis();
+				}
 				refreshScenario();
 				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 			}
@@ -609,7 +619,12 @@ void GuiMap::redo()
 		case LAYER_LOCATIONS:
 			undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
 			if ( chkd.locationWindow.getHandle() != NULL )
-				chkd.locationWindow.RefreshLocationInfo();
+			{
+				if ( chkd.maps.curr->numLocations() == 0 )
+					chkd.locationWindow.DestroyThis();
+				else
+					chkd.locationWindow.RefreshLocationInfo();
+			}
 			refreshScenario();
 			break;
 	}
