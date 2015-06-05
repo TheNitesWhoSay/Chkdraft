@@ -58,6 +58,11 @@ void WindowControl::FocusThis()
 	SetFocus(controlHandle);
 }
 
+void WindowControl::UpdateWindow()
+{
+	::UpdateWindow(getHandle());
+}
+
 void WindowControl::DisableThis()
 {
 	EnableWindow(controlHandle, FALSE);
@@ -66,6 +71,16 @@ void WindowControl::DisableThis()
 void WindowControl::EnableThis()
 {
 	EnableWindow(controlHandle, TRUE);
+}
+
+void WindowControl::Hide()
+{
+	ShowWindow(getHandle(), SW_HIDE);
+}
+
+void WindowControl::Show()
+{
+	ShowWindow(getHandle(), SW_SHOW);
 }
 
 bool WindowControl::isEnabled()
@@ -140,6 +155,29 @@ int WindowControl::Bottom()
 	GetWindowRect(controlHandle, &rcControl);
 	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
 	return rcControl.bottom;
+}
+
+void WindowControl::SetFont(HFONT hFont, bool redrawImmediately)
+{
+	if ( redrawImmediately )
+		SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	else
+		SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(FALSE, 0));
+}
+
+void WindowControl::TrackMouse(DWORD hoverTime)
+{
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(TRACKMOUSEEVENT);
+	tme.dwFlags = TME_HOVER;
+	tme.hwndTrack = controlHandle;
+	tme.dwHoverTime = hoverTime;
+	TrackMouseEvent(&tme);
+}
+
+void WindowControl::UnlockCursor()
+{
+	ClipCursor(NULL);
 }
 
 bool WindowControl::CreateControl( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,

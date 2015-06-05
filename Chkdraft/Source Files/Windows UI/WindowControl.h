@@ -28,8 +28,11 @@ class WindowControl
 
 					bool ReleaseDC(HDC hDC);
 					void FocusThis();
+					void UpdateWindow();
 					void DisableThis();
 					void EnableThis();
+					void Hide();
+					void Show();
 					bool isEnabled();
 					void SetRedraw(bool autoRedraw);
 					void RedrawThis();
@@ -42,6 +45,9 @@ class WindowControl
 					int Right();
 					int Bottom();
 
+					void SetFont(HFONT font, bool redrawImmediately);
+					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
+					void UnlockCursor(); // Globally unlocks the cursor
 
 	protected:
 

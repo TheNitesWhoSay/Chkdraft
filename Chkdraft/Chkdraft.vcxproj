@@ -92,6 +92,8 @@
     <ClCompile Include="Source Files\Windows UI\DragListControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\DropdownControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\EditControl.cpp" />
+    <ClCompile Include="Source Files\Windows UI\GridItem.cpp" />
+    <ClCompile Include="Source Files\Windows UI\GridView.cpp" />
     <ClCompile Include="Source Files\Windows UI\GroupBoxControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ListBoxControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ListViewControl.cpp" />
@@ -194,6 +196,8 @@
     <ClInclude Include="Source Files\Windows UI\DragListControl.h" />
     <ClInclude Include="Source Files\Windows UI\DropdownControl.h" />
     <ClInclude Include="Source Files\Windows UI\EditControl.h" />
+    <ClInclude Include="Source Files\Windows UI\GridItem.h" />
+    <ClInclude Include="Source Files\Windows UI\GridView.h" />
     <ClInclude Include="Source Files\Windows UI\GroupBoxControl.h" />
     <ClInclude Include="Source Files\Windows UI\ListBoxControl.h" />
     <ClInclude Include="Source Files\Windows UI\ListViewControl.h" />

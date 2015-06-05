@@ -37,5 +37,18 @@ void TrigActionsWindow::DoSize()
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
 	TextControl text;
-	text.CreateThis(hWnd, 0, 0, 200, 20, "Actions...", 0);
+	text.CreateThis(hWnd, 5, 5, 200, 20, "Actions...", 0);
+}
+
+LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch ( msg )
+	{
+		case WM_SHOWWINDOW:
+			break;
+
+		default:
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+	return 0;
 }

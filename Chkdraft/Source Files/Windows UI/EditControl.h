@@ -20,9 +20,13 @@ class EditControl : public WindowControl
 
 		void MaximizeTextLimit(); // Sets text limit to 0x7FFFFFFF
 
+		int GetTextLength();
 		bool GetEditText(std::string& dest);
 		bool GetEditBinaryNum(u16 &dest);
 		bool GetEditBinaryNum(u32 &dest);
+
+		bool GetHexByteString(u8* dest, u32 destLength);
+		bool SetHexByteString(u8* bytes, u32 numBytes);
 
 		template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
 			bool GetEditNum(numType &dest);

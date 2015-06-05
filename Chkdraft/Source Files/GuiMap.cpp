@@ -739,7 +739,7 @@ void GuiMap::PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard )
 
 void GuiMap::PaintMiniMap(HWND hWnd)
 {
-	if ( this )
+	if ( this != nullptr )
 	{
 		RECT rect;
 		GetClientRect(hWnd, &rect);

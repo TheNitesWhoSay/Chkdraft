@@ -33,6 +33,24 @@ bool ClassWindow::getClientRect(RECT &rect)
 	return ::GetClientRect(windowHandle, &rect) != 0;
 }
 
+LONG ClassWindow::cliWidth()
+{
+	RECT rect;
+	if ( ::GetClientRect(windowHandle, &rect) != 0 )
+		return rect.right-rect.left;
+	else
+		return 0;
+}
+
+LONG ClassWindow::cliHeight()
+{
+	RECT rect;
+	if ( ::GetClientRect(windowHandle, &rect) != 0 )
+		return rect.bottom-rect.top;
+	else
+		return 0;
+}
+
 bool ClassWindow::operator==(HWND hWnd)
 {
 	return windowHandle == hWnd;

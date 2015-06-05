@@ -196,6 +196,29 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
 	return false;
 }
 
+bool buffer::getNextUnquoted(char character, u32 start, u32 &dest, char terminator)
+{
+	if ( this != nullptr )
+	{
+		for ( u32 i=start; i<sizeUsed; i++ )
+		{
+			if ( data[i] == character )
+			{
+				dest = i;
+				return true;
+			}
+			else if ( data[i] == '\"' )
+			{
+				do { i++; }
+				while ( i < sizeUsed && data[i] != '\"' );
+			}
+			else if ( data[i] == terminator )
+				return false;
+		}
+	}
+	return false;
+}
+
 bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
 {
 	if ( this != nullptr )
@@ -207,6 +230,27 @@ bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
 			{
 				dest = i;
 				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
+{
+	if ( this != nullptr )
+	{
+		for ( u32 i=start; (i<end && i<sizeUsed); i++ )
+		{
+			if ( data[i] == character )
+			{
+				dest = i;
+				return true;
+			}
+			else if ( data[i] == '\"' )
+			{
+				do { i++; }
+				while ( i < sizeUsed && data[i] != '\"' );
 			}
 		}
 	}

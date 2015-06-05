@@ -81,9 +81,11 @@ void TrigGeneralWindow::DoSize()
 	{
 		long cliWidth = rect.right-rect.left,
 			 cliHeight = rect.bottom-rect.top,
-			 oneThird = cliHeight/3,
-			 twoThirds = cliHeight*2/3,
 			 padding = 4,
+			 groupFlagsHeight = 114,
+			 groupFlagsTop = cliHeight-groupFlagsHeight-padding,
+			 remainder = cliHeight-groupFlagsHeight-padding,
+			 halfRemainder = remainder/2,
 			 groupTopPadding = padding+10,
 			 groupLeft = 0,
 			 groupTop = 0,
@@ -93,7 +95,7 @@ void TrigGeneralWindow::DoSize()
 		groupLeft = padding;
 		groupTop = padding;
 		groupWidth = cliWidth-padding*2;
-		groupHeight = oneThird-padding*2;
+		groupHeight = halfRemainder-padding*2;
 		groupComment.SetPos(groupLeft, groupTop, groupWidth, groupHeight);
 		checkExtendedCommentString.MoveTo(groupLeft+groupWidth-checkExtendedCommentString.Width()-padding, groupTop+groupTopPadding);
 		checkExtendedCommentAction.MoveTo(checkExtendedCommentString.Left(), checkExtendedCommentString.Bottom()+1);
@@ -102,9 +104,9 @@ void TrigGeneralWindow::DoSize()
 			checkExtendedCommentString.Left()-padding*2-groupLeft, groupHeight-groupTopPadding-padding);
 
 		groupLeft = padding;
-		groupTop = oneThird+padding;
+		groupTop = halfRemainder+padding;
 		groupWidth = cliWidth-padding*2;
-		groupHeight = oneThird-padding*2;
+		groupHeight = halfRemainder-padding*2;
 		groupNotes.SetPos(groupLeft, groupTop, groupWidth, groupHeight);
 		checkExtendedNotesString.MoveTo(groupLeft+groupWidth-checkExtendedNotesString.Width()-padding, groupTop+groupTopPadding);
 		checkExtendedNotesAction.MoveTo(checkExtendedNotesString.Left(), checkExtendedNotesString.Bottom()+1);
@@ -113,9 +115,9 @@ void TrigGeneralWindow::DoSize()
 			checkExtendedNotesString.Left()-padding*2-groupLeft, groupHeight-groupTopPadding-padding);
 
 		groupLeft = padding;
-		groupTop = twoThirds+padding;
+		groupTop = groupFlagsTop;
 		groupWidth = cliWidth-padding*2;
-		groupHeight = oneThird-padding*2;
+		groupHeight = groupFlagsHeight;
 		groupExecutionFlags.SetPos(groupLeft, groupTop, groupWidth, groupHeight);
 		checkPreservedFlag.MoveTo(groupLeft+padding, groupTop+groupTopPadding);
 		checkDisabled.MoveTo(groupLeft+padding, checkPreservedFlag.Bottom()+1);
@@ -156,16 +158,16 @@ void TrigGeneralWindow::CreateSubWindows(HWND hWnd)
 	textRawFlags.CreateThis(hWnd, 5, 5, 150, 13, "Raw Flags:", TEXT_RAW_FLAGS);
 	editRawFlags.CreateThis(hWnd, 5, 5, 200, 20, false, EDIT_RAW_FLAGS);
 
-	// TEMP //
-	editComment.DisableThis();
+	groupComment.DisableThis();
+	groupNotes.DisableThis();
+	buttonDeleteComment.DisableThis();
+	buttonDeleteNotes.DisableThis();
 	checkExtendedCommentString.DisableThis();
 	checkExtendedCommentAction.DisableThis();
-	buttonDeleteComment.DisableThis();
-	editNotes.DisableThis();
 	checkExtendedNotesString.DisableThis();
 	checkExtendedNotesAction.DisableThis();
-	buttonDeleteNotes.DisableThis();
-	//////////
+	editComment.DisableThis();
+	editNotes.DisableThis();
 }
 
 void TrigGeneralWindow::OnLeave()
@@ -179,6 +181,7 @@ void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setPreserveTriggerFlagged(preserve);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -189,6 +192,7 @@ void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setDisabled(disabled);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -199,6 +203,7 @@ void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreConditionsOnce(ignoreConditionsOnce);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -209,6 +214,7 @@ void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -219,6 +225,7 @@ void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -229,6 +236,7 @@ void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreDefeatDraw(ignoreDefeatDraw);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -239,6 +247,7 @@ void TrigGeneralWindow::SetPausedTrigger(bool paused)
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setFlagPaused(paused);
+		chkd.maps.curr->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -248,7 +257,9 @@ void TrigGeneralWindow::ParseRawFlagsText()
 	Trigger* trigger;
 	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 	{
-		editRawFlags.GetEditBinaryNum(trigger->internalData);
+		if ( editRawFlags.GetEditBinaryNum(trigger->internalData) )
+			chkd.maps.curr->notifyChange(false);
+		
 		RefreshWindow(trigIndex);
 	}		
 }

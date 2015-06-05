@@ -1,4 +1,4 @@
-#include "StaticTrigComponentParser.h"
+ #include "StaticTrigComponentParser.h"
 #include "Mapping Core/MappingCore.h"
 
 bool StaticTrigComponentParser::ParseNumericComparison(char* text, u8 &dest, u32 pos, u32 end)

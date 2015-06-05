@@ -21,6 +21,8 @@ class ClassWindow
 /*  Accessors   */	HWND getHandle(); // Accessor for the window handle
 					bool getWindowRect(RECT &rect);
 					bool getClientRect(RECT &rect);
+					LONG cliWidth();
+					LONG cliHeight();
 					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 
 /*	 Mutators	*/	void ReplaceChildFonts(HFONT hFont);

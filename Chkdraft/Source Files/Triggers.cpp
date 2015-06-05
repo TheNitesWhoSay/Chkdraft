@@ -72,6 +72,8 @@ void TriggersWindow::RefreshWindow()
 	RefreshGroupList();
 	RefreshTrigList();
 	listTriggers.FocusThis();
+	if ( trigModifyWindow.getHandle() != NULL )
+		trigModifyWindow.RefreshWindow(currTrigger);
 }
 
 void TriggersWindow::DoSize()
@@ -374,7 +376,7 @@ void TriggersWindow::RefreshTrigList()
 void TriggersWindow::ButtonNew()
 {
 	Trigger trigger = { };
-	for ( int i=0; i<NUM_TRIG_PLAYERS; i++ )
+	for ( u8 i=Player1; i<=Player8; i++ )
 	{
 		if ( groupSelected[i] )
 			trigger.players[i] = 1;
@@ -383,13 +385,12 @@ void TriggersWindow::ButtonNew()
 	bool insertedTrigger = false;
 	u32 newTrigId = 0;
 	int sel;
-	if ( listTriggers.GetCurSel(sel) )
+	if ( listTriggers.GetCurSel(sel) && sel != numVisibleTrigs-1 )
 	{
 		if ( listTriggers.GetItemData(sel, newTrigId) )
 		{
+			newTrigId ++;
 			insertedTrigger = chkd.maps.curr->insertTrigger(newTrigId, trigger);
-			if ( insertedTrigger )
-				newTrigId ++;
 		}
 	}
 	else if ( chkd.maps.curr->addTrigger(trigger) )
@@ -409,7 +410,6 @@ void TriggersWindow::ButtonNew()
 
 void TriggersWindow::ButtonModify()
 {
-	//mb(currTrigger, "Curr trigger");
 	if ( currTrigger != NO_TRIGGER )
 	{
 		if ( trigModifyWindow.getHandle() == NULL )
@@ -1227,6 +1227,8 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 						int sel;
 						if ( !( listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger) ) )
 							currTrigger = NO_TRIGGER;
+						else if ( trigModifyWindow.getHandle() != NULL )
+							trigModifyWindow.RefreshWindow(currTrigger);
 					}
 					else if ( LOWORD(wParam) == LIST_GROUPS )
 					{
@@ -1311,7 +1313,9 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				u32 listIndex = (u32)mis->itemData;
 				mis->itemWidth = 120;
 				mis->itemHeight = 13;
+				return TRUE;
 			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
@@ -1369,7 +1373,10 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
 					DrawGroup(pdis->hDC, pdis->rcItem, isSelected, u8(u32(pdis->itemData)));
+
+				return TRUE;
 			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_POSTDRAWITEMS:

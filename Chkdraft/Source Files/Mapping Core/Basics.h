@@ -1,6 +1,7 @@
 #ifndef BASICS_H
 #define BASICS_H
 #include <string>
+#include <cstdint>
 
 #ifdef CHKDRAFT // Globally defined in project properties if this is used in CHKDraft
 	void Debug();
@@ -17,30 +18,14 @@
 	#define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__) /* Would print to error messages if CHKDRAFT was defined */
 #endif
 
-#ifndef u64
-#define u64 unsigned long long
-#endif
-#ifndef s64
-#define s64 signed long long
-#endif
-#ifndef u32
-#define u32 unsigned long
-#endif
-#ifndef s32
-#define s32 signed long
-#endif
-#ifndef u16
-#define u16 unsigned short
-#endif
-#ifndef s16
-#define s16 signed short
-#endif
-#ifndef u8
-#define u8 unsigned char
-#endif
-#ifndef s8
-#define s8 signed char
-#endif
+typedef uint64_t u64;
+typedef int64_t s64;
+typedef uint32_t u32;
+typedef int32_t s32;
+typedef uint16_t u16;
+typedef int16_t s16;
+typedef uint8_t u8;
+typedef int8_t s8;
 
 #define BIT_0  0x1
 #define BIT_1  0x2

@@ -6,14 +6,13 @@
 
 /**
 	Data storage drafting
-	- Executing Player bytes 22 and 23: Comment String
-	- Executing Player bytes 24 and 25: Notes String
-	- Executing Player byte 27: Text Flags
-		- Bit 0: Extended Comment String
-		- Bit 1: Extended Comment Action
-		- Bit 2: Extended Notes String
-		- Bit 3: Extended Notes Action
-		- Bit 4-7: Unused
+	- Executing Player bytes 22, 23, 24, 25 make up a 32-bit extended trigger struct index
+		- The following 16 indexes are never used: 0, 1, 256, 257, 65536, 65537, 65792, 65793,
+		- In other words, if ((index&0xFEFEFEFE)==0), the bytes are not an extended trigger struct index
+		- groupedWithPlayerId22 = (extendedData&0x10000000)
+		- groupedWithPlayerId23 = (extendedData&0x20000000)
+		- groupedWithPlayerId24 = (extendedData&0x40000000)
+		- groupedWithPlayerId25 = (extendedData&0x80000000)
 */
 
 class TrigGeneralWindow : public ClassWindow

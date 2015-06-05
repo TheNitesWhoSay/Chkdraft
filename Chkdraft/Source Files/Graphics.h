@@ -4,6 +4,8 @@
 #include "Clipboard.h"
 #include "Data.h"
 
+inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue);
+
 /* Default Draw Order:
 	- Final Tile Data (what MTXM will be)
 	- Units & Sprites, highest YC to lowest YC

@@ -5,6 +5,10 @@
 template <typename valueType>
 void AscendingOrder(valueType &low, valueType &high);
 
+u32 SmallestOf(u32 &first, u32 &second);
+
+s32 SmallestOf(s32 &first, s32 &second);
+
 u32 SmallestOf(u32 &first, u32 &second, u32 &third);
 
 s32 SmallestOf(s32 &first, s32 &second, s32 &third);

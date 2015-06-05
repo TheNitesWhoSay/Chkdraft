@@ -363,13 +363,12 @@ void MAPS::ChangePlayer(u8 newPlayer)
 			{
 				string text;
 				HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
-				HWND hUnitList = chkd.unitWindow.listUnits.getHandle();
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
 				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
 					SetWindowText(hOwner, text.c_str());
 
-				chkd.unitWindow.ChangeOwner(hUnitList, currSelUnit->index, newPlayer);
+				chkd.unitWindow.ChangeOwner(currSelUnit->index, newPlayer);
 			}
 
 			currSelUnit = currSelUnit->next;

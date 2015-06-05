@@ -1,6 +1,7 @@
 #ifndef STRINGTABLENODE_H
 #define STRINGTABLENODE_H
 #include "Basics.h"
+#include <unordered_map>
 
 class StringTableNode // An object comprehensively representing a StarCraft string
 {
@@ -17,5 +18,7 @@ class StringTableNode // An object comprehensively representing a StarCraft stri
 };
 
 bool CompareStrTblNode(StringTableNode first, StringTableNode second); // Returns whether the first should be sorted below the second
+
+bool strIsInHashTable(std::string &str, std::hash<std::string> &strHash, std::unordered_multimap<u32, StringTableNode> &stringTable);
 
 #endif

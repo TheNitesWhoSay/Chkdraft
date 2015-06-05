@@ -76,7 +76,7 @@ bool FileToBuffer(HANDLE &hMpq, const char* fileName, buffer &buf)
 				if ( buf.setSize(fileSize) )
 				{
 					buf.sizeUsed = fileSize;
-					SFileReadFile(openFile, (LPVOID)buf.data, buf.sizeUsed, &bytesRead, NULL);
+					SFileReadFile(openFile, (LPVOID)buf.data, buf.sizeUsed, (LPDWORD)(&bytesRead), NULL);
 					SFileCloseFile(openFile);
 
 					if ( buf.sizeUsed == bytesRead )

@@ -14,8 +14,12 @@ class TrigConditionsWindow : public ClassWindow
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
+		void OnLeave();
 
 	private:
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+		GridViewControl listConditions;
 };
 
 #endif

@@ -64,7 +64,7 @@ bool Chkdraft::CreateThis()
 	}
 
 	DWORD exStyle = NULL;
-	LPCSTR windowName = "Chkdraft 1.0 (Alpha 1.0.1)";
+	LPCSTR windowName = "Chkdraft 1.0 (Beta 1.0.1)";
 	DWORD style = WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN;
 	int windowX = CW_USEDEFAULT,
 		windowY = CW_USEDEFAULT,

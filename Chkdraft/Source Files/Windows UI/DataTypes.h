@@ -1,29 +1,15 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
+#include <cstdint>
+#include <string>
 
-#ifndef u64
-#define u64 unsigned long long
-#endif
-#ifndef s64
-#define s64 signed long long
-#endif
-#ifndef u32
-#define u32 unsigned long
-#endif
-#ifndef s32
-#define s32 signed long
-#endif
-#ifndef u16
-#define u16 unsigned short
-#endif
-#ifndef s16
-#define s16 signed short
-#endif
-#ifndef u8
-#define u8 unsigned char
-#endif
-#ifndef s8
-#define s8 signed char
-#endif
+typedef uint64_t u64;
+typedef int64_t s64;
+typedef uint32_t u32;
+typedef int32_t s32;
+typedef uint16_t u16;
+typedef int16_t s16;
+typedef uint8_t u8;
+typedef int8_t s8;
 
 #endif

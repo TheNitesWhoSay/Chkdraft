@@ -24,18 +24,13 @@ bool LocationWindow::CreateThis(HWND hParent)
 
 bool LocationWindow::DestroyThis()
 {
-	cout << "Destroy this" << endl;
 	if ( ClassWindow::DestroyDialog() )
 	{
-		cout << "Destroy successful" << endl;
 		locProcLocIndex = NO_LOCATION;
 		return true;
 	}
 	else
-	{
-		cout << "Destroy dialog failed" << endl;
 		return false;
-	}
 }
 
 void LocationWindow::RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)

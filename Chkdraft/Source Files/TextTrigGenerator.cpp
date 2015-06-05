@@ -412,6 +412,19 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 					string groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
 				}
+				else if ( players[groupNum] > 0 )
+				{
+					if ( hasPrevious )
+						output.add<char>(',');
+					else
+						hasPrevious = true;
+
+					string groupName = groupTable[groupNum];
+					output.addStr(groupName.c_str(), groupName.size());
+					output.add<char>(':');
+					_itoa_s(players[groupNum], number, 10);
+					output.addStr(number, strlen(number));
+				}
 			}
 
 			output.addStr("){\nConditions:", 14);

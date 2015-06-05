@@ -5,18 +5,29 @@
 class ListViewControl : public WindowControl
 {
 	public:
-		bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
+		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id);
 		void AddColumn(int insertAt, const char* title, int width, int alignmentFlags);
 		void AddRow(int numColumns, LPARAM lParam);
+		void AddRow();
 		void RemoveRow(int rowNum);
-		void ChangeLParam(LPARAM oldLParam, LPARAM newLParam);
-		void SetItem(int row, int column, const char* text);
-		void SetItem(int row, int column, int value);
-		int GetItemRow(int lParam);
+		void SetItemText(int row, int column, const char* text);
+		void SetItemText(int row, int column, int value);
+		void SetItemData(int row, int column, u32 data);
 		void EnableFullRowSelect();
+		bool EnsureVisible(int index, bool ensureEntirelyVisible);
+		bool DeleteAllItems();
+		bool FocusItem(int index);
+		bool SelectRow(int index);
+		//bool SortItems(WPARAM value, LPARAM function);
+
+		int GetItemRow(int lParam);
+		int GetNumColumns();
+		bool GetItemAt(int xCoord, int yCoord, int &itemRow, int &itemColumn);
+		bool GetRowAt(int yCoord, int &itemRow);
+		bool GetColumnAt(int xCoord, int &itemColumn);
 
 	private:
-
+		
 };
 
 #endif

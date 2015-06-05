@@ -1,4 +1,6 @@
 #include "EditControl.h"
+#include <iostream>
+using namespace std;
 
 EditControl::EditControl() : isMultiLine(false)
 {
@@ -86,6 +88,11 @@ void EditControl::MaximizeTextLimit()
 	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
 }
 
+int EditControl::GetTextLength()
+{
+	return GetWindowTextLength(getHandle());
+}
+
 bool EditControl::GetEditText(std::string& dest)
 {
 	char* temp;
@@ -156,6 +163,144 @@ bool EditControl::GetEditBinaryNum(u32 &dest)
 	}
 	else
 		return false;
+}
+
+bool EditControl::GetHexByteString(u8* dest, u32 destLength)
+{
+	char* text;
+	if ( GetEditText(text) )
+	{
+		char strChunk[9] = { };
+		strChunk[8] = '\0';
+
+		size_t strLength = strlen(text);
+		if ( strLength > destLength*2 ) // Don't read past the number of requested bytes
+			strLength = destLength*2;
+
+		size_t numChunks = strLength/8;
+		size_t strRemainder = strLength%8;
+
+		memset(dest, 0, destLength);
+		for ( size_t chunk=0; chunk<numChunks; chunk++ ) // For all full chunks
+		{
+			for ( size_t i=0; i<8; i++ )
+				strChunk[i] = text[chunk*8+i];
+
+			u32 result = strtoul(strChunk, nullptr, 16);
+			dest[chunk*4  ] = u8( (result&0xFF000000) >> 24 );
+			dest[chunk*4+1] = u8( (result&0x00FF0000) >> 16 );
+			dest[chunk*4+2] = u8( (result&0x0000FF00) >>  8 );
+			dest[chunk*4+3] = u8( (result&0x000000FF)		);
+		}
+
+		if ( strRemainder > 0 )
+		{
+			size_t strRemainderStart = numChunks*8;
+			size_t destRemainderStart = numChunks*4;
+			if ( strLength%2 == 0 )
+			{
+				strChunk[strRemainder] = '\0';
+				for ( size_t i=0; i<strRemainder; i++ )
+					strChunk[i] = text[strRemainderStart+i];
+			}
+			else // Half a byte given, pad with a zero
+			{
+				strChunk[strRemainder] = '0';
+				strChunk[strRemainder+1] = '\0';
+				for ( size_t i=0; i<strRemainder; i++ )
+					strChunk[i] = text[strRemainderStart+i];
+			}
+			
+			u32 result = strtoul(strChunk, nullptr, 16);
+			if ( strRemainder == 7 )
+			{
+				dest[destRemainderStart  ] = u8( (result&0xFF000000) >> 24 );
+				dest[destRemainderStart+1] = u8( (result&0x00FF0000) >> 16 );
+				dest[destRemainderStart+2] = u8( (result&0x0000FF00) >>  8 );
+				dest[destRemainderStart+3] = u8( (result&0x000000FF)	   );
+			}
+			if ( strRemainder == 5 || strRemainder == 6 )
+			{
+				dest[destRemainderStart  ] = u8( (result&0xFF0000) >> 16 );
+				dest[destRemainderStart+1] = u8( (result&0x00FF00) >> 8 );
+				dest[destRemainderStart+2] = u8( (result&0x0000FF) );
+			}
+			else if (  strRemainder == 3 || strRemainder == 4 )
+			{
+				dest[destRemainderStart  ] = u8( (result&0xFF00) >> 8 );
+				dest[destRemainderStart+1] = u8( (result&0x00FF) );
+			}
+			else if (  strRemainder == 1 || strRemainder == 2 )
+				dest[destRemainderStart] = u8(result);
+		}
+
+		delete[] text;
+		return true;
+	}
+	else if ( GetTextLength() == 0 )
+	{
+		memset(dest, 0, destLength);
+		return true;
+	}
+	else
+		return false;
+}
+
+bool EditControl::SetHexByteString(u8* bytes, u32 numBytes)
+{
+	char* byteString;
+	try { byteString = new char[numBytes*2+1]; }
+	catch ( std::bad_alloc ) { return false; }
+
+	for ( u32 i=0; i<numBytes; i++ )
+	{
+		u8 firstChar = bytes[i]&0xF0;
+		u32 firstCharPos = i*2;
+		switch ( firstChar )
+		{
+			case 0x00: byteString[firstCharPos] = '0'; break;
+			case 0x10: byteString[firstCharPos] = '1'; break;
+			case 0x20: byteString[firstCharPos] = '2'; break;
+			case 0x30: byteString[firstCharPos] = '3'; break;
+			case 0x40: byteString[firstCharPos] = '4'; break;
+			case 0x50: byteString[firstCharPos] = '5'; break;
+			case 0x60: byteString[firstCharPos] = '6'; break;
+			case 0x70: byteString[firstCharPos] = '7'; break;
+			case 0x80: byteString[firstCharPos] = '8'; break;
+			case 0x90: byteString[firstCharPos] = '9'; break;
+			case 0xA0: byteString[firstCharPos] = 'A'; break;
+			case 0xB0: byteString[firstCharPos] = 'B'; break;
+			case 0xC0: byteString[firstCharPos] = 'C'; break;
+			case 0xD0: byteString[firstCharPos] = 'D'; break;
+			case 0xE0: byteString[firstCharPos] = 'E'; break;
+			case 0xF0: byteString[firstCharPos] = 'F'; break;
+		}
+
+		u8 secondChar = bytes[i]&0x0F;
+		u32 secondCharPos = i*2+1;
+		switch ( secondChar )
+		{
+			case 0x00: byteString[secondCharPos] = '0'; break;
+			case 0x01: byteString[secondCharPos] = '1'; break;
+			case 0x02: byteString[secondCharPos] = '2'; break;
+			case 0x03: byteString[secondCharPos] = '3'; break;
+			case 0x04: byteString[secondCharPos] = '4'; break;
+			case 0x05: byteString[secondCharPos] = '5'; break;
+			case 0x06: byteString[secondCharPos] = '6'; break;
+			case 0x07: byteString[secondCharPos] = '7'; break;
+			case 0x08: byteString[secondCharPos] = '8'; break;
+			case 0x09: byteString[secondCharPos] = '9'; break;
+			case 0x0A: byteString[secondCharPos] = 'A'; break;
+			case 0x0B: byteString[secondCharPos] = 'B'; break;
+			case 0x0C: byteString[secondCharPos] = 'C'; break;
+			case 0x0D: byteString[secondCharPos] = 'D'; break;
+			case 0x0E: byteString[secondCharPos] = 'E'; break;
+			case 0x0F: byteString[secondCharPos] = 'F'; break;
+		}
+	}
+	byteString[numBytes*2] = '\0';
+	SetText(byteString);
+	return true;
 }
 
 template <typename numType>

@@ -420,6 +420,12 @@
     <ClInclude Include="Source Files\Undo.h">
       <Filter>Header Files\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\GridView.h">
+      <Filter>Header Files\Windows\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\GridItem.h">
+      <Filter>Header Files\Windows\Windows UI\Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Clipboard.cpp">
@@ -694,6 +700,12 @@
     </ClCompile>
     <ClCompile Include="Source Files\TrigGeneral.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Triggers\TrigModify</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\GridView.cpp">
+      <Filter>Source Files\Windows\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Windows UI\GridItem.cpp">
+      <Filter>Source Files\Windows\Windows UI\Controls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
