@@ -75,7 +75,7 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 	SetTitle((string("Modify Trigger #") + std::to_string(trigIndex)).c_str());
 	generalWindow.RefreshWindow(trigIndex);
 	playersWindow.RefreshWindow(trigIndex);
-	conditionsWindow.RefreshWindow();
+	conditionsWindow.RefreshWindow(trigIndex);
 	actionsWindow.RefreshWindow();
 	trigModifyTextWindow.RefreshWindow(trigIndex);
 }

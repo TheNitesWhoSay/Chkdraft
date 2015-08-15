@@ -2,14 +2,6 @@
 #include "Chkdraft.h"
 #include "MoveTo.h"
 
-/**
-	Possible performance issue:
-	10,000 some uncommented triggers with 12 some actions leads to...
-		~6 Second Trigger Text Generation
-		~6 Second Trigger Measure Time
-		(real time when most are commented)
-*/
-
 #define TRIGGER_TOP_PADDING 1
 #define TRIGGER_LEFT_PADDING 1
 #define TRIGGER_RIGHT_PADDING 1
@@ -67,11 +59,13 @@ bool TriggersWindow::DestroyThis()
 	return false;
 }
 
-void TriggersWindow::RefreshWindow()
+void TriggersWindow::RefreshWindow(bool focus)
 {
 	RefreshGroupList();
 	RefreshTrigList();
-	listTriggers.FocusThis();
+	if ( focus )
+		listTriggers.FocusThis();
+
 	if ( trigModifyWindow.getHandle() != NULL )
 		trigModifyWindow.RefreshWindow(currTrigger);
 }
@@ -249,130 +243,6 @@ void TriggersWindow::MoveTrigTo()
 	}
 }
 
-void TriggersWindow::CreateSubWindows(HWND hWnd)
-{
-	buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", BUTTON_NEW);
-	buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", BUTTON_MODIFY);
-	buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", BUTTON_DELETE);
-	buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", BUTTON_COPY);
-	
-	buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", BUTTON_MOVEUP);
-	buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", BUTTON_MOVEDOWN);
-	buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", BUTTON_MOVETO);
-
-	listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, LIST_GROUPS);
-	if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, LIST_TRIGGERS) )
-		listGroups.SetPeer(listTriggers.getHandle());
-
-	DoSize();
-	RefreshWindow();
-}
-
-void TriggersWindow::RefreshGroupList()
-{
-	listGroups.SetRedraw(false);
-	listGroups.ClearItems();
-
-	Scenario* chk = chkd.maps.curr;
-	u8 firstNotFound = 0;
-	bool addedPlayer[NUM_TRIG_PLAYERS];
-	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
-		addedPlayer[i] = false;
-
-	if ( chk != nullptr && chk->TRIG().exists() )
-	{
-		Trigger* trigger;
-		u32 numTriggers = chk->numTriggers();
-		for ( u32 i=0; i<numTriggers; i++ )
-		{
-			if ( chk->getTrigger(trigger, i) )
-			{
-				for ( u8 player=firstNotFound; player<NUM_TRIG_PLAYERS; player++ )
-				{
-					if ( !addedPlayer[player] && trigger->players[player] != 0 )
-					{
-						addedPlayer[player] = true;
-						if ( player == firstNotFound ) // Skip already-found players
-							firstNotFound ++;
-					}
-				}
-			}
-		}
-		int selectAllIndex = -1;
-		for ( u8 i=0; i<12; i++ ) // Players
-		{
-			if ( addedPlayer[i] )
-				listGroups.AddItem(i);
-		}
-		for ( u8 i=18; i<22; i++ ) // Forces
-		{
-			if ( addedPlayer[i] )
-				listGroups.AddItem(i);
-		}
-		if ( addedPlayer[17] ) // All Players
-			listGroups.AddItem(17);
-		if ( numTriggers > 0 ) // Show All
-			selectAllIndex = listGroups.AddItem(NUM_TRIG_PLAYERS);
-		for ( u8 i=12; i<17; i++ ) // Lower unused groups
-		{
-			if ( addedPlayer[i] )
-				listGroups.AddItem(i);
-		}
-		for ( u8 i=22; i<NUM_TRIG_PLAYERS; i++ ) // Upper unused groups
-		{
-			if ( addedPlayer[i] )
-				listGroups.AddItem(i);
-		}
-		changeGroupHighlightOnly = true; // Begin selection
-		if ( displayAll )
-			listGroups.SelectItem(selectAllIndex);
-		for ( u8 i=0; i<28; i++ )
-		{
-			if ( groupSelected[i] )
-				listGroups.SelectItem(i);
-		}
-		changeGroupHighlightOnly = false; // End selection
-	}
-
-	listGroups.SetRedraw(true);
-}
-
-void TriggersWindow::RefreshTrigList()
-{
-	listTriggers.SetRedraw(false);
-	listTriggers.ClearItems();
-	numVisibleTrigs = 0;
-	int toSelect = -1;
-
-	Scenario* chk = chkd.maps.curr;
-	if ( chk != nullptr && chk->TRIG().exists() )
-	{
-		Trigger* trigger;
-		u32 numTriggers = chk->numTriggers();
-		for ( u32 i=0; i<numTriggers; i++ )
-		{
-			if ( chk->getTrigger(trigger, i) && ShowTrigger(trigger) )
-			{
-				int newListIndex = listTriggers.AddItem(i);
-				if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
-				{
-					numVisibleTrigs ++;
-					if ( currTrigger == i ) // This trigger is the currTrigger
-						toSelect = newListIndex; // Mark position for selection
-				}
-			}
-		}
-	}
-
-	listTriggers.SetRedraw(true);
-	if ( toSelect == -1 || !listTriggers.SetCurSel(toSelect) ) // Attempt selection
-	{
-		currTrigger = NO_TRIGGER; // Clear currTrigger if selection fails
-		if ( trigModifyWindow.getHandle() != NULL )
-			trigModifyWindow.DestroyThis();
-	}
-}
-
 void TriggersWindow::ButtonNew()
 {
 	Trigger trigger = { };
@@ -403,7 +273,7 @@ void TriggersWindow::ButtonNew()
 	{
 		chkd.maps.curr->notifyChange(false);
 		currTrigger = newTrigId;
-		RefreshWindow();
+		RefreshWindow(true);
 		ButtonModify();
 	}
 }
@@ -426,224 +296,7 @@ void TriggersWindow::ButtonModify()
 	}
 }
 
-bool TriggersWindow::SelectTrigListItem(int item)
-{
-	if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, currTrigger) )
-		return true;
-	else
-	{
-		listTriggers.ClearSel();
-		currTrigger = NO_TRIGGER;
-		return false;
-	}
-}
-
-bool TriggersWindow::DeleteTrigListItem(int item)
-{
-	bool removedItem = false;
-	u32 data;
-	bool success = true;
-	int totalItems = listTriggers.GetNumItems();
-	for ( int i=item+1; i<totalItems; i++ ) // Attempt to decrement the trigger index of items with higher list indexes
-	{
-		if ( !( listTriggers.GetItemData(i, data) && listTriggers.SetItemData(i, data-1) ) ) // Decrement trigger index
-		{
-			success = false; // Decrementing failed
-			break;
-		}
-	}
-
-	if ( success && listTriggers.RemoveItem(item) ) // Decrement succeeded, delete the target item
-	{
-		currTrigger = NO_TRIGGER; // Ensure currTrigger is cleared (until selection is updated)
-		numVisibleTrigs --; // Update amount of visible triggers
-		return true;
-	}
-	else
-		return false;
-}
-
-bool TriggersWindow::CopyTrigListItem(int item)
-{
-	u32 data;
-	bool success = true;
-	int totalItems = listTriggers.GetNumItems();
-	for ( int i=item+1; i<totalItems; i++ ) // Attempt to increment the trigger index of items with higher list indexes
-	{
-		if ( !( listTriggers.GetItemData(i, data) && listTriggers.SetItemData(i, data+1) ) ) // Increment trigger index
-		{
-			success = false; // Incrementing failed
-			break;
-		}
-	}
-
-	if ( success && listTriggers.InsertItem(item+1, currTrigger+1) ) // Increment succeeded, insert the copy item
-	{
-		currTrigger = NO_TRIGGER; // Ensure currTrigger is cleared (until selection is updated)
-		numVisibleTrigs ++; // Update amount of visible triggers
-		return true;
-	}
-	else
-		return false;
-}
-
-bool TriggersWindow::MoveUpTrigListItem(int listIndex, u32 prevTrigIndex)
-{
-	currTrigger = prevTrigIndex;
-	int prevItemHeight, currItemHeight;
-	return listTriggers.GetItemHeight(listIndex-1, prevItemHeight) && // Get heights
-		   listTriggers.GetItemHeight(listIndex, currItemHeight) &&
-		   listTriggers.SetItemData(listIndex, prevTrigIndex+1) && // Adjust stored indexes
-		   listTriggers.SetItemHeight(listIndex-1, currItemHeight) && // Swap heights
-		   listTriggers.SetItemHeight(listIndex, prevItemHeight);
-}
-
-bool TriggersWindow::MoveDownTrigListItem(int listIndex, u32 nextTrigIndex)
-{
-	currTrigger = nextTrigIndex;
-	int nextItemHeight, currItemHeight;
-	return listTriggers.GetItemHeight(listIndex+1, nextItemHeight) && // Get heights
-		   listTriggers.GetItemHeight(listIndex, currItemHeight) &&
-		   listTriggers.SetItemData(listIndex, nextTrigIndex-1) && // Adjust stored indexes
-		   listTriggers.SetItemHeight(listIndex+1, currItemHeight) && // Swap heights
-		   listTriggers.SetItemHeight(listIndex, nextItemHeight);
-}
-
-bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &listIndexMovedTo)
-{
-	listIndexMovedTo = -1;
-	int targetListIndex = -1;
-	if ( FindTargetListIndex(currListIndex, currTrigIndex, targetTrigIndex, targetListIndex) )
-	{
-		u32 listItemData;
-		int listItemHeight,
-			preservedHeight;
-
-		if ( targetListIndex < currListIndex )
-		{
-			if ( !listTriggers.GetItemHeight(currListIndex, preservedHeight) )
-				return false;
-
-			for ( int i=currListIndex; i>=targetListIndex; i-- )
-			{
-				if ( !( listTriggers.GetItemData(i-1, listItemData) &&
-						listTriggers.SetItemData(i, listItemData+1) &&
-						listTriggers.GetItemHeight(i-1, listItemHeight) &&
-						listTriggers.SetItemHeight(i, listItemHeight) ) )
-				{
-					return false;
-				}
-			}
-
-			if ( listTriggers.SetItemData(targetListIndex, targetTrigIndex) &&
-				 listTriggers.SetItemHeight(targetListIndex, preservedHeight) )
-			{
-				listIndexMovedTo = targetListIndex;
-				return true;
-			}
-			else
-				return false;
-		}
-		else if ( targetListIndex > currListIndex )
-		{
-			if ( !listTriggers.GetItemHeight(currListIndex, preservedHeight) )
-				return false;
-
-			for ( int i=currListIndex; i<=targetListIndex; i++ )
-			{
-				if ( !( listTriggers.GetItemData(i+1, listItemData) &&
-						listTriggers.SetItemData(i, listItemData-1) &&
-						listTriggers.GetItemHeight(i+1, listItemHeight) &&
-						listTriggers.SetItemHeight(i, listItemHeight) ) )
-				{
-					return false;
-				}
-			}
-
-			if ( listTriggers.SetItemData(targetListIndex, targetTrigIndex) &&
-				 listTriggers.SetItemHeight(targetListIndex, preservedHeight) )
-			{
-				listIndexMovedTo = targetListIndex;
-				return true;
-			}
-		}
-		else // targetListIndex == currListIndex
-		{
-			listIndexMovedTo = targetListIndex;
-			return currTrigIndex == targetTrigIndex ||
-				   listTriggers.SetItemData(targetListIndex, targetTrigIndex);
-		}
-	}
-	return false;
-}
-
-bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &targetListIndex)
-{
-	u32 listItemData;
-	if ( targetTrigIndex < currTrigIndex )
-	{
-		for ( int i=currListIndex; i>0; i-- )
-		{
-			if ( !listTriggers.GetItemData(i, listItemData) )
-				return false;
-			else if ( listItemData <= targetTrigIndex )
-			{
-				targetListIndex = i;
-				return true;
-			}
-		}
-		targetListIndex = 0;
-		return true;
-	}
-	else if ( targetTrigIndex > currTrigIndex )
-	{
-		int numListIndexes = listTriggers.GetNumItems();
-		for ( int i=currListIndex; i<numListIndexes; i++ )
-		{
-			if ( !listTriggers.GetItemData(i, listItemData) )
-				return false;
-			if ( listItemData == targetTrigIndex )
-			{
-				targetListIndex = i;
-				return true;
-			}
-			else if ( listItemData > targetTrigIndex )
-			{
-				targetListIndex = i-1;
-				return true;
-			}
-		}
-		targetListIndex = numListIndexes-1;
-		return true;
-	}
-	else // targetTrigIndex == currTrigIndex
-	{
-		targetListIndex = currListIndex;
-		return true;
-	}
-}
-
-bool TriggersWindow::ShowTrigger(Trigger* trigger)
-{
-	if ( displayAll )
-		return true;
-
-	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
-	{
-		if ( groupSelected[i] && trigger->players[i] != 0 )
-			return true;
-	}
-
-	return false;
-}
-
-void TriggersWindow::ClearGroups()
-{
-	for ( u8 i=0; i<28; i++ )
-		groupSelected[i] = false;
-}
-
-string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger)
+string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt)
 {
 	stringstream ssCondition;
 	Condition &condition = trigger->conditions[conditionNum];
@@ -752,7 +405,7 @@ string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger)
 	return ssCondition.str();
 }
 
-string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger)
+string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt)
 {
 	stringstream ssAction;
 	Action &action = trigger->actions[actionNum];
@@ -1002,7 +655,7 @@ string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger)
 	return ssAction.str();
 }
 
-string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger)
+string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt)
 {
 	bool more = false;
 	stringstream ssTrigger;
@@ -1021,7 +674,7 @@ string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger)
 			{
 				if ( trigger->conditions[i].condition != CID_NO_CONDITION )
 				{
-					ssTrigger << ' ' << GetConditionString(i, trigger) << "\r\n";
+					ssTrigger << ' ' << GetConditionString(i, trigger, textTrigGenerator) << "\r\n";
 
 					remainingLines --;
 					if ( remainingLines == 0 )
@@ -1047,7 +700,7 @@ string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger)
 			{
 				if ( trigger->actions[i].action != AID_NO_ACTION )
 				{
-					ssTrigger << ' ' << GetActionString(i, trigger) << "\r\n";
+					ssTrigger << ' ' << GetActionString(i, trigger, textTrigGenerator) << "\r\n";
 
 					remainingLines --;
 					if ( remainingLines == 0 )
@@ -1065,6 +718,351 @@ string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger)
 			ssTrigger << "\x13(MORE)" << endl;
 	}
 	return ssTrigger.str();
+}
+
+void TriggersWindow::CreateSubWindows(HWND hWnd)
+{
+	buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", BUTTON_NEW);
+	buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", BUTTON_MODIFY);
+	buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", BUTTON_DELETE);
+	buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", BUTTON_COPY);
+	
+	buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", BUTTON_MOVEUP);
+	buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", BUTTON_MOVEDOWN);
+	buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", BUTTON_MOVETO);
+
+	listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, LIST_GROUPS);
+	if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, LIST_TRIGGERS) )
+		listGroups.SetPeer(listTriggers.getHandle());
+
+	DoSize();
+	RefreshWindow(true);
+}
+
+void TriggersWindow::RefreshGroupList()
+{
+	listGroups.SetRedraw(false);
+	listGroups.ClearItems();
+
+	Scenario* chk = chkd.maps.curr;
+	u8 firstNotFound = 0;
+	bool addedPlayer[NUM_TRIG_PLAYERS];
+	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+		addedPlayer[i] = false;
+
+	if ( chk != nullptr && chk->TRIG().exists() )
+	{
+		Trigger* trigger;
+		u32 numTriggers = chk->numTriggers();
+		for ( u32 i=0; i<numTriggers; i++ )
+		{
+			if ( chk->getTrigger(trigger, i) )
+			{
+				for ( u8 player=firstNotFound; player<NUM_TRIG_PLAYERS; player++ )
+				{
+					if ( !addedPlayer[player] && trigger->players[player] != 0 )
+					{
+						addedPlayer[player] = true;
+						if ( player == firstNotFound ) // Skip already-found players
+							firstNotFound ++;
+					}
+				}
+			}
+		}
+		int selectAllIndex = -1;
+		for ( u8 i=0; i<12; i++ ) // Players
+		{
+			if ( addedPlayer[i] )
+				listGroups.AddItem(i);
+		}
+		for ( u8 i=18; i<22; i++ ) // Forces
+		{
+			if ( addedPlayer[i] )
+				listGroups.AddItem(i);
+		}
+		if ( addedPlayer[17] ) // All Players
+			listGroups.AddItem(17);
+		if ( numTriggers > 0 ) // Show All
+			selectAllIndex = listGroups.AddItem(NUM_TRIG_PLAYERS);
+		for ( u8 i=12; i<17; i++ ) // Lower unused groups
+		{
+			if ( addedPlayer[i] )
+				listGroups.AddItem(i);
+		}
+		for ( u8 i=22; i<NUM_TRIG_PLAYERS; i++ ) // Upper unused groups
+		{
+			if ( addedPlayer[i] )
+				listGroups.AddItem(i);
+		}
+		changeGroupHighlightOnly = true; // Begin selection
+		if ( displayAll )
+			listGroups.SelectItem(selectAllIndex);
+		for ( u8 i=0; i<28; i++ )
+		{
+			if ( groupSelected[i] )
+				listGroups.SelectItem(i);
+		}
+		changeGroupHighlightOnly = false; // End selection
+	}
+
+	listGroups.SetRedraw(true);
+}
+
+void TriggersWindow::RefreshTrigList()
+{
+	listTriggers.SetRedraw(false);
+	listTriggers.ClearItems();
+	numVisibleTrigs = 0;
+	int toSelect = -1;
+
+	Scenario* chk = chkd.maps.curr;
+	if ( chk != nullptr && chk->TRIG().exists() )
+	{
+		Trigger* trigger;
+		u32 numTriggers = chk->numTriggers();
+		for ( u32 i=0; i<numTriggers; i++ )
+		{
+			if ( chk->getTrigger(trigger, i) && ShowTrigger(trigger) )
+			{
+				int newListIndex = listTriggers.AddItem(i);
+				if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
+				{
+					numVisibleTrigs ++;
+					if ( currTrigger == i ) // This trigger is the currTrigger
+						toSelect = newListIndex; // Mark position for selection
+				}
+			}
+		}
+	}
+
+	listTriggers.SetRedraw(true);
+	if ( toSelect == -1 || !listTriggers.SetCurSel(toSelect) ) // Attempt selection
+	{
+		currTrigger = NO_TRIGGER; // Clear currTrigger if selection fails
+		if ( trigModifyWindow.getHandle() != NULL )
+			trigModifyWindow.DestroyThis();
+	}
+}
+
+bool TriggersWindow::SelectTrigListItem(int item)
+{
+	if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, currTrigger) )
+	{
+		trigModifyWindow.RefreshWindow(currTrigger);
+		return true;
+	}
+	else
+	{
+		listTriggers.ClearSel();
+		currTrigger = NO_TRIGGER;
+		trigModifyWindow.RefreshWindow(currTrigger);
+		return false;
+	}
+}
+
+bool TriggersWindow::DeleteTrigListItem(int item)
+{
+	bool removedItem = false;
+	u32 data;
+	bool success = true;
+	int totalItems = listTriggers.GetNumItems();
+	for ( int i=item+1; i<totalItems; i++ ) // Attempt to decrement the trigger index of items with higher list indexes
+	{
+		if ( !( listTriggers.GetItemData(i, data) && listTriggers.SetItemData(i, data-1) ) ) // Decrement trigger index
+		{
+			success = false; // Decrementing failed
+			break;
+		}
+	}
+
+	if ( success && listTriggers.RemoveItem(item) ) // Decrement succeeded, delete the target item
+	{
+		currTrigger = NO_TRIGGER; // Ensure currTrigger is cleared (until selection is updated)
+		numVisibleTrigs --; // Update amount of visible triggers
+		return true;
+	}
+	else
+		return false;
+}
+
+bool TriggersWindow::CopyTrigListItem(int item)
+{
+	u32 data;
+	bool success = true;
+	int totalItems = listTriggers.GetNumItems();
+	for ( int i=item+1; i<totalItems; i++ ) // Attempt to increment the trigger index of items with higher list indexes
+	{
+		if ( !( listTriggers.GetItemData(i, data) && listTriggers.SetItemData(i, data+1) ) ) // Increment trigger index
+		{
+			success = false; // Incrementing failed
+			break;
+		}
+	}
+
+	if ( success && listTriggers.InsertItem(item+1, currTrigger+1) ) // Increment succeeded, insert the copy item
+	{
+		currTrigger = NO_TRIGGER; // Ensure currTrigger is cleared (until selection is updated)
+		numVisibleTrigs ++; // Update amount of visible triggers
+		return true;
+	}
+	else
+		return false;
+}
+
+bool TriggersWindow::MoveUpTrigListItem(int listIndex, u32 prevTrigIndex)
+{
+	currTrigger = prevTrigIndex;
+	int prevItemHeight, currItemHeight;
+	return listTriggers.GetItemHeight(listIndex-1, prevItemHeight) && // Get heights
+		   listTriggers.GetItemHeight(listIndex, currItemHeight) &&
+		   listTriggers.SetItemData(listIndex, prevTrigIndex+1) && // Adjust stored indexes
+		   listTriggers.SetItemHeight(listIndex-1, currItemHeight) && // Swap heights
+		   listTriggers.SetItemHeight(listIndex, prevItemHeight);
+}
+
+bool TriggersWindow::MoveDownTrigListItem(int listIndex, u32 nextTrigIndex)
+{
+	currTrigger = nextTrigIndex;
+	int nextItemHeight, currItemHeight;
+	return listTriggers.GetItemHeight(listIndex+1, nextItemHeight) && // Get heights
+		   listTriggers.GetItemHeight(listIndex, currItemHeight) &&
+		   listTriggers.SetItemData(listIndex, nextTrigIndex-1) && // Adjust stored indexes
+		   listTriggers.SetItemHeight(listIndex+1, currItemHeight) && // Swap heights
+		   listTriggers.SetItemHeight(listIndex, nextItemHeight);
+}
+
+bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &listIndexMovedTo)
+{
+	listIndexMovedTo = -1;
+	int targetListIndex = -1;
+	if ( FindTargetListIndex(currListIndex, currTrigIndex, targetTrigIndex, targetListIndex) )
+	{
+		u32 listItemData;
+		int listItemHeight,
+			preservedHeight;
+
+		if ( targetListIndex < currListIndex )
+		{
+			if ( !listTriggers.GetItemHeight(currListIndex, preservedHeight) )
+				return false;
+
+			for ( int i=currListIndex; i>=targetListIndex; i-- )
+			{
+				if ( !( listTriggers.GetItemData(i-1, listItemData) &&
+						listTriggers.SetItemData(i, listItemData+1) &&
+						listTriggers.GetItemHeight(i-1, listItemHeight) &&
+						listTriggers.SetItemHeight(i, listItemHeight) ) )
+				{
+					return false;
+				}
+			}
+
+			if ( listTriggers.SetItemData(targetListIndex, targetTrigIndex) &&
+				 listTriggers.SetItemHeight(targetListIndex, preservedHeight) )
+			{
+				listIndexMovedTo = targetListIndex;
+				return true;
+			}
+			else
+				return false;
+		}
+		else if ( targetListIndex > currListIndex )
+		{
+			if ( !listTriggers.GetItemHeight(currListIndex, preservedHeight) )
+				return false;
+
+			for ( int i=currListIndex; i<=targetListIndex; i++ )
+			{
+				if ( !( listTriggers.GetItemData(i+1, listItemData) &&
+						listTriggers.SetItemData(i, listItemData-1) &&
+						listTriggers.GetItemHeight(i+1, listItemHeight) &&
+						listTriggers.SetItemHeight(i, listItemHeight) ) )
+				{
+					return false;
+				}
+			}
+
+			if ( listTriggers.SetItemData(targetListIndex, targetTrigIndex) &&
+				 listTriggers.SetItemHeight(targetListIndex, preservedHeight) )
+			{
+				listIndexMovedTo = targetListIndex;
+				return true;
+			}
+		}
+		else // targetListIndex == currListIndex
+		{
+			listIndexMovedTo = targetListIndex;
+			return currTrigIndex == targetTrigIndex ||
+				   listTriggers.SetItemData(targetListIndex, targetTrigIndex);
+		}
+	}
+	return false;
+}
+
+bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &targetListIndex)
+{
+	u32 listItemData;
+	if ( targetTrigIndex < currTrigIndex )
+	{
+		for ( int i=currListIndex; i>0; i-- )
+		{
+			if ( !listTriggers.GetItemData(i, listItemData) )
+				return false;
+			else if ( listItemData <= targetTrigIndex )
+			{
+				targetListIndex = i;
+				return true;
+			}
+		}
+		targetListIndex = 0;
+		return true;
+	}
+	else if ( targetTrigIndex > currTrigIndex )
+	{
+		int numListIndexes = listTriggers.GetNumItems();
+		for ( int i=currListIndex; i<numListIndexes; i++ )
+		{
+			if ( !listTriggers.GetItemData(i, listItemData) )
+				return false;
+			if ( listItemData == targetTrigIndex )
+			{
+				targetListIndex = i;
+				return true;
+			}
+			else if ( listItemData > targetTrigIndex )
+			{
+				targetListIndex = i-1;
+				return true;
+			}
+		}
+		targetListIndex = numListIndexes-1;
+		return true;
+	}
+	else // targetTrigIndex == currTrigIndex
+	{
+		targetListIndex = currListIndex;
+		return true;
+	}
+}
+
+bool TriggersWindow::ShowTrigger(Trigger* trigger)
+{
+	if ( displayAll )
+		return true;
+
+	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+	{
+		if ( groupSelected[i] && trigger->players[i] != 0 )
+			return true;
+	}
+
+	return false;
+}
+
+void TriggersWindow::ClearGroups()
+{
+	for ( u8 i=0; i<28; i++ )
+		groupSelected[i] = false;
 }
 
 bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scenario* chk, u32 triggerNum, Trigger* trigger)
@@ -1086,7 +1084,7 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scen
 	}
 	else
 	{
-		str = GetTriggerString(triggerNum, trigger);
+		str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
 		HGDIOBJ sel = SelectObject(hDC, defaultFont);
 		if ( sel != NULL && sel != HGDI_ERROR )
 		{
@@ -1193,7 +1191,7 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
 	}
 	else
 	{
-		str = GetTriggerString(triggerNum, trigger);
+		str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
 		SetBkMode(hDC, TRANSPARENT);
 		DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
 			rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), str);
@@ -1206,7 +1204,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 	{
 		case WM_SHOWWINDOW:
 			if ( wParam == TRUE )
-				RefreshWindow();
+				RefreshWindow(true);
 			else if ( wParam == FALSE )
 			{
 				// Perhaps update details of the current trigger
@@ -1290,7 +1288,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
 			if ( this != nullptr )
 			{
-				tt.LoadScenario(chkd.maps.curr);
+				textTrigGenerator.LoadScenario(chkd.maps.curr);
 				trigListDC = listTriggers.getDC();
 			}
 			break;
@@ -1321,7 +1319,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
 			listTriggers.ReleaseDC(trigListDC);
 			trigListDC = NULL;
-			tt.ClearScenario();
+			textTrigGenerator.ClearScenario();
 			break;
 
 		case WM_CTLCOLORLISTBOX:
@@ -1335,7 +1333,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 
 		case WM_PREDRAWITEMS:
-			tt.LoadScenario(chkd.maps.curr);
+			textTrigGenerator.LoadScenario(chkd.maps.curr);
 			drawingAll = true;
 			break;
 
@@ -1343,7 +1341,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			if ( wParam == LIST_TRIGGERS )
 			{
 				if ( !drawingAll )
-					tt.LoadScenario(chkd.maps.curr);
+					textTrigGenerator.LoadScenario(chkd.maps.curr);
 
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
 				bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
@@ -1360,7 +1358,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				}
 
 				if ( !drawingAll )
-					tt.ClearScenario();
+					textTrigGenerator.ClearScenario();
 
 				return TRUE;
 			}
@@ -1381,7 +1379,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 		case WM_POSTDRAWITEMS:
 			drawingAll = false;
-			tt.ClearScenario();
+			textTrigGenerator.ClearScenario();
 			break;
 
 		default:

@@ -68,7 +68,7 @@ void TrigEditorWindow::ChangeTab(u32 tabId)
 
 void TrigEditorWindow::RefreshWindow()
 {
-	triggersWindow.RefreshWindow();
+	triggersWindow.RefreshWindow(false);
 	templatesWindow.RefreshWindow();
 	countersWindow.RefreshWindow();
 	cuwpsWindow.RefreshWindow();

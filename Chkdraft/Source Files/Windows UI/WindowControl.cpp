@@ -36,6 +36,12 @@ bool WindowControl::FindThis(HWND hParent, u32 controlId)
 	return controlHandle != NULL;
 }
 
+bool WindowControl::FindThis(HWND controlHandle)
+{
+	this->controlHandle = controlHandle;
+	return this->controlHandle != NULL;
+}
+
 bool WindowControl::DestroyThis()
 {
 	if ( controlHandle != NULL && DestroyWindow(controlHandle) == TRUE )
@@ -104,6 +110,11 @@ void WindowControl::RedrawThis()
 void WindowControl::MoveTo(int x, int y)
 {
 	SetWindowPos(controlHandle, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE);
+}
+
+void WindowControl::SetWidth(int newWidth)
+{
+	SetWindowPos(controlHandle, NULL, 0, 0, newWidth, Height(), SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE);
 }
 
 void WindowControl::SetPos(int x, int y, int width, int height)

@@ -2,12 +2,15 @@
 
 void Chkdraft::OnLoadTest()
 {
-	/*maps.OpenMap("C:\\Users\\Justin\\Desktop\\trigs.scm");
+	/*
+	maps.NewMap(128, 128, 0, 0, 0);
 
-	ShowWindow(getHandle(), SW_MAXIMIZE);
+	//ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 	
-	//OpenMapSettings(ID_SCENARIO_STRINGS);
-	trigEditorWindow.CreateThis(getHandle());//*/
+	trigEditorWindow.CreateThis(getHandle());
+	trigEditorWindow.triggersWindow.ButtonNew();
+	trigEditorWindow.triggersWindow.trigModifyWindow.ChangeTab(2);
+	//*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
@@ -98,7 +101,7 @@ void Chkdraft::SetEditFocused(bool editFocused)
 	this->editFocused = editFocused;
 }
 
-bool Chkdraft::DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
@@ -106,7 +109,22 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				switch ( wParam )
 				{
+					case VK_TAB:
+						if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+							 GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+						{
+							msg = WM_NULL; // Dirty fix to prevent tabs from being focused
+							trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+							return true;
+						}
+						break;
 					case VK_RETURN:
+						if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+							 GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+						{
+							trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+							return true;
+						}
 						if ( GetParent(hWnd) == unitWindow.getHandle() )
 						{
 							unitWindow.DestroyThis();

@@ -1,4 +1,6 @@
 #include "ListViewControl.h"
+#include <iostream>
+using namespace std;
 
 bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id)
 {
@@ -16,7 +18,7 @@ bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int heig
 	return false;
 }
 
-void ListViewControl::AddColumn(int insertAt, const char* title, int width, int alignmentFlags)
+bool ListViewControl::AddColumn(int insertAt, const char* title, int width, int alignmentFlags)
 {
 	LV_COLUMN lvCol = { };
 	lvCol.mask = LVCF_FMT|LVCF_WIDTH|LVCF_TEXT|LVCF_SUBITEM|LVCF_ORDER;
@@ -27,7 +29,12 @@ void ListViewControl::AddColumn(int insertAt, const char* title, int width, int 
 	lvCol.cchTextMax = sizeof(title);
 	lvCol.iOrder = insertAt;
 
-	ListView_InsertColumn(getHandle(), insertAt, &lvCol);
+	return ListView_InsertColumn(getHandle(), insertAt, &lvCol) != -1;
+}
+
+bool ListViewControl::SetColumnWidth(int column, int width)
+{
+	return ListView_SetColumnWidth(getHandle(), column, width) == TRUE;
 }
 
 void ListViewControl::AddRow(int numColumns, LPARAM lParam)
@@ -134,6 +141,11 @@ int ListViewControl::GetItemRow(int lParam)
 	return ListView_FindItem(getHandle(), -1, &lvFind);
 }
 
+int ListViewControl::GetColumnWidth(int column)
+{
+	return SendMessage(getHandle(), LVM_GETCOLUMNWIDTH, column, 0);
+}
+
 int ListViewControl::GetNumColumns()
 {
 	HWND header = (HWND)SendMessage(getHandle(), LVM_GETHEADER, 0, 0);
@@ -195,6 +207,33 @@ bool ListViewControl::GetColumnAt(int xCoord, int &itemColumn)
 	{
 		itemColumn = lvHitTestInfo.iSubItem;
 		return true;
+	}
+	return false;
+}
+
+bool ListViewControl::GetItemRect(int x, int y, RECT& rect)
+{
+	if ( x == 0 ) // Work around Microsoft's error
+	{
+		rect.top = x;
+		rect.left = LVIR_LABEL;
+		if ( SendMessage(getHandle(), LVM_GETSUBITEMRECT, (WPARAM)y, (LPARAM)(&rect)) != 0 )
+		{
+			LONG right = rect.right;
+			rect.top = x;
+			rect.left = LVIR_BOUNDS;
+			if ( SendMessage(getHandle(), LVM_GETSUBITEMRECT, (WPARAM)y, (LPARAM)(&rect)) != 0 )
+			{
+				rect.right = right;
+				return true;
+			}
+		}
+	}
+	else
+	{
+		rect.top = x;
+		rect.left = LVIR_BOUNDS;
+		return SendMessage(getHandle(), LVM_GETSUBITEMRECT, (WPARAM)y, (LPARAM)(&rect)) != 0;
 	}
 	return false;
 }

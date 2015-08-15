@@ -25,10 +25,11 @@ enum ID
 	GROUP_RAWEDIT,
 	TEXT_EXTENDEDDATA,
 	EDIT_RAWPLAYERS,
-	CHECK_ALLOWRAWEDIT
+	CHECK_ALLOWRAWEDIT,
+	BUTTON_ADVANCED
 };
 
-TrigPlayersWindow::TrigPlayersWindow() : trigIndex(0), refreshing(true)
+TrigPlayersWindow::TrigPlayersWindow() : trigIndex(0), refreshing(true), advancedMode(true)
 {
 
 }
@@ -129,12 +130,13 @@ void TrigPlayersWindow::DoSize()
 
 		if ( cliHeight > 200 )
 			groupRawEdit.SetPos(5, 200, cliWidth-10, cliHeight-205);
+
+		buttonAdvanced.MoveTo(rect.right-buttonAdvanced.Width()-8, rect.bottom-buttonAdvanced.Height()-8);
 	}
 }
 
 void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 {
-	groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", GROUP_EXECUTINGPLAYERS);
 	for ( u8 i=0; i<8; i++ )
 	{
 		stringstream ssPlayer;
@@ -152,6 +154,7 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 	checkAllPlayers.CreateThis(hWnd, 110, yPos, 75, 17, false, "All Players", CHECK_ALL_PLAYERS);
 	textPlayerStats.CreateThis(hWnd, 200, 24, 120, 150, "", TEXT_STATS);
 	
+	groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", GROUP_EXECUTINGPLAYERS);
 	groupNonExecutingPlayers.CreateThis(hWnd, 340, 5, 210, 190, "Non-Executing Players", GROUP_UNUSEDPLAYERS);
 	for ( u8 i=0; i<9; i++ )
 		checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers[8+i], CHECK_PLAYER9+i);
@@ -163,7 +166,10 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 	textExtendedData.CreateThis(hWnd, 12, 219, 220, 60, "While not used in StarCraft modifying these bytes can be useful with 3rd party programs. Bytes 22-25 are used by Chkdraft and should not be manually altered. Numbers are in hex.", TEXT_EXTENDEDDATA);
 	checkAllowRawEdit.CreateThis(hWnd, 240, 219, 110, 20, false, "Enable Raw Edit", CHECK_ALLOWRAWEDIT);
 	editRawPlayers.CreateThis(hWnd, 12, 284, 455, 20, false, EDIT_RAWPLAYERS);
+	buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", BUTTON_ADVANCED);
 	editRawPlayers.DisableThis();
+
+	ToggleAdvancedMode();
 }
 
 void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
@@ -239,6 +245,37 @@ void TrigPlayersWindow::ParseRawPlayers()
 	}
 }
 
+void TrigPlayersWindow::ToggleAdvancedMode()
+{
+	advancedMode = !advancedMode;
+	if ( advancedMode ) // Now in advanced mode
+	{
+		buttonAdvanced.SetText("Standard");
+		groupNonExecutingPlayers.Show();
+		for ( u8 i=0; i<9; i++ )
+		checkNonExecutingPlayers[i].Show();
+
+		for ( u8 i=0; i<6; i++ )
+			checkNonExecutingPlayers[i+9].Show();
+		groupRawEdit.Show();
+		checkAllowRawEdit.Show();
+		textExtendedData.Show();
+		editRawPlayers.Show();
+	}
+	else // Now in standard mode
+	{
+		buttonAdvanced.SetText("Advanced");
+		groupNonExecutingPlayers.Hide();
+		for ( u8 i=0; i<15; i++ )
+			checkNonExecutingPlayers[i].Hide();
+		groupRawEdit.Hide();
+		checkAllowRawEdit.Hide();
+		textExtendedData.Hide();
+		editRawPlayers.Hide();
+		Hide(); Show(); // Dirty fix to issues with re-hiding controls
+	}
+}
+
 LRESULT TrigPlayersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -248,10 +285,12 @@ LRESULT TrigPlayersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				OnLeave();
 			else if ( wParam == TRUE )
 				RefreshWindow(trigIndex);
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_LBUTTONDOWN:
 			SetFocus(getHandle());
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_COMMAND:
@@ -267,10 +306,14 @@ LRESULT TrigPlayersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				switch ( HIWORD(wParam) )
 				{
 					case BN_CLICKED:
-						CheckBoxUpdated(LOWORD(wParam));
+						if ( LOWORD(wParam) == BUTTON_ADVANCED )
+							ToggleAdvancedMode();
+						else
+							CheckBoxUpdated(LOWORD(wParam));
 						break;
 				}
 			}
+			return DefWindowProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_CLOSE:

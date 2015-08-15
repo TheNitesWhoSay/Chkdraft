@@ -1,10 +1,12 @@
 #ifndef WINDOWCONTROL_H
 #define WINDOWCONTROL_H
 #include "DataTypes.h"
+#include "Enumerations.h"
 #include <Windows.h>
 #include <WindowsX.h>
 #include <CommCtrl.h>
 #include <string>
+#include <algorithm>
 
 class WindowControl
 {
@@ -22,6 +24,7 @@ class WindowControl
 /*  Universal   */	/** Finds and encapsulates a control within an existing window
 						This may be useful for controls in resource-based dialogs */
 					virtual bool FindThis(HWND hParent, u32 controlId);
+					virtual bool FindThis(HWND controlHandle);
 
 					/** Attempts to destroy this control and reset the associated data */
 					bool DestroyThis();
@@ -38,6 +41,7 @@ class WindowControl
 					void RedrawThis();
 					void MoveTo(int x, int y);
 					void SetPos(int x, int y, int width, int height);
+					void SetWidth(int newWidth);
 					int Width();
 					int Height();
 					int Left();
@@ -65,7 +69,6 @@ class WindowControl
 /*   Defaults   */	/** Executes the default behavior for a control
 						This should be called for messages you don't handle in ControlProc */
 					LRESULT CallDefaultProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 
 	private:
 

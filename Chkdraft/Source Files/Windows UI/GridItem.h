@@ -11,8 +11,10 @@ class GridControlItem
 		void SetData(u32 data);
 		void SetSelected(bool selected);
 		void ToggleSelection();
+		void Clear();
 
 		bool getText(std::string &text);
+		int getTextLength();
 		int getTextNum();
 		u32 getData();
 		bool isSelected();

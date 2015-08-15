@@ -2,7 +2,7 @@
 
 GridControlItem::GridControlItem() : selected(false), data(0)
 {
-
+	text = "";
 }
 
 void GridControlItem::SetText(const char* text)
@@ -32,10 +32,22 @@ void GridControlItem::SetSelected(bool selected)
 	this->selected = selected;
 }
 
+void GridControlItem::Clear()
+{
+	selected = false;
+	data = 0;
+	text = "";
+}
+
 bool GridControlItem::getText(std::string &text)
 {
 	try { text = this->text; return true; }
 	catch ( std::exception ) { return false; }
+}
+
+int GridControlItem::getTextLength()
+{
+	return text.length();
 }
 
 int GridControlItem::getTextNum()

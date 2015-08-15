@@ -37,6 +37,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool CompileTrigger(std::string trigText, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
 		bool CompileTrigger(buffer& text, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
 
+		// Attempts to compile the argNum'th condition argument into the given condition
+		bool ParseConditionName(std::string text, u8 &ID);
+		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, Scenario* chk);
+		u8 defaultFlags(u8 CID);
+
 
 	protected:
 
@@ -66,6 +71,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		inline bool ParsePartEleven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 
 		bool ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32 pos, u32 end); // Parse a player that the trigger is executed by
+		bool ParseConditionName(buffer &arg, u32 &ID);
 		bool ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
 		bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, u32& ID, u8& flags, u32& argsLeft); // Find the equivilant actionID
 		bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, u32 CID, u32 argsLeft, char* error); // Parse an argument belonging to a condition

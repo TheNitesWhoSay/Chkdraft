@@ -2,34 +2,8 @@
 #define LISTBOXCONTROL_H
 #include "WindowControl.h"
 #include <queue>
-
-enum LB
-{
-	/** Sent to the parent when an item is double clicked
-		The WPARAM specifies the item index that was double clicked
-		The LPARAM is the list box's handle */
-	WM_DBLCLKITEM = (WM_APP+1), 
-
-	/** Sent to the parent before several items are measured
-		The WPARAM is NULL
-		The LPARAM is the list box's handle */
-	WM_PREMEASUREITEMS,
-
-	/** Sent to the parent after several items are measured
-		The WPARAM is NULL
-		The LPARAM is the list box's handle */
-	WM_POSTMEASUREITEMS,
-
-	/** Sent to the parent before several items are drawn
-		The WPARAM is NULL
-		The LPARAM is the list box's handle */
-	WM_PREDRAWITEMS,
-
-	/** Sent to the parent after several items are drawn
-		The WPARAM is NULL
-		The LPARAM is the list box's handle */
-	WM_POSTDRAWITEMS
-};
+/** May use some or all of of the LB:: messages
+	from Enumerations.h */
 
 class ListBoxControl : public WindowControl
 {

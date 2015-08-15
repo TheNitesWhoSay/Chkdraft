@@ -33,7 +33,7 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 	{
 		if ( MessageBox(NULL, locateError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES )
 		{
-			sprintf_s(openFilter, MAX_PATH+28, "%s\0*%s*;\0All Files\0*.*\0\0", fileName, fileName);
+			sprintf_s(openFilter, MAX_PATH+28, "%s\0*%s*;\0All Files\0*.*\0\0", fileName);
 
 			OPENFILENAME ofn = { };
 			ofn.lStructSize = sizeof(ofn);

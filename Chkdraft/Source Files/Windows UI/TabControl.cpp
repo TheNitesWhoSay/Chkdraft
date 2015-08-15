@@ -1,4 +1,6 @@
 #include "TabControl.h"
+#include <iostream>
+using namespace std;
 
 u32 TabControl::GetCurSel()
 {

@@ -6,7 +6,8 @@ class ListViewControl : public WindowControl
 {
 	public:
 		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id);
-		void AddColumn(int insertAt, const char* title, int width, int alignmentFlags);
+		bool AddColumn(int insertAt, const char* title, int width, int alignmentFlags);
+		bool SetColumnWidth(int column, int width);
 		void AddRow(int numColumns, LPARAM lParam);
 		void AddRow();
 		void RemoveRow(int rowNum);
@@ -19,12 +20,14 @@ class ListViewControl : public WindowControl
 		bool FocusItem(int index);
 		bool SelectRow(int index);
 		//bool SortItems(WPARAM value, LPARAM function);
-
+		
 		int GetItemRow(int lParam);
 		int GetNumColumns();
+		int GetColumnWidth(int column);
 		bool GetItemAt(int xCoord, int yCoord, int &itemRow, int &itemColumn);
 		bool GetRowAt(int yCoord, int &itemRow);
 		bool GetColumnAt(int xCoord, int &itemColumn);
+		bool GetItemRect(int x, int y, RECT& rect);
 
 	private:
 		

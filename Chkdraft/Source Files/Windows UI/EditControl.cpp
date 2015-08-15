@@ -2,7 +2,7 @@
 #include <iostream>
 using namespace std;
 
-EditControl::EditControl() : isMultiLine(false)
+EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(true)
 {
 
 }
@@ -26,6 +26,35 @@ bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, 
 	return WindowControl::CreateControl( WS_EX_CLIENTEDGE, "EDIT", "", dwStyle,
 										 x, y, width, height,
 										 hParent, (HMENU)id, true );
+}
+
+bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, bool clientEdge, u32 id)
+{
+	DWORD dwStyle = WS_VISIBLE|WS_CHILD;
+	if ( multiLine )
+		dwStyle |= ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL|ES_WANTRETURN|WS_VSCROLL;
+	else
+		dwStyle |= ES_AUTOHSCROLL;
+
+	isMultiLine = multiLine;
+
+	DWORD dwExStyle = 0;
+	if ( clientEdge )
+		dwExStyle |= WS_EX_CLIENTEDGE;
+
+	return WindowControl::CreateControl( dwExStyle, "EDIT", "", dwStyle,
+										 x, y, width, height,
+										 hParent, (HMENU)id, true );
+}
+
+void EditControl::SetForwardArrowKeys(bool forwardArrowKeys)
+{
+	this->forwardArrowKeys = forwardArrowKeys;
+}
+
+void EditControl::SetStopForwardOnClick(bool stopFowardingOnClick)
+{
+	this->stopFowardingOnClick = stopFowardingOnClick;
 }
 
 bool EditControl::SetText(const char* newText)
@@ -86,6 +115,28 @@ template bool EditControl::SetEditBinaryNum<int>(int num);
 void EditControl::MaximizeTextLimit()
 {
 	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
+}
+
+void EditControl::ExpandToText()
+{
+	HDC hDC = GetDC(getHandle());
+	char* text;
+	if ( hDC != NULL && GetEditText(text) )
+	{
+		SIZE strSize = { };
+		RECT textRect = { };
+		if ( GetTextExtentPoint32A(hDC, text, GetTextLength(), &strSize) == TRUE &&
+			 GetClientRect(getHandle(), &textRect) == TRUE &&
+			 strSize.cx > (textRect.right-textRect.left) )
+		{
+			textRect.right = textRect.left + strSize.cx;
+			if ( AdjustWindowRect(&textRect, GetWindowStyle(getHandle()), FALSE) != 0 )
+				SetWidth(textRect.right-textRect.left);
+		}
+
+		delete[] text;
+		ReleaseDC(hDC);
+	}
 }
 
 int EditControl::GetTextLength()
@@ -359,21 +410,44 @@ bool EditControl::GetEditText(char* &dest)
 
 LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if ( msg == WM_KEYDOWN )
+	if ( msg == WM_LBUTTONDOWN && stopFowardingOnClick && forwardArrowKeys )
+		forwardArrowKeys = false;
+	else if ( msg == WM_KEYDOWN )
 	{
-		if ( wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000) > 0  ) // Select all
-			SendMessage(hWnd, EM_SETSEL, 0, -1);
-		else if ( wParam == VK_TAB ) // Insert tab
+		switch ( wParam )
 		{
-			DWORD selStart, selEnd;
-			SendMessage(hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd);
-			SendMessage(hWnd, EM_SETSEL, (WPARAM)selStart, (LPARAM)selEnd);
-			SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"	");
-			return 0; // Prevent default selection update
+			case 'A':
+				if ( (GetKeyState(VK_CONTROL) & 0x8000) > 0 )
+					SendMessage(hWnd, EM_SETSEL, 0, -1);
+				break;
+			case VK_TAB:
+				{
+					DWORD selStart, selEnd;
+					SendMessage(hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd);
+					SendMessage(hWnd, EM_SETSEL, (WPARAM)selStart, (LPARAM)selEnd);
+					SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"	");
+					return 0; // Prevent default selection update
+				}
+				break;
+			case VK_LEFT: case VK_UP: case VK_RIGHT: case VK_DOWN:
+				if ( forwardArrowKeys )
+				{
+					SendMessage(GetParent(hWnd), WM_KEYDOWN, wParam, lParam);
+					return 0;
+				}
+				break;
 		}
+
+		if ( autoExpand )
+			ExpandToText();
 	}
-	else if ( msg == WM_CHAR && (GetKeyState('A') & 0x8000) > 0 && (GetKeyState(VK_CONTROL) & 0x8000) > 0 ) // Prevent key-beep for select all
-		return 0;
+	else if ( msg == WM_CHAR )
+	{
+		if ( (GetKeyState('A') & 0x8000) > 0 && (GetKeyState(VK_CONTROL) & 0x8000) > 0 ) // Prevent key-beep for select all
+			return 0;
+		else if ( forwardArrowKeys && (wParam == VK_LEFT || wParam == VK_UP || wParam == VK_RIGHT || wParam == VK_DOWN) )
+			return 0;
+	}
 	
 	return WindowControl::CallDefaultProc(hWnd, msg, wParam, lParam); // Take default action
 }

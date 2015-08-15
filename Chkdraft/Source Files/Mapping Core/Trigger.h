@@ -17,6 +17,9 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 			#define EXECUTED_BY_PLAYER	   1
 			#define NOT_EXECUTED_BY_PLAYER 0
 
+		Condition& condition(u8 index);
+		Action& action(u8 index);
+
 		u8 numUsedConditions();
 		u8 numUsedActions();
 		bool preserveTriggerFlagged();
@@ -34,6 +37,11 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 		void setIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce);
 		void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
 		void setFlagPaused(bool flagPaused);
+		void deleteCondition(u8 index);
+		void alignTop(); // Moves all non-CID_NO_CONDITION conditions to top of array
+
+		static Condition junkCondition;
+		static Action junkAction;
 };
 #define TRIG_STRUCT_SIZE 2400
 

@@ -64,7 +64,7 @@ BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont) // Callback function for ReplaceC
 
 void ClassWindow::ReplaceChildFonts(HFONT hFont)
 {
-	EnumChildWindows(getHandle(), (WNDENUMPROC)SetFont, (LPARAM)hFont);
+	::EnumChildWindows(getHandle(), (WNDENUMPROC)SetFont, (LPARAM)hFont);
 }
 
 void ClassWindow::LockCursor()
@@ -112,6 +112,14 @@ void ClassWindow::TrackMouse(DWORD hoverTime)
 bool ClassWindow::SetParent(HWND hParent)
 {
 	return ::SetParent(windowHandle, hParent) != NULL;
+}
+
+void ClassWindow::SetRedraw(bool autoRedraw)
+{
+	if ( autoRedraw )
+		SendMessage(windowHandle, WM_SETREDRAW, TRUE, NULL);
+	else
+		SendMessage(windowHandle, WM_SETREDRAW, FALSE, NULL);
 }
 
 void ClassWindow::MoveTo(int x, int y)

@@ -10,6 +10,8 @@
 class TrigModifyWindow : public ClassWindow
 {
 	public:
+		TrigConditionsWindow conditionsWindow;
+
 		TrigModifyWindow();
 		bool CreateThis(HWND hParent, u32 trigIndex);
 		bool DestroyThis();
@@ -28,7 +30,6 @@ class TrigModifyWindow : public ClassWindow
 
 		TrigGeneralWindow generalWindow;
 		TrigPlayersWindow playersWindow;
-		TrigConditionsWindow conditionsWindow;
 		TrigActionsWindow actionsWindow;
 		TrigModifyTextWindow trigModifyTextWindow;
 

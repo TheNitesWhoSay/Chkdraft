@@ -43,9 +43,6 @@
     <Filter Include="Source Files\Windows\Windows UI\Controls">
       <UniqueIdentifier>{a9f99699-244c-4479-9ab2-48721a42b10d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Windows\Windows UI\Windows">
-      <UniqueIdentifier>{a6a13515-7be3-4104-89f0-1abeb83146d5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Windows\Windows UI\Menus">
       <UniqueIdentifier>{cc594dd6-9193-4b60-8cd2-49b2c85e2f2f}</UniqueIdentifier>
     </Filter>
@@ -126,6 +123,9 @@
     </Filter>
     <Filter Include="Source Files\Windows\Dialog Windows\Triggers\TrigModify">
       <UniqueIdentifier>{1d087de4-9101-4cd6-ad4b-286d6eb90e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Windows UI\Windows">
+      <UniqueIdentifier>{a6a13515-7be3-4104-89f0-1abeb83146d5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -425,6 +425,9 @@
     </ClInclude>
     <ClInclude Include="Source Files\Windows UI\GridItem.h">
       <Filter>Header Files\Windows\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Windows UI\Enumerations.h">
+      <Filter>Header Files\Windows\Windows UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

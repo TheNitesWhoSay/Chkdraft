@@ -104,6 +104,61 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, Scenario* 
 	return false;
 }
 
+bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
+										 std::vector<u8> &argMap, Condition& condition, Scenario* chk)
+{
+	if ( !LoadScenario(chk) )
+		return false;
+	
+	buffer txcd("TxCd");
+	if ( argNum < argMap.size() &&
+		 txcd.addStr(conditionArgText.c_str(), conditionArgText.size()) &&
+		 txcd.add<u8>(0) )
+	{
+		char error[256] = { };
+		u32 argsLeft = argMap.size() - argMap[argNum];
+		if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, condition.condition, argsLeft, error) )
+			return true;
+		else
+			CHKD_ERR("Unable to parse condition.\n\n%s", error);
+	}
+	return false;
+}
+
+u8 TextTrigCompiler::defaultFlags(u8 CID)
+{
+	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
+						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
+						  0, 0, 0, 0 };
+
+	if ( CID >= 0 && CID < sizeof(defaultFlags)/sizeof(const u8) )
+		return defaultFlags[CID];
+	else
+		return 0;
+}
+
+bool TextTrigCompiler::ParseConditionName(std::string text, u8 &ID)
+{
+	buffer txcd("TxCd");
+	if ( txcd.addStr(text.c_str(), text.size()) )
+	{
+		CleanText(txcd);
+		u32 CID = CID_NO_CONDITION;
+		if ( ParseConditionName(txcd, CID) && CID != CID_CUSTOM )
+		{
+			if ( ((s32)CID) < 0 )
+				ID = ExtendedToRegularCID((s32)CID);
+			else
+				ID = (u8)CID;
+
+			return true;
+		}
+		else if ( ParseByte((char*)txcd.getPtr(0), ID, 0, txcd.size()) )
+			return true;
+	}
+	return false;
+}
+
 // protected
 
 bool TextTrigCompiler::LoadScenario(Scenario* chk)
@@ -232,7 +287,7 @@ void TextTrigCompiler::CleanText(buffer &text)
 				break;
 
 			default:
-				UCHAR curr = text.get<u8>(pos);
+				u8 curr = text.get<u8>(pos);
 				if ( curr > 96 && curr < 123 ) // Capitalize letters
 					dest.add<u8>(curr-32);
 				else
@@ -561,7 +616,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 			{
 				if ( numConditions > NUM_TRIG_CONDITIONS )
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!");
+					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
 					return false;
 				}
 				currCondition = &currTrig.conditions[numConditions];
@@ -586,7 +641,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 				}
 				else
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'");
+					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 					return false;
 				}
 			}
@@ -646,7 +701,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		{
 			if ( numConditions > NUM_TRIG_CONDITIONS )
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!");
+				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
 				return false;
 			}
 			currCondition = &currTrig.conditions[numConditions];
@@ -821,7 +876,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 			{
 				if ( numActions > NUM_TRIG_ACTIONS )
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!");
+					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
 					return false;
 				}
 
@@ -879,7 +934,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		{
 			if ( numActions > NUM_TRIG_ACTIONS )
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!");
+				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
 				return false;
 			}
 			currAction = &currTrig.actions[numActions];
@@ -978,6 +1033,12 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 			return false;
 		}
 	}
+	else
+	{
+		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Additional Arguments\n\n%s", line, LastError);
+		return false;
+	}
+
 	return true;
 }
 
@@ -1076,31 +1137,9 @@ bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32
 	return false;
 }
 
-bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseConditionName(buffer &arg, u32 &ID)
 {
-	ID = CID_NO_CONDITION;
-	u16 number = 0;
-
-	u32 size = end - pos;
-	buffer arg;
-
-	for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
-	{
-		arg.add<u8>(text.get<u8>(i+pos));
-		if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
-			arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
-	}
-
-	for ( u32 i=0; i<arg.size(); i++ )
-	{
-		if ( arg.get<u8>(i) == ' ' ) // Del spacing
-			arg.del<u8>(i);
-		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
-			arg.del<u8>(i);
-	}
-
 	char currChar = arg.get<u8>(0);
-
 	switch ( currChar )
 	{
 		case 'A':
@@ -1142,10 +1181,7 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 			else if ( arg.has("OUNTDOWNTIMER", 1, 13) )
 				ID = CID_COUNTDOWN_TIMER;
 			else if ( arg.has("USTOM", 1, 5) )
-			{
 				ID = CID_CUSTOM;
-				argsLeft = 8;
-			}
 			break;
 
 		case 'D':
@@ -1210,11 +1246,37 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 			break;
 	}
 
+	return ID != CID_NO_CONDITION;
+}
+
+bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft)
+{
+	ID = CID_NO_CONDITION;
+	u16 number = 0;
+
+	u32 size = end - pos;
+	buffer arg;
+
+	for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
+	{
+		arg.add<u8>(text.get<u8>(i+pos));
+		if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
+			arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
+	}
+
+	for ( u32 i=0; i<arg.size(); i++ )
+	{
+		if ( arg.get<u8>(i) == ' ' ) // Del spacing
+			arg.del<u8>(i);
+		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+			arg.del<u8>(i);
+	}
+
+	ParseConditionName(arg, ID);
+
 	const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
 									1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
 									1, 4, 0, 0 };
-
-
 
 	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
 						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
@@ -1964,6 +2026,9 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 			break;
 	}
 
+	Error("INTERNAL ERROR: Invalid args left or argument unhandled, report this");
+	return false;
+
 ParseActionLocationField: // 4 bytes
 	returnMsg( ParseLocationName(text, currAction.location, pos, end) ||
 			   ParseLong(textPtr, currAction.location, pos, end),
@@ -2253,6 +2318,12 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
 		char temp = locStringPtr[size];
 		locStringPtr[size] = '\0';
 		std::string str(locStringPtr);
+
+		if ( str.compare("anywhere") == 0 ) // Capitalize lower-case anywhere's
+		{
+			locStringPtr[0] = 'A';
+			str[0] = 'A';
+		}
 
 		// Grab the string hash
 		u32 hash = strHash(str);

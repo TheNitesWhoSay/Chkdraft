@@ -18,6 +18,7 @@ class TrigPlayersWindow : public ClassWindow
 		void CheckBoxUpdated(u16 checkId);
 		void OnLeave();
 		void ParseRawPlayers();
+		void ToggleAdvancedMode();
 
 	private:
 		bool refreshing;
@@ -37,6 +38,8 @@ class TrigPlayersWindow : public ClassWindow
 		CheckBoxControl checkAllowRawEdit;
 		TextControl textExtendedData;
 		EditControl editRawPlayers; // 56 hex characters // 28 bytes
+		ButtonControl buttonAdvanced;
+		bool advancedMode;
 };
 
 #endif
