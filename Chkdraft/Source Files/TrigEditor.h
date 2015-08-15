@@ -12,6 +12,8 @@
 class TrigEditorWindow : public ClassWindow
 {
 	public:
+		TriggersWindow triggersWindow;
+
 		TrigEditorWindow();
 		bool CreateThis(HWND hParent);
 		bool DestroyThis();
@@ -26,7 +28,6 @@ class TrigEditorWindow : public ClassWindow
 		u32 currTab;
 		TabControl tabs;
 
-		TriggersWindow triggersWindow;
 		TemplatesWindow templatesWindow;
 		CountersWindow countersWindow;
 		CUWPsWindow cuwpsWindow;

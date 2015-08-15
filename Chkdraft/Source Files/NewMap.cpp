@@ -132,82 +132,60 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						break;
 
 					default:
+						if ( HIWORD(wParam) == LBN_SELCHANGE )
 						{
-							if ( HIWORD(wParam) == LBN_SELCHANGE )
+							int ItemIndex = SendMessage((HWND)lParam, (UINT)LB_GETCURSEL, (WPARAM) 0, (LPARAM)0);
+							if ( LOWORD(wParam) == IDC_LIST_TILESET )
 							{
-								int ItemIndex = SendMessage((HWND)lParam, (UINT)LB_GETCURSEL, (WPARAM) 0, (LPARAM)0);
-								switch ( LOWORD(wParam) )
+								HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
+								HWND hDefaultTrigs = GetDlgItem(hWnd, COMBO_TRIGS);
+								SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
+								switch ( ItemIndex )
 								{
-									case IDC_LIST_TILESET:
-										{
-											HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-											HWND hDefaultTrigs = GetDlgItem(hWnd, COMBO_TRIGS);
-											SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
-											switch ( ItemIndex )
-											{
-												case TERRAIN_BADLANDS: // Badlands
-													{
-														for (int i=0; i<numBadlandsInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_SPACE: // Space Platform
-													{
-														for (int i=0; i<numSpaceInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)spaceInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_INSTALLATION: // Installation
-													{
-														for (int i=0; i<numInstallationInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)installInitTerrain[i]);
-														SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_ASH: // Ash World
-													{
-														for (int i=0; i<numAshInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)ashInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_JUNGLE: // Jungle World
-													{
-														for (int i=0; i<numJungInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)jungInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_DESERT: // Desert World
-													{
-														for (int i=0; i<numDesertInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)desertInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_ICE: // Ice World
-													{
-														for (int i=0; i<numIceInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)iceInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-												case TERRAIN_TWILIGHT: // Twilight World
-													{
-														for (int i=0; i<numTwilightInitTerrain; i++)
-															SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)twilightInitTerrain[i]);
-														SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-													}
-													break;
-											}
-											SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-										}
+									case TERRAIN_BADLANDS: // Badlands
+										for (int i=0; i<numBadlandsInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_SPACE: // Space Platform
+										for (int i=0; i<numSpaceInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)spaceInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_INSTALLATION: // Installation
+										for (int i=0; i<numInstallationInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)installInitTerrain[i]);
+										SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+										break;
+									case TERRAIN_ASH: // Ash World
+										for (int i=0; i<numAshInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)ashInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_JUNGLE: // Jungle World
+										for (int i=0; i<numJungInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)jungInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_DESERT: // Desert World
+										for (int i=0; i<numDesertInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)desertInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_ICE: // Ice World
+										for (int i=0; i<numIceInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)iceInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
+										break;
+									case TERRAIN_TWILIGHT: // Twilight World
+										for (int i=0; i<numTwilightInitTerrain; i++)
+											SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)twilightInitTerrain[i]);
+										SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 										break;
 								}
-							}	
+								SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+							}
 						}
 						break;
 				}

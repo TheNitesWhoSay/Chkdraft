@@ -739,7 +739,7 @@ void GuiMap::PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard )
 
 void GuiMap::PaintMiniMap(HWND hWnd)
 {
-	if ( this )
+	if ( this != nullptr )
 	{
 		RECT rect;
 		GetClientRect(hWnd, &rect);
@@ -906,10 +906,10 @@ bool GuiMap::snapUnitCoordinate(s32& x, s32& y)
 		if ( grid.size.x > 0 && grid.size.y > 0 )
 		{
 			double intervalNum = (double(x-grid.offset.x))/grid.size.x;
-			s32 xIntervalNum = round(intervalNum);
+			s32 xIntervalNum = (s32)round(intervalNum);
 			x = xIntervalNum*grid.size.x;
 			intervalNum = (double(y-grid.offset.y))/grid.size.y;
-			s32 yIntervalNum = round(intervalNum);
+			s32 yIntervalNum = (s32)round(intervalNum);
 			y = yIntervalNum*grid.size.y;
 			return true;
 		}
@@ -1017,13 +1017,13 @@ bool GuiMap::SnapLocationDimensions(s32& x1, s32& y1, s32& x2, s32& y2, u32 flag
 	if ( GetSnapIntervals(lengthX, lengthY, startSnapX, startSnapY) )
 	{
 		double intervalNum = (double(x1-startSnapX))/lengthX;
-		s32 xStartIntervalNum = round(intervalNum);
+		s32 xStartIntervalNum = (s32)round(intervalNum);
 		intervalNum = (double(y1-startSnapY))/lengthY;
-		s32 yStartIntervalNum = round(intervalNum);
+		s32 yStartIntervalNum = (s32)round(intervalNum);
 		intervalNum = (double(x2-startSnapX))/lengthX;
-		s32 xEndIntervalNum = round(intervalNum);
+		s32 xEndIntervalNum = (s32)round(intervalNum);
 		intervalNum = (double(y2-startSnapY))/lengthY;
-		s32 yEndIntervalNum = round(intervalNum);
+		s32 yEndIntervalNum = (s32)round(intervalNum);
 
 		if ( flags & SNAP_LOC_X1 )
 			x1 = xStartIntervalNum*lengthX + startSnapX;

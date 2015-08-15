@@ -2,6 +2,8 @@
 #include "DefaultCHK.h"
 #include "StringUsage.h"
 #include <iostream>
+#include <algorithm>
+#include <unordered_map>
 using namespace std;
 
 #define FORCE_RANDOMIZE_START_LOCATION	BIT_0
@@ -84,7 +86,7 @@ u8 Scenario::numLocations()
 				numLocs ++;
 			}
 		}
-		else
+		else // No more locations in the section
 			break;
 	}
 	return numLocs;
@@ -263,8 +265,8 @@ bool Scenario::getEscapedString(string &dest, u32 stringNum)
 			return false;
 		}
 	}
-
-	return false;
+	else
+		return false;
 }
 
 bool Scenario::getLocationName(string &dest, u8 locationID)
@@ -307,9 +309,7 @@ void Scenario::getUnitName(string &dest, u16 unitID)
 				dest = DefaultUnitDisplayName[unitID]; // Couldn't retrieve name, return default
 		}
 		else // Default unit name
-		{
 			dest = DefaultUnitDisplayName[unitID];
-		}
 	}
 	else // Extended unit
 	{
@@ -431,7 +431,7 @@ bool Scenario::stringExists(u32 stringNum)
 
 bool Scenario::stringExists(string str, u32& stringNum)
 {
-	std::list<StringTableNode> strList;
+	std::vector<StringTableNode> strList;
 	addAllUsedStrings(strList, STRADD_INCLUDE_ALL);
 
 	for ( auto it = strList.begin(); it != strList.end(); it ++ )
@@ -448,7 +448,7 @@ bool Scenario::stringExists(string str, u32& stringNum)
 
 bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 {
-	std::list<StringTableNode> strList;
+	std::vector<StringTableNode> strList;
 	if ( extended )
 		addAllUsedStrings(strList, STRADD_INCLUDE_EXTENDED);
 	else
@@ -463,6 +463,19 @@ bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 		}
 	}
 
+	return false;
+}
+
+bool Scenario::stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList)
+{
+	for ( auto it = strList.begin(); it != strList.end(); it ++ )
+	{
+		if ( it->string.compare(str) == 0 )
+		{
+			stringNum = it->stringNum;
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -1253,6 +1266,94 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 	return false;
 }
 
+bool Scenario::addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
+{
+	if ( cleanStringTable(extended, strList) )
+	{
+		StringUsageTable stringTable;
+		if ( stringTable.populateTable(this, extended) )
+		{
+			if ( stringTable.useNext(stringNum) ) // Get an unused entry if possible
+			{
+				// Check for a need to make a new entry
+				if ( extended && stringNum > KSTR().get<u32>(4) )
+				{
+					u32 numStrs = KSTR().get<u32>(4);
+
+					// Add a new string offset after all the others and a prop struct after all the others
+					if ( !(KSTR().insert<u32>(8+4*numStrs, 0) && KSTR().insert<u32>(12+8*numStrs, 0)) )
+						return false;
+
+					for ( u32 i=1; i<=numStrs; i++ ) // Increment every string offset by 8 to accommodate the new header info
+						KSTR().replace<u32>(4+4*i, KSTR().get<u32>(4+4*i)+8);
+
+					numStrs ++;
+					KSTR().replace<u32>(4, numStrs);
+				}
+				else if ( !extended && stringNum > STR().get<u16>(0) )
+				{
+					if ( STR().size() < 65534 )
+					{
+						u16 numStrs = STR().get<u16>(0);
+						for ( u16 i=1; i<= numStrs; i++ ) // Increment every string offset by 2 to accommodate the new header info
+							STR().replace<u16>(2*i, STR().get<u16>(2*i)+2);
+
+						// Add a new string offset after all the others
+						if ( !STR().insert<u16>(2+2*numStrs, 0) )
+							return false;
+
+						numStrs ++;
+						STR().replace<u16>(0, numStrs);
+					}
+					else
+					{
+						CHKD_ERR("Cannot add string, STR section has reached its structural limit");
+						return false;
+					}
+				}
+
+				if ( extended )
+				{
+					u32 strOffset = KSTR().size();
+					
+					if ( KSTR().addStr(str.c_str(), str.size()) )
+					{
+						if ( str[str.size()-1] != '\0' )
+						{
+							if ( !KSTR().add('\0') )
+								return false;
+						}
+						KSTR().replace<u32>(4+4*stringNum, strOffset);
+						stringNum = 65536 - stringNum;
+						return true;
+					}
+				}
+				else
+				{
+					if ( STR().size() < 65536 )
+					{
+						u16 strOffset = u16(STR().size());
+						if ( STR().addStr(str.c_str(), str.size()) )
+						{
+							if ( str[str.size()-1] != '\0' )
+							{
+								if ( !STR().add('\0') )
+									return false;
+							}
+							STR().replace<u16>(2*stringNum, strOffset);
+							return true;
+						}
+					}
+					else
+						CHKD_ERR("Cannot add string, STR section has reached its structural limit");
+				}
+			}
+		}
+	}
+	
+	return false;
+}
+
 template <typename numType>
 bool Scenario::replaceString(string newString, numType& stringNum, bool extended, bool safeReplace)
 {
@@ -1266,69 +1367,77 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 		else
 			return editString<numType>(newString, stringNum, extended, safeReplace);
 	}
-	else if ( stringExists(newString, newStringNum, extended) )
+	else
 	{
-		stringNum = (numType)newStringNum;
-		removeUnusedString(oldStringNum);
-		return true;
-	}
-	else if ( addString(newString, newStringNum, extended) )
-	{
-		stringNum = (numType)newStringNum;
-		removeUnusedString(oldStringNum);
-		return true;
-	}
-	else // String addition failed, try preserving strings, removing the old string, then adding
-	{
-		if ( extended && !KSTR().exists() ) // Addition of the first KSTR() failed above, nothing more can be done
-			return false;
+		std::vector<StringTableNode> strList;
+		u32 flags = extended ? STRADD_INCLUDE_EXTENDED : STRADD_INCLUDE_STANDARD;
+		bool populatedList = addAllUsedStrings(strList, flags);
 
-		// Get a pointer to the correct string section
-		buffer* strings;
-		if ( extended )
-			strings = &KSTR();
-		else
-			strings = &STR();
-
-		// Attempt to create a backup string section, or at least a backup string (if safeReplace is not set)
-		buffer stringSectionBackup;
-		std::string stringBackup;
-
-		bool didBackupSection = strings->exists() && stringSectionBackup.addStr((const char*)strings->getPtr(0), strings->size()),
-			 didBackupString = false,
-			 wasExtended = false;
-
-		if ( !didBackupSection && !safeReplace )
+		if ( populatedList && stringExists(newString, newStringNum, strList) )
 		{
-			didBackupString = getString(stringBackup, stringNum);
-			wasExtended = isExtendedString(stringNum);
-		}
-		
-		// Check if deleting the original can be safely done or safeReplace is not set
-		if ( didBackupSection || !safeReplace )
-		{
-			// Delete the original string
-			stringNum = 0;
+			stringNum = (numType)newStringNum;
 			removeUnusedString(oldStringNum);
+			return true;
+		}
+		else if ( populatedList && addNonExistentString(newString, newStringNum, extended, strList) )
+		{
+			stringNum = (numType)newStringNum;
+			removeUnusedString(oldStringNum);
+			return true;
+		}
+		else // String addition failed, try preserving strings, removing the old string, then adding
+		{
+			strList.clear();
+			if ( extended && !KSTR().exists() ) // Addition of the first KSTR() failed above, nothing more can be done
+				return false;
 
-			if ( addString(newString, newStringNum, extended) ) // Try adding the new string
-			{
-				stringNum = (numType)newStringNum;
-				return true;
-			}
-			else if ( didBackupSection ) // String addition failed, load backup
-			{
-				if ( extended )
-					stringSectionBackup.setTitle(HEADER_KSTR);
-				else
-					stringSectionBackup.setTitle(HEADER_STR);
+			// Get a pointer to the correct string section
+			buffer* strings;
+			if ( extended )
+				strings = &KSTR();
+			else
+				strings = &STR();
 
-				strings->takeAllData(stringSectionBackup);
-			}
-			else if ( didBackupString ) // String addition failed and full section could not be backed up
+			// Attempt to create a backup string section, or at least a backup string (if safeReplace is not set)
+			buffer stringSectionBackup;
+			std::string stringBackup;
+
+			bool didBackupSection = strings->exists() && stringSectionBackup.addStr((const char*)strings->getPtr(0), strings->size()),
+				 didBackupString = false,
+				 wasExtended = false;
+
+			if ( !didBackupSection && !safeReplace )
 			{
-				if ( addString(stringBackup, newStringNum, wasExtended) ) // Attempt to re-insert the original string
+				didBackupString = getString(stringBackup, stringNum);
+				wasExtended = isExtendedString(stringNum);
+			}
+		
+			// Check if deleting the original can be safely done or safeReplace is not set
+			if ( didBackupSection || !safeReplace )
+			{
+				// Delete the original string
+				stringNum = 0;
+				removeUnusedString(oldStringNum);
+
+				if ( addString(newString, newStringNum, extended) ) // Try adding the new string
+				{
 					stringNum = (numType)newStringNum;
+					return true;
+				}
+				else if ( didBackupSection ) // String addition failed, load backup
+				{
+					if ( extended )
+						stringSectionBackup.setTitle(HEADER_KSTR);
+					else
+						stringSectionBackup.setTitle(HEADER_STR);
+
+					strings->takeAllData(stringSectionBackup);
+				}
+				else if ( didBackupString ) // String addition failed and full section could not be backed up
+				{
+					if ( addString(stringBackup, newStringNum, wasExtended) ) // Attempt to re-insert the original string
+						stringNum = (numType)newStringNum;
+				}
 			}
 		}
 	}
@@ -1346,17 +1455,19 @@ bool Scenario::editString(string newString, numType stringNum, bool extended, bo
 	else if ( stringNum != 0 )
 		testEqual.clear();
 
+	std::vector<StringTableNode> strList;
+	u32 flags = extended ? STRADD_INCLUDE_EXTENDED : STRADD_INCLUDE_STANDARD;
+	bool populatedList = addAllUsedStrings(strList, flags);
+
 	u32 newStringNum = 0;
-	if ( stringExists(newString, newStringNum, extended) )
+	if ( populatedList && stringExists(newString, newStringNum, strList) )
 	{
 		replaceStringNum(stringNum, newStringNum);
 		return true;
 	}
 	else
 	{
-		std::list<StringTableNode> strList;
-		if ( extended == false && addAllUsedStrings(strList, STRADD_INCLUDE_STANDARD) ||
-			 extended == true && addAllUsedStrings(strList, STRADD_INCLUDE_EXTENDED) )
+		if ( populatedList )
 		{
 			for ( auto it = strList.begin(); it != strList.end(); it ++ )
 			{
@@ -1453,7 +1564,7 @@ void Scenario::removeMetaStrings()
 
 bool Scenario::cleanStringTable(bool extendedTable)
 {
-	std::list<StringTableNode> strList;
+	std::vector<StringTableNode> strList;
 
 	u32 flags = 0;
 	if ( extendedTable )
@@ -1464,9 +1575,14 @@ bool Scenario::cleanStringTable(bool extendedTable)
 	return addAllUsedStrings(strList, flags) && rebuildStringTable(strList, extendedTable);
 }
 
+bool Scenario::cleanStringTable(bool extendedTable, std::vector<StringTableNode> &strList)
+{
+	return rebuildStringTable(strList, extendedTable);
+}
+
 bool Scenario::removeDuplicateStrings()
 {
-	std::list<StringTableNode> strList;
+	std::vector<StringTableNode> strList;
 
 	if ( addAllUsedStrings(strList, STRADD_INCLUDE_ALL) )
 	{
@@ -1499,11 +1615,11 @@ bool Scenario::removeDuplicateStrings()
 bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 {
 	if ( recycleSubStrings )
-		return false;
+		return false; // Unimplemented
 
 	removeDuplicateStrings();
 
-	std::list<StringTableNode> strList;
+	std::vector<StringTableNode> strList;
 	u32 flags = 0;
 	if ( extendedTable )
 		flags = STRADD_INCLUDE_EXTENDED;
@@ -1596,7 +1712,7 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 				STR().replace<u16>(0, 1024);
 		}
 
-		std::list<StringTableNode> newStrList;
+		std::vector<StringTableNode> newStrList;
 		return addAllUsedStrings(newStrList, flags) && rebuildStringTable(newStrList, extendedTable);
 	}
 
@@ -1767,9 +1883,14 @@ bool Scenario::repairStringTable(bool extendedTable)
 	return compressStringTable(extendedTable, false);
 }
 
-bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
+bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, u32 flags)
 {
+	std::hash<std::string> strHash;
+	std::unordered_multimap<u32, StringTableNode> stringSearchTable;
+	strList.reserve(strList.size()+numStrings());
 	StringTableNode node;
+	int numMatching = 0;
+	u32 hash = 0;
 	u32 standardNumStrings = numStrings();
 	u32 extendedNumStrings = KSTR().get<u32>(4);
 
@@ -1783,8 +1904,11 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 		{																								\
 			if ( getRawString(node.string, index) ) {													\
 				node.stringNum = index;																	\
-				if ( std::find(strList.begin(), strList.end(), node) == strList.end() )					\
+				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )						\
+				{																						\
 					strList.push_back(node); /* add if the string isn't in the list */					\
+					stringSearchTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );	\
+				}																						\
 			}																							\
 		}
 
@@ -1841,6 +1965,7 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 		for ( int i=0; i<256; i++ )
 			AddStrIfOverZero( SWNM().get<u32>(i*4) );
 
+		strList.shrink_to_fit();
 		return true;
 	}
 	catch ( std::bad_alloc )
@@ -1849,7 +1974,7 @@ bool Scenario::addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags)
 	}
 }
 
-bool Scenario::rebuildStringTable(std::list<StringTableNode> strList, bool extendedTable)
+bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool extendedTable)
 {
 	if ( extendedTable )
 	{
@@ -1861,7 +1986,7 @@ bool Scenario::rebuildStringTable(std::list<StringTableNode> strList, bool exten
 	}
 
 	// Sort string list from lowest to highest index
-	strList.sort(CompareStrTblNode);
+	std::sort(strList.begin(), strList.end(), CompareStrTblNode);
 
 	// Decide what the max strings should be
 	u32 prevNumStrings;
@@ -2038,7 +2163,7 @@ void Scenario::correctMTXM()
 
 bool Scenario::setPlayerOwner(u8 player, u8 newOwner)
 {
-	IOWN().replace<u8>((u32)player, newOwner); // This section is not required by starcraft and should not affect function success/faliure
+	IOWN().replace<u8>((u32)player, newOwner); // This section is not required by starcraft and shouldn't affect function success
 	return OWNR().replace<u8>((u32)player, newOwner);
 }
 
@@ -2469,12 +2594,12 @@ bool Scenario::setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playe
 
 bool Scenario::addTrigger(Trigger &trigger)
 {
-	return TRIG().add<Trigger>(trigger);
+	return TRIG().add<Trigger&>(trigger);
 }
 
 bool Scenario::insertTrigger(u32 triggerId, Trigger &trigger)
 {
-	return TRIG().insert<Trigger>(triggerId*TRIG_STRUCT_SIZE, trigger);
+	return TRIG().insert<Trigger&>(triggerId*TRIG_STRUCT_SIZE, trigger);
 }
 
 bool Scenario::deleteTrigger(u32 triggerId)

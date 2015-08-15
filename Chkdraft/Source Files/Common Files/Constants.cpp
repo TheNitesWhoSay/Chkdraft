@@ -289,6 +289,13 @@ const char* playerColors[] = { "Red", "Blue", "Teal", "Purple", "Orange", "Brown
 							   "Tan", "Dark Aqua", "Pale Green", "Blueish Gray", "Pale Yellow", "Cyan" };
 const int numPlayerColors = sizeof(playerColors)/sizeof(const char*);
 
+const char* triggerPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8",
+								 "Player 9", "Player 10", "Player 11", "Player 12", "None",
+								 "Current Player", "Foes", "Allies", "Neutral Players", "All Players",
+								 "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
+								 "Unused 3", "Unused 4", "Non AV Players", "ID:27" };
+const int numTriggerPlayers = sizeof(triggerPlayers)/sizeof(const char*);
+
 const COLORREF stringColors[] = { RGB(184, 184, 232), RGB(184, 184, 232), RGB(220, 220,  60), RGB(255, 255, 255),
 								  RGB(132, 116, 116), RGB(200,  24,  24), RGB( 16, 252,  24), RGB(244,   4,   4),
 								  RGB( 16, 252,  24), RGB( 16, 252,  24), RGB( 12,  72, 204), RGB( 44, 180, 148),

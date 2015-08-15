@@ -1,5 +1,110 @@
 #include "TextTrigGenerator.h"
 
+const char* textFlags[] = { "Don't Always Display", "Always Display" };
+const char* scoreTypes[] = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };
+const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
+const char* orderTypes[] = { "move", "patrol", "attack" };
+const char* stateModifiers[] = { "0", "1", "2", "3", "enabled", "disabled", "toggle" };
+const char* switchStates[] = { "0", "1", "set", "not set" };
+const char* switchModifiers[] = { "0", "1", "2", "3", "set", "clear", "toggle", "7", "8", "9", "10", "randomize" };
+const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
+const char* numericComparisons[] = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
+const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
+
+void CollapsableDefines()
+{
+	#define ADD_TEXTTRIG_LOCATION(src) {											\
+		if ( src >= 0 && src < locationTable.size() )								\
+			output.addStr(locationTable[src].c_str(), locationTable[src].size());	\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_STRING(src) {																							\
+		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )								\
+		{																														\
+			if ( src < stringTable.size() )																						\
+				output.addStr(stringTable[src].c_str(), stringTable[src].size());												\
+			else																												\
+				output.addStr(string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
+		}																														\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_PLAYER(src) {												\
+		if ( src >= 0 && src < groupTable.size() )									\
+			output.addStr(groupTable[src].c_str(), groupTable[src].size());			\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_UNIT(src) {												\
+		if ( src >= 0 && src < unitTable.size() )									\
+			output.addStr(unitTable[src].c_str(), unitTable[src].size());			\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_SWITCH(src) {												\
+		if ( src >= 0 && src < switchTable.size() )									\
+			output.addStr(switchTable[src].c_str(), switchTable[src].size());		\
+		else { _itoa_s( src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
+		if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )				\
+			output.addStr(scoreTypes[src], strlen(scoreTypes[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
+		if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )			\
+			output.addStr(resourceTypes[src], strlen(resourceTypes[src]));			\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_ORDER(src) {												\
+		if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )				\
+			output.addStr(orderTypes[src], strlen(orderTypes[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_STATE_MODIFIER(src) {										\
+		if ( src >= 0 && src < sizeof(stateModifiers)/sizeof(const char*) )			\
+			output.addStr(stateModifiers[src], strlen(stateModifiers[src]));		\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } } 
+
+	#define ADD_TEXTTRIG_SWITCH_STATE(src) {										\
+		if ( src >= 0 && src < sizeof(switchStates)/sizeof(const char*) )			\
+			output.addStr(switchStates[src], strlen(switchStates[src]));			\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {										\
+		if ( src >= 0 && src < sizeof(switchModifiers)/sizeof(const char*) )		\
+			output.addStr(switchModifiers[src], strlen(switchModifiers[src]));		\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_ALLY_STATE(src) {											\
+		if ( src >= 0 && src < sizeof(allyStates)/sizeof(const char*) )				\
+			output.addStr(allyStates[src], strlen(allyStates[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {										\
+		if ( src >= 0 && src < sizeof(numericComparisons)/sizeof(const char*) )			\
+			output.addStr(numericComparisons[src], strlen(numericComparisons[src]));	\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {									\
+		if ( src >= 0 && src < sizeof(numericModifiers)/sizeof(const char*) )		\
+			output.addStr(numericModifiers[src], strlen(numericModifiers[src]));	\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_SCRIPT(src) {												\
+		output.add('\"'); output.addStr(src, 4); output.add('\"'); }
+
+	#define ADD_TEXTTRIG_NUM_UNITS(src) {											\
+		if ( src == 0 ) output.addStr("All", 3);									\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+
+	#define ADD_TEXTTRIG_NUMBER(src) {												\
+		_itoa_s((int)src, number, 10); output.addStr(number, strlen(number)); }
+
+	#define ADD_TEXTTRIG_TEXT_FLAGS(src) {											\
+		if		( (src&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )							\
+			output.addStr(textFlags[0], strlen(textFlags[0]));						\
+		else if ( (src&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )	\
+			output.addStr(textFlags[1], strlen(textFlags[1])); }
+}
+
 TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTable(false)
 {
 	stringTable.clear();
@@ -45,6 +150,60 @@ void TextTrigGenerator::ClearScenario()
 	switchTable.clear();
 	wavTable.clear();
 	groupTable.clear();
+}
+
+string TextTrigGenerator::GetConditionName(u8 CID)
+{
+	if ( CID < conditionTable.size() )
+		return conditionTable[CID];
+	else
+		return to_string((int)CID);
+}
+
+string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum)
+{
+	buffer output("TEXC");
+	AddConditionArgument(output, condition, condition.condition, stdTextTrigArgNum);
+	if ( output.add('\0') )
+		return string((char*)output.getPtr(0));
+	else
+		return "";
+}
+
+string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap)
+{
+	if ( argNum < argMap.size() )
+	{
+		u8 stdTextTrigArgNum = argMap[argNum];
+		buffer output("TEXC");
+		AddConditionArgument(output, condition, condition.condition, stdTextTrigArgNum);
+		if ( output.add('\0') )
+			return string((char*)output.getPtr(0));
+	}
+	return "";
+}
+
+string TextTrigGenerator::GetActionArgument(Action& action, u8 stdTextTrigArgNum)
+{
+	buffer output("TEXA");
+	AddActionArgument(output, action, action.action, stdTextTrigArgNum);
+	if ( output.add('\0') )
+		return string((char*)output.getPtr(0));
+	else
+		return "";
+}
+
+string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap)
+{
+	if ( argNum < argMap.size() )
+	{
+		u8 stdTextTrigArgNum = argMap[argNum];
+		buffer output("TEXA");
+		AddActionArgument(output, action, action.action, stdTextTrigArgNum);
+		if ( output.add('\0') )
+			return string((char*)output.getPtr(0));
+	}
+	return "";
 }
 
 string TextTrigGenerator::GetTrigLocation(u32 locationNum)
@@ -258,6 +417,382 @@ string TextTrigGenerator::GetTrigNumber(u32 number)
 	return string(cNumber);
 }
 
+inline void TextTrigGenerator::AddConditionArgument(buffer &output, Condition& condition, u8 &CID, u8 &stdTextTrigArgNum)
+{
+	switch ( CID )
+	{
+		case CID_ACCUMULATE: // Player, NumericComparison, Amount, ResourceType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+				case 3: ADD_TEXTTRIG_RESOURCE_TYPE(condition.typeIndex) break;
+			}
+			break;
+		case CID_BRING: // Player, Unit, Location, NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 1: ADD_TEXTTRIG_UNIT(condition.unitID) break;
+				case 2: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
+				case 3: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 4: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		case CID_COMMAND: // Player, Unit, NumericComparison, Amount
+		case CID_DEATHS:  // Player, Unit, NumericComparison, Amount
+		case CID_KILL:	  // Player, Unit, NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 1: ADD_TEXTTRIG_UNIT(condition.unitID) break;
+				case 2: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 3: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		case CID_COMMAND_THE_LEAST: // Unit
+		case CID_COMMAND_THE_MOST:	// Unit
+		case CID_LEAST_KILLS:		// Unit
+		case CID_MOST_KILLS:		// Unit
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_UNIT(condition.unitID);
+			break;
+		case CID_COMMAND_THE_LEAST_AT: // Unit, Location
+		case CID_COMMAND_THE_MOST_AT: // Unit, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_UNIT(condition.unitID) break;
+				case 1: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
+			}
+			break;
+		case CID_COUNTDOWN_TIMER: // NumericComparison, Amount
+		case CID_ELAPSED_TIME: // NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 1: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		case CID_HIGHEST_SCORE: // ScoreType
+		case CID_LOWEST_SCORE: // ScoreType
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_SCORE_TYPE(condition.typeIndex);
+			break;
+		case CID_LEAST_RESOURCES: // ResourceType
+		case CID_MOST_RESOURCES: // ResourceType
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_RESOURCE_TYPE(condition.typeIndex);
+			break;
+		case CID_OPPONENTS: // Player, NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		case CID_SCORE: // Player, ScoreType, NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 1: ADD_TEXTTRIG_SCORE_TYPE(condition.typeIndex) break;
+				case 2: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 3: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		case CID_SWITCH: // Switch, SwitchState
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_SWITCH(condition.typeIndex) break;
+				case 1: ADD_TEXTTRIG_SWITCH_STATE(condition.comparison) break;
+			}
+			break;
+		case (u8)CID_MEMORY: // MemOffset, NumericComparison, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_NUMBER(condition.players) break;
+				case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+			}
+			break;
+		default: // Location, Player, Amount, Unit, NumericComparison, Condition, TypeIndex, Flags, Internal
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
+				case 1: ADD_TEXTTRIG_PLAYER(condition.players) break;
+				case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
+				case 3: ADD_TEXTTRIG_UNIT(condition.unitID) break;
+				case 4: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
+				case 5: ADD_TEXTTRIG_NUMBER(condition.condition) break;
+				case 6: ADD_TEXTTRIG_NUMBER(condition.typeIndex) break;
+				case 7: ADD_TEXTTRIG_NUMBER(condition.flags) break;
+				case 8: ADD_TEXTTRIG_NUMBER(condition.internalData) break;
+			}
+	}
+}
+
+inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action, u8 &AID, u8 &stdTextTrigArgNum)
+{
+	switch ( AID )
+	{
+		case AID_CENTER_VIEW:  // Location
+		case AID_MINIMAP_PING: // Location
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_LOCATION(action.location)
+			break;
+		case AID_COMMENT:				 // String
+		case AID_SET_MISSION_OBJECTIVES: // String
+		case AID_SET_NEXT_SCENARIO:		 // String
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_STRING(action.stringNum)
+			break;
+		case AID_CREATE_UNIT:			// Player, Unit, NumUnits, Location
+		case AID_KILL_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_CREATE_UNIT_WITH_PROPERTIES: // Player, Unit, NumUnits, Location, Properties
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 4: ADD_TEXTTRIG_NUMBER(action.number) break;
+			}
+			break;
+		case AID_DISPLAY_TEXT_MESSAGE: // TextFlags, String
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_TEXT_FLAGS(action.flags) break;
+				case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
+			}
+			break;
+		case AID_GIVE_UNITS_TO_PLAYER: // Player, SecondPlayer, Unit, NumUnits, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_PLAYER(action.number) break;
+				case 2: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 3: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 4: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_KILL_UNIT:	  // Player, Unit
+		case AID_REMOVE_UNIT: // Player, Unit
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+			}
+			break;
+		case AID_LEADERBOARD_CONTROL_AT_LOCATION: // String, Unit, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_LEADERBOARD_CONTROL: // String, Unit
+		case AID_LEADERBOARD_KILLS: // String, Unit
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+			}
+			break;
+		case AID_LEADERBOARD_GREED: // Amount
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_NUMBER(action.number);
+			break;
+		case AID_LEADERBOARD_POINTS: // String, ScoreType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
+			}
+			break;
+		case AID_LEADERBOARD_RESOURCES: // String, ResourceType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
+			}
+			break;
+		case AID_LEADERBOARD_COMPUTER_PLAYERS: // StateModifier
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_STATE_MODIFIER(action.type2);
+			break;
+		case AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION: // String, Unit, Amount, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_LEADERBOARD_GOAL_CONTROL: // String, Unit, Amount
+		case AID_LEADERBOARD_GOAL_KILLS: // String, Unit, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+			}
+			break;
+		case AID_LEADERBOARD_GOAL_POINTS: // String, ScoreType, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+			}
+			break;
+		case AID_LEADERBOARD_GOAL_RESOURCES: // String, Amount, ResourceType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 1: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 2: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
+			}
+			break;
+		case AID_MODIFY_UNIT_ENERGY: // Player, Unit, Amount, NumUnits, Location
+		case AID_MODIFY_UNIT_HANGER_COUNT: // Player, Unit, Amount, NumUnits, Location
+		case AID_MODIFY_UNIT_HITPOINTS: // Player, Unit, Amount, NumUnits, Location
+		case AID_MODIFY_UNIT_SHIELD_POINTS: // Player, Unit, Amount, NumUnits, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 3: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 4: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_MODIFY_UNIT_RESOURCE_AMOUNT: // Player, Amount, NumUnits, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_MOVE_LOCATION: // Player, Unit, LocDest, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.number) break;
+			}
+			break;
+		case AID_MOVE_UNIT: // Player, Unit, NumUnits, Location, LocDest
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 4: ADD_TEXTTRIG_LOCATION(action.number) break;
+			}
+			break;
+		case AID_ORDER: // Player, Unit, Location, LocDest, OrderType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.number) break;
+				case 4: ADD_TEXTTRIG_ORDER(action.type2) break;
+			}
+			break;
+		case AID_PLAY_WAV: // Wav, Duration
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
+			}
+			break;
+		case AID_REMOVE_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_RUN_AI_SCRIPT: // Script
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_SCRIPT((char*)&action.number);
+			break;
+		case AID_RUN_AI_SCRIPT_AT_LOCATION: // Script, Location
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_SCRIPT((char*)&action.number) break;
+				case 1: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+			break;
+		case AID_SET_ALLIANCE_STATUS: // Player, AllyState
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_ALLY_STATE(action.type) break;
+			}
+			break;
+		case AID_SET_COUNTDOWN_TIMER: // NumericModifier, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+				case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
+			}
+			break;
+		case AID_SET_DEATHS: // Player, Unit, NumericModifier, Amount
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+				case 3: ADD_TEXTTRIG_NUMBER(action.number) break;
+			}
+			break;
+		case AID_SET_DOODAD_STATE:	// Player, Unit, Location, StateMod
+		case AID_SET_INVINCIBILITY: // Player, Unit, Location, StateMod
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 3: ADD_TEXTTRIG_STATE_MODIFIER(action.type2) break;
+			}
+			break;
+		case AID_SET_RESOURCES: // Player, NumericModifier, Amount, ResourceType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 3: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
+			}
+			break;
+		case AID_SET_SCORE: // Player, NumericModifier, Amount, ScoreType
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 3: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
+			}
+			break;
+		case AID_SET_SWITCH: // Switch, SwitchMod
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_SWITCH(action.number) break;
+				case 1: ADD_TEXTTRIG_SWITCH_MODIFIER(action.type2) break;
+			}
+			break;
+		case AID_TALKING_PORTRAIT: // Unit, Duration
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
+			}
+			break;
+		case AID_TRANSMISSION: // TextFlags, String, Unit, Location, NumericModifier, DurationMod, Wav, Duration
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_TEXT_FLAGS(action.flags) break;
+				case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 2: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 4: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+				case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 6: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 7: ADD_TEXTTRIG_NUMBER(action.time) break;
+			}
+			break;
+		case AID_WAIT: // Duration
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_NUMBER(action.time);
+			break;
+		default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_LOCATION(action.location) break;
+				case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
+				case 2: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 3: ADD_TEXTTRIG_NUMBER(action.time) break;
+				case 4: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
+				case 6: ADD_TEXTTRIG_NUMBER(action.type) break;
+				case 7: ADD_TEXTTRIG_NUMBER(action.action) break;
+				case 8: ADD_TEXTTRIG_NUMBER(action.type2) break;
+				case 9: ADD_TEXTTRIG_NUMBER(action.flags) break;
+				case 10: ADD_TEXTTRIG_NUMBER(TripletToInt(&action.internalData[0])) break;
+			}
+			break;
+	}
+}
+
 bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString)
 {
 	if ( !LoadScenario(map, true, false) )
@@ -287,110 +822,6 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 								 1, 1, 4, 4, 4, 4, 5, 1, 5, 5,
 								 5, 5, 4, 5, 0, 0, 0, 2, 0, 0 };
 
-	const char* textFlags[] = { "Don't Always Display", "Always Display" };
-	const char* scoreTypes[] = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };
-	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
-	const char* orderTypes[] = { "move", "patrol", "attack" };
-	const char* stateModifiers[] = { "0", "1", "2", "3", "enabled", "disabled", "toggle" };
-	const char* switchStates[] = { "0", "1", "set", "not set" };
-	const char* switchModifiers[] = { "0", "1", "2", "3", "set", "clear", "toggle", "7", "8", "9", "10", "randomize" };
-	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
-	const char* numericComparisons[] = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
-	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
-
-	char number[36] = { };
-
-	#define ADD_TEXTTRIG_LOCATION(src) {											\
-		if ( src >= 0 && src < locationTable.size() )								\
-			output.addStr(locationTable[src].c_str(), locationTable[src].size());	\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_STRING(src) {																							\
-		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )								\
-		{																														\
-			if ( src < stringTable.size() )																						\
-				output.addStr(stringTable[src].c_str(), stringTable[src].size());												\
-			else																												\
-				output.addStr(string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
-		}																														\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_PLAYER(src) {												\
-		if ( src >= 0 && src < groupTable.size() )									\
-			output.addStr(groupTable[src].c_str(), groupTable[src].size());			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_UNIT(src) {												\
-		if ( src >= 0 && src < unitTable.size() )									\
-			output.addStr(unitTable[src].c_str(), unitTable[src].size());			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_SWITCH(src) {												\
-		if ( src >= 0 && src < switchTable.size() )									\
-			output.addStr(switchTable[src].c_str(), switchTable[src].size());		\
-		else { _itoa_s( src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
-		if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )				\
-			output.addStr(scoreTypes[src], strlen(scoreTypes[src]));				\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
-		if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )			\
-			output.addStr(resourceTypes[src], strlen(resourceTypes[src]));			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_ORDER(src) {												\
-		if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )				\
-			output.addStr(orderTypes[src], strlen(orderTypes[src]));				\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_STATE_MODIFIER(src) {										\
-		if ( src >= 0 && src < sizeof(stateModifiers)/sizeof(const char*) )			\
-			output.addStr(stateModifiers[src], strlen(stateModifiers[src]));		\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } } 
-
-	#define ADD_TEXTTRIG_SWITCH_STATE(src) {										\
-		if ( src >= 0 && src < sizeof(switchStates)/sizeof(const char*) )			\
-			output.addStr(switchStates[src], strlen(switchStates[src]));			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {										\
-		if ( src >= 0 && src < sizeof(switchModifiers)/sizeof(const char*) )		\
-			output.addStr(switchModifiers[src], strlen(switchModifiers[src]));		\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_ALLY_STATE(src) {											\
-		if ( src >= 0 && src < sizeof(allyStates)/sizeof(const char*) )				\
-			output.addStr(allyStates[src], strlen(allyStates[src]));				\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {										\
-		if ( src >= 0 && src < sizeof(numericComparisons)/sizeof(const char*) )			\
-			output.addStr(numericComparisons[src], strlen(numericComparisons[src]));	\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {									\
-		if ( src >= 0 && src < sizeof(numericModifiers)/sizeof(const char*) )		\
-			output.addStr(numericModifiers[src], strlen(numericModifiers[src]));	\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_SCRIPT(src) {												\
-		output.add('\"'); output.addStr(src, 4); output.add('\"'); }
-
-	#define ADD_TEXTTRIG_NUM_UNITS(src) {											\
-		if ( src == 0 ) output.addStr("All", 3);									\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
-
-	#define ADD_TEXTTRIG_NUMBER(src) {												\
-		_itoa_s((int)src, number, 10); output.addStr(number, strlen(number)); }
-
-	#define ADD_TEXTTRIG_TEXT_FLAGS(src) {											\
-		if		( (src&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )							\
-			output.addStr(textFlags[0], strlen(textFlags[0]));						\
-		else if ( (src&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )	\
-			output.addStr(textFlags[1], strlen(textFlags[1])); }
-
 	for ( u32 trigNum=0; trigNum<numTrigs; trigNum++ )
 	{
 		if ( TRIG.getPtr<Trigger>(currTrig, trigNum*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE) )
@@ -411,6 +842,19 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 
 					string groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
+				}
+				else if ( players[groupNum] > 0 )
+				{
+					if ( hasPrevious )
+						output.add<char>(',');
+					else
+						hasPrevious = true;
+
+					string groupName = groupTable[groupNum];
+					output.addStr(groupName.c_str(), groupName.size());
+					output.add<char>(':');
+					_itoa_s(players[groupNum], number, 10);
+					output.addStr(number, strlen(number));
 				}
 			}
 
@@ -450,109 +894,12 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 					else
 						numArgs = 9; // custom
 
-					for ( int i=0; i<numArgs; i++ )
+					for ( u8 i=0; i<numArgs; i++ )
 					{
 						if ( i > 0 )
 							output.addStr(", ", 2);
 
-						switch ( CID )
-						{
-							case CID_ACCUMULATE: // Player, NumericComparison, Amount, ResourceType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-									case 3: ADD_TEXTTRIG_RESOURCE_TYPE(condition.typeIndex) break;
-								}
-								break;
-							case CID_BRING: // Player, Unit, Location, NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 1: ADD_TEXTTRIG_UNIT(condition.unitID) break;
-									case 2: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
-									case 3: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 4: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							case CID_COMMAND: // Player, Unit, NumericComparison, Amount
-							case CID_DEATHS:  // Player, Unit, NumericComparison, Amount
-							case CID_KILL:	  // Player, Unit, NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 1: ADD_TEXTTRIG_UNIT(condition.unitID) break;
-									case 2: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 3: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							case CID_COMMAND_THE_LEAST: // Unit
-							case CID_COMMAND_THE_MOST:	// Unit
-							case CID_LEAST_KILLS:		// Unit
-							case CID_MOST_KILLS:		// Unit
-								if ( i == 0 ) ADD_TEXTTRIG_UNIT(condition.unitID);
-								break;
-							case CID_COMMAND_THE_LEAST_AT: // Unit, Location
-							case CID_COMMAND_THE_MOST_AT: // Unit, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_UNIT(condition.unitID) break;
-									case 1: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
-								}
-								break;
-							case CID_COUNTDOWN_TIMER: // NumericComparison, Amount
-							case CID_ELAPSED_TIME: // NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 1: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							case CID_HIGHEST_SCORE: // ScoreType
-							case CID_LOWEST_SCORE: // ScoreType
-								if ( i == 0 ) ADD_TEXTTRIG_SCORE_TYPE(condition.typeIndex);
-								break;
-							case CID_LEAST_RESOURCES: // ResourceType
-							case CID_MOST_RESOURCES: // ResourceType
-								if ( i == 0 ) ADD_TEXTTRIG_RESOURCE_TYPE(condition.typeIndex);
-								break;
-							case CID_OPPONENTS: // Player, NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							case CID_SCORE: // Player, ScoreType, NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 1: ADD_TEXTTRIG_SCORE_TYPE(condition.typeIndex) break;
-									case 2: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 3: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							case CID_SWITCH: // Switch, SwitchState
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_SWITCH(condition.typeIndex) break;
-									case 1: ADD_TEXTTRIG_SWITCH_STATE(condition.comparison) break;
-								}
-								break;
-							case (u8)CID_MEMORY: // MemOffset, NumericComparison, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_NUMBER(condition.players) break;
-									case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-								}
-								break;
-							default: // Location, Player, Amount, Unit, NumericComparison, Condition, TypeIndex, Flags, Internal
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_LOCATION(condition.locationNum) break;
-									case 1: ADD_TEXTTRIG_PLAYER(condition.players) break;
-									case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
-									case 3: ADD_TEXTTRIG_UNIT(condition.unitID) break;
-									case 4: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-									case 5: ADD_TEXTTRIG_NUMBER(condition.condition) break;
-									case 6: ADD_TEXTTRIG_NUMBER(condition.typeIndex) break;
-									case 7: ADD_TEXTTRIG_NUMBER(condition.flags) break;
-									case 8: ADD_TEXTTRIG_NUMBER(condition.internalData) break;
-								}
-						}
+						AddConditionArgument(output, condition, CID, i);
 					}
 
 					output.addStr(");", 2);
@@ -587,281 +934,12 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, strin
 					else
 						numArgs = 11; // custom
 
-					for ( int i=0; i<numArgs; i++ )
+					for ( u8 i=0; i<numArgs; i++ )
 					{
 						if ( i > 0 )
 							output.addStr(", ", 2);
 
-						switch ( AID )
-						{
-							case AID_CENTER_VIEW:  // Location
-							case AID_MINIMAP_PING: // Location
-								if ( i == 0 ) ADD_TEXTTRIG_LOCATION(action.location)
-								break;
-							case AID_COMMENT:				 // String
-							case AID_SET_MISSION_OBJECTIVES: // String
-							case AID_SET_NEXT_SCENARIO:		 // String
-								if ( i == 0 ) ADD_TEXTTRIG_STRING(action.stringNum)
-								break;
-							case AID_CREATE_UNIT:			// Player, Unit, NumUnits, Location
-							case AID_KILL_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_CREATE_UNIT_WITH_PROPERTIES: // Player, Unit, NumUnits, Location, Properties
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 4: ADD_TEXTTRIG_NUMBER(action.number) break;
-								}
-								break;
-							case AID_DISPLAY_TEXT_MESSAGE: // TextFlags, String
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_TEXT_FLAGS(action.flags) break;
-									case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
-								}
-								break;
-							case AID_GIVE_UNITS_TO_PLAYER: // Player, SecondPlayer, Unit, NumUnits, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_PLAYER(action.number) break;
-									case 2: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 3: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 4: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_KILL_UNIT:	  // Player, Unit
-							case AID_REMOVE_UNIT: // Player, Unit
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-								}
-								break;
-							case AID_LEADERBOARD_CONTROL_AT_LOCATION: // String, Unit, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_LEADERBOARD_CONTROL: // String, Unit
-							case AID_LEADERBOARD_KILLS: // String, Unit
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-								}
-								break;
-							case AID_LEADERBOARD_GREED: // Amount
-								if ( i == 0 ) ADD_TEXTTRIG_NUMBER(action.number);
-								break;
-							case AID_LEADERBOARD_POINTS: // String, ScoreType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
-								}
-								break;
-							case AID_LEADERBOARD_RESOURCES: // String, ResourceType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
-								}
-								break;
-							case AID_LEADERBOARD_COMPUTER_PLAYERS: // StateModifier
-								if ( i == 0 ) ADD_TEXTTRIG_STATE_MODIFIER(action.type2);
-								break;
-							case AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION: // String, Unit, Amount, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_LEADERBOARD_GOAL_CONTROL: // String, Unit, Amount
-							case AID_LEADERBOARD_GOAL_KILLS: // String, Unit, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-								}
-								break;
-							case AID_LEADERBOARD_GOAL_POINTS: // String, ScoreType, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-								}
-								break;
-							case AID_LEADERBOARD_GOAL_RESOURCES: // String, Amount, ResourceType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 1: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 2: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
-								}
-								break;
-							case AID_MODIFY_UNIT_ENERGY: // Player, Unit, Amount, NumUnits, Location
-							case AID_MODIFY_UNIT_HANGER_COUNT: // Player, Unit, Amount, NumUnits, Location
-							case AID_MODIFY_UNIT_HITPOINTS: // Player, Unit, Amount, NumUnits, Location
-							case AID_MODIFY_UNIT_SHIELD_POINTS: // Player, Unit, Amount, NumUnits, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 3: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 4: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_MODIFY_UNIT_RESOURCE_AMOUNT: // Player, Amount, NumUnits, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_MOVE_LOCATION: // Player, Unit, LocDest, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.number) break;
-								}
-								break;
-							case AID_MOVE_UNIT: // Player, Unit, NumUnits, Location, LocDest
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 4: ADD_TEXTTRIG_LOCATION(action.number) break;
-								}
-								break;
-							case AID_ORDER: // Player, Unit, Location, LocDest, OrderType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.number) break;
-									case 4: ADD_TEXTTRIG_ORDER(action.type2) break;
-								}
-								break;
-							case AID_PLAY_WAV: // Wav, Duration
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_STRING(action.wavID) break;
-									case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
-								}
-								break;
-							case AID_REMOVE_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_RUN_AI_SCRIPT: // Script
-								if ( i == 0 ) ADD_TEXTTRIG_SCRIPT((char*)&action.number);
-								break;
-							case AID_RUN_AI_SCRIPT_AT_LOCATION: // Script, Location
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_SCRIPT((char*)&action.number) break;
-									case 1: ADD_TEXTTRIG_LOCATION(action.location) break;
-								}
-								break;
-							case AID_SET_ALLIANCE_STATUS: // Player, AllyState
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_ALLY_STATE(action.type) break;
-								}
-								break;
-							case AID_SET_COUNTDOWN_TIMER: // NumericModifier, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
-									case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
-								}
-								break;
-							case AID_SET_DEATHS: // Player, Unit, NumericModifier, Amount
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
-									case 3: ADD_TEXTTRIG_NUMBER(action.number) break;
-								}
-								break;
-							case AID_SET_DOODAD_STATE:	// Player, Unit, Location, StateMod
-							case AID_SET_INVINCIBILITY: // Player, Unit, Location, StateMod
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 2: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 3: ADD_TEXTTRIG_STATE_MODIFIER(action.type2) break;
-								}
-								break;
-							case AID_SET_RESOURCES: // Player, NumericModifier, Amount, ResourceType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 3: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
-								}
-								break;
-							case AID_SET_SCORE: // Player, NumericModifier, Amount, ScoreType
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
-									case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 3: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
-								}
-								break;
-							case AID_SET_SWITCH: // Switch, SwitchMod
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_SWITCH(action.number) break;
-									case 1: ADD_TEXTTRIG_SWITCH_MODIFIER(action.type2) break;
-								}
-								break;
-							case AID_TALKING_PORTRAIT: // Unit, Duration
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
-								}
-								break;
-							case AID_TRANSMISSION: // TextFlags, String, Unit, Location, NumericModifier, DurationMod, Wav, Duration
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_TEXT_FLAGS(action.flags) break;
-									case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 2: ADD_TEXTTRIG_UNIT(action.type) break;
-									case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 4: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
-									case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 6: ADD_TEXTTRIG_STRING(action.wavID) break;
-									case 7: ADD_TEXTTRIG_NUMBER(action.time) break;
-								}
-								break;
-							case AID_WAIT: // Duration
-								if ( i == 0 ) ADD_TEXTTRIG_NUMBER(action.time);
-								break;
-							default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
-								switch ( i ) {
-									case 0: ADD_TEXTTRIG_LOCATION(action.location) break;
-									case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
-									case 2: ADD_TEXTTRIG_STRING(action.wavID) break;
-									case 3: ADD_TEXTTRIG_NUMBER(action.time) break;
-									case 4: ADD_TEXTTRIG_PLAYER(action.group) break;
-									case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
-									case 6: ADD_TEXTTRIG_NUMBER(action.type) break;
-									case 7: ADD_TEXTTRIG_NUMBER(action.action) break;
-									case 8: ADD_TEXTTRIG_NUMBER(action.type2) break;
-									case 9: ADD_TEXTTRIG_NUMBER(action.flags) break;
-									case 10: ADD_TEXTTRIG_NUMBER(TripletToInt(&action.internalData[0])) break;
-								}
-								break;
-						}
+						AddActionArgument(output, action, AID, i);
 					}
 
 					output.addStr(");", 2);

@@ -287,6 +287,7 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			break;
 		case WM_LBUTTONDBLCLK:
 			SendMessage(GetParent(hWnd), WM_DBLCLKITEM, 0, (LPARAM)hWnd);
+			return 0;
 			break;
 		default:
 			return CallDefaultProc(hWnd, msg, wParam, lParam);

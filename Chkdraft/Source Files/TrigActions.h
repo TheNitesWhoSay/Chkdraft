@@ -14,8 +14,10 @@ class TrigActionsWindow : public ClassWindow
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
+		void OnLeave();
 
 	private:
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

@@ -37,6 +37,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool CompileTrigger(std::string trigText, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
 		bool CompileTrigger(buffer& text, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
 
+		// Attempts to compile the argNum'th condition argument into the given condition
+		bool ParseConditionName(std::string text, u8 &ID);
+		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, Scenario* chk);
+		u8 defaultFlags(u8 CID);
+
 
 	protected:
 
@@ -45,7 +50,28 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		void CleanText(buffer& text); // Remove spacing and standardize line endings
 
 		bool ParseTriggers(buffer& text, buffer& output, char* error); // Parse trigger, generate a trig section in buffer output
+		inline bool ParsePartZero(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+		inline bool ParsePartOne(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig);
+		inline bool ParsePartTwo(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+		inline bool ParsePartThree(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+		inline bool ParsePartFour(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+			u32 &conditionEnd, u32 &lineEnd, u32 &conditionIndex, u8 &flags, u32 &argsLeft, u32 &numConditions,
+			Condition*& currCondition, Trigger &currTrig);
+		inline bool ParsePartFive(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
+			Condition*& currCondition, u32 &conditionIndex);
+		inline bool ParsePartSix(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+		inline bool ParsePartSeven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+			u8 &flags, u32 &actionEnd, u32 &lineEnd, u32 &actionIndex, u32 &argsLeft, u32 &numActions,
+			Action*& currAction, Trigger &currTrig);
+		inline bool ParsePartEight(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+			u32 &argsLeft, u32 &argEnd, Action*& currAction, u32 &actionIndex);
+		inline bool ParsePartNine(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+		inline bool ParsePartTen(buffer& text, buffer& output, char*error, u32 &pos, u32 &line, u32 &expecting,
+			u32 &flagsEnd, Trigger& currTrig);
+		inline bool ParsePartEleven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+
 		bool ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32 pos, u32 end); // Parse a player that the trigger is executed by
+		bool ParseConditionName(buffer &arg, u32 &ID);
 		bool ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
 		bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, u32& ID, u8& flags, u32& argsLeft); // Find the equivilant actionID
 		bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, u32 CID, u32 argsLeft, char* error); // Parse an argument belonging to a condition
@@ -77,7 +103,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		std::unordered_multimap<u32, SwitchTableNode> switchTable; // Binary tree of the maps switches
 		std::unordered_multimap<u32, WavTableNode> wavTable; // Binary tree of the maps wavs, redundant? remove me?
 		std::unordered_multimap<u32, GroupTableNode> groupTable; // Binary tree of the maps groups
-		std::list<StringTableNode> addedStrings; // Forward list of strings added during compilation
+		std::vector<StringTableNode> addedStrings; // Forward list of strings added during compilation
 		StringUsageTable strUsage; // Table of strings currently used in the map
 		StringUsageTable extendedStrUsage; // Table of extended strings currently used in the map
 
@@ -87,8 +113,6 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool PrepWavTable(Scenario* map); // Fills wavTable, redundant? remove me?
 		bool PrepGroupTable(Scenario* map); // Fills groupTable
 		bool PrepStringTable(Scenario* map); // Fills stringTable
-
-		bool strIsInTable(string str); // Helper for PrepStringTable
 
 		bool BuildNewStringTable(Scenario* chk); // Builds a new STR section using stringTable and addedStrings
 };

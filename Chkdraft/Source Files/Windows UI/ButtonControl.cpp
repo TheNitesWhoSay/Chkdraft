@@ -15,3 +15,8 @@ LRESULT ButtonControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 	return result;
 }
+
+bool ButtonControl::SetText(const char* newText)
+{
+	return SetWindowText(getHandle(), newText) != 0;
+}

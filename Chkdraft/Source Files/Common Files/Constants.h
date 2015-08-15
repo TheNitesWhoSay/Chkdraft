@@ -1,36 +1,23 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 #include <Windows.h>
+#include <cstdint>
 
 /**
 	Contains constants used throughout the program,
 	such as identifiers, strings, and fonts
 */
 
-#ifndef u64
-#define u64 unsigned long long
-#endif
-#ifndef s64
-#define s64 signed long long
-#endif
-#ifndef u32
-#define u32 unsigned long
-#endif
-#ifndef s32
-#define s32 signed long
-#endif
-#ifndef u16
-#define u16 unsigned short
-#endif
-#ifndef s16
-#define s16 signed short
-#endif
-#ifndef u8
-#define u8 unsigned char
-#endif
-#ifndef s8
-#define s8 signed char
-#endif
+typedef uint64_t u64;
+typedef int64_t s64;
+typedef uint32_t u32;
+typedef int32_t s32;
+typedef uint16_t u16;
+typedef int16_t s16;
+typedef uint8_t u8;
+typedef int8_t s8;
+
+#define u32_max 4294967295
 
 #define ASCII_CHKD 1128811332 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 
@@ -67,6 +54,8 @@ extern const int numPlayerRaces;
 extern const char* playerColors[];
 extern const int numPlayerColors;
 
+extern const char* triggerPlayers[];
+extern const int numTriggerPlayers;
 
 extern const COLORREF stringColors[];
 extern const char* stringColorStrings[];

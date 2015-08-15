@@ -1,6 +1,7 @@
 #ifndef WINDOWCLASS_H
 #define WINDOWCLASS_H
 #include "DataTypes.h"
+#include "Enumerations.h"
 #include <Windows.h>
 #include <string>
 #include <list>
@@ -21,6 +22,8 @@ class ClassWindow
 /*  Accessors   */	HWND getHandle(); // Accessor for the window handle
 					bool getWindowRect(RECT &rect);
 					bool getClientRect(RECT &rect);
+					LONG cliWidth();
+					LONG cliHeight();
 					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 
 /*	 Mutators	*/	void ReplaceChildFonts(HFONT hFont);
@@ -28,6 +31,7 @@ class ClassWindow
 					void UnlockCursor(); // Globally unlocks the cursor
 					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
 					bool SetParent(HWND hParent);
+					void SetRedraw(bool autoRedraw);
 
 					void MoveTo(int x, int y);
 					void SetPos(int x, int y, int width, int height);

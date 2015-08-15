@@ -11,6 +11,7 @@
 #include "Action.h"
 #include "StringTableNode.h"
 #include <list>
+#include <vector>
 using namespace std;
 
 class section
@@ -70,6 +71,7 @@ class Scenario
 					bool stringExists(u32 stringNum); // Checks if a valid string is associated with this stringNum
 					bool stringExists(string str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
 					bool stringExists(string str, u32& stringNum, bool extended); // Checks if string exists in the same table
+					bool stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList);
 					bool escStringDifference(string str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
 					u32 extendedToRegularStr(u32 stringNum); // Returns string number for extended section
 
@@ -154,6 +156,11 @@ class Scenario
 						Returns true and stringNum if string exists or was created successfully */
 					bool addString(string str, u32& stringNum, bool extended);
 
+					/** Attempts to assocate a stringNum with a string that has
+						already been confirmed to not exist in the string section
+						Returns true and stringNum if the string was created successfully */
+					bool addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList);
+
 					/** Attempt to replace a string (specific instance of string), if unsuccessful the old string will remain
 							(if it is not used elsewhere) based on safeReplace and memory conditions
 						stringNum: if not 0 and only used once, the map calls editString, otherwise stringNum is set if successful
@@ -171,18 +178,22 @@ class Scenario
 					template <typename numType> // Strings can, and can only be u16 or u32
 						bool editString(string newString, numType stringNum, bool extended, bool safeEdit);
 
+					template <typename numType>
+						bool editString(string newString, numType stringNum, bool extended, bool safeEdit, std::vector<StringTableNode> &strList);
+
 					void replaceStringNum(u32 toReplace, u32 replacement);
 
 					void removeMetaStrings(); // Attemps to remove all strings not used in-game
 					bool cleanStringTable(bool extendedTable); // Rebuilds string table with current indexs, removes all unused strings
+					bool cleanStringTable(bool extendedTable, std::vector<StringTableNode> &strList); // Cleans string table with given list
 					bool removeDuplicateStrings();
 					bool compressStringTable(bool extendedTable, bool recycleSubStrings); // Rebuilds string table with minimum indexs and smallest size possible
 					bool repairStringTable(bool extendedTable); // Removes what Scmdraft considers string corruption
-					bool addAllUsedStrings(std::list<StringTableNode>& strList, u32 flags); // Adds all used strings to the strList
+					bool addAllUsedStrings(std::vector<StringTableNode>& strList, u32 flags); // Adds all used strings to the strList
 						#define STRADD_INCLUDE_STANDARD BIT_0
 						#define STRADD_INCLUDE_EXTENDED BIT_1
 						#define STRADD_INCLUDE_ALL		(STRADD_INCLUDE_STANDARD|STRADD_INCLUDE_EXTENDED)
-					bool rebuildStringTable(std::list<StringTableNode> strList, bool extendedTable); // Rebuilds string table using the provided list
+					bool rebuildStringTable(std::vector<StringTableNode> strList, bool extendedTable); // Rebuilds string table using the provided list
 
 					void correctMTXM(); // Corrects MTXM of protected maps for view-only purposes
 

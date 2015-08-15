@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -92,6 +92,8 @@
     <ClCompile Include="Source Files\Windows UI\DragListControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\DropdownControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\EditControl.cpp" />
+    <ClCompile Include="Source Files\Windows UI\GridItem.cpp" />
+    <ClCompile Include="Source Files\Windows UI\GridView.cpp" />
     <ClCompile Include="Source Files\Windows UI\GroupBoxControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ListBoxControl.cpp" />
     <ClCompile Include="Source Files\Windows UI\ListViewControl.cpp" />
@@ -194,6 +196,9 @@
     <ClInclude Include="Source Files\Windows UI\DragListControl.h" />
     <ClInclude Include="Source Files\Windows UI\DropdownControl.h" />
     <ClInclude Include="Source Files\Windows UI\EditControl.h" />
+    <ClInclude Include="Source Files\Windows UI\Enumerations.h" />
+    <ClInclude Include="Source Files\Windows UI\GridItem.h" />
+    <ClInclude Include="Source Files\Windows UI\GridView.h" />
     <ClInclude Include="Source Files\Windows UI\GroupBoxControl.h" />
     <ClInclude Include="Source Files\Windows UI\ListBoxControl.h" />
     <ClInclude Include="Source Files\Windows UI\ListViewControl.h" />
@@ -223,14 +228,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -263,6 +268,7 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

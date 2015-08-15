@@ -36,6 +36,12 @@ bool WindowControl::FindThis(HWND hParent, u32 controlId)
 	return controlHandle != NULL;
 }
 
+bool WindowControl::FindThis(HWND controlHandle)
+{
+	this->controlHandle = controlHandle;
+	return this->controlHandle != NULL;
+}
+
 bool WindowControl::DestroyThis()
 {
 	if ( controlHandle != NULL && DestroyWindow(controlHandle) == TRUE )
@@ -58,6 +64,11 @@ void WindowControl::FocusThis()
 	SetFocus(controlHandle);
 }
 
+void WindowControl::UpdateWindow()
+{
+	::UpdateWindow(getHandle());
+}
+
 void WindowControl::DisableThis()
 {
 	EnableWindow(controlHandle, FALSE);
@@ -66,6 +77,16 @@ void WindowControl::DisableThis()
 void WindowControl::EnableThis()
 {
 	EnableWindow(controlHandle, TRUE);
+}
+
+void WindowControl::Hide()
+{
+	ShowWindow(getHandle(), SW_HIDE);
+}
+
+void WindowControl::Show()
+{
+	ShowWindow(getHandle(), SW_SHOW);
 }
 
 bool WindowControl::isEnabled()
@@ -89,6 +110,11 @@ void WindowControl::RedrawThis()
 void WindowControl::MoveTo(int x, int y)
 {
 	SetWindowPos(controlHandle, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE);
+}
+
+void WindowControl::SetWidth(int newWidth)
+{
+	SetWindowPos(controlHandle, NULL, 0, 0, newWidth, Height(), SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE);
 }
 
 void WindowControl::SetPos(int x, int y, int width, int height)
@@ -140,6 +166,29 @@ int WindowControl::Bottom()
 	GetWindowRect(controlHandle, &rcControl);
 	MapWindowPoints(HWND_DESKTOP, GetParent(controlHandle), (LPPOINT) &rcControl, 2);
 	return rcControl.bottom;
+}
+
+void WindowControl::SetFont(HFONT hFont, bool redrawImmediately)
+{
+	if ( redrawImmediately )
+		SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	else
+		SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(FALSE, 0));
+}
+
+void WindowControl::TrackMouse(DWORD hoverTime)
+{
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(TRACKMOUSEEVENT);
+	tme.dwFlags = TME_HOVER;
+	tme.hwndTrack = controlHandle;
+	tme.dwHoverTime = hoverTime;
+	TrackMouseEvent(&tme);
+}
+
+void WindowControl::UnlockCursor()
+{
+	ClipCursor(NULL);
 }
 
 bool WindowControl::CreateControl( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,

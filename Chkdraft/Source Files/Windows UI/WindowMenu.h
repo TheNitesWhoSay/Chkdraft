@@ -1,6 +1,7 @@
 #ifndef WINDOWMENU_H
 #define WINDOWMENU_H
 #include "DataTypes.h"
+#include "Enumerations.h"
 #include <Windows.h>
 
 class WindowMenu

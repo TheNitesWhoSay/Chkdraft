@@ -2,6 +2,13 @@
 #include "Common Files/CommonFiles.h"
 #include "Chkdraft.h"
 
+inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue)
+{
+	bitmap[bitmapIndex  ] = blue ;
+	bitmap[bitmapIndex+1] = green;
+	bitmap[bitmapIndex+2] = red	 ;
+}
+
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, u8* screenBits,
 					   SELECTIONS& selections, u32 layer, HDC hDC, bool showAnywhere)
 {
@@ -47,8 +54,8 @@ void Graphics::DrawTerrain(u8* screenBits)
 	u32 maxRowX, maxRowY, mtxmRef;
 
 	u16 TileValue,
-				   yTile, xTile,
-				   tileset;
+		yTile, xTile,
+		tileset;
 
 	if ( !ERA.get<u16>(tileset, 0) ) return; // Map must have a tileset
 
@@ -137,11 +144,7 @@ void Graphics::DrawGrid(u8* screenBits)
 			for ( x = gridXSize-(screenLeft%gridXSize); x < screenWidth; x += gridXSize ) // Draw vertical lines
 			{
 				for ( y = 0; y < screenHeight; y++ )
-				{
-					screenBits[(y*screenWidth+x)*3  ] = currGrid.blue;
-					screenBits[(y*screenWidth+x)*3+1] = currGrid.green;
-					screenBits[(y*screenWidth+x)*3+2] = currGrid.red;
-				}
+					Set24BitPixel(screenBits, (y*screenWidth+x)*3, currGrid.red, currGrid.green, currGrid.blue);
 			}
 		}
 			
@@ -150,11 +153,7 @@ void Graphics::DrawGrid(u8* screenBits)
 			for ( y = gridYSize-(screenTop%gridYSize); y < screenHeight; y += gridYSize )
 			{
 				for ( x = 0; x<screenWidth; x++ )
-				{
-					screenBits[(y*screenWidth+x)*3  ] = currGrid.blue;
-					screenBits[(y*screenWidth+x)*3+1] = currGrid.green;
-					screenBits[(y*screenWidth+x)*3+2] = currGrid.red;
-				}
+					Set24BitPixel(screenBits, (y*screenWidth+x)*3, currGrid.red, currGrid.green, currGrid.blue);
 			}
 		}
 	}
@@ -219,38 +218,22 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 							if ( leftMostOnScreen )
 							{
 								for ( s32 y=topMost; y<bottomMost; y++ )
-								{
-									screenBits[3*(y*screenWidth+leftMost)+2] = 0;
-									screenBits[3*(y*screenWidth+leftMost)+1] = 0;
-									screenBits[3*(y*screenWidth+leftMost)+0] = 0;
-								}
+									Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 0, 0, 0);
 							}
 							if ( rightMostOnScreen )
 							{
 								for ( s32 y=topMost; y<bottomMost; y++ )
-								{
-									screenBits[3*(y*screenWidth+rightMost)+2] = 0;
-									screenBits[3*(y*screenWidth+rightMost)+1] = 0;
-									screenBits[3*(y*screenWidth+rightMost)+0] = 0;
-								}
+									Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 0, 0, 0);
 							}
 							if ( topMostOnScreen )
 							{
 								for ( s32 x=leftMost; x<rightMost; x++ )
-								{
-									screenBits[3*(topMost*screenWidth+x)+2] = 0;
-									screenBits[3*(topMost*screenWidth+x)+1] = 0;
-									screenBits[3*(topMost*screenWidth+x)+0] = 0;
-								}
+									Set24BitPixel(screenBits, 3*(topMost*screenWidth+x), 0, 0, 0);
 							}
 							if ( bottomMostOnScreen )
 							{
 								for ( s32 x=leftMost; x<rightMost; x++ )
-								{
-									screenBits[3*(bottomMost*screenWidth+x)+2] = 0;
-									screenBits[3*(bottomMost*screenWidth+x)+1] = 0;
-									screenBits[3*(bottomMost*screenWidth+x)+0] = 0;
-								}
+									Set24BitPixel(screenBits, 3*(bottomMost*screenWidth+x), 0, 0, 0);
 							}
 
 							if ( inverted )
@@ -348,38 +331,22 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 				if ( leftMostOnScreen )
 				{
 					for ( s32 y=topMost; y<bottomMost; y++ )
-					{
-						screenBits[3*(y*screenWidth+leftMost)+2] = 255;
-						screenBits[3*(y*screenWidth+leftMost)+1] = 255;
-						screenBits[3*(y*screenWidth+leftMost)+0] = 255;
-					}
+						Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 255, 255, 255);
 				}
 				if ( rightMostOnScreen )
 				{
 					for ( s32 y=topMost; y<bottomMost; y++ )
-					{
-						screenBits[3*(y*screenWidth+rightMost)+2] = 255;
-						screenBits[3*(y*screenWidth+rightMost)+1] = 255;
-						screenBits[3*(y*screenWidth+rightMost)+0] = 255;
-					}
+						Set24BitPixel(screenBits, 3*(y*screenWidth+rightMost), 255, 255, 255);
 				}
 				if ( topMostOnScreen )
 				{
 					for ( s32 x=leftMost; x<rightMost; x++ )
-					{
-						screenBits[3*(topMost*screenWidth+x)+2] = 255;
-						screenBits[3*(topMost*screenWidth+x)+1] = 255;
-						screenBits[3*(topMost*screenWidth+x)+0] = 255;
-					}
+						Set24BitPixel(screenBits, 3*(topMost*screenWidth+x), 255, 255, 255);
 				}
 				if ( bottomMostOnScreen )
 				{
 					for ( s32 x=leftMost; x<rightMost; x++ )
-					{
-						screenBits[3*(bottomMost*screenWidth+x)+2] = 255;
-						screenBits[3*(bottomMost*screenWidth+x)+1] = 255;
-						screenBits[3*(bottomMost*screenWidth+x)+0] = 255;
-					}
+						Set24BitPixel(screenBits, 3*(bottomMost*screenWidth+x), 255, 255, 255);
 				}
 			}
 		}
@@ -522,14 +489,16 @@ void Graphics::DrawLocationNames(HDC hDC)
 								s32 lineHeight = strSize.cy;
 								if ( clipLocationNames )
 								{
-									rect.left = leftMost;
-									rect.top = topMost;
+									rect.left = (leftMost < 0)? 0 : leftMost;
+									rect.top  = ( topMost < 0)? 0 : topMost;
 									rect.bottom = bottomMost-screenTop-1;
 									rect.right = rightMost-screenLeft-1;
+									LONG rectWidth = rect.right-rect.left,
+										 rectHeight = rect.bottom-rect.top;
 
-									if ( strSize.cx < rect.right-rect.left )
+									if ( strSize.cx < rectWidth )
 										ExtTextOut(hDC, leftMost, topMost, ETO_CLIPPED, &rect, &str[0], str.length(), 0);
-									else if ( rect.bottom-rect.top > lineHeight ) // Can word wrap
+									else if ( rectHeight > lineHeight ) // Can word wrap
 									{
 										u32 lastCharPos = str.size()-1;
 										s32 prevBottom = rect.top;
@@ -543,13 +512,13 @@ void Graphics::DrawLocationNames(HDC hDC)
 											{
 												lastCharPos = (ceil-floor)/2 + floor;
 												GetTextExtentPoint32(hDC, &str[0], lastCharPos, &strSize);
-												if ( strSize.cx > rect.right-rect.left )
+												if ( strSize.cx > rectWidth )
 													ceil = lastCharPos;
 												else
 													floor = lastCharPos;
 											}
 											GetTextExtentPoint32(hDC, &str[0], floor+1, &strSize); // Correct last character if needed
-											if ( strSize.cx > rect.right-rect.left )
+											if ( strSize.cx > rectWidth )
 												lastCharPos = floor;
 											else
 												lastCharPos = ceil;
@@ -730,12 +699,7 @@ void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSe
 							for ( u32 xc=0; xc<8; xc++ )
 							{
 								if ( xc + miniTileXC < bitWidth )
-								{
-									u32 bitmapIndex = ((yc+miniTileYC)*bitWidth+xc+miniTileXC)*3;
-									screenBits[bitmapIndex  ] = blue ; // Blue
-									screenBits[bitmapIndex+1] = green; // Green
-									screenBits[bitmapIndex+2] = red	 ; // Red
-								}
+									Set24BitPixel(screenBits, ((yc+miniTileYC)*bitWidth+xc+miniTileXC)*3, red, green, blue);
 							}
 						}
 					}
@@ -993,12 +957,7 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 			for ( u32 yc=0; yc<8; yc++ )
 			{
 				for ( u32 xc=0; xc<8; xc++ )
-				{
-					u32 bitmapIndex = (yc*8+xc)*3;
-					tileBits[bitmapIndex  ] = blue ; // Blue
-					tileBits[bitmapIndex+1] = green; // Green
-					tileBits[bitmapIndex+2] = red  ; // Red
-				}
+					Set24BitPixel(tileBits, (yc*8+xc)*3, red, green, blue);
 			}
 		}
 	}
@@ -1047,12 +1006,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 					for ( u32 yc=0; yc<8; yc++ )
 					{
 						for ( u32 xc=0; xc<8; xc++ )
-						{
-							u32 bitmapIndex = ((yc+miniTileYC)*32+xc+miniTileXC)*3;
-							tileBits[bitmapIndex  ] = blue ; // Blue
-							tileBits[bitmapIndex+1] = green; // Green
-							tileBits[bitmapIndex+2] = red  ; // Red
-						}
+							Set24BitPixel(tileBits, ((yc+miniTileYC)*32+xc+miniTileXC)*3, red, green, blue);
 					}
 				}
 			}

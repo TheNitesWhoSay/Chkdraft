@@ -1,10 +1,12 @@
 #ifndef WINDOWCONTROL_H
 #define WINDOWCONTROL_H
 #include "DataTypes.h"
+#include "Enumerations.h"
 #include <Windows.h>
 #include <WindowsX.h>
 #include <CommCtrl.h>
 #include <string>
+#include <algorithm>
 
 class WindowControl
 {
@@ -22,19 +24,24 @@ class WindowControl
 /*  Universal   */	/** Finds and encapsulates a control within an existing window
 						This may be useful for controls in resource-based dialogs */
 					virtual bool FindThis(HWND hParent, u32 controlId);
+					virtual bool FindThis(HWND controlHandle);
 
 					/** Attempts to destroy this control and reset the associated data */
 					bool DestroyThis();
 
 					bool ReleaseDC(HDC hDC);
 					void FocusThis();
+					void UpdateWindow();
 					void DisableThis();
 					void EnableThis();
+					void Hide();
+					void Show();
 					bool isEnabled();
 					void SetRedraw(bool autoRedraw);
 					void RedrawThis();
 					void MoveTo(int x, int y);
 					void SetPos(int x, int y, int width, int height);
+					void SetWidth(int newWidth);
 					int Width();
 					int Height();
 					int Left();
@@ -42,6 +49,9 @@ class WindowControl
 					int Right();
 					int Bottom();
 
+					void SetFont(HFONT font, bool redrawImmediately);
+					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
+					void UnlockCursor(); // Globally unlocks the cursor
 
 	protected:
 
@@ -59,7 +69,6 @@ class WindowControl
 /*   Defaults   */	/** Executes the default behavior for a control
 						This should be called for messages you don't handle in ControlProc */
 					LRESULT CallDefaultProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 
 	private:
 

@@ -1,5 +1,24 @@
 #include "Trigger.h"
 
+Condition Trigger::junkCondition;
+Action Trigger::junkAction;
+
+Condition& Trigger::condition(u8 index)
+{
+	if ( index < NUM_TRIG_CONDITIONS )
+		return conditions[index];
+	else
+		return junkCondition;
+}
+
+Action& Trigger::action(u8 index)
+{
+	if ( index < NUM_TRIG_ACTIONS )
+		return actions[index];
+	else
+		return junkAction;
+}
+
 u8 Trigger::numUsedConditions()
 {
 	u8 total = 0;
@@ -111,4 +130,48 @@ void Trigger::setFlagPaused(bool flagPaused)
 		internalData |= BIT_5;
 	else
 		internalData &= x32BIT_5;
+}
+
+void Trigger::deleteCondition(u8 index)
+{
+	if ( index < NUM_TRIG_CONDITIONS )
+	{
+		conditions[index].locationNum = 0;
+		conditions[index].players = 0;
+		conditions[index].amount = 0;
+		conditions[index].unitID = 0;
+		conditions[index].comparison = 0;
+		conditions[index].condition = 0;
+		conditions[index].typeIndex = 0;
+		conditions[index].flags = 0;
+		conditions[index].internalData = 0;
+		alignTop();
+	}
+}
+
+void Trigger::alignTop()
+{
+	for ( u8 i=0; i<NUM_TRIG_CONDITIONS; i++ )
+	{
+		if ( conditions[i].condition == CID_NO_CONDITION )
+		{
+			u8 firstUsedAfter = u8(-1);
+			for ( u8 j=i+1; j<NUM_TRIG_CONDITIONS; j++ )
+			{
+				if ( conditions[j].condition != CID_NO_CONDITION )
+				{
+					firstUsedAfter = j;
+					break;
+				}
+			}
+
+			if ( firstUsedAfter != u8(-1) )
+			{
+				for ( u8 j=i; j<NUM_TRIG_CONDITIONS; j++ )
+					conditions[j] = conditions[firstUsedAfter+(j-i)];
+			}
+			else
+				break;
+		}
+	}
 }

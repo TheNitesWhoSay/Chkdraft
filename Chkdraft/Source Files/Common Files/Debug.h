@@ -2,11 +2,20 @@
 #define DEBUG_H
 #include "Constants.h"
 
+// If defined, a standard output window will be shown
+//#define SHOW_CLI
+
 /** CHKD_DEBUG is usually only defined if visual studios is set
 	to compile in debug mode, however it can ocassionally be
 	useful to define in release mode to asses/debug parts of the
 	program without the performance overhead of full debug mode */
 //#define CHKD_DEBUG
+
+#ifndef CHKD_DEBUG
+#ifdef SHOW_CLI
+#define CHKD_DEBUG
+#endif
+#endif
 
 #ifdef CHKD_DEBUG
 #define DEBUG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)

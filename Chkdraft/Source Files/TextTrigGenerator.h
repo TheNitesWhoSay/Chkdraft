@@ -4,6 +4,11 @@
 #include "Mapping Core/MappingCore.h"
 #include <vector>
 
+/**
+	ArgumentMap
+	argMap[i] = stdActionArgNum
+*/
+
 class TextTrigGenerator
 {
 	public:
@@ -18,6 +23,12 @@ class TextTrigGenerator
 
 		bool LoadScenario(Scenario* map); // Loads data about the given scenario for use outside text trigs
 		void ClearScenario(); // Clears loaded scenario data
+
+		string GetConditionName(u8 CID);
+		string GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum);
+		string GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap);
+		string GetActionArgument(Action& action, u8 stdTextTrigArgNum);
+		string GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap);
 
 		string GetTrigLocation(u32 locationNum);
 		string GetTrigString(u32 stringNum);
@@ -40,6 +51,8 @@ class TextTrigGenerator
 	
 	protected:
 
+		inline void AddConditionArgument(buffer &output, Condition &condition, u8 &CID, u8 &stdTextTrigArgNum);
+		inline void AddActionArgument(buffer &output, Action &action, u8 &AID, u8 &stdTextTrigArgNum);
 		bool GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString);
 		bool LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames);
 		bool CorrectLineEndings(buffer& buf); // Corrects any improperly formatted line endings
@@ -58,6 +71,7 @@ class TextTrigGenerator
 		std::vector<string> actionTable; // Array of action names
 		bool goodConditionTable;
 		bool goodActionTable;
+		char number[36];
 
 		bool PrepConditionTable(); // Fills conditionTable
 		bool PrepActionTable(); // Fills actionTable

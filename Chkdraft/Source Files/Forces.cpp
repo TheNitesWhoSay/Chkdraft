@@ -292,6 +292,8 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 											ssPlayer << "Player " << playerBeingDragged+1;
 											SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
 											map->notifyChange(false);
+											chkd.trigEditorWindow.RefreshWindow();
+											SetFocus(getHandle());
 										}
 									}
 								}
@@ -324,6 +326,7 @@ void ForcesWindow::CheckReplaceForceName(int force)
 			 chkd.maps.curr->replaceString(newMapForce, *mapForceString, false, true) )
 		{
 			chkd.maps.curr->notifyChange(false);
+			chkd.maps.curr->refreshScenario();
 		}
 		possibleForceNameUpdate[force] = false;
 	}

@@ -47,7 +47,7 @@ class Chkdraft : public ClassWindow
 /*	  Setup		*/	bool CreateThis();
 					void ParseCmdLine(LPSTR lpCmdLine);
 
-/*  Preprocess	*/	bool DlgKeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+/*  Preprocess	*/	bool DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam);
 					void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 

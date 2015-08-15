@@ -17,8 +17,8 @@ class UnitWindow : public ClassWindow
 		bool CreateSubWindows(HWND hWnd);
 		bool DestroyThis();
 		void SetChangeHighlightOnly(bool changeHighlightOnly);
-		void ChangeCurrOwner(HWND hUnitProperties, u8 newPlayer);
-		void ChangeOwner(HWND hUnitList, int index, u8 newPlayer);
+		void ChangeCurrOwner(u8 newPlayer);
+		void ChangeOwner(int index, u8 newPlayer);
 		void SetListRedraw(bool redraw);
 		bool AddUnitItem(u16 index, ChkUnit* unit);
 		void UpdateEnabledState();

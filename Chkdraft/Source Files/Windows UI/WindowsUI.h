@@ -7,6 +7,7 @@
 #include "DropdownControl.h"
 #include "DragListControl.h"
 #include "EditControl.h"
+#include "GridView.h"
 #include "GroupBoxControl.h"
 #include "ListBoxControl.h"
 #include "ListViewControl.h"

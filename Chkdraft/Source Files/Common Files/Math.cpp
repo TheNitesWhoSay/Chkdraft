@@ -12,6 +12,22 @@ void AscendingOrder(valueType &low, valueType &high)
 }
 /* End templates */ #else
 
+u32 SmallestOf(u32 &first, u32 &second)
+{
+	if ( first < second )
+		return first;
+	else
+		return second;
+}
+
+s32 SmallestOf(s32 &first, s32 &second)
+{
+	if ( first < second )
+		return first;
+	else
+		return second;
+}
+
 u32 SmallestOf(u32 &first, u32 &second, u32 &third)
 {
 	if ( first < second )

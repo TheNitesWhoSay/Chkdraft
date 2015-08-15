@@ -39,6 +39,8 @@ class buffer
 					// Puts next instance of 'character' in 'dest' if found
 					bool getNext(char character, u32 start, u32 &dest);
 					bool getNextUnquoted(char character, u32 start, u32 &dest);
+					bool getNextUnquoted(char character, u32 start, u32 &dest, char terminator);
+					bool getNextUnquoted(char character, u32 start, u32 end, u32 &dest);
 					bool getNextUnescaped(char character, u32 start, u32 &dest);
 
 /*   Mutators   */	// Adds data onto the end of the buffer

@@ -15,7 +15,7 @@ class TriggersWindow : public ClassWindow
 		TriggersWindow();
 		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
-		void RefreshWindow();
+		void RefreshWindow(bool focus);
 		void DoSize();
 
 		void DeleteSelection();
@@ -24,14 +24,19 @@ class TriggersWindow : public ClassWindow
 		void MoveDown();
 		void MoveTrigTo();
 
+		void ButtonNew();
+		void ButtonModify();
+
+		string GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt);
+		string GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt);
+		string GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt);
+
 	protected:
 		bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger
 
 		void CreateSubWindows(HWND hWnd);
 		void RefreshGroupList();
 		void RefreshTrigList();
-		void ButtonNew();
-		void ButtonModify();
 
 		/** Attempts to delete the item at listIndex and decrement higher item's trigger indexes
 			If this method returns false, parts of the trigger list may be invalid */
@@ -70,14 +75,11 @@ class TriggersWindow : public ClassWindow
 
 		PeerListBox listGroups;
 		ListBoxControl listTriggers;
-		TextTrigGenerator tt; // Text trig generator for assisting trigger display
+		TextTrigGenerator textTrigGenerator; // Text trig generator for assisting trigger display
 		HDC trigListDC; // Trig list HDC for speeding up trigger measurement
 
 		bool ShowTrigger(Trigger* trigger); // Checks if trigger should currently be shown
 		void ClearGroups();
-		string GetConditionString(u8 conditionNum, Trigger* trigger);
-		string GetActionString(u8 actionNum, Trigger* trigger);
-		string GetTriggerString(u32 trigNum, Trigger* trigger);
 		bool GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scenario* chk, u32 triggerNum, Trigger* trigger);
 		void DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupNum);
 		void DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenario* chk, u32 triggerNum, Trigger* trigger);
