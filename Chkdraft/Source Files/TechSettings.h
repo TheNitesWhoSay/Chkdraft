@@ -25,10 +25,11 @@ class TechSettingsWindow : public ClassWindow
 		void EnableTechEditing();
 		void SetDefaultTechCosts();
 		void ClearDefaultTechCosts();
-
-	private:
+		LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+	private:
 		s32 selectedTech;
 		bool refreshing;
 		bool isDisabled;

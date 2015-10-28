@@ -9,7 +9,7 @@ class StringPreviewWindow : public ClassWindow
 	public:
 		bool CreateThis(HWND hParent, u32 windowId);
 
-	private:
+	protected:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 

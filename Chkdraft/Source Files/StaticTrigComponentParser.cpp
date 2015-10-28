@@ -614,6 +614,17 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, u32 pos, u32 en
 			dest = 0;
 			return true;
 		}
+		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
+		{
+			char potentialLong[12] = {};
+			memcpy(potentialLong, &text[pos + 2], size - 2);
+			potentialLong[size - 2] = '\0';
+			try {
+				dest = (u32)stoll(potentialLong, nullptr, 16);
+				return true;
+			}
+			catch (exception e) {}
+		}
 		else
 		{
 			char potentialLong[12] = { };
@@ -661,10 +672,24 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, u32 pos, u32 e
 			dest = 0;
 			return true;
 		}
-		char potentialShort[7] = { };
-		memcpy(potentialShort, &text[pos], size);
-		potentialShort[size] = '\0';
-		return ( (dest = atoi(potentialShort)) > 0 );
+		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
+		{
+			char potentialShort[7] = {};
+			memcpy(potentialShort, &text[pos + 2], size - 2);
+			potentialShort[size - 2] = '\0';
+			try {
+				dest = (u32)stol(potentialShort, nullptr, 16);
+				return true;
+			}
+			catch ( exception e ) { return false; }
+		}
+		else
+		{
+			char potentialShort[7] = {};
+			memcpy(potentialShort, &text[pos], size);
+			potentialShort[size] = '\0';
+			return ((dest = atoi(potentialShort)) > 0);
+		}
 	}
 	return false;
 }
@@ -679,10 +704,24 @@ bool StaticTrigComponentParser::ParseByte(char* text, u8& dest, u32 pos, u32 end
 			dest = 0;
 			return true;
 		}
-		char potentialByte[5] = { };
-		memcpy(potentialByte, &text[pos], size);
-		potentialByte[size] = '\0';
-		return ( (dest = atoi(potentialByte)) > 0 );
+		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
+		{
+			char potentialByte[5] = {};
+			memcpy(potentialByte, &text[pos + 2], size - 2);
+			potentialByte[size - 2] = '\0';
+			try {
+				dest = (u32)stol(potentialByte, nullptr, 16);
+				return true;
+			}
+			catch ( exception e ) { return false; }
+		}
+		else
+		{
+			char potentialByte[5] = {};
+			memcpy(potentialByte, &text[pos], size);
+			potentialByte[size] = '\0';
+			return ((dest = atoi(potentialByte)) > 0);
+		}
 	}
 	return false;
 }

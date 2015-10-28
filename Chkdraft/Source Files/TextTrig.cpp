@@ -3,7 +3,7 @@
 
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
-	if ( ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
+	if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
 	{
 		ShowWindow(getHandle(), SW_SHOW);
 		return true;
@@ -20,6 +20,45 @@ void TextTrigWindow::RefreshWindow()
 		SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
 	else
 		Error("Failed to generate text triggers.");
+}
+
+BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+	case IDC_COMPSAVE:
+		if ( chkd.maps.curr != nullptr )
+		{
+			if ( CompileEditText(chkd.maps.curr, hWnd) )
+			{
+				chkd.maps.curr->refreshScenario();
+				if ( chkd.maps.SaveCurr(false) )
+					MessageBox(NULL, "Success", "Compiler", MB_OK);
+				else
+				{
+					MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		else
+			Error("No map open!");
+		break;
+	case ID_COMPILE_TRIGS:
+		if ( chkd.maps.curr != nullptr )
+		{
+			if ( CompileEditText(chkd.maps.curr, hWnd) )
+			{
+				chkd.maps.curr->notifyChange(false);
+				chkd.maps.curr->refreshScenario();
+				MessageBox(NULL, "Success", "Compiler", MB_OK);
+			}
+		}
+		else
+			Error("No map open!");
+		break;
+	}
+	return ClassDialog::DlgCommand(hWnd, wParam, lParam);
 }
 
 BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -56,43 +95,6 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SetWindowPos(hCompSave, hWnd, rcClient.right-rcClient.left-(rcCompSave.right-rcCompSave.left)-10, rcClient.bottom - (rcCompSave.bottom-rcCompSave.top) - 10, (rcCompSave.right-rcCompSave.left), (rcCompSave.bottom-rcCompSave.top), SWP_NOZORDER|SWP_NOACTIVATE);
 				SetWindowPos(hCompile, hWnd, (rcClient.right-rcClient.left-(rcCompSave.right-rcCompSave.left)-10)-(rcCompile.right-rcCompile.left+5), rcClient.bottom - (rcCompile.bottom-rcCompile.top) - 10, (rcCompile.right-rcCompile.left), (rcCompile.bottom-rcCompile.top), SWP_NOZORDER|SWP_NOACTIVATE);
 				SetWindowPos(hEdit, hWnd, 0, 0, rcClient.right, (rcClient.bottom - (rcCompile.bottom-rcCompile.top) - 20), SWP_NOZORDER|SWP_NOACTIVATE);
-			}
-			break;
-
-		case WM_COMMAND:
-			switch ( LOWORD(wParam) )
-			{
-				case IDC_COMPSAVE:
-					if ( chkd.maps.curr != nullptr )
-					{
-						if ( CompileEditText(chkd.maps.curr, hWnd) )
-						{
-							chkd.maps.curr->refreshScenario();
-							if ( chkd.maps.SaveCurr(false) )
-								MessageBox(NULL, "Success", "Compiler", MB_OK);
-							else
-							{
-								MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-					}
-					else
-						Error("No map open!");
-					break;
-				case ID_COMPILE_TRIGS:
-					if ( chkd.maps.curr != nullptr )
-					{
-						if ( CompileEditText(chkd.maps.curr, hWnd) )
-						{
-							chkd.maps.curr->notifyChange(false);
-							chkd.maps.curr->refreshScenario();
-							MessageBox(NULL, "Success", "Compiler", MB_OK);
-						}
-					}
-					else
-						Error("No map open!");
-					break;
 			}
 			break;
 

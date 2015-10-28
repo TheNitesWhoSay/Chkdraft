@@ -1318,7 +1318,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch ( msg )
 	{
 		case WM_PAINT: PaintMap(chkd.maps.curr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard); break;
-		case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
+		case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
 		case WM_ERASEBKGND: return 0; break; // Prevent background from showing
 		case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
 		case WM_VSCROLL: return VerticalScroll(hWnd, msg, wParam, lParam); break;
@@ -1332,7 +1332,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEMOVE: MouseMove(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
 		case WM_MOUSEHOVER: MouseHover(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
 		case WM_LBUTTONUP: LButtonUp(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
-		default: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
+		default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
 	}
 	return 0;
 }
@@ -1356,7 +1356,7 @@ LRESULT GuiMap::HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 			}
 			break;
 		default:
-			return DefMDIChildProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	Scroll(SCROLL_X|VALIDATE_BORDER);
@@ -1383,7 +1383,7 @@ LRESULT GuiMap::VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			}
 			break;
 		default:
-			return DefMDIChildProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	Scroll(SCROLL_Y|VALIDATE_BORDER);
@@ -1410,7 +1410,7 @@ void GuiMap::ActivateMap(HWND hWnd)
 
 LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT result = DefMDIChildProc(hWnd, WM_SIZE, wParam, lParam);
+	LRESULT result = ClassWindow::WndProc(hWnd, WM_SIZE, wParam, lParam);
 	Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
 	return result;
 }
@@ -1420,7 +1420,7 @@ LRESULT GuiMap::DestroyWindow(HWND hWnd)
 	chkd.maps.CloseMap(hWnd);
 	chkd.maps.FocusActive();
 	RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
-	return DefMDIChildProc(hWnd, WM_DESTROY, NULL, NULL);
+	return ClassWindow::WndProc(hWnd, WM_DESTROY, NULL, NULL);
 }
 
 void GuiMap::RButtonUp()
@@ -1989,7 +1989,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 {
 	if ( CanExit() )
-		return DefMDIChildProc(hWnd, WM_CLOSE, NULL, NULL);
+		return ClassWindow::WndProc(hWnd, WM_CLOSE, NULL, NULL);
 	else
 		return 0;
 }

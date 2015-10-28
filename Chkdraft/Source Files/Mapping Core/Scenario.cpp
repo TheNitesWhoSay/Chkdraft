@@ -295,6 +295,18 @@ bool Scenario::getLocationName(string &dest, u8 locationID)
 	return false;
 }
 
+bool Scenario::getSwitchName(string &dest, u8 switchID)
+{
+	buffer &SWNM = this->SWNM();
+	u32 stringNum = 0;
+	if ( SWNM.get<u32>(stringNum, 4 * (u32)switchID) && stringNum != 0 )
+	{
+		return getString(dest, stringNum);
+	}
+	else
+		return false;
+}
+
 void Scenario::getUnitName(string &dest, u16 unitID)
 {
 	buffer& settings = unitSettings();

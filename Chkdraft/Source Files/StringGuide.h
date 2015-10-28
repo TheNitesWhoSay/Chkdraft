@@ -9,8 +9,10 @@ class StringGuideWindow : public ClassWindow
 	public:
 		bool CreateThis(HWND hParent);
 
-	private:
+	protected:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	private:
 		TextControl colorPrefix[NUM_STRING_COLORS];
 		TextControl color[NUM_STRING_COLORS];
 };

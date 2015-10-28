@@ -10,7 +10,7 @@ struct MapNode
 	MapNode* next;
 };
 
-class MAPS : public MdiFrame
+class MAPS : public MdiClient
 {
 	public:
 		GuiMap* curr;

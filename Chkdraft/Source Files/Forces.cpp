@@ -134,6 +134,83 @@ void ForcesWindow::RefreshWindow()
 	}
 }
 
+LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( HIWORD(wParam) )
+	{
+	case BN_CLICKED:
+	{
+		GuiMap* map = chkd.maps.curr;
+		LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+		if ( map != nullptr )
+		{
+			switch ( LOWORD(wParam) )
+			{
+			case CHECK_F1ALLIED: case CHECK_F2ALLIED: case CHECK_F3ALLIED: case CHECK_F4ALLIED:
+			{
+				int force = LOWORD(wParam) - CHECK_F1ALLIED;
+				if ( state == BST_CHECKED )
+					map->setForceAllied(force, true);
+				else
+					map->setForceAllied(force, false);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+			break;
+
+			case CHECK_F1VISION: case CHECK_F2VISION: case CHECK_F3VISION: case CHECK_F4VISION:
+			{
+				int force = LOWORD(wParam) - CHECK_F1VISION;
+				if ( state == BST_CHECKED )
+					map->setForceVision(force, true);
+				else
+					map->setForceVision(force, false);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+			break;
+
+			case CHECK_F1RANDOM: case CHECK_F2RANDOM: case CHECK_F3RANDOM: case CHECK_F4RANDOM:
+			{
+				int force = LOWORD(wParam) - CHECK_F1RANDOM;
+				if ( state == BST_CHECKED )
+					map->setForceRandom(force, true);
+				else
+					map->setForceRandom(force, false);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+			break;
+
+			case CHECK_F1AV: case CHECK_F2AV: case CHECK_F3AV: case CHECK_F4AV:
+			{
+				int force = LOWORD(wParam) - CHECK_F1AV;
+				if ( state == BST_CHECKED )
+					map->setForceAv(force, true);
+				else
+					map->setForceAv(force, false);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+			break;
+			}
+		}
+	}
+	break;
+
+	case EN_CHANGE:
+		if ( LOWORD(wParam) >= EDIT_F1NAME && LOWORD(wParam) <= EDIT_F4NAME )
+			possibleForceNameUpdate[LOWORD(wParam) - EDIT_F1NAME] = true;
+		break;
+
+	case EN_KILLFOCUS:
+		if ( LOWORD(wParam) >= EDIT_F1NAME && LOWORD(wParam) <= EDIT_F4NAME )
+			CheckReplaceForceName(LOWORD(wParam) - EDIT_F1NAME);
+		break;
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -148,81 +225,6 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				for ( int i=0; i<4; i++ )
 					CheckReplaceForceName(i);
-			}
-			break;
-
-		case WM_COMMAND:
-			switch ( HIWORD(wParam) )
-			{
-				case BN_CLICKED:
-					{
-						GuiMap* map = chkd.maps.curr;
-						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-						if ( map != nullptr )
-						{
-							switch ( LOWORD(wParam) )
-							{
-								case CHECK_F1ALLIED: case CHECK_F2ALLIED: case CHECK_F3ALLIED: case CHECK_F4ALLIED:
-									{
-										int force = LOWORD(wParam)-CHECK_F1ALLIED;
-										if ( state == BST_CHECKED )
-											map->setForceAllied(force, true);
-										else
-											map->setForceAllied(force, false);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-									break;
-
-								case CHECK_F1VISION: case CHECK_F2VISION: case CHECK_F3VISION: case CHECK_F4VISION:
-									{
-										int force = LOWORD(wParam)-CHECK_F1VISION;
-										if ( state == BST_CHECKED )
-											map->setForceVision(force, true);
-										else
-											map->setForceVision(force, false);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-									break;
-
-								case CHECK_F1RANDOM: case CHECK_F2RANDOM: case CHECK_F3RANDOM: case CHECK_F4RANDOM:
-									{
-										int force = LOWORD(wParam)-CHECK_F1RANDOM;
-										if ( state == BST_CHECKED )
-											map->setForceRandom(force, true);
-										else
-											map->setForceRandom(force, false);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-									break;
-
-								case CHECK_F1AV: case CHECK_F2AV: case CHECK_F3AV: case CHECK_F4AV:
-									{
-										int force = LOWORD(wParam)-CHECK_F1AV;
-										if ( state == BST_CHECKED )
-											map->setForceAv(force, true);
-										else
-											map->setForceAv(force, false);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-									break;
-							}
-						}
-					}
-					break;
-
-				case EN_CHANGE:
-					if ( LOWORD(wParam) >= EDIT_F1NAME && LOWORD(wParam) <= EDIT_F4NAME )
-						possibleForceNameUpdate[LOWORD(wParam)-EDIT_F1NAME] = true;
-					break;
-
-				case EN_KILLFOCUS:
-					if ( LOWORD(wParam) >= EDIT_F1NAME && LOWORD(wParam) <= EDIT_F4NAME )
-						CheckReplaceForceName(LOWORD(wParam)-EDIT_F1NAME);
-					break;
 			}
 			break;
 
@@ -258,7 +260,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						case DL_CANCELDRAG:
 							playerBeingDragged = 255;
-							return DefWindowProc(hWnd, msg, wParam, lParam);
+							return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 							break;
 
 						case DL_DRAGGING:
@@ -298,17 +300,17 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									}
 								}
 								playerBeingDragged = 255;
-								return DefWindowProc(hWnd, msg, wParam, lParam);
+								return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 							}
 							break;
 
 						default:
-							return DefWindowProc(hWnd, msg, wParam, lParam);
+							return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 							break;
 					}
 				}
 				else
-					return DefWindowProc(hWnd, msg, wParam, lParam);
+					return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			}
 			break;
 	}

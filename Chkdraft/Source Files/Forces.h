@@ -11,9 +11,10 @@ class ForcesWindow : public ClassWindow
 		bool CreateThis(HWND hParent, u32 windowId);
 		bool DestroyThis();
 		void RefreshWindow();
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		void CheckReplaceForceName(int force);
 
 		bool possibleForceNameUpdate[4];

@@ -7,7 +7,7 @@ class MiniMap : public ClassWindow
 	public:
 		bool CreateThis(HWND hParent);
 
-	private:
+	protected:
 		void MiniMapClick(LPARAM ClickPoints);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

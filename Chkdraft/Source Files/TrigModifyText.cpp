@@ -169,6 +169,30 @@ void TrigModifyTextWindow::OnLeave()
 	}
 }
 
+LRESULT TrigModifyTextWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+	case CHECK_AUTOCOMPILE:
+		if ( HIWORD(wParam) == BN_CLICKED )
+			autoCompile = checkAutoCompile.isChecked();
+		break;
+	case BUTTON_RELOAD:
+		if ( HIWORD(wParam) == BN_CLICKED )
+			RefreshWindow(trigIndex);
+		break;
+	case BUTTON_COMPILE:
+		if ( HIWORD(wParam) == BN_CLICKED )
+			Compile(false, false);
+		break;
+	case BUTTON_COMPILEANDSAVE:
+		if ( HIWORD(wParam) == BN_CLICKED )
+			Compile(false, true);
+		break;
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT TrigModifyTextWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -180,36 +204,13 @@ LRESULT TrigModifyTextWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 				RefreshWindow(trigIndex);
 			break;
 
-		case WM_COMMAND:
-			switch ( LOWORD(wParam) )
-			{
-				case CHECK_AUTOCOMPILE:
-					if ( HIWORD(wParam) == BN_CLICKED )
-						autoCompile = checkAutoCompile.isChecked();
-					break;
-				case BUTTON_RELOAD:
-					if ( HIWORD(wParam) == BN_CLICKED )
-						RefreshWindow(trigIndex);
-					break;
-				case BUTTON_COMPILE:
-					if ( HIWORD(wParam) == BN_CLICKED )
-					Compile(false, false);
-					break;
-				case BUTTON_COMPILEANDSAVE:
-					if ( HIWORD(wParam) == BN_CLICKED )
-						Compile(false, true);
-					break;
-			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
 		case WM_CLOSE:
 			OnLeave();
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

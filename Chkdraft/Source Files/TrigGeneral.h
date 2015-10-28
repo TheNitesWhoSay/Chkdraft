@@ -35,6 +35,9 @@ class TrigGeneralWindow : public ClassWindow
 		void SetIgnoreDefeatDraw(bool ignoreDefeatDraw);
 		void SetPausedTrigger(bool paused);
 		void ParseRawFlagsText();
+		void ToggleAdvancedMode();
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		bool refreshing;
@@ -65,7 +68,8 @@ class TrigGeneralWindow : public ClassWindow
 		TextControl textRawFlags;
 		EditControl editRawFlags;
 
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		ButtonControl buttonAdvanced;
+		bool advancedMode;
 };
 
 #endif

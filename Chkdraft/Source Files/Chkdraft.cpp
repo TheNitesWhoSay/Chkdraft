@@ -26,7 +26,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	scData.Load();
 	InitCommonControls();
 	ShowWindow(getHandle(), nCmdShow);
-    UpdateWindow(getHandle());
+    UpdateWindow();
 	ParseCmdLine(lpCmdLine);
 
 	this->OnLoadTest();
@@ -296,111 +296,111 @@ void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
 	}
 }
 
+LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+		// File
+	case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
+	case ID_FILE_OPEN1: maps.OpenMap(); break;
+	case ID_FILE_CLOSE1: maps.CloseActive(); break;
+	case ID_FILE_SAVE1: maps.SaveCurr(false); break;
+	case ID_FILE_SAVEAS1: maps.SaveCurr(true); break;
+	case ID_FILE_QUIT1: PostQuitMessage(0); break;
+
+		// Edit
+	case ID_EDIT_UNDO1: maps.curr->undo(); break;
+	case ID_EDIT_REDO1: maps.curr->redo(); break;
+	case ID_EDIT_CUT1: maps.cut(); break;
+	case ID_EDIT_COPY1: maps.copy(); break;
+	case ID_EDIT_PASTE1: maps.startPaste(true); break;
+	case ID_EDIT_SELECTALL: maps.curr->selectAll(); break;
+	case ID_EDIT_DELETE: maps.curr->deleteSelection(); break;
+	case ID_EDIT_PROPERTIES: maps.properties(); break;
+
+		// View
+		// Grid
+	case ID_GRID_ULTRAFINE: maps.SetGrid(8, 8); break;
+	case ID_GRID_FINE: maps.SetGrid(16, 16); break;
+	case ID_GRID_NORMAL: maps.SetGrid(32, 32); break;
+	case ID_GRID_LARGE: maps.SetGrid(64, 64); break;
+	case ID_GRID_EXTRALARGE: maps.SetGrid(128, 128); break;
+	case ID_GRID_DISABLED: maps.SetGrid(0, 0); break;
+		// Color
+	case ID_COLOR_BLACK: maps.SetGridColor(0, 0, 0); break;
+	case ID_COLOR_GREY: maps.SetGridColor(72, 72, 88); break;
+	case ID_COLOR_WHITE: maps.SetGridColor(255, 255, 255); break;
+	case ID_COLOR_GREEN: maps.SetGridColor(16, 252, 24); break;
+	case ID_COLOR_RED: maps.SetGridColor(244, 4, 4); break;
+	case ID_COLOR_BLUE: maps.SetGridColor(36, 36, 252); break;
+	case ID_COLOR_OTHER: break;
+		// Zoom
+	case ID_ZOOM_400: maps.curr->setZoom(zooms[0]); break;
+	case ID_ZOOM_300: maps.curr->setZoom(zooms[1]); break;
+	case ID_ZOOM_200: maps.curr->setZoom(zooms[2]); break;
+	case ID_ZOOM_150: maps.curr->setZoom(zooms[3]); break;
+	case ID_ZOOM_100: maps.curr->setZoom(zooms[4]); break;
+	case ID_ZOOM_66:  maps.curr->setZoom(zooms[5]); break;
+	case ID_ZOOM_50:  maps.curr->setZoom(zooms[6]); break;
+	case ID_ZOOM_33:  maps.curr->setZoom(zooms[7]); break;
+	case ID_ZOOM_25:  maps.curr->setZoom(zooms[8]); break;
+	case ID_ZOOM_10:  maps.curr->setZoom(zooms[9]); break;
+		// Terrain
+	case ID_TERRAIN_DISPLAYTILEELEVATIONS: maps.curr->ToggleDisplayElevations(); break;
+	case ID_TERRAIN_DISPLAYTILEVALUES: maps.curr->ToggleTileNumSource(false); break;
+	case ID_TERRAIN_DISPLAYTILEVALUESMTXM: maps.curr->ToggleTileNumSource(true); break;
+
+		// Editor
+		// Units
+	case ID_UNITS_UNITSSNAPTOGRID: maps.curr->ToggleUnitSnap(); break;
+	case ID_UNITS_ALLOWSTACK: maps.curr->ToggleUnitStack(); break;
+
+		// Locations
+	case ID_LOCATIONS_SNAPTOTILE: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_TILE); break;
+	case ID_LOCATIONS_SNAPTOACTIVEGRID: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_GRID); break;
+	case ID_LOCATIONS_NOSNAP: maps.curr->SetLocationSnap(NO_LOCATION_SNAP); break;
+	case ID_LOCATIONS_LOCKANYWHERE: maps.curr->ToggleLockAnywhere(); break;
+	case ID_LOCATIONS_CLIPNAMES: maps.curr->ToggleLocationNameClip(); break;
+
+		// Scenario
+	case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
+	case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
+	case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
+	case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
+
+		// Tools
+	case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
+
+		// Windows
+	case ID_WINDOWS_CASCADE: maps.cascade(); break;
+	case ID_WINDOWS_TILEHORIZONTALLY: maps.tileHorizontally(); break;
+	case ID_WINDOWS_TILEVERTICALLY: maps.tileVertically(); break;
+	case ID_WINDOW_CLOSE: maps.destroyActive(); break;
+
+		// Help
+	case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/starcraft/Main_Page"); break;
+	case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
+	case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
+	case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;
+
+	default:
+		switch ( HIWORD(wParam) )
+		{
+		case CBN_SETFOCUS: editFocused = true; break;
+		case CBN_KILLFOCUS: editFocused = false; break;
+		case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
+		case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
+		default: return ClassWindow::Command(hWnd, wParam, lParam); break;
+		}
+		break;
+	}
+	return 0;
+}
+
 LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case WM_COMMAND:
-			{
-				switch ( LOWORD(wParam) )
-				{
-					// File
-					case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
-					case ID_FILE_OPEN1: maps.OpenMap(); break;
-					case ID_FILE_CLOSE1: maps.CloseActive(); break;
-					case ID_FILE_SAVE1: maps.SaveCurr(false); break;
-					case ID_FILE_SAVEAS1: maps.SaveCurr(true); break;
-					case ID_FILE_QUIT1: PostQuitMessage(0); break;
-
-					// Edit
-					case ID_EDIT_UNDO1: maps.curr->undo(); break;
-					case ID_EDIT_REDO1: maps.curr->redo(); break;
-					case ID_EDIT_CUT1: maps.cut(); break;
-					case ID_EDIT_COPY1: maps.copy(); break;
-					case ID_EDIT_PASTE1: maps.startPaste(true); break;
-					case ID_EDIT_SELECTALL: maps.curr->selectAll(); break;
-					case ID_EDIT_DELETE: maps.curr->deleteSelection(); break;
-					case ID_EDIT_PROPERTIES: maps.properties(); break;
-
-					// View
-						// Grid
-						case ID_GRID_ULTRAFINE: maps.SetGrid(8, 8); break;
-						case ID_GRID_FINE: maps.SetGrid(16, 16); break;
-						case ID_GRID_NORMAL: maps.SetGrid(32, 32); break;
-						case ID_GRID_LARGE: maps.SetGrid(64, 64); break;
-						case ID_GRID_EXTRALARGE: maps.SetGrid(128, 128); break;
-						case ID_GRID_DISABLED: maps.SetGrid(0, 0); break;
-							// Color
-							case ID_COLOR_BLACK: maps.SetGridColor(0, 0, 0); break;
-							case ID_COLOR_GREY: maps.SetGridColor(72, 72, 88); break;
-							case ID_COLOR_WHITE: maps.SetGridColor(255, 255, 255); break;
-							case ID_COLOR_GREEN: maps.SetGridColor(16, 252, 24); break;
-							case ID_COLOR_RED: maps.SetGridColor(244, 4, 4); break;
-							case ID_COLOR_BLUE: maps.SetGridColor(36, 36, 252); break;
-							case ID_COLOR_OTHER: break;
-						// Zoom
-						case ID_ZOOM_400: maps.curr->setZoom(zooms[0]); break;
-						case ID_ZOOM_300: maps.curr->setZoom(zooms[1]); break;
-						case ID_ZOOM_200: maps.curr->setZoom(zooms[2]); break;
-						case ID_ZOOM_150: maps.curr->setZoom(zooms[3]); break;
-						case ID_ZOOM_100: maps.curr->setZoom(zooms[4]); break;
-						case ID_ZOOM_66:  maps.curr->setZoom(zooms[5]); break;
-						case ID_ZOOM_50:  maps.curr->setZoom(zooms[6]); break;
-						case ID_ZOOM_33:  maps.curr->setZoom(zooms[7]); break;
-						case ID_ZOOM_25:  maps.curr->setZoom(zooms[8]); break;
-						case ID_ZOOM_10:  maps.curr->setZoom(zooms[9]); break;
-						// Terrain
-						case ID_TERRAIN_DISPLAYTILEELEVATIONS: maps.curr->ToggleDisplayElevations(); break;
-						case ID_TERRAIN_DISPLAYTILEVALUES: maps.curr->ToggleTileNumSource(false); break;
-						case ID_TERRAIN_DISPLAYTILEVALUESMTXM: maps.curr->ToggleTileNumSource(true); break;
-
-					// Editor
-							// Units
-							case ID_UNITS_UNITSSNAPTOGRID: maps.curr->ToggleUnitSnap(); break;
-							case ID_UNITS_ALLOWSTACK: maps.curr->ToggleUnitStack(); break;
-
-							// Locations
-							case ID_LOCATIONS_SNAPTOTILE: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_TILE); break;
-							case ID_LOCATIONS_SNAPTOACTIVEGRID: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_GRID); break;
-							case ID_LOCATIONS_NOSNAP: maps.curr->SetLocationSnap(NO_LOCATION_SNAP); break;
-							case ID_LOCATIONS_LOCKANYWHERE: maps.curr->ToggleLockAnywhere(); break;
-							case ID_LOCATIONS_CLIPNAMES: maps.curr->ToggleLocationNameClip(); break;
-
-					// Scenario
-							case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
-							case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
-							case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
-							case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
-
-					// Tools
-					case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
-
-					// Windows
-					case ID_WINDOWS_CASCADE: maps.cascade(); break;
-					case ID_WINDOWS_TILEHORIZONTALLY: maps.tileHorizontally(); break;
-					case ID_WINDOWS_TILEVERTICALLY: maps.tileVertically(); break;
-					case ID_WINDOW_CLOSE: maps.destroyActive(); break;
-
-					// Help
-					case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/starcraft/Main_Page"); break;
-					case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
-					case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
-					case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;
-
-					default:
-						switch ( HIWORD(wParam) )
-						{
-							case CBN_SETFOCUS: editFocused = true; break;
-							case CBN_KILLFOCUS: editFocused = false; break;
-							case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
-							case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
-							default: return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam); break;
-						}
-						break;
-				}
-			}
-			break;
-
 		case WM_MENUCHAR:
 			return MAKELPARAM(0, MNC_CLOSE);
 			break;
@@ -419,7 +419,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case WM_SHOWWINDOW:
 			{
-				LRESULT result = DefWindowProc(hWnd, msg, wParam, lParam);
+				LRESULT result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 				if ( wParam == TRUE )
 					ShowWindow(currDialog, SW_SHOW);
 
@@ -430,13 +430,13 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_SYSCOMMAND:
 			if ( wParam == SC_RESTORE )
 			{
-				LRESULT result = DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam);
+				LRESULT result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 				RestoreDialogs();
 				return result;
 			}
 			else if ( wParam == SC_MINIMIZE )
 				MinimizeDialogs();
-			return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_CLOSE:
@@ -447,7 +447,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				else
 					return 0; // Abort close
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_DESTROY:
@@ -458,7 +458,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if ( msg == WM_COPYDATA || (msg >= PLUGIN_MSG_START && msg <= PLUGIN_MSG_END) )
 				return CallWindowProc(PluginProc, hWnd, msg, wParam, lParam);
 			else
-				return DefFrameProc(hWnd, maps.getHandle(), msg, wParam, lParam);
+				return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;
@@ -473,13 +473,13 @@ bool Chkdraft::CreateSubWindows()
 		int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
 		return mainMenu.FindThis(hWnd) &&
-			   mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
-			   statusBar.CreateThis( sizeof(statusWidths)/sizeof(int), statusWidths, NULL,
-									 WS_CHILD|WS_VISIBLE|SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS ) &&
-			   maps.CreateMdiFrame( GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD, NULL, NULL,
-									WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL,
-									0, 0, 0, 0, hWnd, (HMENU)IDR_MAIN_PLOT ) &&
-			   mainPlot.CreateThis(hWnd);
+			mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
+			statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, NULL,
+				WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS) &&
+			mainPlot.CreateThis(hWnd) &&
+			BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD,
+				WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
+				0, 0, 0, 0, getHandle(), (HMENU)IDR_MAIN_MDI);
 	}
 	else
 		return false;
@@ -505,31 +505,35 @@ void Chkdraft::RestoreDialogs()
 
 void Chkdraft::SizeSubWindows()
 {
-	RECT rcMain, rcTool, rcStatus, rcLeftBar;
-	
-	mainToolbar.AutoSize();
-	statusBar.AutoSize();
+		RECT rcMain, rcTool, rcStatus, rcLeftBar;
 
-	// Get the size of the client area, toolbar, status bar, and left bar
-	GetClientRect(getHandle(), &rcMain);
-	GetWindowRect(mainToolbar.getHandle(), &rcTool);
-	GetWindowRect(statusBar.getHandle(), &rcStatus);
-	GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
+		mainToolbar.AutoSize();
+		statusBar.AutoSize();
 
-	int xBorder = GetSystemMetrics(SM_CXSIZEFRAME)-1,
-		yBorder = GetSystemMetrics(SM_CYSIZEFRAME)-1;
+		// Get the size of the client area, toolbar, status bar, and left bar
+		GetClientRect(getHandle(), &rcMain);
+		GetWindowRect(mainToolbar.getHandle(), &rcTool);
+		GetWindowRect(statusBar.getHandle(), &rcStatus);
+		GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
 
-	// Fit plot to the area between the toolbar and statusbar
-	SetWindowPos( mainPlot.getHandle(), NULL, 0, rcTool.bottom-rcTool.top,
-				  rcMain.right-rcMain.left, rcMain.bottom-rcMain.top+rcTool.top-rcTool.bottom-rcStatus.bottom+rcStatus.top, SWP_NOZORDER );
+		int xBorder = GetSystemMetrics(SM_CXSIZEFRAME) - 1,
+			yBorder = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
 
-	// Fit left bar to the area between the toolbar and statusbar without changing width
-	SetWindowPos( mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
-				  rcLeftBar.right-rcLeftBar.left, rcStatus.top-rcTool.bottom+yBorder*2, SWP_NOZORDER );
+		// Fit plot to the area between the toolbar and statusbar
+		SetWindowPos(mainPlot.getHandle(), NULL, 0, rcTool.bottom - rcTool.top,
+			rcMain.right - rcMain.left, rcMain.bottom - rcMain.top - (rcTool.bottom - rcTool.top) - (rcStatus.bottom - rcStatus.top),
+			SWP_NOZORDER | SWP_NOACTIVATE);
 
-	// Fit the map MDI window to the area right of the left bar and between the toolbar and statusbar
-	SetWindowPos( maps.getHandle(), NULL, rcLeftBar.right-rcLeftBar.left-xBorder-2, rcTool.bottom-rcTool.top,
-				  rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder+2, rcStatus.top-rcTool.bottom, SWP_NOZORDER );
+		// Fit left bar to the area between the toolbar and statusbar without changing width
+		SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
+			rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
+			SWP_NOZORDER | SWP_NOACTIVATE);
+
+		// Fit the map MDIClient to the area right of the left bar and between the toolbar and statusbar
+		SetWindowPos(maps.getHandle(), HWND_TOP, rcLeftBar.right - rcLeftBar.left - xBorder - 2, rcTool.bottom - rcTool.top,
+			rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder + 2, rcStatus.top - rcTool.bottom,
+			SWP_NOACTIVATE);
+	//}
 
 	RedrawWindow(statusBar.getHandle(), NULL, NULL, RDW_INVALIDATE);
 }

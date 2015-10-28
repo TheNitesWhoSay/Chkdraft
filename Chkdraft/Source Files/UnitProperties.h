@@ -6,7 +6,7 @@
 #include "PreservedUnitStats.h"
 #include "PlayerDropdown.h"
 
-class UnitWindow : public ClassWindow
+class UnitWindow : public ClassDialog
 {
 	public:
 		ListViewControl listUnits; // Make me private eventually
@@ -31,6 +31,8 @@ class UnitWindow : public ClassWindow
 		void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2);
 		void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam);
 		int CompareLvItems(LPARAM index1, LPARAM index2);
+		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:

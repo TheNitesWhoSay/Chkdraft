@@ -112,7 +112,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return DefWindowProc(hWnd, msg, wParam, lParam); // Valid occasion to use this method
 			break;
 	}
 	return 0;

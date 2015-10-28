@@ -1163,19 +1163,19 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, u32 &ID)
 				{
 					if ( arg.has("AT", 15, 2) )
 						ID = CID_COMMAND_THE_LEAST_AT;
-					else
+					else if ( arg.size() == 15 )
 						ID = CID_COMMAND_THE_LEAST;
 				}
 				else if ( arg.has("THEMOST", 7, 7) )
 				{
 					if ( arg.has("AT", 14, 2) )
 						ID = CID_COMMAND_THE_MOST_AT;
-					else
+					else if ( arg.size() == 14 )
 						ID = CID_COMMAND_THE_MOST;
 				}
 				else if ( arg.has("STHEMOSTAT", 7, 10) ) // command'S', added for backwards compatibility
 					ID = CID_COMMAND_THE_MOST_AT;
-				else
+				else if ( arg.size() == 7 )
 					ID = CID_COMMAND;
 			}
 			else if ( arg.has("OUNTDOWNTIMER", 1, 13) )
@@ -1278,14 +1278,10 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 									1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
 									1, 4, 0, 0 };
 
-	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
-						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
-						  0, 0, 0, 0 };
-
 	if ( ID >= 0 && ID < sizeof(conditionNumArgs)/sizeof(const u8) )
 	{
 		argsLeft = conditionNumArgs[ID];
-		flags = defaultFlags[ID];
+		flags = defaultFlags(ID);
 	}
 	else
 	{
@@ -1330,7 +1326,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			{
 				if ( arg.has("WITHPROPERTIES", 10, 14) )
 					ID = AID_CREATE_UNIT_WITH_PROPERTIES;
-				else
+				else if ( arg.size() == 10 )
 					ID = AID_CREATE_UNIT;
 			}
 			else if ( arg.has("ENTERVIEW", 1, 9) )
@@ -1358,7 +1354,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			{
 				if ( arg.has("ATLOCATION", 8, 10) )
 					ID = AID_KILL_UNIT_AT_LOCATION;
-				else
+				else if ( arg.size() == 8 )
 					ID = AID_KILL_UNIT;
 			}
 			break;
@@ -1372,7 +1368,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 					{
 						if ( arg.has("ATLOCATION", 22, 10) )
 							ID = AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION;
-						else
+						else if ( arg.size() == 22 )
 							ID = AID_LEADERBOARD_GOAL_CONTROL;
 					}
 					else if ( arg.has("KILLS", 15, 5) )
@@ -1388,7 +1384,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 					{
 						if ( arg.has("ATLOCATION", 18, 10) )
 							ID = AID_LEADERBOARD_CONTROL_AT_LOCATION;
-						else
+						else if ( arg.size() == 18 )
 							ID = AID_LEADERBOARD_CONTROL;
 					}
 					else if ( arg.has("GREED", 11, 5) )
@@ -1458,14 +1454,14 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			{
 				if ( arg.has("ATLOCATION", 10, 10) )
 					ID = AID_REMOVE_UNIT_AT_LOCATION;
-				else
+				else if ( arg.size() == 10 )
 					ID = AID_REMOVE_UNIT;
 			}
 			else if ( arg.has("UNAISCRIPT", 1, 10) )
 			{
 				if ( arg.has("ATLOCATION", 11, 10) )
 					ID = AID_RUN_AI_SCRIPT_AT_LOCATION;
-				else
+				else if ( arg.size() == 11 )
 					ID = AID_RUN_AI_SCRIPT;
 			}
 			break;
@@ -3193,6 +3189,18 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 			dest = 26;
 			return true;
 		}
+		else if ( arg.has("ONE", 1, 3) )
+		{
+			// Do something with 'none' players (ID:12)
+			dest = 12;
+			return true;
+		}
+		else if ( arg.has("ONAVPLAYERS", 1, 11) )
+		{
+			// Do something with non av players
+			dest = 26;
+			return true;
+		}
 	}
 	else if ( currChar == 'U' )
 	{
@@ -3200,6 +3208,26 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 		{
 			// Do something with Unknown/Unused
 			dest = 12;
+			return true;
+		}
+		else if ( arg.has("NUSED1", 1, 6) )
+		{
+			dest = 22;
+			return true;
+		}
+		else if ( arg.has("NUSED2", 1, 6) )
+		{
+			dest = 23;
+			return true;
+		}
+		else if ( arg.has("NUSED3", 1, 6) )
+		{
+			dest = 24;
+			return true;
+		}
+		else if ( arg.has("NUSED4", 1, 6) )
+		{
+			dest = 25;
 			return true;
 		}
 	}
@@ -3459,6 +3487,14 @@ bool TextTrigCompiler::PrepUnitTable(Scenario* map)
 			{
 				unitNode.unitID = unitID;
 				map->getRawString(unitNode.unitName, stringID);
+				unitTable.insert( pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+			}
+
+			string regUnitName;
+			map->getUnitName(regUnitName, unitID);
+			if ( regUnitName.compare(unitNode.unitName) != 0 )
+			{
+				unitNode.unitName = regUnitName;
 				unitTable.insert( pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
 			}
 		}

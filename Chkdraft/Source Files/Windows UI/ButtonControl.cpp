@@ -8,7 +8,7 @@ bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height
 
 LRESULT ButtonControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT result = CallDefaultProc(hWnd, msg, wParam, lParam);
+	LRESULT result = WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 
 	if ( msg == WM_LBUTTONUP )
 		SendMessage(hWnd, BM_SETSTYLE, BS_PUSHBUTTON, TRUE); // Prevent Border Effect

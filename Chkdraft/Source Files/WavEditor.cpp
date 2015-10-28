@@ -52,12 +52,8 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 			}
 			break;
 
-		case WM_COMMAND:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;
@@ -80,7 +76,7 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
 	buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", BUTTON_BROWSEFORSOUND);
 	textCompressionLevel.CreateThis(hWnd, 5, 459, 100, 20, "Compression Level", TEXT_COMPRESSIONLEVEL);
 	const char* compressionLevels[] = { "Uncompressed", "Low Quality", "Medium Quality", "High Quality" };
-	dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, DROP_COMPRESSIONQUALITY, 4, compressionLevels, defaultFont);
+	dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, DROP_COMPRESSIONQUALITY, 4, compressionLevels, defaultFont);
 	checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", CHECK_VIRTUALFILE);
 	buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", BUTTON_ADDFILE);
 

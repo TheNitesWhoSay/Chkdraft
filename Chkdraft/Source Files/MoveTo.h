@@ -5,7 +5,7 @@
 #include "Windows UI/WindowsUI.h"
 
 template <typename indexType> // Allowed types: u8, s8, u16, s16, u32, s32/int
-class MoveToDialog : public ClassWindow
+class MoveToDialog : public ClassDialog
 {
 	public:
 		static bool GetIndex(indexType &index, HWND hParent);

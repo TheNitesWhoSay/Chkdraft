@@ -10,8 +10,10 @@ class WavEditorWindow : public ClassWindow
 		bool CreateThis(HWND hParent, u32 windowId);
 		void RefreshWindow();
 
-	private:
+	protected:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	private:
 		void CreateSubWindows(HWND hWnd);
 		void DisableMapSoundEditing();
 		void EnableMapSoundEditing();

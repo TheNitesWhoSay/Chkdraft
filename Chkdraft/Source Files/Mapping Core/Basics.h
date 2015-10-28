@@ -63,6 +63,15 @@ typedef int8_t s8;
 #define BIT_30 0x40000000
 #define BIT_31 0x80000000
 
+#define x8BIT_0 0xFE
+#define x8BIT_1 0xFD
+#define x8BIT_2 0xFB
+#define x8BIT_3 0xF7
+#define x8BIT_4 0xEF
+#define x8BIT_5 0xDF
+#define x8BIT_6 0xBF
+#define x8BIT_7 0x7F
+
 #define x32BIT_0 0xFFFFFFFE
 #define x32BIT_1 0xFFFFFFFD
 #define x32BIT_2 0xFFFFFFFB

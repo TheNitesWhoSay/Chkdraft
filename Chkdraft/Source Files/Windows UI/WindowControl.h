@@ -1,25 +1,21 @@
 #ifndef WINDOWCONTROL_H
 #define WINDOWCONTROL_H
 #include "DataTypes.h"
-#include "Enumerations.h"
+#include "WinUIEnums.h"
+#include "WindowsItem.h"
 #include <Windows.h>
 #include <WindowsX.h>
 #include <CommCtrl.h>
 #include <string>
 #include <algorithm>
 
-class WindowControl
+class WindowControl : public WindowsItem
 {
 	public:
 
 /* Constructor  */	WindowControl();
 
 /*  Destructor  */	~WindowControl(); // This will NOT remove the control, use "DestroyThis" or destroy the parent window to do so
-
-/*  Accessors   */	HWND getHandle(); // Accessor for the control handle
-					bool getClientRect(RECT &rect);
-					HDC getDC(); // Gets the current device context
-					bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 
 /*  Universal   */	/** Finds and encapsulates a control within an existing window
 						This may be useful for controls in resource-based dialogs */
@@ -28,30 +24,6 @@ class WindowControl
 
 					/** Attempts to destroy this control and reset the associated data */
 					bool DestroyThis();
-
-					bool ReleaseDC(HDC hDC);
-					void FocusThis();
-					void UpdateWindow();
-					void DisableThis();
-					void EnableThis();
-					void Hide();
-					void Show();
-					bool isEnabled();
-					void SetRedraw(bool autoRedraw);
-					void RedrawThis();
-					void MoveTo(int x, int y);
-					void SetPos(int x, int y, int width, int height);
-					void SetWidth(int newWidth);
-					int Width();
-					int Height();
-					int Left();
-					int Top();
-					int Right();
-					int Bottom();
-
-					void SetFont(HFONT font, bool redrawImmediately);
-					void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
-					void UnlockCursor(); // Globally unlocks the cursor
 
 	protected:
 
@@ -66,13 +38,23 @@ class WindowControl
 						ControlProc method, which you may override to alter default behavior */
 					bool RedirectProc();
 
-/*   Defaults   */	/** Executes the default behavior for a control
-						This should be called for messages you don't handle in ControlProc */
-					LRESULT CallDefaultProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+/*  Overridden  */	/** This method is called when WM_NOTIFY is sent to the
+						control, override this to respond to notifications */
+					virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+
+					/** This method is called when WM_COMMAND is sent to the
+						control, override this to respond to commands */
+					virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+
+					/** This method is where control messages are pre-processed,
+						Override this to handle control messages, return CallDefaultProc
+						to use the default behavior */
+					virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 	private:
 
-/*     Data     */	HWND controlHandle; // Handle to the control this class encapsulates
+/*     Data     */	//HWND controlHandle; // Handle to the control this class encapsulates
 					WNDPROC defaultProc; // Stores the default proc for the encapsulated control
 
 /*  Overridden  */	/** Provides standard naming for window control create methods,
@@ -80,11 +62,6 @@ class WindowControl
 						this in specific though the "bool CreateThis(args)" format is suggested
 						this will fail unless this method has been overriden */
 					virtual bool CreateThis(HWND hParent, int x, int y, int width, int height);
-
-					/** This method is where control messages are pre-processed,
-						Override this to handle control messages, return CallDefaultProc
-						to use the default behavior */
-					virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 /*   Internal   */	/** This method returns the value given by ControlProc with the same parameters */
 					static LRESULT CALLBACK ForwardControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

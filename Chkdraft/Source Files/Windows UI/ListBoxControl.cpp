@@ -202,6 +202,32 @@ bool ListBoxControl::GetSelString(int index, std::string &str)
 	return false;
 }
 
+bool ListBoxControl::GetCurSelString(std::string &str)
+{
+	int selectedItem = -1;
+	if ( GetCurSel(selectedItem) )
+	{
+		LRESULT result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, NULL);
+		if ( result != LB_ERR )
+		{
+			int textLength = 1 + (int)result;
+			char* text = nullptr;
+			try { text = new char[textLength]; }
+			catch ( std::bad_alloc ) { return false; }
+			result = SendMessage(getHandle(), LB_GETTEXT, (WPARAM)selectedItem, (LPARAM)text);
+			if ( result != LB_ERR )
+			{
+				str = text;
+				delete[] text;
+				return true;
+			}
+			else
+				delete[] text;
+		}
+	}
+	return false;
+}
+
 bool ListBoxControl::GetSelItem(int index, int &itemData)
 {
 	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, NULL, NULL);
@@ -263,7 +289,7 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				SendMessage(GetParent(hWnd), WM_PREMEASUREITEMS, NULL, (LPARAM)hWnd);
 				while ( !itemsToAdd.empty() )
 				{
-					CallDefaultProc(hWnd, LB_ADDSTRING, NULL, (LPARAM)itemsToAdd.front());
+					WindowControl::ControlProc(hWnd, LB_ADDSTRING, NULL, (LPARAM)itemsToAdd.front());
 					itemsToAdd.pop();
 				}
 				SendMessage(GetParent(hWnd), WM_POSTMEASUREITEMS, NULL, (LPARAM)hWnd);
@@ -275,7 +301,7 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_PAINT:
 			{
 				SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
-				LRESULT result = CallDefaultProc(hWnd, msg, wParam, lParam);
+				LRESULT result = WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 				// Could replace default drawing with double buffering
 				SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
 				return result;
@@ -290,8 +316,8 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			return 0;
 			break;
 		default:
-			return CallDefaultProc(hWnd, msg, wParam, lParam);
+			return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 			break;
 	}
-	return CallDefaultProc(hWnd, msg, wParam, lParam);
+	return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 }

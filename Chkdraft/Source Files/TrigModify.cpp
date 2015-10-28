@@ -25,7 +25,7 @@ TrigModifyWindow::TrigModifyWindow() : currTab(0), trigIndex(NO_TRIGGER)
 bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 {	
 	if ( getHandle() == NULL &&
-		 ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TRIGMODIFY), hParent) )
+		 ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TRIGMODIFY), hParent) )
 	{
 		ShowNormal();
 		ChangeTab(currTab);
@@ -43,7 +43,7 @@ bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 
 bool TrigModifyWindow::DestroyThis()
 {
-	return ClassWindow::DestroyDialog();
+	return ClassDialog::DestroyDialog();
 }
 
 void TrigModifyWindow::ChangeTab(u32 tabId)
@@ -118,19 +118,68 @@ bool TrigModifyWindow::onTrigTextTab()
 	return currTab == TAB_TEXT;
 }
 
+BOOL TrigModifyWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+	switch ( nmhdr->code )
+	{
+	case TCN_SELCHANGE:
+	{
+		u32 selectedTab = tabs.GetCurSel();
+		switch ( selectedTab )
+		{
+		case TAB_GENERAL: tabs.ShowTab(WIN_GENERAL); break;
+		case TAB_PLAYERS: tabs.ShowTab(WIN_PLAYERS); break;
+		case TAB_CONDITIONS: tabs.ShowTab(WIN_CONDITIONS); break;
+		case TAB_ACTIONS: tabs.ShowTab(WIN_ACTIONS); break;
+		case TAB_TEXT: tabs.ShowTab(WIN_TRIGMODIFYTEXT); break;
+		}
+		currTab = selectedTab;
+	}
+	break;
+	case TCN_SELCHANGING:
+	{
+		u32 selectedTab = tabs.GetCurSel();
+		switch ( selectedTab )
+		{
+		case TAB_GENERAL: tabs.HideTab(WIN_GENERAL); break;
+		case TAB_PLAYERS: tabs.HideTab(WIN_PLAYERS); break;
+		case TAB_CONDITIONS: tabs.HideTab(WIN_CONDITIONS); break;
+		case TAB_ACTIONS: tabs.HideTab(WIN_ACTIONS); break;
+		case TAB_TEXT: tabs.HideTab(WIN_TRIGMODIFYTEXT); break;
+		}
+	}
+	break;
+	default:
+		return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
 BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
 		case WM_SHOWWINDOW:
-			if ( wParam == false && onTrigTextTab() )
+			if ( wParam == FALSE && onTrigTextTab() )
 				trigModifyTextWindow.ParentHidden();
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			else if ( wParam == FALSE && currTab == TAB_CONDITIONS )
+				conditionsWindow.HideSuggestions();
+			return FALSE;
 			break;
 
 		case WM_ACTIVATE:
 			if ( LOWORD(wParam) != WA_INACTIVE )
 				chkd.SetCurrDialog(hWnd);
+			else // LOWORD(wParam) == WA_INACTIVE
+				conditionsWindow.HideSuggestions();
+			return FALSE;
+			break;
+
+		case WM_NCACTIVATE:
+			if ( (BOOL)wParam == FALSE )
+				conditionsWindow.HideSuggestions();
+			return FALSE;
 			break;
 
 		case WM_INITDIALOG:
@@ -149,45 +198,6 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 		case WM_SIZE:
 			DoSize();
-			break;
-
-		case WM_NOTIFY:
-			{
-				NMHDR* notification = (NMHDR*)lParam;
-				switch ( notification->code )
-				{
-					case TCN_SELCHANGE:
-						{
-							u32 selectedTab = tabs.GetCurSel();
-							switch ( selectedTab )
-							{
-								case TAB_GENERAL: tabs.ShowTab(WIN_GENERAL); break;
-								case TAB_PLAYERS: tabs.ShowTab(WIN_PLAYERS);break;
-								case TAB_CONDITIONS: tabs.ShowTab(WIN_CONDITIONS); break;
-								case TAB_ACTIONS: tabs.ShowTab(WIN_ACTIONS); break;
-								case TAB_TEXT: tabs.ShowTab(WIN_TRIGMODIFYTEXT); break;
-							}
-							currTab = selectedTab;
-						}
-						break;
-					case TCN_SELCHANGING:
-						{
-							u32 selectedTab = tabs.GetCurSel();
-							switch ( selectedTab )
-							{
-								case TAB_GENERAL: tabs.HideTab(WIN_GENERAL); break;
-								case TAB_PLAYERS: tabs.HideTab(WIN_PLAYERS); break;
-								case TAB_CONDITIONS: tabs.HideTab(WIN_CONDITIONS); break;
-								case TAB_ACTIONS: tabs.HideTab(WIN_ACTIONS); break;
-								case TAB_TEXT: tabs.HideTab(WIN_TRIGMODIFYTEXT); break;
-							}
-						}
-						break;
-					default:
-						return FALSE;
-						break;
-				}
-			}
 			break;
 
 		case WM_CLOSE:

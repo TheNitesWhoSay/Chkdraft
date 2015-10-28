@@ -4,7 +4,7 @@
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
 
-class LocationWindow : public ClassWindow
+class LocationWindow : public ClassDialog
 {
 	public:
 		LocationWindow();
@@ -14,6 +14,7 @@ class LocationWindow : public ClassWindow
 
 	protected:
 		void RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd);
+		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:

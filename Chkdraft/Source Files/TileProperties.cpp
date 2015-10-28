@@ -3,12 +3,12 @@
 
 bool TilePropWindow::CreateThis(HWND hParent)
 {
-	return ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_DIALOG_SETTILE), hParent);
+	return ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_DIALOG_SETTILE), hParent);
 }
 
 bool TilePropWindow::DestroyThis()
 {
-	return ClassWindow::DestroyDialog();
+	return ClassDialog::DestroyDialog();
 }
 
 void TilePropWindow::UpdateTile()
@@ -23,6 +23,46 @@ void TilePropWindow::UpdateTile()
 	char tileValue[32];
 	_itoa_s(currTile, tileValue, 10);
 	SetWindowText(hEditTile, tileValue);
+}
+
+BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( HIWORD(wParam) )
+	{
+	case EN_UPDATE:
+		RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+		break;
+	}
+	switch ( LOWORD(wParam) )
+	{
+	case IDOK:
+	{
+		TCHAR lpszTile[11];
+		int TextLength = (WORD)SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0);
+		*((LPWORD)lpszTile) = TextLength;
+		SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);
+		lpszTile[TextLength] = NULL;
+
+		u16 tile = atoi(lpszTile);
+		if ( tile > 65535 )
+			tile %= 65536;
+
+		TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
+		headTile->value = tile;
+		chkd.maps.curr->SetTile(headTile->xc, headTile->yc, tile);
+		chkd.maps.curr->nextUndo();
+		EndDialog(hWnd, IDOK);
+		break;
+	}
+
+	case IDCANCEL:
+		EndDialog(hWnd, IDCANCEL);
+		break;
+	default:
+		return FALSE;
+		break;
+	}
+	return TRUE;
 }
 
 BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -41,43 +81,6 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				UpdateTile();
 				PostMessage(hWnd, WM_NEXTDLGCTL, (WPARAM)hEdit, true);
 				return true;
-			}
-			break;
-
-		case WM_COMMAND:
-			{
-				switch ( HIWORD(wParam) )
-				{
-					case EN_UPDATE:
-						RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
-						break;
-				}
-				switch ( LOWORD(wParam) )
-				{
-					case IDOK:
-						{
-							TCHAR lpszTile[11];
-							int TextLength = (WORD) SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0);
-							*((LPWORD)lpszTile) = TextLength;
-							SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);	
-							lpszTile[TextLength] = NULL;
-	
-							u16 tile = atoi(lpszTile);
-							if ( tile > 65535 )
-								tile %= 65536;
-							
-							TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
-							headTile->value = tile;
-							chkd.maps.curr->SetTile(headTile->xc, headTile->yc, tile);
-							chkd.maps.curr->nextUndo();
-							EndDialog(hWnd, IDOK);
-							break;
-						}
-
-					case IDCANCEL:
-						EndDialog(hWnd, IDCANCEL);
-						break;
-				}
 			}
 			break;
 

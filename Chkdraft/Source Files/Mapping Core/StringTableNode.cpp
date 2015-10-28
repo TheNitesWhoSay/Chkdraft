@@ -23,7 +23,8 @@ bool CompareStrTblNode(StringTableNode first, StringTableNode second)
 	return first.stringNum < second.stringNum;
 }
 
-bool strIsInHashTable(std::string &str, std::hash<std::string> &strHash, std::unordered_multimap<u32, StringTableNode> &stringTable)
+bool strIsInHashTable(std::string &str, std::hash<std::string> &strHash,
+	std::unordered_multimap<u32, StringTableNode> &stringTable)
 {
 	u32 hash = strHash(str);
 	int numMatching = stringTable.count(hash);

@@ -64,6 +64,7 @@ class Scenario
 					bool getRawString(string &dest, u32 stringNum);
 					bool getEscapedString(string &dest, u32 stringNum);
 					bool getLocationName(string &dest, u8 locationID);
+					bool getSwitchName(string &dest, u8 switchID);
 					void getUnitName(string &dest, u16 unitID);
 
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map

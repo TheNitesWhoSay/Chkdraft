@@ -9,7 +9,7 @@
 #include "CUWPs.h"
 #include "Switches.h"
 
-class TrigEditorWindow : public ClassWindow
+class TrigEditorWindow : public ClassDialog
 {
 	public:
 		TriggersWindow triggersWindow;
@@ -23,6 +23,8 @@ class TrigEditorWindow : public ClassWindow
 	protected:
 		void CreateSubWindows(HWND hWnd);
 		void DoSize();
+		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		u32 currTab;
@@ -32,8 +34,6 @@ class TrigEditorWindow : public ClassWindow
 		CountersWindow countersWindow;
 		CUWPsWindow cuwpsWindow;
 		SwitchesWindow switchesWindow;
-
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

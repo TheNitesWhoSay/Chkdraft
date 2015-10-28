@@ -25,7 +25,7 @@ TrigEditorWindow::TrigEditorWindow() : currTab(0)
 bool TrigEditorWindow::CreateThis(HWND hParent)
 {
 	if ( getHandle() == NULL &&
-		 ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TRIGEDIT), hParent) )
+		 ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TRIGEDIT), hParent) )
 	{
 		ShowNormal();
 		ChangeTab(currTab);
@@ -41,7 +41,7 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
 bool TrigEditorWindow::DestroyThis()
 {
 	triggersWindow.trigModifyWindow.Hide();
-	return ClassWindow::DestroyDialog();
+	return ClassDialog::DestroyDialog();
 }
 
 void TrigEditorWindow::ChangeTab(u32 tabId)
@@ -110,6 +110,44 @@ void TrigEditorWindow::DoSize()
 	switchesWindow.DoSize();
 }
 
+BOOL TrigEditorWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+	switch ( nmhdr->code )
+	{
+	case TCN_SELCHANGE:
+	{
+		u32 selectedTab = tabs.GetCurSel();
+		switch ( selectedTab )
+		{
+		case TAB_TRIGGERS: tabs.ShowTab(WIN_TRIGGERS); break;
+		case TAB_TEMPLATES: tabs.ShowTab(WIN_TEMPLATES); break;
+		case TAB_COUNTERS: tabs.ShowTab(WIN_COUNTERS); break;
+		case TAB_CUWPS: tabs.ShowTab(WIN_CUWPS); break;
+		case TAB_SWITCHES: tabs.ShowTab(WIN_SWITCHES); break;
+		}
+		currTab = selectedTab;
+	}
+	break;
+	case TCN_SELCHANGING:
+	{
+		u32 selectedTab = tabs.GetCurSel();
+		switch ( selectedTab )
+		{
+		case TAB_TRIGGERS: tabs.HideTab(WIN_TRIGGERS); break;
+		case TAB_TEMPLATES: tabs.HideTab(WIN_TEMPLATES); break;
+		case TAB_COUNTERS: tabs.HideTab(WIN_COUNTERS); break;
+		case TAB_CUWPS: tabs.HideTab(WIN_CUWPS); break;
+		case TAB_SWITCHES: tabs.HideTab(WIN_SWITCHES); break;
+		}
+	}
+	break;
+	default:
+		return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
 BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -117,6 +155,7 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		case WM_ACTIVATE:
 			if ( LOWORD(wParam) != WA_INACTIVE )
 				chkd.SetCurrDialog(hWnd);
+			return FALSE;
 			break;
 
 		case WM_INITDIALOG:
@@ -130,48 +169,10 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			DoSize();
 			break;
 
-		case WM_NOTIFY:
-			{
-				NMHDR* notification = (NMHDR*)lParam;
-				switch ( notification->code )
-				{
-					case TCN_SELCHANGE:
-						{
-							u32 selectedTab = tabs.GetCurSel();
-							switch ( selectedTab )
-							{
-								case TAB_TRIGGERS: tabs.ShowTab(WIN_TRIGGERS); break;
-								case TAB_TEMPLATES: tabs.ShowTab(WIN_TEMPLATES);break;
-								case TAB_COUNTERS: tabs.ShowTab(WIN_COUNTERS); break;
-								case TAB_CUWPS: tabs.ShowTab(WIN_CUWPS); break;
-								case TAB_SWITCHES: tabs.ShowTab(WIN_SWITCHES); break;
-							}
-							currTab = selectedTab;
-						}
-						break;
-					case TCN_SELCHANGING:
-						{
-							u32 selectedTab = tabs.GetCurSel();
-							switch ( selectedTab )
-							{
-								case TAB_TRIGGERS: tabs.HideTab(WIN_TRIGGERS); break;
-								case TAB_TEMPLATES: tabs.HideTab(WIN_TEMPLATES); break;
-								case TAB_COUNTERS: tabs.HideTab(WIN_COUNTERS); break;
-								case TAB_CUWPS: tabs.HideTab(WIN_CUWPS); break;
-								case TAB_SWITCHES: tabs.HideTab(WIN_SWITCHES); break;
-							}
-						}
-						break;
-					default:
-						return FALSE;
-						break;
-				}
-			}
-			break;
-
 		case WM_CLOSE:
 			triggersWindow.trigModifyWindow.Hide();
-			ClassWindow::DestroyDialog();
+			ClassDialog::DestroyDialog();
+			return FALSE;
 			break;
 
 		default:

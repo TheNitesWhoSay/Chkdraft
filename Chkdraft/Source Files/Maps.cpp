@@ -255,7 +255,7 @@ void MAPS::CloseMap(HWND hMap)
 
 void MAPS::CloseActive()
 {
-	SendMessage(MdiFrame::getHandle(), WM_MDIDESTROY, (WPARAM)MdiFrame::getActive(), NULL);
+	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), NULL);
 }
 
 void MAPS::UpdateTreeView()

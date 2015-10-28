@@ -12,8 +12,10 @@ class TreeViewControl : public WindowControl
 		bool ExpandItem(HTREEITEM hItem);
 		void EmptySubTree(HTREEITEM hRoot);
 
-	private:
+	protected:
 		LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	private:
 		HTREEITEM InsertParent(const char* text, LPARAM lParam);
 };
 

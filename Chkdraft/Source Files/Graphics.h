@@ -3,6 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Clipboard.h"
 #include "Data.h"
+#include <vector>
 
 inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue);
 
@@ -77,7 +78,7 @@ class Graphics
 
 		bool isValid; // When false, requires complete sprite refresh
 		bool isSorted; // When false, requires sorting before next use
-		SpriteNode* spriteNodes; // Sorted ArrayList of spriteNodes
+		vector<SpriteNode> spriteNodes; // Sorted ArrayList of spriteNodes
 
 		HWND hPane; // Handle to destination window
 		s32 screenLeft; // X-Position of the screens left edge in the map

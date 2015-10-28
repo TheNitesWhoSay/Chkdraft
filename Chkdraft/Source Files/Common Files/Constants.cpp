@@ -296,6 +296,17 @@ const char* triggerPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4",
 								 "Unused 3", "Unused 4", "Non AV Players", "ID:27" };
 const int numTriggerPlayers = sizeof(triggerPlayers)/sizeof(const char*);
 
+const char* triggerConditions[] = { "Accumulate", "Always", "Bring", "Command", "Command The Least",
+	"Command The Least At", "Command The Most", "Command The Most At", "Countdown Timer", "Custom",
+	"Deaths", "Elapsed Time", "Highest Score", "Kill", "Least Kills", "Least Resources", "Lowest Score",
+	"Memory", "Most Kills", "Most Resources", "Never", "Opponents", "Score", "Switch"
+};
+const int numTriggerConditions = sizeof(triggerConditions)/sizeof(const char*);
+
+const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
+								"Total", "Units", "Units and Buildings" };
+const int numTriggerScores = sizeof(triggerScores) / sizeof(const char*);
+
 const COLORREF stringColors[] = { RGB(184, 184, 232), RGB(184, 184, 232), RGB(220, 220,  60), RGB(255, 255, 255),
 								  RGB(132, 116, 116), RGB(200,  24,  24), RGB( 16, 252,  24), RGB(244,   4,   4),
 								  RGB( 16, 252,  24), RGB( 16, 252,  24), RGB( 12,  72, 204), RGB( 44, 180, 148),

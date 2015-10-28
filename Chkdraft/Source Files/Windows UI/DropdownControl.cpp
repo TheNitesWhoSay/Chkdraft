@@ -1,13 +1,24 @@
 #include "DropdownControl.h"
 
-bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, u32 id, int numItems, const char** items, HFONT font)
+bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
+	u32 id, int numItems, const char** items, HFONT font)
 {
-	DWORD style = CBS_DROPDOWN|WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_AUTOHSCROLL|CBS_HASSTRINGS;
+	DWORD style = WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_AUTOHSCROLL|CBS_HASSTRINGS;
 
 	if ( editable )
-		style |= CBS_DROPDOWN;
+	{
+		if ( alwaysList )
+			style |= CBS_DROPDOWNLIST;
+		else
+			style |= CBS_DROPDOWN;
+	}
 	else
-		style |= CBS_SIMPLE;
+	{
+		if ( alwaysList )
+			style |= CBS_SIMPLE | CBS_DROPDOWNLIST;
+		else
+			style |= CBS_SIMPLE | CBS_DROPDOWN;
+	}
 
 	if ( WindowControl::CreateControl(0, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false) )
 	{

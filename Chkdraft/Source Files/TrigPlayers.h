@@ -19,11 +19,12 @@ class TrigPlayersWindow : public ClassWindow
 		void OnLeave();
 		void ParseRawPlayers();
 		void ToggleAdvancedMode();
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		bool refreshing;
 		u32 trigIndex;
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 		GroupBoxControl groupExecutingPlayers;
 		CheckBoxControl checkMainPlayers[8];

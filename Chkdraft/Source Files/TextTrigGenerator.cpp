@@ -1149,7 +1149,7 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCus
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
 	{
-		for ( int unitID=0; unitID<232; unitID++ )
+		for ( int unitID=0; unitID<=232; unitID++ )
 		{
 			Invariant( unitTable.size() == unitID );
 			if ( quoteArgs )

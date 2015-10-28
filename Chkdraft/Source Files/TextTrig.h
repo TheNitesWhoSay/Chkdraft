@@ -6,7 +6,7 @@
 #include "TextTrigGenerator.h"
 #include "TextTrigCompiler.h"
 
-class TextTrigWindow : public ClassWindow
+class TextTrigWindow : public ClassDialog
 {
 	public:
 		bool CreateThis(HWND hParent);
@@ -15,11 +15,11 @@ class TextTrigWindow : public ClassWindow
 	protected:
 		// Takes the text from the edit control given by hWnd and compiles it into the map
 		bool CompileEditText(Scenario* map, HWND hWnd);
+		virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		EditControl editControl;
-
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

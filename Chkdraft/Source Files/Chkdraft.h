@@ -12,6 +12,7 @@
 class Chkdraft : public ClassWindow
 {
 	public:
+		bool tempBlock = false;
 					void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */	DATA scData; // Main data
@@ -50,14 +51,16 @@ class Chkdraft : public ClassWindow
 /*  Preprocess	*/	bool DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam);
 					void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+/*	  Procs		*/	LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 	private:
 
 /*	   Data     */	HWND currDialog;
 					bool editFocused;
 
-/* Priv Methods */	LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					bool CreateSubWindows();
+/* Priv Methods */	bool CreateSubWindows();
 					void MinimizeDialogs();
 					void RestoreDialogs();
 					void SizeSubWindows();

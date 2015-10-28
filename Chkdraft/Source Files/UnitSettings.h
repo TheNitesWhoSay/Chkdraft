@@ -22,10 +22,11 @@ class UnitSettingsWindow : public ClassWindow
 		void CheckReplaceUnitName();
 		void SetDefaultUnitProperties();
 		void ClearDefaultUnitProperties();
-
-	private:
+		LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+	private:
 		s32 selectedUnit;
 		bool possibleUnitNameUpdate;
 		bool isDisabled;

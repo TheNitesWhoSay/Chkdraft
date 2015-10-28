@@ -15,12 +15,12 @@ TerrainPaletteWindow::TerrainPaletteWindow() : tilesetIndexedYC(0)
 bool TerrainPaletteWindow::CreateThis(HWND hParent)
 {
 	return getHandle() == NULL &&
-		   ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_INDEXED_TILESET), hParent);
+		   ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_INDEXED_TILESET), hParent);
 }
 
 bool TerrainPaletteWindow::DestroyThis()
 {
-	return ClassWindow::DestroyDialog();
+	return ClassDialog::DestroyDialog();
 }
 
 void TerrainPaletteWindow::DoScroll(HWND hWnd)
@@ -292,11 +292,11 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			break;
 
 		case WM_CLOSE:
-			ClassWindow::DestroyDialog();
+			ClassDialog::DestroyDialog();
 			break;
 
 		case WM_DESTROY:
-			ClassWindow::DestroyDialog();
+			ClassDialog::DestroyDialog();
 			break;
 
 		default:

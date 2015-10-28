@@ -20,6 +20,8 @@ class TrigModifyTextWindow : public ClassWindow
 		void Compile(bool silent, bool saveAfter);
 		bool CompileEditText(std::string &newText);
 		void OnLeave();
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		
 	private:
 		EditControl editText;
@@ -28,8 +30,6 @@ class TrigModifyTextWindow : public ClassWindow
 		u32 trigIndex;
 		std::string trigText;
 		bool autoCompile;
-
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

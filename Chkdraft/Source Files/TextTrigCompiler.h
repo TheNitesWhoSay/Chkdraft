@@ -40,7 +40,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		// Attempts to compile the argNum'th condition argument into the given condition
 		bool ParseConditionName(std::string text, u8 &ID);
 		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, Scenario* chk);
-		u8 defaultFlags(u8 CID);
+		static u8 defaultFlags(u8 CID);
 
 
 	protected:

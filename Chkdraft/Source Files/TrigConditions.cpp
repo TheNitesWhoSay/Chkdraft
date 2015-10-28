@@ -1,5 +1,6 @@
 #include "TrigConditions.h"
 #include "Chkdraft.h"
+#include <map>
 
 #define TOP_CONDITION_PADDING 50
 #define BOTTOM_CONDITION_PADDING 0
@@ -7,10 +8,13 @@
 
 enum ID
 {
-	LIST_CONDITIONS = ID_FIRST
+	LIST_CONDITIONS = ID_FIRST,
+	CHECK_ENABLED_1,
+	CHECK_ENABLED_16 = (CHECK_ENABLED_1+15)
 };
 
-TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0)
+TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), listConditions(*this),
+	suggestions(listConditions.GetSuggestions())
 {
 	InitializeArgMaps();
 }
@@ -36,6 +40,7 @@ bool TrigConditionsWindow::CreateThis(HWND hParent, u32 windowId)
 
 bool TrigConditionsWindow::DestroyThis()
 {
+	suggestions.Hide();
 	return false;
 }
 
@@ -57,32 +62,34 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
 				if ( numArgs > 8 )
 					numArgs = 8;
 
-				listConditions.item(0, y).SetText(
+				listConditions.item(1, y).SetText(
 					ttg.GetConditionName(condition.condition).c_str()
 				);
 				for ( u8 x=0; x<numArgs; x++ )
 				{
-					listConditions.item(x+1, y).SetText(
+					listConditions.item(x+2, y).SetText(
 						ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.condition]).c_str()
 					);
 				}
 				for ( u8 x=numArgs; x<8; x++ )
-					listConditions.item(x+1, y).SetText("");
+					listConditions.item(x+2, y).SetText("");
+				
+				listConditions.SetEnabledCheck(y, !condition.isDisabled());
 			}
 			else if ( condition.condition == 0 )
 			{
-				for ( u8 x=0; x<9; x++ )
+				for ( u8 x=0; x<10; x++ )
 					listConditions.item(x, y).SetText("");
 			}
 		}
 
-		listConditions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH);
+		listConditions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH*2);
 	}
 }
 
 void TrigConditionsWindow::DoSize()
 {
-	listConditions.SetPos(0, TOP_CONDITION_PADDING, cliWidth()-2, cliHeight()-TOP_CONDITION_PADDING-BOTTOM_CONDITION_PADDING);
+	listConditions.SetPos(2, TOP_CONDITION_PADDING, cliWidth()-2, cliHeight()-TOP_CONDITION_PADDING-BOTTOM_CONDITION_PADDING);
 }
 
 void TrigConditionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
@@ -91,6 +98,30 @@ void TrigConditionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 		SendMessage(listConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
 	else if ( wParam == VK_RETURN )
 		SendMessage(listConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
+}
+
+void TrigConditionsWindow::HideSuggestions()
+{
+	suggestions.Hide();	
+}
+
+void TrigConditionsWindow::ConditionEnableToggled(u8 conditionNum)
+{
+	Trigger* trig;
+	if ( conditionNum >= 0 && conditionNum < 16 && chkd.maps.curr->getTrigger(trig, trigIndex) )
+	{
+		Condition &condition = trig->condition(conditionNum);
+		if ( condition.condition != CID_NO_CONDITION )
+		{
+			condition.ToggleDisabled();
+
+			chkd.maps.curr->notifyChange(false);
+			RefreshWindow(trigIndex);
+			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+
+			listConditions.SetEnabledCheck(conditionNum, !condition.isDisabled());
+		}
+	}
 }
 
 void TrigConditionsWindow::InitializeArgMaps()
@@ -145,22 +176,19 @@ void TrigConditionsWindow::InitializeArgMaps()
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
 	TextControl text;
-	listConditions.CreateThis(hWnd, 0, 40, 100, 100, true, LIST_CONDITIONS);
-	listConditions.SetFont(defaultFont, false);
-	for ( int i=0; i<9; i++ )
-		listConditions.AddColumn(0, " - ", 50, LVCFMT_CENTER);
+	listConditions.CreateThis(hWnd, 2, 40, 100, 100, LIST_CONDITIONS);
 
-	listConditions.Show();
+	/*listConditions.Show();
 
 	for ( int y=0; y<16; y++ )
 		listConditions.AddRow(9, (y+1)*100);
+	*/
+	suggestions.CreateThis(hWnd, 0, 0, 200, 100);
+	//listConditions.SetUpDownDuringEdit(false);
+	//listConditions.SetKeyReceiver(suggestions.getHandle());
+	//dropUnits.CreateThis(hWnd, 0, 0, 150, 100, false, true, 0, 233, DefaultUnitDisplayName, defaultFont);
 
 	RefreshWindow(trigIndex);
-}
-
-LRESULT TrigConditionsWindow::Notify(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT TrigConditionsWindow::MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -172,84 +200,93 @@ LRESULT TrigConditionsWindow::MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LP
 		mis->itemHeight = 15;
 		return TRUE;
 	}
-	return DefWindowProc(hWnd, msg, wParam, lParam);
+	return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT TrigConditionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT result = DefWindowProc(hWnd, msg, wParam, lParam);
+	LRESULT result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 	DrawSelectedCondition();
 	return result;
+}
+
+bool TrigConditionsWindow::TransformCondition(Condition &condition, u8 newId)
+{
+	if (condition.condition != newId)
+	{
+		if ( newId == CID_COMMAND || newId == CID_BRING ||
+			 newId == CID_COMMAND_THE_MOST_AT || newId == CID_COMMAND_THE_LEAST_AT )
+		{
+			condition.locationNum = 64;
+		}
+		else
+			condition.locationNum = 0;
+
+		condition.players = 0;
+		condition.amount = 0;
+		condition.unitID = 0;
+
+		if ( newId == CID_SWITCH )
+			condition.comparison = 3;
+		else
+			condition.comparison = 0;
+
+		condition.condition = newId;
+		condition.typeIndex = 0;
+		condition.flags = TextTrigCompiler::defaultFlags(newId);
+		condition.internalData = 0;
+		chkd.maps.curr->notifyChange(false);
+		RefreshWindow(trigIndex);
+		chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+		return true;
+	}
+	return false;
 }
 
 BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, string& str)
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
-	if ( gridItemX == 0 ) // Condition Name
+	if ( gridItemX == 1 ) // Condition Name
 	{
 		cout << '(' << gridItemX << ", " << gridItemY << ") Condition Name: " << str << endl;
-		u8 ID = CID_NO_CONDITION;
-		if ( ttc.ParseConditionName(str, ID) )
+		u8 newId = CID_NO_CONDITION;
+		if ( ttc.ParseConditionName(str, newId) || ttc.ParseConditionName(suggestions.Take(), newId) )
 		{
 			if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
 			{
 				Condition &condition = trig->condition((u8)gridItemY);
-				if ( condition.condition != ID )
-				{
-					if ( ID == CID_COMMAND || ID == CID_BRING || ID == CID_COMMAND_THE_MOST_AT || ID == CID_COMMAND_THE_LEAST_AT )
-						condition.locationNum = 64;
-					else
-						condition.locationNum = 0;
-
-					condition.players = 0;
-					condition.amount = 0;
-					condition.unitID = 0;
-					condition.comparison = 0;
-					condition.condition = ID;
-					condition.typeIndex = 0;
-					condition.flags = ttc.defaultFlags(ID);
-					condition.internalData = 0;
-					chkd.maps.curr->notifyChange(false);
-					RefreshWindow(trigIndex);
-					chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-					return FALSE;
-				}
+				TransformCondition(condition, newId);
 			}
 		}
 		else if ( str.length() == 0 )
 		{
-			Trigger* trig;
 			if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
-				 ((u8)gridItemY) <= NUM_TRIG_CONDITIONS &&
-				 trig->conditions[(u8)gridItemY].condition != ID )
+				 (u8)gridItemY <= NUM_TRIG_CONDITIONS &&
+				 trig->conditions[(u8)gridItemY].condition != newId)
 			{
 				trig->deleteCondition((u8)gridItemY);
 				chkd.maps.curr->notifyChange(false);
 				RefreshWindow(trigIndex);
 				chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-				return FALSE;
 			}
 		}
 		else
-		{
 			cout << "Unrecognized Condition Name" << endl;
-			return FALSE;
-		}
 	}
-	else // Condition Arg
+	else if ( gridItemX > 1 ) // Condition Arg
 	{
-		u8 argNum = (u8)gridItemX - 1;
+		u8 argNum = (u8)gridItemX - 2;
 		cout << '(' << gridItemX << ", " << gridItemY << ") Argument " << (int)argNum << ": " << str << endl;
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+		if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
+			 ( ttc.ParseConditionArg(str, argNum, conditionArgMaps[trig->condition((u8)gridItemY).condition],
+				trig->condition((u8)gridItemY), chkd.maps.curr) ||
+			   ttc.ParseConditionArg(suggestions.Take(), argNum, conditionArgMaps[trig->condition((u8)gridItemY).condition],
+				trig->condition((u8)gridItemY), chkd.maps.curr) ) )
 		{
-			if ( ttc.ParseConditionArg(str, argNum, conditionArgMaps[trig->condition((u8)gridItemY).condition],
-				 trig->condition((u8)gridItemY), chkd.maps.curr) )
-			{
-				chkd.maps.curr->notifyChange(false);
-				RefreshWindow(trigIndex);
-				chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-			}
+			chkd.maps.curr->notifyChange(false);
+			RefreshWindow(trigIndex);
+			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		}
 	}
 	return FALSE;
@@ -277,7 +314,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 
 				UINT width = 0, height = 0;
 				GetStringDrawSize(hDC, width, height, str);
-				HBRUSH hBackground = CreateSolidBrush(GetBkColor(hDC));
+				HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
 				RECT rect;
 				rect.left = listConditions.Left()+5;
 				rect.right = listConditions.Right()-5;
@@ -290,7 +327,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 				DrawString(hDC, listConditions.Left()+6, listConditions.Top()-height-1, 500, RGB(0, 0, 0), str);
 			}
 		}
-		ReleaseDC(getHandle(), hDC);
+		ReleaseDC(hDC);
 	}
 }
 
@@ -303,7 +340,7 @@ int TrigConditionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 		UINT width = 0, height = 0;
 		if ( GetStringDrawSize(hDC, width, height, text) )
 			return width+2;
-		ReleaseDC(getHandle(), hDC);
+		ReleaseDC(hDC);
 	}
 	return 0;
 }
@@ -312,7 +349,7 @@ void TrigConditionsWindow::PreDrawItems()
 {
 	HDC hDC = GetDC(getHandle());
 	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, NULL);
-	ReleaseDC(getHandle(), hDC);
+	ReleaseDC(hDC);
 	hBlack = CreateSolidBrush(RGB(0, 0, 0));
 }
 
@@ -351,6 +388,9 @@ void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &
 
 void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
 {
+	if ( gridItemX == 0 && gridItemY >= 0 && gridItemY < 16 )
+		listConditions.checkEnabled[gridItemY].MoveTo(rcItem.left, rcItem.top);
+
 	int width = ListView_GetColumnWidth(listConditions.getHandle(), gridItemX);
 	DrawItemBackground(hDC, gridItemX, gridItemY, rcItem, width, xStart);
 
@@ -406,13 +446,235 @@ void TrigConditionsWindow::PostDrawItems()
 	hBlack = NULL;
 }
 
+void TrigConditionsWindow::SuggestNothing()
+{
+	cout << "Suggest Nothing" << endl;
+	suggestions.ClearStrings();
+	suggestions.Hide();
+	HDC hDC = GetDC(getHandle());
+	HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
+	RECT rect;
+	rect.left = dropUnits.Left();
+	rect.right = dropUnits.Right();
+	rect.top = dropUnits.Top();
+	rect.bottom = dropUnits.Bottom();
+
+	dropUnits.Hide();
+
+	FillRect(hDC, &rect, hBackground);
+	DeleteBrush(hBackground);
+}
+
+void TrigConditionsWindow::SuggestUnit()
+{
+	cout << "Suggest Unit" << endl;
+	dropUnits.Show();
+	if ( chkd.maps.curr != nullptr )
+	{
+		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
+		{
+			string str;
+			chkd.maps.curr->getUnitName(str, i);
+			suggestions.AddString(str);
+			if ( str.compare(string(DefaultUnitDisplayName[i])) != 0 )
+				suggestions.AddString(string(DefaultUnitDisplayName[i]));
+		}
+	}
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestLocation()
+{
+	cout << "Suggest Location" << endl;
+	Scenario* chk = chkd.maps.curr;
+	ChkLocation* loc = nullptr;
+	string str;
+	if ( chk != nullptr )
+	{
+		for ( u8 i = 0; i < 255; i++ )
+		{
+			if ( chk->getLocation(loc, u8(i)) && loc->stringNum > 0 && chk->getLocationName(str, i) )
+				suggestions.AddString(str);
+		}
+	}
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestPlayer()
+{
+	cout << "Suggest Player" << endl;
+	Scenario* chk = chkd.maps.curr;
+	if ( chk != nullptr )
+	{
+		for ( u8 i = 0; i < numTriggerPlayers; i++ )
+			suggestions.AddString(string(triggerPlayers[i]));
+	}
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestAmount()
+{
+	cout << "Suggest Amount" << endl;
+	//suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestNumericComparison()
+{
+	cout << "Suggest Numeric Comparison" << endl;
+	suggestions.AddString(string("At Least"));
+	suggestions.AddString(string("At Most"));
+	suggestions.AddString(string("Exactly"));
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestResourceType()
+{
+	cout << "Suggest Resource Type" << endl;
+	suggestions.AddString(string("Ore"));
+	suggestions.AddString(string("Ore and Gas"));
+	suggestions.AddString(string("Gas"));
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestScoreType()
+{
+	cout << "Suggest Score Type" << endl;
+	for ( u8 i = 0; i < numTriggerScores; i++ )
+		suggestions.AddString(string(triggerScores[i]));
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestSwitch()
+{
+	Scenario* chk = chkd.maps.curr;
+	if ( chk != nullptr )
+	{
+		for ( u16 i = 0; i < 256; i++ )
+		{
+			string str;
+			if ( chk->getSwitchName(str, (u8)i) )
+				suggestions.AddString(str);
+			else
+			{
+				stringstream ss;
+				ss << "Switch " << i + 1 << endl;
+				suggestions.AddString(ss.str());
+			}
+		}
+	}
+	cout << "Suggest Switch" << endl;
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestSwitchState()
+{
+	cout << "Suggest Switch State" << endl;
+	suggestions.AddString(string("Cleared"));
+	suggestions.AddString(string("Set"));
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestComparison()
+{
+	cout << "Suggest Comparison" << endl;
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestConditionType()
+{
+	cout << "Suggest Condition Type" << endl;
+	suggestions.AddStrings(triggerConditions, numTriggerConditions);
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestTypeIndex()
+{
+	cout << "Suggest Type Index" << endl;
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestFlags()
+{
+	cout << "Suggest Flags" << endl;
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::SuggestInternalData()
+{
+	cout << "Suggest Internal Data" << endl;
+	suggestions.Show();
+}
+
+void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
+{
+	cout << "GridEditStart: (" << gridItemX << ", " << gridItemY << ")" << endl;
+	Trigger* trig;
+	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	{
+		Condition &condition = trig->condition((u8)gridItemY);
+		ConditionArgType argType = ConditionArgType::CndNoType;
+		if ( gridItemX == 1 ) // Condition Name
+			argType = ConditionArgType::CndConditionType;
+		else if ( gridItemX > 1 ) // Condition Arg
+		{
+			u8 conditionArgNum = (u8)gridItemX - 2;
+			if ( condition.condition <= 23 && conditionArgMaps[condition.condition].size() > conditionArgNum )
+			{
+				u8 textTrigArgNum = conditionArgMaps[condition.condition][conditionArgNum];
+				argType = condition.TextTrigArgType(textTrigArgNum);
+			}
+		}
+
+		if ( argType != ConditionArgType::CndNoType )
+		{
+			POINT pt = listConditions.GetFocusedBottomRightScreenPt();
+			if ( pt.x != -1 || pt.y != -1 )
+				suggestions.MoveTo(pt.x, pt.y);
+		}
+
+		suggestions.ClearStrings();
+		switch ( argType )
+		{
+			case CndNoType: SuggestNothing(); break;
+			case CndUnit: SuggestUnit(); break;
+			case CndLocation: SuggestLocation(); break;
+			case CndPlayer: SuggestPlayer(); break;
+			case CndAmount: SuggestAmount(); break;
+			case CndNumericComparison: SuggestNumericComparison(); break;
+			case CndResourceType: SuggestResourceType(); break;
+			case CndScoreType: SuggestScoreType(); break;
+			case CndSwitch: SuggestSwitch(); break;
+			case CndSwitchState: SuggestSwitchState(); break;
+			case CndComparison: SuggestComparison(); break;
+			case CndConditionType: SuggestConditionType(); break;
+			case CndTypeIndex: SuggestTypeIndex(); break;
+			case CndFlags: SuggestFlags(); break;
+			case CndInternalData: SuggestInternalData(); break;
+		}
+	}
+}
+
+void TrigConditionsWindow::NewSuggestion(string &str)
+{
+	listConditions.SetEditText(str);
+}
+
+LRESULT TrigConditionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if ( (BOOL)wParam == FALSE )
+		suggestions.Hide();
+
+	return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
+}
+
 LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case WM_NOTIFY: return Notify(hWnd, msg, wParam, lParam); break;
 		case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
 		case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
+		case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
+		case WM_NEWSELTEXT: NewSuggestion(*(string*)lParam); break;
 		case WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
 		case WM_PREDRAWITEMS: PreDrawItems(); break;
 		case WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
@@ -420,7 +682,9 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		case WM_POSTDRAWITEMS: PostDrawItems(); break;
 		case WM_GETGRIDITEMCARETPOS: return -1; break;
 		case WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(string*)lParam); break;
-		default: return DefWindowProc(hWnd, msg, wParam, lParam); break;
+		case WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
+		case WM_GRIDEDITEND: suggestions.Hide(); break;
+		default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
 	}
 	return 0;
 }
