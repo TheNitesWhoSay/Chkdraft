@@ -7,7 +7,9 @@
 #include "Data.h"
 #include "Graphics.h"
 
-class GuiMap : public MapFile, public ClassWindow
+#define GuiMapPtr std::shared_ptr<GuiMap>
+
+class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
 
@@ -49,7 +51,8 @@ class GuiMap : public MapFile, public ClassWindow
 /*   Undo Redo  */  UNDOS& undos() { return undoStacks; }
 					void undo();
 					void redo();
-					void nextUndo() { undoStacks.startNext(0); }
+					virtual void ChangesMade();
+					virtual void ChangesReversed();
 
 /*   Graphics   */	POINT& display() { return displayPivot; }
 					GRID& grid(u32 gridNum) { return graphics.grid(gridNum); };
@@ -57,7 +60,7 @@ class GuiMap : public MapFile, public ClassWindow
 				
 					HWND getHandle();
 
-					void PaintMap( GuiMap* currMap, bool pasting, CLIPBOARD& clipboard );
+					void PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard);
 					void PaintMiniMap(HWND hWnd);
 					void Redraw(bool includeMiniMap);
 					void ValidateBorder(s32 screenWidth, s32 screenHeight);
@@ -123,7 +126,7 @@ class GuiMap : public MapFile, public ClassWindow
 					void ReturnKeyPress();
 
 					static CLIPBOARD* clipboard; // Get this pointing correctly...
-					//static GuiMap** currMap; // Get this pointing correctly...
+					//static GuiMapPtr currMap; // Get this pointing correctly...
 
 	private:
 
@@ -160,7 +163,6 @@ class GuiMap : public MapFile, public ClassWindow
 					HBITMAP MemBitmap;
 					HBITMAP MemMiniBitmap;
 
-					LRESULT procResult;
 					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 					LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -179,7 +181,6 @@ class GuiMap : public MapFile, public ClassWindow
 					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					LRESULT ConfirmWindowClose(HWND hWnd);
-
 };
 
 /** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string

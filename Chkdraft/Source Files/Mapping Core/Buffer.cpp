@@ -19,6 +19,32 @@ buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllott
 	bufTitle[4] = '\0';
 }
 
+buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+{
+	(u32&)bufTitle = bufferTitleVal;
+	bufTitle[4] = '\0';
+}
+
+buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+{
+	for ( int i = 0; i < 5; i++ )
+		this->bufTitle[i] = rhs.bufTitle[i];
+
+	try
+	{
+		data = new s8[rhs.sizeUsed];
+		sizeUsed = rhs.sizeUsed;
+		sizeAllotted = rhs.sizeUsed;
+		memcpy(this->data, rhs.data, rhs.sizeUsed);
+	}
+	catch ( std::exception )
+	{
+		data = nullptr;
+		sizeUsed = 0;
+		sizeAllotted = 0;
+	}
+}
+
 buffer::~buffer()
 {
 	if ( this != nullptr && data != nullptr )
@@ -37,6 +63,14 @@ const char* buffer::title()
 {
 	if ( this != nullptr )
 		return bufTitle;
+	else
+		return 0;
+}
+
+u32 buffer::titleVal()
+{
+	if ( this != nullptr )
+		return (u32&)bufTitle;
 	else
 		return 0;
 }
@@ -88,6 +122,23 @@ bool buffer::getString(char* dest, u32 location, u32 size)
 	}
 	return false;
 }
+
+/* Templates */ #endif
+				#ifdef INCLUDE_TEMPLATES_ONLY
+template <typename valueType>
+bool buffer::getArray(valueType* dest, u32 location, u32 numElements)
+{
+	if ( this != nullptr && dest != nullptr )
+	{
+		if ( location + numElements*sizeof(valueType) > location && location + numElements*sizeof(valueType) <= sizeUsed )
+		{
+			memcpy(dest, &data[location], numElements*sizeof(valueType));
+			return true;
+		}
+	}
+	return false;
+}
+/* End templates */ #else
 
 const void* buffer::getPtr(u32 location)
 {
@@ -262,13 +313,14 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
 template <typename valueType>
 bool buffer::add(valueType value)
 {
-	if ( this != nullptr && sizeUsed+sizeof(valueType) > sizeUsed )
+	if ( this != nullptr && sizeUsed + sizeof(valueType) > sizeUsed )
 	{
-		if ( sizeUsed+sizeof(valueType) > sizeAllotted )
+		if ( sizeUsed + sizeof(valueType) > sizeAllotted )
 		{
 			try {
 				resize(sizeof(valueType), true);
-			} catch ( const BadResize &e ) {
+			}
+			catch ( const BadResize &e ) {
 				CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
 				return false;
 			}
@@ -707,7 +759,7 @@ void buffer::write(FILE* pFile)
 	}
 }
 
-bool buffer::extract(buffer &buf, u32 &position)
+bool buffer::extract(buffer &buf, u32 position)
 {
 	if ( this != nullptr )
 	{
@@ -736,10 +788,35 @@ bool buffer::extract(buffer &buf, u32 &position)
 		sizeAllotted = bufSize;
 
 		addStr((const char*)&buf.data[position], bufSize);
-
-		position += bufSize;
-		
 		return true;
+	}
+	return false;
+}
+
+bool buffer::extract(buffer &src, u32 position, u32 length)
+{
+	if ( this != nullptr )
+	{
+		flush();
+		if ( length == 0 )
+			return true;
+		else if ( position + length > position && position + length <= src.sizeUsed )
+		{ // length > 0, no overflow in the position+length sum or the src buffer 
+			try
+			{
+				data = new s8[length];
+				sizeUsed = length;
+				sizeAllotted = length;
+				memcpy(data, &src.data[position], length);
+				return true;
+			}
+			catch ( std::exception )
+			{
+				data = nullptr;
+				sizeUsed = 0;
+				sizeAllotted = 0;
+			}
+		}
 	}
 	return false;
 }

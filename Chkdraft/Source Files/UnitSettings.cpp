@@ -75,7 +75,7 @@ void UnitSettingsWindow::RefreshWindow()
 		if ( isDisabled )
 			EnableUnitEditing();
 
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 
 		bool useDefaultSettings = chk->unitUsesDefaultSettings(unitId);
 		if ( useDefaultSettings )
@@ -200,12 +200,12 @@ void UnitSettingsWindow::RefreshWindow()
 
 		for ( int i=0; i<12; i++ )
 		{
-			u8 enabledState = chk->getUnitEnabledState(unitId, (u8)i);
-			if ( enabledState == UNIT_STATE_DEFAULTFORPLAYER )
+			UnitEnabledState enabledState = chk->getUnitEnabledState(unitId, (u8)i);
+			if ( enabledState == UnitEnabledState::Default )
 				dropPlayerAvailability[i].SetSel(0);
-			else if ( enabledState == UNIT_STATE_ENABLEDFORPLAYER )
+			else if ( enabledState == UnitEnabledState::Enabled )
 				dropPlayerAvailability[i].SetSel(1);
-			else if ( enabledState == UNIT_STATE_DISABLEDFORPLAYER )
+			else if ( enabledState == UnitEnabledState::Disabled )
 				dropPlayerAvailability[i].SetSel(2);
 		}
 
@@ -413,14 +413,14 @@ void UnitSettingsWindow::CheckReplaceUnitName()
 	if ( possibleUnitNameUpdate && checkUseDefaultName.isChecked() )
 		possibleUnitNameUpdate = false;
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	string newUnitName;
 	if ( possibleUnitNameUpdate && selectedUnit >= 0 && selectedUnit < 228 && editUnitName.GetEditText(newUnitName) )
 	{
 		u16* originalNameString = nullptr;
 		u16* expansionNameString = nullptr;
-		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
-		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
+		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
+		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
 		if ( ( (chk->isExpansion() && gotExp) || (!chk->isExpansion() && gotOrig) ) &&
 			 parseEscapedString(newUnitName) )
 		{
@@ -448,14 +448,14 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 	refreshing = true;
 	if ( selectedUnit >= 0 )
 	{
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		u16 unitId = (u16)selectedUnit;
 
 		// Remove Custom Unit Name
-		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
-			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
-		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
+		chk->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
 		std::string unitName;
 		chk->getUnitName(unitName, (u16)selectedUnit);
 		editUnitName.SetText(unitName.c_str());
@@ -512,15 +512,15 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 {
 	if ( selectedUnit >= 0 )
 	{
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		u16 unitId = (u16)selectedUnit;
 		u32 groundWeapon = (u32)chkd.scData.UnitDat(unitId)->GroundWeapon,
 			airWeapon	 = (u32)chkd.scData.UnitDat(unitId)->AirWeapon;
 
-		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
-			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
-		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
+		chk->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
 		chk->removeUnusedString(origName);
 		chk->removeUnusedString(expName);
 
@@ -631,8 +631,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if ( state == BST_CHECKED )
 				{
 					editUnitName.DisableThis();
-					chkd.maps.curr->UNIS().replace<u16>(2 * selectedUnit + UNIT_SETTINGS_STRING_IDS, 0);
-					chkd.maps.curr->UNIx().replace<u16>(2 * selectedUnit + UNIT_SETTINGS_STRING_IDS, 0);
+					chkd.maps.curr->UNIS().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
+					chkd.maps.curr->UNIx().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
 					std::string unitName;
 					chkd.maps.curr->getUnitName(unitName, (u16)selectedUnit);
 					editUnitName.SetText(unitName.c_str());
@@ -819,7 +819,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			HIWORD(wParam) == CBN_SELCHANGE )
 		{
 			u32 player = LOWORD(wParam) - DROP_P1UNITAVAILABILITY;
-			if ( chkd.maps.curr->setUnitEnabledState((u16)selectedUnit, (u8)player, dropPlayerAvailability[player].GetSel()) )
+			int sel = dropPlayerAvailability[player].GetSel();
+			if ( chkd.maps.curr->setUnitEnabledState((u16)selectedUnit, (u8)player, (UnitEnabledState)dropPlayerAvailability[player].GetSel()) )
 				chkd.maps.curr->notifyChange(false);
 			else
 				RefreshWindow();

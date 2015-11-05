@@ -1,40 +1,38 @@
 #include "Scenario.h"
 #include "DefaultCHK.h"
 #include "StringUsage.h"
+#include "sha256.h"
 #include <iostream>
 #include <algorithm>
 #include <unordered_map>
 using namespace std;
 
-#define FORCE_RANDOMIZE_START_LOCATION	BIT_0
-#define FORCE_ALLIED					BIT_1
-#define FORCE_ALLIED_VICTORY			BIT_2
-#define FORCE_SHARED_VISION				BIT_3
+Scenario::Scenario() : mapIsProtected(false), caching(false),
 
-section::section(char *title) : buf(title)
-{
+// Cached regular section pointers
+type(nullptr), ver(nullptr), iver(nullptr), ive2(nullptr), vcod(nullptr), iown(nullptr), ownr(nullptr), era(nullptr),
+dim(nullptr), side(nullptr), mtxm(nullptr), puni(nullptr), upgr(nullptr), ptec(nullptr), unit(nullptr), isom(nullptr),
+tile(nullptr), dd2(nullptr), thg2(nullptr), mask(nullptr), str(nullptr), uprp(nullptr), upus(nullptr), mrgn(nullptr),
+trig(nullptr), mbrf(nullptr), sprp(nullptr), forc(nullptr), wav(nullptr), unis(nullptr), upgs(nullptr), tecs(nullptr),
+swnm(nullptr), colr(nullptr), pupx(nullptr), ptex(nullptr), unix(nullptr), upgx(nullptr), tecx(nullptr),
 
-}
+// Cached extended section pointers
+kstr(nullptr)
 
-section::section(buffer& buf) : buf(buf)
-{
-	
-}
-
-Scenario::Scenario() : head(nullptr), mapIsProtected(false)
-{
+{ // ctor body
 
 }
 
 Scenario::~Scenario()
 {
-	section* next;
+	sections.clear();
+	/*section* next;
 	while ( head != nullptr )
 	{
 		next = head->next;
 		delete head;
 		head = next;
-	}
+	}*/
 }
 
 Scenario* Scenario::scenario()
@@ -62,6 +60,26 @@ u16 Scenario::numUnits()
 	return u16(UNIT().size()/UNIT_STRUCT_SIZE);
 }
 
+ChkUnit Scenario::getUnit(u16 index)
+{
+	ChkUnit* unitPtr;
+	if ( UNIT().getPtr<ChkUnit>(unitPtr, UNIT_STRUCT_SIZE*(u32)index, (u32)UNIT_STRUCT_SIZE) )
+		return *unitPtr;
+	else
+	{
+		ChkUnit blankUnit = {};
+		return blankUnit;
+	}
+}
+
+bool Scenario::insertUnit(u16 index, ChkUnit &unit)
+{
+	if ( index == numUnits() )
+		return UNIT().add<ChkUnit>(unit);
+	else
+		return UNIT().insert<ChkUnit>(UNIT_STRUCT_SIZE*(u32)index, unit);
+}
+
 bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
 {
 	return UNIT().getPtr(unitRef, index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
@@ -70,6 +88,74 @@ bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
 bool Scenario::getLocation(ChkLocation* &locRef, u16 index)
 {
 	return MRGN().getPtr(locRef, (u32(index))*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE);
+}
+
+ChkLocation Scenario::getLocation(u16 locationIndex)
+{
+	ChkLocation* locationPtr;
+	if ( MRGN().getPtr<ChkLocation>(locationPtr, CHK_LOCATION_SIZE*(u32)locationIndex, (u32)CHK_LOCATION_SIZE) )
+		return *locationPtr;
+	else
+	{
+		ChkLocation blankLocation = {};
+		return blankLocation;
+	}
+}
+
+std::string Scenario::getLocationName(u16 locationIndex)
+{
+	std::string locationName;
+	u16 locationStringIndex = 0;
+	if ( MRGN().get<u16>(locationStringIndex, 16 + CHK_LOCATION_SIZE*(u32)locationIndex) )
+	{
+		if ( locationStringIndex != 0 && getEscapedString(locationName, locationStringIndex) )
+			return locationName;
+	}
+
+	return "Location" + to_string(locationIndex);
+}
+
+bool Scenario::MoveLocation(u16 locationIndex, s32 xChange, s32 yChange)
+{
+	ChkLocation* location = nullptr;
+	if ( getLocation(location, locationIndex) )
+	{
+		location->xc1 += xChange;
+		location->xc2 += xChange;
+		location->yc1 += yChange;
+		location->yc2 += yChange;
+		return true;
+	}
+	return false;
+}
+
+u32 Scenario::GetLocationFieldData(u16 locationIndex, u8 field)
+{
+	u32 pos = CHK_LOCATION_SIZE*(u32)locationIndex + (u32)locationFieldLoc[field];
+	switch ( locationFieldSize[field] )
+	{
+		case 1: return MRGN().get<u8>(pos); break;
+		case 2: return MRGN().get<u16>(pos); break;
+		case 4: return MRGN().get<u32>(pos); break;
+	}
+	return 0;
+}
+
+bool Scenario::SetLocationFieldData(u16 locationIndex, u8 field, u32 data)
+{
+	u32 pos = CHK_LOCATION_SIZE*(u32)locationIndex + (u32)locationFieldLoc[field];
+	switch ( locationFieldSize[field] )
+	{
+		case 1: return MRGN().replace<u8>(pos, u8(data)); break;
+		case 2: return MRGN().replace<u16>(pos, u16(data)); break;
+		case 4: return MRGN().replace<u32>(pos, data); break;
+	}
+	return false;
+}
+
+bool Scenario::insertLocation(u16 index, ChkLocation &location)
+{
+	return MRGN().insert<ChkLocation>(CHK_LOCATION_SIZE*(u32)index, location);
 }
 
 u8 Scenario::numLocations()
@@ -164,10 +250,10 @@ bool Scenario::getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &rando
 		u8 forceProp;
 		if ( FORC().get<u8>(forceProp, 16+forceNum) )
 		{
-			allied = ((forceProp&FORCE_ALLIED) == FORCE_ALLIED);
-			vision = ((forceProp&FORCE_SHARED_VISION) == FORCE_SHARED_VISION);
-			random = ((forceProp&FORCE_RANDOMIZE_START_LOCATION) == FORCE_RANDOMIZE_START_LOCATION);
-			av = ((forceProp&FORCE_ALLIED_VICTORY) == FORCE_ALLIED_VICTORY);
+			allied = ((forceProp&(u8)ForceFlags::Allied) == (u8)ForceFlags::Allied);
+			vision = ((forceProp&(u8)ForceFlags::SharedVision) == (u8)ForceFlags::SharedVision);
+			random = ((forceProp&(u8)ForceFlags::RandomizeStartLocation) == (u8)ForceFlags::RandomizeStartLocation);
+			av	   = ((forceProp&(u8)ForceFlags::AlliedVictory) == (u8)ForceFlags::AlliedVictory);
 			return true;
 		}
 	}
@@ -185,9 +271,9 @@ bool Scenario::getPlayerForce(u8 playerNum, u8 &force)
 bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
 {
 	if ( isExpansion() )
-		return UNIx().get<u16>(stringNum, unitId*2+UNIT_SETTINGS_STRING_IDS);
+		return UNIx().get<u16>(stringNum, unitId*2+(u32)UnitSettingsDataLoc::StringIds);
 	else
-		return UNIS().get<u16>(stringNum, unitId*2+UNIT_SETTINGS_STRING_IDS);
+		return UNIS().get<u16>(stringNum, unitId*2+(u32)UnitSettingsDataLoc::StringIds);
 }
 
 u16 Scenario::numStrings()
@@ -314,9 +400,9 @@ void Scenario::getUnitName(string &dest, u16 unitID)
 	if ( unitID < 228 ) // Regular unit
 	{
 		if ( settings.get<u8>(unitID) == 0 && // Not default unit settings
-			 settings.get<u16>(UNIT_SETTINGS_STRING_IDS+unitID*2) > 0 ) // Not default string
+			 settings.get<u16>(unitID*2+(u32)UnitSettingsDataLoc::StringIds) > 0 ) // Not default string
 		{
-			u16 stringID = settings.get<u16>(UNIT_SETTINGS_STRING_IDS+2*unitID);
+			u16 stringID = settings.get<u16>(2*unitID+(u32)UnitSettingsDataLoc::StringIds);
 			if ( !getString(dest, stringID) ) // Try to retrieve string name
 				dest = DefaultUnitDisplayName[unitID]; // Couldn't retrieve name, return default
 		}
@@ -329,6 +415,35 @@ void Scenario::getUnitName(string &dest, u16 unitID)
 		sprintf_s(unitName, 16, "Unit #%u", unitID);
 		dest = unitName;
 	}
+}
+
+bool Scenario::deleteUnit(u16 index)
+{
+	return UNIT().del(index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
+}
+
+u32 Scenario::GetUnitFieldData(u16 unitIndex, u8 field)
+{
+	u32 pos = UNIT_STRUCT_SIZE*(u32)unitIndex + (u32)unitFieldLoc[field];
+	switch ( unitFieldSize[field] )
+	{
+		case 1: return (u32)UNIT().get<u8>(pos); break;
+		case 2: return (u32)UNIT().get<u16>(pos); break;
+		case 4: return UNIT().get<u32>(pos); break;
+	}
+	return 0;
+}
+
+bool Scenario::SetUnitFieldData(u16 unitIndex, u8 field, u32 data)
+{
+	u32 pos = UNIT_STRUCT_SIZE*(u32)unitIndex + (u32)unitFieldLoc[field];
+	switch ( unitFieldSize[field] )
+	{
+		case 1: return UNIT().replace<u8>(pos, (u8)data); break;
+		case 2: return UNIT().replace<u16>(pos, (u16)data); break;
+		case 4: return UNIT().replace<u32>(pos, data); break;
+	}
+	return false;
 }
 
 bool Scenario::stringIsUsed(u32 stringNum)
@@ -403,7 +518,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 	buffer& UNIS = this->UNIS();
 	for ( int i=0; i<228; i++ )
 	{
-		if ( UNIS.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == stringNum )
+		if ( UNIS.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == stringNum )
 			return true;
 	}
 
@@ -419,7 +534,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 	buffer& UNIx = this->UNIx();
 	for ( int i=0; i<228; i++ )
 	{
-		if ( UNIx.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == stringNum )
+		if ( UNIx.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == stringNum )
 			return true;
 	}
 
@@ -444,13 +559,13 @@ bool Scenario::stringExists(u32 stringNum)
 bool Scenario::stringExists(string str, u32& stringNum)
 {
 	std::vector<StringTableNode> strList;
-	addAllUsedStrings(strList, STRADD_INCLUDE_ALL);
+	addAllUsedStrings(strList, true, true);
 
-	for ( auto it = strList.begin(); it != strList.end(); it ++ )
+	for ( auto &existingString : strList )
 	{
-		if ( it->string.compare(str) == 0 )
+		if ( existingString.string.compare(str) == 0 )
 		{
-			stringNum = it->stringNum;
+			stringNum = existingString.stringNum;
 			return true;
 		}
 	}
@@ -462,15 +577,15 @@ bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 {
 	std::vector<StringTableNode> strList;
 	if ( extended )
-		addAllUsedStrings(strList, STRADD_INCLUDE_EXTENDED);
+		addAllUsedStrings(strList, false, true);
 	else
-		addAllUsedStrings(strList, STRADD_INCLUDE_STANDARD);
+		addAllUsedStrings(strList, true, false);
 
-	for ( auto it = strList.begin(); it != strList.end(); it ++ )
+	for ( auto &existingString : strList )
 	{
-		if ( it->string.compare(str) == 0 )
+		if ( existingString.string.compare(str) == 0 )
 		{
-			stringNum = it->stringNum;
+			stringNum = existingString.stringNum;
 			return true;
 		}
 	}
@@ -480,11 +595,11 @@ bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 
 bool Scenario::stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList)
 {
-	for ( auto it = strList.begin(); it != strList.end(); it ++ )
+	for ( auto &existingString : strList )
 	{
-		if ( it->string.compare(str) == 0 )
+		if ( existingString.string.compare(str) == 0 )
 		{
-			stringNum = it->stringNum;
+			stringNum = existingString.stringNum;
 			return true;
 		}
 	}
@@ -518,9 +633,11 @@ bool Scenario::stringUsedWithLocs(u32 stringNum)
 	return true;
 }
 
-#define IncrementIfEqual(index, counter) \
-	if ( ((u32)index) == stringNum )	 \
-		counter ++;
+void Scenario::IncrementIfEqual(u32 lhs, u32 rhs, u32 &counter)
+{
+	if ( lhs == rhs )
+		++counter;
+}
 
 u32 Scenario::amountStringUsed(u32 stringNum)
 {
@@ -529,7 +646,7 @@ u32 Scenario::amountStringUsed(u32 stringNum)
 	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
 	{
 		if ( getLocation(loc, u8(i)) )
-			IncrementIfEqual(loc->stringNum, amountStringUsed);
+			IncrementIfEqual(loc->stringNum, stringNum, amountStringUsed);
 	}
 	Trigger* trig; // TRIG - trigger strings
 	int trigNum = 0;
@@ -538,8 +655,8 @@ u32 Scenario::amountStringUsed(u32 stringNum)
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
-			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
-			IncrementIfEqual(trig->actions[i].wavID, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].stringNum, stringNum, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].wavID, stringNum, amountStringUsed);
 		}
 	}
 	trigNum = 0; // MBRF - briefing strings
@@ -548,25 +665,25 @@ u32 Scenario::amountStringUsed(u32 stringNum)
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
-			IncrementIfEqual(trig->actions[i].stringNum, amountStringUsed);
-			IncrementIfEqual(trig->actions[i].wavID, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].stringNum, stringNum, amountStringUsed);
+			IncrementIfEqual(trig->actions[i].wavID, stringNum, amountStringUsed);
 		}
 	}
 	// SPRP - scenario property strings
 	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
-	IncrementIfEqual(strIndex, amountStringUsed);
+	IncrementIfEqual(strIndex, stringNum, amountStringUsed);
 	strIndex = SPRP().get<u16>(2); // Scenario Description
-	IncrementIfEqual(strIndex, amountStringUsed);
+	IncrementIfEqual(strIndex, stringNum, amountStringUsed);
 	for ( int i=0; i<4; i++ ) // FORC - force strings
-		IncrementIfEqual(getForceStringNum(i), amountStringUsed);
+		IncrementIfEqual(getForceStringNum(i), stringNum, amountStringUsed);
 	for ( u32 i=0; i<WAV().size()/4; i++ ) // WAV  - sound strings
-		IncrementIfEqual(WAV().get<u32>(i*4), amountStringUsed);
+		IncrementIfEqual(WAV().get<u32>(i*4), stringNum, amountStringUsed);
 	for ( int i=0; i<228; i++ ) // UNIS - unit settings strings (vanilla)
-		IncrementIfEqual(UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), amountStringUsed);
+		IncrementIfEqual(UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds), stringNum, amountStringUsed);
 	for ( int i=0; i<256; i++ ) // SWNM - switch strings
-		IncrementIfEqual(SWNM().get<u32>(i*4), amountStringUsed);
+		IncrementIfEqual(SWNM().get<u32>(i*4), stringNum, amountStringUsed);
 	for ( int i=0; i<228; i++ ) // UNIx - unit settings strings (brood war)
-		IncrementIfEqual(UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), amountStringUsed);
+		IncrementIfEqual(UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds), stringNum, amountStringUsed);
 
 	return amountStringUsed;
 }
@@ -578,7 +695,7 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 	for ( u32 i=0; i<MRGN().size()/CHK_LOCATION_SIZE; i++ )
 	{
 		if ( getLocation(loc, u8(i)) )
-			IncrementIfEqual(loc->stringNum, locs);
+			IncrementIfEqual(loc->stringNum, stringNum, locs);
 	}
 	Trigger* trig; // TRIG - trigger strings
 	int trigNum = 0;
@@ -587,8 +704,8 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
-			IncrementIfEqual(trig->actions[i].stringNum, trigs);
-			IncrementIfEqual(trig->actions[i].wavID, trigs);
+			IncrementIfEqual(trig->actions[i].stringNum, stringNum, trigs);
+			IncrementIfEqual(trig->actions[i].wavID, stringNum, trigs);
 		}
 	}
 	trigNum = 0; // MBRF - briefing strings
@@ -597,25 +714,25 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 		trigNum ++;
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
-			IncrementIfEqual(trig->actions[i].stringNum, briefs);
-			IncrementIfEqual(trig->actions[i].wavID, briefs);
+			IncrementIfEqual(trig->actions[i].stringNum, stringNum, briefs);
+			IncrementIfEqual(trig->actions[i].wavID, stringNum, briefs);
 		}
 	}
 	// SPRP - scenario property strings
 	u16 strIndex = SPRP().get<u16>(0); // Scenario Name
-	IncrementIfEqual(strIndex, props);
+	IncrementIfEqual(strIndex, stringNum, props);
 	strIndex = SPRP().get<u16>(2); // Scenario Description
-	IncrementIfEqual(strIndex, props);
+	IncrementIfEqual(strIndex, stringNum, props);
 	for ( int i=0; i<4; i++ ) // FORC - force strings
-		IncrementIfEqual(getForceStringNum(i), forces);
+		IncrementIfEqual(getForceStringNum(i), stringNum, forces);
 	for ( u32 i=0; i<WAV().size()/4; i++ ) // WAV  - sound strings
-		IncrementIfEqual(WAV().get<u32>(i*4), wavs);
+		IncrementIfEqual(WAV().get<u32>(i*4), stringNum, wavs);
 	for ( int i=0; i<228; i++ ) // UNIS - unit settings strings (vanilla)
-		IncrementIfEqual(UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), units);
+		IncrementIfEqual(UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds), stringNum, units);
 	for ( int i=0; i<256; i++ ) // SWNM - switch strings
-		IncrementIfEqual(SWNM().get<u32>(i*4), switches);
+		IncrementIfEqual(SWNM().get<u32>(i*4), stringNum, switches);
 	for ( int i=0; i<228; i++ ) // UNIx - unit settings strings (brood war)
-		IncrementIfEqual(UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2), units);
+		IncrementIfEqual(UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds), stringNum, units);
 }
 
 bool Scenario::isExpansion()
@@ -739,26 +856,26 @@ bool Scenario::unitUsesDefaultSettings(u16 unitId)
 
 bool Scenario::unitIsEnabled(u16 unitId)
 {
-	return PUNI().get<u8>(PTEC_GLOBAL_AVAILABILITY+unitId) != 0;
+	return PUNI().get<u8>(unitId+(u32)PlayerUnitSettingsDataLoc::GlobalAvailability) != 0;
 }
 
-u8 Scenario::getUnitEnabledState(u16 unitId, u8 player)
+UnitEnabledState Scenario::getUnitEnabledState(u16 unitId, u8 player)
 {
-	if ( PUNI().get<u8>(PTEC_PLAYERUSESDEFAULT+unitId+player*228) == 0 ) // Override
+	if ( PUNI().get<u8>(unitId+player*228+(u32)PlayerUnitSettingsDataLoc::PlayerUsesDefault) == 0 ) // Override
 	{
 		if ( PUNI().get<u8>((u32)unitId+228*(u32)player) == 0 )
-			return UNIT_STATE_DISABLEDFORPLAYER;
+			return UnitEnabledState::Disabled;
 		else
-			return UNIT_STATE_ENABLEDFORPLAYER;
+			return UnitEnabledState::Enabled;
 	}
 	else
-		return UNIT_STATE_DEFAULTFORPLAYER;
+		return UnitEnabledState::Default;
 }
 
 bool Scenario::getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints)
 {
 	u32 untrimmedHitpoints;
-	if ( unitSettings().get<u32>(untrimmedHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	if ( unitSettings().get<u32>(untrimmedHitpoints, 4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints) )
 	{
 		hitpoints = untrimmedHitpoints/256;
 		return true;
@@ -770,7 +887,7 @@ bool Scenario::getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints)
 bool Scenario::getUnitSettingsHitpointByte(u16 unitId, u8 &hitpointByte)
 {
 	u32 untrimmedHitpoints;
-	if ( unitSettings().get<u32>(untrimmedHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	if ( unitSettings().get<u32>(untrimmedHitpoints, 4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints) )
 	{
 		hitpointByte = untrimmedHitpoints%256;
 		return true;
@@ -781,37 +898,37 @@ bool Scenario::getUnitSettingsHitpointByte(u16 unitId, u8 &hitpointByte)
 
 bool Scenario::getUnitSettingsShieldPoints(u16 unitId, u16 &shieldPoints)
 {
-	return unitSettings().get<u16>(shieldPoints, UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId);
+	return unitSettings().get<u16>(shieldPoints, 2*(u32)unitId + (u32)UnitSettingsDataLoc::ShieldPoints);
 }
 
 bool Scenario::getUnitSettingsArmor(u16 unitId, u8 &armor)
 {
-	return unitSettings().get<u8>(armor, UNIT_SETTINGS_ARMOR+(u32)unitId);
+	return unitSettings().get<u8>(armor, (u32)unitId+(u32)UnitSettingsDataLoc::Armor);
 }
 
 bool Scenario::getUnitSettingsBuildTime(u16 unitId, u16 &buildTime)
 {
-	return unitSettings().get<u16>(buildTime, UNIT_SETTINGS_BUILDTIME+2*(u32)unitId);
+	return unitSettings().get<u16>(buildTime, 2*(u32)unitId+(u32)UnitSettingsDataLoc::BuildTime);
 }
 
 bool Scenario::getUnitSettingsMineralCost(u16 unitId, u16 &mineralCost)
 {
-	return unitSettings().get<u16>(mineralCost, UNIT_SETTINGS_MINERALCOST+2*(u32)unitId);
+	return unitSettings().get<u16>(mineralCost, 2*(u32)unitId+(u32)UnitSettingsDataLoc::MineralCost);
 }
 
 bool Scenario::getUnitSettingsGasCost(u16 unitId, u16 &gasCost)
 {
-	return unitSettings().get<u16>(gasCost, UNIT_SETTINGS_GASCOST+2*(u32)unitId);
+	return unitSettings().get<u16>(gasCost, 2*(u32)unitId+(u32)UnitSettingsDataLoc::GasCost);
 }
 
 bool Scenario::getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage)
 {
-	return unitSettings().get<u16>(baseDamage, UNIT_SETTINGS_BASEWEAPON+2*weaponId);
+	return unitSettings().get<u16>(baseDamage, 2*weaponId+(u32)UnitSettingsDataLoc::BaseWeapon);
 }
 
 bool Scenario::getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage)
 {
-	return unitSettings().get<u16>(bonusDamage, UNIT_SETTINGS_BONUSWEAPON(isExpansion())+2*weaponId);
+	return unitSettings().get<u16>(bonusDamage, UnitSettingsDataLocBonusWeapon(isExpansion())+2*weaponId);
 }
 
 bool Scenario::upgradeUsesDefaultCosts(u8 upgradeId)
@@ -822,62 +939,62 @@ bool Scenario::upgradeUsesDefaultCosts(u8 upgradeId)
 bool Scenario::getUpgradeMineralCost(u8 upgradeId, u16 &mineralCost)
 {
 	return upgradeSettings().get<u16>(mineralCost,
-		UPGRADE_SETTINGS_MINERALCOST(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocMineralCost(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeMineralFactor(u8 upgradeId, u16 &mineralFactor)
 {
 	return upgradeSettings().get<u16>(mineralFactor,
-		UPGRADE_SETTINGS_MINERALFACTOR(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocMineralFactor(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeGasCost(u8 upgradeId, u16 &gasCost)
 {
 	return upgradeSettings().get<u16>(gasCost,
-		UPGRADE_SETTINGS_GASCOST(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocGasCost(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeGasFactor(u8 upgradeId, u16 &gasFactor)
 {
 	return upgradeSettings().get<u16>(gasFactor,
-		UPGRADE_SETTINGS_GASFACTOR(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocGasFactor(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeTimeCost(u8 upgradeId, u16 &timeCost)
 {
 	return upgradeSettings().get<u16>(timeCost,
-		UPGRADE_SETTINGS_TIMECOST(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocTimeCost(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeTimeFactor(u8 upgradeId, u16 &timeFactor)
 {
 	return upgradeSettings().get<u16>(timeFactor,
-		UPGRADE_SETTINGS_TIMEFACTOR(isExpansion())+2*(u32)upgradeId);
+		UpgradeSettingsDataLocTimeFactor(isExpansion())+2*(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeDefaultStartLevel(u8 upgradeId, u8 &startLevel)
 {
-	return upgradeRestrictions().get<u8>(startLevel, UPGRADE_DEFAULTSTARTLEVEL(isExpansion())+(u32)upgradeId);
+	return upgradeRestrictions().get<u8>(startLevel, UpgradeSettingsDataLocDefaultStartLevel(isExpansion())+(u32)upgradeId);
 }
 
 bool Scenario::getUpgradeDefaultMaxLevel(u8 upgradeId, u8 &maxLevel)
 {
-	return upgradeRestrictions().get<u8>(maxLevel, UPGRADE_DEFAULTMAXLEVEL(isExpansion())+(u32)upgradeId);
+	return upgradeRestrictions().get<u8>(maxLevel, UpgradeSettingsDataLocDefaultMaxLevel(isExpansion())+(u32)upgradeId);
 }
 
 bool Scenario::playerUsesDefaultUpgradeLevels(u8 upgradeId, u8 player)
 {
-	return upgradeRestrictions().get<u8>(UPGRADE_PLAYERUSESDEFAULT(isExpansion(), player)+(u32)upgradeId) == 1;
+	return upgradeRestrictions().get<u8>(UpgradeSettingsDataLocPlayerUsesDefault(isExpansion(), player)+(u32)upgradeId) == 1;
 }
 
 bool Scenario::getUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 &startLevel)
 {
-	return upgradeRestrictions().get<u8>(startLevel, UPGRADE_PLAYERSTARTLEVEL(isExpansion(), player)+(u32)upgradeId);
+	return upgradeRestrictions().get<u8>(startLevel, UpgradeSettingsDataLocPlayerStartLevel(isExpansion(), player)+(u32)upgradeId);
 }
 
 bool Scenario::getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel)
 {
-	return upgradeRestrictions().get<u8>(maxLevel, UPGRADE_PLAYERMAXLEVEL(isExpansion(), player)+(u32)upgradeId);
+	return upgradeRestrictions().get<u8>(maxLevel, UpgradeSettingsDataLocPlayerMaxLevel(isExpansion(), player)+(u32)upgradeId);
 }
 
 bool Scenario::techUsesDefaultCosts(u8 techId)
@@ -887,52 +1004,63 @@ bool Scenario::techUsesDefaultCosts(u8 techId)
 
 bool Scenario::getTechMineralCost(u8 techId, u16 &mineralCost)
 {
-	return techSettings().get<u16>(mineralCost, TECH_COST_MINERALS(isExpansion())+2*(u32)techId);
+	return techSettings().get<u16>(mineralCost, TechSettingsDataLocMineralCost(isExpansion())+2*(u32)techId);
 }
 
 bool Scenario::getTechGasCost(u8 techId, u16 &gasCost)
 {
-	return techSettings().get<u16>(gasCost, TECH_COST_GAS(isExpansion())+2*(u32)techId);
+	return techSettings().get<u16>(gasCost, TechSettingsDataLocGasCost(isExpansion())+2*(u32)techId);
 }
 
 bool Scenario::getTechTimeCost(u8 techId, u16 &timeCost)
 {
-	return techSettings().get<u16>(timeCost, TECH_COST_TIME(isExpansion())+2*(u32)techId);
+	return techSettings().get<u16>(timeCost, TechSettingsDataLocTimeCost(isExpansion())+2*(u32)techId);
 }
 
 bool Scenario::getTechEnergyCost(u8 techId, u16 &energyCost)
 {
-	return techSettings().get<u16>(energyCost, TECH_COST_ENERGY(isExpansion())+2*(u32)techId);
+	return techSettings().get<u16>(energyCost, TechSettingsDataLocEnergyCost(isExpansion())+2*(u32)techId);
 }
 
 bool Scenario::techAvailableForPlayer(u8 techId, u8 player)
 {
-	return techRestrictions().get<u8>(TECH_AVAILABLEFORPLAYER(isExpansion(), player)+(u32)techId) == 1;
+	return techRestrictions().get<u8>(PlayerTechSettingsDataLocAvailableForPlayer(isExpansion(), player)+(u32)techId) == 1;
 }
 
 bool Scenario::techResearchedForPlayer(u8 techId, u8 player)
 {
-	return techRestrictions().get<u8>(TECH_RESERACHEDFORPLAYER(isExpansion(), player)+(u32)techId) == 1;
+	return techRestrictions().get<u8>(PlayerTechSettingsDataLocResearchedForPlayer(isExpansion(), player)+(u32)techId) == 1;
 }
 
 bool Scenario::techAvailableByDefault(u8 techId)
 {
-	return techRestrictions().get<u8>(TECH_DEFAULTAVAILABILITY(isExpansion())+(u32)techId) == 1;
+	return techRestrictions().get<u8>(PlayerTechSettingsDataLocDefaultAvailability(isExpansion())+(u32)techId) == 1;
 }
 
 bool Scenario::techResearchedByDefault(u8 techId)
 {
-	return techRestrictions().get<u8>(TECH_DEFAULTRESERACHED(isExpansion())+(u32)techId) == 1;
+	return techRestrictions().get<u8>(PlayerTechSettingsDataLocDefaultReserached(isExpansion())+(u32)techId) == 1;
 }
 
 bool Scenario::playerUsesDefaultTechSettings(u8 techId, u8 player)
 {
-	return techRestrictions().get<u8>(TECH_PLAYERUSESDEFAULT(isExpansion(), player)+(u32)techId) == 1;
+	return techRestrictions().get<u8>(PlayerTechSettingsDataLocPlayerUsesDefault(isExpansion(), player)+(u32)techId) == 1;
 }
 
 bool Scenario::setTileset(u16 newTileset)
 {
 	return ERA().replace<u16>(0, newTileset);
+}
+
+u16 Scenario::getTile(u16 xc, u16 yc)
+{
+	return MTXM().get<u16>(2 * (u32)XSize() * (u32)yc + 2 * (u32)xc);
+}
+
+bool Scenario::setTile(u16 xc, u16 yc, u16 value)
+{
+	TILE().replace<u16>(2 * (u32)XSize() * (u32)yc + 2 * (u32)xc, value);
+	return MTXM().replace<u16>(2 * (u32)XSize() * (u32)yc + 2 * (u32)xc, value);
 }
 
 bool Scenario::setDimensions(u16 newWidth, u16 newHeight)
@@ -1160,8 +1288,8 @@ void Scenario::forceDeleteString(u32 stringNum)
 	buffer& UNIS = this->UNIS();
 	for ( int i=0; i<228; i++ )
 	{
-		if ( UNIS.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == stringNum )
-			UNIS.replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, 0);
+		if ( UNIS.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == stringNum )
+			UNIS.replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, 0);
 	}
 
 	// SWNM - switch strings
@@ -1176,8 +1304,8 @@ void Scenario::forceDeleteString(u32 stringNum)
 	buffer& UNIx = this->UNIx();
 	for ( int i=0; i<228; i++ )
 	{
-		if ( UNIx.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == stringNum )
-			UNIx.replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, 0);
+		if ( UNIx.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == stringNum )
+			UNIx.replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, 0);
 	}
 
 	if ( !cleanStringTable(isExtendedString(stringNum)) ) // Scrub string clean from table
@@ -1382,8 +1510,7 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 	else
 	{
 		std::vector<StringTableNode> strList;
-		u32 flags = extended ? STRADD_INCLUDE_EXTENDED : STRADD_INCLUDE_STANDARD;
-		bool populatedList = addAllUsedStrings(strList, flags);
+		bool populatedList = addAllUsedStrings(strList, !extended, extended);
 
 		if ( populatedList && stringExists(newString, newStringNum, strList) )
 		{
@@ -1439,9 +1566,9 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 				else if ( didBackupSection ) // String addition failed, load backup
 				{
 					if ( extended )
-						stringSectionBackup.setTitle(HEADER_KSTR);
+						stringSectionBackup.setTitle((u32)SectionId::KSTR);
 					else
-						stringSectionBackup.setTitle(HEADER_STR);
+						stringSectionBackup.setTitle((u32)SectionId::STR);
 
 					strings->takeAllData(stringSectionBackup);
 				}
@@ -1468,8 +1595,7 @@ bool Scenario::editString(string newString, numType stringNum, bool extended, bo
 		testEqual.clear();
 
 	std::vector<StringTableNode> strList;
-	u32 flags = extended ? STRADD_INCLUDE_EXTENDED : STRADD_INCLUDE_STANDARD;
-	bool populatedList = addAllUsedStrings(strList, flags);
+	bool populatedList = addAllUsedStrings(strList, !extended, extended);
 
 	u32 newStringNum = 0;
 	if ( populatedList && stringExists(newString, newStringNum, strList) )
@@ -1481,11 +1607,11 @@ bool Scenario::editString(string newString, numType stringNum, bool extended, bo
 	{
 		if ( populatedList )
 		{
-			for ( auto it = strList.begin(); it != strList.end(); it ++ )
+			for ( auto &existingString : strList )
 			{
-				if ( it->stringNum == stringNum )
+				if ( existingString.stringNum == stringNum )
 				{
-					it->string = newString; // Replace the old string with the new string
+					existingString.string = newString; // Replace the old string with the new string
 					return rebuildStringTable(strList, extended); // Attempt rebuilding string table
 				}
 			}
@@ -1556,10 +1682,10 @@ void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 
 	for ( int i=0; i<228; i++ )
 	{
-		if ( UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == toReplace )
-			UNIS().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, (u16)replacement);
-		if ( UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == toReplace )
-			UNIx().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, (u16)replacement);
+		if ( UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == toReplace )
+			UNIS().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, (u16)replacement);
+		if ( UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == toReplace )
+			UNIx().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, (u16)replacement);
 	}
 
 	for ( int i=0; i<256; i++ )
@@ -1578,13 +1704,10 @@ bool Scenario::cleanStringTable(bool extendedTable)
 {
 	std::vector<StringTableNode> strList;
 
-	u32 flags = 0;
 	if ( extendedTable )
-		flags = STRADD_INCLUDE_EXTENDED;
+		return addAllUsedStrings(strList, false, true) && rebuildStringTable(strList, extendedTable);
 	else
-		flags = STRADD_INCLUDE_STANDARD;
-
-	return addAllUsedStrings(strList, flags) && rebuildStringTable(strList, extendedTable);
+		return addAllUsedStrings(strList, true, false) && rebuildStringTable(strList, extendedTable);
 }
 
 bool Scenario::cleanStringTable(bool extendedTable, std::vector<StringTableNode> &strList)
@@ -1596,7 +1719,7 @@ bool Scenario::removeDuplicateStrings()
 {
 	std::vector<StringTableNode> strList;
 
-	if ( addAllUsedStrings(strList, STRADD_INCLUDE_ALL) )
+	if ( addAllUsedStrings(strList, true, true) )
 	{
 		for ( auto it = strList.begin(); it != strList.end(); it ++ ) // Do all but the last string as it's covered by the rest
 		{
@@ -1632,14 +1755,9 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 	removeDuplicateStrings();
 
 	std::vector<StringTableNode> strList;
-	u32 flags = 0;
-	if ( extendedTable )
-		flags = STRADD_INCLUDE_EXTENDED;
-	else
-		flags = STRADD_INCLUDE_STANDARD;
 
 	StringUsageTable strUsage;
-	if ( strUsage.populateTable(this, extendedTable) && addAllUsedStrings(strList, flags) )
+	if ( strUsage.populateTable(this, extendedTable) && addAllUsedStrings(strList, !extendedTable, extendedTable) )
 	{
 		u32 firstEmpty, lastFragmented;
 		while ( strUsage.popFragmentedString(firstEmpty, lastFragmented) )
@@ -1704,8 +1822,8 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 				buffer &unitSettings = this->unitSettings();
 				for ( int i=0; i<228; i++ )
 				{
-					if ( unitSettings.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) == lastFragmented )
-						unitSettings.replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, (u16)firstEmpty);
+					if ( unitSettings.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) == lastFragmented )
+						unitSettings.replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, (u16)firstEmpty);
 				}
 
 				for ( int i=0; i<256; i++ )
@@ -1725,7 +1843,7 @@ bool Scenario::compressStringTable(bool extendedTable, bool recycleSubStrings)
 		}
 
 		std::vector<StringTableNode> newStrList;
-		return addAllUsedStrings(newStrList, flags) && rebuildStringTable(newStrList, extendedTable);
+		return addAllUsedStrings(newStrList, !extendedTable, extendedTable) && rebuildStringTable(newStrList, extendedTable);
 	}
 
 	return false;
@@ -1860,28 +1978,28 @@ bool Scenario::repairStringTable(bool extendedTable)
 	{
 		for ( int i=0; i<228; i++ )
 		{
-			stringNum = UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2);
+			stringNum = UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds);
 			if ( stringNum != 0 && RepairString(stringNum, false) )
-				UNIx().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, (u16)stringNum);
+				UNIx().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, (u16)stringNum);
 		}
 		for ( int i=0; i<228; i++ )
 		{
-			stringNum = UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2);
-			UNIS().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2));
+			stringNum = UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds);
+			UNIS().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds));
 		}
 	}
 	else
 	{
 		for ( int i=0; i<228; i++ )
 		{
-			stringNum = UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2);
+			stringNum = UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds);
 			if ( stringNum != 0 && RepairString(stringNum, false) )
-				UNIS().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, (u16)stringNum);
+				UNIS().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, (u16)stringNum);
 		}
 		for ( int i=0; i<228; i++ )
 		{
-			stringNum = UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2);
-			UNIx().replace<u16>(UNIT_SETTINGS_STRING_IDS+i*2, UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2));
+			stringNum = UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds);
+			UNIx().replace<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds, UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds));
 		}
 	}
 
@@ -1895,7 +2013,7 @@ bool Scenario::repairStringTable(bool extendedTable)
 	return compressStringTable(extendedTable, false);
 }
 
-bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, u32 flags)
+bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended)
 {
 	std::hash<std::string> strHash;
 	std::unordered_multimap<u32, StringTableNode> stringSearchTable;
@@ -1909,8 +2027,8 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, u32 flag
 	#define AddStrIfOverZero(index)																		\
 		if ( index > 0 &&																				\
 			 (																							\
-			   ( (flags&STRADD_INCLUDE_STANDARD) > 0 && (u32(index)) <= standardNumStrings ) ||			\
-			   ( (flags&STRADD_INCLUDE_EXTENDED) > 0 && (u32(65536-index)) <= extendedNumStrings )		\
+			   ( includeStandard && (u32(index)) <= standardNumStrings ) ||								\
+			   ( includeExtended && (u32(65536-index)) <= extendedNumStrings )							\
 			 )																							\
 		   )																							\
 		{																								\
@@ -1970,8 +2088,8 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, u32 flag
 		buffer &unitSettings = this->unitSettings();
 		for ( int i=0; i<228; i++ )
 		{
-			AddStrIfOverZero( UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
-			AddStrIfOverZero( UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+			AddStrIfOverZero( UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
+			AddStrIfOverZero( UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
 		}
 
 		for ( int i=0; i<256; i++ )
@@ -1990,10 +2108,10 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 {
 	if ( extendedTable )
 	{
-		for ( auto it = strList.begin(); it != strList.end(); it ++ )
+		for ( auto &str : strList )
 		{
-			if ( it->stringNum >= numStrings() )
-				it->stringNum = 65536 - it->stringNum;
+			if ( str.stringNum >= numStrings() )
+				str.stringNum = 65536 - str.stringNum;
 		}
 	}
 
@@ -2023,14 +2141,14 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	u32 strPortionOffset = 0;
 	if ( extendedTable )
 	{
-		newStrSection->setTitle(HEADER_KSTR);
+		newStrSection->setTitle((u32)SectionId::KSTR);
 		if ( !( newStrSection->add<u32>(2) && newStrSection->add<u32>(numStrs) ) )
 			return false; // Out of memory
 		strPortionOffset = 8 + 8*numStrs;
 	}
 	else
 	{
-		newStrSection->setTitle(HEADER_STR);
+		newStrSection->setTitle((u32)SectionId::STR);
 		if ( !newStrSection->add<u16>(u16(numStrs)) )
 			return false; // Out of memory
 		strPortionOffset = 2 + 2*numStrs;
@@ -2050,9 +2168,9 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	// Add the string offsets while you build the string portion of the table
 	u32 strIndex = 1;
 
-	for ( auto it = strList.begin(); it != strList.end(); it ++ )
+	for ( auto &str : strList )
 	{
-		while ( strIndex < it->stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
+		while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
 		{
 			if ( ( extendedTable && newStrSection->add<u32>(strPortionOffset) ) ||		// Add string offset (extended)
 				 ( !extendedTable && newStrSection->add<u16>(u16(strPortionOffset)) ) // Add string offset (regular)
@@ -2073,7 +2191,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 		if ( (
 			   ( extendedTable && newStrSection->add<u32>(strPortion.size()+strPortionOffset) ) || // Add string offset (extedned)
 			   ( !extendedTable && newStrSection->add<u16>(u16(strPortion.size()+strPortionOffset)) ) // Add string offset (regular)
-			 ) && strPortion.addStr(it->string.c_str(), it->string.size()+1) // Add the string + its NUL char
+			 ) && strPortion.addStr(str.string.c_str(), str.string.size()+1) // Add the string + its NUL char
 		   )
 		{
 			strIndex ++;
@@ -2100,10 +2218,10 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 		if ( !newStrSection->add<u32>(0, numStrs) ) // Add space for prop stuct
 			return false;
 
-		for ( auto it = strList.begin(); it != strList.end(); it ++ ) // Fill in prop struct if it's used
+		for ( auto &str : strList ) // Fill in prop struct if it's used
 		{
-			if ( it->propStruct != 0 )
-				newStrSection->replace<u32>(4+4*numStrs+4*it->stringNum, it->propStruct);
+			if ( str.propStruct != 0 )
+				newStrSection->replace<u32>(4+4*numStrs+4*str.stringNum, str.propStruct);
 		}
 
 		if ( KSTR().exists() )
@@ -2144,31 +2262,28 @@ void Scenario::correctMTXM()
 	{
 		didCorrection = false;
 
-		section* lastInstance = nullptr,
-			   * curr		  = head   ;
+		buffer* lastInstance = nullptr;
 
-		while ( curr != nullptr ) // Cycle through all sections
+		for ( auto &section : sections ) // Cycle through all sections
 		{
-			u32 currID = (u32 &)curr->buf.title()[0]; // First four characters can also be considered a representative integer
+			u32 currID = (u32 &)section.title()[0]; // First four characters can also be considered a representative integer
 
-			if ( currID == HEADER_MTXM )
+			if ( currID == (u32)SectionId::MTXM )
 			{
-				if ( lastInstance != nullptr && lastInstance->buf.size() == XSize()*YSize()*2 && curr->buf.size() != XSize()*YSize()*2 )
+				if ( lastInstance != nullptr && lastInstance->size() == XSize()*YSize()*2 && section.size() != XSize()*YSize()*2 )
 					// A second MTXM section was found
 					// The second MTXM section is not long enough to hold all the tiles, but the first is
 					// However, starcraft will still read in all the tiles it can from this section first
 					// Correct by merging the second section into the first section, then deleting the second section
 				{
-					buffer& srcBuf = curr->buf;
-					char* data = (char*)srcBuf.getPtr(0);
-					lastInstance->buf.replaceStr(0, data, srcBuf.size());
-					RemoveSection(&srcBuf);
+					char* data = (char*)section.getPtr(0);
+					lastInstance->replaceStr(0, data, section.size());
+					RemoveSection(&section);
 					didCorrection = true;
 					break; // curr section was removed, must break out of this loop
 				}
-				lastInstance = curr;
+				lastInstance = &section;
 			}
-			curr = curr->next;
 		}
 	} while ( didCorrection );
 }
@@ -2245,30 +2360,30 @@ bool Scenario::setUnitUseDefaults(u16 unitID, bool useDefaults)
 bool Scenario::setUnitEnabled(u16 unitId, bool enabled)
 {
 	if ( enabled )
-		return PUNI().replace<u8>(PTEC_GLOBAL_AVAILABILITY+unitId, 1);
+		return PUNI().replace<u8>(unitId+(u32)PlayerUnitSettingsDataLoc::GlobalAvailability, 1);
 	else
-		return PUNI().replace<u8>(PTEC_GLOBAL_AVAILABILITY+unitId, 0);
+		return PUNI().replace<u8>(unitId+(u32)PlayerUnitSettingsDataLoc::GlobalAvailability, 0);
 }
 
-bool Scenario::setUnitEnabledState(u16 unitId, u8 player, u8 unitEnabledState)
+bool Scenario::setUnitEnabledState(u16 unitId, u8 player, UnitEnabledState unitEnabledState)
 {
-	if ( unitEnabledState == UNIT_STATE_DEFAULTFORPLAYER )
+	if ( unitEnabledState == UnitEnabledState::Default )
 	{
-		if ( PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 1) ) // Make player use default for this unit
+		if ( PUNI().replace<u8>((u32)unitId+228*(u32)player+(u32)PlayerUnitSettingsDataLoc::PlayerUsesDefault, 1) ) // Make player use default for this unit
 		{
 			PUNI().replace<u8>((u32)unitId+228*(u32)player, 0); // Clear player's unit enabled state (for compression, not necessary)
 			return true;
 		}
 	}
-	else if ( unitEnabledState == UNIT_STATE_ENABLEDFORPLAYER )
+	else if ( unitEnabledState == UnitEnabledState::Enabled )
 	{
 		return PUNI().replace<u8>((u32)unitId+228*(u32)player, 1) && // Set player's unit enabled state to enabled
-			   PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 0); // Make player override this unit's default
+			   PUNI().replace<u8>((u32)unitId+228*(u32)player+(u32)PlayerUnitSettingsDataLoc::PlayerUsesDefault, 0); // Make player override this unit's default
 	}
-	else if ( unitEnabledState == UNIT_STATE_DISABLEDFORPLAYER )
+	else if ( unitEnabledState == UnitEnabledState::Disabled )
 	{
 		return PUNI().replace<u8>((u32)unitId+228*(u32)player, 0) && // Set player's unit enabled state to disabed
-			   PUNI().replace<u8>(PTEC_PLAYERUSESDEFAULT+(u32)unitId+228*(u32)player, 0); // Make player override this unit's default
+			   PUNI().replace<u8>((u32)unitId+228*(u32)player+(u32)PlayerUnitSettingsDataLoc::PlayerUsesDefault, 0); // Make player override this unit's default
 	}
 	return false;
 }
@@ -2276,8 +2391,8 @@ bool Scenario::setUnitEnabledState(u16 unitId, u8 player, u8 unitEnabledState)
 bool Scenario::setUnitSettingsCompleteHitpoints(u16 unitId, u32 completeHitpoints)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
-		 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+		 replacedUNIS = UNIS().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints),
+		 replacedUNIx = UNIx().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints);
 	
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2285,14 +2400,14 @@ bool Scenario::setUnitSettingsCompleteHitpoints(u16 unitId, u32 completeHitpoint
 bool Scenario::setUnitSettingsHitpoints(u16 unitId, u32 hitpoints)
 {
 	u32 completeHitpoints;
-	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	if ( unitSettings().get<u32>(completeHitpoints, 4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints) )
 	{
 		u32 hitpointsByte = completeHitpoints%256;
 		completeHitpoints = hitpoints*256+(u32)hitpointsByte;
 
 		bool expansion = isExpansion(),
-			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
-			 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+			 replacedUNIS = UNIS().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints),
+			 replacedUNIx = UNIx().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints);
 		return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 	}
 	else
@@ -2302,14 +2417,14 @@ bool Scenario::setUnitSettingsHitpoints(u16 unitId, u32 hitpoints)
 bool Scenario::setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte)
 {
 	u32 completeHitpoints;
-	if ( unitSettings().get<u32>(completeHitpoints, UNIT_SETTINGS_HITPOINTS+4*(u32)unitId) )
+	if ( unitSettings().get<u32>(completeHitpoints, 4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints) )
 	{
 		u32 hitpoints = completeHitpoints/256;
 		completeHitpoints = 256*hitpoints+(u32)hitpointByte;
 
 		bool expansion = isExpansion(),
-			 replacedUNIS = UNIS().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints),
-			 replacedUNIx = UNIx().replace<u32>(UNIT_SETTINGS_HITPOINTS+4*(u32)unitId, completeHitpoints);
+			 replacedUNIS = UNIS().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints),
+			 replacedUNIx = UNIx().replace<u32>(4*(u32)unitId+(u32)UnitSettingsDataLoc::HitPoints, completeHitpoints);
 		return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 	}
 	else
@@ -2319,8 +2434,8 @@ bool Scenario::setUnitSettingsHitpointByte(u16 unitId, u8 hitpointByte)
 bool Scenario::setUnitSettingsShieldPoints(u16 unitId, u16 shieldPoints)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId, shieldPoints),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_SHIELDPOINTS+2*(u32)unitId, shieldPoints);
+		 replacedUNIS = UNIS().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::ShieldPoints, shieldPoints),
+		 replacedUNIx = UNIx().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::ShieldPoints, shieldPoints);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2328,8 +2443,8 @@ bool Scenario::setUnitSettingsShieldPoints(u16 unitId, u16 shieldPoints)
 bool Scenario::setUnitSettingsArmor(u16 unitId, u8 armor)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u8>(UNIT_SETTINGS_ARMOR+(u32)unitId, armor),
-		 replacedUNIx = UNIx().replace<u8>(UNIT_SETTINGS_ARMOR+(u32)unitId, armor);
+		 replacedUNIS = UNIS().replace<u8>((u32)unitId+(u32)UnitSettingsDataLoc::Armor, armor),
+		 replacedUNIx = UNIx().replace<u8>((u32)unitId+(u32)UnitSettingsDataLoc::Armor, armor);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2337,8 +2452,8 @@ bool Scenario::setUnitSettingsArmor(u16 unitId, u8 armor)
 bool Scenario::setUnitSettingsBuildTime(u16 unitId, u16 buildTime)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BUILDTIME+2*(u32)unitId, buildTime),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BUILDTIME+2*(u32)unitId, buildTime);
+		 replacedUNIS = UNIS().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::BuildTime, buildTime),
+		 replacedUNIx = UNIx().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::BuildTime, buildTime);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2346,8 +2461,8 @@ bool Scenario::setUnitSettingsBuildTime(u16 unitId, u16 buildTime)
 bool Scenario::setUnitSettingsMineralCost(u16 unitId, u16 mineralCost)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_MINERALCOST+2*(u32)unitId, mineralCost),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_MINERALCOST+2*(u32)unitId, mineralCost);
+		 replacedUNIS = UNIS().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::MineralCost, mineralCost),
+		 replacedUNIx = UNIx().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::MineralCost, mineralCost);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2355,8 +2470,8 @@ bool Scenario::setUnitSettingsMineralCost(u16 unitId, u16 mineralCost)
 bool Scenario::setUnitSettingsGasCost(u16 unitId, u16 gasCost)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_GASCOST+2*(u32)unitId, gasCost),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_GASCOST+2*(u32)unitId, gasCost);
+		 replacedUNIS = UNIS().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::GasCost, gasCost),
+		 replacedUNIx = UNIx().replace<u16>(2*(u32)unitId+(u32)UnitSettingsDataLoc::GasCost, gasCost);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2364,8 +2479,8 @@ bool Scenario::setUnitSettingsGasCost(u16 unitId, u16 gasCost)
 bool Scenario::setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BASEWEAPON+2*weaponId, baseDamage),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BASEWEAPON+2*weaponId, baseDamage);
+		 replacedUNIS = UNIS().replace<u16>(2*weaponId+(u32)UnitSettingsDataLoc::BaseWeapon, baseDamage),
+		 replacedUNIx = UNIx().replace<u16>(2*weaponId+(u32)UnitSettingsDataLoc::BaseWeapon, baseDamage);
 	
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2373,8 +2488,8 @@ bool Scenario::setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage)
 bool Scenario::setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage)
 {
 	bool expansion = isExpansion(),
-		 replacedUNIS = UNIS().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(false)+2*weaponId, bonusDamage),
-		 replacedUNIx = UNIx().replace<u16>(UNIT_SETTINGS_BONUSWEAPON(true)+2*weaponId, bonusDamage);
+		 replacedUNIS = UNIS().replace<u16>(UnitSettingsDataLocBonusWeapon(false)+2*weaponId, bonusDamage),
+		 replacedUNIx = UNIx().replace<u16>(UnitSettingsDataLocBonusWeapon(true)+2*weaponId, bonusDamage);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
 }
@@ -2395,8 +2510,8 @@ bool Scenario::setUpgradeUseDefaults(u8 upgradeNum, bool useDefaults)
 bool Scenario::setUpgradeMineralCost(u8 upgradeId, u16 mineralCost)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_MINERALCOST(false)+2*(u32)upgradeId, mineralCost),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_MINERALCOST(true)+2*(u32)upgradeId, mineralCost);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocMineralCost(false)+2*(u32)upgradeId, mineralCost),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocMineralCost(true)+2*(u32)upgradeId, mineralCost);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2404,8 +2519,8 @@ bool Scenario::setUpgradeMineralCost(u8 upgradeId, u16 mineralCost)
 bool Scenario::setUpgradeMineralFactor(u8 upgradeId, u16 mineralFactor)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_MINERALFACTOR(false)+2*(u32)upgradeId, mineralFactor),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_MINERALFACTOR(true)+2*(u32)upgradeId, mineralFactor);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocMineralFactor(false)+2*(u32)upgradeId, mineralFactor),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocMineralFactor(true)+2*(u32)upgradeId, mineralFactor);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2413,8 +2528,8 @@ bool Scenario::setUpgradeMineralFactor(u8 upgradeId, u16 mineralFactor)
 bool Scenario::setUpgradeGasCost(u8 upgradeId, u16 gasCost)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_GASCOST(false)+2*(u32)upgradeId, gasCost),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_GASCOST(true)+2*(u32)upgradeId, gasCost);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocGasCost(false)+2*(u32)upgradeId, gasCost),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocGasCost(true)+2*(u32)upgradeId, gasCost);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2422,8 +2537,8 @@ bool Scenario::setUpgradeGasCost(u8 upgradeId, u16 gasCost)
 bool Scenario::setUpgradeGasFactor(u8 upgradeId, u16 gasFactor)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_GASFACTOR(false)+2*(u32)upgradeId, gasFactor),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_GASFACTOR(true)+2*(u32)upgradeId, gasFactor);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocGasFactor(false)+2*(u32)upgradeId, gasFactor),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocGasFactor(true)+2*(u32)upgradeId, gasFactor);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2431,8 +2546,8 @@ bool Scenario::setUpgradeGasFactor(u8 upgradeId, u16 gasFactor)
 bool Scenario::setUpgradeTimeCost(u8 upgradeId, u16 timeCost)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_TIMECOST(false)+2*(u32)upgradeId, timeCost),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_TIMECOST(true)+2*(u32)upgradeId, timeCost);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocTimeCost(false)+2*(u32)upgradeId, timeCost),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocTimeCost(true)+2*(u32)upgradeId, timeCost);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2440,8 +2555,8 @@ bool Scenario::setUpgradeTimeCost(u8 upgradeId, u16 timeCost)
 bool Scenario::setUpgradeTimeFactor(u8 upgradeId, u16 timeFactor)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGS = UPGS().replace<u16>(UPGRADE_SETTINGS_TIMEFACTOR(false)+2*(u32)upgradeId, timeFactor),
-		 replacedUPGx = UPGx().replace<u16>(UPGRADE_SETTINGS_TIMEFACTOR(true)+2*(u32)upgradeId, timeFactor);
+		 replacedUPGS = UPGS().replace<u16>(UpgradeSettingsDataLocTimeFactor(false)+2*(u32)upgradeId, timeFactor),
+		 replacedUPGx = UPGx().replace<u16>(UpgradeSettingsDataLocTimeFactor(true)+2*(u32)upgradeId, timeFactor);
 
 	return ( expansion && replacedUPGx ) || ( !expansion && replacedUPGS );
 }
@@ -2453,8 +2568,8 @@ bool Scenario::setUpgradePlayerDefaults(u8 upgradeId, u8 player, bool usesDefaul
 		newValue = 1;
 
 	bool expansion = isExpansion(),
-		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERUSESDEFAULT(false, player)+(u32)upgradeId, newValue),
-		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERUSESDEFAULT(true, player)+(u32)upgradeId, newValue);
+		 replacedUPGR = UPGR().replace<u8>(UpgradeSettingsDataLocPlayerUsesDefault(false, player)+(u32)upgradeId, newValue),
+		 replacedPUPx = PUPx().replace<u8>(UpgradeSettingsDataLocPlayerUsesDefault(true, player)+(u32)upgradeId, newValue);
 
 	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
@@ -2462,8 +2577,8 @@ bool Scenario::setUpgradePlayerDefaults(u8 upgradeId, u8 player, bool usesDefaul
 bool Scenario::setUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 newStartLevel)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERSTARTLEVEL(false, player)+(u32)upgradeId, newStartLevel),
-		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERSTARTLEVEL(true, player)+(u32)upgradeId, newStartLevel);
+		 replacedUPGR = UPGR().replace<u8>(UpgradeSettingsDataLocPlayerStartLevel(false, player)+(u32)upgradeId, newStartLevel),
+		 replacedPUPx = PUPx().replace<u8>(UpgradeSettingsDataLocPlayerStartLevel(true, player)+(u32)upgradeId, newStartLevel);
 
 	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
@@ -2471,8 +2586,8 @@ bool Scenario::setUpgradePlayerStartLevel(u8 upgradeId, u8 player, u8 newStartLe
 bool Scenario::setUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 newMaxLevel)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGR = UPGR().replace<u8>(UPGRADE_PLAYERMAXLEVEL(false, player)+(u32)upgradeId, newMaxLevel),
-		 replacedPUPx = PUPx().replace<u8>(UPGRADE_PLAYERMAXLEVEL(true, player)+(u32)upgradeId, newMaxLevel);
+		 replacedUPGR = UPGR().replace<u8>(UpgradeSettingsDataLocPlayerMaxLevel(false, player)+(u32)upgradeId, newMaxLevel),
+		 replacedPUPx = PUPx().replace<u8>(UpgradeSettingsDataLocPlayerMaxLevel(true, player)+(u32)upgradeId, newMaxLevel);
 
 	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
@@ -2480,8 +2595,8 @@ bool Scenario::setUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 newMaxLevel)
 bool Scenario::setUpgradeDefaultStartLevel(u8 upgradeId, u8 newStartLevel)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGR = UPGR().replace<u8>(UPGRADE_DEFAULTSTARTLEVEL(false)+(u32)upgradeId, newStartLevel),
-		 replacedPUPx = PUPx().replace<u8>(UPGRADE_DEFAULTSTARTLEVEL(true)+(u32)upgradeId, newStartLevel);
+		 replacedUPGR = UPGR().replace<u8>(UpgradeSettingsDataLocDefaultStartLevel(false)+(u32)upgradeId, newStartLevel),
+		 replacedPUPx = PUPx().replace<u8>(UpgradeSettingsDataLocDefaultStartLevel(true)+(u32)upgradeId, newStartLevel);
 
 	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
@@ -2489,8 +2604,8 @@ bool Scenario::setUpgradeDefaultStartLevel(u8 upgradeId, u8 newStartLevel)
 bool Scenario::setUpgradeDefaultMaxLevel(u8 upgradeId, u8 newMaxLevel)
 {
 	bool expansion = isExpansion(),
-		 replacedUPGR = UPGR().replace<u8>(UPGRADE_DEFAULTMAXLEVEL(false)+(u32)upgradeId, newMaxLevel),
-		 replacedPUPx = PUPx().replace<u8>(UPGRADE_DEFAULTMAXLEVEL(true)+(u32)upgradeId, newMaxLevel);
+		 replacedUPGR = UPGR().replace<u8>(UpgradeSettingsDataLocDefaultMaxLevel(false)+(u32)upgradeId, newMaxLevel),
+		 replacedPUPx = PUPx().replace<u8>(UpgradeSettingsDataLocDefaultMaxLevel(true)+(u32)upgradeId, newMaxLevel);
 
 	return ( expansion && replacedPUPx ) || ( !expansion && replacedUPGR );
 }
@@ -2511,8 +2626,8 @@ bool Scenario::setTechUseDefaults(u8 techNum, bool useDefaults)
 bool Scenario::setTechMineralCost(u8 techId, u16 newMineralCost)
 {
 	bool expansion = isExpansion(),
-		 replacedTECS = TECS().replace<u16>(TECH_COST_MINERALS(false)+2*(u32)techId, newMineralCost),
-		 replacedTECx = TECx().replace<u16>(TECH_COST_MINERALS(true)+2*(u32)techId, newMineralCost);
+		 replacedTECS = TECS().replace<u16>(TechSettingsDataLocMineralCost(false)+2*(u32)techId, newMineralCost),
+		 replacedTECx = TECx().replace<u16>(TechSettingsDataLocMineralCost(true)+2*(u32)techId, newMineralCost);
 	
 	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
 }
@@ -2520,8 +2635,8 @@ bool Scenario::setTechMineralCost(u8 techId, u16 newMineralCost)
 bool Scenario::setTechGasCost(u8 techId, u16 newGasCost)
 {
 	bool expansion = isExpansion(),
-		 replacedTECS = TECS().replace<u16>(TECH_COST_GAS(false)+2*(u32)techId, newGasCost),
-		 replacedTECx = TECx().replace<u16>(TECH_COST_GAS(true)+2*(u32)techId, newGasCost);
+		 replacedTECS = TECS().replace<u16>(TechSettingsDataLocGasCost(false)+2*(u32)techId, newGasCost),
+		 replacedTECx = TECx().replace<u16>(TechSettingsDataLocGasCost(true)+2*(u32)techId, newGasCost);
 	
 	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
 }
@@ -2529,8 +2644,8 @@ bool Scenario::setTechGasCost(u8 techId, u16 newGasCost)
 bool Scenario::setTechTimeCost(u8 techId, u16 newTimeCost)
 {
 	bool expansion = isExpansion(),
-		 replacedTECS = TECS().replace<u16>(TECH_COST_TIME(false)+2*(u32)techId, newTimeCost),
-		 replacedTECx = TECx().replace<u16>(TECH_COST_TIME(true)+2*(u32)techId, newTimeCost);
+		 replacedTECS = TECS().replace<u16>(TechSettingsDataLocTimeCost(false)+2*(u32)techId, newTimeCost),
+		 replacedTECx = TECx().replace<u16>(TechSettingsDataLocTimeCost(true)+2*(u32)techId, newTimeCost);
 	
 	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
 }
@@ -2538,8 +2653,8 @@ bool Scenario::setTechTimeCost(u8 techId, u16 newTimeCost)
 bool Scenario::setTechEnergyCost(u8 techId, u16 newEnergyCost)
 {
 	bool expansion = isExpansion(),
-		 replacedTECS = TECS().replace<u16>(TECH_COST_ENERGY(false)+2*(u32)techId, newEnergyCost),
-		 replacedTECx = TECx().replace<u16>(TECH_COST_ENERGY(true)+2*(u32)techId, newEnergyCost);
+		 replacedTECS = TECS().replace<u16>(TechSettingsDataLocEnergyCost(false)+2*(u32)techId, newEnergyCost),
+		 replacedTECx = TECx().replace<u16>(TechSettingsDataLocEnergyCost(true)+2*(u32)techId, newEnergyCost);
 	
 	return ( expansion && replacedTECx ) || ( !expansion && replacedTECS );
 }
@@ -2550,8 +2665,8 @@ bool Scenario::setTechAvailableForPlayer(u8 techId, u8 player, bool availableFor
 	if ( availableForPlayer )
 		newValue = 1;
 
-	bool setExp = PTEx().replace<u8>(TECH_AVAILABLEFORPLAYER(true, player)+(u32)techId, newValue),
-		 setNormal = PTEC().replace<u8>(TECH_AVAILABLEFORPLAYER(false, player)+(u32)techId, newValue);
+	bool setExp = PTEx().replace<u8>(PlayerTechSettingsDataLocAvailableForPlayer(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(PlayerTechSettingsDataLocAvailableForPlayer(false, player)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
@@ -2562,8 +2677,8 @@ bool Scenario::setTechResearchedForPlayer(u8 techId, u8 player, bool researchedF
 	if ( researchedForPlayer )
 		newValue = 1;
 
-	bool setExp = PTEx().replace<u8>(TECH_RESERACHEDFORPLAYER(true, player)+(u32)techId, newValue),
-		 setNormal = PTEC().replace<u8>(TECH_RESERACHEDFORPLAYER(false, player)+(u32)techId, newValue);
+	bool setExp = PTEx().replace<u8>(PlayerTechSettingsDataLocResearchedForPlayer(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(PlayerTechSettingsDataLocResearchedForPlayer(false, player)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
@@ -2574,8 +2689,8 @@ bool Scenario::setTechDefaultAvailability(u8 techId, bool availableByDefault)
 	if ( availableByDefault )
 		newValue = 1;
 
-	bool setExp = PTEx().replace<u8>(TECH_DEFAULTAVAILABILITY(true)+(u32)techId, newValue),
-		 setNormal = PTEC().replace<u8>(TECH_DEFAULTAVAILABILITY(false)+(u32)techId, newValue);
+	bool setExp = PTEx().replace<u8>(PlayerTechSettingsDataLocDefaultAvailability(true)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(PlayerTechSettingsDataLocDefaultAvailability(false)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
@@ -2586,8 +2701,8 @@ bool Scenario::setTechDefaultResearched(u8 techId, bool researchedByDefault)
 	if ( researchedByDefault )
 		newValue = 1;
 
-	bool setExp = PTEx().replace<u8>(TECH_DEFAULTRESERACHED(true)+(u32)techId, newValue),
-		 setNormal = PTEC().replace<u8>(TECH_DEFAULTRESERACHED(false)+(u32)techId, newValue);
+	bool setExp = PTEx().replace<u8>(PlayerTechSettingsDataLocDefaultReserached(true)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(PlayerTechSettingsDataLocDefaultReserached(false)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
@@ -2598,8 +2713,8 @@ bool Scenario::setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playe
 	if ( playerUsesDefaultSettings )
 		newValue = 1;
 
-	bool setExp = PTEx().replace<u8>(TECH_PLAYERUSESDEFAULT(true, player)+(u32)techId, newValue),
-		 setNormal = PTEC().replace<u8>(TECH_PLAYERUSESDEFAULT(false, player)+(u32)techId, newValue);
+	bool setExp = PTEx().replace<u8>(PlayerTechSettingsDataLocPlayerUsesDefault(true, player)+(u32)techId, newValue),
+		 setNormal = PTEC().replace<u8>(PlayerTechSettingsDataLocPlayerUsesDefault(false, player)+(u32)techId, newValue);
 	
 	return ( isExpansion() && setExp ) || ( !isExpansion() && setNormal );
 }
@@ -2661,90 +2776,96 @@ bool Scenario::moveTrigger(u32 triggerId, u32 destId)
 	return false;
 }
 
-bool Scenario::ParseBuffer(buffer &chk)
+bool Scenario::ParseScenario(buffer &chk)
 {
-	int maxSections = 500;
-	u32 position = 0;
-	s32 size = 0;
+	caching = false;
+	u32 chkSize = chk.size();
 
-	char header[5] = { };
+	u32 position = 0,
+		nextPosition = 0;
 
-	section* last = nullptr,
-		   * curr;
-	
-	while ( position+8 < chk.size() )
+	bool parsing = true;
+
+	do
 	{
-		if ( !chk.get<u32>((u32&)header, position) )
-			return false;
-
-		section* checkExisting = head;
-		while ( checkExisting != nullptr && !isProtected() )
+		if ( position + 8 < chkSize ) // Valid section header
 		{
-			if ( !strcmp(checkExisting->buf.title(), header) ) // Duplicate section
-				mapIsProtected = true;
-
-			checkExisting = checkExisting->next;
+			if ( ParseSection(chk, position, nextPosition) )
+				position = nextPosition;
+			else // Severe data handling issue or out of memory
+				return false;
 		}
-
-		try { curr = new section(header); }
-		catch ( std::bad_alloc ) { return false; }
-
-		curr->next = nullptr;
-
-		if ( head == nullptr )
-			head = curr;
-		else if ( last != nullptr )
-			last->next = curr;
-		
-		last = curr;
-
-		if ( !curr->buf.extract(chk, position) && chk.get<s32>(size, position) )
+		else if ( position < chkSize ) // Partial section header
 		{
-			if ( chk.get<s32>(size, position) )
-			{
-				position += 4;
-				if ( position+size > chk.size() && !isProtected() ) // The size would take you past the end of the data
-					mapIsProtected = true;
+			tailLength = (u8)(chkSize - position);
+			if ( !chk.getArray<u8>(tailData, position, tailLength) )
+				return false;
 
-				position += (s32)size;
-			}
-			else // Your position was too great to get an int
-				mapIsProtected = true;
-		}
-
-		maxSections--;
-		if ( !maxSections )
 			mapIsProtected = true;
-	}
+			parsing = false;
+		}
+		else if ( position > chkSize ) // Oversized finish
+		{
+			mapIsProtected = true;
+			parsing = false;
+		}
+		else // Natural finish (position == chkSize)
+			parsing = false;
 
-	if ( !GoodVCOD() )
-		mapIsProtected = true;
+	} while ( parsing );
 
-	if ( isProtected() )
-	{
-		correctMTXM();
-		#ifdef CHKDRAFT
-			mb("Map is protected and will be opened as view-only.");
-		#endif
-	}
+	// Pre-cache mergings/corrections
+	correctMTXM();
+
+	// Cache sections
+	CacheSections();
+	caching = true;
 
 	return true;
 }
 
+bool Scenario::ParseSection(buffer &chk, u32 position, u32 &nextPosition)
+{
+	u32 sectionId = 0;
+	s32 sectionSize = 0;
+
+	if ( chk.get<u32>(sectionId, position) &&	   // Get sectionId/title
+		 chk.get<s32>(sectionSize, position + 4) ) // Get section size
+	{
+		nextPosition = position + 8 + sectionSize;
+	}
+	else
+		return false; // Unexpected read faliure
+
+	if ( sectionSize >= 0 ) // Normal section
+	{
+		auto newSection = AddSection(sectionId);
+		return nextPosition >= position + 8 && // Check for addition overflow
+			   (nextPosition > chk.size() || // Check for oversized
+				sectionSize == 0 || // Check for empty section
+				newSection->extract(chk, position+8, sectionSize)); // Move data to this section
+	}
+	else if ( sectionSize < 0 ) // Jump section
+	{
+		return nextPosition < position + 8 && // Check for addition underflow
+			   nextPosition != 0;			  // Check for loop (right now it just checks for position to zero)
+	}
+	return true; // sectionSize == 0
+}
+
 bool Scenario::ToSingleBuffer(buffer& chk)
 {
+	chk.flush();
 	if ( chk.setTitle("CHK ") )
 	{
-		section* curr = head;
-		while ( curr != nullptr )
+		for ( auto &section : sections )
 		{
-			if ( !( chk.add<u32>((u32&)curr->buf.title()[0]) &&
-					chk.add<u32>(curr->buf.size()) &&
-					( curr->buf.size() == 0 || chk.addStr((const char*)curr->buf.getPtr(0), curr->buf.size()) ) ) )
+			if ( !chk.add<u32>(section.titleVal()) &&
+				chk.add<u32>(section.size()) &&
+				(section.size() == 0 || chk.addStr((const char*)section.getPtr(0), section.size())) )
 			{
 				return false;
 			}
-			curr = curr->next;
 		}
 		return true;
 	}
@@ -2764,8 +2885,69 @@ bool Scenario::Deserialize(const void* data)
 	if ( chk.deserialize(data) )
 	{
 		Flush();
-		if ( ParseBuffer(chk) )
+		if ( ParseScenario(chk) )
 			return true;
+	}
+	return false;
+}
+
+bool Scenario::hasPassword()
+{
+	return tailLength == 7;
+}
+
+bool Scenario::isPassword(string &password)
+{
+	if ( hasPassword() )
+	{
+		SHA256 sha256;
+		string hashStr = sha256(password);
+		if ( hashStr.length() >= 7 )
+		{
+			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+			u8* hashBytes = (u8*)&eightHashBytes;
+
+			for ( u8 i = 0; i < tailLength; i++ )
+			{
+				if ( tailData[i] != hashBytes[i] )
+					return false;
+			}
+			return true;
+		}
+	}
+	else // No password
+		return true;
+	
+	return false;
+}
+
+bool Scenario::SetPassword(string &oldPass, string &newPass)
+{
+	if ( isPassword(oldPass) )
+	{
+		SHA256 sha256;
+		string hashStr = sha256(newPass);
+		if ( hashStr.length() >= 7 )
+		{
+			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+			u8* hashBytes = (u8*)&eightHashBytes;
+
+			tailLength = 7;
+			for ( u8 i = 0; i < tailLength; i++ )
+				tailData[i] = hashBytes[i];
+
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Scenario::Login(string &password)
+{
+	if ( isPassword(password) )
+	{
+		mapIsProtected = false;
+		return true;
 	}
 	return false;
 }
@@ -2785,14 +2967,10 @@ bool Scenario::CreateNew(u16 width, u16 height, u16 tileset, u32 terrain, u32 tr
 		 && Get_TECx(chk) && Get_TRIG(chk) && Get_MBRF(chk) && Get_UPRP(chk)
 		 && Get_UPUS(chk) && Get_SWNM(chk) )
 	{
-		if ( ParseBuffer(chk) )
+		if ( ParseScenario(chk) )
 			return true;
 		else // Chkdraft failed to read a map it creates itself, should never happen!
-		{
-			#ifdef CHKDRAFT
-				Error("New map parsing failed! Report this!");
-			#endif
-		}
+			CHKD_SHOUT("New map parsing failed. Report this!");
 	}
 	return false;
 }
@@ -2801,96 +2979,94 @@ void Scenario::WriteFile(FILE* pFile)
 {
 	if ( !isProtected() )
 	{
-		section* curr = head;
-		while ( curr != nullptr )
-		{
-			curr->buf.write(pFile);
-			curr = curr->next;
-		}
+		for ( auto &section : sections )
+			section.write(pFile);
 	}
+	
+	if ( tailLength > 0 )
+		fwrite(tailData, tailLength, 1, pFile);
 }
 
 bool Scenario::RemoveSection(buffer* buf)
 {
-	section* curr = head,
-		   * prev = nullptr;
-
-	while ( curr )
+	auto toDelete = sections.end();
+	for ( auto it = sections.begin(); it != sections.end(); ++it )
 	{
-		if ( &curr->buf == buf )
+		if ( it._Ptr == buf )
 		{
-			if ( prev )
-				prev->next = curr->next;
-			else
-				head = curr->next;
-
-			delete curr;
-			curr = nullptr;
+			sections.erase(it);
+			CacheSections();
 			return true;
 		}
-		prev = curr;
-		curr = curr->next;
 	}
 	return false;
 }
 
 bool Scenario::AddSection(buffer& buf)
 {
-	section* add;
 	try {
-		add = new section(buf);
-	} catch ( std::bad_alloc ) { return false; }
-
-	add->next = nullptr;
-
-	if ( head == nullptr )
-		head = add;
-	else
-	{
-		section* last = head; // Invariant: head != nullptr
-		while ( last->next != nullptr )
-			last = last->next;
-
-		last->next = add;
+		sections.insert(sections.end(), buf);
+		CacheSections();
+		return true;
 	}
+	catch ( std::exception ) { }
+	return false;
+}
 
-	return true;
+buffer* Scenario::AddSection(u32 sectionId)
+{
+	auto section = sections.end();
+	try {
+		section = sections.insert(sections.end(), buffer(sectionId));
+		CacheSections();
+		return section._Ptr;
+	}
+	catch ( std::bad_alloc ) { } // Out of memory
+	return nullptr;
 }
 
 void Scenario::Flush()
 {
-	section* next;
-	while ( head != nullptr )
-	{
-		next = head->next;
-		delete head;
-		head = next;
-	}
+	sections.clear();
+	CacheSections();
 	mapIsProtected = false;
 }
 
-buffer& Scenario::getSection(u32 id)
+void Scenario::CacheSections()
 {
-	section* lastInstance = nullptr, // Only the last instance of a section is used
-		   * curr		  = head   ;
+	type = getSection((u32)SectionId::TYPE); ver = getSection((u32)SectionId::VER);
+	iver = getSection((u32)SectionId::IVER); ive2 = getSection((u32)SectionId::IVE2);
+	vcod = getSection((u32)SectionId::VCOD); iown = getSection((u32)SectionId::IOWN);
+	ownr = getSection((u32)SectionId::OWNR); era = getSection((u32)SectionId::ERA);
+	dim = getSection((u32)SectionId::DIM); side = getSection((u32)SectionId::SIDE);
+	mtxm = getSection((u32)SectionId::MTXM); puni = getSection((u32)SectionId::PUNI);
+	upgr = getSection((u32)SectionId::UPGR); ptec = getSection((u32)SectionId::PTEC);
+	unit = getSection((u32)SectionId::UNIT); isom = getSection((u32)SectionId::ISOM);
+	tile = getSection((u32)SectionId::TILE); dd2 = getSection((u32)SectionId::DD2);
+	thg2 = getSection((u32)SectionId::THG2); mask = getSection((u32)SectionId::MASK);
+	str = getSection((u32)SectionId::STR); uprp = getSection((u32)SectionId::UPRP);
+	upus = getSection((u32)SectionId::UPUS); mrgn = getSection((u32)SectionId::MRGN);
+	trig = getSection((u32)SectionId::TRIG); mbrf = getSection((u32)SectionId::MBRF);
+	sprp = getSection((u32)SectionId::SPRP); forc = getSection((u32)SectionId::FORC);
+	wav = getSection((u32)SectionId::WAV); unis = getSection((u32)SectionId::UNIS);
+	upgs = getSection((u32)SectionId::UPGS); tecs = getSection((u32)SectionId::TECS);
+	swnm = getSection((u32)SectionId::SWNM); colr = getSection((u32)SectionId::COLR);
+	pupx = getSection((u32)SectionId::PUPx); ptex = getSection((u32)SectionId::PTEx);
+	unix = getSection((u32)SectionId::UNIx); upgx = getSection((u32)SectionId::UPGx);
+	tecx = getSection((u32)SectionId::TECx);
 
-	while ( curr != nullptr ) // Cycle through all sections
+	kstr = getSection((u32)SectionId::KSTR);
+}
+
+buffer* Scenario::getSection(u32 id)
+{
+	buffer* sectionPtr = nullptr;
+	for ( auto &section : sections )
 	{
-		u32 currID = (u32 &)curr->buf.title()[0]; // First four characters can also be considered a representative integer
-
-		if ( currID == id )
-			lastInstance = curr;
-
-		curr = curr->next;
+		if ( id == section.titleVal() )
+			sectionPtr = &section;
 	}
-
-	if ( lastInstance == nullptr )
-	{
-		buffer* nullBuffer = nullptr;
-		return *nullBuffer;
-	}
-	else
-		return lastInstance->buf;
+	return sectionPtr;
 	/** Referances to null buffers are
 		safe to use though you may violate
 		user expectations if you do not check
@@ -2898,29 +3074,29 @@ buffer& Scenario::getSection(u32 id)
 }
 
 // Standard Sections
-buffer& Scenario::TYPE() { return getSection(HEADER_TYPE); } buffer& Scenario::VER () { return getSection(HEADER_VER ); }
-buffer& Scenario::IVER() { return getSection(HEADER_IVER); } buffer& Scenario::IVE2() { return getSection(HEADER_IVE2); }
-buffer& Scenario::VCOD() { return getSection(HEADER_VCOD); } buffer& Scenario::IOWN() { return getSection(HEADER_IOWN); }
-buffer& Scenario::OWNR() { return getSection(HEADER_OWNR); } buffer& Scenario::ERA () { return getSection(HEADER_ERA ); }
-buffer& Scenario::DIM () { return getSection(HEADER_DIM ); } buffer& Scenario::SIDE() { return getSection(HEADER_SIDE); }
-buffer& Scenario::MTXM() { return getSection(HEADER_MTXM); } buffer& Scenario::PUNI() { return getSection(HEADER_PUNI); }
-buffer& Scenario::UPGR() { return getSection(HEADER_UPGR); } buffer& Scenario::PTEC() { return getSection(HEADER_PTEC); }
-buffer& Scenario::UNIT() { return getSection(HEADER_UNIT); } buffer& Scenario::ISOM() { return getSection(HEADER_ISOM); }
-buffer& Scenario::TILE() { return getSection(HEADER_TILE); } buffer& Scenario::DD2 () { return getSection(HEADER_DD2 ); }
-buffer& Scenario::THG2() { return getSection(HEADER_THG2); } buffer& Scenario::MASK() { return getSection(HEADER_MASK); }
-buffer& Scenario::STR () { return getSection(HEADER_STR ); } buffer& Scenario::UPRP() { return getSection(HEADER_UPRP); }
-buffer& Scenario::UPUS() { return getSection(HEADER_UPUS); } buffer& Scenario::MRGN() { return getSection(HEADER_MRGN); }
-buffer& Scenario::TRIG() { return getSection(HEADER_TRIG); } buffer& Scenario::MBRF() { return getSection(HEADER_MBRF); }
-buffer& Scenario::SPRP() { return getSection(HEADER_SPRP); } buffer& Scenario::FORC() { return getSection(HEADER_FORC); }
-buffer& Scenario::WAV () { return getSection(HEADER_WAV ); } buffer& Scenario::UNIS() { return getSection(HEADER_UNIS); }
-buffer& Scenario::UPGS() { return getSection(HEADER_UPGS); } buffer& Scenario::TECS() { return getSection(HEADER_TECS); }
-buffer& Scenario::SWNM() { return getSection(HEADER_SWNM); } buffer& Scenario::COLR() { return getSection(HEADER_COLR); }
-buffer& Scenario::PUPx() { return getSection(HEADER_PUPx); } buffer& Scenario::PTEx() { return getSection(HEADER_PTEx); }
-buffer& Scenario::UNIx() { return getSection(HEADER_UNIx); } buffer& Scenario::UPGx() { return getSection(HEADER_UPGx); }
-buffer& Scenario::TECx() { return getSection(HEADER_TECx); }
+buffer& Scenario::TYPE() { return *type; } buffer& Scenario::VER() { return *ver; }
+buffer& Scenario::IVER() { return *iver; } buffer& Scenario::IVE2() { return *ive2; }
+buffer& Scenario::VCOD() { return *vcod; } buffer& Scenario::IOWN() { return *iown; }
+buffer& Scenario::OWNR() { return *ownr; } buffer& Scenario::ERA () { return *era; }
+buffer& Scenario::DIM () { return *dim; } buffer& Scenario::SIDE() { return *side; }
+buffer& Scenario::MTXM() { return *mtxm; } buffer& Scenario::PUNI() { return *puni; }
+buffer& Scenario::UPGR() { return *upgr; } buffer& Scenario::PTEC() { return *ptec; }
+buffer& Scenario::UNIT() { return *unit; } buffer& Scenario::ISOM() { return *isom; }
+buffer& Scenario::TILE() { return *tile; } buffer& Scenario::DD2 () { return *dd2; }
+buffer& Scenario::THG2() { return *thg2; } buffer& Scenario::MASK() { return *mask; }
+buffer& Scenario::STR () { return *str; } buffer& Scenario::UPRP() { return *uprp; }
+buffer& Scenario::UPUS() { return *upus; } buffer& Scenario::MRGN() { return *mrgn; }
+buffer& Scenario::TRIG() { return *trig; } buffer& Scenario::MBRF() { return *mbrf; }
+buffer& Scenario::SPRP() { return *sprp; } buffer& Scenario::FORC() { return *forc; }
+buffer& Scenario::WAV () { return *wav; } buffer& Scenario::UNIS() { return *unis; }
+buffer& Scenario::UPGS() { return *upgs; } buffer& Scenario::TECS() { return *tecs; }
+buffer& Scenario::SWNM() { return *swnm; } buffer& Scenario::COLR() { return *colr; }
+buffer& Scenario::PUPx() { return *pupx; } buffer& Scenario::PTEx() { return *ptex; }
+buffer& Scenario::UNIx() { return *unix; } buffer& Scenario::UPGx() { return *upgx; }
+buffer& Scenario::TECx() { return *tecx; }
 
 // Extended Sections
-buffer& Scenario::KSTR() { return getSection(HEADER_KSTR); }
+buffer& Scenario::KSTR() { return *kstr; }
 
 bool Scenario::GetStrInfo(char* &ptr, u32 &length, u32 stringNum)
 {

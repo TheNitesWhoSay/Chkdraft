@@ -108,7 +108,7 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-bool TextTrigWindow::CompileEditText(Scenario* map, HWND hWnd)
+bool TextTrigWindow::CompileEditText(ScenarioPtr map, HWND hWnd)
 {
 	if ( map != nullptr )
 	{

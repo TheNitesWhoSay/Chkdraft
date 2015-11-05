@@ -1,4 +1,4 @@
-#include "Condition.h"
+#include "ChkCondition.h"
 
 void Condition::ToggleDisabled()
 {

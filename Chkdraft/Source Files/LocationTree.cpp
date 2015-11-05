@@ -15,7 +15,7 @@ void LocationTree::InsertLocationItem(const char* text, u32 index)
 
 void LocationTree::RebuildLocationTree()
 {
-	GuiMap* map = chkd.maps.curr;
+	GuiMapPtr map = chkd.maps.curr;
 	EmptySubTree(hLocationRoot);
 
 	buffer& MRGN = map->MRGN();

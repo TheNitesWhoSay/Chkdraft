@@ -193,28 +193,31 @@ void WindowsItem::ReplaceChildFonts(HFONT hFont)
 
 void WindowsItem::LockCursor()
 {
-	if ( getHandle() == NULL )
-		::ClipCursor(NULL);
-	else
+	if ( this != nullptr )
 	{
-		RECT clientRect, clipRect;
-		::GetClientRect(getHandle(), &clientRect);
+		if ( getHandle() == NULL )
+			::ClipCursor(NULL);
+		else
+		{
+			RECT clientRect, clipRect;
+			::GetClientRect(getHandle(), &clientRect);
 
-		POINT upperLeft, lowerRight;
-		upperLeft.x = 0;
-		upperLeft.y = 0;
-		lowerRight.x = clientRect.right - 1;
-		lowerRight.y = clientRect.bottom - 1;
+			POINT upperLeft, lowerRight;
+			upperLeft.x = 0;
+			upperLeft.y = 0;
+			lowerRight.x = clientRect.right - 1;
+			lowerRight.y = clientRect.bottom - 1;
 
-		::ClientToScreen(getHandle(), &upperLeft);
-		::ClientToScreen(getHandle(), &lowerRight);
+			::ClientToScreen(getHandle(), &upperLeft);
+			::ClientToScreen(getHandle(), &lowerRight);
 
-		clipRect.left = upperLeft.x;
-		clipRect.top = upperLeft.y;
-		clipRect.bottom = lowerRight.y;
-		clipRect.right = lowerRight.x;
+			clipRect.left = upperLeft.x;
+			clipRect.top = upperLeft.y;
+			clipRect.bottom = lowerRight.y;
+			clipRect.right = lowerRight.x;
 
-		::ClipCursor(&clipRect);
+			::ClipCursor(&clipRect);
+		}
 	}
 }
 

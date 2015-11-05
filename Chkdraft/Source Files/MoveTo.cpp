@@ -33,27 +33,31 @@ bool MoveToDialog<indexType>::InternalGetMoveTo(indexType &index, HWND hParent)
 }
 
 template <typename indexType>
+BOOL MoveToDialog<indexType>::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+		case IDCANCEL:
+			EndDialog(hWnd, IDCANCEL);
+			break;
+
+		case IDOK:
+			gotIndex = editMoveTo.GetEditNum<indexType>(indexMovedTo);
+			EndDialog(hWnd, IDOK);
+			break;
+	}
+
+	return ClassDialog::DlgCommand(hWnd, wParam, lParam);
+}
+
+template <typename indexType>
 BOOL MoveToDialog<indexType>::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if ( msg == WM_COMMAND )
-	{
-		switch ( LOWORD(wParam) )
-		{
-			case IDCANCEL:
-				EndDialog(hWnd, IDCANCEL);
-				break;
-
-			case IDOK:
-				gotIndex = editMoveTo.GetEditNum<indexType>(indexMovedTo);
-				EndDialog(hWnd, IDOK);
-				break;
-		}
-	}
-	else if ( msg == WM_INITDIALOG )
+	if ( msg == WM_INITDIALOG )
 	{
 		editMoveTo.FindThis(hWnd, IDC_EDIT1);
 		SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
 	}
 
-	return 0;
+	return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
 }

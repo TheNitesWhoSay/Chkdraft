@@ -14,81 +14,140 @@ UndoNode::~UndoNode()
 	}
 }
 
-UNDOS::UNDOS(void* thisMap) : headUndo(nullptr), lastUndo(nullptr), headRedo(nullptr), upcomingUndo(nullptr), rootTypes(0), mapPointer(thisMap)
+/*UNDOS::UNDOS(void* thisMap) : upcomingUndo(nullptr), rootTypes(0), mapPointer(thisMap), observer(*((IObserveUndos*)nullptr))
 {
 	startNext(0);
+}*/
+
+UNDOS::UNDOS(IObserveUndos &observer) : observer(observer)
+{
+	
 }
 
 UNDOS::~UNDOS()
 {
-	clip(headUndo, ALL_UNDO_REDOS);
-	clip(headRedo, ALL_UNDO_REDOS);
-
-	if ( upcomingUndo != nullptr )
-		delete upcomingUndo;
+	undos.clear();
+	redos.clear();
+	//upcomingUndo = nullptr;
 }
 
-bool UNDOS::clipUndos(u32 type)
+/*bool UNDOS::submitUndo()
 {
-	return clip(headUndo, type);
-}
+	return startNext(0);
+}*/
 
-bool UNDOS::clipRedos(u32 type)
+/*bool UNDOS::startComboUndo(u32 type)
 {
-	return clip(headRedo, type);
-}
+	return startNext(type);
+}*/
 
-bool UNDOS::startNext(u32 type)
+void UNDOS::AddUndo(ReversiblePtr action)
 {
-	if ( upcomingUndo != nullptr )
+	if ( action->Count() > 0 )
 	{
-		if ( upcomingUndo->head != nullptr ) // Node has items
-		{ // Add upcomingUndo onto the undo stack
-			if ( upcomingUndo->flags & UNDO_UNIT )
-				clipRedos(UNDO_UNIT);
-			else
-				clipRedos(upcomingUndo->flags);
+		undos.push_front(action);
+		AdjustChangeCount(action->GetType(), 1);
+	}
+}
 
-			upcomingUndo->next = headUndo;
-			headUndo = upcomingUndo;
-			upcomingUndo = nullptr;
-			
-			// ### An undo has been added at this precise moment, flag changes here
-			GuiMap* map = (GuiMap*)mapPointer;
-			if ( (rootTypes&(headUndo->flags&UNDO_TYPE)) == 0 && map->changesLocked() == false )
+//void UNDOS::doUndo(u32 type, Scenario* chk, SELECTIONS& sel)
+void UNDOS::doUndo(int32_t type, void *obj)
+{
+	ReversiblePtr reversible = popUndo(type);
+
+	if ( reversible != nullptr )
+	{
+		reversible->Reverse(obj);
+		redos.push_front(reversible);
+		AdjustChangeCount(reversible->GetType(), -1);
+		/* ### An undo is about to be processed
+		/*GuiMap* map = (GuiMap*)mapPointer;
+		if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT )
+		{
+			currNode->flags &= (~UNDO_CHANGE_ROOT); // Take off the change root flag
+			rootTypes &= (~(currNode->flags&UNDO_TYPE)); // Take off the root type flags
+			if ( rootTypes == 0 )
+				map->changesUndone(); // Notify that there is no longer a net undoable net change
+			else if ( map->changesLocked() ) // Changes have been locked, flush
+				flushRoots();
+		}
+		else if ( !map->changesLocked() && (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // No roots of this type
+		{
+			rootTypes |= (currNode->flags&UNDO_TYPE);
+			currNode->flags |= UNDO_CHANGE_ROOT;
+			map->notifyChange(true);
+		}
+		flipNode(currNode->flags, chk, sel, currNode);*/
+	}
+}
+
+//void UNDOS::doRedo(u32 type, Scenario* chk, SELECTIONS& sel)
+void UNDOS::doRedo(int32_t type, void *obj)
+{
+	ReversiblePtr reversible = popRedo(type);
+
+	if ( reversible != nullptr )
+	{
+		reversible->Reverse(obj);
+		undos.push_front(reversible);
+		AdjustChangeCount(reversible->GetType(), 1);
+		/*flipNode(currNode->flags, chk, sel, currNode);
+
+		// ### A redo has been converted to an undo
+		GuiMap* map = (GuiMap*)mapPointer;
+		if ( map->changesLocked() == false )
+		{
+			if ( (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // The redo is not one of the rootTypes
 			{
-				rootTypes |= (headUndo->flags&UNDO_TYPE);
-				headUndo->flags |= UNDO_CHANGE_ROOT;
+				rootTypes |= (currNode->flags&UNDO_TYPE);
+				currNode->flags |= UNDO_CHANGE_ROOT;
 				map->notifyChange(true); // Notify that there has been a change
 			}
-
-			return startNext(type); // Call again to create a new undo
-		}
-		else // Node does not have items
-		{ // Switch flags to specified type
-			upcomingUndo->flags = type;
-			return true;
-		}
-	}
-	else // upcomingUndo == nullptr
-	{ // Attempt to allocate
-		try {
-			upcomingUndo = new UndoNode();
-		} catch ( std::bad_alloc ) {
-
-			if ( lastUndo != nullptr ) // More undos can be deleted
+			else if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT ) // Matching root types
 			{
-				deleteNode(lastUndo);
-				return startNext(type);
+				currNode->flags &= (~UNDO_CHANGE_ROOT);
+				rootTypes &= (~(currNode->flags&UNDO_TYPE));
+				if ( rootTypes == 0 )
+					map->changesUndone();
 			}
-			else // No more undos stacked
-				return false; // No room for more undos/can't make room
-		}
-		return true;
+		}*/
 	}
 }
 
-bool UNDOS::addUndoTile(u16 xc, u16 yc, u16 value)
+void UNDOS::ResetChangeCount()
+{
+	changeCounters.clear();
+}
+
+/*void UNDOS::flushRoots()
+{
+	if ( rootTypes > 0 )
+	{
+		for ( auto &undo : undos )
+		{
+			if ( undo->flags & UNDO_CHANGE_ROOT )
+			{
+				undo->flags &= (~UNDO_CHANGE_ROOT);
+				rootTypes &= (~(undo->flags&UNDO_TYPE));
+			}
+			else if ( rootTypes == 0 )
+				break;
+		}
+
+		for ( auto &redo : redos )
+		{
+			if ( redo->flags & UNDO_CHANGE_ROOT )
+			{
+				redo->flags &= (~UNDO_CHANGE_ROOT);
+				rootTypes &= (~(redo->flags&UNDO_TYPE));
+			}
+			else if ( rootTypes == 0 )
+				break; // No more change roots, all done
+		}
+	}
+}*/
+
+/*bool UNDOS::addUndoTile(u16 xc, u16 yc, u16 value)
 {
 	UndoTile* tile;
 
@@ -207,102 +266,65 @@ bool UNDOS::addUndoLocationChange(u16 locationIndex, u8 field, u32 data)
 	} catch ( std::bad_alloc ) { return false; }
 
 	return addToUndo(UNDO_LOCATION_CHANGE, loc);
-}
+}*/
 
-void UNDOS::doUndo(u32 type, Scenario* chk, SELECTIONS& sel)
+/*bool UNDOS::startNext(u32 type)
 {
-	UndoNode* currNode = popUndo(type);
-
-	if ( currNode != nullptr )
+	/*if ( upcomingUndo != nullptr )
 	{
-		// ### An undo is about to be processed
-		GuiMap* map = (GuiMap*)mapPointer;
-		if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT )
-		{
-			currNode->flags &= (~UNDO_CHANGE_ROOT); // Take off the change root flag
-			rootTypes &= (~(currNode->flags&UNDO_TYPE)); // Take off the root type flags
-			if ( rootTypes == 0 )
-				map->changesUndone(); // Notify that there is no longer a net undoable net change
-			else if ( map->changesLocked() ) // Changes have been locked, flush
-				flushRoots();
-		}
-		else if ( !map->changesLocked() && (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // No roots of this type
-		{
-			rootTypes |= (currNode->flags&UNDO_TYPE);
-			currNode->flags |= UNDO_CHANGE_ROOT;
-			map->notifyChange(true);
-		}
+		if ( upcomingUndo->head != nullptr ) // Node has items
+		{ // Add upcomingUndo onto the undo stack
+			if ( upcomingUndo->flags & UNDO_UNIT )
+				clipRedos(UNDO_UNIT);
+			else
+				clipRedos(upcomingUndo->flags);
 
-		flipNode(currNode->flags, chk, sel, currNode);
-		currNode->next = headRedo;
-		headRedo = currNode;
-	}
-}
+			undos.push_front(shared_ptr<UndoNode>(upcomingUndo));
+			upcomingUndo = nullptr;
 
-void UNDOS::doRedo(u32 type, Scenario* chk, SELECTIONS& sel)
-{
-	UndoNode* currNode = popRedo(type);
-
-	if ( currNode != nullptr )
-	{
-		flipNode(currNode->flags, chk, sel, currNode);
-		currNode->next = headUndo;
-		headUndo = currNode;
-
-		// ### A redo has been converted to an undo
-		GuiMap* map = (GuiMap*)mapPointer;
-		if ( map->changesLocked() == false )
-		{
-			if ( (rootTypes&(currNode->flags&UNDO_TYPE)) == 0 ) // The redo is not one of the rootTypes
+			// ### An undo has been added at this precise moment, flag changes here
+			observer.NotifyRedone(currNode);
+			/*GuiMap* map = (GuiMap*)mapPointer;
+			UndoPtr head = undos.back();
+			if ( (rootTypes&(head->flags&UNDO_TYPE)) == 0 && map->changesLocked() == false )
 			{
-				rootTypes |= (currNode->flags&UNDO_TYPE);
-				currNode->flags |= UNDO_CHANGE_ROOT;
+				rootTypes |= (head->flags&UNDO_TYPE);
+				head->flags |= UNDO_CHANGE_ROOT;
 				map->notifyChange(true); // Notify that there has been a change
 			}
-			else if ( (currNode->flags&UNDO_CHANGE_ROOT) == UNDO_CHANGE_ROOT ) // Matching root types
-			{
-				currNode->flags &= (~UNDO_CHANGE_ROOT);
-				rootTypes &= (~(currNode->flags&UNDO_TYPE));
-				if ( rootTypes == 0 )
-					map->changesUndone();
-			}
+	
+			return startNext(type); // Call again to create a new undo
+		}
+		else // Node does not have items
+		{ // Switch flags to specified type
+			upcomingUndo->flags = type;
+			return true;
 		}
 	}
-}
-
-void UNDOS::flushRoots()
-{
-	if ( rootTypes > 0 )
-	{
-		UndoNode* curr = headUndo;
-		while ( curr != nullptr && rootTypes > 0 )
-		{
-			if ( curr->flags&UNDO_CHANGE_ROOT )
-			{
-				curr->flags &= (~UNDO_CHANGE_ROOT);
-				rootTypes &= (~(curr->flags&UNDO_TYPE));
-			}
-			curr = curr->next;
+	else // upcomingUndo == nullptr
+	{ // Attempt to allocate
+		try {
+			upcomingUndo = UndoPtr(new UndoNode);
 		}
+		catch ( std::bad_alloc ) {
 
-		curr = headRedo;
-		while ( curr != nullptr && rootTypes > 0 )
-		{
-			if ( curr->flags&UNDO_CHANGE_ROOT )
+			if ( undos.front() != nullptr ) // More undos can be deleted
 			{
-				curr->flags &= (~UNDO_CHANGE_ROOT);
-				rootTypes &= (~(curr->flags&UNDO_TYPE));
+				undos.pop_front();
+				return startNext(type);
 			}
-			curr = curr->next;
+			else // No more undos stacked
+				return false; // No room for more undos/can't make room
 		}
+		return true;
 	}
-}
+}*/
 
-void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
+/*void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoPtr node)
 {
 	switch ( flags&UNDO_TYPE )
 	{
-		case UNDO_TERRAIN:
+		case UNDO_TERRAIN: // ORDER DOES NOT MATTER
 			{
 				buffer& MTXM = chk->MTXM(),
 					  & TILE = chk->TILE();
@@ -318,11 +340,11 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 					MTXM.replace<u16>(pos, currTile->value);
 					TILE.replace<u16>(pos, currTile->value);
 					currTile->value = tempVal;
-					currTile = currTile->next;
+					currTile = (UndoTile*)currTile->next;
 				}
 			}
 			break;
-		case UNDO_UNIT_CREATE:
+		case UNDO_UNIT_CREATE: // ORDER DOES NOT MATTER
 			{
 				node->flags &= (~UNDO_UNIT_CREATE);
 				node->flags |= UNDO_UNIT_DEL;
@@ -335,7 +357,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currUnit != nullptr ) // Traverse the detatched stack
 				{ // Build the new stack
-					next = currUnit->next;
+					next = (UndoUnitCreate*)currUnit->next;
 					ChkUnit* unitRef;
 					if ( chk->getUnit(unitRef, currUnit->unitIndex) )
 						node->head = new UndoUnitDel(node->head, currUnit->unitIndex, unitRef);
@@ -345,7 +367,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 				}
 			}
 			break;
-		case UNDO_UNIT_DEL:
+		case UNDO_UNIT_DEL: // ORDER DOES NOT MATTER
 			{
 				node->flags &= (~UNDO_UNIT_DEL);
 				node->flags |= UNDO_UNIT_CREATE;
@@ -358,9 +380,45 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currUnit != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
-					next = currUnit->next;
+					next = (UndoUnitDel*)currUnit->next;
 					UNIT.insert<ChkUnit&>(currUnit->unitIndex*UNIT_STRUCT_SIZE, currUnit->unit);
 					node->head = new UndoUnitCreate(node->head, currUnit->unitIndex);
+					delete currUnit;
+					currUnit = next;
+				}
+			}
+			break;
+		case UNDO_UNIT_CHANGE: // ORDER DOES NOT MATTER
+			{
+				buffer& UNIT = chk->UNIT();
+
+				UndoUnitChange* currUnit = (UndoUnitChange*)node->head,
+					*next;
+
+				node->head = nullptr; // Detatch the current unit stack
+
+				while ( currUnit != nullptr ) // Traverse the detatched stack
+				{ // Build the new stack
+					next = (UndoUnitChange*)currUnit->next;
+					u32 temp = 0,
+						pos = currUnit->unitIndex*UNIT_STRUCT_SIZE + unitFieldLoc[currUnit->field];
+
+					switch ( unitFieldSize[currUnit->field] )
+					{
+					case 1:
+						UNIT.get<u8>((u8&)temp, pos);
+						UNIT.replace<u8>(pos, u8(currUnit->data));
+						break;
+					case 2:
+						UNIT.get<u16>((u16&)temp, pos);
+						UNIT.replace<u16>(pos, u16(currUnit->data));
+						break;
+					case 4:
+						UNIT.get<u32>(temp, pos);
+						UNIT.replace<u32>(pos, currUnit->data);
+						break;
+					}
+					node->head = new UndoUnitChange((UndoUnitChange*)node->head, currUnit->unitIndex, currUnit->field, temp);
 					delete currUnit;
 					currUnit = next;
 				}
@@ -377,7 +435,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currUnit != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
-					next = currUnit->next;
+					next = (UndoUnitMove*)currUnit->next;
 					if ( UNIT.swap<ChkUnit>(currUnit->newIndex*UNIT_STRUCT_SIZE, currUnit->oldIndex*UNIT_STRUCT_SIZE) )
 						sel.sendSwap(currUnit->oldIndex, currUnit->newIndex);
 					node->head = new UndoUnitMove(node->head, currUnit->newIndex, currUnit->oldIndex);
@@ -399,7 +457,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currUnit != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
-					next = currUnit->next;
+					next = (UndoUnitMove*)currUnit->next;
 					if ( UNIT.get<ChkUnit>(preserve, currUnit->newIndex*UNIT_STRUCT_SIZE) &&
 						 UNIT.del<ChkUnit>(currUnit->newIndex*UNIT_STRUCT_SIZE) &&
 						 UNIT.insert<ChkUnit&>(currUnit->oldIndex*UNIT_STRUCT_SIZE, preserve) )
@@ -408,42 +466,6 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 					}
 					sel.finishMove();
 					node->head = new UndoUnitMove(node->head, currUnit->newIndex, currUnit->oldIndex);
-					delete currUnit;
-					currUnit = next;
-				}
-			}
-			break;
-		case UNDO_UNIT_CHANGE:
-			{
-				buffer& UNIT = chk->UNIT();
-
-				UndoUnitChange* currUnit = (UndoUnitChange*)node->head,
-							  * next;
-
-				node->head = nullptr; // Detatch the current unit stack
-
-				while ( currUnit != nullptr ) // Traverse the detatched stack
-				{ // Build the new stack
-					next = currUnit->next;
-					u32 temp = 0,
-						pos = currUnit->unitIndex*UNIT_STRUCT_SIZE + unitFieldLoc[currUnit->field];
-
-					switch ( unitFieldSize[currUnit->field] )
-					{
-						case 1:
-							UNIT.get<u8>((u8&)temp, pos);
-							UNIT.replace<u8>(pos, u8(currUnit->data));
-							break;
-						case 2:
-							UNIT.get<u16>((u16&)temp, pos);
-							UNIT.replace<u16>(pos, u16(currUnit->data));
-							break;
-						case 4:
-							UNIT.get<u32>(temp, pos);
-							UNIT.replace<u32>(pos, currUnit->data);
-							break;
-					}
-					node->head = new UndoUnitChange((UndoUnitChange*)node->head, currUnit->unitIndex, currUnit->field, temp);
 					delete currUnit;
 					currUnit = next;
 				}
@@ -467,7 +489,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 					{
 						for ( u16 i=0; i<numCreates; i++ ) // Traverse unit creates
 						{
-							UndoUnitCreate* next = trackCreate->next;
+							UndoUnitCreate* next = (UndoUnitCreate*)trackCreate->next;
 							ChkUnit* unitRef;
 							if ( chk->getUnit(unitRef, trackCreate->unitIndex) )
 							{
@@ -488,7 +510,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 							UndoUnitDel* trackDel = (UndoUnitDel*)trackCreate;
 							for ( u16 i=0; i<numDeletes; i++ ) // Traverse unit deletes
 							{ // Undo & add each item to the new stack
-								UndoUnitDel* next = trackDel->next;
+								UndoUnitDel* next = (UndoUnitDel*)trackDel->next;
 								if ( UNIT.insert<ChkUnit&>(trackDel->unitIndex*UNIT_STRUCT_SIZE, trackDel->unit) )
 									sel.addUnit(trackDel->unitIndex);
 								try {
@@ -524,7 +546,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currLocation != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
-					next = currLocation->next;
+					next = (UndoLocationCreate*)currLocation->next;
 
 					ChkLocation* locRef;
 					if ( chk->getLocation(locRef, currLocation->locationIndex) )
@@ -565,7 +587,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currLocation != nullptr ) // Traverse the detached stack
 				{ // Build the new stack
-					next = currLocation->next;
+					next = (UndoLocationDel*)currLocation->next;
 
 					// Recreate the string
 					u32 stringNum;
@@ -600,7 +622,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currLoc != nullptr ) // Traverse the detatched stack
 				{ // Build the new stack
-					next = currLoc->next;
+					next = (UndoLocationMove*)currLoc->next;
 
 					ChkLocation* loc;
 					if ( chk->getLocation(loc, currLoc->locationIndex) )
@@ -628,7 +650,7 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 
 				while ( currLoc != nullptr ) // Traverse the detatched stack
 				{ // Build the new stack
-					next = currLoc->next;
+					next = (UndoLocationChange*)currLoc->next;
 					u32 temp = 0,
 						pos = currLoc->locationIndex*CHK_LOCATION_SIZE + locationFieldLoc[currLoc->field];
 
@@ -657,16 +679,14 @@ void UNDOS::flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node)
 			Error("Failed to find matching undo stream");
 			break;
 	}
-}
+}*/
 
-bool UNDOS::addToUndo(u32 type, void* undoInfo)
+/*bool UNDOS::addToUndo(u32 type, void* undoInfo)
 {
 	if ( upcomingUndo == nullptr || (upcomingUndo->flags&type) == 0 )
 	{
 		if ( !startNext(type) )
-		{
 			return false;
-		}
 	}
 
 	Invariant ( upcomingUndo != nullptr );
@@ -679,81 +699,81 @@ bool UNDOS::addToUndo(u32 type, void* undoInfo)
 		upcomingUndo->head = undoInfo;
 	}
 	return true;
-}
+}*/
 
-UndoNode* UNDOS::popUndo(u32 type)
+ReversiblePtr UNDOS::popUndo(int32_t type)
 {
-	UndoNode* track = headUndo;
-
-	while ( track != nullptr )
+	auto it = undos.begin();
+	while ( it != undos.end() )
 	{
-		if ( track->flags & type )
+		if ( type == (*it)->GetType() )
 		{
-			removeNode(track);
-			return track;
+			ReversiblePtr toReturn = (*it);
+			undos.erase(it);
+			return toReturn;
 		}
-		track = track->next;
 	}
 	return nullptr;
 }
 
-UndoNode* UNDOS::popRedo(u32 type)
+ReversiblePtr UNDOS::popRedo(int32_t type)
 {
-	UndoNode* track = headRedo;
-
-	while ( track != nullptr )
+	auto it = redos.begin();
+	while ( it != redos.end() )
 	{
-		if ( track->flags & type )
+		if ( type == (*it)->GetType() )
 		{
-			removeNode(track);
-			return track;
+			ReversiblePtr toReturn = (*it);
+			redos.erase(it);
+			return toReturn;
 		}
-		track = track->next;
+		++it;
 	}
 	return nullptr;
 }
 
-bool UNDOS::clip(UndoNode* track, u32 type)
+void UNDOS::AdjustChangeCount(int32_t type, int32_t adjustBy)
+{
+	cout << type << " : " << adjustBy << endl;
+	
+	if ( type == 0 )
+	{
+		cout << "?type" << endl;
+	}
+
+	auto typeCounter = changeCounters.find(type);
+	if ( typeCounter != changeCounters.end() )
+	{
+		auto newCount = typeCounter->second + adjustBy;
+		if ( newCount == 0 )
+			changeCounters.erase(type);
+		else
+			typeCounter->second = newCount;
+	}
+	else
+		changeCounters.insert(std::pair<int32_t, int32_t>(type, adjustBy));
+
+	if ( changeCounters.size() == 0 )
+		observer.ChangesReversed();
+	else
+		observer.ChangesMade();
+}
+
+/*bool UNDOS::clip(std::list<UndoPtr> &undoRedoList, u32 type)
 {
 	bool didClip = false;
-	UndoNode* next;
-
-	while ( track != nullptr )
+	auto it = undoRedoList.begin();
+	while ( it != undoRedoList.end() )
 	{
-		next = track->next;
-		if ( track->flags & type )
-		{
-			deleteNode(track);
-			didClip = true;
-		}
-		track = next;
+		if ( ((*it)->flags & type) > 0 )
+			it = undoRedoList.erase(it); // 'it' is set to the item after the item erased
+		else
+			++it;
 	}
 	return didClip;
-}
+}*/
 
-void UNDOS::deleteNode(UndoNode* node)
+/*bool UNDOS::clipRedos(u32 type)
 {
-	removeNode(node);
-	delete node;
-}
-
-void UNDOS::removeNode(UndoNode* node)
-{
-	UndoNode* prev = node->prev,
-			* next = node->next;
-
-	if ( next != nullptr )
-		next->prev = prev;
-	if ( prev != nullptr )
-		prev->next = next;
-
-	if ( node == headRedo )
-		headRedo = next;
-	else
-	{
-		if ( node == headUndo )
-			headUndo = next;
-		if ( node == lastUndo )
-			lastUndo = prev;
-	}
-}
+	return clip(redos, type);
+}*/

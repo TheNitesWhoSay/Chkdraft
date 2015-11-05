@@ -193,7 +193,7 @@ bool MapFile::OpenFile()
 					FileToBuffer(hMpq, "staredit\\scenario.chk", chk);
 					MpqCloseUpdatedArchive(hMpq, NULL);
 
-					if ( chk.size() > 0 && ParseBuffer(chk) )
+					if ( chk.size() > 0 && ParseScenario(chk) )
 					{
 						if ( VER().exists() )
 						{
@@ -223,7 +223,7 @@ bool MapFile::OpenFile()
 			{
 				if ( FileToBuffer(filePath, chk) )
 				{
-					if ( ParseBuffer(chk) )
+					if ( ParseScenario(chk) )
 					{
 						if ( VER().exists() )
 						{

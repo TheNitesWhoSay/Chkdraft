@@ -1,8 +1,9 @@
 #include "ClipBoard.h"
 #include "Chkdraft.h"
+#include "TileChange.h"
+#include "UnitCreateDel.h"
 
-CLIPBOARD::CLIPBOARD() : headCopyTile(nullptr), headQuickTile(nullptr), headCopyUnit(nullptr), headQuickUnit(nullptr), 
-						 pasting(false), quickPaste(false)
+CLIPBOARD::CLIPBOARD() : pasting(false), quickPaste(false)
 {
 	edges.left = -1;
 	edges.top = -1;
@@ -20,7 +21,7 @@ CLIPBOARD::~CLIPBOARD()
 
 bool CLIPBOARD::hasTiles()
 {
-	return headCopyTile != nullptr;
+	return copyTiles.size() > 0;
 }
 
 void CLIPBOARD::copy(SELECTIONS* selection, Scenario* chk, u8 layer)
@@ -30,42 +31,34 @@ void CLIPBOARD::copy(SELECTIONS* selection, Scenario* chk, u8 layer)
 		ClearCopyTiles(); // Clear whatever was previously copied
 		if ( selection->hasTiles() )
 		{
-			TileNode* track = selection->getFirstTile(); // track = firstSelectionTile
-			PasteTileNode* add = new PasteTileNode(track->value, track->xc*32, track->yc*32, track->neighbors, headCopyTile);
+			TileNode firstTile = selection->getFirstTile();
+			edges.left = firstTile.xc * 32;
+			edges.right = firstTile.xc * 32 + 32;
+			edges.top = firstTile.yc * 32;
+			edges.bottom = firstTile.yc * 32 + 32;
 
-			edges.left	 = track->xc*32;
-			edges.right	 = track->xc*32 + 32;
-			edges.top	 = track->yc*32;
-			edges.bottom = track->yc*32 + 32;
-
-			headCopyTile = add;
-			track = track->next;
-
-			while ( track != nullptr ) // Traverse through all tiles
+			auto &selTiles = selection->getTiles();
+			for ( auto &selTile : selTiles ) // Traverse through all tiles
 			{
-				add = new PasteTileNode(track->value, track->xc*32, track->yc*32, track->neighbors, headCopyTile);
-				
-				// Record the outermost tile positions for determining their relation to the cursor
-				if		( add->xc	 < edges.left   ) edges.left	= add->xc;
-				else if ( add->xc+32 > edges.right  ) edges.right	= add->xc+32;
-				if		( add->yc	 < edges.top    ) edges.top		= add->yc;
-				else if ( add->yc+32 > edges.bottom ) edges.bottom	= add->yc+32;
+				PasteTileNode tile(selTile.value, selTile.xc * 32, selTile.yc * 32, selTile.neighbors);
 
-				add->next = headCopyTile;
-				headCopyTile = add;
-				track = track->next;
+				// Record the outermost tile positions for determining their relation to the cursor
+				if		( tile.xc	   < edges.left	  ) edges.left	 = tile.xc;
+				else if ( tile.xc + 32 > edges.right  ) edges.right  = tile.xc + 32;
+				if		( tile.yc	   < edges.top	  ) edges.top	 = tile.yc;
+				else if ( tile.yc + 32 > edges.bottom ) edges.bottom = tile.yc + 32;
+
+				copyTiles.insert(copyTiles.end(), tile);
 			}
 
 			POINT middle; // Determine where the new middle of the paste is
 			middle.x = edges.left+(edges.right-edges.left)/2;
 			middle.y = edges.top+(edges.bottom-edges.top)/2; 
 
-			PasteTileNode* pTrack = headCopyTile; // Used to traverse through all paste tiles
-			while ( pTrack != nullptr ) // Update the tile's relative position to the cursor
+			for ( auto &tile : copyTiles ) // Update the tile's relative position to the cursor
 			{
-				pTrack->xc -= middle.x;
-				pTrack->yc -= middle.y;
-				pTrack = pTrack->next;
+				tile.xc -= middle.x;
+				tile.yc -= middle.y;
 			}
 		}
 	}
@@ -74,11 +67,10 @@ void CLIPBOARD::copy(SELECTIONS* selection, Scenario* chk, u8 layer)
 		ClearCopyUnits();
 		if ( selection->hasUnits() )
 		{
-			UnitNode* track = selection->getFirstUnit();
-			PasteUnitNode* add;
 			ChkUnit* currUnit;
 
-			if ( chk->getUnit(currUnit, track->index) )
+			u16 firstUnitIndex = selection->getFirstUnit();
+			if ( chk->getUnit(currUnit, firstUnitIndex) )
 			{
 				edges.left	 = currUnit->xc;
 				edges.right	 = currUnit->xc;
@@ -86,32 +78,30 @@ void CLIPBOARD::copy(SELECTIONS* selection, Scenario* chk, u8 layer)
 				edges.bottom = currUnit->yc;
 			}
 
-			while ( track != nullptr )
+			auto &selectedUnits = selection->getUnits();
+			for ( u16 &unitIndex : selectedUnits )
 			{
-				if ( chk->getUnit(currUnit, track->index) )
+				if ( chk->getUnit(currUnit, unitIndex) )
 				{
-					add = new PasteUnitNode(currUnit);
+					PasteUnitNode add(currUnit);
 
-					if		( add->xc < edges.left   ) edges.left	= add->xc;
-					else if ( add->xc > edges.right  ) edges.right	= add->xc;
-					if		( add->yc < edges.top    ) edges.top	= add->yc;
-					else if ( add->yc > edges.bottom ) edges.bottom = add->yc;
+					if		( add.xc < edges.left	) edges.left   = add.xc;
+					else if ( add.xc > edges.right	) edges.right  = add.xc;
+					if		( add.yc < edges.top	) edges.top	   = add.yc;
+					else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
 
-					add->next = headCopyUnit;;
-					headCopyUnit = add;
+					copyUnits.insert(copyUnits.end(), add);
 				}
-				track = track->next;
 			}
 
 			POINT middle; // Determine where the new middle of the paste is
 			middle.x = edges.left+(edges.right-edges.left)/2;
 			middle.y = edges.top+(edges.bottom-edges.top)/2;
-			PasteUnitNode* pTrack = headCopyUnit; // Used to traverse through all paste units
-			while ( pTrack != nullptr ) // Update the tile's relative position to the cursor
+
+			for ( auto &unit : copyUnits ) // Update the unit's relative position to the cursor
 			{
-				pTrack->xc -= middle.x;
-				pTrack->yc -= middle.y;
-				pTrack = pTrack->next;
+				unit.xc -= middle.x;
+				unit.yc -= middle.y;
 			}
 		}
 	}
@@ -119,24 +109,12 @@ void CLIPBOARD::copy(SELECTIONS* selection, Scenario* chk, u8 layer)
 
 void CLIPBOARD::addQuickTile(u16 index, s32 xc, s32 yc)
 {
-	PasteTileNode* tile;
-	try {
-		tile = new PasteTileNode(index, xc, yc, ALL_NEIGHBORS, headQuickTile);
-	} catch ( std::bad_alloc )
-	{ return; }
-
-	headQuickTile = tile;
+	quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, ALL_NEIGHBORS));
 }
 
 void CLIPBOARD::addQuickUnit(ChkUnit* unitRef)
 {
-	PasteUnitNode* unit;
-	try {
-		unit = new PasteUnitNode(unitRef, headQuickUnit);
-	} catch ( std::bad_alloc )
-	{ return; }
-
-	headQuickUnit = unit;
+	quickUnits.insert(quickUnits.end(), PasteUnitNode(unitRef));
 }
 
 void CLIPBOARD::beginPasting(bool isQuickPaste)
@@ -187,50 +165,49 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 					u16 xSize = chk->XSize();
 					u16 ySize = chk->YSize();
 	
-					PasteTileNode* track = getFirstTile();
-					while ( track != nullptr )
+					std::shared_ptr<ReversibleActions> tileChanges(new ReversibleActions);
+					auto &tiles = getTiles();
+					for ( auto &tile : tiles )
 					{
-						s32 xc = (track->xc+mapClickX)/32;
-						s32 yc = (track->yc+mapClickY)/32;
-	
+						s32 xc = (tile.xc + mapClickX) / 32;
+						s32 yc = (tile.yc + mapClickY) / 32;
+
 						// If within map boundaries
 						if ( xc >= 0 && xc < xSize )
 						{
 							if ( yc >= 0 && yc < ySize )
 							{
-								u32 startLocation = 2*xSize*yc+2*xc; // Down y rows, over x columns
-								if ( chk->MTXM().get<u16>(startLocation) != track->value )
+								u32 startLocation = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
+								if ( chk->MTXM().get<u16>(startLocation) != tile.value )
 								{
-									undos.addUndoTile((u16)xc, (u16)yc, chk->MTXM().get<u16>(startLocation));
-									chk->TILE().replace<u16>(startLocation, track->value);
-									chk->MTXM().replace<u16>(startLocation, track->value);
+									tileChanges->Insert(std::shared_ptr<TileChange>(new TileChange(xc, yc, chk->MTXM().get<u16>(startLocation))));
+									chk->TILE().replace<u16>(startLocation, tile.value);
+									chk->MTXM().replace<u16>(startLocation, tile.value);
 								}
 							}
 						}
-	
-						track = track->next;
 					}
-					undos.startNext(0);
+					undos.AddUndo(tileChanges);
 				}
 			}
 			break;
 		case LAYER_UNITS:
 			{
-				PasteUnitNode* track = getFirstUnit();
-
-				while ( track != nullptr )
+				std::shared_ptr<ReversibleActions> unitCreates(new ReversibleActions);
+				auto &pasteUnits = getUnits();
+				for ( auto &pasteUnit : pasteUnits )
 				{
-					track->unit.xc = u16(mapClickX + track->xc);
-					track->unit.yc = u16(mapClickY + track->yc);
-					if ( mapClickX + (s32(track->xc)) >= 0 && mapClickY + (s32(track->yc)) >= 0 )
+					pasteUnit.unit.xc = u16(mapClickX + pasteUnit.xc);
+					pasteUnit.unit.yc = u16(mapClickY + pasteUnit.yc);
+					if ( mapClickX + (s32(pasteUnit.xc)) >= 0 && mapClickY + (s32(pasteUnit.yc)) >= 0 )
 					{
 						bool canPaste = true;
 						if ( allowStack == false )
 						{
-							s32 unitLeft   = track->unit.xc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeLeft,
-								unitRight  = track->unit.xc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeRight,
-								unitTop	   = track->unit.yc - chkd.scData.units.UnitDat(track->unit.id)->UnitSizeUp,
-								unitBottom = track->unit.yc + chkd.scData.units.UnitDat(track->unit.id)->UnitSizeDown;
+							s32 unitLeft   = pasteUnit.unit.xc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeLeft,
+								unitRight  = pasteUnit.unit.xc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeRight,
+								unitTop	   = pasteUnit.unit.yc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeUp,
+								unitBottom = pasteUnit.unit.yc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeDown;
 
 							ChkUnit* unit;
 							u16 numUnits = chk->numUnits();
@@ -254,52 +231,43 @@ void CLIPBOARD::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, U
 
 						if ( canPaste )
 						{
-							prevPaste.x = track->unit.xc;
-							prevPaste.y = track->unit.yc;
+							prevPaste.x = pasteUnit.unit.xc;
+							prevPaste.y = pasteUnit.unit.yc;
 							u16 numUnits = chk->numUnits();
-							if ( chk->UNIT().add<ChkUnit&>(track->unit) )
+							if ( chk->UNIT().add<ChkUnit&>(pasteUnit.unit) )
 							{
-								undos.addUndoUnitCreate(numUnits);
+								unitCreates->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(numUnits)));
 								if ( chkd.unitWindow.getHandle() != nullptr )
-									chkd.unitWindow.AddUnitItem(numUnits, &track->unit);
+									chkd.unitWindow.AddUnitItem(numUnits, &pasteUnit.unit);
 							}
 						}
 					}
-					track = track->next;
 				}
+				chkd.maps.curr->undos().AddUndo(unitCreates);
 			}
 			break;
 	}
 }
 
-PasteTileNode* CLIPBOARD::getFirstTile()
+std::vector<PasteTileNode> &CLIPBOARD::getTiles()
 {
 	if ( quickPaste )
-		return headQuickTile;
+		return quickTiles;
 	else
-		return headCopyTile;
+		return copyTiles;
 }
 
-PasteUnitNode* CLIPBOARD::getFirstUnit()
+std::vector<PasteUnitNode> &CLIPBOARD::getUnits()
 {
 	if ( quickPaste )
-		return headQuickUnit;
+		return quickUnits;
 	else
-		return headCopyUnit;
+		return copyUnits;
 }
 
 void CLIPBOARD::ClearCopyTiles()
 {
-	PasteTileNode* track = headCopyTile,
-				 * next;
-
-	while ( track != nullptr )
-	{
-		next = track->next;
-		delete track;
-		track = next;
-	}
-	headCopyTile = nullptr;
+	copyTiles.clear();
 	edges.left = -1;
 	edges.top = -1;
 	edges.right = -1;
@@ -308,16 +276,7 @@ void CLIPBOARD::ClearCopyTiles()
 
 void CLIPBOARD::ClearCopyUnits()
 {
-	PasteUnitNode* track = headCopyUnit,
-				 * next;
-
-	while ( track != nullptr )
-	{
-		next = track->next;
-		delete track;
-		track = next;
-	}
-	headCopyUnit = nullptr;
+	copyUnits.clear();
 	edges.left = -1;
 	edges.top = -1;
 	edges.right = -1;
@@ -326,19 +285,6 @@ void CLIPBOARD::ClearCopyUnits()
 
 void CLIPBOARD::ClearQuickItems()
 {
-	PasteTileNode* nextTile;
-	while ( headQuickTile != nullptr )
-	{
-		nextTile = headQuickTile->next;
-		delete headQuickTile;
-		headQuickTile = nextTile;
-	}
-
-	PasteUnitNode* nextUnit;
-	while ( headQuickUnit != nullptr )
-	{
-		nextUnit = headQuickUnit->next;
-		delete headQuickUnit;
-		headQuickUnit = nextUnit;
-	}
+	quickTiles.clear();
+	quickUnits.clear();
 }

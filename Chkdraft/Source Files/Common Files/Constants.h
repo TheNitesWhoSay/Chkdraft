@@ -18,6 +18,7 @@ typedef uint8_t u8;
 typedef int8_t s8;
 
 #define u8_max 255
+#define u16_max 65535
 #define u32_max 4294967295
 
 #define ASCII_CHKD 1128811332 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332

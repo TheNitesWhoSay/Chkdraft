@@ -40,7 +40,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		HWND hForces = getHandle();
 		textAboutForces.CreateThis(hForces, 5, 10, 587, 20,
 			"Designate player forces, set force names, and force properties. It is recommended to separate computer and human players", 0);
@@ -88,7 +88,7 @@ bool ForcesWindow::DestroyThis()
 void ForcesWindow::RefreshWindow()
 {
 	HWND hWnd = getHandle();
-	GuiMap* map = chkd.maps.curr;
+	GuiMapPtr map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
 		for ( int force=0; force<4; force++ )
@@ -140,7 +140,7 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 	case BN_CLICKED:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
 		if ( map != nullptr )
 		{
@@ -285,7 +285,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									if ( windowID >= LB_F1PLAYERS && windowID <= LB_F4PLAYERS )
 									{
 										int force = windowID-LB_F1PLAYERS;
-										GuiMap* map = chkd.maps.curr;
+										GuiMapPtr map = chkd.maps.curr;
 										if ( map != nullptr )
 										{
 											map->setPlayerForce(playerBeingDragged, force);

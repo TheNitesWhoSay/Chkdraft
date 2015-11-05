@@ -95,7 +95,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 
 			// UNIS - unit settings strings (vanilla)
 			for ( int i=0; i<228; i++ )
-				MarkIfOverZero( UNIS.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+				MarkIfOverZero( UNIS.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
 
 			// SWNM - switch strings
 			for ( int i=0; i<256; i++ )
@@ -103,7 +103,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 
 			// UNIx - unit settings strings (brood war)
 			for ( int i=0; i<228; i++ )
-				MarkIfOverZero( UNIx.get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+				MarkIfOverZero( UNIx.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
 
 			return true;
 		}
@@ -127,8 +127,8 @@ bool StringUsageTable::populateTable(std::list<StringTableNode> strList, u32 num
 	if ( stringUsed.add<u8>(0, numStrs+1) ) // Room for all strings + first unused byte
 	{
 		strList.sort(CompareStrTblNode);
-		for ( auto it = strList.begin(); it != strList.end(); it++ )
-			stringUsed.replace<u8>(it->stringNum, 1);
+		for ( auto &str : strList )
+			stringUsed.replace<u8>(str.stringNum, 1);
 
 		return true;
 	}

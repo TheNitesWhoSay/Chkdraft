@@ -1,5 +1,7 @@
 #include "Chkdraft.h"
 
+#define ifmapopen(dothis) if ( this->maps.curr != nullptr ) dothis;
+
 void Chkdraft::OnLoadTest()
 {
 	/*
@@ -81,7 +83,7 @@ bool Chkdraft::CreateThis()
 
 bool Chkdraft::ChangesLocked(u16 mapId)
 {
-	GuiMap* map = maps.GetMap(mapId);
+	GuiMapPtr map = maps.GetMap(mapId);
 	return map != nullptr && map->changesLocked();
 }
 
@@ -133,6 +135,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam
 						else if ( GetParent(hWnd) == locationWindow.getHandle() )
 						{
 							locationWindow.DestroyThis();
+							return true;
+						}
+						else if ( GetParent(hWnd) == enterPasswordWindow.getHandle())
+						{
+							enterPasswordWindow.ButtonLogin();
 							return true;
 						}
 						break;
@@ -291,8 +298,6 @@ void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
 		}
 		else
 			maps.OpenMap(&lpCmdLine[0]);
-
-		maps.FocusActive();
 	}
 }
 
@@ -370,6 +375,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 		// Tools
 	case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
+	case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
 
 		// Windows
 	case ID_WINDOWS_CASCADE: maps.cascade(); break;
@@ -541,7 +547,6 @@ void Chkdraft::SizeSubWindows()
 void Chkdraft::UseDragFile(const char* fileName)
 {
 	maps.OpenMap(fileName);
-	maps.FocusActive();
 }
 
 void Chkdraft::OpenMapSettings(u16 menuId)

@@ -1,5 +1,5 @@
-#ifndef ACTION_H
-#define ACTION_H
+#ifndef CHKACTION_H
+#define CHKACTION_H
 #include "Basics.h"
 
 enum ActionArgType

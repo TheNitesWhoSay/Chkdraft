@@ -42,7 +42,6 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				if ( chkd.maps.NewMap(width, height, tileset, terrain, triggers) )
 				{
-					chkd.maps.FocusActive();
 					chkd.maps.curr->Scroll(SCROLL_X | SCROLL_Y);
 
 					// Tiling Code

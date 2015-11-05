@@ -747,7 +747,7 @@ void TriggersWindow::RefreshGroupList()
 	listGroups.SetRedraw(false);
 	listGroups.ClearItems();
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	u8 firstNotFound = 0;
 	bool addedPlayer[NUM_TRIG_PLAYERS];
 	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
@@ -818,7 +818,7 @@ void TriggersWindow::RefreshTrigList()
 	numVisibleTrigs = 0;
 	int toSelect = -1;
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr && chk->TRIG().exists() )
 	{
 		Trigger* trigger;
@@ -1068,7 +1068,7 @@ void TriggersWindow::ClearGroups()
 		groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scenario* chk, u32 triggerNum, Trigger* trigger)
+bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
 	string str;
 	if ( chk->getActiveComment(trigger, str) )
@@ -1146,7 +1146,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
 	}
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenario* chk, u32 triggerNum, Trigger* trigger)
+void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
 	HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
 	if ( hBackground != NULL )

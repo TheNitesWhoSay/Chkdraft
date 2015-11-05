@@ -1,8 +1,8 @@
 #ifndef TRIGGER_H
 #define TRIGGER_H
 #include "Basics.h"
-#include "Condition.h"
-#include "Action.h"
+#include "ChkCondition.h"
+#include "ChkAction.h"
 
 #define NUM_TRIG_CONDITIONS 16
 #define NUM_TRIG_ACTIONS 64

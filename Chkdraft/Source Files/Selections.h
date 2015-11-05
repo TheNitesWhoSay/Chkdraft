@@ -33,15 +33,6 @@ class TileNode
 		TileNode() : value(0), xc(0), yc(0), neighbors(ALL_NEIGHBORS), next(nullptr) { }
 };
 
-class UnitNode
-{
-	public:
-		u16 index;
-		UnitNode* next;
-
-		UnitNode() : index(0), next(nullptr) { }
-};
-
 class SELECTIONS
 {
 	public:
@@ -63,6 +54,7 @@ class SELECTIONS
 		void addTile(u16 value, u16 xc, u16 yc);
 		void addTile(u16 value, u16 xc, u16 yc, u8 neighbors);
 		void removeTile(TileNode* &tile);
+		void removeTile(u16 xc, u16 yc);
 		void removeTiles();
 
 		u16 getSelectedLocation(); // NO_LOCATION if none are selected
@@ -75,22 +67,24 @@ class SELECTIONS
 		void removeUnit(u16 index);
 		void removeUnits();
 		void ensureFirst(u16 index); // Moves the unit @ index
-		void sendLightMove(u16 oldIndex, u16 newIndex);
 		void sendSwap(u16 oldIndex, u16 newIndex);
 		void sendMove(u16 oldIndex, u16 newIndex);
 		void finishSwap();
 		void finishMove();
 
 		bool unitIsSelected(u16 index);
-		bool hasUnits() { return headUnit != nullptr; }
-		bool hasTiles() { return headTile != nullptr; }
+		bool hasUnits() { return selUnits.size() > 0; }
+		bool hasTiles() { return selTiles.size() > 0; }
 		u16 numUnits();
 		u16 numUnitsUnder(u16 index);
 
-		TileNode* getFirstTile() { return headTile; }
-		UnitNode* getFirstUnit() { return headUnit; }
-		UnitNode* getLastUnit();
+		std::vector<TileNode> &getTiles();
+		TileNode getFirstTile();
+		std::vector<u16> &getUnits();
+		u16 getFirstUnit();
+		u16 getLastUnit();
 		u16 getHighestIndex();
+		u16 getLowestIndex();
 
 		void sortUnits(bool ascending);
 
@@ -101,8 +95,8 @@ class SELECTIONS
 		POINT startDrag;
 		POINT endDrag;
 
-		TileNode* headTile;
-		UnitNode* headUnit;
+		std::vector<u16> selUnits;
+		std::vector<TileNode> selTiles;
 
 		u16 selectedLocation;
 		u8 numRecentLocations;

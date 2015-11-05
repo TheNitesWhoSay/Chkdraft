@@ -57,7 +57,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		refreshing = true;
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		HWND hMapProperties = getHandle();
 
 		std::string mapTitle(""), mapDescription("");
@@ -140,7 +140,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 void MapPropertiesWindow::RefreshWindow()
 {
 	refreshing = true;
-	GuiMap* map = chkd.maps.curr;
+	GuiMapPtr map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
 		string mapTitle, mapDescription;

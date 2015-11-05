@@ -32,20 +32,20 @@ class TextTrigCompiler : public StaticTrigComponentParser
 	public:
 
 		TextTrigCompiler();
-		bool CompileTriggers(std::string trigText, Scenario* chk); // Compiles text, overwrites TRIG and STR upon success
-		bool CompileTriggers(buffer& text, Scenario* chk); // Compiles text, overwrites TRIG and STR upon success
-		bool CompileTrigger(std::string trigText, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
-		bool CompileTrigger(buffer& text, Trigger* trigger, Scenario* chk); // Compiles text, fills trigger upon success
+		bool CompileTriggers(std::string trigText, ScenarioPtr chk); // Compiles text, overwrites TRIG and STR upon success
+		bool CompileTriggers(buffer& text, ScenarioPtr chk); // Compiles text, overwrites TRIG and STR upon success
+		bool CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk); // Compiles text, fills trigger upon success
+		bool CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk); // Compiles text, fills trigger upon success
 
 		// Attempts to compile the argNum'th condition argument into the given condition
 		bool ParseConditionName(std::string text, u8 &ID);
-		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, Scenario* chk);
+		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk);
 		static u8 defaultFlags(u8 CID);
 
 
 	protected:
 
-		bool LoadScenario(Scenario* chk); // Sets up all the string-based metadata
+		bool LoadScenario(ScenarioPtr chk); // Sets up all the string-based metadata
 		void ClearScenario(); // Clears data loaded about a scenario
 		void CleanText(buffer& text); // Remove spacing and standardize line endings
 
@@ -107,14 +107,14 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		StringUsageTable strUsage; // Table of strings currently used in the map
 		StringUsageTable extendedStrUsage; // Table of extended strings currently used in the map
 
-		bool PrepLocationTable(Scenario* map); // Fills locationTable
-		bool PrepUnitTable(Scenario* map); // Fills unitTable
-		bool PrepSwitchTable(Scenario* map); // Fills switchTable
-		bool PrepWavTable(Scenario* map); // Fills wavTable, redundant? remove me?
-		bool PrepGroupTable(Scenario* map); // Fills groupTable
-		bool PrepStringTable(Scenario* map); // Fills stringTable
+		bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
+		bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
+		bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
+		bool PrepWavTable(ScenarioPtr map); // Fills wavTable, redundant? remove me?
+		bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
+		bool PrepStringTable(ScenarioPtr map); // Fills stringTable
 
-		bool BuildNewStringTable(Scenario* chk); // Builds a new STR section using stringTable and addedStrings
+		bool BuildNewStringTable(ScenarioPtr chk); // Builds a new STR section using stringTable and addedStrings
 };
 
 #endif

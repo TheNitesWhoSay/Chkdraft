@@ -48,7 +48,7 @@ bool TechSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 void TechSettingsWindow::RefreshWindow()
 {
 	refreshing = true;
-	Scenario* chk = (Scenario*)chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( selectedTech >= 0 && selectedTech < 44 && chk != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
@@ -262,7 +262,7 @@ void TechSettingsWindow::SetDefaultTechCosts()
 	if ( selectedTech > 0 && selectedTech < 44 && chkd.maps.curr != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		TECHDAT* techDat = chkd.scData.techs.TechDat(tech);
 
 		chk->setTechMineralCost(tech, techDat->MineralCost);
@@ -277,7 +277,7 @@ void TechSettingsWindow::ClearDefaultTechCosts()
 	if ( selectedTech > 0 && selectedTech < 44 && chkd.maps.curr != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 
 		chk->setTechMineralCost(tech, 0);
 		chk->setTechGasCost(tech, 0);

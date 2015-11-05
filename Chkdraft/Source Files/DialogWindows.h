@@ -9,5 +9,7 @@
 #include "TextTrig.h"
 #include "TileProperties.h"
 #include "TrigEditor.h"
+#include "ChangePassword.h"
+#include "EnterPassword.h"
 
 #endif

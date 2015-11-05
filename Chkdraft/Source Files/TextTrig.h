@@ -14,7 +14,7 @@ class TextTrigWindow : public ClassDialog
 
 	protected:
 		// Takes the text from the edit control given by hWnd and compiles it into the map
-		bool CompileEditText(Scenario* map, HWND hWnd);
+		bool CompileEditText(ScenarioPtr map, HWND hWnd);
 		virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

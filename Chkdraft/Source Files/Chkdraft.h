@@ -12,7 +12,6 @@
 class Chkdraft : public ClassWindow
 {
 	public:
-		bool tempBlock = false;
 					void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */	DATA scData; // Main data
@@ -32,6 +31,8 @@ class Chkdraft : public ClassWindow
 					TextTrigWindow textTrigWindow; // Modeless text triggers
 					MapSettingsWindow mapSettingsWindow; // Modeless map settings
 					TrigEditorWindow trigEditorWindow; // Modeless trig editor
+					ChangePasswordDialog changePasswordWindow; // Modeless password editor
+					EnterPasswordDialog enterPasswordWindow; // Modeless login window
 
 /* Constructors */	Chkdraft();
 

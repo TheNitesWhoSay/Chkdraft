@@ -1,4 +1,4 @@
-#include "Action.h"
+#include "ChkAction.h"
 
 ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 {

@@ -486,7 +486,7 @@ void TrigConditionsWindow::SuggestUnit()
 void TrigConditionsWindow::SuggestLocation()
 {
 	cout << "Suggest Location" << endl;
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	ChkLocation* loc = nullptr;
 	string str;
 	if ( chk != nullptr )
@@ -503,7 +503,7 @@ void TrigConditionsWindow::SuggestLocation()
 void TrigConditionsWindow::SuggestPlayer()
 {
 	cout << "Suggest Player" << endl;
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr )
 	{
 		for ( u8 i = 0; i < numTriggerPlayers; i++ )
@@ -546,7 +546,7 @@ void TrigConditionsWindow::SuggestScoreType()
 
 void TrigConditionsWindow::SuggestSwitch()
 {
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr )
 	{
 		for ( u16 i = 0; i < 256; i++ )

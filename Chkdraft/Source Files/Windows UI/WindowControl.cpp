@@ -1,4 +1,5 @@
 #include "WindowControl.h"
+#include <iostream>
 
 WindowControl::WindowControl() : defaultProc(NULL)
 {

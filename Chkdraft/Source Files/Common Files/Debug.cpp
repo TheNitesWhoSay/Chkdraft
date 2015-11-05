@@ -16,6 +16,17 @@ void PrintError(const char* file, unsigned int line, const char* msg, ...)
 	va_end(args);
 }
 
+void ShoutError(const char* file, unsigned int line, const char* msg, ...)
+{
+	char AnError[MAX_ERROR_LENGTH];
+	char AnErrorLoc[MAX_ERROR_LENGTH];
+	va_list args;
+	va_start(args, msg);
+	vsprintf_s(AnError, MAX_ERROR_LENGTH, msg, args);
+	sprintf_s(AnErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+	va_end(args);
+}
+
 #ifdef CHKD_DEBUG
 	void CheckInvariant(bool condition, const char* file, int line)
 	{

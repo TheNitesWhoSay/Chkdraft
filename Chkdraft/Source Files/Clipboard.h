@@ -13,10 +13,9 @@ class PasteTileNode
 		s32 xc;
 		s32 yc;
 		u8 neighbors; // Same as in TileNode
-		PasteTileNode* next;
 
-		PasteTileNode(u16 value, s32 xc, s32 yc, u8 neighbors, PasteTileNode* next) :
-			value(value), xc(xc), yc(yc), neighbors(neighbors), next(next) { }
+		PasteTileNode(u16 value, s32 xc, s32 yc, u8 neighbors) :
+			value(value), xc(xc), yc(yc), neighbors(neighbors) { }
 };
 
 class PasteUnitNode
@@ -25,10 +24,8 @@ class PasteUnitNode
 		ChkUnit unit;
 		s32 xc;
 		s32 yc;
-		PasteUnitNode* next;
 
-		PasteUnitNode(ChkUnit* unitRef) : next(nullptr) { memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
-		PasteUnitNode(ChkUnit* unitRef, PasteUnitNode* next) : next(next) { unit = (*unitRef); xc = unit.xc; yc = unit.yc; }
+		PasteUnitNode(ChkUnit* unitRef) { memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
 
 	private:
 		PasteUnitNode(); // Disallow ctor
@@ -42,22 +39,22 @@ class CLIPBOARD
 		~CLIPBOARD();
 
 		bool hasTiles();
-		bool hasUnits() { return headCopyUnit != nullptr; }
+		bool hasUnits() { return copyUnits.size() > 0; }
 		void copy(SELECTIONS* selection, Scenario* chk, u8 layer);
 		
 		void addQuickTile(u16 index, s32 xc, s32 yc);
-		bool hasQuickTiles() { return headQuickTile != nullptr; }
+		bool hasQuickTiles() { return quickTiles.size() > 0; }
 
 		void addQuickUnit(ChkUnit* unitRef);
-		bool hasQuickUnits() { return headQuickUnit != nullptr; }
+		bool hasQuickUnits() { return quickUnits.size() > 0; }
 
 		void beginPasting(bool isQuickPaste);
 		void endPasting();
 
 		void doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, UNDOS& undos, bool allowStack);
 
-		PasteTileNode* getFirstTile();
-		PasteUnitNode* getFirstUnit();
+		std::vector<PasteTileNode> &getTiles();
+		std::vector<PasteUnitNode> &getUnits();
 		bool isPasting() { return pasting; }
 		bool isQuickPasting() { return pasting && quickPaste; }
 		bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
@@ -68,10 +65,10 @@ class CLIPBOARD
 		bool quickPaste; /* Controls whether you are using quick placement,
 							as opposed to something saved on clipboard.		*/
 		RECT edges;
-		PasteTileNode* headCopyTile;
-		PasteTileNode* headQuickTile;
-		PasteUnitNode* headCopyUnit;
-		PasteUnitNode* headQuickUnit;
+		std::vector<PasteTileNode> copyTiles;
+		std::vector<PasteTileNode> quickTiles;
+		std::vector<PasteUnitNode> copyUnits;
+		std::vector<PasteUnitNode> quickUnits;
 
 		POINT prevPaste;
 

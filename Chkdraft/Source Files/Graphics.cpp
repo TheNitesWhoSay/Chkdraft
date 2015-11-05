@@ -18,8 +18,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 	screenWidth = bitWidth;
 	screenHeight = bitHeight;
 
-	mapWidth = chk->XSize();
-	mapHeight = chk->YSize();
+	mapWidth = chk.XSize();
+	mapHeight = chk.YSize();
 
 	if ( displayingElevations )
 		DrawTileElevations(screenBits);
@@ -48,8 +48,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
 void Graphics::DrawTerrain(u8* screenBits)
 {
-	buffer& ERA  = chk->ERA (),
-		  & MTXM = chk->MTXM();
+	buffer& ERA  = chk.ERA (),
+		  & MTXM = chk.MTXM();
 
 	u32 maxRowX, maxRowY, mtxmRef;
 
@@ -93,7 +93,7 @@ void Graphics::DrawTerrain(u8* screenBits)
 
 void Graphics::DrawTileElevations(u8* screenBits)
 {
-	buffer& MTXM = chk->MTXM();
+	buffer& MTXM = chk.MTXM();
 
 	u32 maxRowX, maxRowY,
 				  xc, yc;
@@ -113,7 +113,7 @@ void Graphics::DrawTileElevations(u8* screenBits)
 	BITMAPINFO bmi = GetBMI(32, 32);
 
 	u8 tileset;
-	if ( !chk->ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+	if ( !chk.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
 	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	for ( yc=screenTop/32; yc<maxRowY; yc++ )
@@ -161,7 +161,7 @@ void Graphics::DrawGrid(u8* screenBits)
 
 void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAnywhere)
 {
-	buffer& MRGN = chk->MRGN();
+	buffer& MRGN = chk.MRGN();
 	ChkLocation* loc;
 	s32 screenRight = screenLeft+screenWidth;
 	s32 screenBottom = screenTop+screenHeight;
@@ -355,9 +355,9 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 
 void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
 {
-	buffer& UNIT = chk->UNIT(),
-		  & ERA  = chk->ERA (),
-		  & COLR = chk->COLR();
+	buffer& UNIT = chk.UNIT(),
+		  & ERA  = chk.ERA (),
+		  & COLR = chk.COLR();
 
 	s32	UnitTableSize = UNIT.size();
 
@@ -402,9 +402,9 @@ void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
 
 void Graphics::DrawSprites(u8* screenBits)
 {
-	buffer& THG2 = chk->THG2(),
-		  & ERA  = chk->ERA (),
-		  & COLR = chk->COLR();
+	buffer& THG2 = chk.THG2(),
+		  & ERA  = chk.ERA (),
+		  & COLR = chk.COLR();
 
 	s32	SpriteTableSize = THG2.size();
 
@@ -454,7 +454,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 {
 	s32 screenRight = screenLeft + screenWidth;
 	s32 screenBottom = screenTop + screenHeight;
-	buffer& MRGN = chk->MRGN();
+	buffer& MRGN = chk.MRGN();
 	ChkLocation* loc;
 
 	HFONT NumFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
@@ -479,7 +479,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 						if ( bottomMost > screenTop )
 						{
 							std::string str;
-							if ( chk->getLocationName(str, u8(locPos/CHK_LOCATION_SIZE)) )
+							if ( chk.getLocationName(str, u8(locPos/CHK_LOCATION_SIZE)) )
 							{
 								leftMost = leftMost-screenLeft+2;
 								topMost = topMost-screenTop+2;
@@ -546,9 +546,9 @@ void Graphics::DrawTileNumbers(HDC hDC)
 {
 	buffer* tileBuf = nullptr;
 	if ( tileNumsFromMTXM )
-		tileBuf = &chk->MTXM();
+		tileBuf = &chk.MTXM();
 	else
-		tileBuf = &chk->TILE();
+		tileBuf = &chk.TILE();
 
 	u32 maxRowX, maxRowY,
 		xc, yc;
@@ -1069,7 +1069,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 }
 
 void DrawTools( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario* chk, u8 layer )
+				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario &chk, u8 layer )
 {
 	if ( layer == LAYER_TERRAIN && selections.hasTiles() ) // Draw selected tiles
 		DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, chk);
@@ -1080,17 +1080,15 @@ void DrawTools( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, 
 		DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, chk, layer);
 }
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario* chk)
+void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk)
 {
 	HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
 	SelectObject(hDC, pen);
 	RECT rect, rcBorder;
 
-	u16 tileset;
-	if ( !chk->ERA().get<u16>(tileset, 0) ) return;
-	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
-
-	TileNode* track = selections.getFirstTile();
+	u16 tilesetNum;
+	if ( !chk.ERA().get<u16>(tilesetNum, 0) ) return;
+	TileSet* tileset = &chkd.scData.tilesets.set[tilesetNum];
 
 	BITMAPINFO bmi = GetBMI(32, 32);
 	rcBorder.left	= (0	  + screenLeft)/32 - 1;
@@ -1098,39 +1096,40 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 	rcBorder.top	= (0	  + screenTop)/32 - 1;
 	rcBorder.bottom	= (height + screenTop)/32 + 1;
 
-	while ( track != nullptr )
+	std::vector<TileNode> &tiles = selections.getTiles();
+	for ( auto &tile : tiles )
 	{
-		if ( track->xc > rcBorder.left &&
-			 track->xc < rcBorder.right &&
-			 track->yc > rcBorder.top &&
-			 track->yc < rcBorder.bottom )
+		if ( tile.xc > rcBorder.left &&
+			 tile.xc < rcBorder.right &&
+			 tile.yc > rcBorder.top &&
+			 tile.yc < rcBorder.bottom )
 		// If tile is within current map border
 		{
 			// Draw tile with a blue haze, might replace with blending
 				DrawTile( hDC,
-						  tiles,
-						  s16(track->xc*32-screenLeft),
-						  s16(track->yc*32-screenTop),
-						  track->value,
+						  tileset,
+						  s16(tile.xc*32-screenLeft),
+						  s16(tile.yc*32-screenTop),
+						  tile.value,
 						  bmi,
 						  32,
 						  0,
 						  0
 						);
 
-			if ( track->neighbors ) // if any edges need to be drawn
+			if ( tile.neighbors > 0 ) // if any edges need to be drawn
 			{
-				rect.left	= track->xc*32 - screenLeft;
-				rect.right	= track->xc*32 - screenLeft + 32;
-				rect.top	= track->yc*32 - screenTop;
-				rect.bottom = track->yc*32 - screenTop + 32;
+				rect.left	= tile.xc*32 - screenLeft;
+				rect.right	= tile.xc*32 - screenLeft + 32;
+				rect.top	= tile.yc*32 - screenTop;
+				rect.bottom = tile.yc*32 - screenTop + 32;
 
-				if ( track->neighbors & NEIGHBOR_TOP )
+				if ( tile.neighbors & NEIGHBOR_TOP )
 				{
 					MoveToEx(hDC, rect.left , rect.top, NULL);
 					LineTo	(hDC, rect.right, rect.top		);
 				}
-				if ( track->neighbors & NEIGHBOR_RIGHT )
+				if ( tile.neighbors & NEIGHBOR_RIGHT )
 				{
 					if ( rect.right >= width )
 						rect.right --;
@@ -1138,7 +1137,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 					MoveToEx(hDC, rect.right, rect.top	   , NULL);
 					LineTo	(hDC, rect.right, rect.bottom+1		 );
 				}
-				if ( track->neighbors & NEIGHBOR_BOTTOM )
+				if ( tile.neighbors & NEIGHBOR_BOTTOM )
 				{
 					if ( rect.bottom >= height )
 						rect.bottom --;
@@ -1146,19 +1145,18 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 					MoveToEx(hDC, rect.left	, rect.bottom, NULL);
 					LineTo	(hDC, rect.right, rect.bottom	   );
 				}
-				if ( track->neighbors & NEIGHBOR_LEFT )
+				if ( tile.neighbors & NEIGHBOR_LEFT )
 				{
 					MoveToEx(hDC, rect.left, rect.bottom, NULL);
 					LineTo	(hDC, rect.left, rect.top-1		  );
 				}
 			}
 		}
-		track = track->next;
 	}
 }
 
 void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-						SELECTIONS& selections, CLIPBOARD& clipboard, Scenario* chk, u8 layer )
+						SELECTIONS& selections, CLIPBOARD& clipboard, Scenario &chk, u8 layer )
 {
 	if ( layer == LAYER_TERRAIN )
 	{
@@ -1167,9 +1165,8 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 	
 		RECT rect, rcShade;
 		u16 tileset;
-		if ( !chk->ERA().get<u16>(tileset, 0) ) return;
+		if ( !chk.ERA().get<u16>(tileset, 0) ) return;
 		TileSet* tiles = &chkd.scData.tilesets.set[tileset];
-		PasteTileNode* track = clipboard.getFirstTile();
 	
 		BITMAPINFO bmi = GetBMI(32, 32);
 		rcShade.left   = -32;
@@ -1181,27 +1178,28 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		center.x = selections.getEndDrag().x + 16;
 		center.y = selections.getEndDrag().y + 16;
 	
-		while ( track != nullptr )
+		std::vector<PasteTileNode> &pasteTiles = clipboard.getTiles();
+		for ( auto &tile : pasteTiles )
 		{
-			rect.left	= ( track->xc + center.x	  )/32*32 - screenLeft;
-			rect.top	= ( track->yc + center.y	  )/32*32 - screenTop;
-			rect.right	= ( track->xc + 32 + center.x )/32*32 - screenLeft;
-			rect.bottom = ( track->yc + 32 + center.y )/32*32 - screenTop;
+			rect.left	= ( tile.xc + center.x	  )/32*32 - screenLeft;
+			rect.top	= ( tile.yc + center.y	  )/32*32 - screenTop;
+			rect.right	= ( tile.xc + 32 + center.x )/32*32 - screenLeft;
+			rect.bottom = ( tile.yc + 32 + center.y )/32*32 - screenTop;
 
 			if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
 			// If tile is within current map border
 			{
 				// Draw tile with a blue haze
-					DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, track->value, bmi, 32, 0, 0);
+					DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 32, 0, 0);
 
-				if ( track->neighbors ) // if any edges need to be drawn
+				if ( tile.neighbors ) // if any edges need to be drawn
 				{
-					if ( track->neighbors & NEIGHBOR_TOP )
+					if ( tile.neighbors & NEIGHBOR_TOP )
 					{
 						MoveToEx(hDC, rect.left	, rect.top, NULL);
 						LineTo	(hDC, rect.right, rect.top		);
 					}
-					if ( track->neighbors & NEIGHBOR_RIGHT )
+					if ( tile.neighbors & NEIGHBOR_RIGHT )
 					{
 						if ( rect.right >= width )
 							rect.right --;
@@ -1209,7 +1207,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 						MoveToEx(hDC, rect.right, rect.top, NULL);
 						LineTo	(hDC, rect.right, rect.bottom+1	);
 					}
-					if ( track->neighbors & NEIGHBOR_BOTTOM )
+					if ( tile.neighbors & NEIGHBOR_BOTTOM )
 					{
 						if ( rect.bottom >= height )
 							rect.bottom --;
@@ -1217,19 +1215,17 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 						MoveToEx(hDC, rect.left	, rect.bottom, NULL);
 						LineTo	(hDC, rect.right, rect.bottom	   );
 					}
-					if ( track->neighbors & NEIGHBOR_LEFT )
+					if ( tile.neighbors & NEIGHBOR_LEFT )
 					{
 						MoveToEx(hDC, rect.left, rect.bottom, NULL);
 						LineTo	(hDC, rect.left, rect.top-1		  );
 					}
 				}
 			}
-			track = track->next;
 		}
 	}
 	else if ( layer == LAYER_UNITS )
 	{
-		PasteUnitNode* track = clipboard.getFirstUnit();
 		u8* screenBits;
 		try {
 			screenBits = new u8[((u32)width)*((u32)height)*3];
@@ -1241,7 +1237,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		GetDIBits(hDC, bitmap, 0, height, screenBits, &bmi, DIB_RGB_COLORS);
 
 		u8 tileset;
-		if ( !chk->ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+		if ( !chk.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
 
 		buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 		s32 sScreenLeft = screenLeft;
@@ -1250,17 +1246,16 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		POINT cursor = selections.getEndDrag();
 		if ( cursor.x != -1 && cursor.y != -1 )
 		{
-			while ( track != nullptr )
+			std::vector<PasteUnitNode> units = clipboard.getUnits();
+			for ( auto &pasteUnit : units )
 			{
-				u8 color = track->unit.owner;
-				chk->getPlayerColor(track->unit.owner, color);
-				if ( cursor.y+track->yc >= 0 )
+				u8 color = pasteUnit.unit.owner;
+				chk.getPlayerColor(pasteUnit.unit.owner, color);
+				if ( cursor.y+ pasteUnit.yc >= 0 )
 				{
 					UnitToBits( screenBits, palette, color, width, height, sScreenLeft, sScreenTop,
-								track->unit.id, u16(cursor.x+track->xc), u16(cursor.y+track->yc), 0, false );
+						pasteUnit.unit.id, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
 				}
-
-				track = track->next;
 			}
 		}
 
@@ -1270,7 +1265,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 	}
 }
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario* chk)
+void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk)
 {
 	POINT start = selections.getStartDrag();
 	POINT end = selections.getEndDrag();
@@ -1286,7 +1281,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections
 	{
 		ChkLocation* loc;
 		u16 selectedLocation = selections.getSelectedLocation();
-		if ( selectedLocation != NO_LOCATION && chk->getLocation(loc, selectedLocation) ) // Draw location resize/movement graphics
+		if ( selectedLocation != NO_LOCATION && chk.getLocation(loc, selectedLocation) ) // Draw location resize/movement graphics
 		{
 			s32 locLeft = loc->xc1-screenLeft;
 			s32 locRight = loc->xc2-screenLeft;
@@ -1401,9 +1396,9 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
 }
 
 void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario* chk )
+					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
 {
-	buffer& MTXM = chk->MTXM();
+	buffer& MTXM = chk.MTXM();
 
 	// minimap colors are equivilant to pixel 7, 6 of the minitile given by (MiniMapCoord%scale)
 	u32 screenWidth  = bitWidth,
@@ -1463,11 +1458,11 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 #define MINI_MAP_MAXBIT 49152 // Maximum graphicBits position
 
 void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario* chk )
+					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
 {
-	buffer& UNIT = chk->UNIT(),
-		  & THG2 = chk->THG2(),
-		  & COLR = chk->COLR();
+	buffer& UNIT = chk.UNIT(),
+		  & THG2 = chk.THG2(),
+		  & COLR = chk.COLR();
 
 	u32 unitTableSize = UNIT.size();
 	u32 spriteTableSize = THG2.size();
@@ -1522,9 +1517,9 @@ void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 	}
 }
 
-void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario* chk)
+void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario &chk)
 {
-	buffer& ERA  = chk->ERA ();
+	buffer& ERA  = chk.ERA ();
 
 	u8 minimapBits[65536] = { };
 

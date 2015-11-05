@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source Files\ChangePassword.cpp" />
     <ClCompile Include="Source Files\Chkdraft.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_DEBUG;CHKDRAFT_DEBUG;_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -22,8 +23,14 @@
     <ClCompile Include="Source Files\ConditionsGrid.cpp" />
     <ClCompile Include="Source Files\Counters.cpp" />
     <ClCompile Include="Source Files\CUWPs.cpp" />
+    <ClCompile Include="Source Files\EnterPassword.cpp" />
     <ClCompile Include="Source Files\Forces.cpp" />
     <ClCompile Include="Source Files\Graphics.cpp" />
+    <ClCompile Include="Source Files\IObserveUndos.cpp" />
+    <ClCompile Include="Source Files\LocationChange.cpp" />
+    <ClCompile Include="Source Files\LocationCreateDel.cpp" />
+    <ClCompile Include="Source Files\LocationMove.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\sha256.cpp" />
     <ClCompile Include="Source Files\PeerListBox.cpp" />
     <ClCompile Include="Source Files\GuiMap.cpp" />
     <ClCompile Include="Source Files\LeftBar.cpp" />
@@ -33,13 +40,13 @@
     <ClCompile Include="Source Files\MainPlot.cpp" />
     <ClCompile Include="Source Files\MainToolbar.cpp" />
     <ClCompile Include="Source Files\MainTree.cpp" />
-    <ClCompile Include="Source Files\Mapping Core\Action.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\ChkAction.cpp" />
     <ClCompile Include="Source Files\Mapping Core\Buffer.cpp" />
     <ClCompile Include="Source Files\Mapping Core\ChkDoodad.cpp" />
     <ClCompile Include="Source Files\Mapping Core\ChkLocation.cpp" />
     <ClCompile Include="Source Files\Mapping Core\ChkSprite.cpp" />
     <ClCompile Include="Source Files\Mapping Core\ChkUnit.cpp" />
-    <ClCompile Include="Source Files\Mapping Core\Condition.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\ChkCondition.cpp" />
     <ClCompile Include="Source Files\Mapping Core\StringTableNode.cpp" />
     <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp" />
     <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp" />
@@ -47,7 +54,7 @@
     <ClCompile Include="Source Files\Mapping Core\MapFile.cpp" />
     <ClCompile Include="Source Files\Mapping Core\Scenario.cpp" />
     <ClCompile Include="Source Files\Mapping Core\Basics.cpp" />
-    <ClCompile Include="Source Files\Mapping Core\Trigger.cpp" />
+    <ClCompile Include="Source Files\Mapping Core\ChkTrigger.cpp" />
     <ClCompile Include="Source Files\MapProperties.cpp" />
     <ClCompile Include="Source Files\Maps.cpp" />
     <ClCompile Include="Source Files\MapSettings.cpp" />
@@ -56,6 +63,7 @@
     <ClCompile Include="Source Files\NewMap.cpp" />
     <ClCompile Include="Source Files\PlayerDropdown.cpp" />
     <ClCompile Include="Source Files\PreservedUnitStats.cpp" />
+    <ClCompile Include="Source Files\Reversibles.cpp" />
     <ClCompile Include="Source Files\Selections.cpp" />
     <ClCompile Include="Source Files\StaticTrigComponentParser.cpp" />
     <ClCompile Include="Source Files\StringEditor.cpp" />
@@ -81,6 +89,10 @@
     <ClCompile Include="Source Files\TrigModifyText.cpp" />
     <ClCompile Include="Source Files\TrigPlayers.cpp" />
     <ClCompile Include="Source Files\Undo.cpp" />
+    <ClCompile Include="Source Files\TileChange.cpp" />
+    <ClCompile Include="Source Files\UnitChange.cpp" />
+    <ClCompile Include="Source Files\UnitCreateDel.cpp" />
+    <ClCompile Include="Source Files\UnitIndexMove.cpp" />
     <ClCompile Include="Source Files\UnitProperties.cpp" />
     <ClCompile Include="Source Files\MoveTo.cpp" />
     <ClCompile Include="Source Files\UnitSettings.cpp" />
@@ -116,6 +128,7 @@
     <None Include="Save-as.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source Files\ChangePassword.h" />
     <ClInclude Include="Source Files\ChkdCtrlEnums.h" />
     <ClInclude Include="Source Files\Chkdraft.h" />
     <ClInclude Include="Source Files\Clipboard.h" />
@@ -130,8 +143,16 @@
     <ClInclude Include="Source Files\CUWPs.h" />
     <ClInclude Include="Source Files\Data.h" />
     <ClInclude Include="Source Files\DialogWindows.h" />
+    <ClInclude Include="Source Files\EnterPassword.h" />
     <ClInclude Include="Source Files\Forces.h" />
     <ClInclude Include="Source Files\Graphics.h" />
+    <ClInclude Include="Source Files\IObserveUndos.h" />
+    <ClInclude Include="Source Files\LocationChange.h" />
+    <ClInclude Include="Source Files\LocationCreateDel.h" />
+    <ClInclude Include="Source Files\LocationMove.h" />
+    <ClInclude Include="Source Files\Mapping Core\CoreStructs.h" />
+    <ClInclude Include="Source Files\Mapping Core\sha256.h" />
+    <ClInclude Include="Source Files\UndoTypes.h" />
     <ClInclude Include="Source Files\PeerListBox.h" />
     <ClInclude Include="Source Files\GuiMap.h" />
     <ClInclude Include="Source Files\LeftBar.h" />
@@ -140,13 +161,13 @@
     <ClInclude Include="Source Files\MainPlot.h" />
     <ClInclude Include="Source Files\MainToolbar.h" />
     <ClInclude Include="Source Files\MainTree.h" />
-    <ClInclude Include="Source Files\Mapping Core\Action.h" />
+    <ClInclude Include="Source Files\Mapping Core\ChkAction.h" />
     <ClInclude Include="Source Files\Mapping Core\Buffer.h" />
     <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h" />
     <ClInclude Include="Source Files\Mapping Core\ChkLocation.h" />
     <ClInclude Include="Source Files\Mapping Core\ChkUnit.h" />
     <ClInclude Include="Source Files\Mapping Core\ChkSprite.h" />
-    <ClInclude Include="Source Files\Mapping Core\Condition.h" />
+    <ClInclude Include="Source Files\Mapping Core\ChkCondition.h" />
     <ClInclude Include="Source Files\Mapping Core\StringTableNode.h" />
     <ClInclude Include="Source Files\Mapping Core\StringUsage.h" />
     <ClInclude Include="Source Files\Mapping Core\DefaultCHK.h" />
@@ -156,7 +177,7 @@
     <ClInclude Include="Source Files\Mapping Core\Scenario.h" />
     <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h" />
     <ClInclude Include="Source Files\Mapping Core\Basics.h" />
-    <ClInclude Include="Source Files\Mapping Core\Trigger.h" />
+    <ClInclude Include="Source Files\Mapping Core\ChkTrigger.h" />
     <ClInclude Include="Source Files\MapProperties.h" />
     <ClInclude Include="Source Files\Maps.h" />
     <ClInclude Include="Source Files\MapSettings.h" />
@@ -165,6 +186,7 @@
     <ClInclude Include="Source Files\NewMap.h" />
     <ClInclude Include="Source Files\PlayerDropdown.h" />
     <ClInclude Include="Source Files\PreservedUnitStats.h" />
+    <ClInclude Include="Source Files\Reversibles.h" />
     <ClInclude Include="Source Files\Selections.h" />
     <ClInclude Include="Source Files\StaticTrigComponentParser.h" />
     <ClInclude Include="Source Files\StringEditor.h" />
@@ -189,6 +211,10 @@
     <ClInclude Include="Source Files\TrigModifyText.h" />
     <ClInclude Include="Source Files\TrigPlayers.h" />
     <ClInclude Include="Source Files\Undo.h" />
+    <ClInclude Include="Source Files\TileChange.h" />
+    <ClInclude Include="Source Files\UnitChange.h" />
+    <ClInclude Include="Source Files\UnitCreateDel.h" />
+    <ClInclude Include="Source Files\UnitIndexMove.h" />
     <ClInclude Include="Source Files\UnitProperties.h" />
     <ClInclude Include="Source Files\MoveTo.h" />
     <ClInclude Include="Source Files\UnitSettings.h" />

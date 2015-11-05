@@ -2,189 +2,184 @@
 #define UNDO_H
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
+#include "IObserveUndos.h"
+#include "Reversibles.h"
 #include "Selections.h"
+#include <map>
+
 
 // Cast to traverse through undo items without reading type
-struct UndoComponent
+class UndoComponent
 {
-	void* next;
+	public:
+		void* next;
+		UndoComponent(void* next) : next(next) { }
+
+	private:
+		UndoComponent(); // Disallow ctor
 };
 
 
 // Undo Components
 
-	class UndoTile
+	class UndoTile : public UndoComponent
 	{
 		public:
-			UndoTile* next;
 			u16 xc;
 			u16 yc;
 			u16 value;
 
 			UndoTile(UndoTile* next, u16 xc, u16 yc, u16 value)
-				: next(next), xc(xc), yc(yc), value(value) { }
+				: UndoComponent(next), xc(xc), yc(yc), value(value) { }
 
 		private:
 			UndoTile(); // Disallow ctor
 	};
 
-	class UndoUnitCreate
+	class UndoUnitCreate : public UndoComponent
 	{
 		public:
-			UndoUnitCreate* next;
 			u16 unitIndex;
 
 			UndoUnitCreate(u16 unitIndex)
-				: next(nullptr), unitIndex(unitIndex) { }
+				: UndoComponent(nullptr), unitIndex(unitIndex) { }
 			UndoUnitCreate(void* next, u16 unitIndex)
-				: next((UndoUnitCreate*)next), unitIndex(unitIndex) { }
+				: UndoComponent((UndoUnitCreate*)next), unitIndex(unitIndex) { }
 
 		private:
 			UndoUnitCreate(); // Disallow ctor
 	};
 
-	class UndoUnitDel
+	class UndoUnitDel : public UndoComponent
 	{
 		public:
-			UndoUnitDel* next;
 			u16 unitIndex;
 			ChkUnit unit;
 
 			UndoUnitDel(u16 unitIndex, ChkUnit* unitRef)
-				: next(nullptr), unitIndex(unitIndex) { unit = (*unitRef); }
+				: UndoComponent(nullptr), unitIndex(unitIndex) { unit = (*unitRef); }
 			UndoUnitDel(void* next, u16 unitIndex, ChkUnit* unitRef)
-				: next((UndoUnitDel*)next), unitIndex(unitIndex) { unit = (*unitRef); }
+				: UndoComponent((UndoUnitDel*)next), unitIndex(unitIndex) { unit = (*unitRef); }
 
 		private:
 			UndoUnitDel(); // Disallow ctor
 	};
 
-	class UndoUnitMove // Also used for undoing swaps
+	class UndoUnitMove : public UndoComponent // Also used for undoing swaps
 	{
 		public:
-			UndoUnitMove* next;
 			u16 oldIndex; // Where it was moved from before undos
 			u16 newIndex; // Where it was moved to before undos
 
 			UndoUnitMove(u16 oldIndex, u16 newIndex)
-				: next(nullptr), oldIndex(oldIndex), newIndex(newIndex) { }
+				: UndoComponent(nullptr), oldIndex(oldIndex), newIndex(newIndex) { }
 			UndoUnitMove(UndoUnitMove* next, u16 oldIndex, u16 newIndex)
-				: next(next), oldIndex(oldIndex), newIndex(newIndex) { }
+				: UndoComponent(next), oldIndex(oldIndex), newIndex(newIndex) { }
 			UndoUnitMove(void* next, u16 oldIndex, u16 newIndex)
-				: next((UndoUnitMove*)next), oldIndex(oldIndex), newIndex(newIndex) { }
+				: UndoComponent((UndoUnitMove*)next), oldIndex(oldIndex), newIndex(newIndex) { }
 
 		private:
 			UndoUnitMove(); // Disallow ctor
 	};
 
-	class UndoUnitChange
+	class UndoUnitChange : public UndoComponent
 	{
 		public:
-			UndoUnitChange* next;
 			u16 unitIndex;
-
 			u8 field;
 			/** Index of data field of unit property, can be
 				used in the unitFieldSize[] and unitFieldLoc[]
 				arrays to get the size of the data type and its
 				distance from the start of the unit structure,
 				respectively */
-
 			u32 data;
 
 			UndoUnitChange(UndoUnitChange* next, u16 unitIndex, u8 field, u32 data)
-				: next(next), unitIndex(unitIndex), field(field), data(data) { }
+				: UndoComponent(next), unitIndex(unitIndex), field(field), data(data) { }
 			UndoUnitChange(u16 unitIndex, u8 field, u32 data)
-				: next(nullptr), unitIndex(unitIndex), field(field), data(data) { }
+				: UndoComponent(nullptr), unitIndex(unitIndex), field(field), data(data) { }
 
 		private:
 			UndoUnitChange(); // Disallow ctor
 	};
 
-	class UndoUnitMoveToHeader
+	class UndoUnitMoveToHeader : public UndoComponent
 	{
 		public:
-			void* next;
 			u16 numDeletes;
 			u16 numCreates;
 
 			UndoUnitMoveToHeader(u16 numDeletes, u16 numCreates)
-				: next(nullptr), numDeletes(numDeletes), numCreates(numCreates) { }
+				: UndoComponent(nullptr), numDeletes(numDeletes), numCreates(numCreates) { }
 			UndoUnitMoveToHeader(void* next, u16 numDeletes, u16 numCreates)
-				: next(next), numDeletes(numDeletes), numCreates(numCreates) { }
+				: UndoComponent(next), numDeletes(numDeletes), numCreates(numCreates) { }
 
 		private:
 			UndoUnitMoveToHeader(); // Disallow ctor
 	};
 
-	class UndoLocationCreate
+	class UndoLocationCreate : public UndoComponent
 	{
 		public:
-			UndoLocationCreate* next;
 			u16 locationIndex;
 
 			UndoLocationCreate(u16 locationIndex)
-				: next(nullptr), locationIndex(locationIndex) { }
+				: UndoComponent(nullptr), locationIndex(locationIndex) { }
 			UndoLocationCreate(void* next, u16 locationIndex)
-				: next((UndoLocationCreate*)next), locationIndex(locationIndex) { }
+				: UndoComponent((UndoLocationCreate*)next), locationIndex(locationIndex) { }
 
 		private:
 			UndoLocationCreate(); // Disallow ctor
 	};
 
-	class UndoLocationDel
+	class UndoLocationDel : public UndoComponent
 	{
 		public:
-			UndoLocationDel* next;
 			u16 locationIndex;
 			ChkLocation location;
 			bool isExtended;
 			std::string locationName;
 
 			UndoLocationDel(u16 locationIndex, ChkLocation* locationRef, bool isExtended, std::string locName)
-				: next(nullptr), locationIndex(locationIndex), isExtended(isExtended), locationName(locName)
+				: UndoComponent(nullptr), locationIndex(locationIndex), isExtended(isExtended), locationName(locName)
 			{ location = (*locationRef); }
 
 			UndoLocationDel(void* next, u16 locationIndex, ChkLocation* locationRef, bool isExtended, std::string locName)
-				: next((UndoLocationDel*)next), locationIndex(locationIndex), isExtended(isExtended), locationName(locName)
+				: UndoComponent((UndoLocationDel*)next), locationIndex(locationIndex), isExtended(isExtended), locationName(locName)
 			{ location = (*locationRef); }
 
 		private:
 			UndoLocationDel(); // Disallow ctor
 	};
 
-	class UndoLocationMove
+	class UndoLocationMove : public UndoComponent
 	{
 		public:
-			UndoLocationMove* next;
 			u16 locationIndex;
 			s32 xChange;
 			s32 yChange;
 
 			UndoLocationMove(u16 locationIndex, s32 xChange, s32 yChange)
-				: next(nullptr), locationIndex(locationIndex), xChange(xChange), yChange(yChange) { }
+				: UndoComponent(nullptr), locationIndex(locationIndex), xChange(xChange), yChange(yChange) { }
 
 			UndoLocationMove(void* next, u16 locationIndex, s32 xChange, s32 yChange)
-				: next((UndoLocationMove*)next), locationIndex(locationIndex), xChange(xChange), yChange(yChange) { }
+				: UndoComponent((UndoLocationMove*)next), locationIndex(locationIndex), xChange(xChange), yChange(yChange) { }
 
 		private:
 			UndoLocationMove(); // Disallow ctor
 	};
 
-	class UndoLocationChange
+	class UndoLocationChange : public UndoComponent
 	{
 		public:
-			UndoLocationChange* next;
 			u16 locationIndex;
-
 			u8 field;
-			
 			u32 data;
 
 			UndoLocationChange(UndoLocationChange* next, u16  locationIndex, u8 field, u32 data)
-				: next(next), locationIndex(locationIndex), field(field), data(data) { }
+				: UndoComponent(next), locationIndex(locationIndex), field(field), data(data) { }
 			UndoLocationChange(u16 locationIndex, u8 field, u32 data)
-				: next(nullptr), locationIndex(locationIndex), field(field), data(data) { }
+				: UndoComponent(nullptr), locationIndex(locationIndex), field(field), data(data) { }
 
 		private:
 			UndoLocationChange(); // Disallow ctor
@@ -196,15 +191,13 @@ class UndoNode
 {
 	public:
 		void* head; // Stack of items that get replaced with this undo
-		UndoNode* next; // The next undo in this list
-		UndoNode* prev;
 		u32 flags;
 			// Type of undo contained in this node
 			#define UNDO_TERRAIN		 BIT_0
 			#define UNDO_UNIT_CREATE	 BIT_1
 			#define UNDO_UNIT_DEL		 BIT_2
-			#define UNDO_UNIT_SWAP		 BIT_3
-			#define UNDO_UNIT_MOVE		 BIT_4
+			//#define UNDO_UNIT_SWAP		 BIT_3
+			//#define UNDO_UNIT_MOVE		 BIT_4
 			#define UNDO_UNIT_CHANGE	 BIT_5
 			#define UNDO_LOCATION_CREATE BIT_6
 			#define UNDO_LOCATION_DEL	 BIT_7
@@ -221,9 +214,12 @@ class UndoNode
 			#define ALL_UNDO_REDOS	  0xFFFFFFFF
 			#define UNDO_TYPE		  0x7FFFFFFF
 
-		UndoNode() : head(nullptr), next(nullptr), prev(nullptr), flags(0) { }
+		UndoNode() : head(nullptr), flags(0) { }
 		~UndoNode();
 };
+
+#define UndoPtr std::shared_ptr<UndoNode>
+#define ReversiblePtr std::shared_ptr<Reversible>
 
 //////////
 
@@ -231,15 +227,22 @@ class UNDOS
 {
 	public:
 
-		UNDOS(void* thisMap);
+		//UNDOS(void* thisMap);
+		UNDOS(IObserveUndos &observer);
 		~UNDOS();
 
-		bool clipUndos(u32 type);
-		bool clipRedos(u32 type);
+		void AddUndo(ReversiblePtr action);
+		//bool submitUndo(); // Submits all additions to the current undo
+		//bool startComboUndo(u32 type); // Call prior to building an undo if it uses multiple base types
+		//void doUndo(u32 type, Scenario* chk, SELECTIONS& sel);
+		void doUndo(int32_t type, void *obj);
+		//void doRedo(u32 type, Scenario* chk, SELECTIONS& sel);
+		void doRedo(int32_t type, void *obj);
+		void ResetChangeCount(); // Does not trigger notifications
+		//void flushRoots();
 
-		bool startNext(u32 type);
-		
-		bool addUndoTile(u16 xc, u16 yc, u16 value);
+		/*bool addUndoTile(u16 xc, u16 yc, u16 value);
+
 		bool addUndoUnitDel(u16 index, ChkUnit* unitRef);
 		bool addUndoUnitCreate(u16 index);
 		bool addUndoUnitSwap(u16 oldIndex, u16 newIndex);
@@ -250,38 +253,33 @@ class UNDOS
 		bool addUndoLocationCreate(u16 index);
 		bool addUndoLocationDel(u16 index, ChkLocation* locationRef, bool isExtended, std::string locName);
 		bool addUndoLocationMove(u16 locationIndex, s32 xChange, s32 yChange);
-		bool addUndoLocationChange(u16 locationIndex, u8 field, u32 data);
-
-		void doUndo(u32 type, Scenario* chk, SELECTIONS& sel);
-		void doRedo(u32 type, Scenario* chk, SELECTIONS& sel);
-
-		void flushRoots();
+		bool addUndoLocationChange(u16 locationIndex, u8 field, u32 data);*/
 
 
 	protected:
 
-		void flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, UndoNode* node);
-
-		bool addToUndo(u32 type, void* undoInfo);
-
-		UndoNode* popUndo(u32 type);
-		UndoNode* popRedo(u32 type);
-
-		bool clip(UndoNode* track, u32 type);
-
-		void deleteNode(UndoNode* node);
-		void removeNode(UndoNode* node);
-
+		//bool startNext(u32 type);
+		//void flipNode(u32 flags, Scenario* chk, SELECTIONS& sel, ReversiblePtr node);
+		//bool addToUndo(u32 type, void* undoInfo);
+		//ReversiblePtr popUndo(u32 type);
+		ReversiblePtr popUndo(int32_t type);
+		//ReversiblePtr popRedo(u32 type);
+		ReversiblePtr popRedo(int32_t type);
+		//bool clip(std::list<ReversiblePtr> &undoRedoList, int32_t type);
+		//bool clipRedos(int32_t type);
+		void AdjustChangeCount(int32_t type, int32_t adjustBy);
 
 	private:
 		
-		UndoNode* headUndo;
-		UndoNode* lastUndo;
-		UndoNode* headRedo;
-		UndoNode* upcomingUndo; // The undo soon to be added
-
-		u32 rootTypes;
-		void* mapPointer; // Pointer to the map this instance of UNDOS belongs to
+		IObserveUndos &observer;
+		std::list<ReversiblePtr> undos; // front = next undo
+		std::list<ReversiblePtr> redos; // front = next redo
+		std::map<int32_t, int32_t> changeCounters; // <type, numChanges>, 1 addition/redo = +1 change, 1 undo = -1 change
+		//std::list<UndoPtr> undos; // front = nextUndo, back = lastUndo
+		//std::list<UndoPtr> redos; // front = nextRedo, back = lastRedo
+		//UndoPtr upcomingUndo; // The undo soon to be added
+		//u32 rootTypes; // All the undoable types that have been added since ctor/flushRoots
+		//void* mapPointer; // Pointer to the map this instance of UNDOS belongs to
 };
 
 #endif

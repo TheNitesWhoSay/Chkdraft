@@ -14,12 +14,12 @@ bool TilePropWindow::DestroyThis()
 void TilePropWindow::UpdateTile()
 {
 	char title[256];
-	TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
-	sprintf_s(title, 256, "Tile Properties (%d, %d)", headTile->xc, headTile->yc);
+	TileNode tile = chkd.maps.curr->selections().getFirstTile();
+	sprintf_s(title, 256, "Tile Properties (%d, %d)", tile.xc, tile.yc);
 	SetWindowText(getHandle(), title);
 
 	HWND hEditTile = GetDlgItem(getHandle(), IDC_EDIT_TILEVALUE);
-	u16 currTile = headTile->value;
+	u16 currTile = tile.value;
 	char tileValue[32];
 	_itoa_s(currTile, tileValue, 10);
 	SetWindowText(hEditTile, tileValue);
@@ -47,10 +47,9 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( tile > 65535 )
 			tile %= 65536;
 
-		TileNode* headTile = chkd.maps.curr->selections().getFirstTile();
-		headTile->value = tile;
-		chkd.maps.curr->SetTile(headTile->xc, headTile->yc, tile);
-		chkd.maps.curr->nextUndo();
+		TileNode tileNode = chkd.maps.curr->selections().getFirstTile();
+		tileNode.value = tile;
+		chkd.maps.curr->SetTile(tileNode.xc, tileNode.yc, tile);
 		EndDialog(hWnd, IDOK);
 		break;
 	}

@@ -1,6 +1,9 @@
 #include "UnitProperties.h"
 #include "MoveTo.h"
 #include "Chkdraft.h"
+#include "UnitChange.h"
+#include "UnitCreateDel.h"
+#include "UnitIndexMove.h"
 
 enum ListColumns {
 	UNIT_NAME_COLUMN,
@@ -113,21 +116,20 @@ void UnitWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void UnitWindow::ChangeCurrOwner(u8 newPlayer)
 {
-	UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 	ChkUnit* unit;
 
-	while ( currUnit != nullptr )
+	std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+	auto &selUnits = chkd.maps.curr->selections().getUnits();
+	for ( u16 &unitIndex : selUnits )
 	{
-		int index = currUnit->index;
-		if ( chkd.maps.curr->getUnit(unit, index) && newPlayer != unit->owner )
+		if ( chkd.maps.curr->getUnit(unit, unitIndex) && newPlayer != unit->owner )
 		{
-			chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_OWNER, unit->owner);
-			ChangeOwner(index, newPlayer);
+			unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_OWNER, unit->owner)));
+			ChangeOwner(unitIndex, newPlayer);
 			unit->owner = newPlayer;
 		}
-		currUnit = currUnit->next;
 	}
-	chkd.maps.curr->undos().startNext(0);
+	chkd.maps.curr->undos().AddUndo(unitChanges);
 	chkd.maps.curr->Redraw(true);
 }
 
@@ -190,7 +192,8 @@ void UnitWindow::UpdateEnabledState()
 	{
 		EnableUnitEditing(getHandle());
 		ChkUnit* unit;
-		if ( chkd.maps.curr->getUnit(unit, chkd.maps.curr->selections().getFirstUnit()->index) )
+		u16 selectedIndex = chkd.maps.curr->selections().getFirstUnit();
+		if ( chkd.maps.curr->getUnit(unit, selectedIndex) )
 			SetUnitFieldText(getHandle(), unit);
 	}
 	else
@@ -204,7 +207,7 @@ void UnitWindow::RepopulateList()
 
 	listUnits.DeleteAllItems();
 
-	if ( chkd.maps.curr )
+	if ( chkd.maps.curr != nullptr )
 	{
 		ChkUnit* unit = nullptr;
 		buffer& units = chkd.maps.curr->UNIT();
@@ -218,17 +221,15 @@ void UnitWindow::RepopulateList()
 		bool unitsSelected = chkd.maps.curr->selections().hasUnits();
 		if ( unitsSelected )
 		{
-			UnitNode* curr = chkd.maps.curr->selections().getFirstUnit();
-			int index = curr->index;
-			listUnits.FocusItem(curr->index);
-			while ( curr != nullptr )
-			{
-				listUnits.SelectRow(curr->index);
-				curr = curr->next;
-			}
+			u16 selectedIndex = chkd.maps.curr->selections().getFirstUnit();
+			listUnits.FocusItem(selectedIndex);
+			auto &selUnits = chkd.maps.curr->selections().getUnits();
+			for ( u16 &unitIndex : selUnits )
+				listUnits.SelectRow(unitIndex);
+			
 			EnableUnitEditing(getHandle());
 			ChkUnit* unit;
-			if ( chkd.maps.curr->getUnit(unit, index) )
+			if ( chkd.maps.curr->getUnit(unit, selectedIndex) )
 			{
 				SetUnitFieldText(getHandle(), unit);
 
@@ -236,9 +237,9 @@ void UnitWindow::RepopulateList()
 				chkd.maps.curr->getUnitName(unitName, unit->id);
 				SetTitle(unitName.c_str());
 
-				int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
+				int row = listUnits.GetItemRow(chkd.maps.curr->selections().getHighestIndex());
 				listUnits.EnsureVisible(row, false);
-				row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
+				row = listUnits.GetItemRow(chkd.maps.curr->selections().getLowestIndex());
 				listUnits.EnsureVisible(row, false);
 			}
 		}
@@ -558,44 +559,49 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 	case IDC_BUTTON_MOVETOP:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		buffer& UNIT = map->UNIT();
 		SELECTIONS&  selections = map->selections();
 		UNDOS& undos = map->undos();
-		undos.startNext(UNDO_UNIT_MOVE);
 
-		u16 unitStackTopIndex = selections.getFirstUnit()->index;
+		u16 unitStackTopIndex = selections.getFirstUnit();
 		selections.sortUnits(true); // sort with lowest indexes first
-		UnitNode* track = selections.getFirstUnit();
 
 		listUnits.SetRedraw(false);
 
 		ChkUnit* unit;
 		ChkUnit preserve;
-		for ( int i = 0; track != nullptr; i++ )
+
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		u16 i = 0;
+		auto &selUnits = selections.getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
-			if ( track->index != 0 && map->getUnit(unit, track->index) ) // If unit is not at the destination index and unitptr can be retrieved
+			if ( unitIndex != 0 && map->getUnit(unit, unitIndex) ) // If unit is not at the destination index and unitptr can be retrieved
 			{
 				preserve = *unit; // Preserve the unit info
-				if ( UNIT.del<ChkUnit>(track->index*UNIT_STRUCT_SIZE) ) // Delete the unit from the section
+				if ( UNIT.del<ChkUnit>(unitIndex*UNIT_STRUCT_SIZE) ) // Delete the unit from the section
 				{
 					if ( UNIT.insert<ChkUnit&>(i*UNIT_STRUCT_SIZE, preserve) ) // Insert the unit at the destination index
 					{
-						undos.addUndoUnitMove(track->index, i);
-						if ( track->index == unitStackTopIndex )
+						unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, i)));
+						if ( unitIndex == unitStackTopIndex )
 							unitStackTopIndex = i;
-						track->index = i; // Modify the index that denotes unit selection
+						unitIndex = i; // Modify the index that denotes unit selection
 					}
 					else // Insertion failed
 					{
-						selections.removeUnit(track->index);
+						selections.removeUnit(unitIndex);
 						break; // Can't advance to next, exit loop
 					}
 				}
 			}
-			track = track->next;
+			i++;
 		}
-		undos.startNext(0);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		if ( unitChanges->Count() > 2 )
+			map->undos().AddUndo(unitChanges);
 		selections.ensureFirst(unitStackTopIndex);
 		RepopulateList();
 	}
@@ -603,48 +609,53 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 	case IDC_BUTTON_MOVEEND:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		buffer& UNIT = map->UNIT();
 		SELECTIONS& selections = map->selections();
 		UNDOS& undos = map->undos();
-		undos.startNext(UNDO_UNIT_MOVE);
 
-		u16 unitStackTopIndex = selections.getFirstUnit()->index;
+		u16 unitStackTopIndex = selections.getFirstUnit();
 		selections.sortUnits(false); // Highest First
-		UnitNode* track = selections.getFirstUnit();
 
 		listUnits.SetRedraw(false);
-		u16 lastIndex = map->numUnits();
+		u16 numUnits = map->numUnits();
 		u16 numUnitsSelected = selections.numUnits();
 
 		ChkUnit* unit;
 		ChkUnit preserve;
-		for ( int i = 1; track != nullptr; i++ )
+
+		u16 i = 1;
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		auto &selUnits = selections.getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
-			if ( track->index != lastIndex && map->getUnit(unit, track->index) )
+			if ( unitIndex != numUnits-1 && map->getUnit(unit, unitIndex) )
 			{
 				preserve = *unit;
-				if ( UNIT.del<ChkUnit>(track->index*UNIT_STRUCT_SIZE) )
+				if ( UNIT.del<ChkUnit>(unitIndex*UNIT_STRUCT_SIZE) )
 				{
-					if ( UNIT.insert<ChkUnit&>((lastIndex - i)*UNIT_STRUCT_SIZE, preserve) )
+					if ( UNIT.insert<ChkUnit&>((numUnits - i)*UNIT_STRUCT_SIZE, preserve) )
 					{
-						undos.addUndoUnitMove(track->index, lastIndex - i);
+						unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, numUnits - i)));
 
-						if ( track->index == unitStackTopIndex )
-							unitStackTopIndex = lastIndex - i;
+						if ( unitIndex == unitStackTopIndex )
+							unitStackTopIndex = numUnits - i;
 
-						track->index = lastIndex - i;
+						unitIndex = numUnits - i;
 					}
 					else
 					{
-						selections.removeUnit(track->index);
+						selections.removeUnit(unitIndex);
 						break;
 					}
 				}
 			}
-			track = track->next;
+			i++;
 		}
-		undos.startNext(0);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		if ( unitChanges->Count() > 2 )
+			map->undos().AddUndo(unitChanges);
 		selections.ensureFirst(unitStackTopIndex);
 		RepopulateList();
 	}
@@ -652,65 +663,74 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 	case IDC_BUTTON_MOVEUP:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		buffer& UNIT = map->UNIT();
 		SELECTIONS& selections = map->selections();
 		HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 
 		selections.sortUnits(true);
-		UnitNode* track = selections.getFirstUnit();
 		listUnits.SetRedraw(false);
-		while ( track != nullptr )
+
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		auto &selUnits = selections.getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
-			if ( track->index > 0 && !selections.unitIsSelected(track->index - 1) )
+			if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
 			{
-				if ( UNIT.swap<ChkUnit>((u32)track->index*UNIT_STRUCT_SIZE, ((u32)track->index - 1)*UNIT_STRUCT_SIZE) )
+				if ( UNIT.swap<ChkUnit>(((u32)unitIndex)*UNIT_STRUCT_SIZE, (((u32)unitIndex) - 1)*UNIT_STRUCT_SIZE) )
 				{
-					map->undos().addUndoUnitSwap(track->index, track->index - 1);
-					SwapIndexes(hUnitList, track->index, track->index - 1);
-					track->index--;
+					unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, unitIndex - 1)));
+					SwapIndexes(hUnitList, unitIndex, unitIndex - 1);
+					unitIndex--;
 				}
 			}
-			track = track->next;
 		}
 		ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-		int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
+		int row = listUnits.GetItemRow(chkd.maps.curr->selections().getHighestIndex());
 		listUnits.EnsureVisible(row, false);
-		row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
+		row = listUnits.GetItemRow(chkd.maps.curr->selections().getLowestIndex());
 		listUnits.EnsureVisible(row, false);
-		map->undos().startNext(0);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		if ( unitChanges->Count() > 2 )
+			map->undos().AddUndo(unitChanges);
+		cout << "Added?" << endl;
 		listUnits.SetRedraw(true);
 	}
 	break;
 	case IDC_BUTTON_MOVEDOWN:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		buffer& UNIT = map->UNIT();
 		SELECTIONS& selections = map->selections();
 		HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 
 		selections.sortUnits(false);
-		UnitNode* track = selections.getFirstUnit();
-		SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
-		while ( track != nullptr )
+		listUnits.SetRedraw(false);
+
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		auto &selUnits = selections.getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
-			if ( track->index < map->numUnits() && !selections.unitIsSelected(track->index + 1) )
+			if ( unitIndex < map->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
 			{
-				if ( UNIT.swap<ChkUnit>((u32(track->index))*UNIT_STRUCT_SIZE, ((u32)track->index + 1)*UNIT_STRUCT_SIZE) )
+				if ( UNIT.swap<ChkUnit>((u32(unitIndex))*UNIT_STRUCT_SIZE, ((u32)unitIndex + 1)*UNIT_STRUCT_SIZE) )
 				{
-					map->undos().addUndoUnitSwap(track->index, track->index + 1);
-					SwapIndexes(hUnitList, track->index, track->index + 1);
-					track->index++;
+					unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, unitIndex + 1)));
+					SwapIndexes(hUnitList, unitIndex, unitIndex + 1);
+					unitIndex++;
 				}
 			}
-			track = track->next;
 		}
+		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
+		if ( unitChanges->Count() > 2 )
+			map->undos().AddUndo(unitChanges);
 		ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-		int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLastUnit()->index);
+		int row = listUnits.GetItemRow(chkd.maps.curr->selections().getLowestIndex());
 		listUnits.EnsureVisible(row, false);
-		row = listUnits.GetItemRow(chkd.maps.curr->selections().getFirstUnit()->index);
+		row = listUnits.GetItemRow(chkd.maps.curr->selections().getHighestIndex());
 		listUnits.EnsureVisible(row, false);
-		map->undos().startNext(0);
 		listUnits.SetRedraw(true);
 	}
 	break;
@@ -723,7 +743,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), NULL);
 			else if ( unitMoveTo > 0 )
 			{
-				GuiMap* map = chkd.maps.curr;
+				GuiMapPtr map = chkd.maps.curr;
 				SELECTIONS& selections = map->selections();
 				u16 numUnitsSelected = selections.numUnits();
 				u16 limit = map->numUnits() - 1;
@@ -734,16 +754,12 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				{
 					buffer& UNIT = map->UNIT();
 					HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-					UNDOS& undos = map->undos();
-					undos.startNext(UNDO_UNIT_MOVETO);
 
-					u16 unitStackTopIndex = selections.getFirstUnit()->index;
+					u16 unitStackTopIndex = selections.getFirstUnit();
 					u16 numUnits = selections.numUnits(),
 						shift = numUnits - 1;
 					selections.sortUnits(false); // Highest First
-					UnitNode* track = selections.getFirstUnit();
-
-					SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
+					listUnits.SetRedraw(false);
 
 					ChkUnit* selectedUnits;
 					try {
@@ -754,38 +770,33 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 						return 0;
 					}
 
-					u16 numDeletes = 0,
-						numCreates = 0;
-
-					for ( int i = 0; track != nullptr; i++ )
+					std::shared_ptr<ReversibleActions> unitCreateDels(new ReversibleActions);
+					u16 i = 0;
+					auto &selUnits = selections.getUnits();
+					for ( u16 &unitIndex : selUnits )
 					{ // Remove each selected unit from the map, store in selectedUnits
-						u32 loc = track->index*UNIT_STRUCT_SIZE;
+						u32 loc = ((u32)unitIndex)*UNIT_STRUCT_SIZE;
 
 						if ( UNIT.get<ChkUnit>(selectedUnits[shift - i], loc) &&
 							UNIT.del<ChkUnit>(loc) )
 						{
-							if ( undos.addUndoUnitDel(track->index, &selectedUnits[shift - i]) )
-								numDeletes++;
-
-							track->index = u16(unitMoveTo + shift - i);
+							unitCreateDels->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(unitIndex, selectedUnits[shift - i])));
+							unitIndex = u16(unitMoveTo + shift - i);
 						}
-
-						track = track->next;
+						i++;
 					}
 
 					for ( int i = 0; i<numUnits; i++ )
 					{
 						if ( UNIT.insert<ChkUnit&>((unitMoveTo + i)*UNIT_STRUCT_SIZE, selectedUnits[i]) )
 						{
-							if ( undos.addUndoUnitCreate(u16(unitMoveTo + i)) )
-								numCreates++;
+							unitCreateDels->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(unitMoveTo + i)));
 						}
 					}
 
 					selections.finishMove();
 					selections.ensureFirst(unitStackTopIndex);
-					undos.addUndoUnitMoveToHeader(numDeletes, numCreates);
-					undos.startNext(0);
+					map->undos().AddUndo(unitCreateDels);
 					RepopulateList();
 				}
 			}
@@ -794,10 +805,11 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_BUTTON_DELETE:
 	{
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		SELECTIONS& selections = map->selections();
 		HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 		SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
+		std::shared_ptr<ReversibleActions> unitDeletes(new ReversibleActions);
 		while ( selections.hasUnits() )
 		{
 			u16 index = selections.getHighestIndex();
@@ -809,14 +821,14 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 			ChkUnit* delUnit;
 			if ( map->getUnit(delUnit, index) )
-				map->undos().addUndoUnitDel(index, delUnit);
+				unitDeletes->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, *delUnit)));
 
 			map->UNIT().del(index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
 
 			for ( int i = index + 1; i <= map->numUnits(); i++ )
 				ChangeIndex(hUnitList, i, i - 1);
 		}
-		map->undos().startNext(0);
+		map->undos().AddUndo(unitDeletes);
 		map->Redraw(true);
 		SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
 	}
@@ -829,102 +841,97 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 			case IDC_CHECK_INVINCIBLE:
 			{
-				UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
-				ChkUnit* unit;
-				while ( currUnit != nullptr )
+				ChkUnit* unit = nullptr;
+				std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+				auto &selUnits = chkd.maps.curr->selections().getUnits();
+				for ( u16 &unitIndex : selUnits )
 				{
-					int index = currUnit->index;
-					if ( chkd.maps.curr->getUnit(unit, index) )
+					if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 					{
-						chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
 						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_INVINCIBLE;
 						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_INVINCIBLE;
 					}
-					currUnit = currUnit->next;
 				}
-				chkd.maps.curr->undos().startNext(0);
+				chkd.maps.curr->undos().AddUndo(unitChanges);
 			}
 			break;
 			case IDC_CHECK_HALLUCINATED:
 			{
-				UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 				ChkUnit* unit;
-				while ( currUnit != nullptr )
+				std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+				auto &selUnits = chkd.maps.curr->selections().getUnits();
+				for ( u16 &unitIndex : selUnits )
 				{
-					int index = currUnit->index;
-					if ( chkd.maps.curr->getUnit(unit, index) )
+					if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 					{
-						chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
 						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_HALLUCINATED;
 						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_HALLUCINATED;
 					}
-					currUnit = currUnit->next;
 				}
-				chkd.maps.curr->undos().startNext(0);
+				chkd.maps.curr->undos().AddUndo(unitChanges);
 			}
 			break;
 			case IDC_CHECK_BURROWED:
 			{
-				UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 				ChkUnit* unit;
-				while ( currUnit != nullptr )
+				std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+				auto &selUnits = chkd.maps.curr->selections().getUnits();
+				for ( u16 &unitIndex : selUnits )
 				{
-					int index = currUnit->index;
-					if ( chkd.maps.curr->getUnit(unit, index) )
+					if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 					{
-						chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
 						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_BURROWED;
 						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_BURROWED;
 					}
-					currUnit = currUnit->next;
 				}
-				chkd.maps.curr->undos().startNext(0);
+				chkd.maps.curr->undos().AddUndo(unitChanges);
 			}
 			break;
 			case IDC_CHECK_CLOAKED:
 			{
-				UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 				ChkUnit* unit;
-				while ( currUnit != nullptr )
+				std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+				auto &selUnits = chkd.maps.curr->selections().getUnits();
+				for ( u16 &unitIndex : selUnits )
 				{
-					int index = currUnit->index;
-					if ( chkd.maps.curr->getUnit(unit, index) )
+					if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 					{
-						chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
 						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_CLOAKED;
 						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_CLOAKED;
 					}
-					currUnit = currUnit->next;
 				}
-				chkd.maps.curr->undos().startNext(0);
+				chkd.maps.curr->undos().AddUndo(unitChanges);
 			}
 			break;
 			case IDC_CHECK_LIFTED:
 			{
-				UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 				ChkUnit* unit;
-				while ( currUnit != nullptr )
+				std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+				auto &selUnits = chkd.maps.curr->selections().getUnits();
+				for ( u16 &unitIndex : selUnits )
 				{
-					int index = currUnit->index;
-					if ( chkd.maps.curr->getUnit(unit, index) )
+					if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 					{
-						chkd.maps.curr->undos().addUndoUnitChange(index, UNIT_FIELD_STATEFLAGS, unit->stateFlags);
+						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
 						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_LIFTED; // Check lifted state
 						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_LIFTED; // Uncheck lifted state
 					}
-					currUnit = currUnit->next;
 				}
-				chkd.maps.curr->undos().startNext(0);
+				chkd.maps.curr->undos().AddUndo(unitChanges);
 			}
 			break;
 			}
@@ -963,15 +970,13 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u8 hpPercent;
 					if ( editLife.GetEditNum<u8>(hpPercent) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 								unit->hitpoints = hpPercent;
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(false);
 					}
@@ -982,15 +987,13 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u8 mpPercent;
 					if ( editMana.GetEditNum<u8>(mpPercent) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 								unit->energy = mpPercent;
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(false);
 					}
@@ -1001,15 +1004,13 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u8 shieldPercent;
 					if ( editShield.GetEditNum<u8>(shieldPercent) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 								unit->shields = shieldPercent;
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(false);
 					}
@@ -1020,15 +1021,13 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u32 resources;
 					if ( editResources.GetEditNum<u32>(resources) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 								unit->resources = resources;
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(false);
 					}
@@ -1039,15 +1038,13 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u16 hanger;
 					if ( editHanger.GetEditNum<u16>(hanger) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 								unit->hanger = hanger;
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(true);
 					}
@@ -1058,25 +1055,23 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u16 unitID;
 					if ( editUnitId.GetEditNum<u16>(unitID) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 							{
 								unit->id = unitID;
-								int row = listUnits.GetItemRow(index);
+								int row = listUnits.GetItemRow(unitIndex);
 
 								string unitName;
 								chkd.maps.curr->getUnitName(unitName, unitID);
 								listUnits.SetItemText(row, UNIT_NAME_COLUMN, unitName.c_str());
 
-								if ( currUnit == chkd.maps.curr->selections().getFirstUnit() )
+								if ( unitIndex == chkd.maps.curr->selections().getFirstUnit() )
 									SetWindowText(hWnd, unitName.c_str());
 							}
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(true);
 						ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
@@ -1088,19 +1083,17 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u16 unitXC;
 					if ( editXc.GetEditNum<u16>(unitXC) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 							{
 								unit->xc = unitXC;
-								int row = listUnits.GetItemRow(index);
+								int row = listUnits.GetItemRow(unitIndex);
 								listUnits.SetItemText(row, UNIT_XC_COLUMN, unitXC);
 							}
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(true);
 						ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
@@ -1112,19 +1105,17 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					u16 unitYC;
 					if ( editYc.GetEditNum<u16>(unitYC) )
 					{
-						UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 						HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
 						ChkUnit* unit;
-						while ( currUnit != nullptr )
+						auto &selUnits = chkd.maps.curr->selections().getUnits();
+						for ( u16 &unitIndex : selUnits )
 						{
-							int index = currUnit->index;
-							if ( chkd.maps.curr->getUnit(unit, index) )
+							if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 							{
 								unit->yc = unitYC;
-								int row = listUnits.GetItemRow(index);
+								int row = listUnits.GetItemRow(unitIndex);
 								listUnits.SetItemText(row, UNIT_YC_COLUMN, unitYC);
 							}
-							currUnit = currUnit->next;
 						}
 						chkd.maps.curr->Redraw(true);
 						ListView_SortItems(hUnitList, ForwardCompareLvItems, this);

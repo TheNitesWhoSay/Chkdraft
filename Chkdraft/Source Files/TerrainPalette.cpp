@@ -194,9 +194,10 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 					int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
 					int numRows = height/PIXELS_PER_TILE+2;
 					bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
+					std::vector<PasteTileNode> pasteTiles = chkd.maps.clipboard.getTiles();
 					u16 numHighlighted = 0;
-					if ( tileHighlighted )
-						numHighlighted = chkd.maps.clipboard.getFirstTile()->value;
+					if ( pasteTiles.size() > 0 )
+						numHighlighted = pasteTiles[0].value;
 
 					for ( s32 row = 0; row < numRows; row++ )
 					{

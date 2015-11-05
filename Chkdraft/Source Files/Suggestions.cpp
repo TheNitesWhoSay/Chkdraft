@@ -84,8 +84,8 @@ void Suggestions::SetStrings()
 	listSuggestions.ClearItems();
 
 	strList.sort(alphabetize);
-	for ( auto it = strList.begin(); it != strList.end(); it++ )
-		listSuggestions.AddString(it->c_str());
+	for ( auto &str : strList )
+		listSuggestions.AddString(str.c_str());
 }
 
 void Suggestions::SetStrings(const char* strings[], int numStrings)
@@ -157,9 +157,9 @@ void Suggestions::EraseBackground(HDC hDC)
 void Suggestions::SuggestFirstStartingWith(string &str)
 {
 	int i = 0;
-	for ( auto it = strList.begin(); it != strList.end(); it++ )
+	for ( auto &check : strList )
 	{
-		if ( firstStartsWithSecond(*it, str) ) // *it begins with str
+		if ( firstStartsWithSecond(check, str) ) // *it begins with str
 		{
 			listSuggestions.SetCurSel(i);
 			return;

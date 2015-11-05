@@ -27,7 +27,7 @@ bool PlayerDropdown::GetPlayerNum(u8 &dest)
 	}
 	else if ( DropdownControl::GetEditText(editText) )
 	{
-		for ( auto & c: editText )
+		for ( auto &c : editText )
 			c = toupper(c);
 
 		int parsedPlayer = 0;

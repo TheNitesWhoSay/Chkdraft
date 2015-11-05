@@ -8,13 +8,13 @@ TextTrigCompiler::TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string trigText, Scenario* chk)
+bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk)
 {
 	buffer text("TxTr");
 	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTriggers(text, chk);
 }
 
-bool TextTrigCompiler::CompileTriggers(buffer& text, Scenario* chk)
+bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk)
 {
 	if ( !LoadScenario(chk) )
 		return false;
@@ -49,13 +49,13 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, Scenario* chk)
 	return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string trigText, Trigger* trigger, Scenario* chk)
+bool TextTrigCompiler::CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk)
 {
 	buffer text("TxTr");
 	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk);
 }
 
-bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, Scenario* chk)
+bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk)
 {
 	if ( !LoadScenario(chk) )
 		return false;
@@ -105,7 +105,7 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, Scenario* 
 }
 
 bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
-										 std::vector<u8> &argMap, Condition& condition, Scenario* chk)
+										 std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk)
 {
 	if ( !LoadScenario(chk) )
 		return false;
@@ -161,10 +161,10 @@ bool TextTrigCompiler::ParseConditionName(std::string text, u8 &ID)
 
 // protected
 
-bool TextTrigCompiler::LoadScenario(Scenario* chk)
+bool TextTrigCompiler::LoadScenario(ScenarioPtr chk)
 {
 	ClearScenario();
-	return strUsage.populateTable(chk, false) && extendedStrUsage.populateTable(chk, true) &&
+	return strUsage.populateTable(chk.get(), false) && extendedStrUsage.populateTable(chk.get(), true) &&
 		   PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
 		   PrepWavTable(chk) && PrepGroupTable(chk) && PrepStringTable(chk);
 }
@@ -2244,9 +2244,9 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 		else if ( numMatching > 1 )
 		{
 			auto range = stringTable.equal_range(hash);
-			for ( auto it = range.first; it != range.second; it ++ )
+			foreachin(pair, range)
 			{
-				StringTableNode &node = it->second;
+				StringTableNode &node = pair->second;
 				if ( node.string.compare(str) == 0 && isExtended == node.isExtended )
 				{
 					if ( success == false ) // If no matches have previously been found
@@ -2336,9 +2336,9 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
 		else if ( numMatching > 1 )
 		{
 			auto range = locationTable.equal_range(hash);
-			for ( auto it = range.first; it != range.second; it ++ )
+			foreachin(pair, range)
 			{
-				LocationTableNode &node = it->second;
+				LocationTableNode &node = pair->second;
 				if ( node.locationName.compare(locStringPtr) == 0 )
 				{
 					if ( success == false ) // If no matches have previously been found
@@ -2821,9 +2821,9 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
 			else if ( numMatching > 1 )
 			{
 				auto range = unitTable.equal_range(hash);
-				for ( auto it = range.first; it != range.second; it ++ )
+				foreachin(pair, range)
 				{
-					UnitTableNode &node = it->second;
+					UnitTableNode &node = pair->second;
 					if ( node.unitName.compare(unitNamePtr) == 0 )
 					{
 						if ( success == false ) // If no matches have previously been found
@@ -2984,9 +2984,9 @@ bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
 		else if ( numMatching > 1 )
 		{
 			auto range = stringTable.equal_range(hash);
-			for ( auto it = range.first; it != range.second; it ++ )
+			foreachin(pair, range)
 			{
-				StringTableNode &node = it->second;
+				StringTableNode &node = pair->second;
 				if ( node.string.compare(wavStringPtr) == 0 )
 				{
 					if ( success == false ) // If no matches have previously been found
@@ -3267,9 +3267,9 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 		else if ( numMatching > 1 )
 		{
 			auto range = groupTable.equal_range(hash);
-			for ( auto it = range.first; it != range.second; it ++ )
+			foreachin(pair, range)
 			{
-				GroupTableNode &node = it->second;
+				GroupTableNode &node = pair->second;
 				if ( node.groupName.compare(groupStrPtr) == 0 )
 				{
 					if ( success == false ) // If no matches have previously been found
@@ -3355,9 +3355,9 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
 			else if ( numMatching > 1 )
 			{
 				auto range = switchTable.equal_range(hash);
-				for ( auto it = range.first; it != range.second; it ++ )
+				foreachin(pair, range)
 				{
-					SwitchTableNode &node = it->second;
+					SwitchTableNode &node = pair->second;
 					if ( node.switchName.compare(switchNamePtr) == 0 )
 					{
 						if ( success == false ) // If no matches have previously been found
@@ -3439,7 +3439,7 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(s32 extendedAID)
 
 // private
 
-bool TextTrigCompiler::PrepLocationTable(Scenario* map)
+bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
 	ChkLocation* loc;
 	u16 stringNum;
@@ -3473,7 +3473,7 @@ bool TextTrigCompiler::PrepLocationTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepUnitTable(Scenario* map)
+bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 {
 	UnitTableNode unitNode;
 	buffer& unitSettings = map->unitSettings();
@@ -3482,7 +3482,7 @@ bool TextTrigCompiler::PrepUnitTable(Scenario* map)
 		u16 stringID;
 		for ( int unitID=0; unitID<228; unitID++ )
 		{
-			if ( unitSettings.get<u16>(stringID, UNIT_SETTINGS_STRING_IDS+unitID*2) &&
+			if ( unitSettings.get<u16>(stringID, unitID*2+(u32)UnitSettingsDataLoc::StringIds) &&
 				 stringID > 0 )
 			{
 				unitNode.unitID = unitID;
@@ -3502,7 +3502,7 @@ bool TextTrigCompiler::PrepUnitTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepSwitchTable(Scenario* map)
+bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 {
 	SwitchTableNode switchNode;
 	buffer& SWNM = map->SWNM();
@@ -3523,7 +3523,7 @@ bool TextTrigCompiler::PrepSwitchTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepWavTable(Scenario* map)
+bool TextTrigCompiler::PrepWavTable(ScenarioPtr map)
 {
 	WavTableNode wavNode;
 	buffer& WAV = map->WAV();
@@ -3544,7 +3544,7 @@ bool TextTrigCompiler::PrepWavTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepGroupTable(Scenario* map)
+bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 {
 	GroupTableNode groupNode;
 	buffer& FORC = map->FORC();
@@ -3565,7 +3565,7 @@ bool TextTrigCompiler::PrepGroupTable(Scenario* map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepStringTable(Scenario* chk)
+bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 {
 	if ( chk->STR().exists() )
 	{
@@ -3622,8 +3622,8 @@ bool TextTrigCompiler::PrepStringTable(Scenario* chk)
 
 		for ( int i=0; i<228; i++ )
 		{
-			AddStrIffOverZero( chk->UNIS().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
-			AddStrIffOverZero( chk->UNIx().get<u16>(UNIT_SETTINGS_STRING_IDS+i*2) );
+			AddStrIffOverZero( chk->UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
+			AddStrIffOverZero( chk->UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
 		}
 
 		for ( int i=0; i<256; i++ )
@@ -3633,30 +3633,30 @@ bool TextTrigCompiler::PrepStringTable(Scenario* chk)
 	return true;
 }
 
-bool TextTrigCompiler::BuildNewStringTable(Scenario* map)
+bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
 {
 	std::vector<StringTableNode> standardStrList;
 	std::vector<StringTableNode> extendedStrList;
 
 	try { // Include all strings added by text trigs
-		for ( auto it = addedStrings.begin(); it != addedStrings.end(); it ++ )
+		for ( auto &str : addedStrings )
 		{
-			if ( it->isExtended )
-				extendedStrList.push_back(*it);
+			if ( str.isExtended )
+				extendedStrList.push_back(str);
 			else
-				standardStrList.push_back(*it);
+				standardStrList.push_back(str);
 		}
 	} catch ( std::bad_alloc ) {
 		sprintf_s(LastError, MAX_ERROR_MESSAGE_SIZE, "Out of memory!");
 		return false;
 	}
 
-	if ( map->addAllUsedStrings(standardStrList, STRADD_INCLUDE_STANDARD) &&
+	if ( map->addAllUsedStrings(standardStrList, true, false) &&
 		 map->rebuildStringTable(standardStrList, false) )
 	{
 		if ( map->KSTR().exists() && extendedStrList.size() > 0 ) // Has extended strings
 		{
-			return map->addAllUsedStrings(extendedStrList, STRADD_INCLUDE_EXTENDED) && 
+			return map->addAllUsedStrings(extendedStrList, false, true) && 
 				   map->rebuildStringTable(extendedStrList, true);
 		}
 		else

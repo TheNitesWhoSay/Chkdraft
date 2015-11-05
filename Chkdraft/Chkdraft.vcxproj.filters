@@ -37,17 +37,11 @@
     <Filter Include="Header Files\Windows\Dialog Windows\Map Settings">
       <UniqueIdentifier>{05f7a68a-263d-4ca5-9e70-aff8e8c7343c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Windows\Dialog Windows\Unit Properties">
-      <UniqueIdentifier>{03b7837e-dd35-49d8-aa47-75221e9e0eae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Windows\Dialog Windows">
       <UniqueIdentifier>{0475b817-ea79-42fe-83d7-bd5ab1bab57c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Windows\Dialog Windows\Map Settings">
       <UniqueIdentifier>{9eb5dbab-57cf-46ba-850a-8618c5cd1791}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Windows\Dialog Windows\Unit Properties">
-      <UniqueIdentifier>{266c6283-1689-4304-a543-f19acd88602a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Windows\Chkd Controls">
       <UniqueIdentifier>{4f4e1987-f9cb-4630-b986-177e294e2f8a}</UniqueIdentifier>
@@ -181,6 +175,36 @@
     <Filter Include="Source Files\Windows UI\%2a">
       <UniqueIdentifier>{6c990c0a-5d29-4a69-9811-3b4431c7dd12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Layers\Unit Properties">
+      <UniqueIdentifier>{266c6283-1689-4304-a543-f19acd88602a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Layers\Unit Properties">
+      <UniqueIdentifier>{03b7837e-dd35-49d8-aa47-75221e9e0eae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Map Protection">
+      <UniqueIdentifier>{27c22ef7-dfc4-4bf7-8280-8ec51696c16c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Map Protection">
+      <UniqueIdentifier>{a1b6c8bb-6904-4770-be46-5e7cf7b38af1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping Core\Structs\%2a">
+      <UniqueIdentifier>{b3341a35-ad97-41bd-8a73-33ef3e79b7ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\Undos">
+      <UniqueIdentifier>{f35b55d9-9e4c-48e6-84e9-286fb2741211}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\Undos">
+      <UniqueIdentifier>{ee1f761c-4719-4e6f-b03c-7d9533c56118}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\Undos\ChkdUndos">
+      <UniqueIdentifier>{2d6b9439-64cf-4cb5-bb4e-8bcbc952e487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\Undos\ChkdUndos">
+      <UniqueIdentifier>{bce32d13-67c1-4415-9ac8-861a0e924444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\Undos\ChkdUndos\%2a">
+      <UniqueIdentifier>{1de6c660-4988-431a-8552-e1b9c305c597}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\Common Files\Constants.h">
@@ -199,7 +223,7 @@
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\PreservedUnitStats.h">
-      <Filter>Header Files\Windows\Dialog Windows\Unit Properties</Filter>
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\Windows UI\ClassWindow.h">
       <Filter>Header Files\Windows UI\Windows</Filter>
@@ -220,7 +244,7 @@
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\UnitProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows\Unit Properties</Filter>
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\MainTree.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
@@ -272,30 +296,6 @@
     </ClInclude>
     <ClInclude Include="Source Files\MoveTo.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkUnit.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkSprite.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Condition.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Action.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Trigger.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkLocation.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\StringTableNode.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
     </ClInclude>
     <ClInclude Include="Source Files\PeerListBox.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
@@ -465,9 +465,6 @@
     <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Undo.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\ChkdPlugins.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
@@ -498,6 +495,75 @@
     <ClInclude Include="Source Files\Mapping Core\MappingCore.h">
       <Filter>Header Files\Mapping Core</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\sha256.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\ChangePassword.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\EnterPassword.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\StringTableNode.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkTrigger.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkCondition.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkUnit.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkSprite.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkLocation.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkAction.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\CoreStructs.h">
+      <Filter>Header Files\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Undo.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Reversibles.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UndoTypes.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\IObserveUndos.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\TileChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationMove.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LocationChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\UnitIndexMove.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Common Files\Constants.cpp">
@@ -510,7 +576,7 @@
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\PreservedUnitStats.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Unit Properties</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Windows UI\ClassWindow.cpp">
       <Filter>Source Files\Windows UI\Windows</Filter>
@@ -531,7 +597,7 @@
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\UnitProperties.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Unit Properties</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\MainTree.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
@@ -591,15 +657,6 @@
       <Filter>Source Files\Mapping Core\Structs</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\ChkDoodad.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Condition.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Action.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Trigger.cpp">
       <Filter>Source Files\Mapping Core\Structs</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\ChkLocation.cpp">
@@ -767,9 +824,6 @@
     <ClCompile Include="Source Files\GuiMap.cpp">
       <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Undo.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\ChkdPlugins.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
@@ -790,6 +844,54 @@
     </ClCompile>
     <ClCompile Include="Source Files\Windows UI\WindowsItem.cpp">
       <Filter>Source Files\Windows UI\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\sha256.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\ChangePassword.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\EnterPassword.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkAction.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkCondition.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkTrigger.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Undo.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\TileChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Reversibles.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\IObserveUndos.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationMove.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LocationChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\UnitIndexMove.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

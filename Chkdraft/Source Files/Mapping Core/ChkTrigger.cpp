@@ -1,4 +1,4 @@
-#include "Trigger.h"
+#include "ChkTrigger.h"
 
 Condition Trigger::junkCondition;
 Action Trigger::junkAction;

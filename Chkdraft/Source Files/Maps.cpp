@@ -1,11 +1,11 @@
 #include "Maps.h"
 #include "Chkdraft.h"
+#include "UnitChange.h"
+using namespace std;
 
-MAPS::MAPS() : UntitledNumber(0),
-			   lastUsedMapID(0),
-			   curr(nullptr), firstMap(nullptr),
-			   currCursor(nullptr),
-			   nonStandardCursor(false)
+MAPS::MAPS() : curr(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
+	nonStandardCursor(false), currCursor(nullptr), standardCursor(NULL), sizeAllCursor(NULL),
+	neswCursor(NULL), nwseCursor(NULL), nsCursor(NULL), weCursor(NULL)
 {
 	standardCursor = LoadCursor(NULL, IDC_ARROW);
 	sizeAllCursor = LoadCursor(NULL, IDC_SIZEALL);
@@ -20,87 +20,74 @@ MAPS::~MAPS()
 
 }
 
-void MAPS::FocusActive()
+bool MAPS::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
 {
-	if ( firstMap == nullptr )
-		curr = nullptr;
-	else
+	for ( auto &pair : openMaps )
 	{
-		HWND hFocus = NULL;
-		if ( curr != nullptr )
-			hFocus = curr->getHandle();
-
-		MapNode* currNode = firstMap;
-		while ( currNode != nullptr && currNode->map.getHandle() != hFocus )
-			currNode = currNode->next;
-
-		if ( currNode != nullptr ) // If a corresponding map was found
-		{
-			curr = &currNode->map; // Sets the current map to the map given by the handle
-			// Need to update location tree, menu checkboxes
-			chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-			curr->updateMenu();
-		}
+		if ( guiMap == pair.second )
+			return true;
 	}
+	return false;
 }
 
-void MAPS::Focus(HWND hFocus)
+bool MAPS::Focus(HWND hGuiMap)
 {
-	MapNode* currNode = firstMap;
-	while ( currNode != nullptr && currNode->map.getHandle() != hFocus )
-		currNode = currNode->next;
-
-	if ( currNode != nullptr /*&& curr != (&currNode->map)*/ ) // If a corresponding map was found and this map is not already the current
+	for ( auto &pair : openMaps )
 	{
-		curr = &currNode->map; // Sets the current map to the map given by the handle
-		// Need to update location tree, menu checkboxes
+		if ( hGuiMap == pair.second->getHandle() )
+			return Focus(pair.second);
+	}
+	return false;
+}
+
+bool MAPS::Focus(shared_ptr<GuiMap> guiMap)
+{
+	if ( guiMap != nullptr && isInOpenMaps(guiMap) )
+	{
+		curr = guiMap;
 		chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 		curr->updateMenu();
+		return true;
 	}
 	else
+	{
 		curr = nullptr;
+		return false;
+	}
 }
 
-GuiMap* MAPS::GetMap(HWND hMap)
+shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
 {
-	MapNode* currNode = firstMap;
-	while ( currNode != nullptr && currNode->map.getHandle() != hMap )
-		currNode = currNode->next;
+	if ( hGuiMap == curr->getHandle() )
+		return curr;
 
-	if ( currNode )
-		return &currNode->map;
+	for ( auto &pair : openMaps)
+	{
+		if ( hGuiMap == pair.second->getHandle() )
+			return pair.second;
+	}
+
+	return nullptr;
+}
+
+shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
+{
+	if ( mapId == 0 || mapId == curr->getMapId() )
+		return curr;
+
+	auto it = openMaps.find(mapId);
+	if ( it != openMaps.end() )
+		return it->second;
 	else
 		return nullptr;
 }
 
-GuiMap* MAPS::GetMap(u16 mapID)
+u16 MAPS::GetMapID(shared_ptr<GuiMap> guiMap)
 {
-	if ( mapID == 0 || mapID == curr->getMapId() )
-		return curr;
+	if ( guiMap != nullptr )
+		return guiMap->getMapId();
 	else
-	{
-		MapNode* currNode = firstMap;
-		while ( currNode != nullptr && currNode->mapID != mapID )
-			currNode = currNode->next;
-
-		if ( currNode )
-			return &currNode->map;
-		else
-			return nullptr;
-	}
-}
-
-u16 MAPS::GetMapID(GuiMap* map)
-{
-	MapNode* currNode = firstMap;
-	while ( currNode != nullptr )
-	{
-		if ( &currNode->map == map )
-			return currNode->mapID;
-
-		currNode = currNode->next;
-	}
-	return 0;
+		return 0;
 }
 
 bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
@@ -111,64 +98,63 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 		return false;
 	}
 
-	MapNode* newMap = new MapNode;
-	
-	if ( newMap->map.CreateNew(width, height, tileset, terrain, triggers) )
+	shared_ptr<GuiMap> newMap = AddEmptyMap();
+
+	if ( newMap->CreateNew(width, height, tileset, terrain, triggers) )
 	{
 		char title[256] = { "Untitled" };
 		if ( UntitledNumber > 0 )
 			sprintf_s(title, 256, "Untitled %d", UntitledNumber);
 
-		if ( newMap->map.CreateThis(getHandle(), title) )
+		if ( newMap->CreateThis(getHandle(), title) )
 		{
-			curr = &newMap->map;
 			UntitledNumber++;
-			PushNode(newMap);
-			Focus(newMap->map.getHandle());
+			EnableMapping();
+			Focus(newMap);
 			curr->Redraw(true);
 			return true;
 		}
 		else
-		{
-			delete newMap;
 			Error("Failed to create MDI Child Window!");
-		}
 	}
 	else
 	{
-		CHKD_ERR("Failed to create scenario file!\n\nError in %s\n\n%s", LastErrorLoc, LastError);
+		CHKD_ERR("Failed to create map!\n\nError in %s\n\n%s", LastErrorLoc, LastError);
 		Error(LastError);
 	}
 
+	RemoveMap(newMap);
 	return false;
 }
 
 bool MAPS::OpenMap(const char* fileName)
 {
-	MapNode* newMap = new MapNode;
+	auto newMap = AddEmptyMap();
 
-	if ( newMap->map.LoadFile(fileName) )
+	if ( newMap->LoadFile(fileName) )
 	{
-		if ( newMap->map.CreateThis(getHandle(), fileName) )
+		if ( newMap->CreateThis(getHandle(), fileName) )
 		{
-			SetWindowText(newMap->map.getHandle(), fileName);
-			PushNode(newMap);
-			Focus(newMap->map.getHandle());
+			SetWindowText(newMap->getHandle(), fileName);
+			EnableMapping();
+			Focus(newMap);
+
+			if ( newMap->isProtected() && newMap->hasPassword() )
+				chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+			else if ( newMap->isProtected() )
+				mb("Map is protected and will be opened as view only");
+
+			SetFocus(chkd.getHandle());
 			curr->Scroll(SCROLL_X|SCROLL_Y);
 			curr->Redraw(true);
 			curr->refreshScenario();
-			FocusActive();
 			return true;
 		} 
 		else
-		{
-			delete newMap;
 			Error("Failed to create MDI Child Window!");
-		}
 	}
-	else
-		delete newMap;
 
+	RemoveMap(newMap);
 	return false;
 }
 
@@ -179,7 +165,6 @@ bool MAPS::OpenMap()
 
 bool MAPS::SaveCurr(bool saveAs)
 {
-	FocusActive();
 	if ( curr->SaveFile(saveAs) )
 	{
 		SetWindowText(curr->getHandle(), curr->FilePath());
@@ -191,66 +176,12 @@ bool MAPS::SaveCurr(bool saveAs)
 
 void MAPS::CloseMap(HWND hMap)
 {
-	MapNode* curr = firstMap,
-		   * deleting = nullptr;
+	shared_ptr<GuiMap> map = GetMap(hMap);
+	if ( map != nullptr )
+		RemoveMap(map);
 
-	if ( curr != nullptr )
-	{
-		if ( firstMap->map.getHandle() == hMap )
-		{
-			deleting = firstMap;
-			firstMap = firstMap->next;
-		}
-		else if ( curr->next != nullptr )
-		{
-			while ( curr->next != nullptr )
-			{
-				if ( curr->next->map.getHandle() == hMap )
-				{
-					deleting = curr->next;
-					curr->next = curr->next->next;
-					break;
-				}
-				curr = curr->next;
-			}
-		}
-	}
-
-	if ( deleting != nullptr )
-	{
-		delete deleting;
-		curr = nullptr;
-		FocusActive();
-		RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
-	}
-
-	if ( firstMap == nullptr ) // Disable mapping functionality
-	{
-		int toolbarItems[] =
-		{
-			ID_FILE_SAVE1, ID_FILE_SAVEAS1, ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_PROPERTIES,
-			ID_EDIT_DELETE, ID_EDIT_COPY1, ID_EDIT_CUT1, ID_EDIT_PASTE1
-		};
-
-		for ( int i=0; i<sizeof(toolbarItems)/sizeof(int); i++ )
-			SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], false);
-
-		ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_HIDE);
-		ShowWindow(chkd.mainToolbar.zoomBox.getHandle(), SW_HIDE);
-		ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
-		ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
-
-		HMENU hMenu = GetMenu(chkd.getHandle());
-
-		for ( int i=0; i<numOnOffMenuItems; i++ )
-			EnableMenuItem(hMenu, onOffMenuItems[i], MF_DISABLED);
-
-		HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
-		ShowWindow(hLeftBar, SW_HIDE);
-
-		chkd.statusBar.SetText(0, "");
-		chkd.statusBar.SetText(1, "");
-	}
+	if ( openMaps.size() == 0 )
+		DisableMapping();
 }
 
 void MAPS::CloseActive()
@@ -277,7 +208,6 @@ void MAPS::ChangeLayer(u8 newLayer)
 	if ( curr != nullptr && curr->currLayer() != newLayer )
 	{
 		curr->selections().removeTiles();
-		curr->currLayer() = newLayer;
 
 		if ( chkd.mainToolbar.layerBox.GetSel() != newLayer )
 			chkd.mainToolbar.layerBox.SetSel(newLayer);
@@ -298,6 +228,8 @@ void MAPS::ChangeLayer(u8 newLayer)
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_SHOW);
 		else
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
+
+		curr->currLayer() = newLayer;
 
 		chkd.tilePropWindow.DestroyThis();
 		curr->Redraw(false);
@@ -345,23 +277,21 @@ void MAPS::ChangePlayer(u8 newPlayer)
 	{
 		if ( clipboard.isPasting() )
 		{
-			PasteUnitNode* curr = clipboard.getFirstUnit();
-			while ( curr != nullptr )
-			{
-				curr->unit.owner = newPlayer;
-				curr = curr->next;
-			}
+			auto &units = clipboard.getUnits();
+			for ( auto &pasteUnit : units )
+				pasteUnit.unit.owner = newPlayer;
 		}
 
 		u16 numUnits = curr->numUnits();
 
-		UnitNode* currSelUnit = curr->selections().getFirstUnit();
-		while ( currSelUnit != nullptr )
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		auto &selUnits = curr->selections().getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
 			ChkUnit* unit;
-			if ( curr->getUnit(unit, currSelUnit->index) && newPlayer != unit->owner )
+			if ( curr->getUnit(unit, unitIndex) && newPlayer != unit->owner )
 			{
-				curr->undos().addUndoUnitChange(currSelUnit->index, UNIT_FIELD_OWNER, unit->owner);
+				unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_OWNER, unit->owner)));
 				unit->owner = newPlayer;
 			}
 
@@ -374,13 +304,10 @@ void MAPS::ChangePlayer(u8 newPlayer)
 				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
 					SetWindowText(hOwner, text.c_str());
 
-				chkd.unitWindow.ChangeOwner(currSelUnit->index, newPlayer);
+				chkd.unitWindow.ChangeOwner(unitIndex, newPlayer);
 			}
-
-			currSelUnit = currSelUnit->next;
 		}
-
-		curr->undos().startNext(0);
+		curr->undos().AddUndo(unitChanges);
 		curr->Redraw(true);
 	}
 
@@ -401,7 +328,6 @@ void MAPS::cut()
 		{
 			clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
 			curr->deleteSelection();
-			curr->nextUndo();
 			if ( clipboard.isPasting() )
 			{
 				endPaste();
@@ -479,10 +405,7 @@ void MAPS::endPaste()
 {
 	clipboard.endPasting();
 	if ( curr != nullptr )
-	{
-		curr->nextUndo();
 		curr->Redraw(false);
-	}
 }
 
 void MAPS::properties()
@@ -491,7 +414,7 @@ void MAPS::properties()
 	{
 		if ( curr->selections().hasTiles() )
 		{
-			TileNode tile = *curr->selections().getFirstTile();
+			TileNode tile = curr->selections().getFirstTile();
 			curr->selections().removeTiles();
 			curr->selections().addTile(tile.value, tile.xc, tile.yc, NEIGHBOR_LEFT|NEIGHBOR_TOP|NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM);
 
@@ -584,17 +507,43 @@ void MAPS::updateCursor(s32 xc, s32 yc)
 		SetCursor(standardCursor);
 }
 
-void MAPS::PushNode(MapNode* map)
+u16 MAPS::NextId()
 {
-	if ( firstMap == nullptr ) // Enable mapping functionality
+	if ( lastUsedMapID < 65535 )
 	{
+		lastUsedMapID++;
+		return lastUsedMapID;
+	}
+	else // Find one that isn't used, ambiguously use 65535 if all are used
+	{
+		u16 newMapId = 65535; // Use 65535 if all are used
+		for ( u32 mapId = 0; mapId < 65536; mapId++ ) // Try every ID, break if you find one
+		{
+			bool used = false; // Assume it's not used until you find that it is
+			auto it = openMaps.find(mapId);
+			if ( it == openMaps.end() ) // mapId is unused
+			{
+				newMapId = mapId;
+				break; // Use the current value of newMapId
+			}
+		}
+		return newMapId; // Use the unused ID or 65535
+	}
+}
+
+void MAPS::EnableMapping()
+{
+	if ( !mappingEnabled ) // Enable mapping functionality
+	{
+		mappingEnabled = true;
+
 		int toolbarItems[] =
 		{
 			ID_FILE_SAVE1, ID_FILE_SAVEAS1, ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_PROPERTIES,
 			ID_EDIT_DELETE, ID_EDIT_COPY1, ID_EDIT_CUT1, ID_EDIT_PASTE1
 		};
 
-		for ( int i=0; i<sizeof(toolbarItems)/sizeof(int); i++ )
+		for ( int i = 0; i < sizeof(toolbarItems) / sizeof(int); i++ )
 			SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], true);
 
 		ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_SHOW);
@@ -603,7 +552,7 @@ void MAPS::PushNode(MapNode* map)
 
 		HMENU hMenu = GetMenu(chkd.getHandle());
 
-		for ( int i=0; i<numOnOffMenuItems; i++ )
+		for ( int i = 0; i < numOnOffMenuItems; i++ )
 			EnableMenuItem(hMenu, onOffMenuItems[i], MF_ENABLED);
 
 		HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
@@ -611,37 +560,80 @@ void MAPS::PushNode(MapNode* map)
 
 		chkd.statusBar.SetText(1, "Terrain");
 	}
+}
 
-	if ( lastUsedMapID < 65535 )
+void MAPS::DisableMapping()
+{
+	if ( mappingEnabled )
 	{
-		lastUsedMapID ++;
-		map->mapID = lastUsedMapID;
-		map->map.setMapId(map->mapID);
-	}
-	else // Find one that isn't used, ambiguously use 65535 if all are used
-	{
-		u16 newMapID;
-		for ( newMapID=0; newMapID<=65535; newMapID++ ) // Try every ID, break if you find one
+		mappingEnabled = false;
+
+		int toolbarItems[] =
 		{
-			bool used = false; // Assume it's not used until you find that it is
-			MapNode* curr = firstMap;
-			while ( curr != nullptr ) // Look through every map
-			{
-				if ( newMapID == curr->mapID ) // If used, flag it as such and stop looking through maps
-				{
-					used = true;
-					break;
-				}
-				curr = curr->next;
-			}
+			ID_FILE_SAVE1, ID_FILE_SAVEAS1, ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_PROPERTIES,
+			ID_EDIT_DELETE, ID_EDIT_COPY1, ID_EDIT_CUT1, ID_EDIT_PASTE1
+		};
 
-			if ( !used ) // If you got through all the maps and found the ID wasn't used, you found an unused ID, break
-				break;
-		}
-		map->mapID = newMapID; // Use the unused ID or 65535
-		map->map.setMapId(map->mapID);
+		for ( int i = 0; i < sizeof(toolbarItems) / sizeof(int); i++ )
+			SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], false);
+
+		ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.zoomBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
+		ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
+
+		HMENU hMenu = GetMenu(chkd.getHandle());
+
+		for ( int i = 0; i < numOnOffMenuItems; i++ )
+			EnableMenuItem(hMenu, onOffMenuItems[i], MF_DISABLED);
+
+		chkd.mainPlot.leftBar.Hide();
+
+		chkd.statusBar.SetText(0, "");
+		chkd.statusBar.SetText(1, "");
+
+		chkd.changePasswordWindow.Hide();
 	}
-	
-	map->next = firstMap;
-	firstMap = map;
+}
+
+shared_ptr<GuiMap> MAPS::AddEmptyMap()
+{
+	u16 id = NextId();
+	if ( id < u16_max )
+	{
+		auto it = openMaps.insert(pair<u16, shared_ptr<GuiMap>>(id, shared_ptr<GuiMap>(new GuiMap)));
+		if ( it != openMaps.end() )
+		{
+			it->second->setMapId(id);
+			return it->second;
+		}
+	}
+	return nullptr;
+}
+
+bool MAPS::RemoveMap(std::shared_ptr<GuiMap> guiMap)
+{
+	if ( guiMap == nullptr )
+		return false;
+
+	u16 toDelete = u16_max;
+	for ( auto &pair : openMaps )
+	{
+		if ( guiMap == pair.second )
+		{
+			toDelete = pair.first;
+			break;
+		}
+	}
+
+	if ( toDelete != u16_max )
+	{
+		if ( guiMap == curr )
+			curr = nullptr;
+
+		openMaps.erase(toDelete);
+		return true;
+	}
+
+	return false;
 }

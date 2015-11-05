@@ -36,7 +36,7 @@ class Graphics
 {
 	public:
 
-		Graphics(Scenario* chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), chk(chk) { }
+		Graphics(Scenario &chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), chk(chk) { }
 
 		void DrawMap( u16 bitWidth, u16 bitHeight,
 					  s32 screenLeft, s32 screenTop,
@@ -74,7 +74,7 @@ class Graphics
 
 	private:
 
-		Scenario* chk; // Pointer to the scenario file this instance of graphics renders
+		Scenario &chk; // Pointer to the scenario file this instance of graphics renders
 
 		bool isValid; // When false, requires complete sprite refresh
 		bool isSorted; // When false, requires sorting before next use
@@ -121,23 +121,23 @@ void DrawTile( HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue
 			   BITMAPINFO &bmi, u8 BlueOffset, u8 GreenOffset, u8 RedOffset );
 
 void DrawTileNumbers( HDC hDC, bool tileNumsFromMTXM, u32 screenLeft, u32 screenTop,
-					  u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, Scenario* chk );
+					  u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, Scenario &chk );
 
 void DrawTools( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario* chk, u8 layer );
+				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario &chk, u8 layer );
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario* chk);
+void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk);
 
 void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections,
-					    CLIPBOARD& clipboard, Scenario* chk, u8 layer);
+					    CLIPBOARD& clipboard, Scenario &chk, u8 layer);
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario* chk);
+void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk);
 
 void DrawSelectingFrame(HDC hDC, SELECTIONS& selections, u32 screenLeft, u32 screenTop, s32 width, s32 height, double scale);
 
 void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom);
 
-void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario* chk);
+void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario &chk);
 
 void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
 

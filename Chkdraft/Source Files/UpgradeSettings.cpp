@@ -63,7 +63,7 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 void UpgradeSettingsWindow::RefreshWindow()
 {
 	refreshing = true;
-	Scenario* chk = (Scenario*)chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chk != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
@@ -302,7 +302,7 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 	if ( selectedUpgrade > 0 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		UPGRADEDAT* upgDat = chkd.scData.upgrades.UpgradeDat(upgrade);
 
 		chk->setUpgradeMineralCost(upgrade, upgDat->MineralCost);
@@ -319,7 +319,7 @@ void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 	if ( selectedUpgrade != -1 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 
 		chk->setUpgradeMineralCost(upgrade, 0);
 		chk->setUpgradeMineralFactor(upgrade, 0);

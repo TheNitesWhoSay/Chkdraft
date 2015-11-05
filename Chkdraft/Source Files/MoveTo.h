@@ -13,6 +13,7 @@ class MoveToDialog : public ClassDialog
 	protected:
 		MoveToDialog();
 		bool InternalGetMoveTo(indexType &index, HWND hParent);
+		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
