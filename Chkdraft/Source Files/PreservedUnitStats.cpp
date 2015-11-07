@@ -1,5 +1,6 @@
 #include "PreservedUnitStats.h"
 #include "Chkdraft.h"
+#include "UnitChange.h"
 
 PreservedUnitStats::PreservedUnitStats() : field(0), numUnits(0), values(nullptr)
 {
@@ -19,26 +20,18 @@ void PreservedUnitStats::addStats(SELECTIONS &sel, u8 statField)
 	flushStats();
 	field = statField;
 
-	UnitNode* currUnit = sel.getFirstUnit();
-	numUnits = 0;
-	while ( currUnit != nullptr )
-	{
-		numUnits ++;
-		currUnit = currUnit->next;
-	}
-
-	currUnit = sel.getFirstUnit();
+	numUnits = sel.numUnits();
 	try { values = new u32[numUnits]; }
 	catch ( std::bad_alloc ) { flushStats(); return; }
 	ChkUnit* unit;
 	buffer& UNITS = chkd.maps.curr->UNIT();
 
-	for ( int i=0; currUnit != nullptr; i++ )
+	u32 i = 0;
+	auto &units = sel.getUnits();
+	for ( u16 &unitIndex : units )
 	{
-		u16 index = currUnit->index;
-		u32 pos = index*UNIT_STRUCT_SIZE + unitFieldLoc[field];
-
-		if ( chkd.maps.curr->getUnit(unit, index) )
+		u32 pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
+		if ( chkd.maps.curr->getUnit(unit, unitIndex) )
 		{
 			switch ( unitFieldSize[field] )
 			{
@@ -47,8 +40,7 @@ void PreservedUnitStats::addStats(SELECTIONS &sel, u8 statField)
 				case 4: values[i] =		 UNITS.get<u32>(pos); break;
 			}
 		}
-
-		currUnit = currUnit->next;
+		i++;
 	}
 }
 
@@ -57,28 +49,24 @@ void PreservedUnitStats::convertToUndo()
 	if ( numUnits > 0 && values != nullptr )
 	{
 		// For each selected unit, add the corresponding undo from values
-		UnitNode* currUnit = chkd.maps.curr->selections().getFirstUnit();
 		buffer& units = chkd.maps.curr->UNIT();
 		u32 pos = 0;
 
-		for ( int i=0; currUnit != nullptr; i++ )
+		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+		u32 i = 0;
+		auto &selUnits = chkd.maps.curr->selections().getUnits();
+		for ( u16 &unitIndex : selUnits )
 		{
-			pos = currUnit->index*UNIT_STRUCT_SIZE + unitFieldLoc[field];
+			pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
 			switch ( unitFieldSize[field] )
 			{
-				case 1:
-					chkd.maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-					break;
-				case 2:
-					chkd.maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-					break;
-				case 4:
-					chkd.maps.curr->undos().addUndoUnitChange(currUnit->index, field, values[i]);
-					break;
+				case 1: unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));
+				case 2: unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));
+				case 4: unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));
 			}
-			currUnit = currUnit->next;
+			i++;
 		}
-		chkd.maps.curr->undos().startNext(0);
+		chkd.maps.curr->undos().AddUndo(unitChanges);
 	}
 	flushStats();
 }

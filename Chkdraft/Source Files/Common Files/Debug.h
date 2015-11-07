@@ -41,6 +41,8 @@ class CLI
 	private:
 		FILE* console;
 };
+
+void ShoutError(const char* file, unsigned int line, const char* msg, ...);
 void CheckInvariant(bool condition, const char* file, int line);
 #define Invariant(condition) ( CheckInvariant(condition, __FILE__, __LINE__) ) // States something that must be true at this point in execution
 #else
@@ -69,5 +71,7 @@ void MessageInt(int integer, const char* caption);
 void MessageChar(char character, int pos);
 void FindLeaks();
 bool RetryError(const char* text);
+
+#define ErrorReturnShoutIfNot(condition, shoutText) if ( !condition ) { MessageBox(NULL, shoutText, "Error!", MB_OK); return false; }
 
 #endif

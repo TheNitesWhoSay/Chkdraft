@@ -29,8 +29,11 @@ class Chkdraft : public ClassWindow
 					TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
 					TilePropWindow tilePropWindow; // Modeless tile properties
 					TextTrigWindow textTrigWindow; // Modeless text triggers
+					LitWindow litWindow; // Modeless lit window
 					MapSettingsWindow mapSettingsWindow; // Modeless map settings
 					TrigEditorWindow trigEditorWindow; // Modeless trig editor
+					ChangePasswordDialog changePasswordWindow; // Modeless password editor
+					EnterPasswordDialog enterPasswordWindow; // Modeless login window
 
 /* Constructors */	Chkdraft();
 
@@ -50,14 +53,16 @@ class Chkdraft : public ClassWindow
 /*  Preprocess	*/	bool DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam);
 					void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+/*	  Procs		*/	LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 	private:
 
 /*	   Data     */	HWND currDialog;
 					bool editFocused;
 
-/* Priv Methods */	LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					bool CreateSubWindows();
+/* Priv Methods */	bool CreateSubWindows();
 					void MinimizeDialogs();
 					void RestoreDialogs();
 					void SizeSubWindows();

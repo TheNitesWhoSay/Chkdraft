@@ -74,5 +74,5 @@ LRESULT TreeViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	if ( msg == WM_CHAR && (GetKeyState(VK_CONTROL) & 0x8000) )
 		 return 0; // Prevent ctrl + key from causing beeps
 	else
-		return WindowControl::CallDefaultProc(hWnd, msg, wParam, lParam);
+		return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 }

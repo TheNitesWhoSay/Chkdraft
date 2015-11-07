@@ -1,5 +1,5 @@
-#ifndef ENUMERATIONS_H
-#define ENUMERATIONS_H
+#ifndef WINUIENUMERATIONS_H
+#define WINUIENUMERATIONS_H
 #include <Windows.h>
 
 enum LB
@@ -28,6 +28,12 @@ enum LB
 		The WPARAM is NULL
 		The LPARAM is the list box's handle */
 	WM_POSTDRAWITEMS,
+
+	/** Possibly sent by windows containing ListBoxes to signal
+		other windows that a ListBox's selection changed 
+		The WPARAM is NULL
+		The LPARAM is a (string*) to the newly selected string */
+	WM_NEWSELTEXT,
 
 	LB_LAST
 };
@@ -74,7 +80,36 @@ enum GV
 		Return: The width if successful, 0 otherwise */
 	WM_GETGRIDITEMWIDTH,
 
+	/** Sent to the parent when the selected square has changed *
+		WPARAM:		LOWORD(wParam) = gridItemX
+					HIWORD(wParam) = gridItemY
+		LPARAM: NULL
+		Return: Unused */
+	WM_GRIDSELCHANGED,
+
+	/** Sent to the parent when a grid item has started to be edited 
+		WPARAM:		LOWORD(wParam) = gridItemX
+					HIWORD(wParam) = gridItemY
+		LPARAM: NULL
+		Return: Unused */
+	WM_GRIDEDITSTART,
+
+	/** Sent to the parent when a grid item has finished being edited
+		WPARAM:		LOWORD(wParam) = gridItemX
+					HIWORD(wParam) = gridItemY
+		LPARAM: NULL
+		Return: Unused */
+	WM_GRIDEDITEND,
+
+	/** Sent to the keyReciever when the text in the edit box has changed
+		WPARAM:	NULL
+		LPARAM: a (string*) to the new string contents
+		Return: Unused */
+	WM_NEWGRIDTEXT,
+
 	GV_LAST
 };
+
+#define WINUI_LAST (GV_LAST+1)
 
 #endif

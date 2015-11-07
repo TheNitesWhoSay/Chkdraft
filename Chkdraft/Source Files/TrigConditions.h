@@ -3,8 +3,10 @@
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
+#include "Suggestions.h"
+#include "ConditionsGrid.h"
 
-class TrigConditionsWindow : public ClassWindow
+class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 {
 	public:
 		TrigConditionsWindow();
@@ -13,27 +15,35 @@ class TrigConditionsWindow : public ClassWindow
 		void RefreshWindow(u32 trigIndex);
 		void DoSize();
 		void ProcessKeyDown(WPARAM wParam, LPARAM lParam);
+		void HideSuggestions();
+		void ConditionEnableToggled(u8 conditionNum);
 
 	protected:
 		void InitializeArgMaps(); // Gives default values to all the argMaps
 		void CreateSubWindows(HWND hWnd);
 		void OnLeave();
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
-		GridViewControl listConditions;
+		ConditionsGrid listConditions;
 		EditControl editListItem;
 		HBRUSH hBlack;
 		u32 trigIndex;
 
-		std::vector<u8> conditionArgMaps[16];
+		std::vector<u8> conditionArgMaps[24];
 		std::vector<u8> actionArgMaps[64];
 
-		LRESULT Notify(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		DropdownControl dropUnits;
+		Suggestions &suggestions;
+
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		bool TransformCondition(Condition &condition, u8 newId);
 		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, string& str);
 		void DrawSelectedCondition();
 		int GetGridItemWidth(int gridItemX, int gridItemY);
+		void CheckEnabledClicked(int conditionNum);
+
 		void PreDrawItems();
 		void SysColorRect(HDC hDC, RECT &rect, DWORD color);
 		void DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int width, int xStart);
@@ -42,7 +52,28 @@ class TrigConditionsWindow : public ClassWindow
 		void DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis);
 		void DrawTouchups(HDC hDC);
 		void PostDrawItems();
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+		void SuggestNothing();
+		void SuggestUnit();
+		void SuggestLocation();
+		void SuggestPlayer();
+		void SuggestAmount();
+		void SuggestNumericComparison();
+		void SuggestResourceType();
+		void SuggestScoreType();
+		void SuggestSwitch();
+		void SuggestSwitchState();
+		void SuggestComparison();
+		void SuggestConditionType();
+		void SuggestTypeIndex();
+		void SuggestFlags();
+		void SuggestInternalData();
+
+		void GridEditStart(u16 gridItemX, u16 gridItemY);
+		void NewSuggestion(string &str);
+
+		void Activate(WPARAM wParam, LPARAM lParam);
+		LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

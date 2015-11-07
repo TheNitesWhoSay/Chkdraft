@@ -9,7 +9,7 @@ class MainPlot : public ClassWindow
 		LeftBar leftBar;
 		bool CreateThis(HWND hParent);
 
-	private:
+	protected:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 

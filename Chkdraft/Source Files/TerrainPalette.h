@@ -3,7 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Windows UI/WindowsUI.h"
 
-class TerrainPaletteWindow : public ClassWindow
+class TerrainPaletteWindow : public ClassDialog
 {
 	public:
 		TerrainPaletteWindow();

@@ -2,7 +2,26 @@
 #define CONDITION_H
 #include "Basics.h"
 
-class Condition // A trigger condition, as found in sets of 16 in a Trigger
+enum ConditionArgType
+{
+	CndNoType,
+	CndUnit,
+	CndLocation,
+	CndPlayer,
+	CndAmount,
+	CndNumericComparison,
+	CndResourceType,
+	CndScoreType,
+	CndSwitch,
+	CndSwitchState,
+	CndComparison, // NumericComparison, SwitchState
+	CndConditionType,
+	CndTypeIndex, // ResourceType, ScoreType, Switch
+	CndFlags,
+	CndInternalData
+};
+
+class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Trigger
 {
 	public:
 		u32 locationNum; // 1 based
@@ -21,7 +40,14 @@ class Condition // A trigger condition, as found in sets of 16 in a Trigger
 			#define CONDITION_FLAG_UNITID_USED			BIT_5 // Probably unnecessary
 			#define CONDITION_FLAG_UKNOWN_6				BIT_6
 			#define CONDITION_FLAG_UNNOWN_7				BIT_7
+
+			#define xCONDITION_FLAG_DISABLED x8BIT_1
 		u16 internalData; // Number of which condition to process next?
+
+		void ToggleDisabled();
+		bool isDisabled();
+		static ConditionArgType TextTrigArgType(u8 argNum, u8 condition);
+		ConditionArgType TextTrigArgType(u8 argNum);
 };
 
 	  //CID = Condition ID

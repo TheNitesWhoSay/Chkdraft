@@ -329,6 +329,7 @@ bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
 
 #define GetMegaTileRef(tiles, cv5Reference) tiles->cv5.get<u16>(cv5Reference)*32
 
-#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64
+#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) \
+(tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64
 
 #endif

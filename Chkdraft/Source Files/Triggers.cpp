@@ -301,6 +301,9 @@ string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, Tex
 	stringstream ssCondition;
 	Condition &condition = trigger->conditions[conditionNum];
 	u8 conditionIndex = condition.condition;
+	if ( condition.isDisabled() )
+		ssCondition << "(disabled) ";
+
 	switch ( conditionIndex )
 	{
 		case CID_ACCUMULATE: // Players, Comparison, Amount, TypeIndex
@@ -744,7 +747,7 @@ void TriggersWindow::RefreshGroupList()
 	listGroups.SetRedraw(false);
 	listGroups.ClearItems();
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	u8 firstNotFound = 0;
 	bool addedPlayer[NUM_TRIG_PLAYERS];
 	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
@@ -815,7 +818,7 @@ void TriggersWindow::RefreshTrigList()
 	numVisibleTrigs = 0;
 	int toSelect = -1;
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr && chk->TRIG().exists() )
 	{
 		Trigger* trigger;
@@ -1065,7 +1068,7 @@ void TriggersWindow::ClearGroups()
 		groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scenario* chk, u32 triggerNum, Trigger* trigger)
+bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
 	string str;
 	if ( chk->getActiveComment(trigger, str) )
@@ -1143,7 +1146,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
 	}
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenario* chk, u32 triggerNum, Trigger* trigger)
+void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
 	HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
 	if ( hBackground != NULL )
@@ -1198,6 +1201,73 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
 	}
 }
 
+LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( HIWORD(wParam) )
+	{
+	case LBN_SELCHANGE:
+		if ( LOWORD(wParam) == LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
+		{
+			int sel;
+			if ( !(listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger)) )
+				currTrigger = NO_TRIGGER;
+			else if ( trigModifyWindow.getHandle() != NULL )
+				trigModifyWindow.RefreshWindow(currTrigger);
+		}
+		else if ( LOWORD(wParam) == LIST_GROUPS )
+		{
+			currTrigger = NO_TRIGGER;
+			if ( changeGroupHighlightOnly )
+				return ClassWindow::Command(hWnd, wParam, lParam);
+
+			int numSel = listGroups.GetNumSel();
+			displayAll = false;
+			ClearGroups();
+			for ( int i = 0; i<numSel; i++ )
+			{
+				int selItem;
+				if ( listGroups.GetSelItem(i, selItem) )
+				{
+					if ( selItem == 28 )
+					{
+						ClearGroups();
+						displayAll = true;
+					}
+					else
+						groupSelected[selItem] = true;
+				}
+			}
+			RefreshTrigList();
+		}
+	case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
+		if ( LOWORD(wParam) == LIST_TRIGGERS )
+		{
+
+		}
+		else if ( LOWORD(wParam) == LIST_GROUPS )
+		{
+
+		}
+	case BN_CLICKED:
+		if ( LOWORD(wParam) == BUTTON_NEW )
+			ButtonNew();
+		else if ( LOWORD(wParam) == BUTTON_MODIFY )
+			ButtonModify();
+		else if ( LOWORD(wParam) == BUTTON_DELETE )
+			DeleteSelection();
+		else if ( LOWORD(wParam) == BUTTON_COPY )
+			CopySelection();
+		else if ( LOWORD(wParam) == BUTTON_MOVEUP )
+			MoveUp();
+		else if ( LOWORD(wParam) == BUTTON_MOVEDOWN )
+			MoveDown();
+		else if ( LOWORD(wParam) == BUTTON_MOVETO )
+			MoveTrigTo();
+		break;
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -1214,71 +1284,6 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_DBLCLKITEM:
 			if ( listTriggers == (HWND)lParam )
 				ButtonModify();
-			break;
-
-		case WM_COMMAND:
-			switch ( HIWORD(wParam) )
-			{
-				case LBN_SELCHANGE:
-					if ( LOWORD(wParam) == LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
-					{
-						int sel;
-						if ( !( listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger) ) )
-							currTrigger = NO_TRIGGER;
-						else if ( trigModifyWindow.getHandle() != NULL )
-							trigModifyWindow.RefreshWindow(currTrigger);
-					}
-					else if ( LOWORD(wParam) == LIST_GROUPS )
-					{
-						currTrigger = NO_TRIGGER;
-						if ( changeGroupHighlightOnly )
-							return DefWindowProc(hWnd, msg, wParam, lParam);
-
-						int numSel = listGroups.GetNumSel();
-						displayAll = false;
-						ClearGroups();
-						for ( int i=0; i<numSel; i++ )
-						{
-							int selItem;
-							if ( listGroups.GetSelItem(i, selItem) )
-							{
-								if ( selItem == 28 )
-								{
-									ClearGroups();
-									displayAll = true;
-								}
-								else
-									groupSelected[selItem] = true;
-							}
-						}
-						RefreshTrigList();
-					}
-				case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
-					if ( LOWORD(wParam) == LIST_TRIGGERS )
-					{
-					
-					}
-					else if ( LOWORD(wParam) == LIST_GROUPS )
-					{
-
-					}
-				case BN_CLICKED:
-					if ( LOWORD(wParam) == BUTTON_NEW )
-						ButtonNew();
-					else if ( LOWORD(wParam) == BUTTON_MODIFY )
-						ButtonModify();
-					else if ( LOWORD(wParam) == BUTTON_DELETE )
-						DeleteSelection();
-					else if ( LOWORD(wParam) == BUTTON_COPY )
-						CopySelection();
-					else if ( LOWORD(wParam) == BUTTON_MOVEUP )
-						MoveUp();
-					else if ( LOWORD(wParam) == BUTTON_MOVEDOWN )
-						MoveDown();
-					else if ( LOWORD(wParam) == BUTTON_MOVETO )
-						MoveTrigTo();
-					break;
-			}
 			break;
 
 		case WM_MOUSEWHEEL:
@@ -1313,7 +1318,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				mis->itemHeight = 13;
 				return TRUE;
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_POSTMEASUREITEMS: // Release items loaded for measurement
@@ -1329,7 +1334,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				if ( hBrush != NULL )
 					return (LPARAM)hBrush;
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_PREDRAWITEMS:
@@ -1374,7 +1379,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 				return TRUE;
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_POSTDRAWITEMS:
@@ -1383,7 +1388,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

@@ -15,12 +15,12 @@ TerrainPaletteWindow::TerrainPaletteWindow() : tilesetIndexedYC(0)
 bool TerrainPaletteWindow::CreateThis(HWND hParent)
 {
 	return getHandle() == NULL &&
-		   ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_INDEXED_TILESET), hParent);
+		   ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_INDEXED_TILESET), hParent);
 }
 
 bool TerrainPaletteWindow::DestroyThis()
 {
-	return ClassWindow::DestroyDialog();
+	return ClassDialog::DestroyDialog();
 }
 
 void TerrainPaletteWindow::DoScroll(HWND hWnd)
@@ -194,9 +194,10 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 					int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
 					int numRows = height/PIXELS_PER_TILE+2;
 					bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
+					std::vector<PasteTileNode> pasteTiles = chkd.maps.clipboard.getTiles();
 					u16 numHighlighted = 0;
-					if ( tileHighlighted )
-						numHighlighted = chkd.maps.clipboard.getFirstTile()->value;
+					if ( pasteTiles.size() > 0 )
+						numHighlighted = pasteTiles[0].value;
 
 					for ( s32 row = 0; row < numRows; row++ )
 					{
@@ -292,11 +293,11 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			break;
 
 		case WM_CLOSE:
-			ClassWindow::DestroyDialog();
+			ClassDialog::DestroyDialog();
 			break;
 
 		case WM_DESTROY:
-			ClassWindow::DestroyDialog();
+			ClassDialog::DestroyDialog();
 			break;
 
 		default:

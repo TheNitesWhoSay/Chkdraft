@@ -20,7 +20,7 @@ bool StringGuideWindow::CreateThis(HWND hParent)
 			colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, stringColorPrefixes[i], 0);
 			color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], TEXT_COLOR_FIRST+i);
 		}
-		ReleaseDC(hStringGuide, hDC);
+		ReleaseDC(hDC);
 		return true;
 	}
 	else
@@ -45,7 +45,7 @@ LRESULT StringGuideWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

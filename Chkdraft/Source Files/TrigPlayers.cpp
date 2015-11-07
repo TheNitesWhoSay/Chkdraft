@@ -276,6 +276,30 @@ void TrigPlayersWindow::ToggleAdvancedMode()
 	}
 }
 
+LRESULT TrigPlayersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	if ( !refreshing )
+	{
+		switch ( LOWORD(wParam) )
+		{
+		case EDIT_RAWPLAYERS:
+			if ( HIWORD(wParam) == EN_KILLFOCUS )
+				ParseRawPlayers();
+			break;
+		}
+		switch ( HIWORD(wParam) )
+		{
+		case BN_CLICKED:
+			if ( LOWORD(wParam) == BUTTON_ADVANCED )
+				ToggleAdvancedMode();
+			else
+				CheckBoxUpdated(LOWORD(wParam));
+			break;
+		}
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT TrigPlayersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -285,44 +309,21 @@ LRESULT TrigPlayersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				OnLeave();
 			else if ( wParam == TRUE )
 				RefreshWindow(trigIndex);
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_LBUTTONDOWN:
 			SetFocus(getHandle());
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
-		case WM_COMMAND:
-			if ( !refreshing )
-			{
-				switch ( LOWORD(wParam) )
-				{
-					case EDIT_RAWPLAYERS:
-						if ( HIWORD(wParam) == EN_KILLFOCUS )
-							ParseRawPlayers();
-						break;
-				}
-				switch ( HIWORD(wParam) )
-				{
-					case BN_CLICKED:
-						if ( LOWORD(wParam) == BUTTON_ADVANCED )
-							ToggleAdvancedMode();
-						else
-							CheckBoxUpdated(LOWORD(wParam));
-						break;
-				}
-			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		case WM_CLOSE:
 			OnLeave();
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 	}
 	return 0;
 }

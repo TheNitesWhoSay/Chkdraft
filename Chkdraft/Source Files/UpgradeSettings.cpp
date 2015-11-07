@@ -63,7 +63,7 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 void UpgradeSettingsWindow::RefreshWindow()
 {
 	refreshing = true;
-	Scenario* chk = (Scenario*)chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chk != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
@@ -302,7 +302,7 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 	if ( selectedUpgrade > 0 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		UPGRADEDAT* upgDat = chkd.scData.upgrades.UpgradeDat(upgrade);
 
 		chk->setUpgradeMineralCost(upgrade, upgDat->MineralCost);
@@ -319,7 +319,7 @@ void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 	if ( selectedUpgrade != -1 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 
 		chk->setUpgradeMineralCost(upgrade, 0);
 		chk->setUpgradeMineralFactor(upgrade, 0);
@@ -328,6 +328,245 @@ void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 		chk->setUpgradeTimeCost(upgrade, 0);
 		chk->setUpgradeTimeFactor(upgrade, 0);
 	}
+}
+
+LRESULT UpgradeSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+	if ( idFrom == TREE_UPGRADES &&
+		refreshing == false &&
+		nmhdr->code == TVN_SELCHANGED &&
+		((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
+	{
+		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
+			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
+
+		u8 upgradeId = (u8)itemData;
+		if ( itemType == TREE_TYPE_UPGRADE && upgradeId < 61 )
+		{
+			selectedUpgrade = upgradeId;
+			RefreshWindow();
+		}
+		else
+		{
+			selectedUpgrade = -1;
+			DisableUpgradeEditing();
+		}
+	}
+	return ClassWindow::Notify(hWnd, idFrom, nmhdr);
+}
+
+LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	if ( refreshing == false )
+	{
+		switch ( LOWORD(wParam) )
+		{
+		case EDIT_MINERALBASECOST:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newMineralCost;
+				if ( editMineralBaseCosts.GetEditNum<u16>(newMineralCost) )
+				{
+					chkd.maps.curr->setUpgradeMineralCost((u8)selectedUpgrade, newMineralCost);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_MINERALUPGRADEFACTOR:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newMineralFactor;
+				if ( editMineralUpgradeFactor.GetEditNum<u16>(newMineralFactor) )
+				{
+					chkd.maps.curr->setUpgradeMineralFactor((u8)selectedUpgrade, newMineralFactor);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_GASBASECOST:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newGasCost;
+				if ( editGasBaseCosts.GetEditNum<u16>(newGasCost) )
+				{
+					chkd.maps.curr->setUpgradeGasCost((u8)selectedUpgrade, newGasCost);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_GASUPGRADEFACTOR:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newGasFactor;
+				if ( editGasUpgradeFactor.GetEditNum<u16>(newGasFactor) )
+				{
+					chkd.maps.curr->setUpgradeGasFactor((u8)selectedUpgrade, newGasFactor);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_TIMEBASECOST:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newTimeCost;
+				if ( editTimeBaseCosts.GetEditNum<u16>(newTimeCost) )
+				{
+					if ( newTimeCost * 15 < newTimeCost ) // Value overflow
+						chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, 65535); // Set to max
+					else // Normal
+						chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, newTimeCost * 15);
+
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_TIMEUPGRADEFACTOR:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u16 newTimeFactor;
+				if ( editTimeUpgradeFactor.GetEditNum<u16>(newTimeFactor) )
+				{
+					if ( newTimeFactor * 15 < newTimeFactor ) // Value overflow
+						chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, 65535); // Set to max
+					else // Normal
+						chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, newTimeFactor * 15);
+
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_DEFAULTSTARTLEVEL:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u8 newStartLevel;
+				if ( editDefaultStartLevel.GetEditNum<u8>(newStartLevel) )
+				{
+					chkd.maps.curr->setUpgradeDefaultStartLevel((u8)selectedUpgrade, newStartLevel);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case EDIT_DEFAULTMAXLEVEL:
+			if ( HIWORD(wParam) == EN_CHANGE )
+			{
+				u8 newMaxLevel;
+				if ( editDefaultMaxLevel.GetEditNum<u8>(newMaxLevel) )
+				{
+					chkd.maps.curr->setUpgradeDefaultMaxLevel((u8)selectedUpgrade, newMaxLevel);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+
+		case CHECK_USEDEFAULTCOSTS:
+			if ( HIWORD(wParam) == BN_CLICKED )
+			{
+				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+				if ( selectedUpgrade != -1 )
+				{
+					if ( state == BST_CHECKED )
+					{
+						chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, true);
+						ClearDefaultUpgradeCosts();
+						DisableCostEditing();
+					}
+					else
+					{
+						chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, false);
+						SetDefaultUpgradeCosts();
+						EnableCostEditing();
+					}
+
+					RefreshWindow();
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+		case BUTTON_RESETUPGRADEDEFAULTS:
+			if ( HIWORD(wParam) == BN_CLICKED )
+			{
+				if ( MessageBox(hWnd, "Are you sure you want to reset all ugprade settings?", "Confirm", MB_YESNO) == IDYES )
+				{
+					buffer newUPGS("UPGS"), newUPGx("UPGx"), newUPGR("UPGR"), newPUPx("PUPx");
+					if ( Get_UPGS(newUPGS) )
+					{
+						newUPGS.del(0, 8);
+						chkd.maps.curr->UPGS().takeAllData(newUPGS);
+					}
+					if ( Get_UPGx(newUPGx) )
+					{
+						newUPGx.del(0, 8);
+						chkd.maps.curr->UPGx().takeAllData(newUPGx);
+					}
+					if ( Get_UPGR(newUPGR) )
+					{
+						newUPGR.del(0, 8);
+						chkd.maps.curr->UPGR().takeAllData(newUPGR);
+					}
+					if ( Get_PUPx(newPUPx) )
+					{
+						newPUPx.del(0, 8);
+						chkd.maps.curr->PUPx().takeAllData(newPUPx);
+					}
+
+					chkd.maps.curr->notifyChange(false);
+					DisableCostEditing();
+					RefreshWindow();
+				}
+			}
+			break;
+		default:
+			if ( HIWORD(wParam) == BN_CLICKED && selectedUpgrade != -1 &&
+				LOWORD(wParam) >= ID_CHECK_DEFAULTUPGRADEP1 && LOWORD(wParam) <= ID_CHECK_DEFAULTUPGRADEP12 )
+			{
+				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+				int player = LOWORD(wParam) - ID_CHECK_DEFAULTUPGRADEP1;
+				bool useDefault = (state == BST_CHECKED);
+				chkd.maps.curr->setUpgradePlayerDefaults((u8)selectedUpgrade, player, useDefault);
+				if ( state != BST_CHECKED )
+				{
+					u8 defaultStartLevel, defaultMaxLevel;
+					if ( chkd.maps.curr->getUpgradeDefaultStartLevel((u8)selectedUpgrade, defaultStartLevel) )
+						chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, defaultStartLevel);
+					if ( chkd.maps.curr->getUpgradeDefaultMaxLevel((u8)selectedUpgrade, defaultMaxLevel) )
+						chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, defaultMaxLevel);
+				}
+				chkd.maps.curr->notifyChange(false);
+				RefreshWindow();
+			}
+			else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
+				LOWORD(wParam) >= ID_EDIT_P1STARTLEVEL && LOWORD(wParam) <= ID_EDIT_P12STARTLEVEL )
+			{
+				u8 player = (u8)(LOWORD(wParam) - ID_EDIT_P1STARTLEVEL),
+					newStartLevel;
+				if ( editPlayerStartLevel[player].GetEditNum<u8>(newStartLevel) )
+				{
+					chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, newStartLevel);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
+				LOWORD(wParam) >= ID_EDIT_P1MAXLEVEL && LOWORD(wParam) <= ID_EDIT_P12MAXLEVEL )
+			{
+				u8 player = (u8)(LOWORD(wParam) - ID_EDIT_P1MAXLEVEL),
+					newMaxLevel;
+				if ( editPlayerMaxLevel[player].GetEditNum<u8>(newMaxLevel) )
+				{
+					chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, newMaxLevel);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+			break;
+		}
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
 }
 
 LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -343,249 +582,11 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
-		case WM_COMMAND:
-			if ( refreshing == false )
-			{
-				switch ( LOWORD(wParam) )
-				{
-					case EDIT_MINERALBASECOST:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newMineralCost;
-							if ( editMineralBaseCosts.GetEditNum<u16>(newMineralCost) )
-							{
-								chkd.maps.curr->setUpgradeMineralCost((u8)selectedUpgrade, newMineralCost);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_MINERALUPGRADEFACTOR:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newMineralFactor;
-							if ( editMineralUpgradeFactor.GetEditNum<u16>(newMineralFactor) )
-							{
-								chkd.maps.curr->setUpgradeMineralFactor((u8)selectedUpgrade, newMineralFactor);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_GASBASECOST:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newGasCost;
-							if ( editGasBaseCosts.GetEditNum<u16>(newGasCost) )
-							{
-								chkd.maps.curr->setUpgradeGasCost((u8)selectedUpgrade, newGasCost);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_GASUPGRADEFACTOR:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newGasFactor;
-							if ( editGasUpgradeFactor.GetEditNum<u16>(newGasFactor) )
-							{
-								chkd.maps.curr->setUpgradeGasFactor((u8)selectedUpgrade, newGasFactor);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_TIMEBASECOST:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newTimeCost;
-							if ( editTimeBaseCosts.GetEditNum<u16>(newTimeCost) )
-							{
-								if ( newTimeCost*15 < newTimeCost ) // Value overflow
-									chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, 65535); // Set to max
-								else // Normal
-									chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, newTimeCost*15);
-
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_TIMEUPGRADEFACTOR:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u16 newTimeFactor;
-							if ( editTimeUpgradeFactor.GetEditNum<u16>(newTimeFactor) )
-							{
-								if ( newTimeFactor*15 < newTimeFactor ) // Value overflow
-									chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, 65535); // Set to max
-								else // Normal
-									chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, newTimeFactor*15);
-
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_DEFAULTSTARTLEVEL:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u8 newStartLevel;
-							if ( editDefaultStartLevel.GetEditNum<u8>(newStartLevel) )
-							{
-								chkd.maps.curr->setUpgradeDefaultStartLevel((u8)selectedUpgrade, newStartLevel);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case EDIT_DEFAULTMAXLEVEL:
-						if ( HIWORD(wParam) == EN_CHANGE )
-						{
-							u8 newMaxLevel;
-							if ( editDefaultMaxLevel.GetEditNum<u8>(newMaxLevel) )
-							{
-								chkd.maps.curr->setUpgradeDefaultMaxLevel((u8)selectedUpgrade, newMaxLevel);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case CHECK_USEDEFAULTCOSTS:
-						if ( HIWORD(wParam) == BN_CLICKED )
-						{
-							LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-							if ( selectedUpgrade != -1 )
-							{
-								if ( state == BST_CHECKED )
-								{
-									chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, true);
-									ClearDefaultUpgradeCosts();
-									DisableCostEditing();
-								}
-								else
-								{
-									chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, false);
-									SetDefaultUpgradeCosts();
-									EnableCostEditing();
-								}
-
-								RefreshWindow();
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-					case BUTTON_RESETUPGRADEDEFAULTS:
-						if ( HIWORD(wParam) == BN_CLICKED )
-						{
-							if ( MessageBox(hWnd, "Are you sure you want to reset all ugprade settings?", "Confirm", MB_YESNO) == IDYES )
-							{
-								buffer newUPGS("UPGS"), newUPGx("UPGx"), newUPGR("UPGR"), newPUPx("PUPx");
-								if ( Get_UPGS(newUPGS) )
-								{
-									newUPGS.del(0, 8);
-									chkd.maps.curr->UPGS().takeAllData(newUPGS);
-								}
-								if ( Get_UPGx(newUPGx) )
-								{
-									newUPGx.del(0, 8);
-									chkd.maps.curr->UPGx().takeAllData(newUPGx);
-								}
-								if ( Get_UPGR(newUPGR) )
-								{
-									newUPGR.del(0, 8);
-									chkd.maps.curr->UPGR().takeAllData(newUPGR);
-								}
-								if ( Get_PUPx(newPUPx) )
-								{
-									newPUPx.del(0, 8);
-									chkd.maps.curr->PUPx().takeAllData(newPUPx);
-								}
-
-								chkd.maps.curr->notifyChange(false);
-								DisableCostEditing();
-								RefreshWindow();
-							}
-						}
-						break;
-					default:
-						if ( HIWORD(wParam) == BN_CLICKED && selectedUpgrade != -1 &&
-							 LOWORD(wParam) >= ID_CHECK_DEFAULTUPGRADEP1 && LOWORD(wParam) <= ID_CHECK_DEFAULTUPGRADEP12 )
-						{
-							LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-							int player = LOWORD(wParam)-ID_CHECK_DEFAULTUPGRADEP1;
-							bool useDefault = (state == BST_CHECKED);
-							chkd.maps.curr->setUpgradePlayerDefaults((u8)selectedUpgrade, player, useDefault);
-							if ( state != BST_CHECKED )
-							{
-								u8 defaultStartLevel, defaultMaxLevel;
-								if ( chkd.maps.curr->getUpgradeDefaultStartLevel((u8)selectedUpgrade, defaultStartLevel) )
-									chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, defaultStartLevel);
-								if ( chkd.maps.curr->getUpgradeDefaultMaxLevel((u8)selectedUpgrade, defaultMaxLevel) )
-									chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, defaultMaxLevel);
-							}
-							chkd.maps.curr->notifyChange(false);
-							RefreshWindow();
-						}
-						else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
-								  LOWORD(wParam) >= ID_EDIT_P1STARTLEVEL && LOWORD(wParam) <= ID_EDIT_P12STARTLEVEL )
-						{
-							u8 player = (u8)(LOWORD(wParam)-ID_EDIT_P1STARTLEVEL),
-							   newStartLevel;
-							if ( editPlayerStartLevel[player].GetEditNum<u8>(newStartLevel) )
-							{
-								chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, newStartLevel);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
-								  LOWORD(wParam) >= ID_EDIT_P1MAXLEVEL && LOWORD(wParam) <= ID_EDIT_P12MAXLEVEL )
-						{
-							u8 player = (u8)(LOWORD(wParam)-ID_EDIT_P1MAXLEVEL),
-							   newMaxLevel;
-							if ( editPlayerMaxLevel[player].GetEditNum<u8>(newMaxLevel) )
-							{
-								chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, newMaxLevel);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-				}
-			}
-			else
-				return DefWindowProc(hWnd, msg, wParam, lParam);
-
-		case WM_NOTIFY:
-			if ( wParam == TREE_UPGRADES && 
-				 refreshing == false &&
-				 ((NMHDR*)lParam)->code == TVN_SELCHANGED &&
-				 ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )
-			{
-				LPARAM itemType = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_TYPE,
-					   itemData = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_DATA;
-
-				u8 upgradeId = (u8)itemData;
-				if ( itemType == TREE_TYPE_UPGRADE && upgradeId < 61 )
-				{
-					selectedUpgrade = upgradeId;
-					RefreshWindow();
-				}
-				else
-				{
-					selectedUpgrade = -1;
-					DisableUpgradeEditing();
-				}
-			}
-			else
-				return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

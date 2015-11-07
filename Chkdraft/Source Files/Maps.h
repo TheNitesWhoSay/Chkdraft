@@ -2,29 +2,24 @@
 #define MAPS_H
 #include "Common Files/CommonFiles.h"
 #include "GuiMap.h"
+#include <map>
 
-struct MapNode
-{
-	GuiMap map;
-	u16 mapID;
-	MapNode* next;
-};
-
-class MAPS : public MdiFrame
+class MAPS : public MdiClient
 {
 	public:
-		GuiMap* curr;
+		GuiMapPtr curr;
 
 		CLIPBOARD clipboard;
 
 		MAPS();
 		~MAPS();
 
-		void FocusActive();
-		void Focus(HWND hFocus);
-		GuiMap* GetMap(HWND hMap);
-		GuiMap* GetMap(u16 mapID);
-		u16 GetMapID(GuiMap* map);
+		bool isInOpenMaps(GuiMapPtr guiMap);
+		bool Focus(HWND hGuiMap);
+		bool Focus(GuiMapPtr guiMap);
+		GuiMapPtr GetMap(HWND hGuiMap);
+		GuiMapPtr GetMap(u16 mapId);
+		u16 GetMapID(GuiMapPtr guiMap);
 
 		bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
 		bool OpenMap(const char* fileName);
@@ -49,10 +44,16 @@ class MAPS : public MdiFrame
 		void updateCursor(s32 xc, s32 yc);
 
 	protected:
-		void PushNode(MapNode* map);
+		u16 NextId();
+		void EnableMapping();
+		void DisableMapping();
+
+		GuiMapPtr AddEmptyMap();
+		bool RemoveMap(GuiMapPtr guiMap);
 
 	private:
-		MapNode* firstMap;
+		bool mappingEnabled;
+		std::multimap<u16, GuiMapPtr> openMaps; // <mapId, map>
 		int UntitledNumber;
 		u16 lastUsedMapID;
 

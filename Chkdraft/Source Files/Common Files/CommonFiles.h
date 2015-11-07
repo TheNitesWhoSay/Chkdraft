@@ -15,6 +15,7 @@
 #include <WindowsX.h>
 #include <CommCtrl.h>
 #include <algorithm>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <cstdio>
@@ -23,5 +24,6 @@
 #include <math.h>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
 #endif

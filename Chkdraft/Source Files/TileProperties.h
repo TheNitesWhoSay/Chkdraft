@@ -3,7 +3,7 @@
 #include "Common Files/CommonFiles.h"
 #include "Windows UI/WindowsUI.h"
 
-class TilePropWindow : public ClassWindow
+class TilePropWindow : public ClassDialog
 {
 	public:
 		bool CreateThis(HWND hParent);
@@ -11,6 +11,7 @@ class TilePropWindow : public ClassWindow
 		void UpdateTile();
 
 	protected:
+		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:

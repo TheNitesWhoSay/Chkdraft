@@ -3,6 +3,8 @@
 #include "Scenario.h"
 #include <cstdio>
 
+#define MapFilePtr std::shared_ptr<MapFile>
+
 class MapFile : public Scenario // MapFile is a scenario file + the stuff here
 {
 	public:

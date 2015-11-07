@@ -19,6 +19,9 @@ class StringEditorWindow : public ClassWindow
 		void addUseItem(string str, u32 amount); // Adds items to StringUse list box
 		bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
 
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 	private:
 		u32 currSelString;
 		u32 numVisibleStrings;
@@ -33,8 +36,6 @@ class StringEditorWindow : public ClassWindow
 		ListBoxControl listStrings;
 		ListBoxControl listUsage;
 		HDC stringListDC; // String list HDC for speeding up string measurement
-
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 LRESULT CALLBACK StringPreviewProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

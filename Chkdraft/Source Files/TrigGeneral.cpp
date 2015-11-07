@@ -23,10 +23,12 @@ enum ID {
 	CHECK_IGNORE_DEFEAT_DRAW,
 	CHECK_IS_PAUSED,
 	TEXT_RAW_FLAGS,
-	EDIT_RAW_FLAGS
+	EDIT_RAW_FLAGS,
+
+	BUTTON_ADVANCED
 };
 
-TrigGeneralWindow::TrigGeneralWindow() : trigIndex(0), refreshing(true)
+TrigGeneralWindow::TrigGeneralWindow() : trigIndex(0), refreshing(true), advancedMode(false)
 {
 
 }
@@ -129,6 +131,8 @@ void TrigGeneralWindow::DoSize()
 
 		textRawFlags.MoveTo(checkFlagPaused.Right()+padding*4, groupTop+groupTopPadding);
 		editRawFlags.MoveTo(textRawFlags.Left(), textRawFlags.Bottom()+1);
+
+		buttonAdvanced.MoveTo(rect.right - buttonAdvanced.Width() - 8, rect.bottom - buttonAdvanced.Height() - 8);
 	}
 }
 
@@ -157,6 +161,21 @@ void TrigGeneralWindow::CreateSubWindows(HWND hWnd)
 
 	textRawFlags.CreateThis(hWnd, 5, 5, 150, 13, "Raw Flags:", TEXT_RAW_FLAGS);
 	editRawFlags.CreateThis(hWnd, 5, 5, 200, 20, false, EDIT_RAW_FLAGS);
+
+	buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", BUTTON_ADVANCED);
+
+	checkIgnoreWaitSkipOnce.Hide();
+	checkIgnoreManyActions.Hide();
+	checkIgnoreDefeatDraw.Hide();
+	checkFlagPaused.Hide();
+	textRawFlags.Hide();
+	editRawFlags.Hide();
+	checkExtendedCommentString.Hide();
+	checkExtendedCommentAction.Hide();
+	checkExtendedNotesString.Hide();
+	checkExtendedNotesAction.Hide();
+	buttonDeleteComment.Hide();
+	buttonDeleteNotes.Hide();
 
 	groupComment.DisableThis();
 	groupNotes.DisableThis();
@@ -264,6 +283,76 @@ void TrigGeneralWindow::ParseRawFlagsText()
 	}		
 }
 
+void TrigGeneralWindow::ToggleAdvancedMode()
+{
+	advancedMode = !advancedMode;
+	if ( advancedMode ) // Now in advanced mode
+	{
+		buttonAdvanced.SetText("Standard");
+		checkIgnoreWaitSkipOnce.Show();
+		checkIgnoreManyActions.Show();
+		checkIgnoreDefeatDraw.Show();
+		checkFlagPaused.Show();
+		textRawFlags.Show();
+		editRawFlags.Show();
+		checkExtendedCommentString.Show();
+		checkExtendedCommentAction.Show();
+		checkExtendedNotesString.Show();
+		checkExtendedNotesAction.Show();
+		buttonDeleteComment.Show();
+		buttonDeleteNotes.Show();
+	}
+	else // Now in standard mode
+	{
+		buttonAdvanced.SetText("Advanced");
+		checkIgnoreWaitSkipOnce.Hide();
+		checkIgnoreManyActions.Hide();
+		checkIgnoreDefeatDraw.Hide();
+		checkFlagPaused.Hide();
+		textRawFlags.Hide();
+		editRawFlags.Hide();
+		checkExtendedCommentString.Hide();
+		checkExtendedCommentAction.Hide();
+		checkExtendedNotesString.Hide();
+		checkExtendedNotesAction.Hide();
+		buttonDeleteComment.Hide();
+		buttonDeleteNotes.Hide();
+	}
+	Hide(); Show(); // Dirty fix to redraw issues
+	RedrawThis(); // Apparently a call to RedrawWindow is insufficient
+}
+
+LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	if ( !refreshing )
+	{
+		switch ( LOWORD(wParam) )
+		{
+			case EDIT_RAW_FLAGS:
+				if ( HIWORD(wParam) == EN_KILLFOCUS )
+					ParseRawFlagsText();
+				break;
+		}
+		switch ( HIWORD(wParam) )
+		{
+			case BN_CLICKED:
+				switch ( LOWORD(wParam) )
+				{
+					case BUTTON_ADVANCED:				ToggleAdvancedMode();											break;
+					case CHECK_PRESERVE_TRIGGER:		SetPreserveTrigger(checkPreservedFlag.isChecked());				break;
+					case CHECK_DISABLED:				SetDisabledTrigger(checkDisabled.isChecked());					break;
+					case CHECK_IGNORE_CONDITIONS_ONCE:	SetIgnoreConditionsOnce(checkIgnoreConditionsOnce.isChecked()); break;
+					case CHECK_IGNORE_WAITSKIP_ONCE:	SetIgnoreWaitSkipOnce(checkIgnoreWaitSkipOnce.isChecked());		break;
+					case CHECK_IGNORE_MISCACTIONS_ONCE:	SetIgnoreMiscActionsOnce(checkIgnoreManyActions.isChecked());	break;
+					case CHECK_IGNORE_DEFEAT_DRAW:		SetIgnoreDefeatDraw(checkIgnoreDefeatDraw.isChecked());			break;
+					case CHECK_IS_PAUSED:				SetPausedTrigger(checkFlagPaused.isChecked());					break;
+				}
+				break;
+		}
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT TrigGeneralWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -275,42 +364,13 @@ LRESULT TrigGeneralWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				RefreshWindow(trigIndex);
 			break;
 
-		case WM_COMMAND:
-			if ( !refreshing )
-			{
-				switch ( LOWORD(wParam) )
-				{
-					case EDIT_RAW_FLAGS:
-						if ( HIWORD(wParam) == EN_KILLFOCUS )
-							ParseRawFlagsText();
-						break;
-				}
-				switch ( HIWORD(wParam) )
-				{
-					case BN_CLICKED:
-						switch ( LOWORD(wParam) )
-						{
-							case CHECK_PRESERVE_TRIGGER:		SetPreserveTrigger(checkPreservedFlag.isChecked());				break;
-							case CHECK_DISABLED:				SetDisabledTrigger(checkDisabled.isChecked());					break;
-							case CHECK_IGNORE_CONDITIONS_ONCE:	SetIgnoreConditionsOnce(checkIgnoreConditionsOnce.isChecked()); break;
-							case CHECK_IGNORE_WAITSKIP_ONCE:	SetIgnoreWaitSkipOnce(checkIgnoreWaitSkipOnce.isChecked());		break;
-							case CHECK_IGNORE_MISCACTIONS_ONCE:	SetIgnoreMiscActionsOnce(checkIgnoreManyActions.isChecked());	break;
-							case CHECK_IGNORE_DEFEAT_DRAW:		SetIgnoreDefeatDraw(checkIgnoreDefeatDraw.isChecked());			break;
-							case CHECK_IS_PAUSED:				SetPausedTrigger(checkFlagPaused.isChecked());					break;
-						}
-						break;
-				}
-			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
 		case WM_CLOSE:
 			OnLeave();
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

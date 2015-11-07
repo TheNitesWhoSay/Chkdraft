@@ -75,7 +75,7 @@ void UnitSettingsWindow::RefreshWindow()
 		if ( isDisabled )
 			EnableUnitEditing();
 
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 
 		bool useDefaultSettings = chk->unitUsesDefaultSettings(unitId);
 		if ( useDefaultSettings )
@@ -200,12 +200,12 @@ void UnitSettingsWindow::RefreshWindow()
 
 		for ( int i=0; i<12; i++ )
 		{
-			u8 enabledState = chk->getUnitEnabledState(unitId, (u8)i);
-			if ( enabledState == UNIT_STATE_DEFAULTFORPLAYER )
+			UnitEnabledState enabledState = chk->getUnitEnabledState(unitId, (u8)i);
+			if ( enabledState == UnitEnabledState::Default )
 				dropPlayerAvailability[i].SetSel(0);
-			else if ( enabledState == UNIT_STATE_ENABLEDFORPLAYER )
+			else if ( enabledState == UnitEnabledState::Enabled )
 				dropPlayerAvailability[i].SetSel(1);
-			else if ( enabledState == UNIT_STATE_DISABLEDFORPLAYER )
+			else if ( enabledState == UnitEnabledState::Disabled )
 				dropPlayerAvailability[i].SetSel(2);
 		}
 
@@ -295,8 +295,8 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 		for ( int x=0; x<2; x++ )
 		{
 			int player = y*2+x;
-			dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, DROP_P1UNITAVAILABILITY+player,
-													   numItems, items, defaultFont );
+			dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, false,
+				DROP_P1UNITAVAILABILITY+player, numItems, items, defaultFont );
 		}
 	}
 
@@ -413,14 +413,14 @@ void UnitSettingsWindow::CheckReplaceUnitName()
 	if ( possibleUnitNameUpdate && checkUseDefaultName.isChecked() )
 		possibleUnitNameUpdate = false;
 
-	Scenario* chk = chkd.maps.curr;
+	ScenarioPtr chk = chkd.maps.curr;
 	string newUnitName;
 	if ( possibleUnitNameUpdate && selectedUnit >= 0 && selectedUnit < 228 && editUnitName.GetEditText(newUnitName) )
 	{
 		u16* originalNameString = nullptr;
 		u16* expansionNameString = nullptr;
-		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
-		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 2);
+		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
+		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
 		if ( ( (chk->isExpansion() && gotExp) || (!chk->isExpansion() && gotOrig) ) &&
 			 parseEscapedString(newUnitName) )
 		{
@@ -448,14 +448,14 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 	refreshing = true;
 	if ( selectedUnit >= 0 )
 	{
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		u16 unitId = (u16)selectedUnit;
 
 		// Remove Custom Unit Name
-		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
-			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
-		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
+		chk->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
 		std::string unitName;
 		chk->getUnitName(unitName, (u16)selectedUnit);
 		editUnitName.SetText(unitName.c_str());
@@ -512,15 +512,15 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 {
 	if ( selectedUnit >= 0 )
 	{
-		Scenario* chk = chkd.maps.curr;
+		ScenarioPtr chk = chkd.maps.curr;
 		u16 unitId = (u16)selectedUnit;
 		u32 groundWeapon = (u32)chkd.scData.UnitDat(unitId)->GroundWeapon,
 			airWeapon	 = (u32)chkd.scData.UnitDat(unitId)->AirWeapon;
 
-		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS),
-			expName  = chk->UNIx().get<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS);
-		chk->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-		chk->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
+		u16 origName = chk->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
+			expName  = chk->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
+		chk->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+		chk->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
 		chk->removeUnusedString(origName);
 		chk->removeUnusedString(expName);
 
@@ -532,6 +532,302 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 		chk->setUnitSettingsGasCost(unitId, 0);
 		chkd.maps.curr->notifyChange(false);
 	}
+}
+
+LRESULT UnitSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+	if ( nmhdr->code == TVN_SELCHANGED && ((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
+	{
+		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
+			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
+
+		u16 unitId = (u16)itemData;
+		if ( itemType == TREE_TYPE_UNIT && unitId < 228 )
+		{
+			CheckReplaceUnitName();
+			selectedUnit = unitId;
+			RefreshWindow();
+		}
+		else
+		{
+			CheckReplaceUnitName();
+			selectedUnit = -1;
+			DisableUnitEditing();
+		}
+	}
+	return ClassWindow::Notify(hWnd, idFrom, nmhdr);
+}
+
+LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	if ( refreshing )
+		return ClassWindow::Command(hWnd, wParam, lParam);
+
+	switch ( LOWORD(wParam) )
+	{
+	case BUTTON_RESETALLUNITDEFAULTS:
+		if ( HIWORD(wParam) == BN_CLICKED )
+		{
+			if ( MessageBox(hWnd, "Are you sure you want to reset all unit settings?", "Confirm", MB_YESNO) == IDYES )
+			{
+				buffer newUNIS("UNIS"), newUNIx("UNIx"), newPUNI("PUNI");
+				if ( Get_UNIS(newUNIS) )
+				{
+					newUNIS.del(0, 8);
+					chkd.maps.curr->UNIS().takeAllData(newUNIS);
+				}
+				if ( Get_UNIx(newUNIx) )
+				{
+					newUNIx.del(0, 8);
+					chkd.maps.curr->UNIx().takeAllData(newUNIx);
+				}
+				if ( Get_PUNI(newPUNI) )
+				{
+					newPUNI.del(0, 8);
+					chkd.maps.curr->PUNI().takeAllData(newPUNI);
+				}
+
+				chkd.maps.curr->cleanStringTable(false);
+				chkd.maps.curr->cleanStringTable(true);
+				DisableUnitEditing();
+				RefreshWindow();
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+
+	case CHECK_USEUNITDEFAULTS:
+		if ( HIWORD(wParam) == BN_CLICKED )
+		{
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			if ( selectedUnit != -1 )
+			{
+				if ( state == BST_CHECKED )
+				{
+					ClearDefaultUnitProperties();
+					DisableUnitProperties();
+					chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, true);
+				}
+				else
+				{
+					SetDefaultUnitProperties();
+					EnableUnitProperties();
+					chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, false);
+				}
+
+				RefreshWindow();
+				chkd.unitWindow.RepopulateList();
+				RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case CHECK_USEDEFAULTUNITNAME:
+		if ( HIWORD(wParam) == BN_CLICKED )
+		{
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			if ( selectedUnit != -1 )
+			{
+				if ( state == BST_CHECKED )
+				{
+					editUnitName.DisableThis();
+					chkd.maps.curr->UNIS().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
+					chkd.maps.curr->UNIx().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
+					std::string unitName;
+					chkd.maps.curr->getUnitName(unitName, (u16)selectedUnit);
+					editUnitName.SetText(unitName.c_str());
+					chkd.unitWindow.RepopulateList();
+					RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+				}
+				else
+					editUnitName.EnableThis();
+
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case CHECK_ENABLEDBYDEFAULT:
+		if ( HIWORD(wParam) == BN_CLICKED )
+		{
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			if ( selectedUnit != -1 )
+			{
+				chkd.maps.curr->setUnitEnabled((u16)selectedUnit, state == BST_CHECKED);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITNAME:
+		if ( HIWORD(wParam) == EN_CHANGE )
+			possibleUnitNameUpdate = true;
+		else if ( HIWORD(wParam) == EN_KILLFOCUS )
+			CheckReplaceUnitName();
+		break;
+	case EDIT_UNITHITPOINTS:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u32 newHitPoints;
+			if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
+			{
+				chkd.maps.curr->setUnitSettingsHitpoints((u16)selectedUnit, newHitPoints);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITHITPOINTSBYTE:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u8 newHitPointByte;
+			if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
+			{
+				chkd.maps.curr->setUnitSettingsHitpointByte((u16)selectedUnit, newHitPointByte);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITSHIELDPOINTS:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newShieldPoints;
+			if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
+			{
+				chkd.maps.curr->setUnitSettingsShieldPoints((u16)selectedUnit, newShieldPoints);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITARMOR:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u8 newArmorByte;
+			if ( editArmor.GetEditNum<u8>(newArmorByte) )
+			{
+				chkd.maps.curr->setUnitSettingsArmor((u16)selectedUnit, newArmorByte);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITBUILDTIME:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newBuildTime;
+			if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
+			{
+				chkd.maps.curr->setUnitSettingsBuildTime((u16)selectedUnit, newBuildTime);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITMINERALCOST:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newMineralCost;
+			if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
+			{
+				chkd.maps.curr->setUnitSettingsMineralCost((u16)selectedUnit, newMineralCost);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITGASCOST:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newGasCost;
+			if ( editGasCost.GetEditNum<u16>(newGasCost) )
+			{
+				chkd.maps.curr->setUnitSettingsGasCost((u16)selectedUnit, newGasCost);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	case EDIT_UNITGROUNDDAMAGE:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newGroundDamage;
+			if ( editGroundDamage.GetEditNum<u16>(newGroundDamage) )
+			{
+				u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
+				u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+
+				if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+					groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+				if ( groundWeapon < 130 )
+				{
+					chkd.maps.curr->setUnitSettingsBaseWeapon(groundWeapon, newGroundDamage);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		break;
+	case EDIT_UNITGROUNDBONUS:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newGroundBonus;
+			if ( editGroundBonus.GetEditNum<u16>(newGroundBonus) )
+			{
+				u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
+				u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+
+				if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+					groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+				if ( groundWeapon < 130 )
+				{
+					chkd.maps.curr->setUnitSettingsBonusWeapon(groundWeapon, newGroundBonus);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		break;
+	case EDIT_UNITAIRDAMAGE:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newAirDamage;
+			if ( editAirDamage.GetEditNum<u16>(newAirDamage) )
+			{
+				u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
+				u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+
+				if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+					airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
+				if ( airWeapon < 130 )
+				{
+					chkd.maps.curr->setUnitSettingsBaseWeapon(airWeapon, newAirDamage);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		break;
+	case EDIT_UNITAIRBONUS:
+		if ( HIWORD(wParam) == EN_CHANGE )
+		{
+			u16 newAirBonus;
+			if ( editAirBonus.GetEditNum<u16>(newAirBonus) )
+			{
+				u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
+				u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
+
+				if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+					airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
+
+				chkd.maps.curr->setUnitSettingsBonusWeapon(airWeapon, newAirBonus);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+	default:
+		if ( LOWORD(wParam) >= DROP_P1UNITAVAILABILITY && LOWORD(wParam) <= DROP_P12UNITAVAILABILITY &&
+			HIWORD(wParam) == CBN_SELCHANGE )
+		{
+			u32 player = LOWORD(wParam) - DROP_P1UNITAVAILABILITY;
+			int sel = dropPlayerAvailability[player].GetSel();
+			if ( chkd.maps.curr->setUnitEnabledState((u16)selectedUnit, (u8)player, (UnitEnabledState)dropPlayerAvailability[player].GetSel()) )
+				chkd.maps.curr->notifyChange(false);
+			else
+				RefreshWindow();
+		}
+		break;
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
 }
 
 LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -551,298 +847,8 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				CheckReplaceUnitName();
 			break;
 
-		case WM_COMMAND:
-			if ( refreshing )
-				return DefWindowProc(hWnd, msg, wParam, lParam);
-			
-			switch ( LOWORD(wParam) )
-			{
-				case BUTTON_RESETALLUNITDEFAULTS:
-					if ( HIWORD(wParam) == BN_CLICKED )
-					{
-						if ( MessageBox(hWnd, "Are you sure you want to reset all unit settings?", "Confirm", MB_YESNO) == IDYES )
-						{
-							buffer newUNIS("UNIS"), newUNIx("UNIx"), newPUNI("PUNI");
-							if ( Get_UNIS(newUNIS) )
-							{
-								newUNIS.del(0, 8);
-								chkd.maps.curr->UNIS().takeAllData(newUNIS);
-							}
-							if ( Get_UNIx(newUNIx) )
-							{
-								newUNIx.del(0, 8);
-								chkd.maps.curr->UNIx().takeAllData(newUNIx);
-							}
-							if ( Get_PUNI(newPUNI) )
-							{
-								newPUNI.del(0, 8);
-								chkd.maps.curr->PUNI().takeAllData(newPUNI);
-							}
-
-							chkd.maps.curr->cleanStringTable(false);
-							chkd.maps.curr->cleanStringTable(true);
-							DisableUnitEditing();
-							RefreshWindow();
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-
-				case CHECK_USEUNITDEFAULTS:
-					if ( HIWORD(wParam) == BN_CLICKED )
-					{
-						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-						if ( selectedUnit != -1 )
-						{
-							if ( state == BST_CHECKED )
-							{
-								ClearDefaultUnitProperties();
-								DisableUnitProperties();
-								chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, true);
-							}
-							else
-							{
-								SetDefaultUnitProperties();
-								EnableUnitProperties();
-								chkd.maps.curr->setUnitUseDefaults((u8)selectedUnit, false);
-							}
-
-							RefreshWindow();
-							chkd.unitWindow.RepopulateList();
-							RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case CHECK_USEDEFAULTUNITNAME:
-					if ( HIWORD(wParam) == BN_CLICKED )
-					{
-						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-						if ( selectedUnit != -1 )
-						{
-							if ( state == BST_CHECKED )
-							{
-								editUnitName.DisableThis();
-								chkd.maps.curr->UNIS().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-								chkd.maps.curr->UNIx().replace<u16>(2*selectedUnit+UNIT_SETTINGS_STRING_IDS, 0);
-								std::string unitName;
-								chkd.maps.curr->getUnitName(unitName, (u16)selectedUnit);
-								editUnitName.SetText(unitName.c_str());
-								chkd.unitWindow.RepopulateList();
-								RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
-							}
-							else
-								editUnitName.EnableThis();
-
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case CHECK_ENABLEDBYDEFAULT:
-					if ( HIWORD(wParam) == BN_CLICKED )
-					{
-						LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-						if ( selectedUnit != -1 )
-						{
-							chkd.maps.curr->setUnitEnabled((u16)selectedUnit, state == BST_CHECKED );
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITNAME:
-					if ( HIWORD(wParam) == EN_CHANGE )
-						possibleUnitNameUpdate = true;
-					else if ( HIWORD(wParam) == EN_KILLFOCUS )
-						CheckReplaceUnitName();
-					break;
-				case EDIT_UNITHITPOINTS:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u32 newHitPoints;
-						if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
-						{
-							chkd.maps.curr->setUnitSettingsHitpoints((u16)selectedUnit, newHitPoints);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITHITPOINTSBYTE:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u8 newHitPointByte;
-						if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
-						{
-							chkd.maps.curr->setUnitSettingsHitpointByte((u16)selectedUnit, newHitPointByte);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITSHIELDPOINTS:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newShieldPoints;
-						if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
-						{
-							chkd.maps.curr->setUnitSettingsShieldPoints((u16)selectedUnit, newShieldPoints);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITARMOR:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u8 newArmorByte;
-						if ( editArmor.GetEditNum<u8>(newArmorByte) )
-						{
-							chkd.maps.curr->setUnitSettingsArmor((u16)selectedUnit, newArmorByte);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITBUILDTIME:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newBuildTime;
-						if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
-						{
-							chkd.maps.curr->setUnitSettingsBuildTime((u16)selectedUnit, newBuildTime);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITMINERALCOST:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newMineralCost;
-						if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
-						{
-							chkd.maps.curr->setUnitSettingsMineralCost((u16)selectedUnit, newMineralCost);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITGASCOST:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newGasCost;
-						if ( editGasCost.GetEditNum<u16>(newGasCost) )
-						{
-							chkd.maps.curr->setUnitSettingsGasCost((u16)selectedUnit, newGasCost);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				case EDIT_UNITGROUNDDAMAGE:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newGroundDamage;
-						if ( editGroundDamage.GetEditNum<u16>(newGroundDamage) )
-						{
-							u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
-							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
-		
-							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
-								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
-							if ( groundWeapon < 130 )
-							{
-								chkd.maps.curr->setUnitSettingsBaseWeapon(groundWeapon, newGroundDamage);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-					}
-					break;
-				case EDIT_UNITGROUNDBONUS:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newGroundBonus;
-						if ( editGroundBonus.GetEditNum<u16>(newGroundBonus) )
-						{
-							u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->GroundWeapon;
-							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
-		
-							if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
-								groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
-							if ( groundWeapon < 130 )
-							{
-								chkd.maps.curr->setUnitSettingsBonusWeapon(groundWeapon, newGroundBonus);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-					}
-					break;
-				case EDIT_UNITAIRDAMAGE:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newAirDamage;
-						if ( editAirDamage.GetEditNum<u16>(newAirDamage) )
-						{
-							u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
-							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
-		
-							if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
-								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
-							if ( airWeapon < 130 )
-							{
-								chkd.maps.curr->setUnitSettingsBaseWeapon(airWeapon, newAirDamage);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-					}
-					break;
-				case EDIT_UNITAIRBONUS:
-					if ( HIWORD(wParam) == EN_CHANGE )
-					{
-						u16 newAirBonus;
-						if ( editAirBonus.GetEditNum<u16>(newAirBonus) )
-						{
-							u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnit)->AirWeapon;
-							u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnit)->Subunit1;
-		
-							if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
-								airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
-
-							chkd.maps.curr->setUnitSettingsBonusWeapon(airWeapon, newAirBonus);
-							chkd.maps.curr->notifyChange(false);
-						}
-					}
-					break;
-				default:
-					if ( LOWORD(wParam) >= DROP_P1UNITAVAILABILITY && LOWORD(wParam) <= DROP_P12UNITAVAILABILITY &&
-						 HIWORD(wParam) == CBN_SELCHANGE )
-					{
-						u32 player = LOWORD(wParam)-DROP_P1UNITAVAILABILITY;
-						if ( chkd.maps.curr->setUnitEnabledState((u16)selectedUnit, (u8)player, dropPlayerAvailability[player].GetSel()) )
-							chkd.maps.curr->notifyChange(false);
-						else
-							RefreshWindow();
-					}
-					break;
-			}
-			break;
-
-		case WM_NOTIFY:
-			if ( ((NMHDR*)lParam)->code == TVN_SELCHANGED && ((LPNMTREEVIEW)lParam)->action != TVC_UNKNOWN )
-			{
-				LPARAM itemType = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_TYPE,
-					   itemData = (((NMTREEVIEW*)lParam)->itemNew.lParam)&TREE_ITEM_DATA;
-
-				u16 unitId = (u16)itemData;
-				if ( itemType == TREE_TYPE_UNIT && unitId < 228 )
-				{
-					CheckReplaceUnitName();
-					selectedUnit = unitId;
-					RefreshWindow();
-				}
-				else
-				{
-					CheckReplaceUnitName();
-					selectedUnit = -1;
-					DisableUnitEditing();
-				}
-			}
-
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

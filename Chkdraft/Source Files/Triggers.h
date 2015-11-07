@@ -62,6 +62,10 @@ class TriggersWindow : public ClassWindow
 
 		bool FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &targetListIndex);
 
+	protected:
+		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 	private:
 		u32 currTrigger; // The trig index of the current trigger
 		bool groupSelected[NUM_TRIG_PLAYERS];
@@ -80,11 +84,10 @@ class TriggersWindow : public ClassWindow
 
 		bool ShowTrigger(Trigger* trigger); // Checks if trigger should currently be shown
 		void ClearGroups();
-		bool GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scenario* chk, u32 triggerNum, Trigger* trigger);
+		bool GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger);
 		void DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupNum);
-		void DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenario* chk, u32 triggerNum, Trigger* trigger);
+		void DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Trigger* trigger);
 		void PrepDoubleBuffer(HWND hWnd, HDC hDC);
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

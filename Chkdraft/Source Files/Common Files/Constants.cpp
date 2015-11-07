@@ -20,7 +20,7 @@ const u32 onOffMenuItems[] =
 	ID_LOCATIONS_NOSNAP, ID_LOCATIONS_SNAPTOACTIVEGRID, ID_LOCATIONS_SNAPTOTILE, ID_LOCATIONS_LOCKANYWHERE, ID_LOCATIONS_CLIPNAMES,
 	ID_TRIGGERS_CLASSICMAPTRIGGERS, ID_SCENARIO_DESCRIPTION, ID_SCENARIO_FORCES, ID_SCENARIO_UNITSETTINGS, ID_SCENARIO_UPGRADESETTINGS, ID_SCENARIO_TECHSETTINGS,
 	ID_SCENARIO_STRINGS, ID_SCENARIO_SOUNDEDITOR,
-	ID_TRIGGERS_TRIGGEREDITOR,
+	ID_TRIGGERS_TRIGGEREDITOR, ID_TOOLS_PASSWORD,
 	ID_WINDOWS_CASCADE, ID_WINDOWS_TILEHORIZONTALLY, ID_WINDOWS_TILEVERTICALLY, ID_WINDOW_CLOSE
 };
 
@@ -295,6 +295,17 @@ const char* triggerPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4",
 								 "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
 								 "Unused 3", "Unused 4", "Non AV Players", "ID:27" };
 const int numTriggerPlayers = sizeof(triggerPlayers)/sizeof(const char*);
+
+const char* triggerConditions[] = { "Accumulate", "Always", "Bring", "Command", "Command The Least",
+	"Command The Least At", "Command The Most", "Command The Most At", "Countdown Timer", "Custom",
+	"Deaths", "Elapsed Time", "Highest Score", "Kill", "Least Kills", "Least Resources", "Lowest Score",
+	"Memory", "Most Kills", "Most Resources", "Never", "Opponents", "Score", "Switch"
+};
+const int numTriggerConditions = sizeof(triggerConditions)/sizeof(const char*);
+
+const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
+								"Total", "Units", "Units and Buildings" };
+const int numTriggerScores = sizeof(triggerScores) / sizeof(const char*);
 
 const COLORREF stringColors[] = { RGB(184, 184, 232), RGB(184, 184, 232), RGB(220, 220,  60), RGB(255, 255, 255),
 								  RGB(132, 116, 116), RGB(200,  24,  24), RGB( 16, 252,  24), RGB(244,   4,   4),

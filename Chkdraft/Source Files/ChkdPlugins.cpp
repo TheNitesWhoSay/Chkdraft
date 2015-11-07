@@ -18,7 +18,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 				if ( copyID >= PLUGIN_MSG_START && copyID <= PLUGIN_MSG_END )
 				{
-					GuiMap* map = chkd.maps.GetMap(mapID);
+					GuiMapPtr map = chkd.maps.GetMap(mapID);
 					if ( map != nullptr )
 					{
 						switch ( copyID )
@@ -81,7 +81,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case SAVE_MAP:
 			{
-				GuiMap* map = chkd.maps.GetMap((u16)wParam);
+				GuiMapPtr map = chkd.maps.GetMap((u16)wParam);
 				if ( map != nullptr )
 				{
 					if ( map->SaveFile(false) )
@@ -92,7 +92,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case COPY_CHK_FILE:
 			{
-				GuiMap* map = chkd.maps.GetMap((u16)lParam);
+				GuiMapPtr map = chkd.maps.GetMap((u16)lParam);
 				if ( map != nullptr )
 				{
 					u16 mapID = chkd.maps.GetMapID(map);
@@ -112,7 +112,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return DefWindowProc(hWnd, msg, wParam, lParam); // Valid occasion to use this method
 			break;
 	}
 	return 0;

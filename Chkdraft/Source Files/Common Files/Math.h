@@ -2,6 +2,8 @@
 #define MATH_H
 #include "Constants.h"
 
+#define foreachin(item, range) for ( auto item = range.first; item != range.second; ++ item)
+
 template <typename valueType>
 void AscendingOrder(valueType &low, valueType &high);
 

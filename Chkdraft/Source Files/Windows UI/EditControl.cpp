@@ -449,5 +449,5 @@ LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 			return 0;
 	}
 	
-	return WindowControl::CallDefaultProc(hWnd, msg, wParam, lParam); // Take default action
+	return WindowControl::ControlProc(hWnd, msg, wParam, lParam); // Take default action
 }

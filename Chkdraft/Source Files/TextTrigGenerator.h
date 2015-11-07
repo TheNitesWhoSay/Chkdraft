@@ -16,12 +16,12 @@ class TextTrigGenerator
 		TextTrigGenerator();
 
 		// Places text trigs representative of the given TRIG section in trigString if successful
-		bool GenerateTextTrigs(Scenario* map, string &trigString);
+		bool GenerateTextTrigs(ScenarioPtr map, string &trigString);
 
 		// Places text trigs representative of the given trigger in trigString if successful
-		bool GenerateTextTrigs(Scenario* map, u32 trigId, string &trigString);
+		bool GenerateTextTrigs(ScenarioPtr map, u32 trigId, string &trigString);
 
-		bool LoadScenario(Scenario* map); // Loads data about the given scenario for use outside text trigs
+		bool LoadScenario(ScenarioPtr map); // Loads data about the given scenario for use outside text trigs
 		void ClearScenario(); // Clears loaded scenario data
 
 		string GetConditionName(u8 CID);
@@ -53,8 +53,8 @@ class TextTrigGenerator
 
 		inline void AddConditionArgument(buffer &output, Condition &condition, u8 &CID, u8 &stdTextTrigArgNum);
 		inline void AddActionArgument(buffer &output, Action &action, u8 &AID, u8 &stdTextTrigArgNum);
-		bool GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString);
-		bool LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames);
+		bool GenerateTextTrigs(ScenarioPtr map, buffer &triggers, string &trigString);
+		bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
 		bool CorrectLineEndings(buffer& buf); // Corrects any improperly formatted line endings
 
 
@@ -75,12 +75,12 @@ class TextTrigGenerator
 
 		bool PrepConditionTable(); // Fills conditionTable
 		bool PrepActionTable(); // Fills actionTable
-		bool PrepLocationTable(Scenario* map, bool quoteArgs); // Fills locationTable
-		bool PrepUnitTable(Scenario* map, bool quoteArgs, bool useCustomNames); // Fills unitTable
-		bool PrepSwitchTable(Scenario* map, bool quoteArgs); // Fills switchTable
-		bool PrepWavTable(Scenario* map, bool quoteArgs); // Fills wavTable
-		bool PrepGroupTable(Scenario* map, bool quoteArgs); // Fills groupTable
-		bool PrepStringTable(Scenario* map, bool quoteArgs); // Fills stringTable
+		bool PrepLocationTable(ScenarioPtr map, bool quoteArgs); // Fills locationTable
+		bool PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames); // Fills unitTable
+		bool PrepSwitchTable(ScenarioPtr map, bool quoteArgs); // Fills switchTable
+		bool PrepWavTable(ScenarioPtr map, bool quoteArgs); // Fills wavTable
+		bool PrepGroupTable(ScenarioPtr map, bool quoteArgs); // Fills groupTable
+		bool PrepStringTable(ScenarioPtr map, bool quoteArgs); // Fills stringTable
 };
 
 #endif

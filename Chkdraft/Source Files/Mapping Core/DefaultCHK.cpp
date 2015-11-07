@@ -5,7 +5,7 @@ bool Get_TYPE(buffer &c)
 	return c.addStr("TYPE\4\0\0\0RAWB", 12);
 }
 
-bool Get_VER (buffer &c)
+bool Get_VER(buffer &c)
 {
 	return c.addStr("VER \2\0\0\0Í\0", 10);
 }
@@ -67,13 +67,13 @@ bool Get_OWNR(buffer &c)
 	return c.addStr("OWNR\14\0\0\0\6\6\6\6\6\6\6\6\0\0\0\0", 20);
 }
 
-bool Get_ERA (buffer &c, u16 tileset)
+bool Get_ERA(buffer &c, u16 tileset)
 {
 	return c.addStr("ERA \2\0\0\0", 8)
 		&& c.add<u16>(tileset);
 }
 
-bool Get_DIM (buffer &c, u16 width, u16 height)
+bool Get_DIM(buffer &c, u16 width, u16 height)
 {
 	return c.addStr("DIM \4\0\0\0", 8)
 		&& c.add<u16>(width)
@@ -87,7 +87,7 @@ bool Get_SIDE(buffer &c)
 
 bool Get_MTXM(buffer &c, u16 width, u16 height)
 {
-	u32 size = width*height*2;
+	u32 size = width*height * 2;
 
 	return c.addStr("MTXM", 4)
 		&& c.add<u32>(size)
@@ -125,23 +125,23 @@ bool Get_UNIT(buffer &c)
 
 bool Get_ISOM(buffer &c, u16 width, u16 height)
 {
-	u32 size = ((u32(width))/2+1)*((u32(height)+1))*8;
+	u32 size = ((u32(width)) / 2 + 1)*((u32(height) + 1)) * 8;
 
 	return c.addStr("ISOM", 4)
 		&& c.add<u32>(size)
-		&& c.add<u16>(16, size/2);
+		&& c.add<u16>(16, size / 2);
 }
 
 bool Get_TILE(buffer &c, u16 width, u16 height)
 {
-	u32 size = (u32(width))*(u32(height))*2;
+	u32 size = (u32(width))*(u32(height)) * 2;
 
 	return c.addStr("TILE", 4)
 		&& c.add<u32>(size)
 		&& c.add<u8>(0, size);
 }
 
-bool Get_DD2 (buffer &c)
+bool Get_DD2(buffer &c)
 {
 	return c.addStr("DD2 \0\0\0\0", 8);
 }
@@ -160,7 +160,7 @@ bool Get_MASK(buffer &c, u16 width, u16 height)
 		&& c.add<u8>(255, size);
 }
 
-bool Get_STR (buffer &c)
+bool Get_STR(buffer &c)
 {
 	return c.addStr("STR [\10\0\0\0\4\3\10\25\10\62\10;\10C\10K\10S\10", 24)
 		&& c.add<u16>(2050, 1017)
@@ -172,8 +172,8 @@ bool Get_MRGN(buffer &c, u16 width, u16 height)
 {
 	return c.addStr("MRGN\0\5\0\0", 8)
 		&& c.add<u8>(0, 1268)
-		&& c.add<u32>(width*32) // 'Anywhere' x-end
-		&& c.add<u32>(height*32) // 'Anywhere' y-end
+		&& c.add<u32>(width * 32) // 'Anywhere' x-end
+		&& c.add<u32>(height * 32) // 'Anywhere' y-end
 		&& c.addStr("\3\0\0\0", 4); // 'Anywhere' string number (3) and elevation (all)
 }
 
@@ -187,7 +187,7 @@ bool Get_FORC(buffer &c)
 	return c.addStr("FORC\24\0\0\0\0\0\0\0\0\0\0\0\4\0\5\0\6\0\7\0\17\17\17\17", 28);
 }
 
-bool Get_WAV (buffer &c)
+bool Get_WAV(buffer &c)
 {
 	return c.addStr("WAV \0\10\0\0", 8)
 		&& c.add<u8>(0, 2048);

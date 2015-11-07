@@ -38,14 +38,13 @@ class EditControl : public WindowControl
 
 	protected:
 		bool GetEditText(char* &dest); // This version isn't public, pass an std::string
-		
+		LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Used to map Select All to Ctrl+A
 
 	private:
 		bool isMultiLine;
 		bool forwardArrowKeys;
 		bool stopFowardingOnClick;
 		bool autoExpand;
-		LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Used to map Select All to Ctrl+A
 };
 
 #endif

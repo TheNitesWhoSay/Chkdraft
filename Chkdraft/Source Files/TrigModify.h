@@ -7,7 +7,7 @@
 #include "TrigActions.h"
 #include "TrigModifyText.h"
 
-class TrigModifyWindow : public ClassWindow
+class TrigModifyWindow : public ClassDialog
 {
 	public:
 		TrigConditionsWindow conditionsWindow;
@@ -22,6 +22,8 @@ class TrigModifyWindow : public ClassWindow
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
+		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		u32 currTab;
@@ -32,8 +34,6 @@ class TrigModifyWindow : public ClassWindow
 		TrigPlayersWindow playersWindow;
 		TrigActionsWindow actionsWindow;
 		TrigModifyTextWindow trigModifyTextWindow;
-
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

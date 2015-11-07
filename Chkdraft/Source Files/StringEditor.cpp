@@ -93,6 +93,73 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
 	stringPreviewWindow.CreateThis(hWnd, PREVIEW_STRING);
 }
 
+LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( HIWORD(wParam) )
+	{
+	case LBN_SELCHANGE:
+		if ( LOWORD(wParam) == LB_STRINGS ) // Change selection, update info boxes and so fourth
+		{
+			if ( currSelString != 0 )
+				updateString(currSelString);
+
+			currSelString = 0;
+			listUsage.ClearItems();
+			int lbIndex;
+			if ( listStrings.GetCurSel(lbIndex) )
+			{
+				string str = "";
+				if ( listStrings.GetItemData(lbIndex, currSelString) && chkd.maps.curr != nullptr &&
+					chkd.maps.curr->getString(str, currSelString) && str.length() > 0 )
+				{
+					editString.SetText(str.c_str());
+
+					u32 locs, trigs, briefs, props, forces, wavs, units, switches;
+					chkd.maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
+					addUseItem("Locations", locs);
+					addUseItem("Triggers", trigs);
+					addUseItem("Briefing Triggers", briefs);
+					addUseItem("Map Properties", props);
+					addUseItem("Forces", forces);
+					addUseItem("WAVs", wavs);
+					addUseItem("Units", units);
+					addUseItem("Switches", switches);
+					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") +
+						std::to_string(currSelString) + ']').c_str());
+				}
+				else
+					chkd.mapSettingsWindow.SetTitle("Map Settings");
+				return 0;
+			}
+			else
+				chkd.mapSettingsWindow.SetTitle("Map Settings");
+			editString.SetText("");
+		}
+		break;
+	case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
+		if ( LOWORD(wParam) == LB_STRINGS && currSelString != 0 && updateString(currSelString) )
+			chkd.maps.curr->refreshScenario();
+		break;
+	case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
+		if ( LOWORD(wParam) == EDIT_STRING && currSelString != 0 && updateString(currSelString) )
+			chkd.maps.curr->refreshScenario();
+		break;
+	case BN_CLICKED:
+		if ( LOWORD(wParam) == DELETE_STRING  &&
+			MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION | MB_YESNO) == IDYES &&
+			chkd.maps.curr != nullptr && currSelString != 0 && chkd.maps.curr->stringExists(currSelString)
+			)
+		{
+			chkd.maps.curr->forceDeleteString(currSelString);
+			chkd.maps.curr->refreshScenario();
+		}
+		else if ( LOWORD(wParam) == SAVE_TO && chkd.maps.curr != nullptr )
+			saveStrings();
+		break;
+	}
+	return 0;
+}
+
 LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -106,72 +173,6 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 		case WM_MOUSEWHEEL:
 			listStrings.SetTopIndex(listStrings.GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
-			break;
-
-		case WM_COMMAND:
-			switch ( HIWORD(wParam) )
-			{
-				case LBN_SELCHANGE:
-					if ( LOWORD(wParam) == LB_STRINGS ) // Change selection, update info boxes and so fourth
-					{
-						if ( currSelString != 0 )
-							updateString(currSelString);
-						
-						currSelString = 0;
-						listUsage.ClearItems();
-						int lbIndex;
-						if ( listStrings.GetCurSel(lbIndex) )
-						{
-							string str = "";
-							if ( listStrings.GetItemData(lbIndex, currSelString) && chkd.maps.curr != nullptr &&
-								 chkd.maps.curr->getString(str, currSelString) && str.length() > 0 )
-							{
-								editString.SetText(str.c_str());
-						
-								u32 locs, trigs, briefs, props, forces, wavs, units, switches;
-								chkd.maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
-								addUseItem("Locations", locs);
-								addUseItem("Triggers", trigs);
-								addUseItem("Briefing Triggers", briefs);
-								addUseItem("Map Properties", props);
-								addUseItem("Forces", forces);
-								addUseItem("WAVs", wavs);
-								addUseItem("Units", units);
-								addUseItem("Switches", switches);
-								chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") +
-									std::to_string(currSelString) + ']').c_str());
-							}
-							else
-								chkd.mapSettingsWindow.SetTitle("Map Settings");
-							return 0;
-						}
-						else
-							chkd.mapSettingsWindow.SetTitle("Map Settings");
-						editString.SetText("");
-					}
-					break;
-				case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == LB_STRINGS && currSelString != 0 && updateString(currSelString) )
-						chkd.maps.curr->refreshScenario();
-					break;
-				case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
-					if ( LOWORD(wParam) == EDIT_STRING && currSelString != 0 && updateString(currSelString) )
-						chkd.maps.curr->refreshScenario();
-					break;
-				case BN_CLICKED:
-					if ( LOWORD(wParam) == DELETE_STRING  &&
-						 MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION|MB_YESNO) == IDYES &&
-						 chkd.maps.curr != nullptr && currSelString != 0 && chkd.maps.curr->stringExists(currSelString)
-					   )
-					{
-						chkd.maps.curr->forceDeleteString(currSelString);
-						chkd.maps.curr->refreshScenario();
-					}
-					else if ( LOWORD(wParam) == SAVE_TO && chkd.maps.curr != nullptr )
-						saveStrings();
-					break;
-			}
-			return 0;
 			break;
 
 		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
@@ -235,7 +236,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

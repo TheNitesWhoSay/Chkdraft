@@ -9,17 +9,22 @@ class buffer
 
 /* Constructors */	buffer();
 					buffer(const char* bufferTitle);
+					buffer(u32 bufferTitleVal);
+					buffer(const buffer &rhs);
 
 /*  Destructor  */	~buffer();
 
 /*  Accessors   */	u32 size(); // Returns sizeUsed
 					const char* title(); // Returns title of buffer
+					u32 titleVal(); // Returns first for bytes of the title as an unsigned int
 
 					// Puts data in 'dest' if 'location' is within the buffer
 					template <typename valueType>
 						bool get(valueType &dest, u32 location);
 					bool getBit(bool &dest, u32 location, u32 bitNum);
 					bool getString(char* dest, u32 location, u32 size);
+					template <typename valueType>
+						bool getArray(valueType* dest, u32 location, u32 numElements);
 
 					// Use the data pointer with care, don't read past dest[sizeUsed-location-1]
 					const void* getPtr(u32 location);
@@ -91,7 +96,10 @@ class buffer
 					void write(FILE* pFile);
 
 					// Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
-					bool extract(buffer &buf, u32 &position);
+					bool extract(buffer &buf, u32 position);
+
+					// Grabs all bytes from position to position+(length-1) from src and places them in this buffer
+					bool extract(buffer &src, u32 position, u32 length);
 
 					// Converts the buffer to raw data, be sure to free memory if successful
 					bool serialize(void* &destData); // First four bytes: bufTitle, second four: sizeUsed, after that is sizeUsed bytes of data
@@ -108,7 +116,7 @@ class buffer
 					// Sets the amount of data allocated for the buffer, does not change 'sizeUsed'
 					bool setSize(u32 size);
 
-					// Deletes data and sets sizeUsed and sizeAllotted to zero
+					// Deletes data and sets sizeUsed and sizeAllotted to zero, bufTitle is unaffected
 					void flush();
 
 

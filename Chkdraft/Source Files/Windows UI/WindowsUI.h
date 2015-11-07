@@ -25,6 +25,7 @@
 
 // Windows
 #include "ClassWindow.h"
-#include "MdiFrame.h"
+#include "ClassDialog.h"
+#include "MdiClient.h"
 
 #endif

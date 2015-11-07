@@ -11,7 +11,7 @@
 #include "StringEditor.h"
 #include "WavEditor.h"
 
-class MapSettingsWindow : public ClassWindow
+class MapSettingsWindow : public ClassDialog
 {
 	public:
 		MapSettingsWindow();
@@ -19,6 +19,11 @@ class MapSettingsWindow : public ClassWindow
 		bool DestroyThis();
 		void ChangeTab(u32 tabID);
 		void RefreshWindow();
+
+	protected:
+		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
 		u32 currTab;
@@ -30,8 +35,6 @@ class MapSettingsWindow : public ClassWindow
 		TechSettingsWindow techSettingsWindow;
 		StringEditorWindow stringEditorWindow;
 		WavEditorWindow wavEditorWindow;
-
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 enum MapSettings {

@@ -118,12 +118,12 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 	actionTable.clear();
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, string &trigString)
 {
 	return this != nullptr && map != nullptr && GenerateTextTrigs(map, map->TRIG(), trigString);
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, u32 trigId, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, string &trigString)
 {
 	Trigger* trig;
 	buffer trigBuff("TRIG");
@@ -134,7 +134,7 @@ bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, u32 trigId, string &tri
 		   GenerateTextTrigs(map, trigBuff, trigString);
 }
 
-bool TextTrigGenerator::LoadScenario(Scenario* map)
+bool TextTrigGenerator::LoadScenario(ScenarioPtr map)
 {
 	return this != nullptr &&
 		   map != nullptr &&
@@ -793,7 +793,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 	}
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(Scenario* map, buffer &triggers, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, string &trigString)
 {
 	if ( !LoadScenario(map, true, false) )
 		return false;
@@ -986,7 +986,7 @@ string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
 
 // protected
 
-bool TextTrigGenerator::LoadScenario(Scenario* map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
 {
 	return map != nullptr &&
 		   PrepConditionTable() &&
@@ -1089,7 +1089,7 @@ bool TextTrigGenerator::PrepActionTable()
 	return true;
 }
 
-bool TextTrigGenerator::PrepLocationTable(Scenario* map, bool quoteArgs)
+bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 {
 	locationTable.clear();
 	
@@ -1141,7 +1141,7 @@ bool TextTrigGenerator::PrepLocationTable(Scenario* map, bool quoteArgs)
 	return true;
 }
 
-bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
 {
 	unitTable.clear();
 
@@ -1149,7 +1149,7 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCus
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
 	{
-		for ( int unitID=0; unitID<232; unitID++ )
+		for ( int unitID=0; unitID<=232; unitID++ )
 		{
 			Invariant( unitTable.size() == unitID );
 			if ( quoteArgs )
@@ -1177,7 +1177,7 @@ bool TextTrigGenerator::PrepUnitTable(Scenario* map, bool quoteArgs, bool useCus
 	return true;
 }
 
-bool TextTrigGenerator::PrepSwitchTable(Scenario* map, bool quoteArgs)
+bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
 	switchTable.clear();
 
@@ -1214,7 +1214,7 @@ bool TextTrigGenerator::PrepSwitchTable(Scenario* map, bool quoteArgs)
 	return true;
 }
 
-bool TextTrigGenerator::PrepWavTable(Scenario* map, bool quoteArgs)
+bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
 {
 	wavTable.clear();
 
@@ -1247,7 +1247,7 @@ bool TextTrigGenerator::PrepWavTable(Scenario* map, bool quoteArgs)
 	return true;
 }
 
-bool TextTrigGenerator::PrepGroupTable(Scenario* map, bool quoteArgs)
+bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
 	groupTable.clear();
 
@@ -1329,7 +1329,7 @@ bool TextTrigGenerator::PrepGroupTable(Scenario* map, bool quoteArgs)
 	return true;
 }
 
-bool TextTrigGenerator::PrepStringTable(Scenario* map, bool quoteArgs)
+bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 {
 	stringTable.clear();
 	extendedStringTable.clear();
@@ -1338,7 +1338,7 @@ bool TextTrigGenerator::PrepStringTable(Scenario* map, bool quoteArgs)
 	{
 		StringUsageTable standardStringUsage;
 		StringUsageTable extendedStringUsage;
-		if ( standardStringUsage.populateTable(map, false) || extendedStringUsage.populateTable(map, true) )
+		if ( standardStringUsage.populateTable(map.get(), false) || extendedStringUsage.populateTable(map.get(), true) )
 		{
 			string str;
 

@@ -1,6 +1,39 @@
-#ifndef ACTION_H
-#define ACTION_H
+#ifndef CHKACTION_H
+#define CHKACTION_H
 #include "Basics.h"
+
+enum ActionArgType
+{
+	ActNoType,
+	ActLocation,
+	ActString,
+	ActPlayer,
+	ActUnit,
+	ActNumUnits,
+	ActCUWP,
+	ActTextFlags,
+	ActAmount,
+	ActScoreType,
+	ActResourceType,
+	ActStateMod,
+	ActPercent,
+	ActOrder,
+	ActWav,
+	ActDuration,
+	ActScript,
+	ActAllyState,
+	ActNumericMod,
+	ActSwitch,
+	ActSwitchMod,
+	ActType,
+	ActActionType,
+	ActSecondaryType,
+	ActFlags,
+	ActNumber, // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+	ActTypeIndex, // Unit, ScoreType, ResourceType, AllianceStatus
+	ActSecondaryTypeIndex, // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+	ActInternalData
+};
 
 class Action // A trigger action, as found in sets of 64 in a Trigger
 {
@@ -27,6 +60,8 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
 			#define ACTION_FLAG_DONT_ALWAYS_DISPLAY (~ACTION_FLAG_ALWAYS_DISPLAY)
 
 		u8 internalData[3]; // Number of actions to process next?
+
+		static ActionArgType TextTrigArgType(u8 argNum, u8 action);
 };
 
 	  //AID = Action ID

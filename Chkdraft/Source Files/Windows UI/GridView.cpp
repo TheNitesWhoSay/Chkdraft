@@ -18,6 +18,41 @@ GridControlItem& GridViewControl::item(int x, int y)
 		return nullItem;
 }
 
+EditControl &GridViewControl::EditBox()
+{
+	return editBox;
+}
+
+bool GridViewControl::allowKeyNavDuringEdit(GVKey key)
+{
+	return true;
+}
+
+bool GridViewControl::allowSel(int x, int y)
+{
+	return true; // Always allow, descendants may alter
+}
+
+bool GridViewControl::allowSel(int xStart, int xEnd, int yStart, int yEnd)
+{
+	return true; // Always allow, decendants may alter
+}
+
+void GridViewControl::adjustSel(int &x, int &y)
+{
+	return; // Do nothing, let descendants alter selections
+}
+
+void GridViewControl::adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd)
+{
+	return; // Do nothing, let descendants alter selections
+}
+
+void GridViewControl::CellClicked(int x, int y)
+{
+	return; // Do nothing, let descendants respond if they wish
+}
+
 bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, u32 id)
 {
 	u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
@@ -86,6 +121,7 @@ void GridViewControl::DeleteSelection()
 				 SendMessage(GetParent(getHandle()), WM_GRIDITEMCHANGING, MAKEWPARAM(x, y), (LPARAM)&str) == TRUE )
 			{
 				item(x, y).SetText(str.c_str());
+				EditTextChanged(str);
 			}
 		}
 	}
@@ -105,8 +141,11 @@ void GridViewControl::SelectRow(int index)
 			gridItems[y][x].SetSelected(false);
 	}
 
-	for ( int x=0; x<numColumns; x++ )
-		gridItems[index][x].SetSelected(true);
+	for ( int x = 0; x < numColumns; x++ )
+	{
+		if ( allowSel(x, index) )
+			gridItems[index][x].SetSelected(true);
+	}
 }
 
 void GridViewControl::SelectSquareTo(int x, int y)
@@ -119,16 +158,22 @@ void GridViewControl::SelectSquareTo(int x, int y)
 			int yEnd = std::max(focusedY, y);
 			for ( int yc=std::min(focusedY, y); yc<=yEnd; yc++ )
 			{
-				for ( int xc=std::min(focusedX, x); xc<=xEnd; xc++ )
-					gridItems[yc][xc].SetSelected(true);
+				for ( int xc = std::min(focusedX, x); xc <= xEnd; xc++ )
+				{
+					if ( allowSel(xc, yc) )
+						gridItems[yc][xc].SetSelected(true);
+				}
 			}
 		}
 		else // Start from 0
 		{
 			for ( int yc=0; yc<=y; yc++ )
 			{
-				for ( int xc=0; xc<=x; xc++ )
-					gridItems[yc][xc].SetSelected(true);
+				for ( int xc = 0; xc <= x; xc++ )
+				{
+					if ( allowSel(xc, yc) )
+						gridItems[yc][xc].SetSelected(true);
+				}
 			}
 		}
 	}
@@ -145,10 +190,16 @@ void GridViewControl::SelectSquare(int xStart, int yStart, int xEnd, int yEnd)
 		if ( yStart > yEnd )
 			std::swap(yStart, yEnd);
 
-		for ( int yc=yStart; yc<=yEnd; yc++ )
+		if ( allowSel(xStart, xEnd, yStart, yEnd) )
 		{
-			for ( int xc=xStart; xc<=xEnd; xc++ )
-				gridItems[yc][xc].SetSelected(true);
+			adjustSel(xStart, xEnd, yStart, yEnd);
+			for ( int yc = yStart; yc <= yEnd; yc++ )
+			{
+				for ( int xc = xStart; xc <= xEnd; xc++ )
+				{
+					gridItems[yc][xc].SetSelected(true);
+				}
+			}
 		}
 	}
 }
@@ -156,14 +207,24 @@ void GridViewControl::SelectSquare(int xStart, int yStart, int xEnd, int yEnd)
 void GridViewControl::FocusItem(int x, int y)
 {
 	EndEditing();
-	if ( x >= 0 && x < numColumns && y >= 0 && y < numRows )
-	{
+	if ( x >= 0 && x < numColumns && y >= 0 && y < numRows && allowSel(x, y) )
+	{	
 		if ( x != focusedX || y != focusedY )
 		{
 			focusedX = x;
 			focusedY = y;
 			item(x, y).SetSelected(true);
+			SendMessage(GetParent(getHandle()), WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), NULL);
 		}
+	}
+}
+
+void GridViewControl::SetEditText(string& text)
+{
+	if ( editing )
+	{
+		editBox.SetText(text.c_str());
+		SetCaretPos(text.length());
 	}
 }
 
@@ -183,15 +244,31 @@ void GridViewControl::EndEditing()
 				item(focusedX, focusedY).SetText(str.c_str());
 			}
 			RedrawThis();
+			SendMessage(GetParent(getHandle()), WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), NULL);
 		}
 		ending = false;
 	}
 }
 
-void GridViewControl::AutoSizeColumns(int minWidth)
+void GridViewControl::AutoSizeColumns(int minWidth, int maxWidth)
 {
 	for ( int i=0; i<numColumns; i++ )
-		AutoSizeColumn(i, minWidth);
+		AutoSizeColumn(i, minWidth, maxWidth);
+}
+
+int GridViewControl::NumRows()
+{
+	return numRows;
+}
+
+int GridViewControl::NumColumns()
+{
+	return numColumns;
+}
+
+bool GridViewControl::isEditing()
+{
+	return editing;
 }
 
 bool GridViewControl::isEditing(int x, int y)
@@ -216,9 +293,42 @@ bool GridViewControl::GetFocusedItemRect(RECT &rect)
 	return ListViewControl::GetItemRect(focusedX, focusedY, rect);
 }
 
+POINT GridViewControl::GetItemTopLeft(int x, int y)
+{
+	POINT pt = {};
+	RECT rcItem = {};
+	if ( GetItemRect(x, y, rcItem) )
+	{
+		pt.x = rcItem.left;
+		pt.y = rcItem.top;
+	}
+	return pt;
+}
+
+POINT GridViewControl::GetFocusedBottomRightScreenPt()
+{
+	POINT pt = {};
+	RECT rcFocus = {};
+	if ( GetFocusedItemRect(rcFocus) )
+	{
+		pt.x = rcFocus.right;
+		pt.y = rcFocus.bottom;
+		if ( ClientToScreen(getHandle(), &pt) )
+			return pt;
+	}
+	pt.x = -1;
+	pt.y = -1;
+	return pt;
+}
+
 bool GridViewControl::GetEditItemRect(RECT &rect)
 {
 	return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
+}
+
+bool GridViewControl::GetEditText(string &str)
+{
+	return editBox.GetEditText(str);
 }
 
 bool GridViewControl::contentHitTest(int x, int y, bool &outsideLeft, bool &outsideTop, bool &outsideRight, bool &outsideBottom)
@@ -288,7 +398,7 @@ bool GridViewControl::resize(int numRows, int numColumns)
 	return false;
 }
 
-void GridViewControl::AutoSizeColumn(int x, int minWidth)
+void GridViewControl::AutoSizeColumn(int x, int minWidth, int maxWidth)
 {
 	int newWidth = 0;
 	for ( int y=0; y<numRows; y++ )
@@ -308,6 +418,9 @@ void GridViewControl::AutoSizeColumn(int x, int minWidth)
 	{
 		if ( minWidth > 0 && newWidth < minWidth )
 			newWidth = minWidth;
+
+		if ( newWidth > maxWidth )
+			newWidth = maxWidth;
 
 		if ( minWidth == 0 && newWidth == ListViewControl::GetColumnWidth(x) )
 		{
@@ -336,7 +449,7 @@ void GridViewControl::DragSelectTo(int x, int y)
 		 ( outsideLeft || outsideTop || outsideRight || outsideBottom ) )
 	{
 		if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
-		DeselectAll();
+			DeselectAll();
 
 		int row, col;
 		if ( outsideLeft && outsideTop )
@@ -373,8 +486,9 @@ void GridViewControl::DragSelectTo(int x, int y)
 	{
 		if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
 			DeselectAll();
-		
+
 		SelectSquare(focusedX, focusedY, dragMoveX, dragMoveY);
+
 		RedrawThis();
 	}
 }
@@ -389,8 +503,7 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 		editing = true;
 
 		editBox.SetFont(GetWindowFont(getHandle()), false);
-		editBox.SetForwardArrowKeys(false);
-		editBox.SetStopForwardOnClick(true);
+		bool startedByInput = false;
 
 		int x = -1;
 		int y = -1;
@@ -408,8 +521,9 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 			editBox.SetText("");
 			SetCaretPos(0);
 		}
-		else
+		else // By input start
 		{
+			startedByInput = true;
 			char newText[2] = { };
 			newText[0] = initChar;
 			newText[1] = '\0';
@@ -419,6 +533,17 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 		}
 		editBox.ExpandToText();
 		RedrawThis();
+
+		SendMessage(GetParent(getHandle()), WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), NULL);
+
+		if ( startedByInput )
+		{
+			char newText[2] = {};
+			newText[0] = initChar;
+			newText[1] = '\0';
+			string sNewText(newText);
+			EditTextChanged(sNewText);
+		}
 	}
 }
 
@@ -463,45 +588,71 @@ void GridViewControl::SetCaretPos(int newCaretPos)
 	editBox.FocusThis();
 }
 
+void GridViewControl::KeyDown(WPARAM wParam)
+{
+	switch ( wParam )
+	{
+	case VK_LEFT: LeftArrowKey(); break;
+	case VK_UP: UpArrowKey(); break;
+	case VK_RIGHT: RightArrowKey(); break;
+	case VK_DOWN: DownArrowKey(); break;
+	case VK_TAB: TabKey(); break;
+	case VK_RETURN: EnterKey(); break;
+	case VK_DELETE: DeleteSelection(); break;
+	default: return; break;
+	}
+
+	RedrawThis();
+}
+
+void GridViewControl::EditTextChanged(string &str)
+{
+
+}
+
 void GridViewControl::LButtonDown(int xClick, int yClick)
 {
+	bool allowDrag = true;
+
 	FocusThis();
 	int x = -1;
 	int y = -1;
 
 	if ( ListViewControl::GetItemAt(xClick, yClick, y, x) )
 	{
-		if ( (GetKeyState(VK_SHIFT) & 0x8000) && (GetKeyState(VK_CONTROL) & 0x8000) )
+		CellClicked(x, y);
+		if ( allowSel(x, y) )
 		{
-			SelectSquareTo(x, y);
-		}
-		else if ( GetKeyState(VK_SHIFT) & 0x8000 )
-		{
-			DeselectAll();
-			SelectSquareTo(x, y);
-		}
-		else if ( GetKeyState(VK_CONTROL) & 0x8000 )
-		{
-			if ( item(x, y).isSelected() )
+			if ( (GetKeyState(VK_SHIFT) & 0x8000) && (GetKeyState(VK_CONTROL) & 0x8000) )
 			{
-				if ( !isFocused(x, y) )
-					item(x, y).SetSelected(false);
+				SelectSquareTo(x, y);
 			}
-			else
+			else if ( GetKeyState(VK_SHIFT) & 0x8000 )
 			{
-				item(x, y).SetSelected(true);
+				DeselectAll();
+				SelectSquareTo(x, y);
+			}
+			else if ( GetKeyState(VK_CONTROL) & 0x8000 )
+			{
+				if ( item(x, y).isSelected() )
+				{
+					if ( !isFocused(x, y) )
+						item(x, y).SetSelected(false);
+				}
+				else
+					FocusItem(x, y);
+			}
+			else // Normal click within items
+			{
+				DeselectAll();
+				//if ( editing && focusedX == x && focusedY == y ) // Use if manually doing edits
+				//	UpdateCaretPos(xClick, yClick);
 				FocusItem(x, y);
 			}
+			RedrawThis();
 		}
-		else // Normal click within items
-		{
-			DeselectAll();
-			item(x, y).SetSelected(true);
-			//if ( editing && focusedX == x && focusedY == y ) // Use if manually doing edits
-			//	UpdateCaretPos(xClick, yClick);
-			FocusItem(x, y);
-		}
-		RedrawThis();
+		else // Selection at (x, y) is forbidden
+			allowDrag = false;
 	}
 	else
 	{
@@ -545,9 +696,12 @@ void GridViewControl::LButtonDown(int xClick, int yClick)
 		RedrawThis();
 	}
 
-	SetCapture(getHandle());
-	lButtonDown = true;
-	TrackMouse(10);
+	if ( allowDrag )
+	{
+		SetCapture(getHandle());
+		lButtonDown = true;
+		TrackMouse(10);
+	}
 }
 
 void GridViewControl::LButtonDblClk(int xClick, int yClick)
@@ -560,7 +714,7 @@ void GridViewControl::LButtonDblClk(int xClick, int yClick)
 
 void GridViewControl::MouseMove(int xMove, int yMove, WPARAM wParam)
 {
-	if ( focusedX != -1 && focusedY != -1 && wParam & MK_LBUTTON ) // If click and dragging
+	if ( lButtonDown && focusedX != -1 && focusedY != -1 && wParam & MK_LBUTTON ) // If click and dragging
 	{
 		int dragMoveX = -1;
 		int dragMoveY = -1;
@@ -568,7 +722,7 @@ void GridViewControl::MouseMove(int xMove, int yMove, WPARAM wParam)
 		{
 			if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
 				DeselectAll();
-			
+
 			SelectSquare(focusedX, focusedY, dragMoveX, dragMoveY);
 			RedrawThis();
 		}
@@ -586,7 +740,7 @@ void GridViewControl::MouseHover(int xHover, int yHover)
 
 void GridViewControl::LButtonUp(int xRelease, int yRelease)
 {
-	if ( !editing && focusedX != -1 && focusedY != -1 )
+	if ( lButtonDown && !editing && focusedX != -1 && focusedY != -1 )
 	{
 		lButtonDown = false;
 		ReleaseCapture();
@@ -594,20 +748,127 @@ void GridViewControl::LButtonUp(int xRelease, int yRelease)
 	}
 }
 
-void GridViewControl::KeyDown(WPARAM wParam)
+void GridViewControl::LeftArrowKey()
 {
-	switch ( wParam )
+	// Focus next selectable cell directly to the left of focus
+	if ( !editing || allowKeyNavDuringEdit(GVLeft) )
 	{
-		case VK_LEFT: DeselectAll(); FocusItem(focusedX-1, focusedY); break;
-		case VK_UP: DeselectAll(); FocusItem(focusedX, focusedY-1); break;
-		case VK_RIGHT: DeselectAll(); FocusItem(focusedX+1, focusedY); break;
-		case VK_DOWN: DeselectAll(); FocusItem(focusedX, focusedY+1); break;
-		case VK_RETURN: DeselectAll(); FocusItem(focusedX, focusedY+1); break;
-		case VK_TAB: DeselectAll(); FocusItem(focusedX+1, focusedY); break;
-		case VK_DELETE: DeleteSelection(); break;
-		default: return; break;
+		DeselectAll();
+
+		for ( int x = focusedX - 1; x >= 0; x-- )
+		{
+			if ( allowSel(x, focusedY) )
+			{
+				FocusItem(x, focusedY);
+				return;
+			}
+		}
 	}
-	RedrawThis();
+}
+
+void GridViewControl::UpArrowKey()
+{
+	// Focus next selectable cell directly above focus
+	if ( !editing || allowKeyNavDuringEdit(GVUp) )
+	{
+		DeselectAll();
+
+		for ( int y = focusedY - 1; y >= 0; y-- )
+		{
+			if ( allowSel(focusedX, y) )
+			{
+				FocusItem(focusedX, y);
+				return;
+			}
+		}
+	}
+}
+
+void GridViewControl::RightArrowKey()
+{
+	// Focus next selectable cell directly to the right of focus
+	if ( !editing || allowKeyNavDuringEdit(GVRight) )
+	{
+		DeselectAll();
+
+		for ( int x = focusedX + 1; x < numColumns; x++ )
+		{
+			if ( allowSel(x, focusedY) )
+			{
+				FocusItem(x, focusedY);
+				return;
+			}
+		}
+	}
+}
+
+void GridViewControl::DownArrowKey()
+{
+	// Focus next selectable cell directly below focus
+	if ( !editing || allowKeyNavDuringEdit(GVDown) )
+	{
+		DeselectAll();
+
+		for ( int y = focusedY + 1; y < numRows; y++ )
+		{
+			if ( allowSel(focusedX, y) )
+			{
+				FocusItem(focusedX, y);
+				return;
+			}
+		}
+	}
+}
+
+void GridViewControl::TabKey()
+{
+	// Focus next selectable cell
+	if ( !editing || allowKeyNavDuringEdit(GVTab) )
+	{
+		DeselectAll();
+
+		for ( int x = focusedX + 1; x < numColumns; x++ )
+		{
+			if ( allowSel(x, focusedY) )
+			{
+				FocusItem(x, focusedY);
+				return;
+			}
+		}
+
+		for ( int y = focusedY + 1; y < numRows; y++ )
+		{
+			for ( int x = 0; x < numColumns; x++ )
+			{
+				if ( allowSel(x, y) )
+				{
+					FocusItem(x, y);
+					return;
+				}
+			}
+		}
+	}
+}
+
+void GridViewControl::EnterKey()
+{
+	// Focus first selectable cell lower rows
+	if ( !editing || allowKeyNavDuringEdit(GVReturn) )
+	{
+		DeselectAll();
+
+		for ( int y = focusedY + 1; y < numRows; y++ )
+		{
+			for ( int x = 0; x < numColumns; x++ )
+			{
+				if ( allowSel(x, y) )
+				{
+					FocusItem(x, y);
+					return;
+				}
+			}
+		}
+	}
 }
 
 void GridViewControl::Paint(HWND hWnd)
@@ -682,22 +943,34 @@ void GridViewControl::DrawItems(HWND hWnd)
 	EndPaint(hWnd, &ps);
 }
 
-LRESULT GridViewControl::Notify(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
-	switch ( ((LPNMHDR)lParam)->code )
+	switch ( nmhdr->code )
 	{
-		case HDN_DIVIDERDBLCLICK: AutoSizeColumn(((LPNMHEADER)lParam)->iItem, 0); break;
-		case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((LPNMHEADERW)lParam)->iItem, 0); break;
-		default: return WindowControl::CallDefaultProc(hWnd, msg, wParam, lParam); break;
+		case HDN_DIVIDERDBLCLICK: AutoSizeColumn(((NMHEADER*)nmhdr)->iItem, 0, 100); break;
+		case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((NMHEADERW*)nmhdr)->iItem, 0, 100); break;
+		default: return WindowControl::Notify(hWnd, idFrom, nmhdr); break;
 	}
 	return 0;
+}
+
+LRESULT GridViewControl::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( HIWORD(wParam) )
+	{
+		default:
+			return WindowControl::Command(hWnd, wParam, lParam);
+			break;
+	}
+	return WindowControl::Command(hWnd, wParam, lParam);
 }
 
 LRESULT GridViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case WM_NOTIFY: return Notify(hWnd, msg, wParam, lParam); break;
+		//case WM_COMMAND: return Command(hWnd, msg, wParam, lParam); break;
+		//case WM_NOTIFY: return Notify(hWnd, msg, wParam, lParam); break;
 		case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
 		case WM_KEYDOWN: KeyDown(wParam); break;
 		case WM_CHAR: StartEditing(-1, -1, (char)wParam); break;
@@ -707,7 +980,7 @@ LRESULT GridViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case WM_LBUTTONUP: LButtonUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
 		case WM_LBUTTONDBLCLK: LButtonDblClk(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
 		case WM_PAINT: Paint(hWnd); break;
-		default: return WindowControl::CallDefaultProc(hWnd, msg, wParam, lParam); break;
+		default: return WindowControl::ControlProc(hWnd, msg, wParam, lParam); break;
 	}
 	return 0;
 }

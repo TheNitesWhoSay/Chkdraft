@@ -12,10 +12,13 @@
 	void Error(const char* ErrorMessage); // Basic error message box
 	bool RetryError(const char* text); // Error box with yes/no confirm
 	extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
+	void ShoutError(const char* file, unsigned int line, const char* msg, ...);
 	#define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__) // Prints a detailed error
+	#define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, __VA_ARGS__) // Shouts an error message
 #else
 	void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message
 	#define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__) /* Would print to error messages if CHKDRAFT was defined */
+	#define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__) /* Would shout an error message if CHKDRAFT was defined */
 #endif
 
 typedef uint64_t u64;
@@ -62,6 +65,15 @@ typedef int8_t s8;
 #define BIT_29 0x20000000
 #define BIT_30 0x40000000
 #define BIT_31 0x80000000
+
+#define x8BIT_0 0xFE
+#define x8BIT_1 0xFD
+#define x8BIT_2 0xFB
+#define x8BIT_3 0xF7
+#define x8BIT_4 0xEF
+#define x8BIT_5 0xDF
+#define x8BIT_6 0xBF
+#define x8BIT_7 0x7F
 
 #define x32BIT_0 0xFFFFFFFE
 #define x32BIT_1 0xFFFFFFFD

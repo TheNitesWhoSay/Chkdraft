@@ -57,7 +57,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		refreshing = true;
-		GuiMap* map = chkd.maps.curr;
+		GuiMapPtr map = chkd.maps.curr;
 		HWND hMapProperties = getHandle();
 
 		std::string mapTitle(""), mapDescription("");
@@ -87,9 +87,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		_itoa_s(currHeight, sCurrHeight, 10);
 
 		textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
-		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, CB_MAPTILESET, NUM_TILESETS, (const char**)tilesetNames, defaultFont);
+		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, CB_MAPTILESET, NUM_TILESETS, (const char**)tilesetNames, defaultFont);
 		textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
-		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, CB_NEWMAPTERRAIN, numTilesetInitTerrains[currTileset], (const char**)initTerrains[currTileset], defaultFont);
+		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, CB_NEWMAPTERRAIN, numTilesetInitTerrains[currTileset], (const char**)initTerrains[currTileset], defaultFont);
 		textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
 		editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, EDIT_NEWMAPWIDTH);
 		editMapWidth.SetText(sCurrWidth);
@@ -116,9 +116,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 
 				groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
 				textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
-				dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, CB_P1OWNER+player, numPlayerOwners, playerOwners, defaultFont);
+				dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, CB_P1OWNER+player, numPlayerOwners, playerOwners, defaultFont);
 				textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
-				dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, CB_P1RACE+player, numPlayerRaces, playerRaces, defaultFont);
+				dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, CB_P1RACE+player, numPlayerRaces, playerRaces, defaultFont);
 
 				if ( yBox < 2 )
 				{
@@ -126,7 +126,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 						map->getPlayerColor((u8)player, color);
 
 					textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, CB_P1COLOR+player, numPlayerColors, playerColors, defaultFont);
+					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, CB_P1COLOR+player, numPlayerColors, playerColors, defaultFont);
 				}
 			}
 		}
@@ -140,7 +140,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 void MapPropertiesWindow::RefreshWindow()
 {
 	refreshing = true;
-	GuiMap* map = chkd.maps.curr;
+	GuiMapPtr map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
 		string mapTitle, mapDescription;
@@ -185,6 +185,138 @@ void MapPropertiesWindow::RefreshWindow()
 	refreshing = false;
 }
 
+LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+	case EDIT_MAPTITLE:
+		if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
+			possibleTitleUpdate = true;
+		else if ( HIWORD(wParam) == EN_KILLFOCUS )
+			CheckReplaceMapTitle();
+		break;
+
+	case EDIT_MAPDESCRIPTION:
+		if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
+			possibleDescriptionUpdate = true;
+		else if ( HIWORD(wParam) == EN_KILLFOCUS )
+			CheckReplaceMapDescription();
+		break;
+
+	case BUTTON_APPLY:
+	{
+		if ( HIWORD(wParam) == BN_CLICKED )
+		{
+			LRESULT newTileset = SendMessage(GetDlgItem(hWnd, CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
+			chkd.maps.curr->setTileset((u16)newTileset);
+			u16 newWidth, newHeight;
+			if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
+				chkd.maps.curr->setDimensions((u16)newWidth, (u16)newHeight);
+
+			// Apply new terrain...
+
+			chkd.maps.curr->notifyChange(false);
+			chkd.maps.curr->Redraw(true);
+		}
+	}
+	break;
+
+	case CB_MAPTILESET:
+		if ( HIWORD(wParam) == CBN_SELCHANGE )
+		{
+			HWND hMapTileset = GetDlgItem(hWnd, CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, CB_NEWMAPTERRAIN);
+			LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, NULL, NULL);
+			if ( currTileset != CB_ERR && currTileset < NUM_TILESETS )
+			{
+				while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, NULL) != CB_ERR );
+
+				for ( int i = 0; i<numTilesetInitTerrains[currTileset]; i++ )
+					SendMessage(hMapNewTerrain, CB_ADDSTRING, NULL, (LPARAM)initTerrains[currTileset][i]);
+
+				SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
+				SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, NULL);
+				PostMessage(hMapNewTerrain, CB_SETEDITSEL, NULL, (-1, 0));
+			}
+		}
+		break;
+	case CB_P1OWNER: case CB_P2OWNER: case CB_P3OWNER: case CB_P4OWNER:
+	case CB_P5OWNER: case CB_P6OWNER: case CB_P7OWNER: case CB_P8OWNER:
+	case CB_P9OWNER: case CB_P10OWNER: case CB_P11OWNER: case CB_P12OWNER:
+		if ( HIWORD(wParam) == CBN_SELCHANGE )
+		{
+			u32 player = LOWORD(wParam) - CB_P1OWNER; // 0 based player
+			u8 newOwner = 0;
+			LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			if ( player >= 0 && player < 12 && sel != CB_ERR )
+			{
+				switch ( sel )
+				{
+				case 0: newOwner = 4; break;
+				case 1: newOwner = 3; break;
+				case 2: newOwner = 5; break;
+				case 3: newOwner = 6; break;
+				case 4: newOwner = 7; break;
+				}
+				if ( newOwner != 0 )
+				{
+					chkd.maps.curr->setPlayerOwner((u8)player, newOwner);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		break;
+
+	case CB_P1RACE: case CB_P2RACE: case CB_P3RACE: case CB_P4RACE:
+	case CB_P5RACE: case CB_P6RACE: case CB_P7RACE: case CB_P8RACE:
+	case CB_P9RACE: case CB_P10RACE: case CB_P11RACE: case CB_P12RACE:
+		if ( HIWORD(wParam) == CBN_SELCHANGE )
+		{
+			u32 player = LOWORD(wParam) - CB_P1RACE; // 0 based player
+			LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
+			{
+				chkd.maps.curr->setPlayerRace((u8)player, (u8)newRace);
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+
+	case CB_P1COLOR: case CB_P2COLOR: case CB_P3COLOR: case CB_P4COLOR:
+	case CB_P5COLOR: case CB_P6COLOR: case CB_P7COLOR: case CB_P8COLOR:
+		switch ( HIWORD(wParam) )
+		{
+		case CBN_SELCHANGE:
+		{
+			u32 player = LOWORD(wParam) - CB_P1COLOR; // 0 based player
+			LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
+			{
+				if ( chkd.maps.curr->setPlayerColor((u8)player, (u8)newColor) )
+					chkd.maps.curr->Redraw(true);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+		break;
+		case CBN_EDITCHANGE:
+		{
+			u32 player = LOWORD(wParam) - CB_P1COLOR; // 0 based player
+			u8 newColor;
+			if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
+			{
+				if ( chkd.maps.curr->setPlayerColor((u8)player, newColor) )
+					chkd.maps.curr->Redraw(true);
+
+				chkd.maps.curr->notifyChange(false);
+			}
+		}
+
+		}
+		break;
+	}
+	return ClassWindow::Command(hWnd, wParam, lParam);
+}
+
 LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -200,143 +332,11 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				CheckReplaceMapTitle();
 				CheckReplaceMapDescription();
 			}
-			return DefWindowProc(hWnd, msg, wParam, lParam);
-			break;
-
-		case WM_COMMAND:
-			{
-				switch ( LOWORD(wParam) )
-				{
-					case EDIT_MAPTITLE:
-						if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
-							possibleTitleUpdate = true;
-						else if ( HIWORD(wParam) == EN_KILLFOCUS )
-							CheckReplaceMapTitle();
-						break;
-
-					case EDIT_MAPDESCRIPTION:
-						if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
-							possibleDescriptionUpdate = true;
-						else if ( HIWORD(wParam) == EN_KILLFOCUS )
-							CheckReplaceMapDescription();
-						break;
-
-					case BUTTON_APPLY:
-						{
-							if ( HIWORD(wParam) == BN_CLICKED )
-							{
-								LRESULT newTileset = SendMessage(GetDlgItem(hWnd, CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
-								chkd.maps.curr->setTileset((u16)newTileset);
-								u16 newWidth, newHeight;
-								if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
-									chkd.maps.curr->setDimensions((u16)newWidth, (u16)newHeight);
-
-								// Apply new terrain...
-
-								chkd.maps.curr->notifyChange(false);
-								chkd.maps.curr->Redraw(true);
-							}
-						}
-						break;
-
-					case CB_MAPTILESET:
-						if ( HIWORD(wParam) == CBN_SELCHANGE )
-						{
-							HWND hMapTileset = GetDlgItem(hWnd, CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, CB_NEWMAPTERRAIN);
-							LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, NULL, NULL);
-							if ( currTileset != CB_ERR && currTileset < NUM_TILESETS )
-							{
-								while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, NULL) != CB_ERR );
-
-								for ( int i=0; i<numTilesetInitTerrains[currTileset]; i++ )
-									SendMessage(hMapNewTerrain, CB_ADDSTRING, NULL, (LPARAM)initTerrains[currTileset][i]);
-
-								SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-								SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, NULL);
-								PostMessage(hMapNewTerrain, CB_SETEDITSEL, NULL, (-1, 0));
-							}
-						}
-						break;
-					case CB_P1OWNER: case CB_P2OWNER: case CB_P3OWNER: case CB_P4OWNER:
-					case CB_P5OWNER: case CB_P6OWNER: case CB_P7OWNER: case CB_P8OWNER:
-					case CB_P9OWNER: case CB_P10OWNER: case CB_P11OWNER: case CB_P12OWNER:
-						if ( HIWORD(wParam) == CBN_SELCHANGE )
-						{
-							u32 player = LOWORD(wParam)-CB_P1OWNER; // 0 based player
-							u8 newOwner = 0;
-							LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
-							if ( player >= 0 && player < 12 && sel != CB_ERR )
-							{
-								switch ( sel )
-								{
-									case 0: newOwner = 4; break;
-									case 1: newOwner = 3; break;
-									case 2: newOwner = 5; break;
-									case 3: newOwner = 6; break;
-									case 4: newOwner = 7; break;
-								}
-								if ( newOwner != 0 )
-								{
-									chkd.maps.curr->setPlayerOwner((u8)player, newOwner);
-									chkd.maps.curr->notifyChange(false);
-								}
-							}
-						}
-						break;
-
-					case CB_P1RACE: case CB_P2RACE: case CB_P3RACE: case CB_P4RACE:
-					case CB_P5RACE: case CB_P6RACE: case CB_P7RACE: case CB_P8RACE:
-					case CB_P9RACE: case CB_P10RACE: case CB_P11RACE: case CB_P12RACE:
-						if ( HIWORD(wParam) == CBN_SELCHANGE )
-						{
-							u32 player = LOWORD(wParam)-CB_P1RACE; // 0 based player
-							LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
-							if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
-							{
-								chkd.maps.curr->setPlayerRace((u8)player, (u8)newRace);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-						break;
-
-					case CB_P1COLOR: case CB_P2COLOR: case CB_P3COLOR: case CB_P4COLOR:
-					case CB_P5COLOR: case CB_P6COLOR: case CB_P7COLOR: case CB_P8COLOR:
-						switch ( HIWORD(wParam) )
-						{
-							case CBN_SELCHANGE:
-								{
-									u32 player = LOWORD(wParam)-CB_P1COLOR; // 0 based player
-									LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
-									if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
-									{
-										if ( chkd.maps.curr->setPlayerColor((u8)player, (u8)newColor) )
-											chkd.maps.curr->Redraw(true);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-								}
-								break;
-							case CBN_EDITCHANGE:
-								{
-									u32 player = LOWORD(wParam)-CB_P1COLOR; // 0 based player
-									u8 newColor;
-									if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
-									{
-										if ( chkd.maps.curr->setPlayerColor((u8)player, newColor) )
-											chkd.maps.curr->Redraw(true);
-
-										chkd.maps.curr->notifyChange(false);
-									}
-								}
-
-						}
-						break;
-				}
-			}
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			break;
 	}
 	return 0;

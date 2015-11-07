@@ -12,7 +12,8 @@ class LeftBar : public ClassWindow
 
 		bool CreateThis(HWND hParent);
 
-	private:
+	protected:
+		LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 

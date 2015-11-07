@@ -3,7 +3,7 @@
 
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
-	if ( ClassWindow::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
+	if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
 	{
 		ShowWindow(getHandle(), SW_SHOW);
 		return true;
@@ -20,6 +20,45 @@ void TextTrigWindow::RefreshWindow()
 		SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
 	else
 		Error("Failed to generate text triggers.");
+}
+
+BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch ( LOWORD(wParam) )
+	{
+	case IDC_COMPSAVE:
+		if ( chkd.maps.curr != nullptr )
+		{
+			if ( CompileEditText(chkd.maps.curr) )
+			{
+				chkd.maps.curr->refreshScenario();
+				if ( chkd.maps.SaveCurr(false) )
+					MessageBox(NULL, "Success", "Compiler", MB_OK);
+				else
+				{
+					MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
+					chkd.maps.curr->notifyChange(false);
+				}
+			}
+		}
+		else
+			Error("No map open!");
+		break;
+	case ID_COMPILE_TRIGS:
+		if ( chkd.maps.curr != nullptr )
+		{
+			if ( CompileEditText(chkd.maps.curr) )
+			{
+				chkd.maps.curr->notifyChange(false);
+				chkd.maps.curr->refreshScenario();
+				MessageBox(NULL, "Success", "Compiler", MB_OK);
+			}
+		}
+		else
+			Error("No map open!");
+		break;
+	}
+	return ClassDialog::DlgCommand(hWnd, wParam, lParam);
 }
 
 BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -59,43 +98,6 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 
-		case WM_COMMAND:
-			switch ( LOWORD(wParam) )
-			{
-				case IDC_COMPSAVE:
-					if ( chkd.maps.curr != nullptr )
-					{
-						if ( CompileEditText(chkd.maps.curr, hWnd) )
-						{
-							chkd.maps.curr->refreshScenario();
-							if ( chkd.maps.SaveCurr(false) )
-								MessageBox(NULL, "Success", "Compiler", MB_OK);
-							else
-							{
-								MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
-								chkd.maps.curr->notifyChange(false);
-							}
-						}
-					}
-					else
-						Error("No map open!");
-					break;
-				case ID_COMPILE_TRIGS:
-					if ( chkd.maps.curr != nullptr )
-					{
-						if ( CompileEditText(chkd.maps.curr, hWnd) )
-						{
-							chkd.maps.curr->notifyChange(false);
-							chkd.maps.curr->refreshScenario();
-							MessageBox(NULL, "Success", "Compiler", MB_OK);
-						}
-					}
-					else
-						Error("No map open!");
-					break;
-			}
-			break;
-
 		case WM_CLOSE:
 			EndDialog(hWnd, wParam);
 			break;
@@ -106,7 +108,7 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-bool TextTrigWindow::CompileEditText(Scenario* map, HWND hWnd)
+bool TextTrigWindow::CompileEditText(ScenarioPtr map)
 {
 	if ( map != nullptr )
 	{
