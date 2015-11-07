@@ -1,5 +1,31 @@
 #include "FileIO.h"
 
+bool FindFile(const char* filePath)
+{
+	FILE* file;
+	fopen_s(&file, filePath, "r");
+	bool found = file != nullptr;
+	if ( file != nullptr )
+		fclose(file);
+
+	return found;
+}
+
+bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes)
+{
+	if ( FindFile(filePath) )
+		return true;
+
+	for ( int i = 0; i < numWaitTimes; i++ )
+	{
+		Sleep(waitTimes[i]);
+		if ( FindFile(filePath) )
+			return true;
+	}
+
+	return false;
+}
+
 bool FileExists(const char* fileName)
 {
 	FILE* fileCheck = nullptr;
@@ -137,13 +163,13 @@ bool FileToBuffer(const char* FileName, buffer &buf)
 	if ( pFile != nullptr )
 	{
 		buf.flush();
-		fseek (pFile , 0, SEEK_END);
+		fseek(pFile, 0, SEEK_END);
 		u32 fileSize = (u32)ftell(pFile);
 
 		if ( buf.setSize(fileSize) )
 		{
 			buf.sizeUsed = fileSize;
-			rewind (pFile);
+			rewind(pFile);
 
 			size_t lengthRead = fread(buf.data, 1, buf.sizeUsed, pFile);
 			fclose(pFile);

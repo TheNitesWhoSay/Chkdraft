@@ -102,8 +102,9 @@ bool LitWindow::RunLua(ScenarioPtr map)
 			int result = (int)ShellExecute(NULL, "open", litPath.c_str(), luaPath.c_str(), workingDir.c_str(), SW_SHOWNORMAL);
 			if ( result > 32 )
 			{
-				buffer luaOutputData;
-				if ( FileToBuffer(txtPath.c_str(), luaOutputData) )
+				buffer luaOutputData("luaO");
+				int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
+				if ( PatientFindFile(txtPath.c_str(), 4, waitTimes) && FileToBuffer(txtPath.c_str(), luaOutputData) )
 				{
 					TextTrigCompiler compiler;
 					if ( compiler.CompileTriggers(luaOutputData, map) )
@@ -112,7 +113,7 @@ bool LitWindow::RunLua(ScenarioPtr map)
 						Error("Trigger compilation failed.");
 				}
 				else
-					Error("LIT error, output file not present.");
+					Error("LIT output file was not found or could not be read.");
 			}
 			else
 				Error(string("ShellExecute on LIT failed: " + to_string(result)).c_str());

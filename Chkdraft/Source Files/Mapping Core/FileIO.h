@@ -6,6 +6,10 @@
 
 // MPQ handling
 
+bool FindFile(const char* filePath);
+
+bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes);
+
 bool OpenArchive(const char* szFilePath, const char* FileName, MPQHANDLE &hMpq);
 
 bool CloseArchive(MPQHANDLE mpq);
