@@ -29,7 +29,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case IDC_COMPSAVE:
 		if ( chkd.maps.curr != nullptr )
 		{
-			if ( CompileEditText(chkd.maps.curr, hWnd) )
+			if ( CompileEditText(chkd.maps.curr) )
 			{
 				chkd.maps.curr->refreshScenario();
 				if ( chkd.maps.SaveCurr(false) )
@@ -47,7 +47,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case ID_COMPILE_TRIGS:
 		if ( chkd.maps.curr != nullptr )
 		{
-			if ( CompileEditText(chkd.maps.curr, hWnd) )
+			if ( CompileEditText(chkd.maps.curr) )
 			{
 				chkd.maps.curr->notifyChange(false);
 				chkd.maps.curr->refreshScenario();
@@ -108,7 +108,7 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-bool TextTrigWindow::CompileEditText(ScenarioPtr map, HWND hWnd)
+bool TextTrigWindow::CompileEditText(ScenarioPtr map)
 {
 	if ( map != nullptr )
 	{

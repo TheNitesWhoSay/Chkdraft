@@ -3,7 +3,7 @@
 #include "Constants.h"
 
 // If defined, a standard output window will be shown
-#define SHOW_CLI
+//#define SHOW_CLI
 
 /** CHKD_DEBUG is usually only defined if visual studios is set
 	to compile in debug mode, however it can ocassionally be
@@ -71,5 +71,7 @@ void MessageInt(int integer, const char* caption);
 void MessageChar(char character, int pos);
 void FindLeaks();
 bool RetryError(const char* text);
+
+#define ErrorReturnShoutIfNot(condition, shoutText) if ( !condition ) { MessageBox(NULL, shoutText, "Error!", MB_OK); return false; }
 
 #endif

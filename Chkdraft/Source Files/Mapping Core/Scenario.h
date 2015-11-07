@@ -108,7 +108,7 @@ class Scenario
 					bool MoveLocation(u16 locationIndex, s32 xChange, s32 yChange);
 					u32 GetLocationFieldData(u16 locationIndex, u8 field);
 					bool SetLocationFieldData(u16 locationIndex, u8 field, u32 data);
-					bool insertLocation(u16 index, ChkLocation &location);
+					bool insertLocation(u16 index, ChkLocation &location, std::string name);
 					u8 numLocations(); // Gets the current amount of locations in the map
 					bool createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationIndex); // Create a location
 					void deleteLocation(u16 locationIndex); // Unconditionally deletes a location

@@ -29,6 +29,7 @@ class Chkdraft : public ClassWindow
 					TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
 					TilePropWindow tilePropWindow; // Modeless tile properties
 					TextTrigWindow textTrigWindow; // Modeless text triggers
+					LitWindow litWindow; // Modeless lit window
 					MapSettingsWindow mapSettingsWindow; // Modeless map settings
 					TrigEditorWindow trigEditorWindow; // Modeless trig editor
 					ChangePasswordDialog changePasswordWindow; // Modeless password editor

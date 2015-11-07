@@ -540,9 +540,6 @@
     <ClInclude Include="Source Files\UndoTypes.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\IObserveUndos.h">
-      <Filter>Header Files\Mapping\Undos</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\TileChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
@@ -563,6 +560,9 @@
     </ClInclude>
     <ClInclude Include="Source Files\UnitIndexMove.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\LIT.h">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -872,9 +872,6 @@
     <ClCompile Include="Source Files\Reversibles.cpp">
       <Filter>Source Files\Mapping\Undos</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\IObserveUndos.cpp">
-      <Filter>Source Files\Mapping\Undos</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\UnitCreateDel.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
@@ -892,6 +889,9 @@
     </ClCompile>
     <ClCompile Include="Source Files\UnitIndexMove.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\LIT.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

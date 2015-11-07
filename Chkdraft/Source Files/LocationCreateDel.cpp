@@ -25,7 +25,7 @@ void LocationCreateDel::Reverse(void *guiMap)
 	}
 	else // Do create
 	{
-		((GuiMap*)guiMap)->insertLocation(locationIndex, *location);
+		((GuiMap*)guiMap)->insertLocation(locationIndex, *location, locationName);
 		location = nullptr;
 		locationName.clear();
 	}
@@ -33,6 +33,6 @@ void LocationCreateDel::Reverse(void *guiMap)
 
 int32_t LocationCreateDel::GetType()
 {
-	return (int32_t)UndoTypes::UnitChange;
+	return (int32_t)UndoTypes::LocationChange;
 }
 

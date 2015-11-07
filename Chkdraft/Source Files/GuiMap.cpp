@@ -1837,7 +1837,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					}
 										
 					//undos().addUndoLocationMove(selectedLocation, dragX, dragY);
-					undoStacks.AddUndo(std::shared_ptr<LocationMove>(new LocationMove(selectedLocation, dragX, dragY)));
+					undoStacks.AddUndo(std::shared_ptr<LocationMove>(new LocationMove(selectedLocation, -dragX, -dragY)));
 				}
 				else // Resize location
 				{

@@ -26,7 +26,7 @@
     <ClCompile Include="Source Files\EnterPassword.cpp" />
     <ClCompile Include="Source Files\Forces.cpp" />
     <ClCompile Include="Source Files\Graphics.cpp" />
-    <ClCompile Include="Source Files\IObserveUndos.cpp" />
+    <ClCompile Include="Source Files\LIT.cpp" />
     <ClCompile Include="Source Files\LocationChange.cpp" />
     <ClCompile Include="Source Files\LocationCreateDel.cpp" />
     <ClCompile Include="Source Files\LocationMove.cpp" />
@@ -146,7 +146,7 @@
     <ClInclude Include="Source Files\EnterPassword.h" />
     <ClInclude Include="Source Files\Forces.h" />
     <ClInclude Include="Source Files\Graphics.h" />
-    <ClInclude Include="Source Files\IObserveUndos.h" />
+    <ClInclude Include="Source Files\LIT.h" />
     <ClInclude Include="Source Files\LocationChange.h" />
     <ClInclude Include="Source Files\LocationCreateDel.h" />
     <ClInclude Include="Source Files\LocationMove.h" />

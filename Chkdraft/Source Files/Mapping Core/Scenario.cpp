@@ -109,7 +109,10 @@ std::string Scenario::getLocationName(u16 locationIndex)
 	if ( MRGN().get<u16>(locationStringIndex, 16 + CHK_LOCATION_SIZE*(u32)locationIndex) )
 	{
 		if ( locationStringIndex != 0 && getEscapedString(locationName, locationStringIndex) )
+		{
+			cout << "LocName: " << locationName << endl;
 			return locationName;
+		}
 	}
 
 	return "Location" + to_string(locationIndex);
@@ -153,9 +156,19 @@ bool Scenario::SetLocationFieldData(u16 locationIndex, u8 field, u32 data)
 	return false;
 }
 
-bool Scenario::insertLocation(u16 index, ChkLocation &location)
+bool Scenario::insertLocation(u16 index, ChkLocation &location, std::string name)
 {
-	return MRGN().insert<ChkLocation>(CHK_LOCATION_SIZE*(u32)index, location);
+	if ( name.size() > 0 )
+	{
+		u32 stringNum;
+		if ( addString(name, stringNum, false) )
+		{
+			location.stringNum = stringNum;
+			return MRGN().replace<ChkLocation>(CHK_LOCATION_SIZE*(u32)index, location);
+		}
+	}
+	location.stringNum = 0;
+	return MRGN().replace<ChkLocation>(CHK_LOCATION_SIZE*(u32)index, location);
 }
 
 u8 Scenario::numLocations()

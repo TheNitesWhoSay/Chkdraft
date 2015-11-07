@@ -11,5 +11,6 @@
 #include "TrigEditor.h"
 #include "ChangePassword.h"
 #include "EnterPassword.h"
+#include "LIT.h"
 
 #endif
