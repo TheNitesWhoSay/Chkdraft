@@ -84,10 +84,10 @@ bool MapFile::SaveFile(bool SaveAs)
 				if ( MRGN().size() < 5100 ) // If there's < 255 locations
 					MRGN().add<u8>(0, 5100-MRGN().size()); // Add space for 255
 			}
-			else if ( SaveType == 3 || SaveType == 6 ) // BroodWar Map, edit to match
+			else if ( SaveType == 3 || SaveType == 6 || SaveType == 7 ) // BroodWar Map, edit to match
 			{
-				VER ().overwrite("Í\0", 2);
 				TYPE().overwrite("RAWB", 4);
+				VER ().overwrite("Í\0", 2);
 				RemoveSection(&IVER());
 				IVE2().overwrite("\13\0", 2);
 

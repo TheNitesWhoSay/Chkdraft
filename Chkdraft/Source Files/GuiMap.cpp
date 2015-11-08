@@ -512,7 +512,7 @@ void GuiMap::deleteSelection()
 						SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), NULL);
 					else
 					{
-						ReversibleActionsPtr deletes;
+						ReversibleActionsPtr deletes(new ReversibleActions);
 						while ( selection.hasUnits() )
 						{
 							// Get the highest index in the selection

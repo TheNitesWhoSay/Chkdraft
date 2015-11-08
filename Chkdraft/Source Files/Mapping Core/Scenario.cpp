@@ -7,7 +7,7 @@
 #include <unordered_map>
 using namespace std;
 
-Scenario::Scenario() : mapIsProtected(false), caching(false),
+Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
 // Cached regular section pointers
 type(nullptr), ver(nullptr), iver(nullptr), ive2(nullptr), vcod(nullptr), iown(nullptr), ownr(nullptr), era(nullptr),
@@ -110,7 +110,6 @@ std::string Scenario::getLocationName(u16 locationIndex)
 	{
 		if ( locationStringIndex != 0 && getEscapedString(locationName, locationStringIndex) )
 		{
-			cout << "LocName: " << locationName << endl;
 			return locationName;
 		}
 	}
@@ -2880,6 +2879,10 @@ bool Scenario::ToSingleBuffer(buffer& chk)
 				return false;
 			}
 		}
+
+		if ( tailLength > 0 && tailLength < 8 )
+			chk.addStr((const char*)tailData, tailLength);
+
 		return true;
 	}
 	else
@@ -2981,7 +2984,9 @@ bool Scenario::CreateNew(u16 width, u16 height, u16 tileset, u32 terrain, u32 tr
 		 && Get_UPUS(chk) && Get_SWNM(chk) )
 	{
 		if ( ParseScenario(chk) )
+		{
 			return true;
+		}
 		else // Chkdraft failed to read a map it creates itself, should never happen!
 			CHKD_SHOUT("New map parsing failed. Report this!");
 	}
@@ -2994,15 +2999,14 @@ void Scenario::WriteFile(FILE* pFile)
 	{
 		for ( auto &section : sections )
 			section.write(pFile);
+
+		if ( tailLength > 0 && tailLength < 8 )
+			fwrite(tailData, tailLength, 1, pFile);
 	}
-	
-	if ( tailLength > 0 )
-		fwrite(tailData, tailLength, 1, pFile);
 }
 
 bool Scenario::RemoveSection(buffer* buf)
 {
-	auto toDelete = sections.end();
 	for ( auto it = sections.begin(); it != sections.end(); ++it )
 	{
 		if ( it._Ptr == buf )

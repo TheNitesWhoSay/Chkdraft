@@ -694,7 +694,6 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
 		if ( unitChanges->Count() > 2 )
 			map->undos().AddUndo(unitChanges);
-		cout << "Added?" << endl;
 		listUnits.SetRedraw(true);
 	}
 	break;
