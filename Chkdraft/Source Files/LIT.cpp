@@ -90,33 +90,40 @@ BOOL LitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 bool LitWindow::RunLua(ScenarioPtr map)
 {
 	std::string luaPath;
-	char chkdDir[MAX_PATH] = {};
+	char cChkdPath[MAX_PATH] = {};
 	if ( editPath.GetEditText(luaPath) )
 	{
-		if ( GetCurrentDirectory(MAX_PATH, chkdDir) )
+		if ( GetModuleFileName(NULL, cChkdPath, MAX_PATH) != MAX_PATH )
 		{
-			string workingDir(string(chkdDir) + "\\chkd\\Tools\\LIT\\bin\\");
-			string litPath(workingDir + "LIT.exe");
-			string txtPath(workingDir + "out.txt");
-			std::remove(txtPath.c_str());
-			int result = (int)ShellExecute(NULL, "open", litPath.c_str(), luaPath.c_str(), workingDir.c_str(), SW_SHOWNORMAL);
-			if ( result > 32 )
+			string chkdPath(cChkdPath);
+			auto lastBackslashPos = chkdPath.find_last_of('\\');
+			if ( lastBackslashPos != string::npos && lastBackslashPos < chkdPath.size())
 			{
-				buffer luaOutputData("luaO");
-				int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
-				if ( PatientFindFile(txtPath.c_str(), 4, waitTimes) && FileToBuffer(txtPath.c_str(), luaOutputData) )
+				string workingDir(chkdPath.substr(0, lastBackslashPos) + "\\chkd\\Tools\\LIT\\bin\\");
+				string litPath(workingDir + "LIT.exe");
+				string txtPath(workingDir + "out.txt");
+				std::remove(txtPath.c_str());
+				int result = (int)ShellExecute(NULL, "open", litPath.c_str(), luaPath.c_str(), workingDir.c_str(), SW_SHOWNORMAL);
+				if ( result > 32 )
 				{
-					TextTrigCompiler compiler;
-					if ( compiler.CompileTriggers(luaOutputData, map) )
-						return true;
+					buffer luaOutputData("luaO");
+					int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
+					if ( PatientFindFile(txtPath.c_str(), 4, waitTimes) && FileToBuffer(txtPath.c_str(), luaOutputData) )
+					{
+						TextTrigCompiler compiler;
+						if ( compiler.CompileTriggers(luaOutputData, map) )
+							return true;
+						else
+							Error("Trigger compilation failed.");
+					}
 					else
-						Error("Trigger compilation failed.");
+						Error("LIT output file was not found or could not be read.");
 				}
 				else
-					Error("LIT output file was not found or could not be read.");
+					Error(string("ShellExecute on LIT failed: " + to_string(result)).c_str());
 			}
 			else
-				Error(string("ShellExecute on LIT failed: " + to_string(result)).c_str());
+				Error("Couldn't find last backslash in edit text.");
 		}
 		else
 			Error("Failed to get Chkdraft's directory.");
