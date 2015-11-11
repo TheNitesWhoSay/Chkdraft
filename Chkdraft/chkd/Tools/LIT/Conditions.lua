@@ -12,8 +12,8 @@ function Resources( )
 	
 	function object:SetType( resource )
 		if type( resource ) ~= "string" then
-			print( "\nERROR: Resources:SetType( ) only accepts strings." )
-			assert( type( resource ) == "string" )
+			__Error( "Resources:SetType( ) only accepts strings." )
+			--assert( type( resource ) == "string" )
 		end
 		
 		properType = false
@@ -241,8 +241,8 @@ function Score( )
 	
 	function object:SetType( name )
 		if type( name ) ~= "string" then
-			print( "\nERROR: HighestScore:SetType( ) only accepts strings." )
-			assert( type( name ) == "string" )
+			__Error( "HighestScore:SetType( ) only accepts strings." )
+			--assert( type( name ) == "string" )
 		end
 		
 		properType = false
@@ -422,11 +422,11 @@ function Switch( )
 	local object = {}
 	
 	function object:SetNumber( number )
-		if number < 0 or number > 255 then
-			print( "\nERROR: Switch:SetNumber( ) must take a number in the range of 0 to 255." )
-			assert( false )
+		if number < 0 or number > 256 then
+			__Error( "Switch:SetNumber( ) must take a number in the range of 1 to 256." )
 		end
-		
+		__LockSwitch( number )
+		self.number = number
 		self.switch = __WrapQuotes( "Switch" .. tostring( number ) )
 	end
 	

@@ -1,8 +1,23 @@
+----------------------------------------------------------------------------------------------------
+-- @file	Lock.lua
+-- @author	Randy Gaul
+-- @date	11/8/2015
+----------------------------------------------------------------------------------------------------
+
 UNIT_IDS = {}
 BACKUP_IDS = UNIT_IDS
+LOCK_ID = 1
+SWITCH_ID = 1
 
 function RECORD( t, unit )
-	t[ unit ] = false
+	t[ unit ] = {}
+	r = t[ unit ]
+	
+	local i = 1
+	while i < 12 do
+		r[ i ] = false
+		i = i + 1
+	end
 end
 
 RECORD( UNIT_IDS, "Alan Schezar (Goliath)" )
@@ -242,103 +257,125 @@ while i < 256 do
 	i = i + 1
 end
 
-function __LockSwitch( id )
-	local locked = SWITCH_IDS[ id ]
+function LockID( )
+	local id = LOCK_ID
+	LOCK_ID = LOCK_ID + 1
+	return id
+end
+
+function SwitchID( )
+	local id = SWITCH_ID
+	SWITCH_ID = SWITCH_ID + 1
+	return id
+end
+
+function __LockSwitch( index, id )
+	local s = SWITCH_IDS[ index ]
+	local okay = true
 	
-	if locked then
-		print( "\nERROR: Attempted to use the switch " .. tostring( id ) .. " while previously locked." )
-		assert( false )
+	if s then
+		if id then
+			okay = s == id
+		else
+			okay = false
+		end
+	end
+	
+	if not okay then
+		__Error( "Attempted to use the switch " .. tostring( index ) .. " while previously locked." )
 	end
 end
 
-function LockSwitch( id )
-	__LockSwitch( id )
-	SWITCH_IDS[ id ] = true
-	
+function __AllocSwitch( num, id )
 	local s = Switch( )
-	s:SetNumber( id )
+	s:SetNumber( num )
+	s.id = id
+	SWITCH_IDS[ num ] = id
 	return s
 end
 
-function AllocSwitch( )
-	for k, v in pairs( SWITCH_IDS ) do
-		if not v then
-			local s = Switch( )
-			s:SetNumber( k )
-			SWITCH_IDS[ k ] = true
-			print( "allocated switch: " .. k )
-			return s
+function AllocSwitch( num )
+	if not num then
+		for k, v in pairs( SWITCH_IDS ) do
+			if not v then
+				return __AllocSwitch( k, LockID( ) )
+			end
+		end
+	else
+		local id = LockID( )
+		__LockSwitch( num, id )
+		return __AllocSwitch( num, id )
+	end
+
+	__Error( "Attempted to alloc a switch when there are no free switches available." )
+end
+
+function FreeSwitch( s )
+	if type( s ) == "table" then
+		__LockSwitch( s.number, s.id )
+		SWITCH_IDS[ s.number ] = false
+	else
+		if SWITCH_IDS[ s ] then
+			SWITCH_IDS[ s ] = false
+		else
+			__Warn( "Tried to free switch " .. tostring( s ) .. " when it wasn't locked." )
 		end
 	end
-
-	print( "\nERROR: Attempted to alloc a switch when there are no free switches available." )
-	assert( false )
 end
 
-function FreeSwitch( id )
-	local locked = SWITCH_IDS[ id ]
-	if not locked then print( "\nWARNING: Tried to free the switch " .. tostring( id ) .. " though it isn't locked." ) end
-	SWITCH_IDS[ s ] = false
-end
-
-function __LockDC( name )
-	local locked = UNIT_IDS[ name ]
+function __LockDC( name, player, id )
+	local t = UNIT_IDS[ name ]
+	local tid = t[ player ]
+	local okay = true
 	
-	if locked then
-		print( "\nERROR: Attempted to use the dc " .. name .. " while previously locked." )
-		assert( false )
+	if tid then
+		if id then
+			okay = t[ player ] == id
+		else
+			okay = false
+		end
+	end
+	
+	if not okay then
+		__Error( "Attempted to use the dc " .. name .. " for player " .. tostring( player ) .. " while previously locked." )
 	end
 end
 
-function LockDC( player, name )
-	__LockDC( name )
-	UNIT_IDS[ name ] = true
-	
+function __AllocDC( p, u, id, t )
 	local dc = Deaths( )
-	dc:SetPlayer( player )
-	dc:SetUnit( name )
-	
+	dc:SetPlayer( p )
+	dc:SetUnit( u )
+	dc.id = id
+	t[ p ] = id
 	return dc
 end
 
-local asdf = 0
-
-function AllocDC( player )
-	for k, v in pairs( UNIT_IDS ) do
-		if not v then
-			local dc = Deaths( )
-			dc:SetPlayer( player )
-			dc:SetUnit( k )
-			UNIT_IDS[ k ] = true
-			print( "allocated dc (" .. tostring( asdf ) .. ") : " .. k )
-			asdf = asdf + 1
-			return dc
+function AllocDC( player, unit )
+	local id = LockID( )
+		
+	if not unit then
+		for k, v in pairs( UNIT_IDS ) do
+			if not v[ player ] then
+				return __AllocDC( player, k, id, v )
+			end
 		end
+	else
+		__LockDC( unit, player, id )
+		return __AllocDC( player, unit, id, UNIT_IDS[ unit ] )
 	end
 
-	print( "\nERROR: Attempted to alloc a DC when there are no free DCs available." )
-	assert( false )
+	__Error( "Attempted to alloc a DC for player " .. player .. " when there are no free DCs available." )
 end
 
 function FreeDC( dc )
-	local s = dc.unit:gsub( "\"", "" )
-	local locked = UNIT_IDS[ s ]
-	if not locked then print( "\nWARNING: Tried to free the dc " .. dc.unit .. " though it isn't locked." ) end
-	UNIT_IDS[ s ] = false
-end
-
-function CustomDCList( list )
-	for k, v in pairs( list ) do
-		if BACKUP_IDS[ k ] == nil then
-			print( "\nERROR: CustomDCList - The name " .. k .. " is not a valid unit ID." )
-			assert( false )
-			return
-		end
-	end
-	
-	UNIT_IDS = list
-end
-
-function RestoreDCList( )
-	UNIT_IDS = BACKUP_IDS
+	local u = dc.unit:gsub( "\"", "" )
+	local t = UNIT_IDS[ u ]
+	local s = dc.player:gsub( "Player ", "" )
+	s = s:gsub( "\"", "" )
+	local p = tonumber( s )
+	assert( t[ p ] == dc.id )
+	local locked = t[ p ]
+	if not locked then __Warn( "Tried to free the dc " .. dc.unit .. " for player " .. tostring( p ) .. " though it isn't locked." ) end
+	--print( "Freed DC: Player " .. s .. ", id " .. tostring( t[ p ] ) .. ", " .. u )
+	t[ p ] = false
 end

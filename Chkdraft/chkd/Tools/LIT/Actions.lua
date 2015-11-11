@@ -146,8 +146,8 @@ function Leaderboard( )
 	
 	function object:SetType( name )
 		if type( name ) ~= "string" then
-			print( "\nERROR: Leaderboard:SetType( ) only accepts strings." )
-			assert( type( name ) == "string" )
+			__Error( "Leaderboard:SetType( ) only accepts strings." )
+			--assert( type( name ) == "string" )
 		end
 		
 		properType = false
@@ -177,8 +177,7 @@ function Leaderboard( )
 		end
 		
 		if properType == false then
-			print( "\nERROR: Name string must be one of the above strings." )
-			assert( properType )
+			__Error( "Name string must be one of the above strings." )
 		end
 		
 		self.type = name
@@ -457,8 +456,8 @@ function Transmission( )
         local ext = string.match( fileName, "([^.]+)$" )
 		
 		if ext ~= "wav" and ext ~= "WAV" then
-			print( "\nERROR: PlayWAV:Play( ) only accepts strings for a file path to a .wav file." )
-			assert( type( name ) == "string" )
+			__Error( "PlayWAV:Play( ) only accepts strings for a file path to a .wav file." )
+			--assert( type( name ) == "string" )
 		end
 		
 		local fileNameAndPath = "staredit/wav/" .. fileName

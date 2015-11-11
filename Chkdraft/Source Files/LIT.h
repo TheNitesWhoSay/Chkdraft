@@ -11,7 +11,11 @@ class LitWindow : public ClassDialog
 		void RefreshWindow();
 
 	protected:
-		bool RunLua(ScenarioPtr map);
+		bool GetLitPaths(string &litDirectory, string &litPath);
+		bool GetInputPaths(string &luaDirectory, string &luaName);
+		bool WriteLitBat(string &luaDirectory, string &luaName, string &litDirectory, string &litBatPath,
+			string &textOutName, string &trigOutName);
+		bool RunLit(ScenarioPtr map);
 		void ButtonLit();
 		void ButtonLitSave();
 		virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);

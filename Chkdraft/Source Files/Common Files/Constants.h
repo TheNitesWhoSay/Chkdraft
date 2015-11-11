@@ -2,6 +2,7 @@
 #define CONSTANTS_H
 #include <Windows.h>
 #include <cstdint>
+#include <string>
 
 /**
 	Contains constants used throughout the program,

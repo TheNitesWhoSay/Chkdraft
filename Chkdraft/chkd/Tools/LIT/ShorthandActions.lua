@@ -29,8 +29,8 @@ end
 ----------------------------------------------------------------------------------------------------
 -- Comment
 ----------------------------------------------------------------------------------------------------
-function Comment( commentString )
-	tofile( "\tComment(\"" .. commentString .. "\");\n" )
+function Comment( text )
+	tofile( "\tComment(\"" .. text .. "\");\n" )
 end
 
 ----------------------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ function RunScript( script )
 end
 
 function RunScriptAt( script, location )
-		tofile( "\tRun AI Script At Location(" .. __WrapQuotes( script ) .. ", " .. __WrapQuotes( location ) .. ");\n" );
+	tofile( "\tRun AI Script At Location(" .. __WrapQuotes( script ) .. ", " .. __WrapQuotes( location ) .. ");\n" );
 end
 
 ----------------------------------------------------------------------------------------------------
@@ -258,4 +258,31 @@ end
 ----------------------------------------------------------------------------------------------------
 function Wait( milliseconds )
 	tofile( "\tWait(" .. tostring( milliseconds ) .. ");\n" )
+end
+
+----------------------------------------------------------------------------------------------------
+-- Run vision script
+----------------------------------------------------------------------------------------------------
+function VisionOf( player )
+	RunScript( "+Vi" .. tostring( player - 1 ) )
+end
+
+function VisionNone( player )
+	RunScript( "-Vi" .. tostring( player - 1 ) )
+end
+
+----------------------------------------------------------------------------------------------------
+-- Switch
+----------------------------------------------------------------------------------------------------
+function SetSwitch( number )
+	__LockSwitch( number )
+	tofile( "\tSet Switch(" .. __WrapQuotes( "Switch" .. tostring( number ) ) .. ", set);\n" )
+end
+
+function ClearSwitch( number )
+	tofile( "\tSet Switch(" .. __WrapQuotes( "Switch" .. tostring( number ) ) .. ", clear);\n" )
+end
+
+function ToggleSwitch( number )
+	tofile( "\tSet Switch(" .. __WrapQuotes( "Switch" .. tostring( number ) ) .. ", toggle);\n" )
 end

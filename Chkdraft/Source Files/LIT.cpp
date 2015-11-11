@@ -22,11 +22,10 @@ void LitWindow::ButtonLit()
 {
 	if ( chkd.maps.curr != nullptr )
 	{
-		if ( RunLua(chkd.maps.curr) )
+		if ( RunLit(chkd.maps.curr) )
 		{
 			chkd.maps.curr->notifyChange(false);
 			chkd.maps.curr->refreshScenario();
-			MessageBox(NULL, "Success", "Compiler", MB_OK);
 		}
 	}
 	else
@@ -37,12 +36,10 @@ void LitWindow::ButtonLitSave()
 {
 	if ( chkd.maps.curr != nullptr )
 	{
-		if ( RunLua(chkd.maps.curr) )
+		if ( RunLit(chkd.maps.curr) )
 		{
 			chkd.maps.curr->refreshScenario();
-			if ( chkd.maps.SaveCurr(false) )
-				MessageBox(NULL, "Success", "Compiler", MB_OK);
-			else
+			if ( !chkd.maps.SaveCurr(false) )
 			{
 				MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
 				chkd.maps.curr->notifyChange(false);
@@ -87,49 +84,102 @@ BOOL LitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-bool LitWindow::RunLua(ScenarioPtr map)
+bool LitWindow::GetLitPaths(string &litDirectory, string &litPath)
+{
+	char cChkdPath[MAX_PATH] = {};
+	if ( GetModuleFileName(NULL, cChkdPath, MAX_PATH) != MAX_PATH )
+	{
+		string chkdPath(cChkdPath);
+		auto lastBackslashPos = chkdPath.find_last_of('\\');
+		if ( lastBackslashPos != string::npos && lastBackslashPos < chkdPath.size() )
+		{
+			litDirectory = string(chkdPath.substr(0, lastBackslashPos) + "\\chkd\\Tools\\LIT\\");
+			litPath = litDirectory + "RunLIT.bat";
+			return true;
+		}
+	}
+	Error("Failed to determine LIT's directory");
+	return false;
+}
+
+bool LitWindow::GetInputPaths(string &luaDirectory, string &luaName)
 {
 	std::string luaPath;
-	char cChkdPath[MAX_PATH] = {};
 	if ( editPath.GetEditText(luaPath) )
 	{
-		if ( GetModuleFileName(NULL, cChkdPath, MAX_PATH) != MAX_PATH )
+		auto lastBackslashPos = luaPath.find_last_of('\\');
+		if ( lastBackslashPos != string::npos && lastBackslashPos < luaPath.size() )
 		{
-			string chkdPath(cChkdPath);
-			auto lastBackslashPos = chkdPath.find_last_of('\\');
-			if ( lastBackslashPos != string::npos && lastBackslashPos < chkdPath.size())
-			{
-				string workingDir(chkdPath.substr(0, lastBackslashPos) + "\\chkd\\Tools\\LIT\\bin\\");
-				string litPath(workingDir + "LIT.exe");
-				string txtPath(workingDir + "out.txt");
-				std::remove(txtPath.c_str());
-				int result = (int)ShellExecute(NULL, "open", litPath.c_str(), luaPath.c_str(), workingDir.c_str(), SW_SHOWNORMAL);
-				if ( result > 32 )
-				{
-					buffer luaOutputData("luaO");
-					int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
-					if ( PatientFindFile(txtPath.c_str(), 4, waitTimes) && FileToBuffer(txtPath.c_str(), luaOutputData) )
-					{
-						TextTrigCompiler compiler;
-						if ( compiler.CompileTriggers(luaOutputData, map) )
-							return true;
-						else
-							Error("Trigger compilation failed.");
-					}
-					else
-						Error("LIT output file was not found or could not be read.");
-				}
-				else
-					Error(string("ShellExecute on LIT failed: " + to_string(result)).c_str());
-			}
-			else
-				Error("Couldn't find last backslash in edit text.");
+			luaDirectory = luaPath.substr(0, lastBackslashPos + 1);
+			luaName = luaPath.substr(lastBackslashPos + 1);
+			return true;
 		}
 		else
-			Error("Failed to get Chkdraft's directory.");
+			Error("Couldn't find last backslash in edit text.");
 	}
 	else
 		Error("Empty path or failed to get edit text.");
 
+	return false;
+}
+
+bool LitWindow::WriteLitBat(string &luaDirectory, string &luaName, string &litDirectory, string &litBatPath,
+	string &textOutPath, string &trigOutName)
+{
+	litBatPath = litDirectory + "chkd-LIT_LIT.bat";
+	RemoveFile(litBatPath);
+	ofstream litBat(litBatPath);
+	if ( litBat.is_open() )
+	{
+		litBat << "LIT.exe " <<
+			"\"" << luaDirectory << "\\\" " <<
+			"\"" << luaName << "\" " <<
+			"\"" << litDirectory << "\\\" " <<
+			"\"" << trigOutName << "\" > " <<
+			"\"" << textOutPath << "\"";
+		litBat.close();
+		return true;
+	}
+	return false;
+}
+
+bool LitWindow::RunLit(ScenarioPtr map)
+{
+	string litDirectory, litPath, luaDirectory, luaName, litBatPath, litText;
+	if ( GetLitPaths(litDirectory, litPath) && GetInputPaths(luaDirectory, luaName) )
+	{
+		string textPath(litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(litDirectory + trigName);
+		if ( WriteLitBat(luaDirectory, luaName, litDirectory, litBatPath, textPath, trigName) )
+		{
+			RemoveFiles(textPath, trigPath);
+			int result = (int)ShellExecute(NULL, "open", litBatPath.c_str(), NULL, litDirectory.c_str(), SW_SHOWDEFAULT);
+			if ( result > 32 )
+			{
+				int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
+				buffer litTrigs("litT");
+				bool foundLitText = PatientFindFile(textPath.c_str(), 4, waitTimes) && FileToString(textPath, litText);
+				bool foundLitTrigs = FileToBuffer(trigPath.c_str(), litTrigs);
+				RemoveFiles(textPath, trigPath, litBatPath);
+				if ( foundLitTrigs )
+				{
+					TextTrigCompiler compiler;
+					if ( compiler.CompileTriggers(litTrigs, map) )
+					{
+						foundLitText ? Message(litText, "LIT") : Message("Success!", "Text Trigger Compiler");
+						return true;
+					}
+					else
+						Error("Trigger Compilation Failed!");
+				}
+				else
+					foundLitText ? Message(litText, "LIT") : Error("LIT trigger output file was not found or could not be read.");
+			}
+			else
+				Error(string("ShellExecute on LIT.bat failed: " + to_string(result)).c_str());
+		}
+		else
+			Error("Failed to write LIT.bat");
+	}
+	RemoveFile(litBatPath);
 	return false;
 }

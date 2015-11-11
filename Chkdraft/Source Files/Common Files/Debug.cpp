@@ -102,6 +102,16 @@ void db(int i, const char* text)
 		MessageInt(i, text);
 }
 
+void Message(std::string text)
+{
+	MessageBox(NULL, text.c_str(), "Message", MB_OK);
+}
+
+void Message(std::string text, std::string caption)
+{
+	MessageBox(NULL, text.c_str(), caption.c_str(), MB_OK);
+}
+
 void MessageInt(int integer, const char* caption)
 {
 	char cInt[32];
