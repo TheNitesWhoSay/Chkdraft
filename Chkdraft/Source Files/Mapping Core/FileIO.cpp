@@ -135,6 +135,44 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 		   || FileToBuffer(hStarDat, fileName, buf);
 }
 
+bool FileToString(string fileName, string &str)
+{
+	str.clear();
+	ifstream file(fileName, ifstream::in|ifstream::ate); // Open at ending characters position
+	if ( file.is_open() )
+	{
+		auto size = file.tellg(); // Grab size via current position
+		str.reserve((size_t)size); // Set string size to file size
+		file.seekg(0); // Move reader to beggining of file
+		while ( !file.eof() )
+			str += file.get();
+
+		if ( str.length() > 0 && str[str.length() - 1] == (char)-1 )
+			str[str.length() - 1] = '\0';
+
+		return true;
+	}
+	return false;
+}
+
+void RemoveFile(string fileName)
+{
+	std::remove(fileName.c_str());
+}
+
+void RemoveFiles(string firstFileName, string secondFileName)
+{
+	std::remove(firstFileName.c_str());
+	std::remove(secondFileName.c_str());
+}
+
+void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName)
+{
+	std::remove(firstFileName.c_str());
+	std::remove(secondFileName.c_str());
+	std::remove(thirdFileName.c_str());
+}
+
 OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter)
 {
 	OPENFILENAME ofn = { };

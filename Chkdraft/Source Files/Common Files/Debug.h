@@ -67,6 +67,8 @@ void mb(int i, const char* text);
 void mb(int i, const char character);
 void db(const char *text);
 void db(int i, const char* text);
+void Message(std::string text);
+void Message(std::string text, std::string caption);
 void MessageInt(int integer, const char* caption);
 void MessageChar(char character, int pos);
 void FindLeaks();

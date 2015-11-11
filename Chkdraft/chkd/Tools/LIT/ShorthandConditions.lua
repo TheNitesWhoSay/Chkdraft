@@ -38,6 +38,7 @@ end
 -- Deaths (shorthand version, see DeathCounter.lua for the verbose version)
 ----------------------------------------------------------------------------------------------------
 function DC( player, unit, qmod, count )
+	__LockDC( unit, player )
 	tofile( "\tDeaths(" .. __Player( player ) .. ", " .. __Unit( unit ) ..  ", " .. qmod .. ", " .. __Count( count ) .. ");\n" )
 end
 

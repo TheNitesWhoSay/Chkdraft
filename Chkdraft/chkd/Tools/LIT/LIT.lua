@@ -4,6 +4,19 @@
 -- @date	08/14/2014
 ----------------------------------------------------------------------------------------------------
 
+function __Error( s )
+	io.write( "ERROR: " )
+	print( s )
+	print( debug.traceback( ) )
+	assert( false )
+end
+
+function __Warn( s )
+	io.write( "\nERROR: " )
+	print( s )
+	print( debug.traceback( ) )
+end
+
 function opentriggerfile( s )
   TRIGGER_FILE = io.open( s, "w" )
 end
@@ -38,8 +51,7 @@ function __Player( player )
 	elseif ( type( player ) == "number" ) then
 		return __WrapQuotes( "Player " .. tostring( player ) )
 	else
-		-- No acceptable type passed to this function
-		assert( false )
+		__Error( "No acceptable type passed to this function." )
 	end
 end
 
@@ -52,8 +64,8 @@ function __WAV( fileName )
 	local ext = string.match( fileName, "([^.]+)$" )
 	
 	if ext ~= "wav" and ext ~= "WAV" then
-		print( "\nERROR: PlayWAV:Play( ) only accepts strings for a file path to a .wav file." )
-		assert( type( name ) == "string" )
+		__Error( "PlayWAV:Play( ) only accepts strings for a file path to a .wav file." )
+		--assert( type( name ) == "string" )
 	end
 	
 	local fileNameAndPath = "staredit/wav/" .. fileName
@@ -75,8 +87,7 @@ end
 
 function __Resource( s )
 	if s ~= "ore" and s ~= "gas" and "ore and gas" then
-		print( "\nERROR: resource must be \"ore\" or \"gas\" or \"ore and gas\"." )
-		assert( false )
+		__Error( "Resource must be \"ore\" or \"gas\" or \"ore and gas\"." )
 	end
 	
 	return s

@@ -4,8 +4,6 @@
 #include "SFmpqapi.h"
 #include <fstream>
 
-// MPQ handling
-
 bool FindFile(const char* filePath);
 
 bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes);
@@ -20,7 +18,13 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 
 bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* fileName, buffer& buf);
 
-// General program IO
+bool FileToString(string fileName, string &str);
+
+void RemoveFile(string fileName);
+
+void RemoveFiles(string firstFileName, string secondFileName);
+
+void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName);
 
 OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter);
 

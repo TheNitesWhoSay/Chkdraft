@@ -12,6 +12,7 @@ function Deaths( )
 	end
 	
 	function object:SetPlayer( player )
+		self.playerRaw = player
 		self.player = __Player( player )
 	end
 	
@@ -22,37 +23,37 @@ function Deaths( )
 	
 	function object:AtLeast( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tDeaths(" .. self.player .. ", " .. self.unit ..  ", At Least, " .. self.count .. ");\n" )
 	end
 	
 	function object:AtMost( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tDeaths(" .. self.player .. ", " .. self.unit ..  ", At Most, " .. self.count .. ");\n" )
 	end
 	
 	function object:Exactly( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tDeaths(" .. self.player .. ", " .. self.unit ..  ", Exactly, " .. self.count .. ");\n" )
 	end
 	
 	function object:Add( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tSet Deaths(" .. self.player .. ", " .. self.unit ..  ", Add, " .. self.count .. ");\n" )
 	end
 	
 	function object:SetTo( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tSet Deaths(" .. self.player .. ", " .. self.unit ..  ", Set To, " .. self.count .. ");\n" )
 	end
 	
 	function object:Subtract( count )
 		if ( count ~= nil ) then self:SetCount( count ) end
-		__LockDC( self.unitNoQuote )
+		__LockDC( self.unitNoQuote, self.playerRaw, self.id )
 		tofile( "\tSet Deaths(" .. self.player .. ", " .. self.unit ..  ", Subtract, " .. self.count .. ");\n" )
 	end
 	
