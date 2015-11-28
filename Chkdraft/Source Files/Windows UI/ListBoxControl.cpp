@@ -1,6 +1,5 @@
 #include "ListBoxControl.h"
 #include <iostream>
-using namespace std;
 
 ListBoxControl::ListBoxControl() : autoRedraw(true)
 {

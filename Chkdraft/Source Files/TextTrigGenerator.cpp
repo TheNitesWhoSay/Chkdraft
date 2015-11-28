@@ -1,5 +1,7 @@
 #include "TextTrigGenerator.h"
 
+#include <string>
+
 const char* textFlags[] = { "Don't Always Display", "Always Display" };
 const char* scoreTypes[] = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };
 const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
@@ -24,34 +26,34 @@ void CollapsableDefines()
 			if ( src < stringTable.size() )																						\
 				output.addStr(stringTable[src].c_str(), stringTable[src].size());												\
 			else																												\
-				output.addStr(string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
+				output.addStr(std::string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
 		}																														\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_PLAYER(src) {												\
 		if ( src >= 0 && src < groupTable.size() )									\
 			output.addStr(groupTable[src].c_str(), groupTable[src].size());			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_UNIT(src) {												\
 		if ( src >= 0 && src < unitTable.size() )									\
 			output.addStr(unitTable[src].c_str(), unitTable[src].size());			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SWITCH(src) {												\
 		if ( src >= 0 && src < switchTable.size() )									\
 			output.addStr(switchTable[src].c_str(), switchTable[src].size());		\
-		else { _itoa_s( src, number, 10); output.addStr(number, strlen(number)); } }
+		else { _itoa_s( src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
 		if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )				\
-			output.addStr(scoreTypes[src], strlen(scoreTypes[src]));				\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+			output.addStr(scoreTypes[src], std::strlen(scoreTypes[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
 		if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )			\
-			output.addStr(resourceTypes[src], strlen(resourceTypes[src]));			\
-		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
+			output.addStr(resourceTypes[src], std::strlen(resourceTypes[src]));			\
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_ORDER(src) {												\
 		if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )				\
@@ -118,12 +120,12 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 	actionTable.clear();
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string &trigString)
 {
 	return this != nullptr && map != nullptr && GenerateTextTrigs(map, map->TRIG(), trigString);
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, std::string &trigString)
 {
 	Trigger* trig;
 	buffer trigBuff("TRIG");
@@ -152,25 +154,25 @@ void TextTrigGenerator::ClearScenario()
 	groupTable.clear();
 }
 
-string TextTrigGenerator::GetConditionName(u8 CID)
+std::string TextTrigGenerator::GetConditionName(u8 CID)
 {
 	if ( CID < conditionTable.size() )
 		return conditionTable[CID];
 	else
-		return to_string((int)CID);
+		return std::to_string((int)CID);
 }
 
-string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum)
+std::string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum)
 {
 	buffer output("TEXC");
 	AddConditionArgument(output, condition, condition.condition, stdTextTrigArgNum);
 	if ( output.add('\0') )
-		return string((char*)output.getPtr(0));
+		return std::string((char*)output.getPtr(0));
 	else
 		return "";
 }
 
-string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap)
+std::string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap)
 {
 	if ( argNum < argMap.size() )
 	{
@@ -178,22 +180,22 @@ string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 argNum, 
 		buffer output("TEXC");
 		AddConditionArgument(output, condition, condition.condition, stdTextTrigArgNum);
 		if ( output.add('\0') )
-			return string((char*)output.getPtr(0));
+			return std::string((char*)output.getPtr(0));
 	}
 	return "";
 }
 
-string TextTrigGenerator::GetActionArgument(Action& action, u8 stdTextTrigArgNum)
+std::string TextTrigGenerator::GetActionArgument(Action& action, u8 stdTextTrigArgNum)
 {
 	buffer output("TEXA");
 	AddActionArgument(output, action, action.action, stdTextTrigArgNum);
 	if ( output.add('\0') )
-		return string((char*)output.getPtr(0));
+		return std::string((char*)output.getPtr(0));
 	else
 		return "";
 }
 
-string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap)
+std::string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap)
 {
 	if ( argNum < argMap.size() )
 	{
@@ -201,24 +203,24 @@ string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std::vect
 		buffer output("TEXA");
 		AddActionArgument(output, action, action.action, stdTextTrigArgNum);
 		if ( output.add('\0') )
-			return string((char*)output.getPtr(0));
+			return std::string((char*)output.getPtr(0));
 	}
 	return "";
 }
 
-string TextTrigGenerator::GetTrigLocation(u32 locationNum)
+std::string TextTrigGenerator::GetTrigLocation(u32 locationNum)
 {
 	char number[12];
 	if ( locationNum >= 0 && locationNum < locationTable.size() )
-		return string(locationTable[locationNum]);
+		return std::string(locationTable[locationNum]);
 	else
 	{
 		_itoa_s(locationNum, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigString(u32 stringNum)
+std::string TextTrigGenerator::GetTrigString(u32 stringNum)
 {
 	char number[12];
 	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
@@ -226,16 +228,16 @@ string TextTrigGenerator::GetTrigString(u32 stringNum)
 		if ( stringNum < stringTable.size() )
 			return stringTable[stringNum];
 		else
-			return string("k" + extendedStringTable[65536-stringNum]);
+			return std::string("k" + extendedStringTable[65536-stringNum]);
 	}
 	else
 	{
 		_itoa_s(stringNum, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
+std::string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
 {
 	char number[12];
 	if ( groupNum >= 0 && groupNum < groupTable.size() )
@@ -243,11 +245,11 @@ string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
 	else
 	{
 		_itoa_s(groupNum, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigUnit(u16 unitId)
+std::string TextTrigGenerator::GetTrigUnit(u16 unitId)
 {
 	char number[12];
 	if ( unitId >= 0 && unitId < unitTable.size() )
@@ -255,11 +257,11 @@ string TextTrigGenerator::GetTrigUnit(u16 unitId)
 	else
 	{
 		_itoa_s(unitId, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
+std::string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
 {
 	char number[12];
 	if ( switchNum >= 0 && switchNum < switchTable.size() )
@@ -267,11 +269,11 @@ string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
 	else
 	{
 		_itoa_s(switchNum, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
+std::string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
 {
 	char number[12];
 	const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
@@ -280,11 +282,11 @@ string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
 	else
 	{
 		_itoa_s(scoreType, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
+std::string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
 {
 	char number[12];
 	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
@@ -293,11 +295,11 @@ string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
 	else
 	{
 		_itoa_s(resourceType, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigOrder(u8 order)
+std::string TextTrigGenerator::GetTrigOrder(u8 order)
 {
 	char number[12];
 	const char* orderTypes[] = { "move", "patrol", "attack" };
@@ -310,111 +312,111 @@ string TextTrigGenerator::GetTrigOrder(u8 order)
 	}
 }
 
-string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
+std::string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
 {
 	char number[12];
 	const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
 	if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers)/sizeof(const char*) )
-		return string(stateModifiers[stateModifier]);
+		return std::string(stateModifiers[stateModifier]);
 	else
 	{
 		_itoa_s(stateModifier, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
+std::string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
 {
 	char number[12];
 	const char* switchStates[] = { "0", "1", "Set", "Cleared" };
 	if ( switchState >= 0 && switchState < sizeof(switchStates)/sizeof(const char*) )
-		return string(switchStates[switchState]);
+		return std::string(switchStates[switchState]);
 	else
 	{
 		_itoa_s(switchState, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
+std::string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
 {
 	char number[12];
 	const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
 	if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers)/sizeof(const char*) )
-		return string(switchModifiers[switchModifier]);
+		return std::string(switchModifiers[switchModifier]);
 	else
 	{
 		_itoa_s(switchModifier, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigAllyState(u16 allyState)
+std::string TextTrigGenerator::GetTrigAllyState(u16 allyState)
 {
 	char number[12];
 	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
 	if ( allyState >= 0 && allyState < sizeof(allyStates)/sizeof(const char*) )
-		return string(allyStates[allyState]);
+		return std::string(allyStates[allyState]);
 	else
 	{
 		_itoa_s(allyState, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
+std::string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
 {
 	char number[12];
 	const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
 	if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons)/sizeof(const char*) )
-		return string(numericComparisons[numericComparison]);
+		return std::string(numericComparisons[numericComparison]);
 	else
 	{
 		_itoa_s(numericComparison, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
+std::string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
 {
 	char number[12];
 	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 	if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers)/sizeof(const char*) )
-		return string(numericModifiers[numericModifier]);
+		return std::string(numericModifiers[numericModifier]);
 	else
 	{
 		_itoa_s(numericModifier, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigScript(u32 scriptNum)
+std::string TextTrigGenerator::GetTrigScript(u32 scriptNum)
 {
 	char script[7];
 	script[0] = '\"';
 	(u32&)script[1] = scriptNum;
 	script[5] = '\"';
 	script[6] = '\0';
-	return string(script);
+	return std::string(script);
 }
 
-string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
+std::string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
 {
 	char number[12];
 	if ( numUnits == 0 )
-		return string("All");
+		return std::string("All");
 	else
 	{
 		_itoa_s(numUnits, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigNumber(u32 number)
+std::string TextTrigGenerator::GetTrigNumber(u32 number)
 {
 	char cNumber[12];
 	_itoa_s((int)number, cNumber, 10);
-	return string(cNumber);
+	return std::string(cNumber);
 }
 
 inline void TextTrigGenerator::AddConditionArgument(buffer &output, Condition& condition, u8 &CID, u8 &stdTextTrigArgNum)
@@ -793,7 +795,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 	}
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std::string &trigString)
 {
 	if ( !LoadScenario(map, true, false) )
 		return false;
@@ -840,7 +842,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, str
 					else
 						hasPrevious = true;
 
-					string groupName = groupTable[groupNum];
+					std::string groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
 				}
 				else if ( players[groupNum] > 0 )
@@ -850,7 +852,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, str
 					else
 						hasPrevious = true;
 
-					string groupName = groupTable[groupNum];
+					std::string groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
 					output.add<char>(':');
 					_itoa_s(players[groupNum], number, 10);
@@ -969,18 +971,18 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, str
 	return true;
 }
 
-string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
+std::string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
 {
 	char number[12];
 	const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
 	if		( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )
-		return string(cTextFlags[0]);
+		return std::string(cTextFlags[0]);
 	else if ( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )
-		return string(cTextFlags[1]);
+		return std::string(cTextFlags[1]);
 	else
 	{
 		_itoa_s(textFlags, number, 10);
-		return string(number);
+		return std::string(number);
 	}
 }
 
@@ -1048,9 +1050,9 @@ bool TextTrigGenerator::PrepConditionTable()
 	const char** conditionNames = legacyConditionNames;
 
 	for ( int i=0; i<24; i++ )
-		conditionTable.push_back(string(conditionNames[i]));
+		conditionTable.push_back(std::string(conditionNames[i]));
 
-	string custom("Custom");
+	std::string custom("Custom");
 	for ( int i=24; i<256; i++ )
 		conditionTable.push_back(custom);
 
@@ -1079,9 +1081,9 @@ bool TextTrigGenerator::PrepActionTable()
 	const char** actionNames = legacyActionNames;
 
 	for ( int i=0; i<60; i++ )
-		actionTable.push_back(string(actionNames[i]));
+		actionTable.push_back(std::string(actionNames[i]));
 
-	string custom("Custom");
+	std::string custom("Custom");
 	for ( int i=60; i<256; i++ )
 		actionTable.push_back(custom);
 
@@ -1095,10 +1097,10 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 	
 	ChkLocation* loc;
 	u16 stringNum;
-	string locationName;
+	std::string locationName;
 	buffer& MRGN = map->MRGN();
 
-	locationTable.push_back( string("0") );
+	locationTable.push_back(std::string("0") );
 
 	if ( MRGN.exists() && map->STR().exists() )
 	{
@@ -1145,7 +1147,7 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
 	unitTable.clear();
 
-	string unitName;
+	std::string unitName;
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
 	{
@@ -1156,19 +1158,19 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 			{
 				if ( useCustomNames && unitID < 228 )
 				{
-					string unquotedName;
+					std::string unquotedName;
 					map->getUnitName(unquotedName, unitID);
 					unitName = "\"" + unquotedName + "\"";
 				}
 				else
-					unitName = "\"" + string(LegacyTextTrigDisplayName[unitID]) + "\"";
+					unitName = "\"" + std::string(LegacyTextTrigDisplayName[unitID]) + "\"";
 			}
 			else
 			{
 				if ( useCustomNames && unitID < 228 )
 					map->getUnitName(unitName, unitID);
 				else
-					unitName = string(LegacyTextTrigDisplayName[unitID]);
+					unitName = std::string(LegacyTextTrigDisplayName[unitID]);
 			}
 
 			unitTable.push_back( unitName );
@@ -1181,7 +1183,7 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
 	switchTable.clear();
 
-	string switchName;
+	std::string switchName;
 	buffer& SWNM = map->SWNM();
 	if ( SWNM.exists() && map->STR().exists() )
 	{
@@ -1218,7 +1220,7 @@ bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
 {
 	wavTable.clear();
 
-	string wavName;
+	std::string wavName;
 	buffer& WAV = map->WAV();
 	if ( WAV.exists() && map->STR().exists() )
 	{
@@ -1251,7 +1253,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
 	groupTable.clear();
 
-	string groupName;
+	std::string groupName;
 	buffer& FORC = map->FORC();
 	bool hasForcStrings = FORC.exists() && map->STR().exists();
 
@@ -1340,7 +1342,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 		StringUsageTable extendedStringUsage;
 		if ( standardStringUsage.populateTable(map.get(), false) || extendedStringUsage.populateTable(map.get(), true) )
 		{
-			string str;
+			std::string str;
 
 			u32 numStrings = standardStringUsage.numStrings();
 			for ( u32 i=0; i<numStrings; i++ )

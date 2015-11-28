@@ -1,6 +1,8 @@
 #include "Forces.h"
 #include "Chkdraft.h"
 
+#include <string>
+
 enum ID {
 	EDIT_F1NAME = ID_FIRST,
 	EDIT_F4NAME = (EDIT_F1NAME+3),
@@ -51,7 +53,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 			for ( int x=0; x<2; x++ )
 			{
 				int force = x+y*2;
-				string forceName = "";
+				std::string forceName = "";
 				bool allied = false, vision = false, random = false, av = false;
 				if ( map != nullptr )
 				{
@@ -93,7 +95,7 @@ void ForcesWindow::RefreshWindow()
 	{
 		for ( int force=0; force<4; force++ )
 		{
-			string forceName;
+			std::string forceName;
 			bool allied = false, vision = false, random = false, av = false;
 			forceName = map->getForceString(force);
 			map->getForceInfo(force, allied, vision, random, av);
@@ -123,7 +125,7 @@ void ForcesWindow::RefreshWindow()
 			{
 				map->getPlayerColor(player, color);
 				map->getPlayerRace(player, race);
-				stringstream ssplayer;
+				std::stringstream ssplayer;
 				ssplayer << "Player " << player+1 << " - " << playerColors[color] << " - "
 						 << playerRaces[race] << " (" << playerOwners[displayOwner] << ")";
 				HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
@@ -290,7 +292,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										{
 											map->setPlayerForce(playerBeingDragged, force);
 											RefreshWindow();
-											stringstream ssPlayer;
+											std::stringstream ssPlayer;
 											ssPlayer << "Player " << playerBeingDragged+1;
 											SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
 											map->notifyChange(false);
@@ -319,7 +321,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void ForcesWindow::CheckReplaceForceName(int force)
 {
-	string newMapForce;
+	std::string newMapForce;
 	if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
 	{
 		u16* mapForceString;

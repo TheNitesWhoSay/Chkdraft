@@ -1,6 +1,11 @@
 #include "TextTrigCompiler.h"
 #include "Mapping Core/MappingCore.h"
 
+#include <exception>
+#include <string>
+#include <utility>
+#include <vector>
+
 #define MAX_ERROR_MESSAGE_SIZE 256
 
 TextTrigCompiler::TextTrigCompiler()
@@ -2277,7 +2282,7 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 				 ( !isExtended && strUsage.useNext(node.stringNum) ) )
 			{
 				addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
-				stringTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) ); // Add to search tree for recycling
+				stringTable.insert(std::pair<u32, StringTableNode>(strHash(node.string), node) ); // Add to search tree for recycling
 				if ( isExtended )
 					dest = 65536 - node.stringNum;
 				else
@@ -3459,12 +3464,12 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 				{
 					locNode.locationNum = 64;
 					locNode.locationName = "Anywhere";
-					locationTable.insert( pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
+					locationTable.insert(std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
 				}
 				else if ( loc->stringNum > 0 && map->getRawString(locNode.locationName, loc->stringNum) )
 				{
 					locNode.locationNum = u8(i+1);
-					locationTable.insert( pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
+					locationTable.insert(std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
 				}
 			}
 		}
@@ -3487,15 +3492,15 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 			{
 				unitNode.unitID = unitID;
 				map->getRawString(unitNode.unitName, stringID);
-				unitTable.insert( pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+				unitTable.insert(std::pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
 			}
 
-			string regUnitName;
+			std::string regUnitName;
 			map->getUnitName(regUnitName, unitID);
 			if ( regUnitName.compare(unitNode.unitName) != 0 )
 			{
 				unitNode.unitName = regUnitName;
-				unitTable.insert( pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+				unitTable.insert(std::pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
 			}
 		}
 	}
@@ -3516,7 +3521,7 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 				 map->getRawString(switchNode.switchName, stringID) )
 			{
 				switchNode.switchNum = u8(switchID);
-				switchTable.insert( pair<u32, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );				
+				switchTable.insert(std::pair<u32, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
 			}
 		}
 	}
@@ -3537,7 +3542,7 @@ bool TextTrigCompiler::PrepWavTable(ScenarioPtr map)
 				 map->getRawString(wavNode.wavName, stringID) )
 			{
 				wavNode.wavID = stringID;
-				wavTable.insert( pair<u32, WavTableNode>(strHash(wavNode.wavName), wavNode) );
+				wavTable.insert(std::pair<u32, WavTableNode>(strHash(wavNode.wavName), wavNode) );
 			}
 		}
 	}
@@ -3558,7 +3563,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 				 map->getRawString(groupNode.groupName, stringID) )
 			{
 				groupNode.groupID = i+18;
-				groupTable.insert( pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode) );
+				groupTable.insert(std::pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode) );
 			}
 		}
 	}
@@ -3575,7 +3580,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 				node.stringNum = index;																		\
 				node.isExtended = chk->isExtendedString(node.stringNum);									\
 				if ( !strIsInHashTable(node.string, strHash, stringTable) ) {															\
-					stringTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );			\
+					stringTable.insert( std::pair<u32, StringTableNode>(strHash(node.string), node) );			\
 				}																							\
 			}
 
