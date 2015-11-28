@@ -1,5 +1,6 @@
 #include "ConditionsGrid.h"
-using namespace std;
+
+#include <string>
 
 enum ID
 {
@@ -135,7 +136,7 @@ void ConditionsGrid::KeyDown(WPARAM wParam)
 	GridViewControl::KeyDown(wParam);
 }
 
-void ConditionsGrid::EditTextChanged(string &str)
+void ConditionsGrid::EditTextChanged(std::string &str)
 {
 	ignoreChange = true;
 	suggestions.SuggestNear(str);
@@ -175,7 +176,7 @@ LRESULT ConditionsGrid::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case EN_CHANGE:
 		if ( !ignoreChange )
 		{
-			string str;
+			std::string str;
 			GridViewControl::GetEditText(str);
 			ignoreChange = true;
 			suggestions.SuggestNear(str);

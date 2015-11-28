@@ -1,12 +1,17 @@
 #include "FileIO.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <fstream>
+#include <string>
+
 bool FindFile(const char* filePath)
 {
 	FILE* file;
 	fopen_s(&file, filePath, "r");
 	bool found = file != nullptr;
 	if ( file != nullptr )
-		fclose(file);
+		std::fclose(file);
 
 	return found;
 }
@@ -31,7 +36,7 @@ bool FileExists(const char* fileName)
 	FILE* fileCheck = nullptr;
 	if ( fopen_s(&fileCheck, fileName, "r") == 0 )
 	{
-		fclose(fileCheck);
+		std::fclose(fileCheck);
 		return true;
 	}
 	else
@@ -135,10 +140,10 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 		   || FileToBuffer(hStarDat, fileName, buf);
 }
 
-bool FileToString(string fileName, string &str)
+bool FileToString(std::string fileName, std::string &str)
 {
 	str.clear();
-	ifstream file(fileName, ifstream::in|ifstream::ate); // Open at ending characters position
+	std::ifstream file(fileName, std::ifstream::in| std::ifstream::ate); // Open at ending characters position
 	if ( file.is_open() )
 	{
 		auto size = file.tellg(); // Grab size via current position
@@ -155,18 +160,18 @@ bool FileToString(string fileName, string &str)
 	return false;
 }
 
-void RemoveFile(string fileName)
+void RemoveFile(std::string fileName)
 {
 	std::remove(fileName.c_str());
 }
 
-void RemoveFiles(string firstFileName, string secondFileName)
+void RemoveFiles(std::string firstFileName, std::string secondFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
 }
 
-void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName)
+void RemoveFiles(std::string firstFileName, std::string secondFileName, std::string thirdFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
@@ -209,8 +214,8 @@ bool FileToBuffer(const char* FileName, buffer &buf)
 			buf.sizeUsed = fileSize;
 			rewind(pFile);
 
-			size_t lengthRead = fread(buf.data, 1, buf.sizeUsed, pFile);
-			fclose(pFile);
+			size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
+			std::fclose(pFile);
 
 			if ( lengthRead == buf.sizeUsed )
 				return true;

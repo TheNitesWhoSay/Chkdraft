@@ -1,6 +1,8 @@
 #include "EnterPassword.h"
 #include "Chkdraft.h"
 
+#include <string>
+
 bool EnterPasswordDialog::CreateThis(HWND hParent)
 {
 	ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_ENTERPASS), hParent);
@@ -14,7 +16,7 @@ void EnterPasswordDialog::DestroyThis()
 
 void EnterPasswordDialog::ButtonLogin()
 {
-	string password;
+	std::string password;
 	if ( editPassword.GetEditText(password) )
 	{
 		editPassword.SetText("");

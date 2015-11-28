@@ -2,6 +2,8 @@
 #include "Chkdraft.h"
 #include "MoveTo.h"
 
+#include <string>
+
 #define TRIGGER_TOP_PADDING 1
 #define TRIGGER_LEFT_PADDING 1
 #define TRIGGER_RIGHT_PADDING 1
@@ -296,9 +298,9 @@ void TriggersWindow::ButtonModify()
 	}
 }
 
-string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt)
 {
-	stringstream ssCondition;
+	std::stringstream ssCondition;
 	Condition &condition = trigger->conditions[conditionNum];
 	u8 conditionIndex = condition.condition;
 	if ( condition.isDisabled() )
@@ -408,9 +410,9 @@ string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, Tex
 	return ssCondition.str();
 }
 
-string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt)
 {
-	stringstream ssAction;
+	std::stringstream ssAction;
 	Action &action = trigger->actions[actionNum];
 	u8 actionIndex = action.action;
 	switch ( actionIndex )
@@ -658,10 +660,10 @@ string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, TextTrigG
 	return ssAction.str();
 }
 
-string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt)
 {
 	bool more = false;
-	stringstream ssTrigger;
+	std::stringstream ssTrigger;
 	u8 remainingLines = 13;
 	u8 numConditions = trigger->numUsedConditions();
 	u8 numActions = trigger->numUsedActions();
@@ -718,7 +720,7 @@ string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigG
 			}
 		}
 		if ( more )
-			ssTrigger << "\x13(MORE)" << endl;
+			ssTrigger << "\x13(MORE)" << std::endl;
 	}
 	return ssTrigger.str();
 }
@@ -1070,14 +1072,14 @@ void TriggersWindow::ClearGroups()
 
 bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
-	string str;
+	std::string str;
 	if ( chk->getActiveComment(trigger, str) )
 	{
 		size_t endOfLine = str.find("\r\n");
-		if ( endOfLine != string::npos )
-			str.insert(endOfLine, (string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+		if ( endOfLine != std::string::npos )
+			str.insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 		else
-			str.append((string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+			str.append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
 		if ( GetStringDrawSize(hDC, width, height, str) )
 		{
@@ -1126,7 +1128,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
 	SetBkMode(hDC, TRANSPARENT);
 	if ( groupNum < 29 )
 	{
-		string groupNames[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
+		std::string groupNames[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
 							    "Player 7", "Player 8", "Player 9 (unused)", "Player 10 (unused)",
 								"Player 11 (unused)", "Player 12 (unused)",
 								"unknown/unused", "Current Player (unused)", "Foes (unused)", "Allies (unused)", "Neutral Players (unused)",
@@ -1139,7 +1141,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
 	}
 	else
 	{
-		stringstream ssGroup;
+		std::stringstream ssGroup;
 		ssGroup << "Group: " << u16(groupNum);
 		DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
 			rcItem.right-rcItem.left, RGB(0, 0, 0), ssGroup.str());
@@ -1176,17 +1178,17 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
 		DeleteObject(hBackground);
 	}
 
-	string str;
+	std::string str;
 	LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
 	if ( chk->getActiveComment(trigger, str) )
 	{
 		char num[12] = { };
 		_itoa_s(triggerNum, num, 10);
 		size_t endOfLine = str.find("\r\n");
-		if ( endOfLine != string::npos )
-			str.insert(endOfLine, string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+		if ( endOfLine != std::string::npos )
+			str.insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
 		else
-			str.append(string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+			str.append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
 
 		SetBkMode(hDC, TRANSPARENT);
 		DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,

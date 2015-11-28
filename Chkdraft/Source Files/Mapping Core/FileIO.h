@@ -2,7 +2,9 @@
 #define FILEIO_H
 #include "Buffer.h"
 #include "SFmpqapi.h"
+
 #include <fstream>
+#include <string>
 
 bool FindFile(const char* filePath);
 
@@ -18,13 +20,13 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 
 bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* fileName, buffer& buf);
 
-bool FileToString(string fileName, string &str);
+bool FileToString(std::string fileName, std::string &str);
 
-void RemoveFile(string fileName);
+void RemoveFile(std::string fileName);
 
-void RemoveFiles(string firstFileName, string secondFileName);
+void RemoveFiles(std::string firstFileName, std::string secondFileName);
 
-void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName);
+void RemoveFiles(std::string firstFileName, std::string secondFileName, std::string thirdFileName);
 
 OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter);
 

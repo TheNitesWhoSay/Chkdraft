@@ -1,6 +1,8 @@
 #include "MapProperties.h"
 #include "Chkdraft.h"
 
+#include <string>
+
 enum ID {
 	EDIT_MAPTITLE = ID_FIRST,
 	EDIT_MAPDESCRIPTION,
@@ -143,7 +145,7 @@ void MapPropertiesWindow::RefreshWindow()
 	GuiMapPtr map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
-		string mapTitle, mapDescription;
+		std::string mapTitle, mapDescription;
 		map->getMapTitle(mapTitle);
 		map->getMapDescription(mapDescription);
 		u16 tileset = map->getTileset(),
@@ -344,7 +346,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
-	string newMapTitle;
+	std::string newMapTitle;
 	if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
 	{
 		u16* mapTitleString;
@@ -360,7 +362,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
-	string newMapDescription;
+	std::string newMapDescription;
 	if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
 	{
 		u16* mapDescriptionString;
