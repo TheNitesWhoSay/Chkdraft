@@ -2,6 +2,7 @@
 #include "Chkdraft.h"
 #include "LocationChange.h"
 
+#include <cstring>
 #include <exception>
 #include <string>
 
@@ -81,22 +82,18 @@ void LocationWindow::RefreshLocationInfo()
 	ChkLocation* locRef;
 	if ( locProcLocIndex != NO_LOCATION && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 	{
-		char text[20];
-		_itoa_s(locRef->xc1, text, 10);
-		SetWindowText(GetDlgItem(hWnd, IDC_LOCLEFT), text);
-		_itoa_s(locRef->yc1, text, 10);
-		SetWindowText(GetDlgItem(hWnd, IDC_LOCTOP), text);
-		_itoa_s(locRef->xc2, text, 10);
-		SetWindowText(GetDlgItem(hWnd, IDC_LOCRIGHT), text);
-		_itoa_s(locRef->yc2, text, 10);
-		SetWindowText(GetDlgItem(hWnd, IDC_LOCBOTTOM), text);
+		SetWindowText(GetDlgItem(hWnd, IDC_LOCLEFT), std::to_string(locRef->xc1).c_str());
+		SetWindowText(GetDlgItem(hWnd, IDC_LOCTOP), std::to_string(locRef->yc1).c_str());
+		SetWindowText(GetDlgItem(hWnd, IDC_LOCRIGHT), std::to_string(locRef->xc2).c_str());
+		SetWindowText(GetDlgItem(hWnd, IDC_LOCBOTTOM), std::to_string(locRef->yc2).c_str());
 
+		char text[20];
 		_itoa_s(locRef->elevation, text, 2);
-		size_t len = strlen(text);
+		size_t len = std::strlen(text);
 		if ( len > 0 && len < 16 )
 		{
-			memmove(&text[16-len], text, len);
-			memset(text, '0', 16-len);
+			std::memmove(&text[16-len], text, len);
+			std::memset(text, '0', 16-len);
 			text[16] = '\0';
 		}
 		SetWindowText(GetDlgItem(hWnd, IDC_RAWFLAGS), text);

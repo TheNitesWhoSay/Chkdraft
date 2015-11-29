@@ -16,7 +16,7 @@ bool StringGuideWindow::CreateThis(HWND hParent)
 		SIZE strSize = { };
 		for ( int i=0; i<NUM_STRING_COLORS; i++ )
 		{
-			GetTextExtentPoint32(hDC, stringColorPrefixes[i], strlen(stringColorPrefixes[i]), &strSize);
+			GetTextExtentPoint32(hDC, stringColorPrefixes[i], std::strlen(stringColorPrefixes[i]), &strSize);
 			colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, stringColorPrefixes[i], 0);
 			color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], TEXT_COLOR_FIRST+i);
 		}
