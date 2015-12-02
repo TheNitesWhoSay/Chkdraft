@@ -2,38 +2,11 @@
 #define SCENARIO_H
 #include "Buffer.h"
 #include "Basics.h"
+#include "EscapeStrings.h"
 #include "CoreStructs.h"
 #include <memory>
 #include <vector>
 #include <list>
-
-enum class SectionId : uint32_t {
-	TYPE = 1162893652, VER  =  542262614, IVER = 1380275785, IVE2 =  843404873,
-	VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA  =  541151813,
-	DIM  =  541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
-	UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
-	TILE = 1162627412, DD2  =  540165188, THG2 =  843532372, MASK = 1263747405,
-	STR  =  542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
-	TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
-	WAV  =  542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
-	SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
-	UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
-
-	KSTR = 1381258059
-};
-enum class ForceFlags : uint8_t {
-	None = 0,
-	RandomizeStartLocation = BIT_0,
-	Allied = BIT_1,
-	AlliedVictory = BIT_2,
-	SharedVision = BIT_3
-};
-enum class UnitEnabledState : uint8_t
-{
-	Default = 0,
-	Enabled = 1,
-	Disabled = 2
-};
 
 class Scenario
 {
@@ -54,9 +27,8 @@ class Scenario
 					buffer& techSettings(); // Gets settings from TECS/TECx based on whether the map is expansion
 					buffer& techRestrictions(); // Gets PTEC/PTEx based on whether the map is expansion
 
-
-/*  Description	*/	bool getMapTitle(std::string &dest);
-					bool getMapDescription(std::string &dest);
+/*  Description	*/	bool getMapTitle(ChkdString &dest);
+					bool getMapDescription(ChkdString &dest);
 
 
 /*	 Players	*/	bool getPlayerOwner(u8 player, u8& owner); // Gets the current owner of a player
@@ -68,7 +40,7 @@ class Scenario
 
 
 /*	  Forces	*/	u32 getForceStringNum(u8 index); // Gets the string number of the force at the given index
-					string getForceString(u8 forceNum); // Gets the name of the string at the given force num
+					bool getForceString(ChkdString &str, u8 forceNum); // Gets the name of the given force num
 					bool getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &random, bool &av); // Attempts to get info for given force num
 					bool getPlayerForce(u8 playerNum, u8 &force); // Attempts to get the force a player belongs to
 					bool setPlayerForce(u8 player, u8 newForce); // Sets a new force for a player
@@ -96,7 +68,8 @@ class Scenario
 					bool insertUnit(u16 index, ChkUnit &unit);
 					bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
 					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
-					void getUnitName(string &dest, u16 unitID);
+					bool getUnitName(RawString &dest, u16 unitID);
+					bool getUnitName(ChkdString &dest, u16 unitID);
 					bool deleteUnit(u16 index);
 					u32 GetUnitFieldData(u16 unitIndex, u8 field);
 					bool SetUnitFieldData(u16 unitIndex, u8 field, u32 data);
@@ -104,21 +77,24 @@ class Scenario
 
 /*	Locations	*/	bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
 					ChkLocation getLocation(u16 locationIndex);
-					std::string getLocationName(u16 locationIndex);
+					bool getLocationName(u16 locationIndex, RawString &str);
+					bool getLocationName(u16 locationIndex, ChkdString &str);
 					bool MoveLocation(u16 locationIndex, s32 xChange, s32 yChange);
 					u32 GetLocationFieldData(u16 locationIndex, u8 field);
 					bool SetLocationFieldData(u16 locationIndex, u8 field, u32 data);
-					bool insertLocation(u16 index, ChkLocation &location, std::string name);
-					u8 numLocations(); // Gets the current amount of locations in the map
+					bool insertLocation(u16 index, ChkLocation &location, RawString &name);
+					bool insertLocation(u16 index, ChkLocation &location, ChkdString &name);
+					u8 numLocations(); // Gets the current amount of used locations in the map
+					u16 locationCapacity(); // Gets the map's current location capacity
+					bool locationIsUsed(u16 locationIndex);
 					bool createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationIndex); // Create a location
 					void deleteLocation(u16 locationIndex); // Unconditionally deletes a location
 					bool stringUsedWithLocs(u32 stringNum); // Returns whether the string is used for a location
-					bool getLocationName(string &dest, u8 locationID);
 
 
 /*	 Triggers	*/	u32 numTriggers(); // Returns the number of triggers in this scenario
 					bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index
-					bool getActiveComment(Trigger* trigger, string &comment);
+					bool getActiveComment(Trigger* trigger, RawString &comment);
 					bool addTrigger(Trigger &trigger);
 					bool insertTrigger(u32 triggerId, Trigger &trigger);
 					bool deleteTrigger(u32 triggerId);
@@ -128,7 +104,7 @@ class Scenario
 					bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
 
 
-/*	 Switches	*/	bool getSwitchName(string &dest, u8 switchID);
+/*	 Switches	*/	bool getSwitchName(ChkdString &dest, u8 switchID);
 
 
 /*	 Briefing	*/	bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
@@ -162,6 +138,8 @@ class Scenario
 					bool setUnitSettingsGasCost(u16 unitId, u16 gasCost);
 					bool setUnitSettingsBaseWeapon(u32 weaponId, u16 baseDamage);
 					bool setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage);
+					bool setUnitName(u16 unitId, RawString &newName);
+					bool setUnitName(u16 unitId, ChkdString &newName);
 
 
 /* UpgrSettings */	bool upgradeUsesDefaultCosts(u8 upgradeId);
@@ -217,16 +195,16 @@ class Scenario
 
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
 					bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string
-					bool stringExists(u32 stringNum); // Checks if a valid string is associated with this stringNum
-					bool stringExists(string str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
-					bool stringExists(string str, u32& stringNum, bool extended); // Checks if string exists in the same table
-					bool stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList);
-					bool escStringDifference(string str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
+					bool stringExists(u32 stringNum); // Checks if a string is associated with this stringNum
+					bool stringExists(RawString &str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
+					bool stringExists(RawString &str, u32& stringNum, bool extended); // Checks if string exists in the same table
+					bool stringExists(RawString &str, u32& stringNum, std::vector<StringTableNode> &strList);
+					bool FindDifference(ChkdString &str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
 					u32 extendedToRegularStr(u32 stringNum); // Returns string number for extended section
 
-					bool getString(string &dest, u32 stringNum);
-					bool getRawString(string &dest, u32 stringNum);
-					bool getEscapedString(string &dest, u32 stringNum);
+					bool GetString(RawString &dest, u32 stringNum); // No special formatting
+					bool GetString(EscString &dest, u32 stringNum); // C++ formatting, see MakeEscString
+					bool GetString(ChkdString &dest, u32 stringNum); // Chkd and C++ formatting, see MakeChkdString
 
 					inline void IncrementIfEqual(u32 lhs, u32 rhs, u32 &counter);
 					u32 amountStringUsed(u32 stringNum); // Returns the number of times a string is used
@@ -237,12 +215,15 @@ class Scenario
 
 					/** Attempt to associate a stringNum with a string
 						Returns true and stringNum if string exists or was created successfully */
-					bool addString(string str, u32& stringNum, bool extended);
+					template <typename numType> // Strings can, and can only be u16 or u32
+					bool addString(RawString &str, numType &stringNum, bool extended);
+					template <typename numType> // Strings can, and can only be u16 or u32
+					bool addString(ChkdString &str, numType &stringNum, bool extended);
 
 					/** Attempts to assocate a stringNum with a string that has
 						already been confirmed to not exist in the string section
 						Returns true and stringNum if the string was created successfully */
-					bool addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList);
+					bool addNonExistentString(RawString &str, u32 &stringNum, bool extended, std::vector<StringTableNode> &strList);
 
 					/** Attempt to replace a string (specific instance of string), if unsuccessful the old string will remain
 							(if it is not used elsewhere) based on safeReplace and memory conditions
@@ -252,7 +233,9 @@ class Scenario
 							conditions
 						Returns true if the string exists already or was successfully created */
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool replaceString(string newString, numType& stringNum, bool extended, bool safeReplace);
+					bool replaceString(RawString &newString, numType &stringNum, bool extended, bool safeReplace);
+					template <typename numType> // Strings can, and can only be u16 or u32
+					bool replaceString(ChkdString &newString, numType &stringNum, bool extended, bool safeReplace);
 
 					/** Attempts to edit the contents of a string (universal change to string), if unsucessesful the old string will
 							remain (if it is not used elsewhere) based on safeEdit and memory conditions
@@ -260,7 +243,9 @@ class Scenario
 							if false the function will always attempt to make room, and may lose the old string in low-mem conditions
 						Returns true if the string contents were successfully edited, always false if stringNum is 0 */
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool editString(string newString, numType stringNum, bool extended, bool safeEdit);
+					bool editString(RawString &newString, numType stringNum, bool extended, bool safeEdit);
+					template <typename numType> // Strings can, and can only be u16 or u32
+					bool editString(ChkdString &newString, numType stringNum, bool extended, bool safeEdit);
 
 					void replaceStringNum(u32 toReplace, u32 replacement);
 
@@ -328,9 +313,7 @@ class Scenario
 		bool ParseSection(buffer &chk, u32 position, u32 &nextPosition);
 		void CacheSections(); // Caches all section references for fast access
 
-		bool GetStrInfo(char* &ptr, u32 &length, u32 stringNum); // Gets a pointer to the string and its length if successful
-		bool MakeStr(string& dest, char* src, u32 srcLen); // Makes a C++ string from a C string
-		bool MakeEscapedStr(string& dest, char* src, u32 srcLen); // Makes a C++ string with escaped characters from a C string
+		bool GetStrInfo(char* &ptr, size_t &length, u32 stringNum); // Gets a pointer to the string and its length if successful
 		bool ZeroOutString(u32 stringNum); // returns false if stringNum is not a string in any sense
 		bool RepairString(u32& stringNum, bool extended); // Ensures that the string would not be considered corrupted by Scmdraft
 
@@ -354,40 +337,6 @@ class Scenario
 		buffer *kstr;
 };
 
-typedef shared_ptr<Scenario> ScenarioPtr;
-
-enum class UnitSettingsDataLoc {
-	HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,
-	MineralCost = 2280, GasCost = 2736, StringIds = 3192, BaseWeapon = 3648,
-};
-#define UnitSettingsDataLocBonusWeapon(isExpansion) (isExpansion?3908:3848)
-enum class PlayerUnitSettingsDataLoc {
-	GlobalAvailability = 2736, PlayerUsesDefault = 2964
-};
-#ifndef COLLAPSIBLEDEFINEDDATALOCS
-#define UpgradeSettingsDataLocMineralCost(isExpansion) (isExpansion?62:46)
-#define UpgradeSettingsDataLocMineralFactor(isExpansion) (isExpansion?184:138)
-#define UpgradeSettingsDataLocGasCost(isExpansion) (isExpansion?306:230)
-#define UpgradeSettingsDataLocGasFactor(isExpansion) (isExpansion?428:322)
-#define UpgradeSettingsDataLocTimeCost(isExpansion) (isExpansion?550:414)
-#define UpgradeSettingsDataLocTimeFactor(isExpansion) (isExpansion?672:506)
-
-#define UpgradeSettingsDataLocPlayerMaxLevel(isExpansion, player) (isExpansion?(61*(u32)player):(46*(u32)player))
-#define UpgradeSettingsDataLocPlayerStartLevel(isExpansion, player) (isExpansion?(732+61*(u32)player):(552+46*(u32)player))
-#define UpgradeSettingsDataLocDefaultMaxLevel(isExpansion) (isExpansion?1464:1104)
-#define UpgradeSettingsDataLocDefaultStartLevel(isExpansion) (isExpansion?1525:1150)
-#define UpgradeSettingsDataLocPlayerUsesDefault(isExpansion, player) (isExpansion?(1586+61*(u32)player):(1196+46*(u32)player))
-
-#define TechSettingsDataLocMineralCost(isExpansion) (isExpansion?44:24)
-#define TechSettingsDataLocGasCost(isExpansion) (isExpansion?132:72)
-#define TechSettingsDataLocTimeCost(isExpansion) (isExpansion?220:120)
-#define TechSettingsDataLocEnergyCost(isExpansion) (isExpansion?308:168)
-
-#define PlayerTechSettingsDataLocAvailableForPlayer(isExpansion, player) (isExpansion?(44*(u32)player):(24*(u32)player))
-#define PlayerTechSettingsDataLocResearchedForPlayer(isExpansion, player) (isExpansion?(528+44*(u32)player):(288+24*(u32)player))
-#define PlayerTechSettingsDataLocDefaultAvailability(isExpansion) (isExpansion?1056:576)
-#define PlayerTechSettingsDataLocDefaultReserached(isExpansion) (isExpansion?1100:600)
-#define PlayerTechSettingsDataLocPlayerUsesDefault(isExpansion, player) (isExpansion?(1144+44*(u32)player):(624+24*(u32)player))
-#endif
+typedef std::shared_ptr<Scenario> ScenarioPtr;
 
 #endif

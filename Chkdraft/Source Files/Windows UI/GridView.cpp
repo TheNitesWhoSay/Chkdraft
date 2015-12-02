@@ -112,19 +112,26 @@ void GridViewControl::ClearItems()
 
 void GridViewControl::DeleteSelection()
 {
+	bool hasDeleted = false;
 	string str = "";
 	for ( int y=0; y<numRows; y++ )
 	{
 		for ( int x=0; x<numColumns; x++ )
 		{
-			if ( item(x, y).isSelected() &&
-				 SendMessage(GetParent(getHandle()), WM_GRIDITEMCHANGING, MAKEWPARAM(x, y), (LPARAM)&str) == TRUE )
+			if ( item(x, y).isSelected() || isFocused(x, y) )
 			{
-				item(x, y).SetText(str.c_str());
-				EditTextChanged(str);
+				hasDeleted = true;
+				if ( SendMessage(GetParent(getHandle()), WM_GRIDITEMDELETING, MAKEWPARAM(x, y), NULL) == TRUE )
+				{
+					item(x, y).SetText(str.c_str());
+					EditTextChanged(str);
+				}
 			}
 		}
 	}
+
+	if ( hasDeleted )
+		SendMessage(GetParent(getHandle()), WM_GRIDDELETEFINISHED, NULL, NULL);
 }
 
 bool GridViewControl::DeleteAllItems()
@@ -279,6 +286,89 @@ bool GridViewControl::isEditing(int x, int y)
 bool GridViewControl::isFocused(int x, int y)
 {
 	return x == focusedX && y == focusedY;
+}
+
+bool GridViewControl::isSelectionRectangular()
+{
+	int topLeftX = -1, topLeftY = -1,
+		bottomRightX = -1, bottomRightY = -1;
+
+	for ( int y = 0; y < numRows; y++ )
+	{
+		for ( int x = 0; x < numColumns; x++ )
+		{
+			if ( isFocused(x, y) || item(x, y).isSelected() )
+			{
+				topLeftX = x;
+				topLeftY = y;
+				goto ExitTopLeftLoop; // Found a top-left coordinate
+			}
+		}
+	} ExitTopLeftLoop:
+
+	if ( topLeftX == -1 || topLeftY == -1 )
+		return false; // No selection found
+
+	for ( int y = numRows-1; y >= 0; y-- )
+	{
+		for ( int x = numColumns-1; x >= 0; x-- )
+		{
+			if ( isFocused(x, y) || item(x, y).isSelected() )
+			{
+				bottomRightX = x;
+				bottomRightY = y;
+				goto ExitBottomRightLoop; // Found a bottom-right coordinate
+			}
+		}
+	} ExitBottomRightLoop:
+
+	if ( bottomRightX < topLeftX ) // Selection forms a backwards L
+		return false; // Backwards L's cannot be rectangular
+
+	if ( topLeftX != -1 && topLeftY != -1 && bottomRightX != -1 && bottomRightY != -1 ) // Found coordinates
+	{
+		for ( int y = 0; y < numRows; y++ )
+		{
+			for ( int x = 0; x < numColumns; x++ )
+			{
+				if ( isFocused(x, y) || item(x, y).isSelected() )
+				{
+					if ( x < topLeftX || x > bottomRightX || y < topLeftY || y > bottomRightY )
+						return false; // Coordinate of selected item is outside rectangle formed by topLeft/bottomRight coordinates
+				}
+			}
+		}
+
+		for ( int y = topLeftY; y < bottomRightY; y++ )
+		{
+			for ( int x = topLeftX; x < bottomRightX; x++ )
+			{
+				if ( !(isFocused(x, y) || item(x, y).isSelected()) )
+					return false; // Coordinate within rectangle formed by topLeft/bottomRight is not selected
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool GridViewControl::GetSelTopLeft(int &topLeftX, int &topLeftY)
+{
+	topLeftX = -1;
+	topLeftY = -1;
+	for ( int y = 0; y < numRows; y++ )
+	{
+		for ( int x = 0; x < numColumns; x++ )
+		{
+			if ( isFocused(x, y) || item(x, y).isSelected() )
+			{
+				topLeftX = x;
+				topLeftY = y;
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 bool GridViewControl::GetFocusedItem(int &x, int &y)
@@ -588,18 +678,24 @@ void GridViewControl::SetCaretPos(int newCaretPos)
 	editBox.FocusThis();
 }
 
+void GridViewControl::Char(WPARAM wParam)
+{
+	if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
+		StartEditing(-1, -1, (char)wParam);
+}
+
 void GridViewControl::KeyDown(WPARAM wParam)
 {
 	switch ( wParam )
 	{
-	case VK_LEFT: LeftArrowKey(); break;
-	case VK_UP: UpArrowKey(); break;
-	case VK_RIGHT: RightArrowKey(); break;
-	case VK_DOWN: DownArrowKey(); break;
-	case VK_TAB: TabKey(); break;
-	case VK_RETURN: EnterKey(); break;
-	case VK_DELETE: DeleteSelection(); break;
-	default: return; break;
+		case VK_LEFT: LeftArrowKey(); break;
+		case VK_UP: UpArrowKey(); break;
+		case VK_RIGHT: RightArrowKey(); break;
+		case VK_DOWN: DownArrowKey(); break;
+		case VK_TAB: TabKey(); break;
+		case VK_RETURN: EnterKey(); break;
+		case VK_DELETE: DeleteSelection(); break;
+		default: return; break;
 	}
 
 	RedrawThis();
@@ -973,7 +1069,7 @@ LRESULT GridViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		//case WM_NOTIFY: return Notify(hWnd, msg, wParam, lParam); break;
 		case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
 		case WM_KEYDOWN: KeyDown(wParam); break;
-		case WM_CHAR: StartEditing(-1, -1, (char)wParam); break;
+		case WM_CHAR: Char(wParam); break;
 		case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
 		case WM_MOUSEMOVE: MouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
 		case WM_MOUSEHOVER: MouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;

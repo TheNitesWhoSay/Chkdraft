@@ -3,6 +3,27 @@
 #include "TileChange.h"
 #include "UnitCreateDel.h"
 
+void StringToWindowsClipboard(string &str)
+{
+	OpenClipboard(NULL);
+	if ( EmptyClipboard() != 0 )
+	{
+		HGLOBAL globalData = GlobalAlloc(GMEM_MOVEABLE, str.size() + 1);
+		if ( globalData != NULL )
+		{
+			LPVOID lockedData = GlobalLock(globalData);
+			if ( lockedData != NULL )
+			{
+				memcpy(lockedData, str.c_str(), str.size() + 1);
+				GlobalUnlock(lockedData);
+				SetClipboardData(CF_TEXT, globalData);
+			}
+			GlobalFree(globalData);
+		}
+	}
+	CloseClipboard();
+}
+
 CLIPBOARD::CLIPBOARD() : pasting(false), quickPaste(false)
 {
 	edges.left = -1;

@@ -478,8 +478,8 @@ void Graphics::DrawLocationNames(HDC hDC)
 						s32 bottomMost = std::max(loc->yc1, loc->yc2);
 						if ( bottomMost > screenTop )
 						{
-							std::string str;
-							if ( chk.getLocationName(str, u8(locPos/CHK_LOCATION_SIZE)) )
+							ChkdString str;
+							if ( chk.getLocationName(u16(locPos/CHK_LOCATION_SIZE), str) )
 							{
 								leftMost = leftMost-screenLeft+2;
 								topMost = topMost-screenTop+2;

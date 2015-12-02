@@ -2,10 +2,12 @@
 #include "DefaultCHK.h"
 #include "StringUsage.h"
 #include "sha256.h"
+#include "Math.h"
 #include <iostream>
 #include <algorithm>
 #include <unordered_map>
-using namespace std;
+#include <string>
+#include <memory>
 
 Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
@@ -38,6 +40,77 @@ Scenario::~Scenario()
 Scenario* Scenario::scenario()
 {
 	return this;
+}
+
+bool Scenario::isExpansion()
+{
+	return VER().get<u16>(0) >= 63;
+}
+
+buffer& Scenario::unitSettings()
+{
+	if ( isExpansion() && this->UNIx().exists() )
+		return this->UNIx();
+	else
+		return this->UNIS();
+}
+
+buffer& Scenario::upgradeSettings()
+{
+	if ( isExpansion() && this->UPGx().exists() )
+		return this->UPGx();
+	else
+		return this->UPGS();
+}
+
+buffer& Scenario::upgradeRestrictions()
+{
+	if ( isExpansion() && this->PUPx().exists() )
+		return this->PUPx();
+	else
+		return this->UPGR();
+}
+
+buffer& Scenario::techSettings()
+{
+	if ( isExpansion() && this->TECx().exists() )
+		return this->TECx();
+	else
+		return this->TECS();
+}
+
+buffer& Scenario::techRestrictions()
+{
+	if ( isExpansion() && this->PTEx().exists() )
+		return this->PTEx();
+	else
+		return this->PTEC();
+}
+
+bool Scenario::getMapTitle(ChkdString &dest)
+{
+	dest = "";
+	if ( SPRP().exists() )
+	{
+		u16 stringNum = 0;
+		if ( SPRP().get<u16>(stringNum, 0) )
+			return GetString(dest, (u32)stringNum);
+	}
+	dest = "Untitled Scenario";
+	return false;
+}
+
+bool Scenario::getMapDescription(ChkdString &dest)
+{
+	dest = "";
+	if ( SPRP().exists() )
+	{
+		u16 stringNum = 0;
+		if ( SPRP().get<u16>(stringNum, 2) )
+			return GetString(dest, (u32)stringNum);
+	}
+	dest = "Destroy all enemy buildings.";
+	return false;
 }
 
 u16 Scenario::XSize()
@@ -102,19 +175,40 @@ ChkLocation Scenario::getLocation(u16 locationIndex)
 	}
 }
 
-std::string Scenario::getLocationName(u16 locationIndex)
+bool Scenario::getLocationName(u16 locationIndex, RawString &str)
 {
-	std::string locationName;
 	u16 locationStringIndex = 0;
-	if ( MRGN().get<u16>(locationStringIndex, 16 + CHK_LOCATION_SIZE*(u32)locationIndex) )
+	if ( MRGN().get<u16>(locationStringIndex, 16 + CHK_LOCATION_SIZE*(u32)locationIndex) &&
+		locationStringIndex != 0 && GetString(str, locationStringIndex) )
 	{
-		if ( locationStringIndex != 0 && getEscapedString(locationName, locationStringIndex) )
-		{
-			return locationName;
-		}
+		return true;
 	}
 
-	return "Location" + to_string(locationIndex);
+	try
+	{
+		str = "Location " + to_string(locationIndex);
+		return true;
+	}
+	catch ( std::exception ) {}
+	return false;
+}
+
+bool Scenario::getLocationName(u16 locationIndex, ChkdString &str)
+{
+	u16 locationStringIndex = 0;
+	if ( MRGN().get<u16>(locationStringIndex, 16 + CHK_LOCATION_SIZE*(u32)locationIndex) &&
+		locationStringIndex != 0 && GetString(str, locationStringIndex) )
+	{
+		return true;
+	}
+
+	try
+	{
+		str = "Location " + to_string(locationIndex);
+		return true;
+	}
+	catch ( std::exception ) {}
+	return false;
 }
 
 bool Scenario::MoveLocation(u16 locationIndex, s32 xChange, s32 yChange)
@@ -155,7 +249,7 @@ bool Scenario::SetLocationFieldData(u16 locationIndex, u8 field, u32 data)
 	return false;
 }
 
-bool Scenario::insertLocation(u16 index, ChkLocation &location, std::string name)
+bool Scenario::insertLocation(u16 index, ChkLocation &location, RawString &name)
 {
 	if ( name.size() > 0 )
 	{
@@ -168,6 +262,13 @@ bool Scenario::insertLocation(u16 index, ChkLocation &location, std::string name
 	}
 	location.stringNum = 0;
 	return MRGN().replace<ChkLocation>(CHK_LOCATION_SIZE*(u32)index, location);
+}
+
+bool Scenario::insertLocation(u16 index, ChkLocation &location, ChkdString &name)
+{
+	RawString rawLocationName;
+	return ParseChkdStr(name, rawLocationName) &&
+		insertLocation(index, location, rawLocationName);
 }
 
 u8 Scenario::numLocations()
@@ -190,6 +291,25 @@ u8 Scenario::numLocations()
 	return numLocs;
 }
 
+u16 Scenario::locationCapacity()
+{
+	return MRGN().size() / CHK_LOCATION_SIZE;
+}
+
+bool Scenario::locationIsUsed(u16 locationIndex)
+{
+	ChkLocation* locRef;
+	if ( getLocation(locRef, locationIndex) )
+	{
+		if ( locRef->elevation != 0 || locRef->stringNum != 0 ||
+			 locRef->xc1 != 0 || locRef->xc2 != 0 || locRef->yc1 != 0 || locRef->yc2 != 0 )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 u32 Scenario::numTriggers()
 {
 	return u32(TRIG().size()/TRIG_STRUCT_SIZE);
@@ -200,7 +320,7 @@ bool Scenario::getTrigger(Trigger* &trigRef, u32 index)
 	return TRIG().getPtr(trigRef, index*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE);
 }
 
-bool Scenario::getActiveComment(Trigger* trigger, string &comment)
+bool Scenario::getActiveComment(Trigger* trigger, RawString &comment)
 {
 	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
 	{
@@ -209,7 +329,7 @@ bool Scenario::getActiveComment(Trigger* trigger, string &comment)
 		{
 			if ( (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
 			{
-				if ( action.stringNum != 0 && getRawString(comment, action.stringNum) )
+				if ( action.stringNum != 0 && GetString(comment, action.stringNum) )
 					return true;
 				else
 				{
@@ -239,20 +359,24 @@ u32 Scenario::getForceStringNum(u8 index)
 		return 0;
 }
 
-std::string Scenario::getForceString(u8 forceNum)
+bool Scenario::getForceString(ChkdString &str, u8 forceNum)
 {
-	string forceString;
 	u32 stringNum = getForceStringNum(forceNum);
 	if ( stringNum != 0 )
-		getString(forceString, stringNum);
+		return GetString(str, stringNum);
 	else
 	{
-		char num[12];
-		_itoa_s(forceNum+1, num, 10);
-		forceString += "Force ";
-		forceString += num;
+		try
+		{
+			char num[12];
+			_itoa_s(forceNum + 1, num, 10);
+			str += "Force ";
+			str += num;
+			return true;
+		}
+		catch ( std::exception ) { }
 	}
-	return forceString;
+	return false;
 }
 
 bool Scenario::getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &random, bool &av)
@@ -298,68 +422,49 @@ u32 Scenario::totalStrings()
 	return ((u32)STR().get<u16>(0)) + KSTR().get<u32>(4);
 }
 
-bool Scenario::getString(string &dest, u32 stringNum)
+bool Scenario::GetString(RawString &dest, u32 stringNum)
 {
 	dest.clear();
 
 	char* srcStr;
-	u32 length;
-
-	if ( GetStrInfo(srcStr, length, stringNum) )
-	{
-		return MakeStr(dest, srcStr, length);
-	}
-	else if ( stringNum == 0 )
-	{
-		dest = "";
-		return true;
-	}
-
-	return false;
-}
-
-bool Scenario::getRawString(string &dest, u32 stringNum)
-{
-	dest.clear();
-
-	char* srcStr;
-	u32 length;
+	size_t length;
 
 	if ( GetStrInfo(srcStr, length, stringNum) )
 	{
 		try {
-			dest += srcStr;
+			dest.append(srcStr, length);
 			return true;
-		} catch ( std::exception ) { // Catch bad_alloc and length_error
+		}
+		catch ( std::exception ) { // Catch bad_alloc and length_error
 			return false;
 		}
 	}
 	else if ( stringNum == 0 )
 	{
-		dest = "";
+		dest.clear();
 		return true;
 	}
 
 	return false;
 }
 
-bool Scenario::getEscapedString(string &dest, u32 stringNum)
+bool Scenario::GetString(EscString &dest, u32 stringNum)
 {
 	dest.clear();
-
 	char* srcStr;
-	u32 length;
+	size_t length;
 
 	if ( GetStrInfo(srcStr, length, stringNum) )
 	{
-		return MakeEscapedStr(dest, srcStr, length);
+		return MakeEscStr(srcStr, length, dest);
 	}
 	else if ( stringNum == 0 )
 	{
 		try {
 			dest = "";
 			return true;
-		} catch ( std::exception ) {
+		}
+		catch ( std::exception ) {
 			return false;
 		}
 	}
@@ -367,66 +472,102 @@ bool Scenario::getEscapedString(string &dest, u32 stringNum)
 		return false;
 }
 
-bool Scenario::getLocationName(string &dest, u8 locationID)
+bool Scenario::GetString(ChkdString &dest, u32 stringNum)
 {
-	buffer& MRGN = this->MRGN();
-	ChkLocation* loc;
-	if ( MRGN.getPtr<ChkLocation>(loc, locationID*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE) )
-	{
-		if ( loc->stringNum == 0 || !this->getEscapedString(dest, loc->stringNum) )
-		{
-			char locNum[8];
-			_itoa_s(int(locationID), locNum, 10);
+	dest.clear();
 
-			dest.clear();
-			try {
-				dest += "Location ";
-				dest += locNum;
-				return true;
-			} catch ( std::exception ) {
-				return false;
-			}
-		}
-		else
-			return getEscapedString(dest, loc->stringNum);
+	char* srcStr;
+	size_t length;
+
+	if ( GetStrInfo(srcStr, length, stringNum) )
+	{
+		return MakeChkdStr(srcStr, length, dest);
 	}
+	else if ( stringNum == 0 )
+	{
+		dest = "";
+		return true;
+	}
+
 	return false;
 }
 
-bool Scenario::getSwitchName(string &dest, u8 switchID)
+bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
 {
 	buffer &SWNM = this->SWNM();
 	u32 stringNum = 0;
 	if ( SWNM.get<u32>(stringNum, 4 * (u32)switchID) && stringNum != 0 )
-	{
-		return getString(dest, stringNum);
-	}
+		return GetString(dest, stringNum);
 	else
 		return false;
 }
 
-void Scenario::getUnitName(string &dest, u16 unitID)
+bool Scenario::getUnitName(RawString &dest, u16 unitID)
 {
 	buffer& settings = unitSettings();
+	if ( unitID < 228 ) // Regular unit
+	{
+		if ( settings.get<u8>(unitID) == 0 && // Not default unit settings
+			settings.get<u16>(unitID * 2 + (u32)UnitSettingsDataLoc::StringIds) > 0 ) // Not default string
+		{
+			u16 stringID = settings.get<u16>(2 * unitID + (u32)UnitSettingsDataLoc::StringIds);
+			if ( GetString(dest, stringID) )
+				return true;
+		}
 
+		try
+		{
+			dest = DefaultUnitDisplayName[unitID];
+			return true;
+		}
+		catch ( std::exception ) {}
+	}
+	else // Extended unit
+	{
+		char unitName[16];
+		sprintf_s(unitName, 16, "Unit #%u", unitID);
+		try
+		{
+			dest = unitName;
+			return true;
+		}
+		catch ( std::exception ) {}
+	}
+	return false;
+}
+
+bool Scenario::getUnitName(ChkdString &dest, u16 unitID)
+{
+	buffer& settings = unitSettings();
 	if ( unitID < 228 ) // Regular unit
 	{
 		if ( settings.get<u8>(unitID) == 0 && // Not default unit settings
 			 settings.get<u16>(unitID*2+(u32)UnitSettingsDataLoc::StringIds) > 0 ) // Not default string
 		{
 			u16 stringID = settings.get<u16>(2*unitID+(u32)UnitSettingsDataLoc::StringIds);
-			if ( !getString(dest, stringID) ) // Try to retrieve string name
-				dest = DefaultUnitDisplayName[unitID]; // Couldn't retrieve name, return default
+			if ( GetString(dest, stringID) )
+				return true;
 		}
-		else // Default unit name
+
+		try
+		{
 			dest = DefaultUnitDisplayName[unitID];
+			return true;
+		}
+		catch ( std::exception ) {}
 	}
 	else // Extended unit
 	{
 		char unitName[16];
 		sprintf_s(unitName, 16, "Unit #%u", unitID);
-		dest = unitName;
+		try
+		{
+			dest = unitName;
+			return true;
+		}
+		catch ( std::exception ) {}
 	}
+	return false;
 }
 
 bool Scenario::deleteUnit(u16 index)
@@ -568,7 +709,7 @@ bool Scenario::stringExists(u32 stringNum)
 		     stringNum < numStrings() );
 }
 
-bool Scenario::stringExists(string str, u32& stringNum)
+bool Scenario::stringExists(RawString &str, u32& stringNum)
 {
 	std::vector<StringTableNode> strList;
 	addAllUsedStrings(strList, true, true);
@@ -585,7 +726,7 @@ bool Scenario::stringExists(string str, u32& stringNum)
 	return false;
 }
 
-bool Scenario::stringExists(string str, u32& stringNum, bool extended)
+bool Scenario::stringExists(RawString &str, u32& stringNum, bool extended)
 {
 	std::vector<StringTableNode> strList;
 	if ( extended )
@@ -605,7 +746,7 @@ bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 	return false;
 }
 
-bool Scenario::stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList)
+bool Scenario::stringExists(RawString &str, u32& stringNum, std::vector<StringTableNode> &strList)
 {
 	for ( auto &existingString : strList )
 	{
@@ -618,12 +759,12 @@ bool Scenario::stringExists(string str, u32& stringNum, std::vector<StringTableN
 	return false;
 }
 
-bool Scenario::escStringDifference(string str, u32& stringNum)
+bool Scenario::FindDifference(ChkdString &str, u32& stringNum)
 {
-	string existing;
-	if ( getEscapedString(existing, stringNum) )
+	RawString rawSuppliedString, rawStringAtNum;
+	if ( ParseChkdStr(str, rawSuppliedString) && GetString(rawStringAtNum, stringNum) )
 	{
-		if ( str.compare(existing) == 0 )
+		if ( rawSuppliedString.compare(rawStringAtNum) == 0 )
 			return false;
 	}
 	return true;
@@ -747,51 +888,6 @@ void Scenario::getStringUse(u32 stringNum, u32& locs, u32& trigs, u32& briefs, u
 		IncrementIfEqual(UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds), stringNum, units);
 }
 
-bool Scenario::isExpansion()
-{
-	return VER().get<u16>(0) >= 63;
-}
-
-buffer& Scenario::unitSettings()
-{
-	if ( isExpansion() )
-		return this->UNIx();
-	else
-		return this->UNIS();
-}
-
-buffer& Scenario::upgradeSettings()
-{
-	if ( isExpansion() )
-		return this->UPGx();
-	else
-		return this->UPGS();
-}
-
-buffer& Scenario::upgradeRestrictions()
-{
-	if ( isExpansion() )
-		return this->PUPx();
-	else
-		return this->UPGR();
-}
-
-buffer& Scenario::techSettings()
-{
-	if ( isExpansion() )
-		return this->TECx();
-	else
-		return this->TECS();
-}
-
-buffer& Scenario::techRestrictions()
-{
-	if ( isExpansion() )
-		return this->PTEx();
-	else
-		return this->PTEC();
-}
-
 bool Scenario::GoodVCOD()
 {
 	buffer defaultVCOD("vcod");
@@ -818,32 +914,6 @@ bool Scenario::GoodVCOD()
 bool Scenario::isProtected()
 {
 	return mapIsProtected;
-}
-
-bool Scenario::getMapTitle(std::string& dest)
-{
-	dest = "";
-	if ( SPRP().exists() )
-	{
-		u16 stringNum;
-		if ( SPRP().get<u16>(stringNum, 0) )
-			return getString(dest, (u32)stringNum);
-	}
-	dest = "Untitled Scenario";
-	return false;
-}
-
-bool Scenario::getMapDescription(std::string& dest)
-{
-	dest = "";
-	if ( SPRP().exists() )
-	{
-		u16 stringNum;
-		if ( SPRP().get<u16>(stringNum, 2) )
-			return getString(dest, (u32)stringNum);
-	}
-	dest = "Destroy all enemy buildings.";
-	return false;
 }
 
 bool Scenario::getPlayerOwner(u8 player, u8& owner)
@@ -1175,7 +1245,7 @@ bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationI
 			char locNum[8];
 			_itoa_s(int(unusedIndex), locNum, 10);
 
-			std::string str = "Location ";
+			RawString str = "Location ";
 			str += locNum;
 			u32 newStrNum;
 			if ( addString(str, newStrNum, false) )
@@ -1324,7 +1394,8 @@ void Scenario::forceDeleteString(u32 stringNum)
 		ZeroOutString(stringNum); // Not enough memory for a full clean at this time, just zero-out the string
 }
 
-bool Scenario::addString(string str, u32& stringNum, bool extended)
+template <typename numType> // Strings can, and can only be u16 or u32
+bool Scenario::addString(RawString &str, numType &stringNum, bool extended)
 {
 	u32 newStringNum;
 	if ( stringExists(str, newStringNum, extended) )
@@ -1340,7 +1411,7 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 			if ( stringTable.useNext(stringNum) ) // Get an unused entry if possible
 			{
 				// Check for a need to make a new entry
-				if ( extended && stringNum > KSTR().get<u32>(4) )
+				if ( extended && (u32)stringNum > KSTR().get<u32>(4) )
 				{
 					u32 numStrs = KSTR().get<u32>(4);
 
@@ -1354,12 +1425,12 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 					numStrs ++;
 					KSTR().replace<u32>(4, numStrs);
 				}
-				else if ( !extended && stringNum > STR().get<u16>(0) )
+				else if ( !extended && (u32)stringNum > STR().get<u16>(0) )
 				{
 					if ( STR().size() < 65534 )
 					{
 						u16 numStrs = STR().get<u16>(0);
-						for ( u16 i=1; i<= numStrs; i++ ) // Increment every string offset by 2 to accommodate the new header info
+						for ( u16 i = 1; i <= numStrs; i++ ) // Increment every string offset by 2 to accommodate the new header info
 							STR().replace<u16>(2*i, STR().get<u16>(2*i)+2);
 
 						// Add a new string offset after all the others
@@ -1387,8 +1458,8 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 							if ( !KSTR().add('\0') )
 								return false;
 						}
-						KSTR().replace<u32>(4+4*stringNum, strOffset);
-						stringNum = 65536 - stringNum;
+						KSTR().replace<u32>(4+4*(u32(stringNum)), strOffset);
+						stringNum = (65536 - (u32)stringNum);
 						return true;
 					}
 				}
@@ -1404,7 +1475,7 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 								if ( !STR().add('\0') )
 									return false;
 							}
-							STR().replace<u16>(2*stringNum, strOffset);
+							STR().replace<u16>(2*(u32(stringNum)), strOffset);
 							return true;
 						}
 					}
@@ -1417,8 +1488,20 @@ bool Scenario::addString(string str, u32& stringNum, bool extended)
 	
 	return false;
 }
+template bool Scenario::addString<u16>(RawString &str, u16 &stringNum, bool extended);
+template bool Scenario::addString<u32>(RawString &str, u32 &stringNum, bool extended);
 
-bool Scenario::addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
+template <typename numType> // Strings can, and can only be u16 or u32
+bool Scenario::addString(ChkdString &str, numType &stringNum, bool extended)
+{
+	RawString rawString;
+	return ParseChkdStr(str, rawString) &&
+		addString<numType>(rawString, stringNum, extended);
+}
+template bool Scenario::addString<u16>(ChkdString &str, u16 &stringNum, bool extended);
+template bool Scenario::addString<u32>(ChkdString &str, u32 &stringNum, bool extended);
+
+bool Scenario::addNonExistentString(RawString &str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
 {
 	if ( cleanStringTable(extended, strList) )
 	{
@@ -1507,14 +1590,14 @@ bool Scenario::addNonExistentString(string str, u32& stringNum, bool extended, s
 }
 
 template <typename numType>
-bool Scenario::replaceString(string newString, numType& stringNum, bool extended, bool safeReplace)
+bool Scenario::replaceString(RawString &newString, numType& stringNum, bool extended, bool safeReplace)
 {
 	u32 newStringNum, oldStringNum = (u32)stringNum;
 
 	if ( stringNum != 0 && amountStringUsed(stringNum) == 1 )
 	{
-		string testEqual;
-		if ( getRawString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
+		RawString testEqual;
+		if ( GetString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
 			return false;
 		else
 			return editString<numType>(newString, stringNum, extended, safeReplace);
@@ -1551,7 +1634,7 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 
 			// Attempt to create a backup string section, or at least a backup string (if safeReplace is not set)
 			buffer stringSectionBackup;
-			std::string stringBackup;
+			RawString stringBackup;
 
 			bool didBackupSection = strings->exists() && stringSectionBackup.addStr((const char*)strings->getPtr(0), strings->size()),
 				 didBackupString = false,
@@ -1559,13 +1642,15 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 
 			if ( !didBackupSection && !safeReplace )
 			{
-				didBackupString = getString(stringBackup, stringNum);
+				didBackupString = GetString(stringBackup, stringNum);
 				wasExtended = isExtendedString(stringNum);
 			}
 		
 			// Check if deleting the original can be safely done or safeReplace is not set
 			if ( didBackupSection || !safeReplace )
 			{
+				u32 backupStringNum = stringNum;
+
 				// Delete the original string
 				stringNum = 0;
 				removeUnusedString(oldStringNum);
@@ -1583,6 +1668,7 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 						stringSectionBackup.setTitle((u32)SectionId::STR);
 
 					strings->takeAllData(stringSectionBackup);
+					stringNum = backupStringNum;
 				}
 				else if ( didBackupString ) // String addition failed and full section could not be backed up
 				{
@@ -1594,14 +1680,24 @@ bool Scenario::replaceString(string newString, numType& stringNum, bool extended
 	}
 	return false;
 }
-template bool Scenario::replaceString<u16>(string newString, u16& stringNum, bool extended, bool safeReplace);
-template bool Scenario::replaceString<u32>(string newString, u32& stringNum, bool extended, bool safeReplace);
+template bool Scenario::replaceString<u16>(RawString &newString, u16& stringNum, bool extended, bool safeReplace);
+template bool Scenario::replaceString<u32>(RawString &newString, u32& stringNum, bool extended, bool safeReplace);
 
 template <typename numType>
-bool Scenario::editString(string newString, numType stringNum, bool extended, bool safeEdit)
+bool Scenario::replaceString(ChkdString &newString, numType &stringNum, bool extended, bool safeReplace)
 {
-	string testEqual;
-	if ( stringNum == 0 || (getRawString(testEqual, stringNum) && testEqual.compare(newString) == 0) )
+	RawString rawString;
+	return ParseChkdStr(newString, rawString) &&
+		replaceString<numType>(rawString, stringNum, extended, safeReplace);
+}
+template bool Scenario::replaceString<u16>(ChkdString &newString, u16& stringNum, bool extended, bool safeReplace);
+template bool Scenario::replaceString<u32>(ChkdString &newString, u32& stringNum, bool extended, bool safeReplace);
+
+template <typename numType>
+bool Scenario::editString(RawString &newString, numType stringNum, bool extended, bool safeEdit)
+{
+	RawString testEqual;
+	if ( stringNum == 0 || (GetString(testEqual, stringNum) && testEqual.compare(newString) == 0) )
 		return false;
 	else if ( stringNum != 0 )
 		testEqual.clear();
@@ -1631,8 +1727,18 @@ bool Scenario::editString(string newString, numType stringNum, bool extended, bo
 	}
 	return false;
 }
-template bool Scenario::editString<u16>(string newString, u16 stringNum, bool extended, bool safeEdit);
-template bool Scenario::editString<u32>(string newString, u32 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u16>(RawString &newString, u16 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u32>(RawString &newString, u32 stringNum, bool extended, bool safeEdit);
+
+template <typename numType>
+bool Scenario::editString(ChkdString &newString, numType stringNum, bool extended, bool safeEdit)
+{
+	RawString rawString;
+	return ParseChkdStr(newString, rawString) &&
+		editString(rawString, stringNum, extended, safeEdit);
+}
+template bool Scenario::editString<u16>(ChkdString &newString, u16 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u32>(ChkdString &newString, u32 stringNum, bool extended, bool safeEdit);
 
 void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 {
@@ -1975,9 +2081,10 @@ bool Scenario::repairStringTable(bool extendedTable)
 
 	for ( u32 i=0; i<WAV().size()/4; i++ )
 	{
-		string str;
+		RawString str;
 		stringNum = WAV().get<u32>(i*4);
-		if ( stringNum != 0 && !( stringExists(stringNum) && getString(str, stringNum) && str.c_str()[0] != '\0' ) )
+		// if stringNum is nonzero and does not have valid contents...
+		if ( stringNum != 0 && !( stringExists(stringNum) && GetString(str, stringNum) && str.size() > 0 ) )
 		{
 			WAV().replace<u32>(i*4, 0);
 			removeUnusedString(stringNum);
@@ -2036,22 +2143,23 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 	u32 standardNumStrings = numStrings();
 	u32 extendedNumStrings = KSTR().get<u32>(4);
 
-	#define AddStrIfOverZero(index)																		\
-		if ( index > 0 &&																				\
-			 (																							\
-			   ( includeStandard && (u32(index)) <= standardNumStrings ) ||								\
-			   ( includeExtended && (u32(65536-index)) <= extendedNumStrings )							\
-			 )																							\
-		   )																							\
-		{																								\
-			if ( getRawString(node.string, index) ) {													\
-				node.stringNum = index;																	\
-				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )						\
-				{																						\
-					strList.push_back(node); /* add if the string isn't in the list */					\
-					stringSearchTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );	\
-				}																						\
-			}																							\
+	#define AddStrIfOverZero(index)														\
+		if ( index > 0 &&																\
+			 (																			\
+			   ( includeStandard && (u32(index)) <= standardNumStrings ) ||				\
+			   ( includeExtended && (u32(65536-index)) <= extendedNumStrings )			\
+			 )																			\
+		   )																			\
+		{																				\
+			if ( GetString(node.string, index) ) {										\
+				node.stringNum = index;													\
+				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )		\
+				{																		\
+					strList.push_back(node); /* add if the string isn't in the list */	\
+					stringSearchTable.insert( pair<u32, StringTableNode>(				\
+						strHash(node.string), node) );									\
+				}																		\
+			}																			\
 		}
 
 	try
@@ -2504,6 +2612,28 @@ bool Scenario::setUnitSettingsBonusWeapon(u32 weaponId, u16 bonusDamage)
 		 replacedUNIx = UNIx().replace<u16>(UnitSettingsDataLocBonusWeapon(true)+2*weaponId, bonusDamage);
 
 	return ( expansion && replacedUNIx ) || ( !expansion && replacedUNIS );
+}
+
+bool Scenario::setUnitName(u16 unitId, RawString &unitName)
+{
+	u16* originalNameString = nullptr;
+	u16* expansionNameString = nullptr;
+	bool gotOrig = UNIx().getPtr<u16>(originalNameString, 2 * unitId + (u32)UnitSettingsDataLoc::StringIds, 2);
+	bool gotExp = UNIS().getPtr<u16>(expansionNameString, 2 * unitId + (u32)UnitSettingsDataLoc::StringIds, 2);
+	bool replacedOrig = false, replacedExp = false;
+	gotOrig ? replacedOrig = replaceString(unitName, *originalNameString, false, true) : replacedOrig = false;
+	gotExp ? replacedExp = replaceString(unitName, *expansionNameString, false, true) : replacedExp = false;
+	return (isExpansion() && replacedExp) || (!isExpansion() && replacedOrig);
+}
+
+
+bool Scenario::setUnitName(u16 unitId, ChkdString &unitName)
+{
+	RawString rawUnitName;
+	if ( ParseChkdStr(unitName, rawUnitName) )
+		return setUnitName(unitId, rawUnitName);
+	else
+		return false;
 }
 
 bool Scenario::setUpgradeUseDefaults(u8 upgradeNum, bool useDefaults)
@@ -3115,7 +3245,7 @@ buffer& Scenario::TECx() { return *tecx; }
 // Extended Sections
 buffer& Scenario::KSTR() { return *kstr; }
 
-bool Scenario::GetStrInfo(char* &ptr, u32 &length, u32 stringNum)
+bool Scenario::GetStrInfo(char* &ptr, size_t &length, u32 stringNum)
 {
 	buffer* strings = &STR();
 	u32 numStrings = u32(strings->get<u16>(0));
@@ -3140,20 +3270,17 @@ bool Scenario::GetStrInfo(char* &ptr, u32 &length, u32 stringNum)
 
 	if ( strings->exists() && stringNum != 0 )
 	{
-		u32 start,
-			end;
+		u32 start = 0, end = 0;
 
 		if ( extended )
 			start = strings->get<u32>(4+4*stringNum);
 		else
 			start = strings->get<u16>(2*stringNum);
 		
-		if ( strings->getNext('\0', start, end) ) // Next NUL char marks the end of the string
-			end ++; // Add space for NUL char
-		else // Much corruption
+		if ( !strings->getNext('\0', start, end) ) // Next NUL char marks the end of the string
 			end = strings->size(); // Just end it where section ends
 
-		length = end-start;
+		length = (size_t)(end-start);
 		ptr = (char*)strings->getPtr(start);
 		return true;
 	}
@@ -3161,84 +3288,13 @@ bool Scenario::GetStrInfo(char* &ptr, u32 &length, u32 stringNum)
 		return false;
 }
 
-bool Scenario::MakeStr(string& dest, char* src, u32 srcLen)
-{
-	try
-	{
-		for ( u32 i=0; i<srcLen-1; i++ )
-		{
-			if ( (u8)src[i] < 32 && src[i] != '\n' && src[i] != '\r' && src[i] != '\11' )
-			{
-				dest.push_back('<');
-				if ( src[i]/16 > 9 )
-					dest.push_back(src[i]/16+'A'-10);
-				else
-					dest.push_back(src[i]/16+'0');
-				if ( src[i]%16 > 9 )
-					dest.push_back(src[i]%16+'A'-10);
-				else
-					dest.push_back(src[i]%16+'0');
-				dest.push_back('>');
-			}
-			else
-				dest.push_back(src[i]);
-		}
-		return true;
-	}
-	catch ( std::exception ) // Catch bad_alloc and length_error
-	{
-		dest.clear();
-		return false;
-	}
-}
-
-bool Scenario::MakeEscapedStr(string& dest, char* src, u32 srcLen)
-{
-	try
-	{
-		for ( u32 i=0; i<srcLen-1; i++ )
-		{
-			if ( src[i] == '\n' )
-				dest.append("\\n");
-			else if ( src[i] == '\r' )
-				dest.append("\\r");
-			else if ( src[i] == '\"' )
-				dest.append("\\\"");
-			else if ( src[i] < 32 && src[i] != '\11')
-			{
-				dest.push_back('\\');
-				dest.push_back('x');
-				dest.push_back('0');
-				if ( unsigned char(src[i])/16 <= 9 )
-					dest.push_back(unsigned char(src[i])/16+'0');
-				else
-					dest.push_back(unsigned char(src[i])/16-10+'A');
-				if ( unsigned char(src[i])%16 <= 9 )
-					dest.push_back(unsigned char(src[i])%16+'0');
-				else
-					dest.push_back(unsigned char(src[i])%16-10+'A');
-			}
-			else if ( src[i] == '\\' )
-				dest.append("\\\\");
-			else
-				dest.push_back(src[i]);
-		}
-		return true;
-	}
-	catch ( std::exception ) // Catch bad_alloc and length_error
-	{
-		dest.clear();
-		return false;
-	}
-}
-
 bool Scenario::ZeroOutString(u32 stringNum)
 {
 	char* str;
-	u32 length;
+	size_t length;
 	if ( GetStrInfo(str, length, stringNum) )
 	{
-		for ( u32 i=0; i<length; i++ ) // Zero-out characters
+		for ( size_t i=0; i<length; i++ ) // Zero-out characters
 			str[i] = '\0';
 
 		if ( stringNum < numStrings() )
@@ -3262,12 +3318,12 @@ bool Scenario::ZeroOutString(u32 stringNum)
 
 bool Scenario::RepairString(u32& stringNum, bool extended)
 {
-	string str;
-	if ( stringExists(stringNum) && getString(str, stringNum) && str.c_str()[0] != '\0' )
+	RawString str;
+	if ( stringExists(stringNum) && GetString(str, stringNum) && str.size() > 0 )
 		return false; // No Repair
 	else
 	{
-		if ( addString("strRepair", stringNum, extended) )
+		if ( addString(RawString("strRepair"), stringNum, extended) )
 			return true;
 		else
 			return false;

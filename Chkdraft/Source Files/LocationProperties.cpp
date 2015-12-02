@@ -17,6 +17,7 @@ bool LocationWindow::CreateThis(HWND hParent)
 		editLocRight.FindThis(getHandle(), IDC_LOCRIGHT);
 		editLocBottom.FindThis(getHandle(), IDC_LOCBOTTOM);
 		editRawFlags.FindThis(getHandle(), IDC_RAWFLAGS);
+		checkUseExtended.FindThis(getHandle(), IDC_EXTLOCNAMESTR);
 		return true;
 	}
 	else
@@ -105,8 +106,8 @@ void LocationWindow::RefreshLocationInfo()
 		else
 			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_UNCHECKED, NULL);
 
-		std::string locName;
-		if ( chkd.maps.curr->getString(locName, locRef->stringNum) )
+		ChkdString locName;
+		if ( chkd.maps.curr->GetString(locName, locRef->stringNum) )
 			SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), locName.c_str());
 		else
 			SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), "ERROR");
@@ -233,8 +234,8 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 								break;
 							case IDC_EXTLOCNAMESTR:
 							{
-								string str;
-								if ( chkd.maps.curr->getString(str, locRef->stringNum) )
+								ChkdString str;
+								if ( chkd.maps.curr->GetString(str, locRef->stringNum) )
 								{
 									u32 newStrNum;
 									if ( chkd.maps.curr->addString(str, newStrNum, true) )
@@ -287,8 +288,8 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 								break;
 							case IDC_EXTLOCNAMESTR:
 							{
-								string str;
-								if ( chkd.maps.curr->getString(str, locRef->stringNum) )
+								ChkdString str;
+								if ( chkd.maps.curr->GetString(str, locRef->stringNum) )
 								{
 									u32 newStrNum;
 									if ( chkd.maps.curr->addString(str, newStrNum, false) )
@@ -407,43 +408,14 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					break;
 					case IDC_LOCATION_NAME:
 					{
-						std::string oldString;
-						if ( chkd.maps.curr->getString(oldString, preservedStat) )
+						ChkdString locationName;
+						if ( editLocName.GetEditText(locationName) )
 						{
-							char* newString;
-							int textLength = GetWindowTextLength(GetDlgItem(hWnd, IDC_LOCATION_NAME)) + 1;
-							if ( textLength != 0 )
+							bool isExtended = checkUseExtended.isChecked();
+							if ( chkd.maps.curr->replaceString<u16>(locationName, locRef->stringNum, isExtended, true) )
 							{
-								try {
-									newString = new char[textLength];
-								}
-								catch ( std::bad_alloc ) { return TRUE; }
-								if ( GetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), newString, textLength) == 0 )
-								{
-									delete[] newString;
-									return TRUE;
-								}
-
-								if ( oldString.compare(newString) != 0 ) // Attempt string replace
-								{
-									std::string newStr;
-									try {
-										newStr = newString;
-									}
-									catch ( std::bad_alloc ) { delete[] newString; return TRUE; }
-									delete[] newString;
-
-									u32 newStringNum;
-									bool isExtended = (SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_GETCHECK, NULL, NULL) == BST_CHECKED);
-									if ( parseEscapedString(newStr) && chkd.maps.curr->addString(newStr, newStringNum, isExtended) )
-									{
-										locRef->stringNum = u16(newStringNum);
-										chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-										chkd.maps.curr->removeUnusedString(preservedStat);
-										chkd.maps.curr->notifyChange(false);
-										chkd.maps.curr->refreshScenario();
-									}
-								}
+								chkd.maps.curr->notifyChange(false);
+								chkd.maps.curr->refreshScenario();
 							}
 						}
 					}

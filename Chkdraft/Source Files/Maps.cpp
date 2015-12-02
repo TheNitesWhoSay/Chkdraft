@@ -205,7 +205,7 @@ void MAPS::SetGrid(s16 xSize, s16 ySize)
 
 void MAPS::ChangeLayer(u8 newLayer)
 {
-	if ( curr != nullptr && curr->currLayer() != newLayer )
+	if ( curr != nullptr && curr->getLayer() != newLayer )
 	{
 		curr->selections().removeTiles();
 
@@ -229,7 +229,7 @@ void MAPS::ChangeLayer(u8 newLayer)
 		else
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
-		curr->currLayer() = newLayer;
+		curr->setLayer(newLayer);
 
 		chkd.tilePropWindow.DestroyThis();
 		curr->Redraw(false);
@@ -273,7 +273,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 {
 	curr->currPlayer() = newPlayer;
 
-	if ( curr->currLayer() == LAYER_UNITS )
+	if ( curr->getLayer() == LAYER_UNITS )
 	{
 		if ( clipboard.isPasting() )
 		{
@@ -326,7 +326,7 @@ void MAPS::cut()
 			Error("Cannot copy from protected maps!");
 		else
 		{
-			clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
+			clipboard.copy(&curr->selections(), curr->scenario(), curr->getLayer());
 			curr->deleteSelection();
 			if ( clipboard.isPasting() )
 			{
@@ -346,7 +346,7 @@ void MAPS::copy()
 			Error("Cannot copy from protected maps!");
 		else
 		{
-			clipboard.copy(&curr->selections(), curr->scenario(), curr->currLayer());
+			clipboard.copy(&curr->selections(), curr->scenario(), curr->getLayer());
 			if ( clipboard.isPasting() )
 			{
 				endPaste();
@@ -367,7 +367,7 @@ void MAPS::startPaste(bool isQuickPaste)
 {
 	if ( curr == nullptr )
 		return;
-	else if ( curr->currLayer() == LAYER_TERRAIN )
+	else if ( curr->getLayer() == LAYER_TERRAIN )
 	{
 		if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
 		{
@@ -384,7 +384,7 @@ void MAPS::startPaste(bool isQuickPaste)
 			TrackMouseEvent(&tme);
 		}
 	}
-	else if ( curr->currLayer() == LAYER_UNITS )
+	else if ( curr->getLayer() == LAYER_UNITS )
 	{
 		if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
 		{
@@ -410,7 +410,7 @@ void MAPS::endPaste()
 
 void MAPS::properties()
 {
-	if ( curr->currLayer() == LAYER_TERRAIN )
+	if ( curr->getLayer() == LAYER_TERRAIN )
 	{
 		if ( curr->selections().hasTiles() )
 		{
@@ -436,7 +436,7 @@ void MAPS::stickCursor()
 
 void MAPS::updateCursor(s32 xc, s32 yc)
 {
-	if ( curr->currLayer() == LAYER_LOCATIONS )
+	if ( curr->getLayer() == LAYER_LOCATIONS )
 	{
 		u16 selectedLocation = curr->selections().getSelectedLocation();
 		if ( selectedLocation != NO_LOCATION )

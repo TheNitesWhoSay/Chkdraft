@@ -303,7 +303,7 @@ const char* triggerConditions[] = { "Accumulate", "Always", "Bring", "Command", 
 };
 const int numTriggerConditions = sizeof(triggerConditions)/sizeof(const char*);
 
-const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
+const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings",
 								"Total", "Units", "Units and Buildings" };
 const int numTriggerScores = sizeof(triggerScores) / sizeof(const char*);
 

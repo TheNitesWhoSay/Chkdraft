@@ -21,6 +21,7 @@ class StringUsageTable
 
 		bool useNext(u32 &index); /** Next avaliable string index stored in 'index', marking 'index' as unavaliable
 										returns false if no index can plausibly be used. */
+		bool useNext(u16 &index);
 
 		bool isUsed(u32 index); // Returns if a given index is in use
 

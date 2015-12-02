@@ -105,9 +105,19 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 	return true;
 }
 
-u8& GuiMap::currLayer()
+u8 GuiMap::getLayer()
 {
-	return layer;
+	return this->layer;
+}
+
+bool GuiMap::setLayer(u8 newLayer)
+{
+	chkd.maps.endPaste();
+	ClipCursor(NULL);
+	Redraw(false);
+	selection.setDrags(-1, -1);
+	this->layer = newLayer;
+	return true;
 }
 
 double GuiMap::getZoom()
@@ -539,8 +549,6 @@ void GuiMap::deleteSelection()
 					u16 index = selection.getSelectedLocation();
 					if ( index != NO_LOCATION && getLocation(loc, index) )
 					{
-						std::string locName = "";
-						getRawString(locName, loc->stringNum);
 						undoStacks.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(index)));
 
 						chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
@@ -748,7 +756,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 				   pasting,
 				   clipboard,
 				   *this,
-				   this->currLayer()
+				   this->getLayer()
 				 ); // Drag and paste graphics
 
 		if ( layer != LAYER_LOCATIONS )
@@ -1314,7 +1322,7 @@ void GuiMap::ReturnKeyPress()
 {
 	if ( this != nullptr )
 	{
-		if ( currLayer() == LAYER_UNITS )
+		if ( getLayer() == LAYER_UNITS )
 		{
 			if ( selection.hasUnits() )
 			{
@@ -1323,7 +1331,7 @@ void GuiMap::ReturnKeyPress()
 				ShowWindow(chkd.unitWindow.getHandle(), SW_SHOW);
 			}
 		}
-		else if ( currLayer() == LAYER_LOCATIONS )
+		else if ( getLayer() == LAYER_LOCATIONS )
 		{
 			if ( selection.getSelectedLocation() != NO_LOCATION )
 			{
@@ -2026,89 +2034,3 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 		return 0;
 }
 
-bool parseEscapedString(std::string& str)
-{
-	char currChar;
-	std::string newStr = "";
-	int strLength = str.length();
-	const char* strPtr = str.c_str();
-	try
-	{
-		u8 value;
-		for ( int i=0; i<strLength; i++ )
-		{
-			currChar = strPtr[i];
-			switch ( currChar )
-			{
-				case '\\':
-					if ( i+1 < strLength )
-					{
-						i ++;
-						currChar = strPtr[i];
-						if ( currChar == 'X' || currChar == 'x' )
-						{
-							if ( i+3 < strLength && strPtr[i+1] >= '0' && strPtr[i+1] <= '9' && getTwoByteHexVal(&strPtr[i+2], value) )
-							{
-								newStr.push_back(value);
-								i += 3;
-							}
-							else if ( i+2 < strLength && getTwoByteHexVal(&strPtr[i+1], value) )
-							{
-								newStr.push_back(value);
-								i += 2;
-							}
-							else if ( i+1 < strLength && getOneByteHexVal(strPtr[i+1], value) )
-							{
-								newStr.push_back(value);
-								i ++;
-							}
-							else
-							{
-								newStr.push_back('\\');
-								newStr.push_back(currChar);
-							}
-						}
-						else if ( currChar == 'n' )
-							newStr.push_back('\n');
-						else if ( currChar == 'r' )
-							newStr.push_back('\r');
-						else
-						{
-							newStr.push_back('\\');
-							newStr.push_back(currChar);
-						}
-					}
-					else
-						newStr.push_back(currChar);
-					break;
-
-				case '<':
-					if ( i+2 < strLength )
-					{
-						if ( strPtr[i+2] == '>' && getOneByteHexVal(strPtr[i+1], value) )
-						{
-							newStr.push_back(value);
-							i += 2;
-						}
-						else if ( i+3 < strLength && strPtr[i+3] == '>' && getTwoByteHexVal(&strPtr[i+1], value) )
-						{
-							newStr.push_back(value);
-							i += 3;
-						}
-						else
-							newStr.push_back(currChar);
-					}
-					else
-						newStr.push_back(currChar);
-					break;
-
-				default:
-					newStr.push_back(currChar);
-					break;
-			}
-		}
-		str = newStr;
-		return true;
-	}
-	catch ( std::exception ) { return false; } // catches length_error and bad_alloc
-}

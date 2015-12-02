@@ -60,7 +60,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		GuiMapPtr map = chkd.maps.curr;
 		HWND hMapProperties = getHandle();
 
-		std::string mapTitle(""), mapDescription("");
+		ChkdString mapTitle(""), mapDescription("");
 		u16 currTileset = 0,
 			currWidth = 0,
 			currHeight = 0;
@@ -143,7 +143,7 @@ void MapPropertiesWindow::RefreshWindow()
 	GuiMapPtr map = chkd.maps.curr;
 	if ( map != nullptr )
 	{
-		string mapTitle, mapDescription;
+		ChkdString mapTitle, mapDescription;
 		map->getMapTitle(mapTitle);
 		map->getMapDescription(mapDescription);
 		u16 tileset = map->getTileset(),
@@ -344,12 +344,11 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
-	string newMapTitle;
+	ChkdString newMapTitle;
 	if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
 	{
 		u16* mapTitleString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
-			 parseEscapedString(newMapTitle) &&
 			 chkd.maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
 		{
 			chkd.maps.curr->notifyChange(false);
@@ -360,12 +359,11 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
-	string newMapDescription;
+	ChkdString newMapDescription;
 	if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
 	{
 		u16* mapDescriptionString;
 		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
-			 parseEscapedString(newMapDescription) &&
 			 chkd.maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
 		{
 			chkd.maps.curr->notifyChange(false);

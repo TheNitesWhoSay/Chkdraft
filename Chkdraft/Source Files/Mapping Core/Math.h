@@ -1,6 +1,6 @@
 #ifndef MATH_H
 #define MATH_H
-#include "Constants.h"
+#include "Basics.h"
 
 #define foreachin(item, range) for ( auto item = range.first; item != range.second; ++ item)
 
@@ -19,14 +19,10 @@ void LongToBytes(s32 value, u8* bytes);
 
 void ShortToBytes(u16 value, u8* bytes);
 
-s32 TripletToInt(byte* triplet);
+s32 TripletToInt(u8* triplet);
 
 template <typename T>
 s32 round(T value);
-
-bool getOneByteHexVal(char character, u8& value);
-
-bool getTwoByteHexVal(const char* string, u8& value);
 
 #define INCLUDE_TEMPLATES_ONLY
 #include "Math.cpp"

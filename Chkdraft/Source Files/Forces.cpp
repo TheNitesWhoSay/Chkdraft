@@ -51,11 +51,11 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 			for ( int x=0; x<2; x++ )
 			{
 				int force = x+y*2;
-				string forceName = "";
+				ChkdString forceName = "";
 				bool allied = false, vision = false, random = false, av = false;
 				if ( map != nullptr )
 				{
-					forceName = map->getForceString(force);
+					map->getForceString(forceName, force);
 					map->getForceInfo(force, allied, vision, random, av);
 				}
 
@@ -93,9 +93,9 @@ void ForcesWindow::RefreshWindow()
 	{
 		for ( int force=0; force<4; force++ )
 		{
-			string forceName;
+			ChkdString forceName;
 			bool allied = false, vision = false, random = false, av = false;
-			forceName = map->getForceString(force);
+			map->getForceString(forceName, force);
 			map->getForceInfo(force, allied, vision, random, av);
 
 			SetWindowText(GetDlgItem(hWnd, EDIT_F1NAME+force), forceName.c_str());
@@ -319,12 +319,11 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void ForcesWindow::CheckReplaceForceName(int force)
 {
-	string newMapForce;
+	ChkdString newMapForce;
 	if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
 	{
 		u16* mapForceString;
 		if ( chkd.maps.curr->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
-			 parseEscapedString(newMapForce) &&
 			 chkd.maps.curr->replaceString(newMapForce, *mapForceString, false, true) )
 		{
 			chkd.maps.curr->notifyChange(false);

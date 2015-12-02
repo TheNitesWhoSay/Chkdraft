@@ -222,7 +222,7 @@ void UnitSettingsWindow::RefreshWindow()
 			checkUseDefaultName.SetCheck(false);
 		}
 			
-		std::string unitName;
+		ChkdString unitName;
 		chk->getUnitName(unitName, unitId);
 		editUnitName.SetText(unitName.c_str());
 		chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + DefaultUnitDisplayName[unitId] + ']').c_str());
@@ -414,31 +414,19 @@ void UnitSettingsWindow::CheckReplaceUnitName()
 		possibleUnitNameUpdate = false;
 
 	ScenarioPtr chk = chkd.maps.curr;
-	string newUnitName;
+	RawString rawUnitName;
+	ChkdString newUnitName;
 	if ( possibleUnitNameUpdate && selectedUnit >= 0 && selectedUnit < 228 && editUnitName.GetEditText(newUnitName) )
 	{
-		u16* originalNameString = nullptr;
-		u16* expansionNameString = nullptr;
-		bool gotOrig = chk->UNIx().getPtr<u16>(originalNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
-		bool gotExp = chk->UNIS().getPtr<u16>(expansionNameString, 2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 2);
-		if ( ( (chk->isExpansion() && gotExp) || (!chk->isExpansion() && gotOrig) ) &&
-			 parseEscapedString(newUnitName) )
+		if ( chk->setUnitName(selectedUnit, newUnitName) )
 		{
-			bool replacedOrig = false, replacedExp = false;
-			if ( gotOrig )
-				replacedOrig = chk->replaceString(newUnitName, *originalNameString, false, true);
-			if ( gotExp )
-				replacedExp = chk->replaceString(newUnitName, *expansionNameString, false, true);
-
-			if ( replacedOrig || replacedExp )
-			{
-				chkd.maps.curr->notifyChange(false);
-				chkd.unitWindow.RepopulateList();
-				RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
-			}
-			else
-				RefreshWindow();
+			chkd.maps.curr->notifyChange(false);
+			chkd.unitWindow.RepopulateList();
+			RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 		}
+		else
+			RefreshWindow();
+
 		possibleUnitNameUpdate = false;
 	}
 }
@@ -456,7 +444,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 			expName  = chk->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
 		chk->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
 		chk->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
-		std::string unitName;
+		ChkdString unitName;
 		chk->getUnitName(unitName, (u16)selectedUnit);
 		editUnitName.SetText(unitName.c_str());
 		checkUseDefaultName.DisableThis();
@@ -633,7 +621,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					editUnitName.DisableThis();
 					chkd.maps.curr->UNIS().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
 					chkd.maps.curr->UNIx().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
-					std::string unitName;
+					ChkdString unitName;
 					chkd.maps.curr->getUnitName(unitName, (u16)selectedUnit);
 					editUnitName.SetText(unitName.c_str());
 					chkd.unitWindow.RepopulateList();

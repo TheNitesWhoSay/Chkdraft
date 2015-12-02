@@ -6,7 +6,7 @@
 #include "Suggestions.h"
 #include "ConditionsGrid.h"
 
-class TrigConditionsWindow : public ClassWindow, IConditionGridUser
+class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 {
 	public:
 		TrigConditionsWindow();
@@ -17,6 +17,11 @@ class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 		void ProcessKeyDown(WPARAM wParam, LPARAM lParam);
 		void HideSuggestions();
 		void ConditionEnableToggled(u8 conditionNum);
+		void EscapeString(string &str);
+		bool BuildSelectionString(string &str);
+		virtual void CutSelection();
+		virtual void CopySelection();
+		virtual void Paste();
 
 	protected:
 		void InitializeArgMaps(); // Gives default values to all the argMaps
@@ -38,8 +43,13 @@ class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		void ChangeConditionType(Condition &condition, u8 newId);
 		bool TransformCondition(Condition &condition, u8 newId);
+		void ClearArgument(Condition &condition, u8 argNum);
+		void UpdateConditionName(u8 conditionNum, string &newText);
+		void UpdateConditionArg(u8 conditionNum, u8 argNum, string &newText);
 		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, string& str);
+		BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
 		void DrawSelectedCondition();
 		int GetGridItemWidth(int gridItemX, int gridItemY);
 		void CheckEnabledClicked(int conditionNum);

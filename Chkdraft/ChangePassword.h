@@ -1,6 +1,0 @@
-#ifndef CHANGEPASSWORD_H
-#define CHANGEPASSWORD_H
-
-
-
-#endif

@@ -30,11 +30,11 @@ class TextTrigGenerator
 		string GetActionArgument(Action& action, u8 stdTextTrigArgNum);
 		string GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap);
 
-		string GetTrigLocation(u32 locationNum);
-		string GetTrigString(u32 stringNum);
-		string GetTrigPlayer(u32 groupNum);
-		string GetTrigUnit(u16 unitId);
-		string GetTrigSwitch(u32 switchNum);
+		ChkdString GetTrigLocation(u32 locationNum);
+		ChkdString GetTrigString(u32 stringNum);
+		ChkdString GetTrigPlayer(u32 groupNum);
+		ChkdString GetTrigUnit(u16 unitId);
+		ChkdString GetTrigSwitch(u32 switchNum);
 		string GetTrigScoreType(u16 scoreType);
 		string GetTrigResourceType(u16 resourceType);
 		string GetTrigOrder(u8 order);
@@ -60,15 +60,15 @@ class TextTrigGenerator
 
 	private:
 
-		std::vector<string> stringTable; // Array list of map strings
-		std::vector<string> extendedStringTable; // Array list of extended map strings
-		std::vector<string> locationTable; // Array of map locations
-		std::vector<string> unitTable; // Array of map units
-		std::vector<string> switchTable; // Array of map switches
-		std::vector<string> wavTable; // Array of map wavs
-		std::vector<string> groupTable; // Array of map groups
-		std::vector<string> conditionTable; // Array of condition names
-		std::vector<string> actionTable; // Array of action names
+		std::vector<ChkdString> stringTable; // Array list of map strings
+		std::vector<ChkdString> extendedStringTable; // Array list of extended map strings
+		std::vector<ChkdString> locationTable; // Array of map locations
+		std::vector<ChkdString> unitTable; // Array of map units
+		std::vector<ChkdString> switchTable; // Array of map switches
+		std::vector<ChkdString> wavTable; // Array of map wavs
+		std::vector<ChkdString> groupTable; // Array of map groups
+		std::vector<std::string> conditionTable; // Array of condition names
+		std::vector<std::string> actionTable; // Array of action names
 		bool goodConditionTable;
 		bool goodActionTable;
 		char number[36];

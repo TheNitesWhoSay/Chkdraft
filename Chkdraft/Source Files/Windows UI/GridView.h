@@ -54,6 +54,8 @@ class GridViewControl : public ListViewControl
 		bool isEditing();
 		bool isEditing(int x, int y);
 		bool isFocused(int x, int y);
+		bool isSelectionRectangular();
+		bool GetSelTopLeft(int &topLeftX, int &topLeftY);
 		bool GetFocusedItem(int &x, int &y);
 		bool GetFocusedItemRect(RECT &rect);
 		POINT GetItemTopLeft(int x, int y);
@@ -71,6 +73,7 @@ class GridViewControl : public ListViewControl
 		virtual void StartEditing(int xClick, int yClick, char initChar); // Pass -1, -1 if starting via typing, '\0' if by click
 		void UpdateCaretPos(int xClick, int yClick);
 		void SetCaretPos(int newCaretPos);
+		virtual void Char(WPARAM wParam);
 		virtual void KeyDown(WPARAM wParam);
 
 		/** Called when the GridView alters text in the edit box manually,

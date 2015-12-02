@@ -19,12 +19,12 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 			switch ( itemType )
 			{
 				//case TREE_TYPE_ROOT: // Same as category
-			case TREE_TYPE_CATEGORY: if ( chkd.maps.curr->currLayer() != itemData ) chkd.maps.ChangeLayer(u8(itemData)); break;
-			case TREE_TYPE_ISOM: if ( chkd.maps.curr->currLayer() != LAYER_TERRAIN ) chkd.maps.ChangeLayer(LAYER_TERRAIN); break;
-			case TREE_TYPE_UNIT: if ( chkd.maps.curr->currLayer() != LAYER_UNITS ) chkd.maps.ChangeLayer(LAYER_UNITS); break;
-			case TREE_TYPE_LOCATION: if ( chkd.maps.curr->currLayer() != LAYER_LOCATIONS ) chkd.maps.ChangeLayer(LAYER_LOCATIONS); break;
-			case TREE_TYPE_SPRITE: if ( chkd.maps.curr->currLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
-			case TREE_TYPE_DOODAD: if ( chkd.maps.curr->currLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
+			case TREE_TYPE_CATEGORY: if ( chkd.maps.curr->getLayer() != itemData ) chkd.maps.ChangeLayer(u8(itemData)); break;
+			case TREE_TYPE_ISOM: if ( chkd.maps.curr->getLayer() != LAYER_TERRAIN ) chkd.maps.ChangeLayer(LAYER_TERRAIN); break;
+			case TREE_TYPE_UNIT: if ( chkd.maps.curr->getLayer() != LAYER_UNITS ) chkd.maps.ChangeLayer(LAYER_UNITS); break;
+			case TREE_TYPE_LOCATION: if ( chkd.maps.curr->getLayer() != LAYER_LOCATIONS ) chkd.maps.ChangeLayer(LAYER_LOCATIONS); break;
+			case TREE_TYPE_SPRITE: if ( chkd.maps.curr->getLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
+			case TREE_TYPE_DOODAD: if ( chkd.maps.curr->getLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
 			}
 
 			switch ( itemType )
@@ -33,7 +33,7 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 			{
 				chkd.maps.curr->selections().removeUnits();
 				chkd.maps.endPaste();
-				if ( chkd.maps.curr->currLayer() != LAYER_UNITS )
+				if ( chkd.maps.curr->getLayer() != LAYER_UNITS )
 					chkd.maps.ChangeLayer(LAYER_UNITS);
 
 				ChkUnit unit = {};
