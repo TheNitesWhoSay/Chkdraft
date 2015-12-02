@@ -13,12 +13,16 @@ bool TilePropWindow::DestroyThis()
 
 void TilePropWindow::UpdateTile()
 {
+	char title[256];
 	TileNode tile = chkd.maps.curr->selections().getFirstTile();
-	SetWindowText(getHandle(), std::string("Tile Properties (" + std::to_string(tile.xc) + ", " + std::to_string(tile.yc) + ")").c_str());
+	sprintf_s(title, 256, "Tile Properties (%d, %d)", tile.xc, tile.yc);
+	SetWindowText(getHandle(), title);
 
 	HWND hEditTile = GetDlgItem(getHandle(), IDC_EDIT_TILEVALUE);
 	u16 currTile = tile.value;
-	SetWindowText(hEditTile, std::to_string(currTile).c_str());
+	char tileValue[32];
+	_itoa_s(currTile, tileValue, 10);
+	SetWindowText(hEditTile, tileValue);
 }
 
 BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)

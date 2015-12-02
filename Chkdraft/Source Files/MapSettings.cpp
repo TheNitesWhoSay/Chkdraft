@@ -150,7 +150,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				for ( int i=0; i<sizeof(tabs)/sizeof(const char*); i++ )
 				{
 					item.pszText = (LPSTR)tabs[i];
-					item.cchTextMax = std::strlen(tabs[i]);
+					item.cchTextMax = strlen(tabs[i]);
 					TabCtrl_InsertItem(hTabs, i, &item);
 				}
 				

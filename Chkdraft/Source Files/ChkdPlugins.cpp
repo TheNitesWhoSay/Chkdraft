@@ -55,7 +55,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										MessageBox(NULL, "Compilation failed, couldn't allocate space for input text.", "Error!", MB_OK);
 										return FALSE;
 									}
-									std::memcpy(inputText, copyData, length);
+									memcpy(inputText, copyData, length);
 									if ( inputText[length-2] != '\0' ) // Ensure NUL-terminated
 										inputText[length-1] = '\0';
 	

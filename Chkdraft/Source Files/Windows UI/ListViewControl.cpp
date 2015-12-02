@@ -67,7 +67,7 @@ void ListViewControl::SetItemText(int row, int column, const char* text)
 	subItem.mask = LVIF_TEXT;
 	subItem.iItem = row;
 	subItem.pszText = LPSTR(text);
-	subItem.cchTextMax = std::strlen(text);
+	subItem.cchTextMax = strlen(text);
 	subItem.iSubItem = column;
 
 	ListView_SetItem(getHandle(), &subItem);
@@ -75,7 +75,9 @@ void ListViewControl::SetItemText(int row, int column, const char* text)
 
 void ListViewControl::SetItemText(int row, int column, int value)
 {
-	SetItemText(row, column, std::to_string(value).c_str());
+	char cVal[32] = { };
+	_itoa_s(value, cVal, 10);
+	SetItemText(row, column, cVal);
 }
 
 void ListViewControl::SetItemData(int row, int column, u32 data)

@@ -84,7 +84,7 @@ bool DropdownControl::GetEditNum(numType &dest)
 			dest = temp;
 			success = true;
 		}
-		else if (std::strlen(text) > 0 && text[0] == '0' )
+		else if ( strlen(text) > 0 && text[0] == '0' )
 		{
 			dest = 0;
 			success = true;
@@ -117,7 +117,7 @@ bool DropdownControl::GetEditText(char* &dest)
 		{
 			text[length-1] = '\0';
 			dest = new char[length];
-			std::strncpy(dest, text, length);
+			strcpy_s(dest, length, text);
 			success = true;
 		}
 		delete[] text;

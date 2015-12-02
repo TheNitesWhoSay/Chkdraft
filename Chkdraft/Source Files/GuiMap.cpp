@@ -1257,7 +1257,7 @@ void GuiMap::addAsterisk()
 
 		if ( GetWindowText(getHandle(), (LPSTR)text, length) > 0 )
 		{
-			std::strcat(text, "*");
+			strcat_s(text, length+1, "*");
 			SetWindowText(getHandle(), text);
 		}
 	}
@@ -1540,7 +1540,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 
 	// Set status bar tracking pos
 	char newPos[64];
-	std::snprintf(newPos, 64, "%i, %i (%i, %i)", mapHoverX, mapHoverY, mapHoverX/32, mapHoverY/32);
+	sprintf_s(newPos, 64, "%i, %i (%i, %i)", mapHoverX, mapHoverY, mapHoverX/32, mapHoverY/32);
 	chkd.statusBar.SetText(0, newPos);
 	
 	switch ( wParam )

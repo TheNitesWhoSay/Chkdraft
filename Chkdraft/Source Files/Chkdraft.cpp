@@ -288,7 +288,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
 {
-	int length = std::strlen(lpCmdLine);
+	int length = strlen(lpCmdLine);
 	if ( length > 1 ) // Minimum length 2
 	{
 		if ( lpCmdLine[0] == '\"' )
