@@ -7,6 +7,8 @@
 #include "Data.h"
 #include "Graphics.h"
 
+#define GuiMapPtr std::shared_ptr<GuiMap>
+
 class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
@@ -182,7 +184,5 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					HBITMAP MemBitmap;
 					HBITMAP MemMiniBitmap;
 };
-
-typedef std::shared_ptr<GuiMap> GuiMapPtr;
 
 #endif
