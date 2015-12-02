@@ -7,8 +7,6 @@
 #include "PeerListBox.h"
 #include "TrigModify.h"
 
-#include <string>
-
 class TriggersWindow : public ClassWindow
 {
 	public:
@@ -29,9 +27,9 @@ class TriggersWindow : public ClassWindow
 		void ButtonNew();
 		void ButtonModify();
 
-		std::string GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt);
-		std::string GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt);
-		std::string GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt);
+		string GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt);
+		string GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt);
+		string GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt);
 
 	protected:
 		bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger

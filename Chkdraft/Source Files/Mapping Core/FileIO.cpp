@@ -1,17 +1,12 @@
 #include "FileIO.h"
 
-#include <algorithm>
-#include <cstdio>
-#include <fstream>
-#include <string>
-
 bool FindFile(const char* filePath)
 {
 	FILE* file;
 	fopen_s(&file, filePath, "r");
 	bool found = file != nullptr;
 	if ( file != nullptr )
-		std::fclose(file);
+		fclose(file);
 
 	return found;
 }
@@ -36,7 +31,7 @@ bool FileExists(const char* fileName)
 	FILE* fileCheck = nullptr;
 	if ( fopen_s(&fileCheck, fileName, "r") == 0 )
 	{
-		std::fclose(fileCheck);
+		fclose(fileCheck);
 		return true;
 	}
 	else
@@ -140,10 +135,10 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 		   || FileToBuffer(hStarDat, fileName, buf);
 }
 
-bool FileToString(std::string fileName, std::string &str)
+bool FileToString(string fileName, string &str)
 {
 	str.clear();
-	std::ifstream file(fileName, std::ifstream::in| std::ifstream::ate); // Open at ending characters position
+	ifstream file(fileName, ifstream::in|ifstream::ate); // Open at ending characters position
 	if ( file.is_open() )
 	{
 		auto size = file.tellg(); // Grab size via current position
@@ -160,18 +155,18 @@ bool FileToString(std::string fileName, std::string &str)
 	return false;
 }
 
-void RemoveFile(std::string fileName)
+void RemoveFile(string fileName)
 {
 	std::remove(fileName.c_str());
 }
 
-void RemoveFiles(std::string firstFileName, std::string secondFileName)
+void RemoveFiles(string firstFileName, string secondFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
 }
 
-void RemoveFiles(std::string firstFileName, std::string secondFileName, std::string thirdFileName)
+void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
@@ -214,8 +209,8 @@ bool FileToBuffer(const char* FileName, buffer &buf)
 			buf.sizeUsed = fileSize;
 			rewind(pFile);
 
-			size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
-			std::fclose(pFile);
+			size_t lengthRead = fread(buf.data, 1, buf.sizeUsed, pFile);
+			fclose(pFile);
 
 			if ( lengthRead == buf.sizeUsed )
 				return true;

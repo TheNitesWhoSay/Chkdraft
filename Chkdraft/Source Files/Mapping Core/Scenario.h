@@ -3,12 +3,9 @@
 #include "Buffer.h"
 #include "Basics.h"
 #include "CoreStructs.h"
-
-#include <cstdio>
-#include <list>
 #include <memory>
-#include <string>
 #include <vector>
+#include <list>
 
 enum class SectionId : uint32_t {
 	TYPE = 1162893652, VER  =  542262614, IVER = 1380275785, IVE2 =  843404873,
@@ -71,7 +68,7 @@ class Scenario
 
 
 /*	  Forces	*/	u32 getForceStringNum(u8 index); // Gets the string number of the force at the given index
-					std::string getForceString(u8 forceNum); // Gets the name of the string at the given force num
+					string getForceString(u8 forceNum); // Gets the name of the string at the given force num
 					bool getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &random, bool &av); // Attempts to get info for given force num
 					bool getPlayerForce(u8 playerNum, u8 &force); // Attempts to get the force a player belongs to
 					bool setPlayerForce(u8 player, u8 newForce); // Sets a new force for a player
@@ -99,7 +96,7 @@ class Scenario
 					bool insertUnit(u16 index, ChkUnit &unit);
 					bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
 					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
-					void getUnitName(std::string &dest, u16 unitID);
+					void getUnitName(string &dest, u16 unitID);
 					bool deleteUnit(u16 index);
 					u32 GetUnitFieldData(u16 unitIndex, u8 field);
 					bool SetUnitFieldData(u16 unitIndex, u8 field, u32 data);
@@ -116,12 +113,12 @@ class Scenario
 					bool createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationIndex); // Create a location
 					void deleteLocation(u16 locationIndex); // Unconditionally deletes a location
 					bool stringUsedWithLocs(u32 stringNum); // Returns whether the string is used for a location
-					bool getLocationName(std::string &dest, u8 locationID);
+					bool getLocationName(string &dest, u8 locationID);
 
 
 /*	 Triggers	*/	u32 numTriggers(); // Returns the number of triggers in this scenario
 					bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index
-					bool getActiveComment(Trigger* trigger, std::string &comment);
+					bool getActiveComment(Trigger* trigger, string &comment);
 					bool addTrigger(Trigger &trigger);
 					bool insertTrigger(u32 triggerId, Trigger &trigger);
 					bool deleteTrigger(u32 triggerId);
@@ -131,7 +128,7 @@ class Scenario
 					bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
 
 
-/*	 Switches	*/	bool getSwitchName(std::string &dest, u8 switchID);
+/*	 Switches	*/	bool getSwitchName(string &dest, u8 switchID);
 
 
 /*	 Briefing	*/	bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
@@ -221,15 +218,15 @@ class Scenario
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
 					bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string
 					bool stringExists(u32 stringNum); // Checks if a valid string is associated with this stringNum
-					bool stringExists(std::string str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
-					bool stringExists(std::string str, u32& stringNum, bool extended); // Checks if string exists in the same table
-					bool stringExists(std::string str, u32& stringNum, std::vector<StringTableNode> &strList);
-					bool escStringDifference(std::string str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
+					bool stringExists(string str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
+					bool stringExists(string str, u32& stringNum, bool extended); // Checks if string exists in the same table
+					bool stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList);
+					bool escStringDifference(string str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
 					u32 extendedToRegularStr(u32 stringNum); // Returns string number for extended section
 
-					bool getString(std::string &dest, u32 stringNum);
-					bool getRawString(std::string &dest, u32 stringNum);
-					bool getEscapedString(std::string &dest, u32 stringNum);
+					bool getString(string &dest, u32 stringNum);
+					bool getRawString(string &dest, u32 stringNum);
+					bool getEscapedString(string &dest, u32 stringNum);
 
 					inline void IncrementIfEqual(u32 lhs, u32 rhs, u32 &counter);
 					u32 amountStringUsed(u32 stringNum); // Returns the number of times a string is used
@@ -240,12 +237,12 @@ class Scenario
 
 					/** Attempt to associate a stringNum with a string
 						Returns true and stringNum if string exists or was created successfully */
-					bool addString(std::string str, u32& stringNum, bool extended);
+					bool addString(string str, u32& stringNum, bool extended);
 
 					/** Attempts to assocate a stringNum with a string that has
 						already been confirmed to not exist in the string section
 						Returns true and stringNum if the string was created successfully */
-					bool addNonExistentString(std::string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList);
+					bool addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList);
 
 					/** Attempt to replace a string (specific instance of string), if unsuccessful the old string will remain
 							(if it is not used elsewhere) based on safeReplace and memory conditions
@@ -255,7 +252,7 @@ class Scenario
 							conditions
 						Returns true if the string exists already or was successfully created */
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool replaceString(std::string newString, numType& stringNum, bool extended, bool safeReplace);
+					bool replaceString(string newString, numType& stringNum, bool extended, bool safeReplace);
 
 					/** Attempts to edit the contents of a string (universal change to string), if unsucessesful the old string will
 							remain (if it is not used elsewhere) based on safeEdit and memory conditions
@@ -263,7 +260,7 @@ class Scenario
 							if false the function will always attempt to make room, and may lose the old string in low-mem conditions
 						Returns true if the string contents were successfully edited, always false if stringNum is 0 */
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool editString(std::string newString, numType stringNum, bool extended, bool safeEdit);
+					bool editString(string newString, numType stringNum, bool extended, bool safeEdit);
 
 					void replaceStringNum(u32 toReplace, u32 replacement);
 
@@ -282,9 +279,9 @@ class Scenario
 
 /*	 Security	*/	bool isProtected(); // Checks if map is protected
 					bool hasPassword(); // Checks if the map has a password
-					bool isPassword(std::string &password); // Checks if this is the password the map has
-					bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
-					bool Login(std::string &password); // Attempts to login to the map
+					bool isPassword(string &password); // Checks if this is the password the map has
+					bool SetPassword(string &oldPass, string &newPass); // Attempts to password-protect the map
+					bool Login(string &password); // Attempts to login to the map
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,8 +329,8 @@ class Scenario
 		void CacheSections(); // Caches all section references for fast access
 
 		bool GetStrInfo(char* &ptr, u32 &length, u32 stringNum); // Gets a pointer to the string and its length if successful
-		bool MakeStr(std::string& dest, char* src, u32 srcLen); // Makes a C++ string from a C string
-		bool MakeEscapedStr(std::string& dest, char* src, u32 srcLen); // Makes a C++ string with escaped characters from a C string
+		bool MakeStr(string& dest, char* src, u32 srcLen); // Makes a C++ string from a C string
+		bool MakeEscapedStr(string& dest, char* src, u32 srcLen); // Makes a C++ string with escaped characters from a C string
 		bool ZeroOutString(u32 stringNum); // returns false if stringNum is not a string in any sense
 		bool RepairString(u32& stringNum, bool extended); // Ensures that the string would not be considered corrupted by Scmdraft
 
@@ -357,7 +354,7 @@ class Scenario
 		buffer *kstr;
 };
 
-typedef std::shared_ptr<Scenario> ScenarioPtr;
+typedef shared_ptr<Scenario> ScenarioPtr;
 
 enum class UnitSettingsDataLoc {
 	HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,

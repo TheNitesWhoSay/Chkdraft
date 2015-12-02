@@ -2,14 +2,10 @@
 #include "DefaultCHK.h"
 #include "StringUsage.h"
 #include "sha256.h"
-
-#include <algorithm>
-#include <cstdio>
-#include <exception>
-#include <functional>
 #include <iostream>
-#include <string>
+#include <algorithm>
 #include <unordered_map>
+using namespace std;
 
 Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
@@ -118,7 +114,7 @@ std::string Scenario::getLocationName(u16 locationIndex)
 		}
 	}
 
-	return "Location" + std::to_string(locationIndex);
+	return "Location" + to_string(locationIndex);
 }
 
 bool Scenario::MoveLocation(u16 locationIndex, s32 xChange, s32 yChange)
@@ -204,7 +200,7 @@ bool Scenario::getTrigger(Trigger* &trigRef, u32 index)
 	return TRIG().getPtr(trigRef, index*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE);
 }
 
-bool Scenario::getActiveComment(Trigger* trigger, std::string &comment)
+bool Scenario::getActiveComment(Trigger* trigger, string &comment)
 {
 	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
 	{
@@ -245,7 +241,7 @@ u32 Scenario::getForceStringNum(u8 index)
 
 std::string Scenario::getForceString(u8 forceNum)
 {
-	std::string forceString;
+	string forceString;
 	u32 stringNum = getForceStringNum(forceNum);
 	if ( stringNum != 0 )
 		getString(forceString, stringNum);
@@ -302,7 +298,7 @@ u32 Scenario::totalStrings()
 	return ((u32)STR().get<u16>(0)) + KSTR().get<u32>(4);
 }
 
-bool Scenario::getString(std::string &dest, u32 stringNum)
+bool Scenario::getString(string &dest, u32 stringNum)
 {
 	dest.clear();
 
@@ -322,7 +318,7 @@ bool Scenario::getString(std::string &dest, u32 stringNum)
 	return false;
 }
 
-bool Scenario::getRawString(std::string &dest, u32 stringNum)
+bool Scenario::getRawString(string &dest, u32 stringNum)
 {
 	dest.clear();
 
@@ -347,7 +343,7 @@ bool Scenario::getRawString(std::string &dest, u32 stringNum)
 	return false;
 }
 
-bool Scenario::getEscapedString(std::string &dest, u32 stringNum)
+bool Scenario::getEscapedString(string &dest, u32 stringNum)
 {
 	dest.clear();
 
@@ -371,7 +367,7 @@ bool Scenario::getEscapedString(std::string &dest, u32 stringNum)
 		return false;
 }
 
-bool Scenario::getLocationName(std::string &dest, u8 locationID)
+bool Scenario::getLocationName(string &dest, u8 locationID)
 {
 	buffer& MRGN = this->MRGN();
 	ChkLocation* loc;
@@ -397,7 +393,7 @@ bool Scenario::getLocationName(std::string &dest, u8 locationID)
 	return false;
 }
 
-bool Scenario::getSwitchName(std::string &dest, u8 switchID)
+bool Scenario::getSwitchName(string &dest, u8 switchID)
 {
 	buffer &SWNM = this->SWNM();
 	u32 stringNum = 0;
@@ -409,7 +405,7 @@ bool Scenario::getSwitchName(std::string &dest, u8 switchID)
 		return false;
 }
 
-void Scenario::getUnitName(std::string &dest, u16 unitID)
+void Scenario::getUnitName(string &dest, u16 unitID)
 {
 	buffer& settings = unitSettings();
 
@@ -572,7 +568,7 @@ bool Scenario::stringExists(u32 stringNum)
 		     stringNum < numStrings() );
 }
 
-bool Scenario::stringExists(std::string str, u32& stringNum)
+bool Scenario::stringExists(string str, u32& stringNum)
 {
 	std::vector<StringTableNode> strList;
 	addAllUsedStrings(strList, true, true);
@@ -589,7 +585,7 @@ bool Scenario::stringExists(std::string str, u32& stringNum)
 	return false;
 }
 
-bool Scenario::stringExists(std::string str, u32& stringNum, bool extended)
+bool Scenario::stringExists(string str, u32& stringNum, bool extended)
 {
 	std::vector<StringTableNode> strList;
 	if ( extended )
@@ -609,7 +605,7 @@ bool Scenario::stringExists(std::string str, u32& stringNum, bool extended)
 	return false;
 }
 
-bool Scenario::stringExists(std::string str, u32& stringNum, std::vector<StringTableNode> &strList)
+bool Scenario::stringExists(string str, u32& stringNum, std::vector<StringTableNode> &strList)
 {
 	for ( auto &existingString : strList )
 	{
@@ -622,9 +618,9 @@ bool Scenario::stringExists(std::string str, u32& stringNum, std::vector<StringT
 	return false;
 }
 
-bool Scenario::escStringDifference(std::string str, u32& stringNum)
+bool Scenario::escStringDifference(string str, u32& stringNum)
 {
-	std::string existing;
+	string existing;
 	if ( getEscapedString(existing, stringNum) )
 	{
 		if ( str.compare(existing) == 0 )
@@ -1328,7 +1324,7 @@ void Scenario::forceDeleteString(u32 stringNum)
 		ZeroOutString(stringNum); // Not enough memory for a full clean at this time, just zero-out the string
 }
 
-bool Scenario::addString(std::string str, u32& stringNum, bool extended)
+bool Scenario::addString(string str, u32& stringNum, bool extended)
 {
 	u32 newStringNum;
 	if ( stringExists(str, newStringNum, extended) )
@@ -1422,7 +1418,7 @@ bool Scenario::addString(std::string str, u32& stringNum, bool extended)
 	return false;
 }
 
-bool Scenario::addNonExistentString(std::string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
+bool Scenario::addNonExistentString(string str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
 {
 	if ( cleanStringTable(extended, strList) )
 	{
@@ -1511,13 +1507,13 @@ bool Scenario::addNonExistentString(std::string str, u32& stringNum, bool extend
 }
 
 template <typename numType>
-bool Scenario::replaceString(std::string newString, numType& stringNum, bool extended, bool safeReplace)
+bool Scenario::replaceString(string newString, numType& stringNum, bool extended, bool safeReplace)
 {
 	u32 newStringNum, oldStringNum = (u32)stringNum;
 
 	if ( stringNum != 0 && amountStringUsed(stringNum) == 1 )
 	{
-		std::string testEqual;
+		string testEqual;
 		if ( getRawString(testEqual, oldStringNum) && testEqual.compare(newString) == 0 )
 			return false;
 		else
@@ -1598,13 +1594,13 @@ bool Scenario::replaceString(std::string newString, numType& stringNum, bool ext
 	}
 	return false;
 }
-template bool Scenario::replaceString<u16>(std::string newString, u16& stringNum, bool extended, bool safeReplace);
-template bool Scenario::replaceString<u32>(std::string newString, u32& stringNum, bool extended, bool safeReplace);
+template bool Scenario::replaceString<u16>(string newString, u16& stringNum, bool extended, bool safeReplace);
+template bool Scenario::replaceString<u32>(string newString, u32& stringNum, bool extended, bool safeReplace);
 
 template <typename numType>
-bool Scenario::editString(std::string newString, numType stringNum, bool extended, bool safeEdit)
+bool Scenario::editString(string newString, numType stringNum, bool extended, bool safeEdit)
 {
-	std::string testEqual;
+	string testEqual;
 	if ( stringNum == 0 || (getRawString(testEqual, stringNum) && testEqual.compare(newString) == 0) )
 		return false;
 	else if ( stringNum != 0 )
@@ -1635,8 +1631,8 @@ bool Scenario::editString(std::string newString, numType stringNum, bool extende
 	}
 	return false;
 }
-template bool Scenario::editString<u16>(std::string newString, u16 stringNum, bool extended, bool safeEdit);
-template bool Scenario::editString<u32>(std::string newString, u32 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u16>(string newString, u16 stringNum, bool extended, bool safeEdit);
+template bool Scenario::editString<u32>(string newString, u32 stringNum, bool extended, bool safeEdit);
 
 void Scenario::replaceStringNum(u32 toReplace, u32 replacement)
 {
@@ -1979,7 +1975,7 @@ bool Scenario::repairStringTable(bool extendedTable)
 
 	for ( u32 i=0; i<WAV().size()/4; i++ )
 	{
-		std::string str;
+		string str;
 		stringNum = WAV().get<u32>(i*4);
 		if ( stringNum != 0 && !( stringExists(stringNum) && getString(str, stringNum) && str.c_str()[0] != '\0' ) )
 		{
@@ -2053,7 +2049,7 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )						\
 				{																						\
 					strList.push_back(node); /* add if the string isn't in the list */					\
-					stringSearchTable.insert( std::pair<u32, StringTableNode>(strHash(node.string), node) );	\
+					stringSearchTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );	\
 				}																						\
 			}																							\
 		}
@@ -2916,15 +2912,15 @@ bool Scenario::hasPassword()
 	return tailLength == 7;
 }
 
-bool Scenario::isPassword(std::string &password)
+bool Scenario::isPassword(string &password)
 {
 	if ( hasPassword() )
 	{
 		SHA256 sha256;
-		std::string hashStr = sha256(password);
+		string hashStr = sha256(password);
 		if ( hashStr.length() >= 7 )
 		{
-			u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
+			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
 			u8* hashBytes = (u8*)&eightHashBytes;
 
 			for ( u8 i = 0; i < tailLength; i++ )
@@ -2941,15 +2937,15 @@ bool Scenario::isPassword(std::string &password)
 	return false;
 }
 
-bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
+bool Scenario::SetPassword(string &oldPass, string &newPass)
 {
 	if ( isPassword(oldPass) )
 	{
 		SHA256 sha256;
-		std::string hashStr = sha256(newPass);
+		string hashStr = sha256(newPass);
 		if ( hashStr.length() >= 7 )
 		{
-			u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
+			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
 			u8* hashBytes = (u8*)&eightHashBytes;
 
 			tailLength = 7;
@@ -2962,7 +2958,7 @@ bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
 	return false;
 }
 
-bool Scenario::Login(std::string &password)
+bool Scenario::Login(string &password)
 {
 	if ( isPassword(password) )
 	{
@@ -3165,7 +3161,7 @@ bool Scenario::GetStrInfo(char* &ptr, u32 &length, u32 stringNum)
 		return false;
 }
 
-bool Scenario::MakeStr(std::string& dest, char* src, u32 srcLen)
+bool Scenario::MakeStr(string& dest, char* src, u32 srcLen)
 {
 	try
 	{
@@ -3196,7 +3192,7 @@ bool Scenario::MakeStr(std::string& dest, char* src, u32 srcLen)
 	}
 }
 
-bool Scenario::MakeEscapedStr(std::string& dest, char* src, u32 srcLen)
+bool Scenario::MakeEscapedStr(string& dest, char* src, u32 srcLen)
 {
 	try
 	{
@@ -3266,7 +3262,7 @@ bool Scenario::ZeroOutString(u32 stringNum)
 
 bool Scenario::RepairString(u32& stringNum, bool extended)
 {
-	std::string str;
+	string str;
 	if ( stringExists(stringNum) && getString(str, stringNum) && str.c_str()[0] != '\0' )
 		return false; // No Repair
 	else

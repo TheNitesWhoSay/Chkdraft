@@ -3,6 +3,7 @@
 #include "Scenario.h"
 #include "Basics.h"
 #include <list>
+using namespace std;
 
 class StringUsageTable
 {

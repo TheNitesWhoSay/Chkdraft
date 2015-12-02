@@ -1,8 +1,6 @@
 #include "ChangePassword.h"
 #include "Chkdraft.h"
 
-#include <string>
-
 bool ChangePasswordDialog::CreateThis(HWND hParent)
 {
 	if ( chkd.maps.curr != nullptr )
@@ -35,7 +33,7 @@ void ChangePasswordDialog::Hide()
 
 void ChangePasswordDialog::ButtonApply()
 {
-	std::string oldPass, newPass;
+	string oldPass, newPass;
 	editOldPass.GetEditText(oldPass);
 	editNewPass.GetEditText(newPass);
 	editOldPass.SetText("");

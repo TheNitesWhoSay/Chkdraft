@@ -1,9 +1,6 @@
 #include "UnitSettings.h"
 #include "Chkdraft.h"
 
-#include <sstream>
-#include <string>
-
 enum ID
 {
 	TREE_UNITSETTINGS = ID_FIRST,
@@ -122,7 +119,7 @@ void UnitSettingsWindow::RefreshWindow()
 		}
 		else
 		{
-			std::stringstream newGroundGroupText;
+			stringstream newGroundGroupText;
 			newGroundGroupText << "Ground Weapon [" << weaponNames[groundWeapon] << "]";
 			groupGroundWeapon.SetText(newGroundGroupText.str().c_str());
 		}
@@ -131,7 +128,7 @@ void UnitSettingsWindow::RefreshWindow()
 		{
 			if ( airWeapon != 130 && airWeapon == groundWeapon )
 			{
-				std::stringstream newAirGroupText;
+				stringstream newAirGroupText;
 				newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
 				groupAirWeapon.SetText(newAirGroupText.str().c_str());
 			}
@@ -148,7 +145,7 @@ void UnitSettingsWindow::RefreshWindow()
 		}
 		else
 		{
-			std::stringstream newAirGroupText;
+			stringstream newAirGroupText;
 			newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
 			groupAirWeapon.SetText(newAirGroupText.str().c_str());
 		}
@@ -228,7 +225,7 @@ void UnitSettingsWindow::RefreshWindow()
 		std::string unitName;
 		chk->getUnitName(unitName, unitId);
 		editUnitName.SetText(unitName.c_str());
-		chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + DefaultUnitDisplayName[unitId] + ']').c_str());
+		chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + DefaultUnitDisplayName[unitId] + ']').c_str());
 	}
 	else
 		DisableUnitEditing();
@@ -280,7 +277,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 		for ( int x=0; x<2; x++ )
 		{
 			int player = y*2+x;
-			std::stringstream ssPlayer;
+			stringstream ssPlayer;
 			if ( player < 9 )
 				ssPlayer << "Player 0" << player+1;
 			else
@@ -417,7 +414,7 @@ void UnitSettingsWindow::CheckReplaceUnitName()
 		possibleUnitNameUpdate = false;
 
 	ScenarioPtr chk = chkd.maps.curr;
-	std::string newUnitName;
+	string newUnitName;
 	if ( possibleUnitNameUpdate && selectedUnit >= 0 && selectedUnit < 228 && editUnitName.GetEditText(newUnitName) )
 	{
 		u16* originalNameString = nullptr;
@@ -842,7 +839,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				RefreshWindow();
 				if ( selectedUnit != -1 )
-					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + DefaultUnitDisplayName[selectedUnit] + ']').c_str());
+					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + DefaultUnitDisplayName[selectedUnit] + ']').c_str());
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}

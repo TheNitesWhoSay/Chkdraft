@@ -5,8 +5,6 @@
 #include "UnitCreateDel.h"
 #include "UnitIndexMove.h"
 
-#include <string>
-
 enum ListColumns {
 	UNIT_NAME_COLUMN,
 	UNIT_OWNER_COLUMN,
@@ -176,7 +174,7 @@ bool UnitWindow::AddUnitItem(u16 index, ChkUnit* unit)
 	_itoa_s(unit->yc, yc, 10);
 	_itoa_s(index, cIndex, 10);
 
-	std::string unitName;
+	string unitName;
 	chkd.maps.curr->getUnitName(unitName, id);
 
 	listUnits.AddRow(4, index);
@@ -235,7 +233,7 @@ void UnitWindow::RepopulateList()
 			{
 				SetUnitFieldText(getHandle(), unit);
 
-				std::string unitName;
+				string unitName;
 				chkd.maps.curr->getUnitName(unitName, unit->id);
 				SetTitle(unitName.c_str());
 
@@ -501,7 +499,7 @@ BOOL UnitWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 					ChkUnit* unit;
 					if ( chkd.maps.curr->getUnit(unit, index) )
 					{
-						std::string unitName;
+						string unitName;
 						chkd.maps.curr->getUnitName(unitName, unit->id);
 						SetWindowText(hWnd, unitName.c_str());
 						SetUnitFieldText(hWnd, unit);
@@ -1066,7 +1064,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 								unit->id = unitID;
 								int row = listUnits.GetItemRow(unitIndex);
 
-								std::string unitName;
+								string unitName;
 								chkd.maps.curr->getUnitName(unitName, unitID);
 								listUnits.SetItemText(row, UNIT_NAME_COLUMN, unitName.c_str());
 

@@ -1,9 +1,6 @@
  #include "StaticTrigComponentParser.h"
 #include "Mapping Core/MappingCore.h"
 
-#include <exception>
-#include <string>
-
 bool StaticTrigComponentParser::ParseNumericComparison(char* text, u8 &dest, u32 pos, u32 end)
 {
 	int size = end-pos;
@@ -620,20 +617,20 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, u32 pos, u32 en
 		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
 		{
 			char potentialLong[12] = {};
-			std::memcpy(potentialLong, &text[pos + 2], size - 2);
+			memcpy(potentialLong, &text[pos + 2], size - 2);
 			potentialLong[size - 2] = '\0';
 			try {
-				dest = (u32)std::stoll(potentialLong, nullptr, 16);
+				dest = (u32)stoll(potentialLong, nullptr, 16);
 				return true;
 			}
-			catch (std::exception e) {}
+			catch (exception e) {}
 		}
 		else
 		{
 			char potentialLong[12] = { };
-			std::memcpy(potentialLong, &text[pos], size);
+			memcpy(potentialLong, &text[pos], size);
 			potentialLong[size] = '\0';
-			return ( (dest = std::atoi(potentialLong)) > 0 );
+			return ( (dest = atoi(potentialLong)) > 0 );
 		}
 	}
 	return false;
@@ -678,13 +675,13 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, u32 pos, u32 e
 		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
 		{
 			char potentialShort[7] = {};
-			std::memcpy(potentialShort, &text[pos + 2], size - 2);
+			memcpy(potentialShort, &text[pos + 2], size - 2);
 			potentialShort[size - 2] = '\0';
 			try {
-				dest = (u32)std::stol(potentialShort, nullptr, 16);
+				dest = (u32)stol(potentialShort, nullptr, 16);
 				return true;
 			}
-			catch (std::exception e ) { return false; }
+			catch ( exception e ) { return false; }
 		}
 		else
 		{
@@ -710,20 +707,20 @@ bool StaticTrigComponentParser::ParseByte(char* text, u8& dest, u32 pos, u32 end
 		else if ( size > 2 && text[pos] == '0' && text[pos + 1] == 'x' )
 		{
 			char potentialByte[5] = {};
-			std::memcpy(potentialByte, &text[pos + 2], size - 2);
+			memcpy(potentialByte, &text[pos + 2], size - 2);
 			potentialByte[size - 2] = '\0';
 			try {
-				dest = (u32)std::stol(potentialByte, nullptr, 16);
+				dest = (u32)stol(potentialByte, nullptr, 16);
 				return true;
 			}
-			catch (std::exception e ) { return false; }
+			catch ( exception e ) { return false; }
 		}
 		else
 		{
 			char potentialByte[5] = {};
-			std::memcpy(potentialByte, &text[pos], size);
+			memcpy(potentialByte, &text[pos], size);
 			potentialByte[size] = '\0';
-			return ((dest = std::atoi(potentialByte)) > 0);
+			return ((dest = atoi(potentialByte)) > 0);
 		}
 	}
 	return false;

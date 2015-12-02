@@ -1,10 +1,7 @@
 #include "Maps.h"
 #include "Chkdraft.h"
 #include "UnitChange.h"
-
-#include <memory>
-#include <string>
-#include <utility>
+using namespace std;
 
 MAPS::MAPS() : curr(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
 	nonStandardCursor(false), currCursor(nullptr), standardCursor(NULL), sizeAllCursor(NULL),
@@ -43,7 +40,7 @@ bool MAPS::Focus(HWND hGuiMap)
 	return false;
 }
 
-bool MAPS::Focus(std::shared_ptr<GuiMap> guiMap)
+bool MAPS::Focus(shared_ptr<GuiMap> guiMap)
 {
 	if ( guiMap != nullptr && isInOpenMaps(guiMap) )
 	{
@@ -59,7 +56,7 @@ bool MAPS::Focus(std::shared_ptr<GuiMap> guiMap)
 	}
 }
 
-std::shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
+shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
 {
 	if ( hGuiMap == curr->getHandle() )
 		return curr;
@@ -73,7 +70,7 @@ std::shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
 	return nullptr;
 }
 
-std::shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
+shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
 {
 	if ( mapId == 0 || mapId == curr->getMapId() )
 		return curr;
@@ -85,7 +82,7 @@ std::shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
 		return nullptr;
 }
 
-u16 MAPS::GetMapID(std::shared_ptr<GuiMap> guiMap)
+u16 MAPS::GetMapID(shared_ptr<GuiMap> guiMap)
 {
 	if ( guiMap != nullptr )
 		return guiMap->getMapId();
@@ -101,7 +98,7 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 		return false;
 	}
 
-	std::shared_ptr<GuiMap> newMap = AddEmptyMap();
+	shared_ptr<GuiMap> newMap = AddEmptyMap();
 
 	if ( newMap->CreateNew(width, height, tileset, terrain, triggers) )
 	{
@@ -179,7 +176,7 @@ bool MAPS::SaveCurr(bool saveAs)
 
 void MAPS::CloseMap(HWND hMap)
 {
-	std::shared_ptr<GuiMap> map = GetMap(hMap);
+	shared_ptr<GuiMap> map = GetMap(hMap);
 	if ( map != nullptr )
 		RemoveMap(map);
 
@@ -300,7 +297,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 
 			if ( chkd.unitWindow.getHandle() != nullptr )
 			{
-				std::string text;
+				string text;
 				HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
 				if ( newPlayer < 12 )
 					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
@@ -599,12 +596,12 @@ void MAPS::DisableMapping()
 	}
 }
 
-std::shared_ptr<GuiMap> MAPS::AddEmptyMap()
+shared_ptr<GuiMap> MAPS::AddEmptyMap()
 {
 	u16 id = NextId();
 	if ( id < u16_max )
 	{
-		auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap)));
+		auto it = openMaps.insert(pair<u16, shared_ptr<GuiMap>>(id, shared_ptr<GuiMap>(new GuiMap)));
 		if ( it != openMaps.end() )
 		{
 			it->second->setMapId(id);
