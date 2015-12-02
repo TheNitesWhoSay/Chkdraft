@@ -6,7 +6,7 @@
 #include "Undo.h"
 #include "Data.h"
 
-void StringToWindowsClipboard(string &str);
+void StringToWindowsClipboard(std::string &str);
 
 class PasteTileNode
 {

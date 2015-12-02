@@ -1,6 +1,7 @@
 #include "Graphics.h"
 #include "Common Files/CommonFiles.h"
 #include "Chkdraft.h"
+#include <string>
 
 inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue)
 {
@@ -1585,12 +1586,12 @@ void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16
 	DeleteObject(pen);
 }
 
-UINT GetStringDrawWidth(HDC hDC, string str)
+UINT GetStringDrawWidth(HDC hDC, std::string str)
 {
 	return LOWORD(GetTabbedTextExtent(hDC, (LPCSTR)str.c_str(), str.size(), 0, NULL));
 }
 
-bool GetLineDrawSize(HDC hDC, SIZE* strSize, string str)
+bool GetLineDrawSize(HDC hDC, SIZE* strSize, std::string str)
 {
 	DWORD result = GetTabbedTextExtent(hDC, (LPCSTR)str.c_str(), str.size(), 0, NULL);
 	if ( result != 0 )
@@ -1603,12 +1604,12 @@ bool GetLineDrawSize(HDC hDC, SIZE* strSize, string str)
 		return false;
 }
 
-void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, string str)
+void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, std::string str)
 {
 	TabbedTextOut(hDC, xPos, yPos, (LPCSTR)str.c_str(), str.size(), 0, NULL, 0);
 }
 
-void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str)
+void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
 {
 	COLORREF lastColor = defaultColor;
 	const char* cStr = str.c_str();
@@ -1622,7 +1623,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 		{
 			if ( i > chunkStartChar ) // Output everything prior to this...
 			{
-				string chunk = str.substr(chunkStartChar, i-chunkStartChar);
+				std::string chunk = str.substr(chunkStartChar, i-chunkStartChar);
 				if ( center )
 				{
 					UINT chunkWidth, chunkHeight;
@@ -1690,7 +1691,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 
 	if ( chunkStartChar < size )
 	{
-		string chunk = str.substr(chunkStartChar, size-chunkStartChar);
+		std::string chunk = str.substr(chunkStartChar, size-chunkStartChar);
 		if ( center )
 		{
 			UINT chunkWidth, chunkHeight;
@@ -1715,7 +1716,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 	}
 }
 
-bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
+bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, std::string str)
 {
 	// This method is very time sensative and should be optimized as much as possible
 	width = 0;
@@ -1727,13 +1728,13 @@ bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 	size_t start = 0,
 		   loc,
 		   max = str.size(),
-		   npos = string::npos;
+		   npos = std::string::npos;
 
 	loc = str.find("\r\n");
 	if ( loc != npos ) // Has new lines
 	{
 		// Do first line
-		string firstLine = str.substr(0, loc);
+		std::string firstLine = str.substr(0, loc);
 		if ( GetLineDrawSize(hDC, &strSize, firstLine) )
 		{
 			start = loc+2;
@@ -1746,7 +1747,7 @@ bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 				loc = str.find("\r\n", start);
 				if ( loc != npos )
 				{
-					string line = " ";
+					std::string line = " ";
 					if ( loc-start > 0 )
 						line = str.substr(start, loc-start);
 					start = loc+2;
@@ -1762,7 +1763,7 @@ bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 				else
 				{
 					// Do last line
-					string lastLine = str.substr(start, max-start);
+					std::string lastLine = str.substr(start, max-start);
 					if ( GetLineDrawSize(hDC, &strSize, lastLine) )
 					{
 						height += strSize.cy;
@@ -1787,7 +1788,7 @@ bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, string str)
 	return false;
 }
 
-void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, string str)
+void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
 {
 	SetTextColor(hDC, defaultColor);
 	SIZE strSize;
@@ -1797,13 +1798,13 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
 		size_t start = 0,
 			   loc,
 			   max = str.size(),
-			   npos = string::npos;
+			   npos = std::string::npos;
 
 		loc = str.find("\r\n");
 		if ( loc != npos ) // Has new lines
 		{
 			// Do first line
-			string firstLine = str.substr(0, loc);
+			std::string firstLine = str.substr(0, loc);
 			DrawStringLine(hDC, xPos, yPos, width, defaultColor, firstLine);
 			if ( GetLineDrawSize(hDC, &strSize, firstLine) )
 			{
@@ -1815,7 +1816,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
 					loc = str.find("\r\n", start);
 					if ( loc != npos )
 					{
-						string line = " ";
+						std::string line = " ";
 						if ( loc-start > 0 )
 						{
 							line = str.substr(start, loc-start);
@@ -1831,7 +1832,7 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
 					else
 					{
 						// Do last line
-						string lastLine = str.substr(start, max-start);
+						std::string lastLine = str.substr(start, max-start);
 						if ( GetLineDrawSize(hDC, &strSize, lastLine) )
 						{
 							DrawStringLine(hDC, xPos, yPos, width, defaultColor, lastLine);

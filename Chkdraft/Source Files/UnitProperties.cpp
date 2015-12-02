@@ -4,6 +4,7 @@
 #include "UnitChange.h"
 #include "UnitCreateDel.h"
 #include "UnitIndexMove.h"
+#include <string>
 
 enum ListColumns {
 	UNIT_NAME_COLUMN,

@@ -1,5 +1,6 @@
 #include "MapProperties.h"
 #include "Chkdraft.h"
+#include <string>
 
 enum ID {
 	EDIT_MAPTITLE = ID_FIRST,

@@ -3,11 +3,13 @@
 #include "StringUsage.h"
 #include "sha256.h"
 #include "Math.h"
-#include <iostream>
 #include <algorithm>
-#include <unordered_map>
+#include <cstdio>
+#include <exception>
+#include <functional>
+#include <iostream>
 #include <string>
-#include <memory>
+#include <unordered_map>
 
 Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
@@ -186,7 +188,7 @@ bool Scenario::getLocationName(u16 locationIndex, RawString &str)
 
 	try
 	{
-		str = "Location " + to_string(locationIndex);
+		str = "Location " + std::to_string(locationIndex);
 		return true;
 	}
 	catch ( std::exception ) {}
@@ -204,7 +206,7 @@ bool Scenario::getLocationName(u16 locationIndex, ChkdString &str)
 
 	try
 	{
-		str = "Location " + to_string(locationIndex);
+		str = "Location " + std::to_string(locationIndex);
 		return true;
 	}
 	catch ( std::exception ) {}
@@ -2156,7 +2158,7 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )		\
 				{																		\
 					strList.push_back(node); /* add if the string isn't in the list */	\
-					stringSearchTable.insert( pair<u32, StringTableNode>(				\
+					stringSearchTable.insert( std::pair<u32, StringTableNode>(			\
 						strHash(node.string), node) );									\
 				}																		\
 			}																			\
@@ -3042,15 +3044,15 @@ bool Scenario::hasPassword()
 	return tailLength == 7;
 }
 
-bool Scenario::isPassword(string &password)
+bool Scenario::isPassword(std::string &password)
 {
 	if ( hasPassword() )
 	{
 		SHA256 sha256;
-		string hashStr = sha256(password);
+		std::string hashStr = sha256(password);
 		if ( hashStr.length() >= 7 )
 		{
-			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+			u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
 			u8* hashBytes = (u8*)&eightHashBytes;
 
 			for ( u8 i = 0; i < tailLength; i++ )
@@ -3067,12 +3069,12 @@ bool Scenario::isPassword(string &password)
 	return false;
 }
 
-bool Scenario::SetPassword(string &oldPass, string &newPass)
+bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
 {
 	if ( isPassword(oldPass) )
 	{
 		SHA256 sha256;
-		string hashStr = sha256(newPass);
+		std::string hashStr = sha256(newPass);
 		if ( hashStr.length() >= 7 )
 		{
 			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
@@ -3088,7 +3090,7 @@ bool Scenario::SetPassword(string &oldPass, string &newPass)
 	return false;
 }
 
-bool Scenario::Login(string &password)
+bool Scenario::Login(std::string &password)
 {
 	if ( isPassword(password) )
 	{

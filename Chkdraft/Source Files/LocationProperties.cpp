@@ -1,6 +1,8 @@
 #include "LocationProperties.h"
 #include "Chkdraft.h"
 #include "LocationChange.h"
+#include <exception>
+#include <string>
 
 LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
 {

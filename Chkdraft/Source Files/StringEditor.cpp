@@ -1,5 +1,7 @@
 #include "StringEditor.h"
 #include "Chkdraft.h"
+#include <fstream>
+#include <string>
 
 enum ID {
 	DELETE_STRING = ID_FIRST,
@@ -64,7 +66,7 @@ void StringEditorWindow::RefreshWindow()
 		}
 		listStrings.SetRedraw(true);
 		if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
-			chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
+			chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
 		else
 		{
 			currSelString = 0; // Clear currSelString if selection fails
@@ -124,7 +126,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					addUseItem("WAVs", wavs);
 					addUseItem("Units", units);
 					addUseItem("Switches", switches);
-					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [String #") +
+					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [String #") +
 						std::to_string(currSelString) + ']').c_str());
 				}
 				else
@@ -253,7 +255,7 @@ void StringEditorWindow::saveStrings()
 
 		DeleteFileA(filePath);
 
-		ofstream outFile(filePath, std::ofstream::out);
+		std::ofstream outFile(filePath, std::ofstream::out);
 		if ( outFile.is_open() )
 		{
 			ChkdString str;
@@ -267,7 +269,7 @@ void StringEditorWindow::saveStrings()
 	}
 }
 
-void StringEditorWindow::addUseItem(string str, u32 amount)
+void StringEditorWindow::addUseItem(std::string str, u32 amount)
 {
 	if ( amount > 0 )
 		listUsage.AddString((str + ": " + std::to_string(amount)).c_str());

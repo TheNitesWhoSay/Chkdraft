@@ -1,5 +1,6 @@
 #include "Forces.h"
 #include "Chkdraft.h"
+#include <string>
 
 enum ID {
 	EDIT_F1NAME = ID_FIRST,
@@ -123,7 +124,7 @@ void ForcesWindow::RefreshWindow()
 			{
 				map->getPlayerColor(player, color);
 				map->getPlayerRace(player, race);
-				stringstream ssplayer;
+				std::stringstream ssplayer;
 				ssplayer << "Player " << player+1 << " - " << playerColors[color] << " - "
 						 << playerRaces[race] << " (" << playerOwners[displayOwner] << ")";
 				HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
@@ -290,7 +291,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										{
 											map->setPlayerForce(playerBeingDragged, force);
 											RefreshWindow();
-											stringstream ssPlayer;
+											std::stringstream ssPlayer;
 											ssPlayer << "Player " << playerBeingDragged+1;
 											SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
 											map->notifyChange(false);

@@ -1,8 +1,8 @@
 #include "Suggestions.h"
 #include "Common Files/CommonFiles.h"
-using namespace std;
+#include <string>
 
-bool alphabetize(const string &first, const string &second)
+bool alphabetize(const std::string &first, const std::string &second)
 {
 	// true = first before second, false = second before first
 	size_t firstLen = first.length(),
@@ -21,7 +21,7 @@ bool alphabetize(const string &first, const string &second)
 	return firstLen < secondLen;
 }
 
-bool firstStartsWithSecond(const string &first, const string &second)
+bool firstStartsWithSecond(const std::string &first, const std::string &second)
 {
 	size_t firstLen = first.length();
 	size_t secondLen = second.length();
@@ -70,10 +70,10 @@ void Suggestions::ClearStrings()
 void Suggestions::AddStrings(const char* strings[], int numStrings)
 {
 	for ( int i = 0; i < numStrings; i++ )
-		strList.push_back(string(strings[i]));
+		strList.push_back(std::string(strings[i]));
 }
 
-void Suggestions::AddString(string &string)
+void Suggestions::AddString(std::string &string)
 {
 	strList.push_back(string);
 }
@@ -92,7 +92,7 @@ void Suggestions::SetStrings(const char* strings[], int numStrings)
 {
 	strList.clear();
 	for ( int i = 0; i < numStrings; i++ )
-		strList.push_back(string(strings[i]));
+		strList.push_back(std::string(strings[i]));
 
 	SetStrings();
 }
@@ -110,7 +110,7 @@ void Suggestions::Hide()
 	ShowWindow(getHandle(), SW_HIDE);
 }
 
-void Suggestions::SuggestNear(string &str)
+void Suggestions::SuggestNear(std::string &str)
 {
 	SuggestFirstStartingWith(str);
 }
@@ -125,9 +125,9 @@ void Suggestions::ArrowDown()
 	KeyDown(VK_DOWN);
 }
 
-string Suggestions::Take()
+std::string Suggestions::Take()
 {
-	string str;
+	std::string str;
 	if ( !isShown )
 		return "0";
 	else if ( listSuggestions.GetCurSelString(str) )
@@ -154,7 +154,7 @@ void Suggestions::EraseBackground(HDC hDC)
 	}*/
 }
 
-void Suggestions::SuggestFirstStartingWith(string &str)
+void Suggestions::SuggestFirstStartingWith(std::string &str)
 {
 	int i = 0;
 	for ( auto &check : strList )
@@ -197,7 +197,7 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		case LBN_SELCHANGE:
 			{
-				string str;
+				std::string str;
 				if ( listSuggestions.GetCurSelString(str) )
 					SendMessage(suggestParent, WM_NEWSELTEXT, NULL, (LPARAM)&str);
 			}
@@ -214,7 +214,7 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch ( msg )
 	{
 		//case WM_SIZE: DoSize(); break;
-		case WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(string*)lParam); break;
+		case WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
 		case WM_KEYDOWN: KeyDown(wParam); break;
 		case WM_ERASEBKGND: EraseBackground((HDC)wParam); break;
 		default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;

@@ -1,5 +1,6 @@
 #include "TechSettings.h"
 #include "Chkdraft.h"
+#include <string>
 
 enum ID {
 	TREE_TECHS = ID_FIRST,
@@ -53,7 +54,7 @@ void TechSettingsWindow::RefreshWindow()
 	{
 		u8 tech = (u8)selectedTech;
 		if ( selectedTech != -1 )
-			chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
+			chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
 
 		if ( isDisabled )
 			EnableTechEditing();
@@ -175,7 +176,7 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 	const char* playerTechSettings[] = { "Disabled", "Enabled", "Researched" };
 	for ( int player=0; player<12; player++ )
 	{
-		stringstream ssPlayerTech;
+		std::stringstream ssPlayerTech;
 		ssPlayerTech << "Use Default for Player ";
 		if ( player < 9 )
 			ssPlayerTech << "0" << player+1;
@@ -499,7 +500,7 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				RefreshWindow();
 				if ( selectedTech != -1 )
-					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
+					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}
