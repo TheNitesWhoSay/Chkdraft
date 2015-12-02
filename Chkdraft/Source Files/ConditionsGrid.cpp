@@ -1,6 +1,9 @@
 #include "ConditionsGrid.h"
 using namespace std;
 
+// Copy -> escape tabs to \t
+// Paste -> parse \t to tabs
+
 enum ID
 {
 	CHECK_ENABLED_1 = ID_FIRST,
@@ -25,7 +28,6 @@ bool ConditionsGrid::CreateThis(HWND hParent, int x, int y, int width, int heigh
 	for ( int y = 0; y<16; y++ )
 		GridViewControl::AddRow(9, (y + 1) * 100);
 
-	//suggestions.CreateThis(hWnd, 0, 0, 200, 100);
 	CreateSubWindows(getHandle());
 	return false;
 }
@@ -172,27 +174,27 @@ LRESULT ConditionsGrid::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	switch ( HIWORD(wParam) )
 	{
-	case EN_CHANGE:
-		if ( !ignoreChange )
-		{
-			string str;
-			GridViewControl::GetEditText(str);
-			ignoreChange = true;
-			suggestions.SuggestNear(str);
-			ignoreChange = false;
-		}
-		break;
-	case BN_CLICKED:
-		if ( LOWORD(wParam) >= CHECK_ENABLED_1 && LOWORD(wParam) <= CHECK_ENABLED_16 )
-		{
-			u8 conditionNum = u8(LOWORD(wParam) - CHECK_ENABLED_1);
-			if ( conditionNum >= 0 && conditionNum < 16 )
-				user.ConditionEnableToggled(conditionNum);
-		}
-		break;
-	default:
-		return GridViewControl::Command(hWnd, wParam, lParam);
-		break;
+		case EN_CHANGE:
+			if ( !ignoreChange )
+			{
+				string str;
+				GridViewControl::GetEditText(str);
+				ignoreChange = true;
+				suggestions.SuggestNear(str);
+				ignoreChange = false;
+			}
+			break;
+		case BN_CLICKED:
+			if ( LOWORD(wParam) >= CHECK_ENABLED_1 && LOWORD(wParam) <= CHECK_ENABLED_16 )
+			{
+				u8 conditionNum = u8(LOWORD(wParam) - CHECK_ENABLED_1);
+				if ( conditionNum >= 0 && conditionNum < 16 )
+					user.ConditionEnableToggled(conditionNum);
+			}
+			break;
+		default:
+			return GridViewControl::Command(hWnd, wParam, lParam);
+			break;
 	}
 	return GridViewControl::Command(hWnd, wParam, lParam);
 }
@@ -206,6 +208,21 @@ LRESULT ConditionsGrid::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				suggestions.ArrowUp();
 			else if ( wParam == VK_DOWN )
 				suggestions.ArrowDown();
+			break;
+
+		case WM_KEYDOWN:
+			if ( GetKeyState(VK_CONTROL) & 0x8000 )
+			{
+				switch ( wParam )
+				{
+					case 'c': case 'C': user.CopySelection(); break;
+					case 'p': case 'P': user.Paste(); break;
+					case 'x': case 'X': user.CutSelection(); break;
+					default: return GridViewControl::ControlProc(hWnd, msg, wParam, lParam); break;
+				}
+			}
+			else
+				return GridViewControl::ControlProc(hWnd, msg, wParam, lParam); break;
 			break;
 
 		default: return GridViewControl::ControlProc(hWnd, msg, wParam, lParam); break;

@@ -127,6 +127,12 @@ bool ListViewControl::SelectRow(int index)
 	return SendMessage(getHandle(), LVM_SETITEMSTATE, index, (LPARAM)&item) == TRUE;
 }
 
+void ListViewControl::RedrawHeader()
+{
+	HWND hHeader = (HWND)SendMessage(getHandle(), LVM_GETHEADER, NULL, NULL);
+	RedrawWindow(hHeader, NULL, NULL, RDW_INVALIDATE);
+}
+
 //bool ListViewControl::SortItems(WPARAM value, LPARAM function)
 //{
 //	return false;

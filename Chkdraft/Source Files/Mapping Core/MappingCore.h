@@ -6,6 +6,7 @@
 #include "Mapping Core/DefaultCHK.h"
 #include "Mapping Core/FileIO.h"
 #include "Mapping Core/MapFile.h"
+#include "Mapping Core/Math.h"
 #include "Mapping Core/Scenario.h"
 #include "Mapping Core/SFmpqapi.h"
 #include "Mapping Core/StringUsage.h"

@@ -165,6 +165,30 @@ bool StringUsageTable::useNext(u32 &index)
 	return false;
 }
 
+bool StringUsageTable::useNext(u16 &index)
+{
+	for ( u32 i = 1; i<stringUsed.size() && i < 65536; i++ )
+	{
+		if ( stringUsed.get<u8>(i) == 0 )
+		{
+			stringUsed.replace<u8>(i, 1);
+			index = (u16)i;
+			return true;
+		}
+	}
+
+	// No open slots, add another
+	if ( stringUsed.size() < 65536 && stringUsed.add<u8>(1) )
+	{
+		index = (u16)(stringUsed.size() - 1);
+		return true;
+	}
+	else // Prolly out of memory
+		index = 0;
+
+	return false;
+}
+
 bool StringUsageTable::isUsed(u32 index)
 {
 	return stringUsed.get<u8>(index) == 1; // If it can't find, it equals 0 and returns that it's unused

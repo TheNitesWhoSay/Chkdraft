@@ -6,6 +6,8 @@
 #include "Undo.h"
 #include "Data.h"
 
+void StringToWindowsClipboard(string &str);
+
 class PasteTileNode
 {
 	public:

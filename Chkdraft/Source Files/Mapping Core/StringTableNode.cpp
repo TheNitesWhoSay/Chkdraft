@@ -23,7 +23,7 @@ bool CompareStrTblNode(StringTableNode first, StringTableNode second)
 	return first.stringNum < second.stringNum;
 }
 
-bool strIsInHashTable(std::string &str, std::hash<std::string> &strHash,
+bool strIsInHashTable(RawString &str, std::hash<std::string> &strHash,
 	std::unordered_multimap<u32, StringTableNode> &stringTable)
 {
 	u32 hash = strHash(str);

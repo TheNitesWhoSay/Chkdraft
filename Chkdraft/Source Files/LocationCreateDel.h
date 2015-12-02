@@ -14,7 +14,7 @@ class LocationCreateDel : public ReversibleAction
 	private:
 		u16 locationIndex;
 		std::unique_ptr<ChkLocation> location; // If creation, is a nullptr
-		std::string locationName; // If creation, is empty
+		RawString locationName; // If creation, is empty
 };
 
 #endif

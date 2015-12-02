@@ -1070,7 +1070,7 @@ void TriggersWindow::ClearGroups()
 
 bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
 {
-	string str;
+	RawString str;
 	if ( chk->getActiveComment(trigger, str) )
 	{
 		size_t endOfLine = str.find("\r\n");
@@ -1176,7 +1176,7 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
 		DeleteObject(hBackground);
 	}
 
-	string str;
+	RawString str;
 	LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
 	if ( chk->getActiveComment(trigger, str) )
 	{

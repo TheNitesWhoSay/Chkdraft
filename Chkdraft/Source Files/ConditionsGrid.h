@@ -6,8 +6,11 @@
 
 class IConditionGridUser // ~Interface
 {
-public:
-	virtual void ConditionEnableToggled(u8 conditionNum) = 0;
+	public:
+		virtual void ConditionEnableToggled(u8 conditionNum) = 0;
+		virtual void CutSelection() = 0;
+		virtual void CopySelection() = 0;
+		virtual void Paste() = 0;
 };
 
 class ConditionsGrid : public GridViewControl

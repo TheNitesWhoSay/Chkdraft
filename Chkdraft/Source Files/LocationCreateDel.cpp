@@ -20,7 +20,7 @@ void LocationCreateDel::Reverse(void *guiMap)
 	{
 		location = std::unique_ptr<ChkLocation>(new ChkLocation);
 		*location = ((GuiMap*)guiMap)->getLocation(locationIndex);
-		locationName = ((GuiMap*)guiMap)->getLocationName(locationIndex);
+		((GuiMap*)guiMap)->getLocationName(locationIndex, locationName);
 		((GuiMap*)guiMap)->deleteLocation(locationIndex);
 	}
 	else // Do create

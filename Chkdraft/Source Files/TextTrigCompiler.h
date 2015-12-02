@@ -7,23 +7,23 @@
 
 // StringTableNode defined in Basics.h
 struct LocationTableNode {
-	std::string locationName;
+	RawString locationName;
 	u8 locationNum;
 };
 struct UnitTableNode {
-	std::string unitName;
+	RawString unitName;
 	u16 unitID;
 };
 struct SwitchTableNode {
-	std::string switchName;
+	RawString switchName;
 	u8 switchNum;
 };
 struct WavTableNode {
-	std::string wavName;
+	RawString wavName;
 	u32 wavID;
 };
 struct GroupTableNode {
-	std::string groupName;
+	RawString groupName;
 	u32 groupID;
 };
 

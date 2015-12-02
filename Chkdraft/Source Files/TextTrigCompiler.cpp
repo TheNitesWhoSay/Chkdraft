@@ -252,6 +252,10 @@ void TextTrigCompiler::CleanText(buffer &text)
 							{
 								dest.add<u8>('\n');
 							}
+							else if ( text.get<u8>(pos) == 't' )
+							{
+								dest.add<u8>('\t');
+							}
 							else if ( text.get<char>(curr, pos) )
 								dest.add<u8>(curr);
 						}
@@ -3447,7 +3451,10 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 	buffer& MRGN = map->MRGN();
 	if ( MRGN.exists() && map->STR().exists() )
 	{
-		locationTable.reserve(MRGN.size()/sizeof(ChkLocation));
+		locationTable.reserve(MRGN.size()/sizeof(ChkLocation)+1);
+		locNode.locationNum = 0;
+		locNode.locationName = "No Location";
+		locationTable.insert(pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode));
 		for ( u32 i=0; i<MRGN.size()/sizeof(ChkLocation); i++ )
 		{
 			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
@@ -3461,7 +3468,7 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 					locNode.locationName = "Anywhere";
 					locationTable.insert( pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
 				}
-				else if ( loc->stringNum > 0 && map->getRawString(locNode.locationName, loc->stringNum) )
+				else if ( loc->stringNum > 0 && map->GetString(locNode.locationName, loc->stringNum) )
 				{
 					locNode.locationNum = u8(i+1);
 					locationTable.insert( pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
@@ -3486,11 +3493,11 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 				 stringID > 0 )
 			{
 				unitNode.unitID = unitID;
-				map->getRawString(unitNode.unitName, stringID);
+				map->GetString(unitNode.unitName, stringID);
 				unitTable.insert( pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
 			}
 
-			string regUnitName;
+			RawString regUnitName;
 			map->getUnitName(regUnitName, unitID);
 			if ( regUnitName.compare(unitNode.unitName) != 0 )
 			{
@@ -3513,7 +3520,7 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 		{
 			if ( SWNM.get<u32>(stringID, switchID*4) &&
 				 stringID > 0 &&
-				 map->getRawString(switchNode.switchName, stringID) )
+				 map->GetString(switchNode.switchName, stringID) )
 			{
 				switchNode.switchNum = u8(switchID);
 				switchTable.insert( pair<u32, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );				
@@ -3534,7 +3541,7 @@ bool TextTrigCompiler::PrepWavTable(ScenarioPtr map)
 			u32 stringID;
 			if ( WAV.get<u32>(stringID, i*4) &&
 				 stringID > 0 &&
-				 map->getRawString(wavNode.wavName, stringID) )
+				 map->GetString(wavNode.wavName, stringID) )
 			{
 				wavNode.wavID = stringID;
 				wavTable.insert( pair<u32, WavTableNode>(strHash(wavNode.wavName), wavNode) );
@@ -3555,7 +3562,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 			u16 stringID;
 			if ( FORC.get<u16>(stringID, 8+i*2) &&
 				 stringID > 0 &&
-				 map->getRawString(groupNode.groupName, stringID) )
+				 map->GetString(groupNode.groupName, stringID) )
 			{
 				groupNode.groupID = i+18;
 				groupTable.insert( pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode) );
@@ -3570,13 +3577,13 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 	if ( chk->STR().exists() )
 	{
 		StringTableNode node;
-		#define AddStrIffOverZero(index)																	\
-			if ( index > 0 && chk->getRawString(node.string, index) ) {										\
-				node.stringNum = index;																		\
-				node.isExtended = chk->isExtendedString(node.stringNum);									\
-				if ( !strIsInHashTable(node.string, strHash, stringTable) ) {															\
-					stringTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );			\
-				}																							\
+		#define AddStrIffOverZero(index)															\
+			if ( index > 0 && chk->GetString(node.string, index) ) {								\
+				node.stringNum = index;																\
+				node.isExtended = chk->isExtendedString(node.stringNum);							\
+				if ( !strIsInHashTable(node.string, strHash, stringTable) ) {						\
+					stringTable.insert( pair<u32, StringTableNode>(strHash(node.string), node) );	\
+				}																					\
 			}
 
 		ChkLocation* loc;

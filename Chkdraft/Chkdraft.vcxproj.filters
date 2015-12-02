@@ -213,9 +213,6 @@
     <ClInclude Include="Source Files\Common Files\Debug.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Common Files\Math.h">
-      <Filter>Header Files\Common Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Common Files\Resource.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
@@ -564,15 +561,18 @@
     <ClInclude Include="Source Files\LIT.h">
       <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\Math.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\EscapeStrings.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Common Files\Constants.cpp">
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Common Files\Debug.cpp">
-      <Filter>Source Files\Common Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Common Files\Math.cpp">
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\PreservedUnitStats.cpp">
@@ -892,6 +892,12 @@
     </ClCompile>
     <ClCompile Include="Source Files\LIT.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\Math.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\EscapeStrings.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

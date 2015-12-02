@@ -18,14 +18,15 @@ void CollapsableDefines()
 			output.addStr(locationTable[src].c_str(), locationTable[src].size());	\
 		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
-	#define ADD_TEXTTRIG_STRING(src) {																							\
-		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )								\
-		{																														\
-			if ( src < stringTable.size() )																						\
-				output.addStr(stringTable[src].c_str(), stringTable[src].size());												\
-			else																												\
-				output.addStr(string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
-		}																														\
+	#define ADD_TEXTTRIG_STRING(src) {																\
+		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )	\
+		{																							\
+			if ( src < stringTable.size() )															\
+				output.addStr(stringTable[src].c_str(), stringTable[src].size());					\
+			else																					\
+				output.addStr(string("k" + extendedStringTable[65536-src]).c_str(),					\
+					extendedStringTable[65536-src].size()+1);										\
+		}																							\
 		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_PLAYER(src) {												\
@@ -206,19 +207,19 @@ string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std::vect
 	return "";
 }
 
-string TextTrigGenerator::GetTrigLocation(u32 locationNum)
+ChkdString TextTrigGenerator::GetTrigLocation(u32 locationNum)
 {
 	char number[12];
 	if ( locationNum >= 0 && locationNum < locationTable.size() )
-		return string(locationTable[locationNum]);
+		return ChkdString(locationTable[locationNum]);
 	else
 	{
 		_itoa_s(locationNum, number, 10);
-		return string(number);
+		return ChkdString(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigString(u32 stringNum)
+ChkdString TextTrigGenerator::GetTrigString(u32 stringNum)
 {
 	char number[12];
 	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
@@ -226,16 +227,16 @@ string TextTrigGenerator::GetTrigString(u32 stringNum)
 		if ( stringNum < stringTable.size() )
 			return stringTable[stringNum];
 		else
-			return string("k" + extendedStringTable[65536-stringNum]);
+			return ChkdString("k" + extendedStringTable[65536-stringNum]);
 	}
 	else
 	{
 		_itoa_s(stringNum, number, 10);
-		return string(number);
+		return ChkdString(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
+ChkdString TextTrigGenerator::GetTrigPlayer(u32 groupNum)
 {
 	char number[12];
 	if ( groupNum >= 0 && groupNum < groupTable.size() )
@@ -243,11 +244,11 @@ string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
 	else
 	{
 		_itoa_s(groupNum, number, 10);
-		return string(number);
+		return ChkdString(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigUnit(u16 unitId)
+ChkdString TextTrigGenerator::GetTrigUnit(u16 unitId)
 {
 	char number[12];
 	if ( unitId >= 0 && unitId < unitTable.size() )
@@ -255,11 +256,11 @@ string TextTrigGenerator::GetTrigUnit(u16 unitId)
 	else
 	{
 		_itoa_s(unitId, number, 10);
-		return string(number);
+		return ChkdString(number);
 	}
 }
 
-string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
+ChkdString TextTrigGenerator::GetTrigSwitch(u32 switchNum)
 {
 	char number[12];
 	if ( switchNum >= 0 && switchNum < switchTable.size() )
@@ -267,7 +268,7 @@ string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
 	else
 	{
 		_itoa_s(switchNum, number, 10);
-		return string(number);
+		return ChkdString(number);
 	}
 }
 
@@ -840,7 +841,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, str
 					else
 						hasPrevious = true;
 
-					string groupName = groupTable[groupNum];
+					ChkdString groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
 				}
 				else if ( players[groupNum] > 0 )
@@ -850,7 +851,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, str
 					else
 						hasPrevious = true;
 
-					string groupName = groupTable[groupNum];
+					ChkdString groupName = groupTable[groupNum];
 					output.addStr(groupName.c_str(), groupName.size());
 					output.add<char>(':');
 					_itoa_s(players[groupNum], number, 10);
@@ -1095,10 +1096,10 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 	
 	ChkLocation* loc;
 	u16 stringNum;
-	string locationName;
+	ChkdString locationName;
 	buffer& MRGN = map->MRGN();
 
-	locationTable.push_back( string("0") );
+	locationTable.push_back( string("No Location") );
 
 	if ( MRGN.exists() && map->STR().exists() )
 	{
@@ -1120,7 +1121,7 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 
 					locationTable.push_back( locationName );
 				}
-				else if ( loc->stringNum > 0 && map->getEscapedString(locationName, loc->stringNum) )
+				else if ( loc->stringNum > 0 && map->GetString(locationName, loc->stringNum) )
 				{
 					if ( quoteArgs )
 						locationTable.push_back( "\"" + locationName + "\"" );
@@ -1145,7 +1146,7 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
 	unitTable.clear();
 
-	string unitName;
+	ChkdString unitName;
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
 	{
@@ -1156,19 +1157,19 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 			{
 				if ( useCustomNames && unitID < 228 )
 				{
-					string unquotedName;
+					ChkdString unquotedName;
 					map->getUnitName(unquotedName, unitID);
 					unitName = "\"" + unquotedName + "\"";
 				}
 				else
-					unitName = "\"" + string(LegacyTextTrigDisplayName[unitID]) + "\"";
+					unitName = ChkdString("\"" + string(LegacyTextTrigDisplayName[unitID]) + "\"");
 			}
 			else
 			{
 				if ( useCustomNames && unitID < 228 )
 					map->getUnitName(unitName, unitID);
 				else
-					unitName = string(LegacyTextTrigDisplayName[unitID]);
+					unitName = ChkdString(LegacyTextTrigDisplayName[unitID]);
 			}
 
 			unitTable.push_back( unitName );
@@ -1181,7 +1182,7 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
 	switchTable.clear();
 
-	string switchName;
+	ChkdString switchName;
 	buffer& SWNM = map->SWNM();
 	if ( SWNM.exists() && map->STR().exists() )
 	{
@@ -1191,7 +1192,7 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 			Invariant( switchTable.size() == switchID );
 			if ( SWNM.get<u32>(stringID, switchID*4) &&
 				 stringID > 0 &&
-				 map->getEscapedString(switchName, stringID) )
+				 map->GetString(switchName, stringID) )
 			{
 				if ( quoteArgs )
 					switchTable.push_back( "\"" + switchName + "\"" );
@@ -1218,7 +1219,7 @@ bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
 {
 	wavTable.clear();
 
-	string wavName;
+	ChkdString wavName;
 	buffer& WAV = map->WAV();
 	if ( WAV.exists() && map->STR().exists() )
 	{
@@ -1228,7 +1229,7 @@ bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
 			u32 stringID;
 			if ( WAV.get<u32>(stringID, i*4) &&
 				 stringID > 0 &&
-				 map->getEscapedString(wavName, stringID) )
+				 map->GetString(wavName, stringID) )
 			{
 				if ( quoteArgs )
 					wavTable.push_back( "\"" + wavName + "\"" );
@@ -1251,7 +1252,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
 	groupTable.clear();
 
-	string groupName;
+	ChkdString groupName;
 	buffer& FORC = map->FORC();
 	bool hasForcStrings = FORC.exists() && map->STR().exists();
 
@@ -1300,7 +1301,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 		if ( hasForcStrings &&
 			 FORC.get<u16>(stringID, 8+i*2) &&
 			 stringID > 0 &&
-			 map->getEscapedString(groupName, stringID) )
+			 map->GetString(groupName, stringID) )
 		{
 			if ( quoteArgs )
 				groupName = "\"" + groupName + "\"";
@@ -1340,7 +1341,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 		StringUsageTable extendedStringUsage;
 		if ( standardStringUsage.populateTable(map.get(), false) || extendedStringUsage.populateTable(map.get(), true) )
 		{
-			string str;
+			ChkdString str;
 
 			u32 numStrings = standardStringUsage.numStrings();
 			for ( u32 i=0; i<numStrings; i++ )
@@ -1348,7 +1349,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 				str = "";
 
 				if ( standardStringUsage.isUsed(i) )
-					map->getEscapedString(str, i);
+					map->GetString(str, i);
 
 				if ( quoteArgs )
 					stringTable.push_back( "\"" + str + "\"" );
@@ -1362,7 +1363,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 				str = "";
 
 				if ( extendedStringUsage.isUsed(i) )
-					map->getEscapedString(str, (65536-i));
+					map->GetString(str, (65536-i));
 
 				if ( quoteArgs )
 					extendedStringTable.push_back( "\"" + str + "\"" );

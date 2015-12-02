@@ -22,6 +22,7 @@ class LocationWindow : public ClassDialog
 		u32 preservedStat;
 		u16 locProcLocIndex;
 
+		CheckBoxControl checkUseExtended;
 		EditControl editLocName;
 		EditControl editLocLeft;
 		EditControl editLocTop;

@@ -70,6 +70,19 @@ enum GV
 		Return: TRUE to allow the change to proceed, FALSE to prevent it */
 	WM_GRIDITEMCHANGING,
 
+	/** Sent when an item is deleted
+		WPARAM:		LOWORD(wParam) = gridItemX
+					HIWORD(wParam) = gridItemY
+		LPARAM: NULL
+		Return: TRUE to allow the deletion, FALSE to prevent it */
+	WM_GRIDITEMDELETING,
+
+	/** Sent when a delete operation has completed
+		WPARAM: NULL
+		LPARAM: NULL
+		Return: Unused */
+	WM_GRIDDELETEFINISHED,
+
 	/** Sent to the parent to request the drawing-width of a specific
 		item (as per how it's drawn in WM_DRAWGRIDVIEWITEM),
 		you must return a valid width for double-clicking columns

@@ -46,11 +46,11 @@ void StringEditorWindow::RefreshWindow()
 		StringUsageTable strUse;
 		if ( strUse.populateTable(chkd.maps.curr->scenario(), false) )
 		{
-			string str;
+			RawString str;
 			u32 lastUsed = strUse.lastUsedString();
 			for ( u32 i=0; i<=lastUsed; i++ )
 			{
-				if ( strUse.isUsed(i) && chkd.maps.curr->getRawString(str, i) && str.size() > 0 )
+				if ( strUse.isUsed(i) && chkd.maps.curr->GetString(str, i) && str.size() > 0 )
 				{
 					int newListIndex = listStrings.AddItem(i);
 					if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
@@ -108,9 +108,9 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			int lbIndex;
 			if ( listStrings.GetCurSel(lbIndex) )
 			{
-				string str = "";
+				ChkdString str;
 				if ( listStrings.GetItemData(lbIndex, currSelString) && chkd.maps.curr != nullptr &&
-					chkd.maps.curr->getString(str, currSelString) && str.length() > 0 )
+					chkd.maps.curr->GetString(str, currSelString) && str.length() > 0 )
 				{
 					editString.SetText(str.c_str());
 
@@ -182,9 +182,9 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_MEASUREITEM:
 			{
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-				string str;
+				RawString str;
 
-				if ( chkd.maps.curr->getRawString(str, mis->itemData) && str.size() > 0 &&
+				if ( chkd.maps.curr->GetString(str, mis->itemData) && str.size() > 0 &&
 					 GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, str) )
 				{
 					mis->itemWidth += 5;
@@ -211,8 +211,8 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
 				{	
-					string str;
-					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getRawString(str, pdis->itemData) && str.size() > 0 )
+					RawString str;
+					if ( chkd.maps.curr != nullptr && chkd.maps.curr->GetString(str, pdis->itemData) && str.size() > 0 )
 					{
 						HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
 						if ( hBackground != NULL )
@@ -256,10 +256,10 @@ void StringEditorWindow::saveStrings()
 		ofstream outFile(filePath, std::ofstream::out);
 		if ( outFile.is_open() )
 		{
-			string str;
+			ChkdString str;
 			for ( u32 i=0; i<chkd.maps.curr->numStrings(); i++ )
 			{
-				if ( chkd.maps.curr->getString(str, i) && str.size() > 0 )
+				if ( chkd.maps.curr->GetString(str, i) && str.size() > 0 )
 					outFile << i << ": " << str << "\r\n";
 			}
 			outFile.close();
@@ -275,11 +275,10 @@ void StringEditorWindow::addUseItem(string str, u32 amount)
 
 bool StringEditorWindow::updateString(u32 stringNum)
 {
-	string editStr;
-	if ( chkd.maps.curr != nullptr && editString.GetEditText(editStr) && chkd.maps.curr->escStringDifference(editStr, stringNum) )
+	ChkdString editStr;
+	if ( chkd.maps.curr != nullptr && editString.GetEditText(editStr) && chkd.maps.curr->FindDifference(editStr, stringNum) )
 	{
-		if ( parseEscapedString(editStr) &&
-			 chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
+		if ( chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
 		{
 			chkd.maps.curr->notifyChange(false);
 			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )

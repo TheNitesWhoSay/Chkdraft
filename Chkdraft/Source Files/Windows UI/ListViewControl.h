@@ -19,6 +19,7 @@ class ListViewControl : public WindowControl
 		bool DeleteAllItems();
 		bool FocusItem(int index);
 		bool SelectRow(int index);
+		void RedrawHeader();
 		//bool SortItems(WPARAM value, LPARAM function);
 		
 		int GetItemRow(int lParam);

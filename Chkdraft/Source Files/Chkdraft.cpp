@@ -259,7 +259,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	if ( maps.curr && editFocused == false && GetActiveWindow() == getHandle() )
 	{
-		u8 layer = maps.curr->currLayer();
+		u8 layer = maps.curr->getLayer();
 		if ( layer == LAYER_UNITS || layer == LAYER_FOG || layer == LAYER_SPRITES )
 		{
 			u8 newPlayer;

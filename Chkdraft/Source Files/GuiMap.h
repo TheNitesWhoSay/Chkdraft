@@ -7,8 +7,6 @@
 #include "Data.h"
 #include "Graphics.h"
 
-#define GuiMapPtr std::shared_ptr<GuiMap>
-
 class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
@@ -23,7 +21,8 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 /*   Chk Accel  */	// Sets the given tile to the given tileNum
 					bool SetTile(s32 x, s32 y, u16 tileNum);
 
-/*   UI Accel   */	u8& currLayer();
+/*   UI Accel   */	u8 getLayer();
+					bool setLayer(u8 newLayer);
 					double getZoom();
 					void setZoom(double newScale);
 					u8& currPlayer();
@@ -125,8 +124,28 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					bool CreateThis(HWND hClient, const char* title);
 					void ReturnKeyPress();
 
-					static CLIPBOARD* clipboard; // Get this pointing correctly...
-					//static GuiMapPtr currMap; // Get this pointing correctly...
+
+	protected:
+
+					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+					LRESULT DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam);
+					void ActivateMap(HWND hWnd);
+					LRESULT DestroyWindow(HWND hWnd);
+
+					void RButtonUp();
+					void LButtonDoubleClick(int x, int y);
+					void LButtonDown(int x, int y, WPARAM wParam);
+					void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
+					void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
+					void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+					void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+					LRESULT ConfirmWindowClose(HWND hWnd);
+
 
 	private:
 
@@ -162,29 +181,8 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					HDC MemMinihDC;
 					HBITMAP MemBitmap;
 					HBITMAP MemMiniBitmap;
-
-					LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					LRESULT MapMouseProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					LRESULT VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-					LRESULT DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam);
-					void ActivateMap(HWND hWnd);
-					LRESULT DestroyWindow(HWND hWnd);
-
-					void RButtonUp();
-					void LButtonDoubleClick(int x, int y);
-					void LButtonDown(int x, int y, WPARAM wParam);
-					void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
-					void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
-					void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
-					void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
-					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
-					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
-					LRESULT ConfirmWindowClose(HWND hWnd);
 };
 
-/** Attempts to turn an escaped string (either via <XX>'s or \'s) into a raw string
-	Returns true and modifies str if successful, str not modified otherwise */
-bool parseEscapedString(std::string& str);
+typedef std::shared_ptr<GuiMap> GuiMapPtr;
 
 #endif

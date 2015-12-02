@@ -177,13 +177,11 @@ void Suggestions::KeyDown(WPARAM wParam)
 			listSuggestions.GetCurSel(currSel);
 			listSuggestions.SetCurSel(currSel-1);
 			Command(getHandle(), MAKEWPARAM(0, LBN_SELCHANGE), (LPARAM)listSuggestions.getHandle());
-			cout << "Suggest Up" << endl;
 			break;
 		case VK_DOWN:
 			listSuggestions.GetCurSel(currSel);
 			listSuggestions.SetCurSel(currSel + 1);
 			Command(getHandle(), MAKEWPARAM(0, LBN_SELCHANGE), (LPARAM)listSuggestions.getHandle());
-			cout << "Suggest Down" << endl;
 			break;
 	}
 }
@@ -199,7 +197,6 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		case LBN_SELCHANGE:
 			{
-				cout << "LBN_SELCHANGE" << endl;
 				string str;
 				if ( listSuggestions.GetCurSelString(str) )
 					SendMessage(suggestParent, WM_NEWSELTEXT, NULL, (LPARAM)&str);
