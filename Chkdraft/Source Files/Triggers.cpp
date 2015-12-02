@@ -1182,8 +1182,7 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
 	LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
 	if ( chk->getActiveComment(trigger, str) )
 	{
-		char num[12] = { };
-		_itoa_s(triggerNum, num, 10);
+		std::string num(std::to_string(triggerNum));
 		size_t endOfLine = str.find("\r\n");
 		if ( endOfLine != std::string::npos )
 			str.insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');

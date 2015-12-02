@@ -235,10 +235,10 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 									SetBkMode(MemhDC, TRANSPARENT);
 									SetTextColor(MemhDC, RGB(255, 255, 0));
 
-									char TileHex[32];
+									char TileHex[8];
+									std::snprintf(TileHex, 8, "%hu", tileValue);
 									RECT nullRect = { };
-									sprintf_s(TileHex, 8, "%hu", tileValue);
-									ExtTextOut(MemhDC, column*PIXELS_PER_TILE+3, row*PIXELS_PER_TILE-yOffset+2, ETO_OPAQUE, &nullRect, TileHex, strlen(TileHex), 0);
+									ExtTextOut(MemhDC, column*PIXELS_PER_TILE+3, row*PIXELS_PER_TILE-yOffset+2, ETO_OPAQUE, &nullRect, TileHex, std::strlen(TileHex), 0);
 
 									DeleteObject(NumFont);
 								}

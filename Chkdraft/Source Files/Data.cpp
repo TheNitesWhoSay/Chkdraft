@@ -1,5 +1,7 @@
 #include "Data.h"
 
+#include <string>
+
 bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
 {
 	return	  LoadSet(hStarDat, hBrooDat, hPatchRt, "badlands", 0)
@@ -14,27 +16,38 @@ bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatch
 
 bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* name, u8 num)
 {
-	char path[MAX_PATH];
+	const std::string path("tileset\\");
+	const size_t szExtension = 4;
 
-	sprintf_s(path, MAX_PATH, "tileset\\%s.cv5", name);
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, path, set[num].cv5) ) return false;
-	sprintf_s(path, MAX_PATH, "tileset\\%s.vf4", name);
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, path, set[num].vf4) ) return false;
-	sprintf_s(path, MAX_PATH, "tileset\\%s.vr4", name);
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, path, set[num].vr4) ) return false;
-	sprintf_s(path, MAX_PATH, "tileset\\%s.vx4", name);
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, path, set[num].vx4) ) return false;
-	sprintf_s(path, MAX_PATH, "tileset\\%s.wpe", name);
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, path, set[num].wpe) ) return false;
+	if ((path.length() + std::strlen(name) + szExtension + 1) > MAX_PATH)
+		return false;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".cv5").c_str(), set[num].cv5) )
+		return false;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vf4").c_str(), set[num].vf4) )
+		return false;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vr4").c_str(), set[num].vr4) )
+		return false;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vx4").c_str(), set[num].vx4) )
+		return false;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".wpe").c_str(), set[num].wpe) )
+		return false;
+
 	return true;
 }
 
 bool GRP::LoadGrp(const char* fileName, MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
 {
-	char grpPath[MAX_PATH] = { };
-	sprintf_s(grpPath, MAX_PATH, "unit\\%s", fileName);
+	const std::string path("unit\\");
 
-	return FileToBuffer(hStarDat, hBrooDat, hPatchRt, grpPath, imageDat);
+	if ((path.length() + std::strlen(fileName) + 1) > MAX_PATH)
+		return false;
+
+	return FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string("unit\\" + std::string(fileName)).c_str(), imageDat);
 }
 
 u8* GRP::data(u32 frame, u32 line)

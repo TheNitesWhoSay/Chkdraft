@@ -25,7 +25,7 @@ class PasteUnitNode
 		s32 xc;
 		s32 yc;
 
-		PasteUnitNode(ChkUnit* unitRef) { memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
+		PasteUnitNode(ChkUnit* unitRef) { std::memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
 
 	private:
 		PasteUnitNode(); // Disallow ctor

@@ -142,7 +142,7 @@ void UnitWindow::ChangeOwner(int index, u8 newPlayer)
 		padding[0] = '0';
 	else
 		padding[0] = '\0';
-	sprintf_s(owner, "Player %s%i", padding, newPlayer+1);
+	std::snprintf(owner, sizeof(owner), "Player %s%i", padding, newPlayer+1);
 
 	int row = listUnits.GetItemRow(index);
 	listUnits.SetItemText(row, UNIT_OWNER_COLUMN, owner);
@@ -170,11 +170,11 @@ bool UnitWindow::AddUnitItem(u16 index, ChkUnit* unit)
 		padding[0] = '0';
 	else
 		padding[0] = '\0';
-	sprintf_s(owner, "Player %s%i", padding, unit->owner+1);
-						
-	_itoa_s(unit->xc, xc, 10);
-	_itoa_s(unit->yc, yc, 10);
-	_itoa_s(index, cIndex, 10);
+	std::snprintf(owner, sizeof(owner), "Player %s%i", padding, unit->owner+1);
+
+	std::strcpy(xc, std::to_string(unit->xc).c_str());
+	std::strcpy(yc, std::to_string(unit->yc).c_str());
+	std::strcpy(cIndex, std::to_string(index).c_str());
 
 	std::string unitName;
 	chkd.maps.curr->getUnitName(unitName, id);
@@ -344,22 +344,20 @@ void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit* unit)
 		 hCloak	   = GetDlgItem(hWnd, IDC_CHECK_CLOAKED		), hLifted = GetDlgItem(hWnd, IDC_CHECK_LIFTED	  ),
 		 hXc	   = GetDlgItem(hWnd, IDC_EDIT_XC			), hYc	   = GetDlgItem(hWnd, IDC_EDIT_YC		  );
 
-	char number[16];
 	if ( unit->owner < 12 )
 		SendMessage(hPlayer, CB_SETCURSEL, unit->owner, NULL);
 	else
 	{
-		_itoa_s(unit->owner+1, number, 10);
-		SetWindowText(hPlayer  , number);
+		SetWindowText(hPlayer  , std::to_string(unit->owner + 1).c_str());
 	}
-	_itoa_s(unit->hitpoints, number, 10); SetWindowText(hHp		, number);
-	_itoa_s(unit->energy   , number, 10); SetWindowText(hMp		, number);
-	_itoa_s(unit->shields  , number, 10); SetWindowText(hShield	, number);
-	_itoa_s(unit->resources, number, 10); SetWindowText(hResource, number);
-	_itoa_s(unit->hanger   , number, 10); SetWindowText(hHanger  , number);
-	_itoa_s(unit->id	   , number, 10); SetWindowText(hId		, number);
-	_itoa_s(unit->xc	   , number, 10); SetWindowText(hXc		, number);
-	_itoa_s(unit->yc	   , number, 10); SetWindowText(hYc		, number);
+	SetWindowText(hHp		, std::to_string(unit->hitpoints).c_str());
+	SetWindowText(hMp		, std::to_string(unit->hitpoints).c_str());
+	SetWindowText(hShield	, std::to_string(unit->energy).c_str());
+	SetWindowText(hResource, std::to_string(unit->resources).c_str());
+	SetWindowText(hHanger  , std::to_string(unit->hanger).c_str());
+	SetWindowText(hId		, std::to_string(unit->id).c_str());
+	SetWindowText(hXc		, std::to_string(unit->xc).c_str());
+	SetWindowText(hYc		, std::to_string(unit->yc).c_str());
 	SendMessage(hInvinc, BM_SETCHECK, unit->stateFlags&UNIT_STATE_INVINCIBLE  , NULL);
 	SendMessage(hHallu , BM_SETCHECK, unit->stateFlags&UNIT_STATE_HALLUCINATED, NULL);
 	SendMessage(hBurrow, BM_SETCHECK, unit->stateFlags&UNIT_STATE_BURROWED	  , NULL);

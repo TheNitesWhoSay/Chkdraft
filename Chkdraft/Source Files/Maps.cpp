@@ -107,7 +107,7 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 	{
 		char title[256] = { "Untitled" };
 		if ( UntitledNumber > 0 )
-			sprintf_s(title, 256, "Untitled %d", UntitledNumber);
+			std::snprintf(title, 256, "Untitled %d", UntitledNumber);
 
 		if ( newMap->CreateThis(getHandle(), title) )
 		{
@@ -315,9 +315,9 @@ void MAPS::ChangePlayer(u8 newPlayer)
 	}
 
 	char color[32], race[32], playerText[64];
-	sprintf_s(color, "Red");
-	sprintf_s(race, "Terran");
-	sprintf_s(playerText, "Player %i: %s %s", curr->currPlayer()+1, color, race);
+	std::snprintf(color, sizeof(color), "Red");
+	std::snprintf(race, sizeof(color), "Terran");
+	std::snprintf(playerText, sizeof(color), "Player %i: %s %s", curr->currPlayer()+1, color, race);
 	chkd.statusBar.SetText(2, playerText);
 }
 

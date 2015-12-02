@@ -11,7 +11,7 @@ MapFile::MapFile() : SaveType(0)
 bool MapFile::LoadFile(const char* &path)
 {
 	if ( path != nullptr )
-		strcpy_s(filePath, MAX_PATH, path); // Copy the given path to the map's stored filePath
+		std::strncpy(filePath, path, MAX_PATH); // Copy the given path to the map's stored filePath
 	else if ( GetPath() )
 		path = filePath; // Have the pointer point to the new filePath
 
@@ -36,23 +36,23 @@ bool MapFile::SaveFile(bool SaveAs)
 			{
 				SaveType = (u8)ofn.nFilterIndex;
 
-				char* ext = strrchr(filePath, '.'); // Find the last occurrence of '.'
+				char* ext = std::strrchr(filePath, '.'); // Find the last occurrence of '.'
 				if ( ext == nullptr ) // No extension specified, need to add
 				{
 					if ( SaveType == 1 || SaveType == 2 )
-						strcat_s(filePath, ".scm");
+						std::strcat(filePath, ".scm");
 					else if ( SaveType == 3 || SaveType == 7 )
-						strcat_s(filePath, ".scx");
+						std::strcat(filePath, ".scx");
 					else if ( SaveType >= 4 && SaveType <= 6 )
-						strcat_s(filePath, ".chk");
+						std::strcat(filePath, ".chk");
 				}
 				else // Extension specified, give it precedence over filterIndex
 				{
-					if ( strcmp(ext, ".chk") == 0 && SaveType < 4 )
+					if ( std::strcmp(ext, ".chk") == 0 && SaveType < 4 )
 						SaveType = 5;
-					else if ( strcmp(ext, ".scm") == 0 && SaveType > 1 )
+					else if ( std::strcmp(ext, ".scm") == 0 && SaveType > 1 )
 						SaveType = 2;
-					else if ( strcmp(ext, ".scx") == 0 )
+					else if ( std::strcmp(ext, ".scx") == 0 )
 						SaveType = 3;
 					else if ( SaveType == 7 )
 						SaveType = 3;
@@ -97,15 +97,15 @@ bool MapFile::SaveFile(bool SaveAs)
 
 			if ( (SaveType > 0 && SaveType <= 3) || SaveType == 7 ) // Must be packed into an MPQ
 			{
-				fopen_s(&pFile, filePath, "wb");
+				pFile = std::fopen(filePath, "wb");
 				if ( pFile != nullptr )
 				{
-					fclose(pFile);
+					std::fclose(pFile);
 					HANDLE hMpq = NULL;
 					DeleteFileA("chk.tmp"); // Remove any existing chk.tmp files
-					fopen_s(&pFile, "chk.tmp", "wb");
+					pFile = std::fopen("chk.tmp", "wb");
 					WriteFile(pFile);
-					fclose(pFile);
+					std::fclose(pFile);
 
 					hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_ALWAYS|MOAU_MAINTAIN_LISTFILE, 16);
 					if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
@@ -132,9 +132,9 @@ bool MapFile::SaveFile(bool SaveAs)
 			else // Is a chk file or unrecognized format, write out chk file
 			{
 				DeleteFileA(filePath); // Remove any existing files of the same name
-				fopen_s(&pFile, filePath, "wb");
+				pFile = std::fopen(filePath, "wb");
 				WriteFile(pFile);
-				fclose(pFile);
+				std::fclose(pFile);
 				return true;
 			}
 		}
@@ -154,7 +154,7 @@ bool MapFile::GetPath()
 
 	if ( GetRegScPath(initPath, MAX_PATH) )
 	{
-		strcat_s(initPath, "\\Maps");
+		std::strcat(initPath, "\\Maps");
 		ofn.lpstrInitialDir = initPath;
 	}
 	else
@@ -166,7 +166,7 @@ bool MapFile::GetPath()
 
 	if ( GetOpenFileName(&ofn) == TRUE )
 	{
-		strcpy_s(filePath, MAX_PATH, szFileName);
+		std::strncpy(filePath, szFileName, MAX_PATH);
 		return true;
 	}
 	else if ( CommDlgExtendedError() != 0 )
@@ -252,9 +252,9 @@ bool MapFile::OpenFile()
 
 bool MapFile::SetPath(const char* newPath)
 {
-	if ( strlen(newPath) < FILENAME_MAX )
+	if ( std::strlen(newPath) < FILENAME_MAX )
 	{
-		strcpy_s(filePath, newPath);
+		std::strcpy(filePath, newPath);
 		return true;
 	}
 	else
