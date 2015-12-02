@@ -33,7 +33,9 @@ void LocationTree::RebuildLocationTree()
 					InsertLocationItem(locName.c_str(), i);
 				else
 				{
-					InsertLocationItem(std::string("Location " + std::to_string(i)).c_str(), i);
+					char locationName[20];
+					sprintf_s(locationName, "Location %u", i);
+					InsertLocationItem(locationName, i);
 				}
 			}
 		}

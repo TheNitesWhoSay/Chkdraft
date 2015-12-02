@@ -245,15 +245,17 @@ u32 Scenario::getForceStringNum(u8 index)
 
 std::string Scenario::getForceString(u8 forceNum)
 {
-	std::string forceString = {};
+	std::string forceString;
 	u32 stringNum = getForceStringNum(forceNum);
 	if ( stringNum != 0 )
 		getString(forceString, stringNum);
 	else
 	{
-		forceString = "Force " + std::to_string(forceNum + 1);
+		char num[12];
+		_itoa_s(forceNum+1, num, 10);
+		forceString += "Force ";
+		forceString += num;
 	}
-
 	return forceString;
 }
 
@@ -377,9 +379,13 @@ bool Scenario::getLocationName(std::string &dest, u8 locationID)
 	{
 		if ( loc->stringNum == 0 || !this->getEscapedString(dest, loc->stringNum) )
 		{
+			char locNum[8];
+			_itoa_s(int(locationID), locNum, 10);
+
 			dest.clear();
 			try {
-				dest = "Location " + std::to_string(locationID);
+				dest += "Location ";
+				dest += locNum;
 				return true;
 			} catch ( std::exception ) {
 				return false;
@@ -421,7 +427,9 @@ void Scenario::getUnitName(std::string &dest, u16 unitID)
 	}
 	else // Extended unit
 	{
-		dest = "Unit #" + std::to_string(unitID);
+		char unitName[16];
+		sprintf_s(unitName, 16, "Unit #%u", unitID);
+		dest = unitName;
 	}
 }
 
@@ -1168,7 +1176,11 @@ bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationI
 	if ( getLocation(curr, unusedIndex) )
 	{
 		try {
-			std::string str = "Location " + std::to_string(unusedIndex);
+			char locNum[8];
+			_itoa_s(int(unusedIndex), locNum, 10);
+
+			std::string str = "Location ";
+			str += locNum;
 			u32 newStrNum;
 			if ( addString(str, newStrNum, false) )
 				curr->stringNum = u16(newStrNum);

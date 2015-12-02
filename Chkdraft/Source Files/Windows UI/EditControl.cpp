@@ -1,7 +1,5 @@
 #include "EditControl.h"
-
 #include <iostream>
-#include <type_traits>
 
 EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(true)
 {
@@ -66,15 +64,19 @@ bool EditControl::SetText(const char* newText)
 template <typename numType>
 bool EditControl::SetEditNum(numType num)
 {
-	if (std::is_signed<numType>::value == true)
+	if ( num < 0 ) // Signed
 	{
 		s32 temp = (s32)num;
-		return SetText(std::to_string(temp).c_str());
+		char newText[12];
+		_itoa_s(temp, newText, 10);
+		return SetText(newText);
 	}
 	else // Unsigned or irrelevantly signed
 	{
 		u32 temp = (u32)num;
-		return SetText(std::to_string(temp).c_str());
+		char newText[12];
+		_itoa_s(temp, newText, 10);
+		return SetText(newText);
 	}
 }
 template bool EditControl::SetEditNum<u8>(u8 num);
@@ -92,11 +94,11 @@ bool EditControl::SetEditBinaryNum(numType num)
 	u32 temp = (u32)num;
 	u8 numBits = (sizeof(numType)*8);
 	_itoa_s(temp, newText, 2);
-	size_t length = std::strlen(newText);
+	size_t length = strlen(newText);
 	if ( length > 0 && length < numBits )
 	{
-		std::memmove(&newText[numBits-length], newText, length);
-		std::memset(newText, '0', numBits-length);
+		memmove(&newText[numBits-length], newText, length);
+		memset(newText, '0', numBits-length);
 		newText[numBits] = '\0';
 	}
 	return SetText(newText);
@@ -164,7 +166,7 @@ bool EditControl::GetEditBinaryNum(u16 &dest)
 		const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
 									 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
-		int length = std::strlen(editText);
+		int length = strlen(editText);
 		for ( int i=length-1; i>=0; i-- )
 		{
 			if ( editText[i] == '1' )
@@ -194,7 +196,7 @@ bool EditControl::GetEditBinaryNum(u32 &dest)
 									 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
 									 0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 
-		int length = std::strlen(editText);
+		int length = strlen(editText);
 		for ( int i=length-1; i>=0; i-- )
 		{
 			if ( editText[i] == '1' )
@@ -221,14 +223,14 @@ bool EditControl::GetHexByteString(u8* dest, u32 destLength)
 		char strChunk[9] = { };
 		strChunk[8] = '\0';
 
-		size_t strLength = std::strlen(text);
+		size_t strLength = strlen(text);
 		if ( strLength > destLength*2 ) // Don't read past the number of requested bytes
 			strLength = destLength*2;
 
 		size_t numChunks = strLength/8;
 		size_t strRemainder = strLength%8;
 
-		std::memset(dest, 0, destLength);
+		memset(dest, 0, destLength);
 		for ( size_t chunk=0; chunk<numChunks; chunk++ ) // For all full chunks
 		{
 			for ( size_t i=0; i<8; i++ )
@@ -287,7 +289,7 @@ bool EditControl::GetHexByteString(u8* dest, u32 destLength)
 	}
 	else if ( GetTextLength() == 0 )
 	{
-		std::memset(dest, 0, destLength);
+		memset(dest, 0, destLength);
 		return true;
 	}
 	else
@@ -364,7 +366,7 @@ bool EditControl::GetEditNum(numType &dest)
 			dest = temp;
 			success = true;
 		}
-		else if (std::strlen(text) > 0 && text[0] == '0' )
+		else if ( strlen(text) > 0 && text[0] == '0' )
 		{
 			dest = 0;
 			success = true;
@@ -397,7 +399,7 @@ bool EditControl::GetEditText(char* &dest)
 		{
 			text[length-1] = '\0';
 			dest = new char[length];
-			std::strncpy(dest, text, length);
+			strcpy_s(dest, length, text);
 			success = true;
 		}
 		delete[] text;

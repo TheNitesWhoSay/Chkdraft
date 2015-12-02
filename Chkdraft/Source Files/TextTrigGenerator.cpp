@@ -1,6 +1,5 @@
 #include "TextTrigGenerator.h"
 
-#include <cstring>
 #include <string>
 
 const char* textFlags[] = { "Don't Always Display", "Always Display" };
@@ -19,7 +18,7 @@ void CollapsableDefines()
 	#define ADD_TEXTTRIG_LOCATION(src) {											\
 		if ( src >= 0 && src < locationTable.size() )								\
 			output.addStr(locationTable[src].c_str(), locationTable[src].size());	\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_STRING(src) {																							\
 		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )								\
@@ -29,83 +28,83 @@ void CollapsableDefines()
 			else																												\
 				output.addStr(std::string("k" + extendedStringTable[65536-src]).c_str(), extendedStringTable[65536-src].size()+1);	\
 		}																														\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_PLAYER(src) {												\
 		if ( src >= 0 && src < groupTable.size() )									\
 			output.addStr(groupTable[src].c_str(), groupTable[src].size());			\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_UNIT(src) {												\
 		if ( src >= 0 && src < unitTable.size() )									\
 			output.addStr(unitTable[src].c_str(), unitTable[src].size());			\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SWITCH(src) {												\
 		if ( src >= 0 && src < switchTable.size() )									\
 			output.addStr(switchTable[src].c_str(), switchTable[src].size());		\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s( src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
 		if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )				\
 			output.addStr(scoreTypes[src], std::strlen(scoreTypes[src]));				\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
 		if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )			\
 			output.addStr(resourceTypes[src], std::strlen(resourceTypes[src]));			\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_ORDER(src) {												\
 		if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )				\
-			output.addStr(orderTypes[src], std::strlen(orderTypes[src]));				\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(orderTypes[src], strlen(orderTypes[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_STATE_MODIFIER(src) {										\
 		if ( src >= 0 && src < sizeof(stateModifiers)/sizeof(const char*) )			\
-			output.addStr(stateModifiers[src], std::strlen(stateModifiers[src]));		\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } } 
+			output.addStr(stateModifiers[src], strlen(stateModifiers[src]));		\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } } 
 
 	#define ADD_TEXTTRIG_SWITCH_STATE(src) {										\
 		if ( src >= 0 && src < sizeof(switchStates)/sizeof(const char*) )			\
-			output.addStr(switchStates[src], std::strlen(switchStates[src]));			\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(switchStates[src], strlen(switchStates[src]));			\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {										\
 		if ( src >= 0 && src < sizeof(switchModifiers)/sizeof(const char*) )		\
-			output.addStr(switchModifiers[src], std::strlen(switchModifiers[src]));		\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(switchModifiers[src], strlen(switchModifiers[src]));		\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_ALLY_STATE(src) {											\
 		if ( src >= 0 && src < sizeof(allyStates)/sizeof(const char*) )				\
-			output.addStr(allyStates[src], std::strlen(allyStates[src]));				\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(allyStates[src], strlen(allyStates[src]));				\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {										\
 		if ( src >= 0 && src < sizeof(numericComparisons)/sizeof(const char*) )			\
-			output.addStr(numericComparisons[src], std::strlen(numericComparisons[src]));	\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(numericComparisons[src], strlen(numericComparisons[src]));	\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {									\
 		if ( src >= 0 && src < sizeof(numericModifiers)/sizeof(const char*) )		\
-			output.addStr(numericModifiers[src], std::strlen(numericModifiers[src]));	\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+			output.addStr(numericModifiers[src], strlen(numericModifiers[src]));	\
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SCRIPT(src) {												\
 		output.add('\"'); output.addStr(src, 4); output.add('\"'); }
 
 	#define ADD_TEXTTRIG_NUM_UNITS(src) {											\
 		if ( src == 0 ) output.addStr("All", 3);									\
-		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+		else { _itoa_s(src, number, 10); output.addStr(number, strlen(number)); } }
 
 	#define ADD_TEXTTRIG_NUMBER(src) {												\
-		std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); }
+		_itoa_s((int)src, number, 10); output.addStr(number, strlen(number)); }
 
 	#define ADD_TEXTTRIG_TEXT_FLAGS(src) {											\
 		if		( (src&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )							\
-			output.addStr(textFlags[0], std::strlen(textFlags[0]));						\
+			output.addStr(textFlags[0], strlen(textFlags[0]));						\
 		else if ( (src&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )	\
-			output.addStr(textFlags[1], std::strlen(textFlags[1])); }
+			output.addStr(textFlags[1], strlen(textFlags[1])); }
 }
 
 TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTable(false)
@@ -211,14 +210,19 @@ std::string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std:
 
 std::string TextTrigGenerator::GetTrigLocation(u32 locationNum)
 {
+	char number[12];
 	if ( locationNum >= 0 && locationNum < locationTable.size() )
 		return std::string(locationTable[locationNum]);
 	else
-		return std::to_string(locationNum);
+	{
+		_itoa_s(locationNum, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigString(u32 stringNum)
 {
+	char number[12];
 	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536-stringNum) < extendedStringTable.size() ) )
 	{
 		if ( stringNum < stringTable.size() )
@@ -227,112 +231,163 @@ std::string TextTrigGenerator::GetTrigString(u32 stringNum)
 			return std::string("k" + extendedStringTable[65536-stringNum]);
 	}
 	else
-		return std::to_string(stringNum);
+	{
+		_itoa_s(stringNum, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigPlayer(u32 groupNum)
 {
+	char number[12];
 	if ( groupNum >= 0 && groupNum < groupTable.size() )
 		return groupTable[groupNum].c_str();
 	else
-		return std::to_string(groupNum);
+	{
+		_itoa_s(groupNum, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigUnit(u16 unitId)
 {
+	char number[12];
 	if ( unitId >= 0 && unitId < unitTable.size() )
 		return unitTable[unitId];
 	else
-		return std::to_string(unitId);
+	{
+		_itoa_s(unitId, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigSwitch(u32 switchNum)
 {
+	char number[12];
 	if ( switchNum >= 0 && switchNum < switchTable.size() )
 		return switchTable[switchNum];
 	else
-		return std::to_string(switchNum);
+	{
+		_itoa_s(switchNum, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigScoreType(u16 scoreType)
 {
+	char number[12];
 	const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
 	if ( scoreType >= 0 && scoreType < sizeof(scoreTypes)/sizeof(const char*) )
 		return scoreTypes[scoreType];
 	else
-		return std::to_string(scoreType);
+	{
+		_itoa_s(scoreType, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigResourceType(u16 resourceType)
 {
+	char number[12];
 	const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
 	if ( resourceType >= 0 && resourceType < sizeof(resourceTypes)/sizeof(const char*) )
 		return resourceTypes[resourceType];
 	else
-		return std::to_string(resourceType);
+	{
+		_itoa_s(resourceType, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigOrder(u8 order)
 {
+	char number[12];
 	const char* orderTypes[] = { "move", "patrol", "attack" };
 	if ( order >= 0 && order < sizeof(orderTypes)/sizeof(const char*) )
 		return orderTypes[order];
 	else
-		return std::to_string(order);
+	{
+		_itoa_s(order, number, 10);
+		return number;
+	}
 }
 
 std::string TextTrigGenerator::GetTrigStateModifier(u8 stateModifier)
 {
+	char number[12];
 	const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
 	if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers)/sizeof(const char*) )
 		return std::string(stateModifiers[stateModifier]);
 	else
-		return std::to_string(stateModifier);
+	{
+		_itoa_s(stateModifier, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigSwitchState(u8 switchState)
 {
+	char number[12];
 	const char* switchStates[] = { "0", "1", "Set", "Cleared" };
 	if ( switchState >= 0 && switchState < sizeof(switchStates)/sizeof(const char*) )
 		return std::string(switchStates[switchState]);
 	else
-		return std::to_string(switchState);
+	{
+		_itoa_s(switchState, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigSwitchModifier(u8 switchModifier)
 {
+	char number[12];
 	const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
 	if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers)/sizeof(const char*) )
 		return std::string(switchModifiers[switchModifier]);
 	else
-		return std::to_string(switchModifier);
+	{
+		_itoa_s(switchModifier, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigAllyState(u16 allyState)
 {
+	char number[12];
 	const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
 	if ( allyState >= 0 && allyState < sizeof(allyStates)/sizeof(const char*) )
 		return std::string(allyStates[allyState]);
 	else
-		return std::to_string(allyState);
+	{
+		_itoa_s(allyState, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigNumericComparison(u8 numericComparison)
 {
+	char number[12];
 	const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
 	if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons)/sizeof(const char*) )
 		return std::string(numericComparisons[numericComparison]);
 	else
-		return std::to_string(numericComparison);
+	{
+		_itoa_s(numericComparison, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
 {
+	char number[12];
 	const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 	if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers)/sizeof(const char*) )
 		return std::string(numericModifiers[numericModifier]);
 	else
-		return std::to_string(numericModifier);
+	{
+		_itoa_s(numericModifier, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigScript(u32 scriptNum)
@@ -347,15 +402,21 @@ std::string TextTrigGenerator::GetTrigScript(u32 scriptNum)
 
 std::string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
 {
+	char number[12];
 	if ( numUnits == 0 )
 		return std::string("All");
 	else
-		return std::to_string(numUnits);
+	{
+		_itoa_s(numUnits, number, 10);
+		return std::string(number);
+	}
 }
 
 std::string TextTrigGenerator::GetTrigNumber(u32 number)
 {
-	return std::to_string(number);
+	char cNumber[12];
+	_itoa_s((int)number, cNumber, 10);
+	return std::string(cNumber);
 }
 
 inline void TextTrigGenerator::AddConditionArgument(buffer &output, Condition& condition, u8 &CID, u8 &stdTextTrigArgNum)
@@ -781,7 +842,8 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 					else
 						hasPrevious = true;
 
-					output.addStr(groupTable[groupNum]);
+					std::string groupName = groupTable[groupNum];
+					output.addStr(groupName.c_str(), groupName.size());
 				}
 				else if ( players[groupNum] > 0 )
 				{
@@ -790,9 +852,11 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 					else
 						hasPrevious = true;
 
-					output.addStr(groupTable[groupNum]);
+					std::string groupName = groupTable[groupNum];
+					output.addStr(groupName.c_str(), groupName.size());
 					output.add<char>(':');
-					output.addStr(std::to_string(players[groupNum]));
+					_itoa_s(players[groupNum], number, 10);
+					output.addStr(number, strlen(number));
 				}
 			}
 
@@ -889,7 +953,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 			{
 				output.addStr("\n\nFlags:\n", 9);
 				_itoa_s(currTrig->internalData, number, 2);
-				size_t length = std::strlen(number);
+				size_t length = strlen(number);
 				output.addStr("00000000000000000000000000000000", (32-length));
 				output.addStr(number, length);
 				output.add<char>(';');
@@ -909,13 +973,17 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 
 std::string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
 {
+	char number[12];
 	const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
 	if		( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == 0 )
 		return std::string(cTextFlags[0]);
 	else if ( (textFlags&ACTION_FLAG_ALWAYS_DISPLAY) == ACTION_FLAG_ALWAYS_DISPLAY )
 		return std::string(cTextFlags[1]);
 	else
-		return std::to_string(textFlags);
+	{
+		_itoa_s(textFlags, number, 10);
+		return std::string(number);
+	}
 }
 
 // protected
@@ -1064,8 +1132,12 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 			}
 
 			if ( locationTable.size() == i+1 )
-				locationTable.push_back( std::to_string(i + 1) );
-
+			{
+				char locNum[12];
+				_itoa_s(i+1, locNum, 10);
+				locationName = locNum;
+				locationTable.push_back( locationName );
+			}
 		}
 	}
 	return true;
@@ -1130,11 +1202,13 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 			}
 			else
 			{
-				if (quoteArgs)
-					switchName = "\"Switch" + std::to_string(switchID + 1) + "\"";
+				char swDefault[20];
+				if ( quoteArgs )
+					sprintf_s(swDefault, 20, "\"Switch%i\"", switchID+1);
 				else
-					switchName = "Switch" + std::to_string(switchID + 1);
+					sprintf_s(swDefault, 20, "Switch%i", switchID+1);
 
+				switchName = swDefault;
 				switchTable.push_back( switchName );
 			}
 		}
@@ -1164,7 +1238,12 @@ bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
 					wavTable.push_back(wavName);
 			}
 			else
-				wavTable.push_back( std::to_string(i) );
+			{
+				char wavNum[12];
+				_itoa_s(i, wavNum, 10);
+				wavName = wavNum;
+				wavTable.push_back( wavName );
+			}
 		}
 	}
 	return true;
@@ -1232,11 +1311,13 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 		}
 		else
 		{
-			if (quoteArgs)
-				groupName = "\"Force " + std::to_string(i) + "\"";
+			char forceName[12];
+			if ( quoteArgs )
+				sprintf_s(forceName, 12, "\"Force %i\"", i);
 			else
-				groupName = "Force " + std::to_string(i);
+				sprintf_s(forceName, 12, "Force %i", i);
 
+			groupName = forceName;
 			groupTable.push_back( groupName );
 		}
 	}

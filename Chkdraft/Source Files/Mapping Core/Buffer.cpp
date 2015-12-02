@@ -14,7 +14,7 @@ buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
 
 buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
-	std::strncpy(bufTitle, bufferTitle, 4);
+	strcpy_s(bufTitle, 5, bufferTitle);
 	bufTitle[4] = '\0';
 }
 
@@ -34,7 +34,7 @@ buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0)
 		data = new s8[rhs.sizeUsed];
 		sizeUsed = rhs.sizeUsed;
 		sizeAllotted = rhs.sizeUsed;
-		std::memcpy(this->data, rhs.data, rhs.sizeUsed);
+		memcpy(this->data, rhs.data, rhs.sizeUsed);
 	}
 	catch ( std::exception )
 	{
@@ -115,7 +115,7 @@ bool buffer::getString(char* dest, u32 location, u32 size)
 	{
 		if ( location+size > location && location+size <= sizeUsed )
 		{
-			std::memcpy(dest, &data[location], size);
+			memcpy(dest, &data[location], size);
 			return true;
 		}
 	}
@@ -131,7 +131,7 @@ bool buffer::getArray(valueType* dest, u32 location, u32 numElements)
 	{
 		if ( location + numElements*sizeof(valueType) > location && location + numElements*sizeof(valueType) <= sizeUsed )
 		{
-			std::memcpy(dest, &data[location], numElements*sizeof(valueType));
+			memcpy(dest, &data[location], numElements*sizeof(valueType));
 			return true;
 		}
 	}
@@ -358,10 +358,6 @@ bool buffer::add(valueType value, u32 amount)
 }
 /* End templates */ #else
 
-bool buffer::addStr(std::string chunk)
-{
-	return this->addStr(chunk.c_str(), chunk.length());
-}
 bool buffer::addStr(const char* chunk, u32 chunkSize)
 {
 	if ( chunkSize == 0 )
@@ -378,7 +374,7 @@ bool buffer::addStr(const char* chunk, u32 chunkSize)
 				return false;
 			}
 		}
-		std::memcpy(&data[sizeUsed], chunk, chunkSize);
+		memcpy(&data[sizeUsed], chunk, chunkSize);
 		sizeUsed += chunkSize;
 		return true;
 	}
@@ -402,7 +398,7 @@ bool buffer::insert(u32 location, valueType value)
 			}
 		}
 
-		std::memmove( &data[location+sizeof(valueType)],
+		memmove( &data[location+sizeof(valueType)],
 				 &data[location],
 				 sizeUsed - location );
 		
@@ -428,7 +424,7 @@ bool buffer::insert(u32 location, valueType value, u32 amount)
 			}
 		}
 
-		std::memmove( &data[location+sizeof(valueType)*amount],
+		memmove( &data[location+sizeof(valueType)*amount],
 				 &data[location],
 				 sizeUsed - location );
 		
@@ -456,11 +452,11 @@ bool buffer::insertStr(u32 startLocation, const char* chunk, u32 chunkSize)
 			}
 		}
 
-		std::memmove( &data[startLocation+chunkSize],
+		memmove( &data[startLocation+chunkSize],
 				 &data[startLocation],
 				 sizeUsed-startLocation );
 
-		std::memcpy( &data[startLocation],
+		memcpy( &data[startLocation],
 				chunk,
 				chunkSize );
 
@@ -501,7 +497,7 @@ bool buffer::replaceStr(u32 startLocation, const char* chunk, u32 chunkSize)
 {
 	if ( this != nullptr && startLocation+chunkSize <= sizeUsed )
 	{
-		std::memcpy( &data[startLocation],
+		memcpy( &data[startLocation],
 				chunk,
 				chunkSize );
 
@@ -525,21 +521,21 @@ bool buffer::replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u
 				return false;
 			}
 
-			std::memmove( &data[startLocation+initialSize], // Move everything after initial chunk forward differance
+			memmove( &data[startLocation+initialSize], // Move everything after initial chunk forward differance
 					 &data[startLocation+initialSize+difference],
 					 sizeUsed-startLocation-initialSize );
 
-			std::memcpy( &data[startLocation],
+			memcpy( &data[startLocation],
 					chunk,
 					chunkSize );
 		}
 		else if ( difference < 0 ) // Contract area, insert data
 		{
-			std::memmove( &data[startLocation+chunkSize], // Move everything after initial chunk back differance
+			memmove( &data[startLocation+chunkSize], // Move everything after initial chunk back differance
 					 &data[startLocation+initialSize],
 					 sizeUsed-startLocation-initialSize );
 
-			std::memcpy( &data[startLocation],
+			memcpy( &data[startLocation],
 					chunk,
 					chunkSize );
 
@@ -552,7 +548,7 @@ bool buffer::replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u
 		}
 		else // difference == 0
 		{
-			std::memcpy( &data[startLocation],
+			memcpy( &data[startLocation],
 					chunk,
 					chunkSize );
 		}
@@ -609,8 +605,8 @@ bool buffer::swapStr(u32 location1, u32 location2, u32 swapSize)
 		} catch ( std::bad_alloc ) {
 			return false;
 		}
-		std::memcpy(temp, &data[location1], swapSize);
-		std::memcpy(&data[location2], temp, swapSize);
+		memcpy(temp, &data[location1], swapSize);
+		memcpy(&data[location2], temp, swapSize);
 		return true;
 	}
 	return false;
@@ -624,7 +620,7 @@ bool buffer::overwrite(const char* chunk, u32 chunkSize)
 
 		if ( setSize(chunkSize) )
 		{
-			std::memcpy(data, chunk, chunkSize);
+			memcpy(data, chunk, chunkSize);
 			sizeUsed = chunkSize;
 			return true;
 		}
@@ -655,7 +651,7 @@ bool buffer::setTitle(char* newTitle)
 {
 	if ( this != nullptr )
 	{
-		std::strncpy(bufTitle, newTitle, 4);
+		strcpy_s(bufTitle, 5, newTitle);
 		bufTitle[4] = '\0';
 		return true;
 	}
@@ -684,7 +680,7 @@ bool buffer::del(u32 location)
 	{
 		if ( s64(sizeUsed)-s64(location)+s64(sizeof(valueType)) > 0 )
 		{
-			std::memmove(
+			memmove(
 				&data[location],
 				&data[location+sizeof(valueType)],
 				sizeUsed-location-sizeof(valueType)
@@ -712,7 +708,7 @@ bool buffer::delRange(u32 startLocation, u32 endLocation)
 		u32 differance = endLocation-startLocation;
 
 		if ( endLocation < sizeUsed )
-			std::memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
+			memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
 
 		sizeUsed -= differance;
 
@@ -735,7 +731,7 @@ bool buffer::del(u32 startLocation, u32 size)
 		if ( endLocation <= sizeUsed )
 		{
 			if ( endLocation < sizeUsed )
-				std::memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
+				memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
 
 			sizeUsed -= size;
 
@@ -810,7 +806,7 @@ bool buffer::extract(buffer &src, u32 position, u32 length)
 				data = new s8[length];
 				sizeUsed = length;
 				sizeAllotted = length;
-				std::memcpy(data, &src.data[position], length);
+				memcpy(data, &src.data[position], length);
 				return true;
 			}
 			catch ( std::exception )
@@ -839,7 +835,7 @@ bool buffer::serialize(void* &destData)
 		(u32&)rawData[0] = (u32&)bufTitle;
 		(u32&)rawData[4] = sizeUsed;
 		if ( sizeUsed > 0 )
-			std::memcpy(&rawData[8], data, sizeUsed);
+			memcpy(&rawData[8], data, sizeUsed);
 
 		destData = (void*)rawData;
 		return true;
@@ -912,9 +908,9 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 			}
 
 			if ( sizeUsed <= sizeAllotted )
-				std::memcpy( newBuffer, data, sizeUsed*sizeof(char) );
+				memcpy( newBuffer, data, sizeUsed*sizeof(char) );
 			else
-				std::memcpy( newBuffer, data, sizeAllotted*sizeof(char) );
+				memcpy( newBuffer, data, sizeAllotted*sizeof(char) );
 
 			if ( data )
 			{

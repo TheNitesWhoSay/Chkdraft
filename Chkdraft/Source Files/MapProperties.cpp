@@ -84,8 +84,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, EDIT_MAPDESCRIPTION);
 		editMapDescription.SetText(mapDescription.c_str());
 
-		std::string sCurrWidth(std::to_string(currWidth));
-		std::string sCurrHeight(std::to_string(currHeight));
+		char sCurrWidth[12], sCurrHeight[12];
+		_itoa_s(currWidth, sCurrWidth, 10);
+		_itoa_s(currHeight, sCurrHeight, 10);
 
 		textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
 		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, CB_MAPTILESET, NUM_TILESETS, (const char**)tilesetNames, defaultFont);
@@ -93,10 +94,10 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, CB_NEWMAPTERRAIN, numTilesetInitTerrains[currTileset], (const char**)initTerrains[currTileset], defaultFont);
 		textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
 		editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, EDIT_NEWMAPWIDTH);
-		editMapWidth.SetText(sCurrWidth.c_str());
+		editMapWidth.SetText(sCurrWidth);
 		textNewMapHeight.CreateThis(hMapProperties, 440, 185, 50, 20, "Height", 0);
 		editMapHeight.CreateThis(hMapProperties, 440, 205, 50, 20, false, EDIT_NEWMAPHEIGHT);
-		editMapHeight.SetText(sCurrHeight.c_str());
+		editMapHeight.SetText(sCurrHeight);
 		buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", BUTTON_APPLY);
 
 		const char* sPlayers[] = { "Player 1", "Player 2" , "Player 3" , "Player 4",
@@ -151,8 +152,9 @@ void MapPropertiesWindow::RefreshWindow()
 			currWidth = map->XSize(),
 			currHeight = map->YSize();
 
-		std::string sCurrWidth(std::to_string(currWidth));
-		std::string sCurrHeight(std::to_string(currHeight));
+		char sCurrWidth[12], sCurrHeight[12];
+		_itoa_s(currWidth, sCurrWidth, 10);
+		_itoa_s(currHeight, sCurrHeight, 10);
 		
 		editMapTitle.SetText(mapTitle.c_str());
 		editMapDescription.SetText(mapDescription.c_str());
@@ -162,8 +164,8 @@ void MapPropertiesWindow::RefreshWindow()
 		dropMapTileset.ClearEditSel();
 		dropNewMapTerrain.SetSel(0);
 		dropNewMapTerrain.ClearEditSel();
-		editMapWidth.SetText(sCurrWidth.c_str());
-		editMapHeight.SetText(sCurrHeight.c_str());
+		editMapWidth.SetText(sCurrWidth);
+		editMapHeight.SetText(sCurrHeight);
 					
 		for ( int player=0; player<12; player++ )
 		{

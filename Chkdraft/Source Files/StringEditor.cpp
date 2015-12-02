@@ -251,8 +251,8 @@ void StringEditorWindow::saveStrings()
 	OPENFILENAME ofn = GetOfn(filePath, "Text Documents(*.txt)\0*.txt\0All Files\0*\0", 0);
 	if ( GetSaveFileName(&ofn) )
 	{
-		if ( ofn.nFilterIndex == 1 && std::strstr(filePath, ".txt") == nullptr )
-			std::strcat(filePath, ".txt");
+		if ( ofn.nFilterIndex == 1 && strstr(filePath, ".txt") == nullptr )
+			strcat_s(filePath, ".txt");
 
 		DeleteFileA(filePath);
 

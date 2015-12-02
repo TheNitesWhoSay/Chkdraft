@@ -1,11 +1,6 @@
 #include "Debug.h"
 #include "CommonFiles.h"
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
-#include <string>
-
 bool debugging = false;
 
 const u32 MAX_ERROR_LENGTH = 512;
@@ -16,8 +11,8 @@ void PrintError(const char* file, unsigned int line, const char* msg, ...)
 {
 	va_list args;
 	va_start(args, msg);
-	std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg, args);
-	std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+	vsprintf_s(LastError, MAX_ERROR_LENGTH, msg, args);
+	sprintf_s(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
 	va_end(args);
 }
 
@@ -27,8 +22,8 @@ void ShoutError(const char* file, unsigned int line, const char* msg, ...)
 	char AnErrorLoc[MAX_ERROR_LENGTH];
 	va_list args;
 	va_start(args, msg);
-	std::vsnprintf(AnError, MAX_ERROR_LENGTH, msg, args);
-	std::snprintf(AnErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+	vsprintf_s(AnError, MAX_ERROR_LENGTH, msg, args);
+	sprintf_s(AnErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
 	va_end(args);
 }
 
@@ -36,7 +31,7 @@ void ShoutError(const char* file, unsigned int line, const char* msg, ...)
 	void CheckInvariant(bool condition, const char* file, int line)
 	{
 		char invarError[MAX_ERROR_LENGTH];
-		std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", std::strrchr(file, '\\')+1, line);
+		sprintf_s(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", strrchr(file, '\\')+1, line);
 
 		if ( condition == false )
 			MessageBox(NULL, invarError, "Error!", MB_OK|MB_ICONEXCLAMATION);
@@ -51,7 +46,7 @@ void Error(const char* ErrorMessage)
 void Coord(s32 x, s32 y, const char* title = "Coordinates")
 {
 	char message[256];
-	std::snprintf(message, sizeof(message), "(x, y) --> (%d, %d)", x, y);
+	sprintf_s(message, 256, "(x, y) --> (%d, %d)", x, y);
 	MessageBox(NULL, message, title, MB_OK);
 }
 
@@ -72,9 +67,12 @@ void mb(int i, const char* text)
 
 void mb(int i, const char character)
 {
-	char msg[2] = { character, '\0' };
+	char msg[2], cInt[32];
+	msg[0] = character;
+	msg[1] = '\0';
+	_itoa_s(i, cInt, 10);
 
-	MessageBox(NULL, msg, std::to_string(i).c_str(), MB_OK);
+	MessageBox(NULL, msg, cInt, MB_OK);
 }
 
 void Debug()
@@ -116,15 +114,26 @@ void Message(std::string text, std::string caption)
 
 void MessageInt(int integer, const char* caption)
 {
-	MessageBox(NULL, std::to_string(integer).c_str(), caption, MB_OK);
+	char cInt[32];
+	_itoa_s(integer, cInt, 10);
+	MessageBox(NULL, cInt, caption, MB_OK);
 }
 
 void MessageChar(char character, int pos)
 {
-	std::string posStr(std::to_string(pos));
-	std::string chrStr(std::to_string(character));
+	char posStr[32];
+	char chrStr[32];
 
-	MessageBox(NULL, chrStr.c_str(), posStr.c_str(), MB_OK);
+	_itoa_s(character, chrStr, 32, 10);
+	_itoa_s(pos, posStr, 32, 10);
+
+	if ( (unsigned char)character < 32 )
+		MessageBox(NULL, chrStr, posStr, MB_OK);
+	else
+	{
+		char str[2] = { character, '\0' };
+		MessageBox(NULL, str, posStr, MB_OK);
+	}
 }
 
 void FindLeaks()
