@@ -6,9 +6,6 @@
 #include "Suggestions.h"
 #include "ConditionsGrid.h"
 
-#include <string>
-#include <vector>
-
 class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 {
 	public:
@@ -42,7 +39,7 @@ class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		bool TransformCondition(Condition &condition, u8 newId);
-		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str);
+		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, string& str);
 		void DrawSelectedCondition();
 		int GetGridItemWidth(int gridItemX, int gridItemY);
 		void CheckEnabledClicked(int conditionNum);
@@ -73,7 +70,7 @@ class TrigConditionsWindow : public ClassWindow, IConditionGridUser
 		void SuggestInternalData();
 
 		void GridEditStart(u16 gridItemX, u16 gridItemY);
-		void NewSuggestion(std::string &str);
+		void NewSuggestion(string &str);
 
 		void Activate(WPARAM wParam, LPARAM lParam);
 		LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

@@ -1,8 +1,6 @@
 #include "TrigConditions.h"
 #include "Chkdraft.h"
-
 #include <map>
-#include <string>
 
 #define TOP_CONDITION_PADDING 50
 #define BOTTOM_CONDITION_PADDING 0
@@ -245,13 +243,13 @@ bool TrigConditionsWindow::TransformCondition(Condition &condition, u8 newId)
 	return false;
 }
 
-BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str)
+BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, string& str)
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
 	if ( gridItemX == 1 ) // Condition Name
 	{
-		std::cout << '(' << gridItemX << ", " << gridItemY << ") Condition Name: " << str << std::endl;
+		cout << '(' << gridItemX << ", " << gridItemY << ") Condition Name: " << str << endl;
 		u8 newId = CID_NO_CONDITION;
 		if ( ttc.ParseConditionName(str, newId) || ttc.ParseConditionName(suggestions.Take(), newId) )
 		{
@@ -274,12 +272,12 @@ BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, std::s
 			}
 		}
 		else
-			std::cout << "Unrecognized Condition Name" << std::endl;
+			cout << "Unrecognized Condition Name" << endl;
 	}
 	else if ( gridItemX > 1 ) // Condition Arg
 	{
 		u8 argNum = (u8)gridItemX - 2;
-		std::cout << '(' << gridItemX << ", " << gridItemY << ") Argument " << (int)argNum << ": " << str << std::endl;
+		cout << '(' << gridItemX << ", " << gridItemY << ") Argument " << (int)argNum << ": " << str << endl;
 		if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
 			 ( ttc.ParseConditionArg(str, argNum, conditionArgMaps[trig->condition((u8)gridItemY).condition],
 				trig->condition((u8)gridItemY), chkd.maps.curr) ||
@@ -309,7 +307,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 			{
 				u8 conditionNum = (u8)focusedY;
 				TextTrigGenerator ttg;
-				std::string str;
+				string str;
 				ttg.LoadScenario(chkd.maps.curr);
 				str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);
 				ttg.ClearScenario();
@@ -335,7 +333,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 
 int TrigConditionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 {
-	std::string text;
+	string text;
 	if ( listConditions.item(gridItemX, gridItemY).getText(text) )
 	{
 		HDC hDC = GetDC(getHandle());
@@ -396,7 +394,7 @@ void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItem
 	int width = ListView_GetColumnWidth(listConditions.getHandle(), gridItemX);
 	DrawItemBackground(hDC, gridItemX, gridItemY, rcItem, width, xStart);
 
-	std::string text;
+	string text;
 	if ( listConditions.item(gridItemX, gridItemY).getText(text) )
 		DrawString(hDC, xStart+1, rcItem.top, width-2, RGB(0, 0, 0), text);
 
@@ -450,7 +448,7 @@ void TrigConditionsWindow::PostDrawItems()
 
 void TrigConditionsWindow::SuggestNothing()
 {
-	std::cout << "Suggest Nothing" << std::endl;
+	cout << "Suggest Nothing" << endl;
 	suggestions.ClearStrings();
 	suggestions.Hide();
 	HDC hDC = GetDC(getHandle());
@@ -469,17 +467,17 @@ void TrigConditionsWindow::SuggestNothing()
 
 void TrigConditionsWindow::SuggestUnit()
 {
-	std::cout << "Suggest Unit" << std::endl;
+	cout << "Suggest Unit" << endl;
 	dropUnits.Show();
 	if ( chkd.maps.curr != nullptr )
 	{
 		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
 		{
-			std::string str;
+			string str;
 			chkd.maps.curr->getUnitName(str, i);
 			suggestions.AddString(str);
-			if ( str.compare(std::string(DefaultUnitDisplayName[i])) != 0 )
-				suggestions.AddString(std::string(DefaultUnitDisplayName[i]));
+			if ( str.compare(string(DefaultUnitDisplayName[i])) != 0 )
+				suggestions.AddString(string(DefaultUnitDisplayName[i]));
 		}
 	}
 	suggestions.Show();
@@ -487,10 +485,10 @@ void TrigConditionsWindow::SuggestUnit()
 
 void TrigConditionsWindow::SuggestLocation()
 {
-	std::cout << "Suggest Location" << std::endl;
+	cout << "Suggest Location" << endl;
 	ScenarioPtr chk = chkd.maps.curr;
 	ChkLocation* loc = nullptr;
-	std::string str;
+	string str;
 	if ( chk != nullptr )
 	{
 		for ( u8 i = 0; i < 255; i++ )
@@ -504,45 +502,45 @@ void TrigConditionsWindow::SuggestLocation()
 
 void TrigConditionsWindow::SuggestPlayer()
 {
-	std::cout << "Suggest Player" << std::endl;
+	cout << "Suggest Player" << endl;
 	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr )
 	{
 		for ( u8 i = 0; i < numTriggerPlayers; i++ )
-			suggestions.AddString(std::string(triggerPlayers[i]));
+			suggestions.AddString(string(triggerPlayers[i]));
 	}
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestAmount()
 {
-	std::cout << "Suggest Amount" << std::endl;
+	cout << "Suggest Amount" << endl;
 	//suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestNumericComparison()
 {
-	std::cout << "Suggest Numeric Comparison" << std::endl;
-	suggestions.AddString(std::string("At Least"));
-	suggestions.AddString(std::string("At Most"));
-	suggestions.AddString(std::string("Exactly"));
+	cout << "Suggest Numeric Comparison" << endl;
+	suggestions.AddString(string("At Least"));
+	suggestions.AddString(string("At Most"));
+	suggestions.AddString(string("Exactly"));
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestResourceType()
 {
-	std::cout << "Suggest Resource Type" << std::endl;
-	suggestions.AddString(std::string("Ore"));
-	suggestions.AddString(std::string("Ore and Gas"));
-	suggestions.AddString(std::string("Gas"));
+	cout << "Suggest Resource Type" << endl;
+	suggestions.AddString(string("Ore"));
+	suggestions.AddString(string("Ore and Gas"));
+	suggestions.AddString(string("Gas"));
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestScoreType()
 {
-	std::cout << "Suggest Score Type" << std::endl;
+	cout << "Suggest Score Type" << endl;
 	for ( u8 i = 0; i < numTriggerScores; i++ )
-		suggestions.AddString(std::string(triggerScores[i]));
+		suggestions.AddString(string(triggerScores[i]));
 	suggestions.Show();
 }
 
@@ -553,63 +551,63 @@ void TrigConditionsWindow::SuggestSwitch()
 	{
 		for ( u16 i = 0; i < 256; i++ )
 		{
-			std::string str;
+			string str;
 			if ( chk->getSwitchName(str, (u8)i) )
 				suggestions.AddString(str);
 			else
 			{
-				std::stringstream ss;
-				ss << "Switch " << i + 1 << std::endl;
+				stringstream ss;
+				ss << "Switch " << i + 1 << endl;
 				suggestions.AddString(ss.str());
 			}
 		}
 	}
-	std::cout << "Suggest Switch" << std::endl;
+	cout << "Suggest Switch" << endl;
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestSwitchState()
 {
-	std::cout << "Suggest Switch State" << std::endl;
-	suggestions.AddString(std::string("Cleared"));
-	suggestions.AddString(std::string("Set"));
+	cout << "Suggest Switch State" << endl;
+	suggestions.AddString(string("Cleared"));
+	suggestions.AddString(string("Set"));
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestComparison()
 {
-	std::cout << "Suggest Comparison" << std::endl;
+	cout << "Suggest Comparison" << endl;
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestConditionType()
 {
-	std::cout << "Suggest Condition Type" << std::endl;
+	cout << "Suggest Condition Type" << endl;
 	suggestions.AddStrings(triggerConditions, numTriggerConditions);
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestTypeIndex()
 {
-	std::cout << "Suggest Type Index" << std::endl;
+	cout << "Suggest Type Index" << endl;
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestFlags()
 {
-	std::cout << "Suggest Flags" << std::endl;
+	cout << "Suggest Flags" << endl;
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::SuggestInternalData()
 {
-	std::cout << "Suggest Internal Data" << std::endl;
+	cout << "Suggest Internal Data" << endl;
 	suggestions.Show();
 }
 
 void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
-	std::cout << "GridEditStart: (" << gridItemX << ", " << gridItemY << ")" << std::endl;
+	cout << "GridEditStart: (" << gridItemX << ", " << gridItemY << ")" << endl;
 	Trigger* trig;
 	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
 	{
@@ -656,7 +654,7 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 	}
 }
 
-void TrigConditionsWindow::NewSuggestion(std::string &str)
+void TrigConditionsWindow::NewSuggestion(string &str)
 {
 	listConditions.SetEditText(str);
 }
@@ -676,14 +674,14 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
 		case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
 		case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
-		case WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
+		case WM_NEWSELTEXT: NewSuggestion(*(string*)lParam); break;
 		case WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
 		case WM_PREDRAWITEMS: PreDrawItems(); break;
 		case WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
 		case WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
 		case WM_POSTDRAWITEMS: PostDrawItems(); break;
 		case WM_GETGRIDITEMCARETPOS: return -1; break;
-		case WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
+		case WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(string*)lParam); break;
 		case WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
 		case WM_GRIDEDITEND: suggestions.Hide(); break;
 		default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;

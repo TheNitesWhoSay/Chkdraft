@@ -6,8 +6,6 @@
 #include "StringGuide.h"
 #include "StringPreview.h"
 
-#include <string>
-
 class StringEditorWindow : public ClassWindow
 {
 	public:
@@ -18,7 +16,7 @@ class StringEditorWindow : public ClassWindow
 	protected:
 		void CreateSubWindows(HWND hWnd);
 		void saveStrings();
-		void addUseItem(std::string str, u32 amount); // Adds items to StringUse list box
+		void addUseItem(string str, u32 amount); // Adds items to StringUse list box
 		bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
 
 		LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);

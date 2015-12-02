@@ -1,8 +1,6 @@
 #include "LIT.h"
 #include "Chkdraft.h"
-
-#include <fstream>
-#include <string>
+using namespace std;
 
 bool LitWindow::CreateThis(HWND hParent)
 {
@@ -86,16 +84,16 @@ BOOL LitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-bool LitWindow::GetLitPaths(std::string &litDirectory, std::string &litPath)
+bool LitWindow::GetLitPaths(string &litDirectory, string &litPath)
 {
 	char cChkdPath[MAX_PATH] = {};
 	if ( GetModuleFileName(NULL, cChkdPath, MAX_PATH) != MAX_PATH )
 	{
-		std::string chkdPath(cChkdPath);
+		string chkdPath(cChkdPath);
 		auto lastBackslashPos = chkdPath.find_last_of('\\');
-		if ( lastBackslashPos != std::string::npos && lastBackslashPos < chkdPath.size() )
+		if ( lastBackslashPos != string::npos && lastBackslashPos < chkdPath.size() )
 		{
-			litDirectory = std::string(chkdPath.substr(0, lastBackslashPos) + "\\chkd\\Tools\\LIT\\");
+			litDirectory = string(chkdPath.substr(0, lastBackslashPos) + "\\chkd\\Tools\\LIT\\");
 			litPath = litDirectory + "RunLIT.bat";
 			return true;
 		}
@@ -104,13 +102,13 @@ bool LitWindow::GetLitPaths(std::string &litDirectory, std::string &litPath)
 	return false;
 }
 
-bool LitWindow::GetInputPaths(std::string &luaDirectory, std::string &luaName)
+bool LitWindow::GetInputPaths(string &luaDirectory, string &luaName)
 {
 	std::string luaPath;
 	if ( editPath.GetEditText(luaPath) )
 	{
 		auto lastBackslashPos = luaPath.find_last_of('\\');
-		if ( lastBackslashPos != std::string::npos && lastBackslashPos < luaPath.size() )
+		if ( lastBackslashPos != string::npos && lastBackslashPos < luaPath.size() )
 		{
 			luaDirectory = luaPath.substr(0, lastBackslashPos + 1);
 			luaName = luaPath.substr(lastBackslashPos + 1);
@@ -125,12 +123,12 @@ bool LitWindow::GetInputPaths(std::string &luaDirectory, std::string &luaName)
 	return false;
 }
 
-bool LitWindow::WriteLitBat(std::string &luaDirectory, std::string &luaName, std::string &litDirectory, std::string &litBatPath,
-	std::string &textOutPath, std::string &trigOutName)
+bool LitWindow::WriteLitBat(string &luaDirectory, string &luaName, string &litDirectory, string &litBatPath,
+	string &textOutPath, string &trigOutName)
 {
 	litBatPath = litDirectory + "chkd-LIT_LIT.bat";
 	RemoveFile(litBatPath);
-	std::ofstream litBat(litBatPath);
+	ofstream litBat(litBatPath);
 	if ( litBat.is_open() )
 	{
 		litBat << "LIT.exe " <<
@@ -147,10 +145,10 @@ bool LitWindow::WriteLitBat(std::string &luaDirectory, std::string &luaName, std
 
 bool LitWindow::RunLit(ScenarioPtr map)
 {
-	std::string litDirectory, litPath, luaDirectory, luaName, litBatPath, litText;
+	string litDirectory, litPath, luaDirectory, luaName, litBatPath, litText;
 	if ( GetLitPaths(litDirectory, litPath) && GetInputPaths(luaDirectory, luaName) )
 	{
-		std::string textPath(litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(litDirectory + trigName);
+		string textPath(litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(litDirectory + trigName);
 		if ( WriteLitBat(luaDirectory, luaName, litDirectory, litBatPath, textPath, trigName) )
 		{
 			RemoveFiles(textPath, trigPath);
@@ -177,7 +175,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
 					foundLitText ? Message(litText, "LIT") : Error("LIT trigger output file was not found or could not be read.");
 			}
 			else
-				Error(std::string("ShellExecute on LIT.bat failed: " + std::to_string(result)).c_str());
+				Error(string("ShellExecute on LIT.bat failed: " + to_string(result)).c_str());
 		}
 		else
 			Error("Failed to write LIT.bat");

@@ -1,8 +1,6 @@
 #include "TrigPlayers.h"
 #include "Chkdraft.h"
 
-#include <sstream>
-
 enum ID
 {
 	GROUP_EXECUTINGPLAYERS = ID_FIRST,
@@ -67,7 +65,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
 	Trigger* trig;
 	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
 	{
-		std::stringstream ssStats;
+		stringstream ssStats;
 		const char* strTimesExecuted[] = { "Never", "Once", "Twice", "Thrice" };
 		u8 exec[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 		if ( trig->players[AllPlayers] & 1 )
@@ -92,16 +90,16 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
 			if ( trig->players[Player1+player] & 1 )
 				exec[player] ++;
 		}
-		ssStats << "For each trigger cycle..." << std::endl
-			<< "This trigger will be run by:" << std::endl << std::endl
-			<< "By Player 1: " << strTimesExecuted[exec[0]] << std::endl
-			<< "By Player 2: " << strTimesExecuted[exec[1]] << std::endl
-			<< "By Player 3: " << strTimesExecuted[exec[2]] << std::endl
-			<< "By Player 4: " << strTimesExecuted[exec[3]] << std::endl
-			<< "By Player 5: " << strTimesExecuted[exec[4]] << std::endl
-			<< "By Player 6: " << strTimesExecuted[exec[5]] << std::endl
-			<< "By Player 7: " << strTimesExecuted[exec[6]] << std::endl
-			<< "By Player 8: " << strTimesExecuted[exec[7]] << std::endl;
+		ssStats << "For each trigger cycle..." << endl
+			<< "This trigger will be run by:" << endl << endl
+			<< "By Player 1: " << strTimesExecuted[exec[0]] << endl
+			<< "By Player 2: " << strTimesExecuted[exec[1]] << endl
+			<< "By Player 3: " << strTimesExecuted[exec[2]] << endl
+			<< "By Player 4: " << strTimesExecuted[exec[3]] << endl
+			<< "By Player 5: " << strTimesExecuted[exec[4]] << endl
+			<< "By Player 6: " << strTimesExecuted[exec[5]] << endl
+			<< "By Player 7: " << strTimesExecuted[exec[6]] << endl
+			<< "By Player 8: " << strTimesExecuted[exec[7]] << endl;
 		textPlayerStats.SetText(ssStats.str().c_str());
 
 		for ( u8 i=0; i<8; i++ )
@@ -141,14 +139,14 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 {
 	for ( u8 i=0; i<8; i++ )
 	{
-		std::stringstream ssPlayer;
+		stringstream ssPlayer;
 		ssPlayer << "Player " << (i+1);
 		checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str().c_str(), CHECK_PLAYER1+i);
 	}
 	int yPos = 24;
 	for ( u8 i=0; i<4; i++ )
 	{
-		std::stringstream ssPlayer;
+		stringstream ssPlayer;
 		ssPlayer << "Force " << (i+1);
 		checkForces[i].CreateThis(hWnd, 110, 24+18*i, 75, 17, false, ssPlayer.str().c_str(), CHECK_FORCE1+i);
 		yPos += 18;

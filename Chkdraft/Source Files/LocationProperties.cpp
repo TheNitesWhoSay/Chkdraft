@@ -2,9 +2,6 @@
 #include "Chkdraft.h"
 #include "LocationChange.h"
 
-#include <exception>
-#include <string>
-
 LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
 {
 
@@ -236,7 +233,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 								break;
 							case IDC_EXTLOCNAMESTR:
 							{
-								std::string str;
+								string str;
 								if ( chkd.maps.curr->getString(str, locRef->stringNum) )
 								{
 									u32 newStrNum;
@@ -290,7 +287,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 								break;
 							case IDC_EXTLOCNAMESTR:
 							{
-								std::string str;
+								string str;
 								if ( chkd.maps.curr->getString(str, locRef->stringNum) )
 								{
 									u32 newStrNum;

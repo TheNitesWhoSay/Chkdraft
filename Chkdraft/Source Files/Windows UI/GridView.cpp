@@ -1,7 +1,6 @@
 #include "GridView.h"
-
 #include <iostream>
-#include <string>
+using namespace std;
 
 GridControlItem GridViewControl::nullItem; // Obligatory definition of static variable
 
@@ -113,7 +112,7 @@ void GridViewControl::ClearItems()
 
 void GridViewControl::DeleteSelection()
 {
-	std::string str = "";
+	string str = "";
 	for ( int y=0; y<numRows; y++ )
 	{
 		for ( int x=0; x<numColumns; x++ )
@@ -220,7 +219,7 @@ void GridViewControl::FocusItem(int x, int y)
 	}
 }
 
-void GridViewControl::SetEditText(std::string& text)
+void GridViewControl::SetEditText(string& text)
 {
 	if ( editing )
 	{
@@ -234,7 +233,7 @@ void GridViewControl::EndEditing()
 	if ( !ending )
 	{
 		ending = true;
-		std::string str;
+		string str;
 		bool gotText = editBox.GetEditText(str) || editBox.GetTextLength() == 0;
 		if ( editing == true && editBox.DestroyThis() )
 		{
@@ -327,7 +326,7 @@ bool GridViewControl::GetEditItemRect(RECT &rect)
 	return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
 }
 
-bool GridViewControl::GetEditText(std::string &str)
+bool GridViewControl::GetEditText(string &str)
 {
 	return editBox.GetEditText(str);
 }
@@ -405,7 +404,7 @@ void GridViewControl::AutoSizeColumn(int x, int minWidth, int maxWidth)
 	for ( int y=0; y<numRows; y++ )
 	{
 		RECT rect;
-		std::string str;
+		string str;
 		if ( item(x, y).getText(str) &&
 			 ListViewControl::GetItemRect(focusedX, focusedY, rect) )
 		{
@@ -510,7 +509,7 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 		int y = -1;
 		if ( GetItemAt(xClick, yClick, y, x) )
 		{
-			std::string str;
+			string str;
 			if ( item(x, y).getText(str) )
 				editBox.SetText(str.c_str());
 			
@@ -542,7 +541,7 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 			char newText[2] = {};
 			newText[0] = initChar;
 			newText[1] = '\0';
-			std::string sNewText(newText);
+			string sNewText(newText);
 			EditTextChanged(sNewText);
 		}
 	}
@@ -606,7 +605,7 @@ void GridViewControl::KeyDown(WPARAM wParam)
 	RedrawThis();
 }
 
-void GridViewControl::EditTextChanged(std::string &str)
+void GridViewControl::EditTextChanged(string &str)
 {
 
 }

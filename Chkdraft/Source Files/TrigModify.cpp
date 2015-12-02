@@ -1,8 +1,6 @@
 #include "TrigModify.h"
 #include "Chkdraft.h"
 
-#include <string>
-
 enum ID {
 	TAB_GENERAL = 0,
 	TAB_PLAYERS,
@@ -74,7 +72,7 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 {
 	this->trigIndex = trigIndex;
 	Show();
-	SetTitle((std::string("Modify Trigger #") + std::to_string(trigIndex)).c_str());
+	SetTitle((string("Modify Trigger #") + std::to_string(trigIndex)).c_str());
 	generalWindow.RefreshWindow(trigIndex);
 	playersWindow.RefreshWindow(trigIndex);
 	conditionsWindow.RefreshWindow(trigIndex);

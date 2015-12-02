@@ -1,8 +1,6 @@
 #include "TextTrig.h"
 #include "Chkdraft.h"
 
-#include <string>
-
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
 	if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
@@ -16,7 +14,7 @@ bool TextTrigWindow::CreateThis(HWND hParent)
 
 void TextTrigWindow::RefreshWindow()
 {
-	std::string trigString;
+	string trigString;
 	TextTrigGenerator textTrigs;
 	if ( textTrigs.GenerateTextTrigs(chkd.maps.curr, trigString) )
 		SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
