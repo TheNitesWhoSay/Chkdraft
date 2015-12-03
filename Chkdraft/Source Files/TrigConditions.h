@@ -5,6 +5,8 @@
 #include "Windows UI/WindowsUI.h"
 #include "Suggestions.h"
 #include "ConditionsGrid.h"
+#include <string>
+#include <vector>
 
 class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 {
@@ -17,8 +19,8 @@ class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 		void ProcessKeyDown(WPARAM wParam, LPARAM lParam);
 		void HideSuggestions();
 		void ConditionEnableToggled(u8 conditionNum);
-		void EscapeString(string &str);
-		bool BuildSelectionString(string &str);
+		void EscapeString(std::string &str);
+		bool BuildSelectionString(std::string &str);
 		virtual void CutSelection();
 		virtual void CopySelection();
 		virtual void Paste();
@@ -46,9 +48,9 @@ class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 		void ChangeConditionType(Condition &condition, u8 newId);
 		bool TransformCondition(Condition &condition, u8 newId);
 		void ClearArgument(Condition &condition, u8 argNum);
-		void UpdateConditionName(u8 conditionNum, string &newText);
-		void UpdateConditionArg(u8 conditionNum, u8 argNum, string &newText);
-		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, string& str);
+		void UpdateConditionName(u8 conditionNum, std::string &newText);
+		void UpdateConditionArg(u8 conditionNum, u8 argNum, std::string &newText);
+		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str);
 		BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
 		void DrawSelectedCondition();
 		int GetGridItemWidth(int gridItemX, int gridItemY);
@@ -80,7 +82,7 @@ class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 		void SuggestInternalData();
 
 		void GridEditStart(u16 gridItemX, u16 gridItemY);
-		void NewSuggestion(string &str);
+		void NewSuggestion(std::string &str);
 
 		void Activate(WPARAM wParam, LPARAM lParam);
 		LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

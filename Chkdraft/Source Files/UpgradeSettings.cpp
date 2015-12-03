@@ -1,5 +1,7 @@
 #include "UpgradeSettings.h"
 #include "Chkdraft.h"
+#include <sstream>
+#include <string>
 
 enum ID {
 	TREE_UPGRADES = ID_FIRST,
@@ -67,7 +69,7 @@ void UpgradeSettingsWindow::RefreshWindow()
 	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chk != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
+		chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
 
 		if ( isDisabled )
 			EnableUpgradeEditing();
@@ -171,7 +173,7 @@ void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
 
 	for ( int player=0; player<12; player++ )
 	{
-		stringstream ssPlayer;
+		std::stringstream ssPlayer;
 		if ( player < 9 )
 			ssPlayer << "Player 0" << player+1;
 		else
@@ -578,7 +580,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			{
 				RefreshWindow();
 				if ( selectedUpgrade != -1 )
-					chkd.mapSettingsWindow.SetTitle((string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
+					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}

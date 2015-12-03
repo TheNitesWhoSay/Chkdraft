@@ -4,9 +4,11 @@
 #include "Basics.h"
 #include "EscapeStrings.h"
 #include "CoreStructs.h"
-#include <memory>
-#include <vector>
+#include <cstdio>
 #include <list>
+#include <memory>
+#include <string>
+#include <vector>
 
 class Scenario
 {
@@ -264,9 +266,9 @@ class Scenario
 
 /*	 Security	*/	bool isProtected(); // Checks if map is protected
 					bool hasPassword(); // Checks if the map has a password
-					bool isPassword(string &password); // Checks if this is the password the map has
-					bool SetPassword(string &oldPass, string &newPass); // Attempts to password-protect the map
-					bool Login(string &password); // Attempts to login to the map
+					bool isPassword(std::string &password); // Checks if this is the password the map has
+					bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
+					bool Login(std::string &password); // Attempts to login to the map
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

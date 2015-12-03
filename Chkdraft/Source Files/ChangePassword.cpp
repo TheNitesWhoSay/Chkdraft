@@ -1,5 +1,6 @@
 #include "ChangePassword.h"
 #include "Chkdraft.h"
+#include <string>
 
 bool ChangePasswordDialog::CreateThis(HWND hParent)
 {
@@ -33,7 +34,7 @@ void ChangePasswordDialog::Hide()
 
 void ChangePasswordDialog::ButtonApply()
 {
-	string oldPass, newPass;
+	std::string oldPass, newPass;
 	editOldPass.GetEditText(oldPass);
 	editNewPass.GetEditText(newPass);
 	editOldPass.SetText("");

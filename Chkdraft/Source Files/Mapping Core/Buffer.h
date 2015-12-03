@@ -53,6 +53,7 @@ class buffer
 						bool add(valueType value);
 					template <typename valueType>
 						bool add(valueType value, u32 amount);
+					bool addStr(std::string chunk);
 					bool addStr(const char* chunk, u32 chunkSize);
 
 					// Inserts data at a position in the buffer

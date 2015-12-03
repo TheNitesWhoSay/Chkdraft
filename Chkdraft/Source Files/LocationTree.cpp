@@ -32,11 +32,7 @@ void LocationTree::RebuildLocationTree()
 				if ( map->getLocationName((u16)i, locName) )
 					InsertLocationItem(locName.c_str(), i);
 				else
-				{
-					char locationName[20];
-					sprintf_s(locationName, "Location %u", i);
-					InsertLocationItem(locationName, i);
-				}
+					InsertLocationItem(std::string("Location " + std::to_string(i)).c_str(), i);
 			}
 		}
 	}

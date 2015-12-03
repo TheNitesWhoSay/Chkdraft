@@ -3,11 +3,13 @@
 #include "StringUsage.h"
 #include "sha256.h"
 #include "Math.h"
-#include <iostream>
 #include <algorithm>
-#include <unordered_map>
+#include <cstdio>
+#include <exception>
+#include <functional>
+#include <iostream>
 #include <string>
-#include <memory>
+#include <unordered_map>
 
 Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
@@ -186,7 +188,7 @@ bool Scenario::getLocationName(u16 locationIndex, RawString &str)
 
 	try
 	{
-		str = "Location " + to_string(locationIndex);
+		str = "Location " + std::to_string(locationIndex);
 		return true;
 	}
 	catch ( std::exception ) {}
@@ -204,7 +206,7 @@ bool Scenario::getLocationName(u16 locationIndex, ChkdString &str)
 
 	try
 	{
-		str = "Location " + to_string(locationIndex);
+		str = "Location " + std::to_string(locationIndex);
 		return true;
 	}
 	catch ( std::exception ) {}
@@ -368,10 +370,7 @@ bool Scenario::getForceString(ChkdString &str, u8 forceNum)
 	{
 		try
 		{
-			char num[12];
-			_itoa_s(forceNum + 1, num, 10);
-			str += "Force ";
-			str += num;
+			str = "Force " + std::to_string(forceNum + 1);
 			return true;
 		}
 		catch ( std::exception ) { }
@@ -524,11 +523,9 @@ bool Scenario::getUnitName(RawString &dest, u16 unitID)
 	}
 	else // Extended unit
 	{
-		char unitName[16];
-		sprintf_s(unitName, 16, "Unit #%u", unitID);
 		try
 		{
-			dest = unitName;
+			dest = "Unit #" + std::to_string(unitID);
 			return true;
 		}
 		catch ( std::exception ) {}
@@ -1242,12 +1239,8 @@ bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationI
 	if ( getLocation(curr, unusedIndex) )
 	{
 		try {
-			char locNum[8];
-			_itoa_s(int(unusedIndex), locNum, 10);
-
-			RawString str = "Location ";
-			str += locNum;
-			u32 newStrNum;
+			RawString str = "Location " + std::to_string(unusedIndex);
+			u32 newStrNum = 0;
 			if ( addString(str, newStrNum, false) )
 				curr->stringNum = u16(newStrNum);
 		} catch ( std::bad_alloc ) {
@@ -2156,7 +2149,7 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 				if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )		\
 				{																		\
 					strList.push_back(node); /* add if the string isn't in the list */	\
-					stringSearchTable.insert( pair<u32, StringTableNode>(				\
+					stringSearchTable.insert( std::pair<u32, StringTableNode>(			\
 						strHash(node.string), node) );									\
 				}																		\
 			}																			\
@@ -3042,15 +3035,15 @@ bool Scenario::hasPassword()
 	return tailLength == 7;
 }
 
-bool Scenario::isPassword(string &password)
+bool Scenario::isPassword(std::string &password)
 {
 	if ( hasPassword() )
 	{
 		SHA256 sha256;
-		string hashStr = sha256(password);
+		std::string hashStr = sha256(password);
 		if ( hashStr.length() >= 7 )
 		{
-			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+			u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
 			u8* hashBytes = (u8*)&eightHashBytes;
 
 			for ( u8 i = 0; i < tailLength; i++ )
@@ -3067,12 +3060,12 @@ bool Scenario::isPassword(string &password)
 	return false;
 }
 
-bool Scenario::SetPassword(string &oldPass, string &newPass)
+bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
 {
 	if ( isPassword(oldPass) )
 	{
 		SHA256 sha256;
-		string hashStr = sha256(newPass);
+		std::string hashStr = sha256(newPass);
 		if ( hashStr.length() >= 7 )
 		{
 			u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
@@ -3088,7 +3081,7 @@ bool Scenario::SetPassword(string &oldPass, string &newPass)
 	return false;
 }
 
-bool Scenario::Login(string &password)
+bool Scenario::Login(std::string &password)
 {
 	if ( isPassword(password) )
 	{

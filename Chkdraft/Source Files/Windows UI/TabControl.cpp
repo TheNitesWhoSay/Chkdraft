@@ -1,6 +1,5 @@
 #include "TabControl.h"
 #include <iostream>
-using namespace std;
 
 u32 TabControl::GetCurSel()
 {
@@ -18,7 +17,7 @@ bool TabControl::InsertTab(u32 tabId, const char* label)
 	item.mask = TCIF_TEXT;
 	item.iImage = -1;
 	item.pszText = (LPSTR)label;
-	item.cchTextMax = strlen(label);
+	item.cchTextMax = std::strlen(label);
 	return SendMessage(getHandle(), TCM_INSERTITEM, tabId, LPARAM(&item)) != -1;
 }
 

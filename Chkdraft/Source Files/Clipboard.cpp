@@ -3,7 +3,7 @@
 #include "TileChange.h"
 #include "UnitCreateDel.h"
 
-void StringToWindowsClipboard(string &str)
+void StringToWindowsClipboard(std::string &str)
 {
 	OpenClipboard(NULL);
 	if ( EmptyClipboard() != 0 )

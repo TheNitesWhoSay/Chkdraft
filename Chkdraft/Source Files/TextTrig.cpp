@@ -1,5 +1,6 @@
 #include "TextTrig.h"
 #include "Chkdraft.h"
+#include <string>
 
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
@@ -14,7 +15,7 @@ bool TextTrigWindow::CreateThis(HWND hParent)
 
 void TextTrigWindow::RefreshWindow()
 {
-	string trigString;
+	std::string trigString;
 	TextTrigGenerator textTrigs;
 	if ( textTrigs.GenerateTextTrigs(chkd.maps.curr, trigString) )
 		SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());

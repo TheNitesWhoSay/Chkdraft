@@ -14,7 +14,7 @@ void EnterPasswordDialog::DestroyThis()
 
 void EnterPasswordDialog::ButtonLogin()
 {
-	string password;
+	std::string password;
 	if ( editPassword.GetEditText(password) )
 	{
 		editPassword.SetText("");

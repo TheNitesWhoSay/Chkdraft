@@ -1,14 +1,21 @@
 #include "FileIO.h"
+#include <algorithm>
+#include <cstdio>
+#include <fstream>
+#include <string>
 
 bool FindFile(const char* filePath)
 {
-	FILE* file;
-	fopen_s(&file, filePath, "r");
-	bool found = file != nullptr;
-	if ( file != nullptr )
-		fclose(file);
-
-	return found;
+	if ( filePath != nullptr )
+	{
+		FILE* file = std::fopen(filePath, "r");
+		if ( file != nullptr )
+		{
+			std::fclose(file);
+			return true;
+		}
+	}
+	return false;
 }
 
 bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes)
@@ -26,18 +33,6 @@ bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes)
 	return false;
 }
 
-bool FileExists(const char* fileName)
-{
-	FILE* fileCheck = nullptr;
-	if ( fopen_s(&fileCheck, fileName, "r") == 0 )
-	{
-		fclose(fileCheck);
-		return true;
-	}
-	else
-		return false;
-}
-
 bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 {
 	BOOL success = FALSE;
@@ -46,11 +41,11 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 		 retryError[MAX_PATH+76],
 		 openFilter[MAX_PATH+28];
 
-	sprintf_s(filePath, MAX_PATH, "%s\\%s", directory, fileName);
-	sprintf_s(locateError, MAX_PATH+60, "Could not find %s!\n\nWould you like to locate it manually?", filePath);
-	sprintf_s(retryError, MAX_PATH+76, "Failed to open %s! The file may be in use.\n\nWould you like to try again?", fileName);
+	std::snprintf(filePath, MAX_PATH, "%s\\%s", directory, fileName);
+	std::snprintf(locateError, MAX_PATH+60, "Could not find %s!\n\nWould you like to locate it manually?", filePath);
+	std::snprintf(retryError, MAX_PATH+76, "Failed to open %s! The file may be in use.\n\nWould you like to try again?", fileName);
 
-	if ( FileExists(filePath) ) // File found
+	if ( FindFile(filePath) ) // File found
 	{
 		do { success = SFileOpenArchive((LPCSTR)filePath, 0, NULL, &hMpq); }
 		while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES );
@@ -59,7 +54,7 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 	{
 		if ( MessageBox(NULL, locateError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES )
 		{
-			sprintf_s(openFilter, MAX_PATH+28, "%s\0*%s*;\0All Files\0*.*\0\0", fileName);
+			std::snprintf(openFilter, MAX_PATH+28, "%s\0*%s*;\0All Files\0*.*\0\0", fileName);
 
 			OPENFILENAME ofn = { };
 			ofn.lStructSize = sizeof(ofn);
@@ -135,10 +130,10 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 		   || FileToBuffer(hStarDat, fileName, buf);
 }
 
-bool FileToString(string fileName, string &str)
+bool FileToString(std::string fileName, std::string &str)
 {
 	str.clear();
-	ifstream file(fileName, ifstream::in|ifstream::ate); // Open at ending characters position
+	std::ifstream file(fileName, std::ifstream::in|std::ifstream::ate); // Open at ending characters position
 	if ( file.is_open() )
 	{
 		auto size = file.tellg(); // Grab size via current position
@@ -155,18 +150,18 @@ bool FileToString(string fileName, string &str)
 	return false;
 }
 
-void RemoveFile(string fileName)
+void RemoveFile(std::string fileName)
 {
 	std::remove(fileName.c_str());
 }
 
-void RemoveFiles(string firstFileName, string secondFileName)
+void RemoveFiles(std::string firstFileName, std::string secondFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
 }
 
-void RemoveFiles(string firstFileName, string secondFileName, string thirdFileName)
+void RemoveFiles(std::string firstFileName, std::string secondFileName, std::string thirdFileName)
 {
 	std::remove(firstFileName.c_str());
 	std::remove(secondFileName.c_str());
@@ -195,28 +190,26 @@ OPENFILENAME GetScSaveOfn(char* szFileName)
 
 bool FileToBuffer(const char* FileName, buffer &buf)
 {
-	FILE* pFile;
-	fopen_s(&pFile, (const char*)FileName, "rb");
-	
-	if ( pFile != nullptr )
+	bool success = false;
+	if ( FileName != nullptr )
 	{
-		buf.flush();
-		fseek(pFile, 0, SEEK_END);
-		u32 fileSize = (u32)ftell(pFile);
-
-		if ( buf.setSize(fileSize) )
+		FILE* pFile = std::fopen(FileName, "rb");
+		if ( pFile != nullptr )
 		{
-			buf.sizeUsed = fileSize;
-			rewind(pFile);
-
-			size_t lengthRead = fread(buf.data, 1, buf.sizeUsed, pFile);
-			fclose(pFile);
-
-			if ( lengthRead == buf.sizeUsed )
-				return true;
+			buf.flush();
+			std::fseek(pFile, 0, SEEK_END);
+			u32 fileSize = (u32)std::ftell(pFile);
+			if ( buf.setSize(fileSize) )
+			{
+				buf.sizeUsed = fileSize;
+				std::rewind(pFile);
+				size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
+				success = (lengthRead == buf.sizeUsed);
+			}
+			std::fclose(pFile);
 		}
 	}
-	return false;
+	return success;
 }
 
 DWORD GetSubKeyString(HKEY hParentKey, const char* subKey, const char* valueName, char* data, DWORD* dataSize)

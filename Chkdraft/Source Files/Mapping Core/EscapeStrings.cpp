@@ -1,6 +1,5 @@
 #include "EscapeStrings.h"
 #include <iostream>
-using namespace std;
 
 bool getOneCharHexVal(char character, u8 &value)
 {
