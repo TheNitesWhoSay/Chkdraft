@@ -370,10 +370,7 @@ bool Scenario::getForceString(ChkdString &str, u8 forceNum)
 	{
 		try
 		{
-			char num[12];
-			_itoa_s(forceNum + 1, num, 10);
-			str += "Force ";
-			str += num;
+			str = "Force " + std::to_string(forceNum + 1);
 			return true;
 		}
 		catch ( std::exception ) { }
@@ -526,11 +523,9 @@ bool Scenario::getUnitName(RawString &dest, u16 unitID)
 	}
 	else // Extended unit
 	{
-		char unitName[16];
-		sprintf_s(unitName, 16, "Unit #%u", unitID);
 		try
 		{
-			dest = unitName;
+			dest = "Unit #" + std::to_string(unitID);
 			return true;
 		}
 		catch ( std::exception ) {}
@@ -1244,12 +1239,8 @@ bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationI
 	if ( getLocation(curr, unusedIndex) )
 	{
 		try {
-			char locNum[8];
-			_itoa_s(int(unusedIndex), locNum, 10);
-
-			RawString str = "Location ";
-			str += locNum;
-			u32 newStrNum;
+			RawString str = "Location " + std::to_string(unusedIndex);
+			u32 newStrNum = 0;
 			if ( addString(str, newStrNum, false) )
 				curr->stringNum = u16(newStrNum);
 		} catch ( std::bad_alloc ) {

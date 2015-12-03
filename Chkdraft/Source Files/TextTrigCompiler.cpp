@@ -1,5 +1,7 @@
 #include "TextTrigCompiler.h"
 #include "Mapping Core/MappingCore.h"
+#include <cstdio>
+#include <cstring>
 #include <exception>
 #include <string>
 #include <utility>
@@ -31,22 +33,22 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk)
 	if ( ParseTriggers(text, output, error) )
 	{
 		if ( BuildNewStringTable(chk) )
-		{			
+		{
 			if ( !chk->TRIG().exists() )
 			{
 				output.setTitle("TRIG");
 				if ( chk->AddSection(output) )
 					return true;
 				else
-					sprintf_s(error, "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+					std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 			}
 			else if ( chk->TRIG().takeAllData(output) )
 				return true;
 			else
-				sprintf_s(error, "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
+				std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
 		}
 		else
-			sprintf_s(error, "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+			std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 	}
 
 	MessageBox(NULL, error, "Error!", MB_OK|MB_ICONEXCLAMATION);
@@ -79,7 +81,7 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 				if ( chk->AddSection(output) )
 					return true;
 				else
-					sprintf_s(error, "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+					std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 			}
 			else
 			{
@@ -87,21 +89,21 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 				if ( output.getPtr<Trigger>(trig, 0, TRIG_STRUCT_SIZE) )
 				{
 					trigger->internalData = trig->internalData;
-					for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+					for ( u8 i = 0; i < NUM_TRIG_PLAYERS; i++ )
 						trigger->players[i] = trig->players[i];
-					for ( u8 i=0; i<NUM_TRIG_CONDITIONS; i++ )
+					for ( u8 i = 0; i < NUM_TRIG_CONDITIONS; i++ )
 						trigger->conditions[i] = trig->conditions[i];
-					for ( u8 i=0; i<NUM_TRIG_ACTIONS; i++ )
+					for ( u8 i = 0; i < NUM_TRIG_ACTIONS; i++ )
 						trigger->actions[i] = trig->actions[i];
 
 					return true;
 				}
 				else
-					sprintf_s(error, "No text errors, but trigger could not be transferred.\n\n%s", LastError);
+					std::snprintf(error, sizeof(error), "No text errors, but trigger could not be transferred.\n\n%s", LastError);
 			}
 		}
 		else
-			sprintf_s(error, "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+			std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 	}
 
 	MessageBox(NULL, error, "Error!", MB_OK|MB_ICONEXCLAMATION);
@@ -429,15 +431,15 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 
 						if ( !output.add<Trigger&>(currTrig) )
 						{
-							sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Failed to add trigger.\n\n%s", LastError);
+							std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Failed to add trigger.\n\n%s", LastError);
 							return false;
 						}
 
-						memset(&currTrig, 0, sizeof(Trigger));
+						std::memset(&currTrig, 0, sizeof(Trigger));
 						expecting = 0;
 						if ( text.has('\0', pos) ) // End of Text
 						{
-							strcpy_s(error, MAX_ERROR_MESSAGE_SIZE, "Success!");
+							std::strcpy(error, "Success!");
 							return true;
 						}
 					}
@@ -472,13 +474,13 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 			return false;
 		}
 	}
 	else 
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Trigger\" or End of Text", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Trigger\" or End of Text", line);
 		return false;
 	}
 	return true;
@@ -521,13 +523,13 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, char* e
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Player Identifier", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Player Identifier", line);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \',\' or \')\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \',\' or \')\'", line);
 			return false;
 		}
 	}
@@ -544,7 +546,7 @@ inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, char* e
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '{'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '{'", line);
 		return false;
 	}
 	return true;
@@ -586,10 +588,10 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
 				pos += 2;
 				line ++;
 			}
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 		}
 		else
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
 
 		return false;
 	}
@@ -624,7 +626,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 			{
 				if ( numConditions > NUM_TRIG_CONDITIONS )
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
+					std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
 					return false;
 				}
 				currCondition = &currTrig.conditions[numConditions];
@@ -649,19 +651,19 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 				}
 				else
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+					std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 					return false;
 				}
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Name", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Name", line);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 			return false;
 		}
 	}
@@ -680,7 +682,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 			return false;
 		}
 	}
@@ -694,7 +696,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 			return false;
 		}
 	}
@@ -709,7 +711,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		{
 			if ( numConditions > NUM_TRIG_CONDITIONS )
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nCondition Max Exceeded!", line);
 				return false;
 			}
 			currCondition = &currTrig.conditions[numConditions];
@@ -734,19 +736,19 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Name", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Name", line);
 			return false;
 		}
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 		return false;
 	}
 	return true;
@@ -762,7 +764,7 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 	{
 		if ( argsLeft > 0 )
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Argument", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Condition Argument", line);
 			return false;
 		}
 
@@ -780,13 +782,13 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
 			return false;
 		}
 	}
 	else if ( argsLeft == 0 )
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\' or \'}\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\' or \'}\'", line);
 		return false;
 	}
 	else if ( argsLeft == 1 )
@@ -800,13 +802,13 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\n%s", line, LastError);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\n%s", line, LastError);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
 			return false;
 		}
 	}
@@ -819,13 +821,13 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\n%s", line, LastError);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\n%s", line, LastError);
 			return false;
 		}
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \',\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \',\'", line);
 		return false;
 	}
 	return true;
@@ -854,9 +856,9 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, char* e
 	else
 	{
 		if ( text.has("ACTIONS", pos, 7) || text.has("FLAGS", pos, 5) )
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 		else
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Actions\" or \"Flags\" or '}'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Actions\" or \"Flags\" or '}'", line);
 		return false;
 	}
 	return true;
@@ -884,7 +886,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 			{
 				if ( numActions > NUM_TRIG_ACTIONS )
 				{
-					sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
+					std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
 					return false;
 				}
 
@@ -902,13 +904,13 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '('", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '('", line);
 			return false;
 		}
 	}
@@ -927,7 +929,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 			return false;
 		}
 	}
@@ -942,7 +944,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		{
 			if ( numActions > NUM_TRIG_ACTIONS )
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
 				return false;
 			}
 			currAction = &currTrig.actions[numActions];
@@ -958,13 +960,13 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
 			return false;
 		}
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\'", line);
 		return false;
 	}
 	return true;
@@ -980,7 +982,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 	{
 		if ( argsLeft > 0 )
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument", line);
 			return false;
 		}
 
@@ -998,13 +1000,13 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
 			return false;
 		}
 	}
 	else if ( argsLeft == 0 )
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
 		return false;
 	}
 	else if ( argsLeft == 1 )
@@ -1018,13 +1020,13 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 			}
 			else
 			{
-				sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
+				std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
 				return false;
 			}
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'", line);
 			return false;
 		}
 	}
@@ -1037,13 +1039,13 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
 			return false;
 		}
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Additional Arguments\n\n%s", line, LastError);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Additional Arguments\n\n%s", line, LastError);
 		return false;
 	}
 
@@ -1067,9 +1069,9 @@ inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, char* 
 	else
 	{
 		if ( text.has("FLAGS", pos, 5) )
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
 		else
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Flags\" or \'}\'", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Flags\" or \'}\'", line);
 		return false;
 	}
 	return true;
@@ -1094,13 +1096,13 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, char*er
 		}
 		else
 		{
-			sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Binary Execution Flags (32-bit max).", line);
+			std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Binary Execution Flags (32-bit max).", line);
 			return false;
 		}
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \';\'", line);
 		return false;
 	}
 	return true;
@@ -1116,7 +1118,7 @@ inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, char
 	}
 	else
 	{
-		sprintf_s(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'}\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'}\'", line);
 		return false;
 	}
 	return true;
@@ -1667,13 +1669,13 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 	Error("INTERNAL ERROR: Invalid args left or argument unhandled, report this");
 	return false;
 
-// returns whether the condition was true and prints msg to the error message if false
-#define returnMsg(condition, msg)					   \
-	if ( condition )								   \
-		return true;								   \
-	else {											   \
-		sprintf_s(LastError, MAX_ERROR_LENGTH, msg);   \
-		return false;								   \
+	// returns whether the condition was true and prints msg to the error message if false
+#define returnMsg(condition, msg)							\
+	if ( condition )										\
+		return true;										\
+	else {													\
+		std::snprintf(LastError, MAX_ERROR_LENGTH, msg);	\
+		return false;										\
 	}
 
 ParseConditionLocationField: // 4 bytes
@@ -3658,7 +3660,7 @@ bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
 				standardStrList.push_back(str);
 		}
 	} catch ( std::bad_alloc ) {
-		sprintf_s(LastError, MAX_ERROR_MESSAGE_SIZE, "Out of memory!");
+		std::snprintf(LastError, MAX_ERROR_MESSAGE_SIZE, "Out of memory!");
 		return false;
 	}
 

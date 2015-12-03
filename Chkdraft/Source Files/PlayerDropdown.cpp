@@ -32,9 +32,9 @@ bool PlayerDropdown::GetPlayerNum(u8 &dest)
 
 		int parsedPlayer = 0;
 
-		if (	sscanf_s(editText.c_str(), "PLAYER%d", &parsedPlayer) > 0
-			 || sscanf_s(editText.c_str(), "P%d"	 , &parsedPlayer) > 0
-			 || sscanf_s(editText.c_str(), "ID:%d"   , &parsedPlayer) > 0 )
+		if (	std::sscanf(editText.c_str(), "PLAYER%d", &parsedPlayer) > 0
+			 || std::sscanf(editText.c_str(), "P%d", &parsedPlayer) > 0
+			 || std::sscanf(editText.c_str(), "ID:%d", &parsedPlayer) > 0 )
 		{
 			dest = parsedPlayer;
 			dest --; // to 0 based

@@ -15,9 +15,7 @@ void GridControlItem::SetText(int text)
 {
 	try
 	{
-		char sNum[12];
-		_itoa_s(text, sNum, 10);
-		this->text = sNum;
+		this->text = std::to_string(text);
 	}
 	catch ( std::exception ) { }
 }

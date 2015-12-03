@@ -571,22 +571,18 @@ void Graphics::DrawTileNumbers(HDC hDC)
 	SetBkMode( hDC, TRANSPARENT );
 	SetTextColor(hDC, RGB(255, 255, 0));
 	RECT nullRect = { };
-	char TileHex[32];
+	std::string TileHex;
 
 	for ( yc=screenTop/32; yc<maxRowY; yc++ )
 	{
 		for ( xc=screenLeft/32; xc<maxRowX; xc++ )
 		{
-			if ( tileBuf->get<u16>(wTileHex, 2*mapWidth*yc+2*xc) )
-			{
-				sprintf_s(TileHex, 8, "%hu", wTileHex);
-				ExtTextOut(hDC, xc*32-screenLeft+3, yc*32-screenTop+2, ETO_OPAQUE, &nullRect, TileHex, strlen(TileHex), 0);
-			}
+			if ( tileBuf->get<u16>(wTileHex, 2 * mapWidth*yc + 2 * xc) )
+				TileHex = std::to_string(wTileHex);
 			else
-			{
-				sprintf_s(TileHex, 8, "DNE");
-				ExtTextOut(hDC, xc*32-screenLeft+3, yc*32-screenTop+2, ETO_OPAQUE, &nullRect, TileHex, strlen(TileHex), 0);
-			}
+				TileHex = "DNE";
+
+			ExtTextOut(hDC, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, ETO_OPAQUE, &nullRect, TileHex.c_str(), TileHex.length(), 0);
 		}
 	}
 	DeleteObject(NumFont);
