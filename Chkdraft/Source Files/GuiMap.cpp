@@ -8,7 +8,7 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap(bool doAutoBackups) : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
+GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
 			 layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
 			 dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
 			 snapUnits(true), stackUnits(false),
@@ -2082,7 +2082,10 @@ bool GuiMap::TryBackup(bool &outCopyFailed)
 		{
 			std::string backupPath;
 			if ( GetBackupPath(currTime, backupPath) && MakeFileCopy(MapFile::GetFilePath(), backupPath) )
+			{
+				lastBackupTime = currTime;
 				return true;
+			}
 			else
 				outCopyFailed = true;
 		}

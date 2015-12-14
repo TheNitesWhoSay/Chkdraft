@@ -30,6 +30,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	ShowWindow(getHandle(), nCmdShow);
     UpdateWindow();
 	ParseCmdLine(lpCmdLine);
+	GuiMap::SetAutoBackup(true);
 
 	this->OnLoadTest();
 

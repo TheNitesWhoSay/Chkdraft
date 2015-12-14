@@ -12,7 +12,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
 
-/* Constructor	*/	GuiMap(bool doAutoBackups);
+/* Constructor	*/	GuiMap();
 
 /*  Destructor  */	~GuiMap();
 
@@ -124,7 +124,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 
 					bool CreateThis(HWND hClient, const char* title);
 					void ReturnKeyPress();
-					void SetAutoBackup(bool doAutoBackups);
+					static void SetAutoBackup(bool doAutoBackups);
 
 
 	protected:
