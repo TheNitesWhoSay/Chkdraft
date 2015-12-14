@@ -17,7 +17,6 @@ class StaticTrigComponentParser
 		bool ParseSwitchMod(char* text, u8 &dest, u32 pos, u32 end); // Set, clear, toggle, randomize
 		bool ParseStateMod(char* text, u8 &dest, u32 pos, u32 end); // Disable, Enable, Toggle
 		bool ParseOrder(char* text, u8 &dest, u32 pos, u32 end); // Attack, move, patrol
-		bool ParseScript(char* text, u32 &dest, u32 pos, u32 end); // Find a script by name
 
 		bool ParseResourceType(char* text, u16 &dest, u32 pos, u32 end); // Accelerator for 2-byte resource types
 		bool ParseScoreType(char* text, u16 &dest, u32 pos, u32 end); // Accelerator for 2-byte score types

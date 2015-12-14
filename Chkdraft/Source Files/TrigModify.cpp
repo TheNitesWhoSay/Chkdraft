@@ -77,7 +77,7 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 	generalWindow.RefreshWindow(trigIndex);
 	playersWindow.RefreshWindow(trigIndex);
 	conditionsWindow.RefreshWindow(trigIndex);
-	actionsWindow.RefreshWindow();
+	actionsWindow.RefreshWindow(trigIndex);
 	trigModifyTextWindow.RefreshWindow(trigIndex);
 }
 
@@ -117,6 +117,16 @@ void TrigModifyWindow::DoSize()
 bool TrigModifyWindow::onTrigTextTab()
 {
 	return currTab == TAB_TEXT;
+}
+
+void TrigModifyWindow::RedrawThis()
+{
+	ClassDialog::RedrawThis();
+	conditionsWindow.RedrawThis();
+	actionsWindow.RedrawThis();
+	generalWindow.RedrawThis();
+	playersWindow.RedrawThis();
+	trigModifyTextWindow.RedrawThis();
 }
 
 BOOL TrigModifyWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)

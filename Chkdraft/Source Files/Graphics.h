@@ -2,7 +2,7 @@
 #define GRAPHICS_H
 #include "Common Files/CommonFiles.h"
 #include "Clipboard.h"
-#include "Data.h"
+#include "ScData.h"
 #include <string>
 #include <vector>
 

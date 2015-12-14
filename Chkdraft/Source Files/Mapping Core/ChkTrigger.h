@@ -38,6 +38,7 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 		void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
 		void setFlagPaused(bool flagPaused);
 		void deleteCondition(u8 index);
+		void deleteAction(u8 index);
 		void alignTop(); // Moves all non-CID_NO_CONDITION conditions to top of array
 
 		static Condition junkCondition;

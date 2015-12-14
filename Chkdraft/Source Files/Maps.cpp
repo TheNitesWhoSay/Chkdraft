@@ -603,7 +603,7 @@ std::shared_ptr<GuiMap> MAPS::AddEmptyMap()
 	u16 id = NextId();
 	if ( id < u16_max )
 	{
-		auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap)));
+		auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap(true))));
 		if ( it != openMaps.end() )
 		{
 			it->second->setMapId(id);

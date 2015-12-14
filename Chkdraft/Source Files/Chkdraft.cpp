@@ -119,12 +119,25 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam
 							trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
 							return true;
 						}
+						else if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+							GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+						{
+							msg = WM_NULL; // Dirty fix to prevent tabs from being focused
+							trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+							return true;
+						}
 						break;
 					case VK_RETURN:
 						if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
 							 GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
 						{
 							trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+							return true;
+						}
+						else if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+							GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+						{
+							trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
 							return true;
 						}
 						if ( GetParent(hWnd) == unitWindow.getHandle() )

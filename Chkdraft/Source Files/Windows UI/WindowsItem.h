@@ -36,7 +36,7 @@ class WindowsItem
 		void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
 		bool SetParent(HWND hParent);
 		void SetRedraw(bool autoRedraw);
-		void RedrawThis();
+		virtual void RedrawThis();
 
 		void MoveTo(int x, int y);
 		void SetPos(int x, int y, int width, int height);

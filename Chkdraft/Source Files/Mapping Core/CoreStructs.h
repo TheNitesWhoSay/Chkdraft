@@ -3,6 +3,7 @@
 
 #include "ChkAction.h"
 #include "ChkCondition.h"
+#include "ChkCuwp.h"
 #include "ChkDoodad.h"
 #include "ChkLocation.h"
 #include "ChkSprite.h"

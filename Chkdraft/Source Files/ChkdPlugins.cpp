@@ -64,7 +64,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									delete[] inputText;
 
 									TextTrigCompiler compiler;
-									if ( compiler.CompileTriggers(textBuf, map) )
+									if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )
 									{
 										map->notifyChange(false);
 										return TRUE;

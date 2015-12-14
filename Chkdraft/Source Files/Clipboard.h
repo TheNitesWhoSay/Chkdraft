@@ -4,9 +4,11 @@
 #include "Mapping Core/MappingCore.h"
 #include "Selections.h"
 #include "Undo.h"
-#include "Data.h"
+#include "ScData.h"
 
 void StringToWindowsClipboard(std::string &str);
+
+bool WindowsClipboardToString(std::string &str);
 
 class PasteTileNode
 {

@@ -146,7 +146,7 @@ bool TrigModifyTextWindow::CompileEditText(std::string &newText)
 		if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
 		{
 			TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
-			if ( compiler.CompileTrigger(newText, trigger, chkd.maps.curr) )
+			if ( compiler.CompileTrigger(newText, trigger, chkd.maps.curr, chkd.scData) )
 				return true;
 			else
 				MessageBox(NULL, "Compilation failed.", "Error!", MB_OK);

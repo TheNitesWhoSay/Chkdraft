@@ -303,6 +303,21 @@ const char* triggerConditions[] = { "Accumulate", "Always", "Bring", "Command", 
 };
 const int numTriggerConditions = sizeof(triggerConditions)/sizeof(const char*);
 
+const char* triggerActions[] = { "Center View", "Comment", "Create Unit", "Create Unit with Properties",
+	"Defeat", "Display Text Message", "Draw", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
+	"Leader Board Control at Location", "Leader Board Control", "Leader Board Greed", "Leader Board Kills",
+	"Leader Board Points", "Leader Board Resources", "Leader Board Goal Control At Location",
+	"Leader Board Goal Control", "Leader Board Goal Kills", "Leader Board Goal Points", "Leader Board Goal Resources",
+	"Leader Board Computer Players", "MiniMap Ping", "Modify Unit Energy", "Modify Unit Hanger Count",
+	"Modify Unit Hit Points", "Modify Unit Resource Amount", "Modify Unit Shield Points", "Move Location",
+	"Move Unit", "Mute Unit Speech", "Order", "Pause Game", "Pause Timer", "Play Wav", "Preserve Trigger", "Remove Unit",
+	"Remove Unit At Location", "Run AI Script", "Run AI Script At Location", "Set Alliance Status", "Set Countdown Timer",
+	"Set Deaths", "Set Doodad State", "Set Invincibility", "Set Mission Objectives", "Set Next Scenario", "Set Resources",
+	"Set Score", "Set Switch", "Talking Portrait", "Transmission", "Unmute Unit Speech", "Unpause Game", "Unpause Timer",
+	"Victory", "Wait"
+};
+const int numTriggerActions = sizeof(triggerActions) / sizeof(const char*);
+
 const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings",
 								"Total", "Units", "Units and Buildings" };
 const int numTriggerScores = sizeof(triggerScores) / sizeof(const char*);

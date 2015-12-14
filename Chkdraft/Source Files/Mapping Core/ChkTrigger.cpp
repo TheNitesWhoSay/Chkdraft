@@ -149,6 +149,27 @@ void Trigger::deleteCondition(u8 index)
 	}
 }
 
+void Trigger::deleteAction(u8 index)
+{
+	if ( index < NUM_TRIG_ACTIONS )
+	{
+		actions[index].location = 0;
+		actions[index].stringNum = 0;
+		actions[index].wavID = 0;
+		actions[index].time = 0;
+		actions[index].group = 0;
+		actions[index].number = 0;
+		actions[index].type = 0;
+		actions[index].action = 0;
+		actions[index].type2 = 0;
+		actions[index].flags = 0;
+		actions[index].internalData[0] = 0;
+		actions[index].internalData[1] = 0;
+		actions[index].internalData[2] = 0;
+		alignTop();
+	}
+}
+
 void Trigger::alignTop()
 {
 	for ( u8 i=0; i<NUM_TRIG_CONDITIONS; i++ )

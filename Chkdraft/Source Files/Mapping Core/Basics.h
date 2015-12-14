@@ -76,6 +76,25 @@ typedef int8_t s8;
 #define x8BIT_6 0xBF
 #define x8BIT_7 0x7F
 
+#define x16BIT_0 0xFFFE
+#define x16BIT_1 0xFFFD
+#define x16BIT_2 0xFFFB
+#define x16BIT_3 0xFFF7
+#define x16BIT_4 0xFFEF
+#define x16BIT_5 0xFFDF
+#define x16BIT_6 0xFFBF
+#define x16BIT_7 0xFF7F
+
+#define x16BIT_8 0xFEFF
+#define x16BIT_9 0xFDFF
+#define x16BIT_10 0xFBFF
+#define x16BIT_11 0xF7FF
+#define x16BIT_12 0xEFFF
+#define x16BIT_13 0xDFFF
+#define x16BIT_14 0xBFFF
+#define x16BIT_15 0x7FFF
+
+
 #define x32BIT_0 0xFFFFFFFE
 #define x32BIT_1 0xFFFFFFFD
 #define x32BIT_2 0xFFFFFFFB

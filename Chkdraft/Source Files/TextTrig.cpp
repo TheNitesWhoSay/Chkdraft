@@ -117,7 +117,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
 		if ( editControl.GetEditText(trigText) )
 		{
 			TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
-			if ( compiler.CompileTriggers(trigText, map) )
+			if ( compiler.CompileTriggers(trigText, map, chkd.scData) )
 				return true;
 			else
 				MessageBox(NULL, "Compilation failed.", "Error!", MB_OK);

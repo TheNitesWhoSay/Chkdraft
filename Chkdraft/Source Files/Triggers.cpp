@@ -414,6 +414,9 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
 	std::stringstream ssAction;
 	Action &action = trigger->actions[actionNum];
 	u8 actionIndex = action.action;
+	if ( action.isDisabled() )
+		ssAction << "(disabled) ";
+
 	switch ( actionIndex )
 	{
 		case AID_CENTER_VIEW: // Location
@@ -527,7 +530,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
 		case AID_MODIFY_UNIT_RESOURCE_AMOUNT: // Type2, Players, Location, Number
 			ssAction << "Set resource amount for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C resource sources owned by \x08"
 				<< tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\' to \x08"
-				<< tt.GetTrigNumber(action.number) << "\x0C%.";
+				<< tt.GetTrigNumber(action.number) << "\x0C.";
 			break;
 		case AID_MODIFY_UNIT_SHIELD_POINTS: // Type2, Type, Players, Location, Number
 			ssAction << "Set shield points for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
@@ -541,7 +544,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
 			break;
 		case AID_MOVE_UNIT: // Type2, Type, Players, Location, Number
 			ssAction << "Move \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-				<< "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+				<< "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.number)
 				<< "\x0C\' to \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\'.";
 			break;
 		case AID_MUTE_UNIT_SPEECH:
@@ -562,7 +565,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
 			ssAction << "Pause the countdown timer.";
 			break;
 		case AID_PLAY_WAV: // Wav, Duration
-			ssAction << "Play \'\x08" << tt.GetTrigString(action.wavID) << "\x0C\'.";
+			ssAction << "Play \'\x08" << tt.GetTrigWav(action.wavID) << "\x0C\'.";
 			break;
 		case AID_PRESERVE_TRIGGER:
 			ssAction << "Preserve trigger.";
@@ -629,7 +632,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
 			break;
 		case AID_TRANSMISSION: // Type, Location, Wav, Type2, Number, String
 			ssAction << "Send transmission to current player from \x08" << tt.GetTrigUnit(action.type) << "\x0C at \'\x08"
-				<< tt.GetTrigLocation(action.location) << "\x0C\'. Play '\x08" << tt.GetTrigString(action.wavID)
+				<< tt.GetTrigLocation(action.location) << "\x0C\'. Play '\x08" << tt.GetTrigWav(action.wavID)
 				<< "\x0C\'. Modify duration: \x08" << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08"
 				<< tt.GetTrigNumber(action.number) << "\x0C miliseconds. Display text:\x08"
 				<< tt.GetTrigString(action.stringNum) << '\x0C';

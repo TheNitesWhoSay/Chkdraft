@@ -967,13 +967,6 @@ void GridViewControl::EnterKey()
 	}
 }
 
-void GridViewControl::Paint(HWND hWnd)
-{
-	SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
-	DrawItems(hWnd);
-	SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
-}
-
 void GridViewControl::DrawItems(HWND hWnd)
 {
 	HWND hWndParent = GetParent(hWnd);
@@ -1037,6 +1030,13 @@ void GridViewControl::DrawItems(HWND hWnd)
 		}
 	}
 	EndPaint(hWnd, &ps);
+}
+
+void GridViewControl::Paint(HWND hWnd)
+{
+	SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
+	DrawItems(hWnd);
+	SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
 }
 
 LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)

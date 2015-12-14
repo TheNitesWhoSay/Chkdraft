@@ -1,4 +1,4 @@
-#include "Data.h"
+#include "ScData.h"
 #include <string>
 
 bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
@@ -498,31 +498,6 @@ bool Sprites::LoadSprites(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPat
 	return true;
 }
 
-bool DATA::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStarDat)
-{
-	buffer imageTbl;
-
-	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, "arr\\images.tbl", imageTbl) )
-		Error("Could not load images.tbl");
-
-	char* fileName;
-	numGrps = imageTbl.get<u16>(0);
-
-	try {
-		grps = new GRP[numGrps];
-	} catch ( std::bad_alloc ) {
-		return false;
-	}
-
-	for ( u32 i=0; i<numGrps; i++ )
-	{
-		fileName = (char*)imageTbl.getPtr(imageTbl.get<u16>((i+1)*2));
-		grps[i].LoadGrp(fileName, hPatchRt, hBrooDat, hStarDat);
-	}
-
-	return true;
-}
-
 FLINGYDAT* Sprites::FlingyDat(u32 id)
 {
 	if ( id < 209 )
@@ -605,7 +580,96 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 	return false;
 }
 
-void DATA::Load()
+bool TblFiles::Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
+{
+	return FileToBuffer(hStarDat, hBrooDat, hPatchRt, "Rez\\stat_txt.tbl", stat_txtTbl);
+}
+
+bool TblFiles::GetStatTblString(u16 stringNum, std::string &outString)
+{
+	return GetTblString(stat_txtTbl, stringNum, outString);
+}
+
+bool TblFiles::GetTblString(buffer &tbl, u16 stringNum, std::string &outString)
+{
+	outString.clear();
+	u16 numStrings = tbl.get<u16>(0);
+
+	if ( tbl.exists() && stringNum != 0 )
+	{
+		u32 start = tbl.get<u16>(2 * stringNum);
+		u32 end = 0;
+		if ( !tbl.getNext('\0', start, end) ) // Next NUL char marks the end of the string
+			end = tbl.size(); // Just end it where buffer ends
+
+		size_t length = (size_t)(end - start);
+		char* cString = (char*)tbl.getPtr(start);
+		try {
+			outString = std::string(cString, length);
+			return true;
+		}
+		catch ( std::bad_alloc ) {}
+	}
+	return false;
+}
+
+bool AiScripts::Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
+{
+	return FileToBuffer(hStarDat, hBrooDat, hPatchRt, "scripts\\AISCRIPT.BIN", aiScriptBin);
+}
+
+bool AiScripts::GetAiEntry(int aiNum, AIEntry &outAiEntry)
+{
+	return aiScriptBin.get<AIEntry>(outAiEntry, aiNum*sizeof(AIEntry) + aiScriptBin.get<u32>(0));
+}
+
+int AiScripts::GetNumAiScripts()
+{
+	return (aiScriptBin.size() - aiScriptBin.get<u32>(0)) / sizeof(AIEntry);
+}
+
+bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)
+{
+	AIEntry aiEntry = {};
+	if ( GetAiEntry(aiNum, aiEntry) )
+	{
+		outAiId = aiEntry.id;
+		return true;
+	}
+	return false;
+}
+
+bool AiScripts::GetAiIdentifier(std::string &inAiName, u32 &outAiId)
+{
+	std::string scAiName;
+	int numAiScripts = GetNumAiScripts();
+	for ( int i = 0; i < numAiScripts; i++ )
+	{
+		if ( GetAiName(i, scAiName) && scAiName.compare(inAiName) == 0 )
+			return true;
+	}
+	return false;
+}
+
+bool AiScripts::GetAiName(int aiNum, std::string &outAiName)
+{
+	AIEntry aiEntry = {};
+	return GetAiEntry(aiNum, aiEntry) && tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName);
+}
+
+bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
+{
+	AIEntry aiEntry = {};
+	if ( GetAiEntry(aiNum, aiEntry) )
+	{
+		outId = aiEntry.id;
+		if ( tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName) )
+			return true;
+	}
+	return false;
+}
+
+void ScData::Load()
 {
 	MPQHANDLE hStarDat = nullptr,
 			  hBrooDat = nullptr,
@@ -647,9 +711,41 @@ void DATA::Load()
 	if ( !tselect.load(hStarDat, hBrooDat, hPatchRt, "game\\tselect.pcx") )
 		Error("Failed to load tselect.pcx");
 
+	if ( !aiScripts.Load(hStarDat, hBrooDat, hPatchRt) )
+		Error("Failed to load AIScripts");
+
+	if ( !tblFiles.Load(hStarDat, hBrooDat, hPatchRt) )
+		Error("Failed to load tbl files");
+
 	CloseArchive(hStarDat);
 	CloseArchive(hBrooDat);
 	CloseArchive(hPatchRt);
+}
+
+bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStarDat)
+{
+	buffer imageTbl;
+
+	if ( !FileToBuffer(hStarDat, hBrooDat, hPatchRt, "arr\\images.tbl", imageTbl) )
+		Error("Could not load images.tbl");
+
+	char* fileName;
+	numGrps = imageTbl.get<u16>(0);
+
+	try {
+		grps = new GRP[numGrps];
+	}
+	catch ( std::bad_alloc ) {
+		return false;
+	}
+
+	for ( u32 i = 0; i<numGrps; i++ )
+	{
+		fileName = (char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
+		grps[i].LoadGrp(fileName, hPatchRt, hBrooDat, hStarDat);
+	}
+
+	return true;
 }
 
 bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue)

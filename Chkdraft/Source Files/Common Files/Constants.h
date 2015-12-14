@@ -63,6 +63,9 @@ extern const int numTriggerPlayers;
 extern const char* triggerConditions[];
 extern const int numTriggerConditions;
 
+extern const char* triggerActions[];
+extern const int numTriggerActions;
+
 extern const char* triggerScores[];
 extern const int numTriggerScores;
 

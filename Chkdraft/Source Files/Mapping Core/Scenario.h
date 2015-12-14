@@ -105,6 +105,15 @@ class Scenario
 					bool moveTriggerDown(u32 triggerId); // Moves the given trigger down one absolute index
 					bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
 
+/*	   CUWPs	*/	bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
+					bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
+					bool IsCuwpUsed(u8 cuwpIndex);
+					bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
+
+/*	   WAVs		*/	bool GetWav(u16 wavIndex, u32 &outStringIndex);
+					bool AddWav(u32 stringIndex);
+					bool IsWavUsed(u16 wavIndex);
+					bool IsStringUsedWithWavs(u32 stringIndex);
 
 /*	 Switches	*/	bool getSwitchName(ChkdString &dest, u8 switchID);
 
@@ -192,13 +201,15 @@ class Scenario
 					bool setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playerUsesDefaultSettings);
 
 
-/*	 Strings	*/	u16 numStrings(); // Returns number of strings in the STR section
-					u32 totalStrings(); // Returns number of strings in the STR and KSTR sections
+/*	 Strings	*/	u16 numStrSlots();
+					u32 numKstrSlots();
+					u32 numCombinedStringSlots();
 
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
 					bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string
 					bool stringExists(u32 stringNum); // Checks if a string is associated with this stringNum
 					bool stringExists(RawString &str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
+					bool stringExists(ChkdString &str, u32 &stringNum);
 					bool stringExists(RawString &str, u32& stringNum, bool extended); // Checks if string exists in the same table
 					bool stringExists(RawString &str, u32& stringNum, std::vector<StringTableNode> &strList);
 					bool FindDifference(ChkdString &str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
@@ -207,6 +218,10 @@ class Scenario
 					bool GetString(RawString &dest, u32 stringNum); // No special formatting
 					bool GetString(EscString &dest, u32 stringNum); // C++ formatting, see MakeEscString
 					bool GetString(ChkdString &dest, u32 stringNum); // Chkd and C++ formatting, see MakeChkdString
+
+					bool GetExtendedString(RawString &dest, u32 extendedStringSectionIndex); // No special formatting
+					bool GetExtendedString(EscString &dest, u32 extendedStringSectionIndex); // C++ formatting, see MakeEscString
+					bool GetExtendedString(ChkdString &dest, u32 extendedStringSectionIndex); // Chkd and C++ formatting, see MakeChkdString
 
 					inline void IncrementIfEqual(u32 lhs, u32 rhs, u32 &counter);
 					u32 amountStringUsed(u32 stringNum); // Returns the number of times a string is used

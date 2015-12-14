@@ -8,13 +8,14 @@
 #include "MainPlot.h"
 #include "NewMap.h"
 #include "Maps.h"
+#include "ScData.h"
 
 class Chkdraft : public ClassWindow
 {
 	public:
 					void OnLoadTest(); // Write testing code here
 
-/*  Main Items  */	DATA scData; // Main data
+/*  Main Items  */	ScData scData; // Data from StarCraft files
 					MAPS maps; // Main map container
 
 /* Dialog Boxes */	NewMap newMap; // New map DialogBox

@@ -262,11 +262,64 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes)
 	return false;
 }
 
-bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outEscString)
+bool MakeOneLineChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString)
 {
 	try
 	{
-		outEscString.clear();
+		outChkdString.clear();
+		for ( size_t i = 0; i < inRawStringLength; i++ )
+		{
+			unsigned char currChar = inRawString[i];
+			if ( currChar == '\r' && i + 1 < inRawStringLength && inRawString[i + 1] == '\n' )
+			{
+				outChkdString.append("\\r");
+			}
+			else if ( currChar == '\n' && i != 0 && inRawString[i - 1] == '\r' )
+			{
+				outChkdString.append("\\n");
+			}
+			else if ( currChar == '\t' )
+			{
+				outChkdString.append("\\t");
+			}
+			else if ( currChar < 32 || currChar >= 127 )
+			{
+				outChkdString.push_back('<');
+
+				if ( currChar / 16 > 9 )
+					outChkdString.push_back(currChar / 16 + 'A' - 10);
+				else
+					outChkdString.push_back(currChar / 16 + '0');
+
+				if ( currChar % 16 > 9 )
+					outChkdString.push_back(currChar % 16 + 'A' - 10);
+				else
+					outChkdString.push_back(currChar % 16 + '0');
+
+				outChkdString.push_back('>');
+			}
+			else if ( currChar == '<' )
+				outChkdString.append("\\<");
+			else if ( currChar == '\\' )
+				outChkdString.append("\\\\");
+			else
+				outChkdString.push_back(currChar);
+		}
+		return true;
+	}
+	catch ( std::exception ) {} // Catch bad_alloc and length_error
+	outChkdString.clear();
+	return false;
+}
+
+bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString)
+{
+	if ( outChkdString.IsOneLine() )
+		return MakeOneLineChkdStr(inRawString, inRawStringLength, outChkdString);
+
+	try
+	{
+		outChkdString.clear();
 		for ( size_t i = 0; i < inRawStringLength; i++ )
 		{
 			unsigned char currChar = inRawString[i];
@@ -275,37 +328,40 @@ bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &
 
 			if ( (currChar < 32 || currChar >= 127) && currChar != '\t' && !partOfNewLine )
 			{
-				outEscString.push_back('<');
+				outChkdString.push_back('<');
 
 				if ( currChar / 16 > 9 )
-					outEscString.push_back(currChar / 16 + 'A' - 10);
+					outChkdString.push_back(currChar / 16 + 'A' - 10);
 				else
-					outEscString.push_back(currChar / 16 + '0');
+					outChkdString.push_back(currChar / 16 + '0');
 
 				if ( currChar % 16 > 9 )
-					outEscString.push_back(currChar % 16 + 'A' - 10);
+					outChkdString.push_back(currChar % 16 + 'A' - 10);
 				else
-					outEscString.push_back(currChar % 16 + '0');
+					outChkdString.push_back(currChar % 16 + '0');
 
-				outEscString.push_back('>');
+				outChkdString.push_back('>');
 			}
 			else if ( currChar == '<' )
-				outEscString.append("\\<");
+				outChkdString.append("\\<");
 			else if ( currChar == '\\' )
-				outEscString.append("\\\\");
+				outChkdString.append("\\\\");
 			else
-				outEscString.push_back(currChar);
+				outChkdString.push_back(currChar);
 		}
 		return true;
 	}
 	catch ( std::exception ) {} // Catch bad_alloc and length_error
-	outEscString.clear();
+	outChkdString.clear();
 	return false;
 }
 
 bool MakeChkdStr(RawString &inRawString, ChkdString &outChkdString)
 {
-	return MakeChkdStr(inRawString.c_str(), inRawString.length(), outChkdString);
+	if ( outChkdString.IsOneLine() )
+		return MakeOneLineChkdStr(inRawString.c_str(), inRawString.length(), outChkdString);
+	else
+		return MakeChkdStr(inRawString.c_str(), inRawString.length(), outChkdString);
 }
 
 bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos)

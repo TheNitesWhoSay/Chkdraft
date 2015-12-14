@@ -1,7 +1,8 @@
-#ifndef DATA_H
-#define DATA_H
+#ifndef SCDATA_H
+#define SCDATA_H
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
+#include <map>
 
 struct TileSet
 {
@@ -294,9 +295,52 @@ class PCX
 		bool load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename);
 };
 
-class DATA
+struct AIEntry
+{
+	u32 id; // 4-byte text, stored in TRIG section
+	u32 ptr; // File pointer in this file, 0 means it's in BWScript.bin
+	u32 statStrIndex; // stat_txt.tbl string index for name
+	u32 flags;
+		// 01 - Ran in Location (Run AI Script at Location)
+		// 02 - StarEdit Invisible
+		// 04 - BW Only
+};
+
+class TblFiles
 {
 	public:
+		bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
+		bool GetStatTblString(u16 stringNum, std::string &outString);
+
+	protected:
+		bool GetTblString(buffer &buf, u16 stringNum, std::string &outString);
+
+	private:
+		buffer stat_txtTbl;
+};
+
+class AiScripts
+{
+	public:
+		AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
+		bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
+		bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
+		int GetNumAiScripts();
+		bool GetAiIdentifier(int aiNum, u32 &outAiId);
+		bool GetAiIdentifier(std::string &inAiName, u32 &outAiId);
+		bool GetAiName(int aiNum, std::string &outAiName);
+		bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
+
+	private:
+		buffer aiScriptBin;
+		TblFiles &tblFiles;
+};
+
+class ScData
+{
+	public:
+
+		ScData() : aiScripts(tblFiles) {}
 
 		Tiles tilesets;
 		Upgrades upgrades;
@@ -304,6 +348,8 @@ class DATA
 		Units units;
 		Weapons weapons;
 		Sprites sprites;
+		TblFiles tblFiles;
+		AiScripts aiScripts;
 		PCX tminimap;
 		PCX tunit;
 		PCX tselect;
@@ -323,7 +369,6 @@ class DATA
 
 		bool LoadGrps(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
 };
-
 
 bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
 

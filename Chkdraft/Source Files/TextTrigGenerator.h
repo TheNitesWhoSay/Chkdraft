@@ -4,6 +4,7 @@
 #include "Mapping Core/MappingCore.h"
 #include <vector>
 #include <string>
+#include <map>
 
 /**
 	ArgumentMap
@@ -28,11 +29,13 @@ class TextTrigGenerator
 		std::string GetConditionName(u8 CID);
 		std::string GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum);
 		std::string GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap);
-		std::string GetActionArgument(Action& action, u8 stdTextTrigArgNum);
-		std::string GetActionArgument(Action& action, u8 argNum, std::vector<u8> &argMap);
+		std::string GetActionName(u8 AID);
+		std::string GetActionArgument(Action &action, u8 stdTextTrigArgNum);
+		std::string GetActionArgument(Action &action, u8 argNum, std::vector<u8> &argMap);
 
 		ChkdString GetTrigLocation(u32 locationNum);
 		ChkdString GetTrigString(u32 stringNum);
+		ChkdString GetTrigWav(u32 stringNum);
 		ChkdString GetTrigPlayer(u32 groupNum);
 		ChkdString GetTrigUnit(u16 unitId);
 		ChkdString GetTrigSwitch(u32 switchNum);
@@ -66,8 +69,8 @@ class TextTrigGenerator
 		std::vector<ChkdString> locationTable; // Array of map locations
 		std::vector<ChkdString> unitTable; // Array of map units
 		std::vector<ChkdString> switchTable; // Array of map switches
-		std::vector<ChkdString> wavTable; // Array of map wavs
 		std::vector<ChkdString> groupTable; // Array of map groups
+		std::map<u32, std::string> scriptTable; // Array of map scripts
 		std::vector<std::string> conditionTable; // Array of condition names
 		std::vector<std::string> actionTable; // Array of action names
 		bool goodConditionTable;
@@ -79,8 +82,8 @@ class TextTrigGenerator
 		bool PrepLocationTable(ScenarioPtr map, bool quoteArgs); // Fills locationTable
 		bool PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames); // Fills unitTable
 		bool PrepSwitchTable(ScenarioPtr map, bool quoteArgs); // Fills switchTable
-		bool PrepWavTable(ScenarioPtr map, bool quoteArgs); // Fills wavTable
 		bool PrepGroupTable(ScenarioPtr map, bool quoteArgs); // Fills groupTable
+		bool PrepScriptTable(ScenarioPtr map, bool quoteArgs); // Fills scriptTable
 		bool PrepStringTable(ScenarioPtr map, bool quoteArgs); // Fills stringTable
 };
 

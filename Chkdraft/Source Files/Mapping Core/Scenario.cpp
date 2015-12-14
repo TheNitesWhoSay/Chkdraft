@@ -411,14 +411,19 @@ bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
 		return UNIS().get<u16>(stringNum, unitId*2+(u32)UnitSettingsDataLoc::StringIds);
 }
 
-u16 Scenario::numStrings()
+u16 Scenario::numStrSlots()
 {
 	return STR().get<u16>(0);
 }
 
-u32 Scenario::totalStrings()
+u32 Scenario::numKstrSlots()
 {
-	return ((u32)STR().get<u16>(0)) + KSTR().get<u32>(4);
+	return KSTR().get<u32>(4);
+}
+
+u32 Scenario::numCombinedStringSlots()
+{
+	return STR().get<u16>(0) + KSTR().get<u32>(4);
 }
 
 bool Scenario::GetString(RawString &dest, u32 stringNum)
@@ -489,6 +494,21 @@ bool Scenario::GetString(ChkdString &dest, u32 stringNum)
 	}
 
 	return false;
+}
+
+bool Scenario::GetExtendedString(RawString &dest, u32 extendedStringSectionIndex)
+{
+	return GetString(dest, 65535 - extendedStringSectionIndex);
+}
+
+bool Scenario::GetExtendedString(EscString &dest, u32 extendedStringSectionIndex)
+{
+	return GetString(dest, 65535 - extendedStringSectionIndex);
+}
+
+bool Scenario::GetExtendedString(ChkdString &dest, u32 extendedStringSectionIndex)
+{
+	return GetString(dest, 65535 - extendedStringSectionIndex);
 }
 
 bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
@@ -693,7 +713,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 
 bool Scenario::isExtendedString(u32 stringNum)
 {
-	return stringNum >= numStrings() &&
+	return stringNum >= numStrSlots() &&
 		   stringNum < 65536 &&
 		   KSTR().exists() &&
 		   (u32(65536-stringNum)) <= KSTR().get<u32>(4);
@@ -703,7 +723,7 @@ bool Scenario::stringExists(u32 stringNum)
 {
 	return isExtendedString(stringNum) ||
 		   ( STR().exists() &&
-		     stringNum < numStrings() );
+		     stringNum < numStrSlots() );
 }
 
 bool Scenario::stringExists(RawString &str, u32& stringNum)
@@ -721,6 +741,12 @@ bool Scenario::stringExists(RawString &str, u32& stringNum)
 	}
 
 	return false;
+}
+
+bool Scenario::stringExists(ChkdString &str, u32 &stringNum)
+{
+	RawString rawStr;
+	return ParseChkdStr(str, rawStr) && stringExists(rawStr, stringNum);
 }
 
 bool Scenario::stringExists(RawString &str, u32& stringNum, bool extended)
@@ -2129,12 +2155,12 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 {
 	std::hash<std::string> strHash;
 	std::unordered_multimap<u32, StringTableNode> stringSearchTable;
-	strList.reserve(strList.size()+numStrings());
+	strList.reserve(strList.size()+numCombinedStringSlots());
 	StringTableNode node;
 	int numMatching = 0;
 	u32 hash = 0;
-	u32 standardNumStrings = numStrings();
-	u32 extendedNumStrings = KSTR().get<u32>(4);
+	u32 standardNumStrings = numStrSlots();
+	u32 extendedNumStrings = numKstrSlots();
 
 	#define AddStrIfOverZero(index)														\
 		if ( index > 0 &&																\
@@ -2223,7 +2249,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	{
 		for ( auto &str : strList )
 		{
-			if ( str.stringNum >= numStrings() )
+			if ( str.stringNum >= numStrSlots() )
 				str.stringNum = 65536 - str.stringNum;
 		}
 	}
@@ -2234,9 +2260,9 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	// Decide what the max strings should be
 	u32 prevNumStrings;
 	if ( extendedTable )
-		prevNumStrings = KSTR().get<u32>(4);
+		prevNumStrings = numKstrSlots();
 	else
-		prevNumStrings = numStrings();
+		prevNumStrings = numStrSlots();
 
 	u32 numStrs = 0;
 	if ( strList.size() > 0 )
@@ -2911,6 +2937,76 @@ bool Scenario::moveTrigger(u32 triggerId, u32 destId)
 	return false;
 }
 
+bool Scenario::GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct)
+{
+	return IsCuwpUsed(cuwpIndex) && UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
+}
+
+bool Scenario::AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex)
+{
+	for ( u8 i = 0; i < 64; i++ )
+	{
+		if ( !IsCuwpUsed(i) )
+		{
+			if ( UPRP().replace<ChkCuwp>((u32)i*sizeof(ChkCuwp), propStruct) && UPUS().replace<u8>(i, 1) )
+			{
+				outCuwpIndex = i;
+				return true;
+			}
+			else
+				return false;
+		}
+	}
+	return false;
+}
+
+bool Scenario::IsCuwpUsed(u8 cuwpIndex)
+{
+	return UPUS().get<u8>(cuwpIndex) != 0;
+}
+
+bool Scenario::SetCuwpUsed(u8 cuwpIndex, bool isUsed)
+{
+	if ( isUsed )
+		return UPUS().replace<u8>(cuwpIndex, 1);
+	else
+		return UPUS().replace<u8>(cuwpIndex, 0);
+}
+
+bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)
+{
+	return WAV().get<u32>(outStringIndex, (u32)wavIndex * 4) && outStringIndex > 0;
+}
+
+bool Scenario::AddWav(u32 stringIndex)
+{
+	if ( IsStringUsedWithWavs(stringIndex) )
+		return true; // No need to add a duplicate entry
+
+	for ( u32 i = 0; i < 512; i++ )
+	{
+		if ( !IsWavUsed(i) && WAV().replace<u32>(i * 4, stringIndex) )
+			return true;
+	}
+	return false;
+}
+
+bool Scenario::IsWavUsed(u16 wavIndex)
+{
+	u32 stringIndex = 0;
+	return WAV().get<u32>(stringIndex, (u32)wavIndex * 4) && stringIndex > 0;
+}
+
+bool Scenario::IsStringUsedWithWavs(u32 stringIndex)
+{
+	for ( u32 i = 0; i < 512; i++ )
+	{
+		if ( stringIndex == WAV().get<u32>(i * 4) )
+			return true;
+	}
+	return false;
+}
+
 bool Scenario::ParseScenario(buffer &chk)
 {
 	caching = false;
@@ -3290,10 +3386,11 @@ bool Scenario::ZeroOutString(u32 stringNum)
 		for ( size_t i=0; i<length; i++ ) // Zero-out characters
 			str[i] = '\0';
 
-		if ( stringNum < numStrings() )
+		u32 numRegularStrings = (u32)numStrSlots();
+		if ( stringNum < numStrSlots() )
 		{
-			if ( STR().size() > u32(numStrings())*2+2 ) // If you can get to start of string data
-				return STR().replace<u16>(2*stringNum, numStrings()*2+2); // Set string offset to start of string data (NUL)
+			if ( STR().size() > numRegularStrings*2+2 ) // If you can get to start of string data
+				return STR().replace<u16>(2*stringNum, numRegularStrings*2+2); // Set string offset to start of string data (NUL)
 			else
 				return STR().replace<u16>(2*stringNum, 0); // Otherwise just zero it
 		}

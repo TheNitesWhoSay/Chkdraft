@@ -15,84 +15,108 @@ const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", 
 
 void CollapsableDefines()
 {
-	#define ADD_TEXTTRIG_LOCATION(src) {																		\
+#define ADD_TEXTTRIG_LOCATION(src) {																		\
 		if ( src >= 0 && src < locationTable.size() )															\
 			output.addStr(locationTable[src].c_str(), locationTable[src].size());								\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_STRING(src) {																\
-		if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )	\
-		{																							\
-			if ( src < stringTable.size() )															\
-				output.addStr(stringTable[src].c_str(), stringTable[src].size());					\
-			else																					\
-				output.addStr(std::string("k" + extendedStringTable[65536-src]).c_str(),			\
-					extendedStringTable[65536-src].size()+1);										\
-		}																							\
+#define ADD_TEXTTRIG_STRING(src) {																	\
+		if ( src == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )						\
+			output.addStr("No String");																	\
+		else if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )	\
+		{																								\
+			if ( src < stringTable.size() )																\
+				output.addStr(stringTable[src].c_str(), stringTable[src].size());						\
+			else																						\
+				output.addStr(std::string("k" + extendedStringTable[65536-src]).c_str(),				\
+					extendedStringTable[65536-src].size()+1);											\
+		}																								\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_PLAYER(src) {												\
+#define ADD_TEXTTRIG_WAV(src) {																			\
+		if ( src == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )							\
+			output.addStr("No WAV");																		\
+		else if ( src >= 0 && (src < stringTable.size() || (65536 - src) < extendedStringTable.size()) )	\
+		{																									\
+			if ( src < stringTable.size() )																	\
+				output.addStr(stringTable[src].c_str(), stringTable[src].size());							\
+			else																							\
+				output.addStr((std::string("k") + extendedStringTable[65536 - src]).c_str(),				\
+					extendedStringTable[65536 - src].size() + 1);											\
+		}																									\
+		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
+
+
+#define ADD_TEXTTRIG_PLAYER(src) {												\
 		if ( src >= 0 && src < groupTable.size() )									\
 			output.addStr(groupTable[src].c_str(), groupTable[src].size());			\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_UNIT(src) {												\
+#define ADD_TEXTTRIG_UNIT(src) {												\
 		if ( src >= 0 && src < unitTable.size() )									\
 			output.addStr(unitTable[src].c_str(), unitTable[src].size());			\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_SWITCH(src) {												\
+#define ADD_TEXTTRIG_SWITCH(src) {												\
 		if ( src >= 0 && src < switchTable.size() )									\
 			output.addStr(switchTable[src].c_str(), switchTable[src].size());		\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
+#define ADD_TEXTTRIG_SCORE_TYPE(src) {											\
 		if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )				\
 			output.addStr(scoreTypes[src], std::strlen(scoreTypes[src]));				\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
+#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {										\
 		if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )			\
 			output.addStr(resourceTypes[src], std::strlen(resourceTypes[src]));			\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_ORDER(src) {												\
+#define ADD_TEXTTRIG_ORDER(src) {												\
 		if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )				\
 			output.addStr(orderTypes[src], std::strlen(orderTypes[src]));				\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_STATE_MODIFIER(src) {										\
+#define ADD_TEXTTRIG_STATE_MODIFIER(src) {										\
 		if ( src >= 0 && src < sizeof(stateModifiers)/sizeof(const char*) )			\
 			output.addStr(stateModifiers[src], std::strlen(stateModifiers[src]));		\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } } 
 
-	#define ADD_TEXTTRIG_SWITCH_STATE(src) {										\
+#define ADD_TEXTTRIG_SWITCH_STATE(src) {										\
 		if ( src >= 0 && src < sizeof(switchStates)/sizeof(const char*) )			\
 			output.addStr(switchStates[src], std::strlen(switchStates[src]));			\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {										\
+#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {										\
 		if ( src >= 0 && src < sizeof(switchModifiers)/sizeof(const char*) )		\
 			output.addStr(switchModifiers[src], std::strlen(switchModifiers[src]));		\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_ALLY_STATE(src) {											\
+#define ADD_TEXTTRIG_ALLY_STATE(src) {											\
 		if ( src >= 0 && src < sizeof(allyStates)/sizeof(const char*) )				\
 			output.addStr(allyStates[src], std::strlen(allyStates[src]));				\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {										\
+#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {										\
 		if ( src >= 0 && src < sizeof(numericComparisons)/sizeof(const char*) )			\
 			output.addStr(numericComparisons[src], std::strlen(numericComparisons[src]));	\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
-	#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {									\
+#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {									\
 		if ( src >= 0 && src < sizeof(numericModifiers)/sizeof(const char*) )		\
 			output.addStr(numericModifiers[src], std::strlen(numericModifiers[src]));	\
 		else { std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); } }
 
 	#define ADD_TEXTTRIG_SCRIPT(src) {												\
-		output.add('\"'); output.addStr(src, 4); output.add('\"'); }
+		if ( src == 0 )																\
+			output.addStr("No Script", 9);											\
+		else																		\
+		{																			\
+			auto it = scriptTable.find(src);										\
+			if ( it != scriptTable.end() )											\
+				output.addStr(it->second);											\
+			else { output.add('\"'); output.addStr((char*)&src, 4); output.add('\"'); } \
+		} }
 
 	#define ADD_TEXTTRIG_NUM_UNITS(src) {											\
 		if ( src == 0 ) output.addStr("All", 3);									\
@@ -115,7 +139,6 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 	locationTable.clear();
 	unitTable.clear();
 	switchTable.clear();
-	wavTable.clear();
 	groupTable.clear();
 	conditionTable.clear();
 	actionTable.clear();
@@ -151,7 +174,6 @@ void TextTrigGenerator::ClearScenario()
 	locationTable.clear();
 	unitTable.clear();
 	switchTable.clear();
-	wavTable.clear();
 	groupTable.clear();
 }
 
@@ -186,6 +208,14 @@ std::string TextTrigGenerator::GetConditionArgument(Condition& condition, u8 arg
 	return "";
 }
 
+std::string TextTrigGenerator::GetActionName(u8 AID)
+{
+	if ( AID < actionTable.size() )
+		return actionTable[AID];
+	else
+		return std::to_string((int)AID);
+}
+
 std::string TextTrigGenerator::GetActionArgument(Action& action, u8 stdTextTrigArgNum)
 {
 	buffer output("TEXA");
@@ -212,22 +242,32 @@ std::string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std:
 ChkdString TextTrigGenerator::GetTrigLocation(u32 locationNum)
 {
 	if ( locationNum >= 0 && locationNum < locationTable.size() )
-		return ChkdString(locationTable[locationNum]);
+		return ChkdString(locationTable[locationNum], true);
 	else
-		return ChkdString(std::to_string(locationNum));
+		return ChkdString(std::to_string(locationNum), true);
 }
 
 ChkdString TextTrigGenerator::GetTrigString(u32 stringNum)
 {
-	if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536 - stringNum) < extendedStringTable.size()) )
+	if ( stringNum == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )
+		return ChkdString("No String", true);
+	else if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536 - stringNum) < extendedStringTable.size()) )
 	{
 		if ( stringNum < stringTable.size() )
 			return stringTable[stringNum];
 		else
-			return ChkdString("k" + extendedStringTable[65536 - stringNum]);
+			return ChkdString("k" + extendedStringTable[65536 - stringNum], true);
 	}
 	else
 		return ChkdString(std::to_string(stringNum));
+}
+
+ChkdString TextTrigGenerator::GetTrigWav(u32 stringNum)
+{
+	if ( stringNum == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )
+		return ChkdString("No WAV");
+	else
+		return GetTrigString(stringNum);
 }
 
 ChkdString TextTrigGenerator::GetTrigPlayer(u32 groupNum)
@@ -337,12 +377,23 @@ std::string TextTrigGenerator::GetTrigNumericModifier(u8 numericModifier)
 
 std::string TextTrigGenerator::GetTrigScript(u32 scriptNum)
 {
-	char script[7];
-	script[0] = '\"';
-	(u32&)script[1] = scriptNum;
-	script[5] = '\"';
-	script[6] = '\0';
-	return std::string(script);
+	if ( scriptNum == 0 )
+		return std::string("No Script");
+
+	char script[5];
+	(u32&)script[0] = scriptNum;
+	script[4] = '\0';
+
+	bool hasNonNumericCharacter =
+		script[0] < '0' || script[0] > '9' ||
+		script[1] < '0' || script[1] > '9' ||
+		script[2] < '0' || script[2] > '9' ||
+		script[3] < '0' || script[3] > '9';
+
+	if ( hasNonNumericCharacter )
+		return std::string(script);
+	else
+		return std::string("\"" + std::string(script) + "\"");
 }
 
 std::string TextTrigGenerator::GetTrigNumUnits(u8 numUnits)
@@ -623,7 +674,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 			break;
 		case AID_PLAY_WAV: // Wav, Duration
 			switch ( stdTextTrigArgNum ) {
-				case 0: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 0: ADD_TEXTTRIG_WAV(action.wavID) break;
 				case 1: ADD_TEXTTRIG_NUMBER(action.time) break;
 			}
 			break;
@@ -636,11 +687,11 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 			}
 			break;
 		case AID_RUN_AI_SCRIPT: // Script
-			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_SCRIPT((char*)&action.number);
+			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_SCRIPT(action.number)
 			break;
 		case AID_RUN_AI_SCRIPT_AT_LOCATION: // Script, Location
 			switch ( stdTextTrigArgNum ) {
-				case 0: ADD_TEXTTRIG_SCRIPT((char*)&action.number) break;
+				case 0: ADD_TEXTTRIG_SCRIPT(action.number) break;
 				case 1: ADD_TEXTTRIG_LOCATION(action.location) break;
 			}
 			break;
@@ -709,7 +760,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
 				case 4: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
 				case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
-				case 6: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 6: ADD_TEXTTRIG_WAV(action.wavID) break;
 				case 7: ADD_TEXTTRIG_NUMBER(action.time) break;
 			}
 			break;
@@ -720,7 +771,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 			switch ( stdTextTrigArgNum ) {
 				case 0: ADD_TEXTTRIG_LOCATION(action.location) break;
 				case 1: ADD_TEXTTRIG_STRING(action.stringNum) break;
-				case 2: ADD_TEXTTRIG_STRING(action.wavID) break;
+				case 2: ADD_TEXTTRIG_WAV(action.wavID) break;
 				case 3: ADD_TEXTTRIG_NUMBER(action.time) break;
 				case 4: ADD_TEXTTRIG_PLAYER(action.group) break;
 				case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
@@ -929,8 +980,8 @@ bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCu
 		   PrepLocationTable(map, quoteArgs) &&
 		   PrepUnitTable(map, quoteArgs, useCustomNames) &&
 		   PrepSwitchTable(map, quoteArgs) &&
-		   PrepWavTable(map, quoteArgs) &&
 		   PrepGroupTable(map, quoteArgs) &&
+		   PrepScriptTable(map, quoteArgs) &&
 		   PrepStringTable(map, quoteArgs);
 }
 
@@ -1030,10 +1081,10 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 	
 	ChkLocation* loc;
 	u16 stringNum;
-	ChkdString locationName;
+	ChkdString locationName(true);
 	buffer& MRGN = map->MRGN();
 
-	locationTable.push_back( std::string("No Location") );
+	locationTable.push_back(ChkdString("No Location", true));
 
 	if ( MRGN.exists() && map->STR().exists() )
 	{
@@ -1075,7 +1126,7 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
 	unitTable.clear();
 
-	ChkdString unitName;
+	ChkdString unitName(true);
 	buffer& unitSettings = map->unitSettings();
 	if ( unitSettings.exists() && map->STR().exists() )
 	{
@@ -1111,7 +1162,7 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
 	switchTable.clear();
 
-	ChkdString switchName;
+	ChkdString switchName(true);
 	buffer& SWNM = map->SWNM();
 	if ( SWNM.exists() && map->STR().exists() )
 	{
@@ -1142,39 +1193,11 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 	return true;
 }
 
-bool TextTrigGenerator::PrepWavTable(ScenarioPtr map, bool quoteArgs)
-{
-	wavTable.clear();
-
-	ChkdString wavName;
-	buffer& WAV = map->WAV();
-	if ( WAV.exists() && map->STR().exists() )
-	{
-		for ( u32 i=0; i<512; i++ )
-		{
-			Invariant( wavTable.size() == i );
-			u32 stringID;
-			if ( WAV.get<u32>(stringID, i * 4) &&
-				stringID > 0 &&
-				map->GetString(wavName, stringID) )
-			{
-				if ( quoteArgs )
-					wavTable.push_back("\"" + wavName + "\"");
-				else
-					wavTable.push_back(wavName);
-			}
-			else
-				wavTable.push_back(std::to_string(i));
-		}
-	}
-	return true;
-}
-
 bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
 	groupTable.clear();
 
-	ChkdString groupName;
+	ChkdString groupName(true);
 	buffer& FORC = map->FORC();
 	bool hasForcStrings = FORC.exists() && map->STR().exists();
 
@@ -1252,6 +1275,47 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 	return true;
 }
 
+bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
+{
+	scriptTable.clear();
+
+	scriptTable.insert(std::pair<u32, std::string>(0, "No Script"));
+
+	Trigger* trigPtr = nullptr;
+	u32 numTrigs = map->numTriggers();
+	for ( u32 i = 0; i < numTrigs; i++ )
+	{
+		if ( map->getTrigger(trigPtr, i) )
+		{
+			for ( u8 actionNum = 0; actionNum < NUM_TRIG_ACTIONS; actionNum++ )
+			{
+				Action &action = trigPtr->action(actionNum);
+				u8 actionId = action.action;
+				bool isScriptAction = (actionId == AID_RUN_AI_SCRIPT || actionId == AID_RUN_AI_SCRIPT_AT_LOCATION);
+				if ( isScriptAction && action.number != 0 )
+				{
+					char numberString[5] = {};
+					(u32&)numberString = action.number;
+					for ( u8 i = 0; i < 4; i++ )
+					{
+						if ( numberString[i] == '\0' )
+							numberString[i] = ' ';
+					}
+
+					if ( quoteArgs )
+					{
+						scriptTable.insert(std::pair<u32, std::string>(action.number,
+							std::string("\"" + std::string(numberString) + "\"")));
+					}
+					else
+						scriptTable.insert(std::pair<u32, std::string>(action.number, std::string(numberString)));
+				}
+			}
+		}
+	}
+	return true;
+}
+
 bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 {
 	stringTable.clear();
@@ -1263,13 +1327,11 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 		StringUsageTable extendedStringUsage;
 		if ( standardStringUsage.populateTable(map.get(), false) || extendedStringUsage.populateTable(map.get(), true) )
 		{
-			ChkdString str;
+			ChkdString str(true);
 
 			u32 numStrings = standardStringUsage.numStrings();
 			for ( u32 i=0; i<numStrings; i++ )
 			{
-				str = "";
-
 				if ( standardStringUsage.isUsed(i) )
 					map->GetString(str, i);
 
@@ -1282,8 +1344,6 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 			numStrings = extendedStringUsage.numStrings();
 			for ( u32 i=0; i<numStrings; i++ )
 			{
-				str = "";
-
 				if ( extendedStringUsage.isUsed(i) )
 					map->GetString(str, (65536-i));
 

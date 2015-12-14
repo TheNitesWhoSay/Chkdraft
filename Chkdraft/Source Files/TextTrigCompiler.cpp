@@ -14,15 +14,15 @@ TextTrigCompiler::TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk)
+bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData)
 {
 	buffer text("TxTr");
-	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTriggers(text, chk);
+	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTriggers(text, chk, scData);
 }
 
-bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk)
+bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData)
 {
-	if ( !LoadScenario(chk) )
+	if ( !LoadCompiler(chk, scData) )
 		return false;
 
 	buffer output("TxOp");
@@ -55,15 +55,15 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk)
 	return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk)
+bool TextTrigCompiler::CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk, ScData &scData)
 {
 	buffer text("TxTr");
-	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk);
+	return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk, scData);
 }
 
-bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk)
+bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk, ScData &scData)
 {
-	if ( !LoadScenario(chk) )
+	if ( !LoadCompiler(chk, scData) )
 		return false;
 
 	buffer output("TxOp");
@@ -110,39 +110,6 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 	return false;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
-										 std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk)
-{
-	if ( !LoadScenario(chk) )
-		return false;
-	
-	buffer txcd("TxCd");
-	if ( argNum < argMap.size() &&
-		 txcd.addStr(conditionArgText.c_str(), conditionArgText.size()) &&
-		 txcd.add<u8>(0) )
-	{
-		char error[256] = { };
-		u32 argsLeft = argMap.size() - argMap[argNum];
-		if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, condition.condition, argsLeft, error) )
-			return true;
-		else
-			CHKD_ERR("Unable to parse condition.\n\n%s", error);
-	}
-	return false;
-}
-
-u8 TextTrigCompiler::defaultFlags(u8 CID)
-{
-	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
-						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
-						  0, 0, 0, 0 };
-
-	if ( CID >= 0 && CID < sizeof(defaultFlags)/sizeof(const u8) )
-		return defaultFlags[CID];
-	else
-		return 0;
-}
-
 bool TextTrigCompiler::ParseConditionName(std::string text, u8 &ID)
 {
 	buffer txcd("TxCd");
@@ -165,23 +132,140 @@ bool TextTrigCompiler::ParseConditionName(std::string text, u8 &ID)
 	return false;
 }
 
-// protected
-
-bool TextTrigCompiler::LoadScenario(ScenarioPtr chk)
+bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
+										 std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk, ScData &scData)
 {
-	ClearScenario();
-	return strUsage.populateTable(chk.get(), false) && extendedStrUsage.populateTable(chk.get(), true) &&
-		   PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
-		   PrepWavTable(chk) && PrepGroupTable(chk) && PrepStringTable(chk);
+	if ( !LoadCompiler(chk, scData) )
+		return false;
+	
+	buffer txcd("TxCd");
+	if ( argNum < argMap.size() &&
+		 txcd.addStr(conditionArgText.c_str(), conditionArgText.size()) &&
+		 txcd.add<u8>(0) )
+	{
+		char error[256] = { };
+		u32 argsLeft = numConditionArgs(condition.condition) - argMap[argNum];
+		if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, condition.condition, argsLeft, error) )
+			return true;
+		else
+			CHKD_ERR("Unable to parse condition.\n\n%s", error);
+	}
+	return false;
 }
 
-void TextTrigCompiler::ClearScenario()
+bool TextTrigCompiler::ParseActionName(std::string text, u8 &ID)
+{
+	buffer txac("TxAc");
+	if ( txac.addStr(text.c_str(), text.size()) )
+	{
+		CleanText(txac);
+		u32 AID = AID_NO_ACTION;
+		if ( ParseActionName(txac, AID) && AID != AID_CUSTOM )
+		{
+			if ( ((s32)AID) < 0 )
+				ID = ExtendedToRegularAID((s32)AID);
+			else
+				ID = (u8)AID;
+
+			return true;
+		}
+		else if ( ParseByte((char*)txac.getPtr(0), ID, 0, txac.size()) )
+			return true;
+	}
+	return false;
+}
+
+bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
+									  std::vector<u8> &argMap, Action &action, ScenarioPtr chk, ScData &scData)
+{
+	if ( !LoadCompiler(chk, scData) )
+		return false;
+
+	buffer txac("TxAc");
+	if ( argNum < argMap.size() &&
+		txac.addStr(actionArgText.c_str(), actionArgText.size()) &&
+		txac.add<u8>(0) )
+	{
+		char error[256] = {};
+		u32 argsLeft = numActionArgs(action.action) - argMap[argNum];
+		if ( ParseActionArg(txac, action, 0, txac.size() - 1, action.action, argsLeft, error) )
+			return true;
+		else
+			CHKD_ERR("Unable to parse action.\n\n%s", error);
+	}
+	return false;
+}
+
+u8 TextTrigCompiler::defaultConditionFlags(u8 CID)
+{
+	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
+						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
+						  0, 0, 0, 0 };
+
+	if ( CID >= 0 && CID < sizeof(defaultFlags)/sizeof(const u8) )
+		return defaultFlags[CID];
+	else
+		return 0;
+}
+
+u8 TextTrigCompiler::defaultActionFlags(u8 AID)
+{
+	u8 defaultFlags[] = { 0, 4, 4, 4, 4,		4, 4, 0, 4, 0,
+						  4, 28, 0, 4, 4,		4, 4, 16, 16, 0,
+						  16, 0, 20, 20, 20,	20, 4, 4, 4, 20,
+						  4, 4, 4, 16, 16,		0, 16, 0, 20, 20,
+						  4, 4, 20, 20, 20,		20, 20, 0, 20, 20,
+						  20, 20, 4, 20, 4,		4, 4, 4, 0, 0 };
+
+	if ( AID >= 0 && AID < sizeof(defaultFlags) / sizeof(const u8) )
+		return defaultFlags[AID];
+	else
+		return 0;
+}
+
+u8 TextTrigCompiler::numConditionArgs(s32 CID)
+{
+	const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
+	1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
+	1, 4, 0, 0 };
+
+	if ( CID >= 0 && CID < sizeof(conditionNumArgs) / sizeof(const u8) )
+		return conditionNumArgs[CID];
+	else
+		return 0;
+}
+
+u8 TextTrigCompiler::numActionArgs(s32 AID)
+{
+	const u8 actionNumArgs[] = { 0, 0, 0, 0, 1,  0, 0, 8, 2, 2,
+		1, 5, 1, 2, 2,  1, 2, 2, 3, 2,
+		2, 2, 2, 4, 2,  4, 4, 4, 1, 2,
+		0, 0, 1, 3, 4,  3, 3, 3, 4, 5,
+		1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
+		5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
+
+	if ( AID >= 0 && AID < sizeof(actionNumArgs) / sizeof(const u8) )
+		return actionNumArgs[AID];
+	else
+		return ExtendedNumActionArgs(AID);
+}
+
+// protected
+
+bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, ScData &scData)
+{
+	ClearCompiler();
+	return strUsage.populateTable(chk.get(), false) && extendedStrUsage.populateTable(chk.get(), true) &&
+		   PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
+		   PrepGroupTable(chk) && PrepStringTable(chk) && PrepScriptTable(scData);
+}
+
+void TextTrigCompiler::ClearCompiler()
 {
 	stringTable.clear();
 	locationTable.clear();
 	unitTable.clear();
 	switchTable.clear();
-	wavTable.clear();
 	groupTable.clear();
 
 	addedStrings.clear();
@@ -1284,22 +1368,221 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 
 	ParseConditionName(arg, ID);
 
-	const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
-									1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
-									1, 4, 0, 0 };
-
-	if ( ID >= 0 && ID < sizeof(conditionNumArgs)/sizeof(const u8) )
-	{
-		argsLeft = conditionNumArgs[ID];
-		flags = defaultFlags(ID);
-	}
-	else
-	{
-		argsLeft = ExtendedNumConditionArgs(ID);
-		flags = 0;
-	}
-
+	flags = defaultConditionFlags(ID);
+	argsLeft = numConditionArgs(ID);
+	
 	return ID != CID_NO_CONDITION;
+}
+
+bool TextTrigCompiler::ParseActionName(buffer &arg, u32 &ID)
+{
+	char currChar = arg.get<u8>(0);
+	switch ( currChar )
+	{
+		case 'C':
+			if ( arg.has("OMMENT", 1, 6) )
+				ID = AID_COMMENT;
+			else if ( arg.has("REATEUNIT", 1, 9) )
+			{
+				if ( arg.has("WITHPROPERTIES", 10, 14) )
+					ID = AID_CREATE_UNIT_WITH_PROPERTIES;
+				else if ( arg.size() == 10 )
+					ID = AID_CREATE_UNIT;
+			}
+			else if ( arg.has("ENTERVIEW", 1, 9) )
+				ID = AID_CENTER_VIEW;
+			else if ( arg.has("USTOM", 1, 5) )
+				ID = AID_CUSTOM;
+			break;
+
+		case 'D':
+			if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
+				ID = AID_DISPLAY_TEXT_MESSAGE;
+			else if ( arg.has("EFEAT", 1, 5) )
+				ID = AID_DEFEAT;
+			else if ( arg.has("RAW", 1, 3) )
+				ID = AID_DRAW;
+			break;
+
+		case 'G':
+			if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
+				ID = AID_GIVE_UNITS_TO_PLAYER;
+			break;
+
+		case 'K':
+			if ( arg.has("ILLUNIT", 1, 7) )
+			{
+				if ( arg.has("ATLOCATION", 8, 10) )
+					ID = AID_KILL_UNIT_AT_LOCATION;
+				else if ( arg.size() == 8 )
+					ID = AID_KILL_UNIT;
+			}
+			break;
+
+		case 'L':
+			if ( arg.has("EADERBOARD", 1, 10) )
+			{
+				if ( arg.has("GOAL", 11, 4) )
+				{
+					if ( arg.has("CONTROL", 15, 7) )
+					{
+						if ( arg.has("ATLOCATION", 22, 10) )
+							ID = AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION;
+						else if ( arg.size() == 22 )
+							ID = AID_LEADERBOARD_GOAL_CONTROL;
+					}
+					else if ( arg.has("KILLS", 15, 5) )
+						ID = AID_LEADERBOARD_GOAL_KILLS;
+					else if ( arg.has("POINTS", 15, 6) )
+						ID = AID_LEADERBOARD_GOAL_POINTS;
+					else if ( arg.has("RESOURCES", 15, 9) )
+						ID = AID_LEADERBOARD_GOAL_RESOURCES;
+				}
+				else
+				{
+					if ( arg.has("CONTROL", 11, 7) )
+					{
+						if ( arg.has("ATLOCATION", 18, 10) )
+							ID = AID_LEADERBOARD_CONTROL_AT_LOCATION;
+						else if ( arg.size() == 18 )
+							ID = AID_LEADERBOARD_CONTROL;
+					}
+					else if ( arg.has("GREED", 11, 5) )
+						ID = AID_LEADERBOARD_GREED;
+					else if ( arg.has("KILLS", 11, 5) )
+						ID = AID_LEADERBOARD_KILLS;
+					else if ( arg.has("POINTS", 11, 6) )
+						ID = AID_LEADERBOARD_POINTS;
+					else if ( arg.has("RESOURCES", 11, 9) )
+						ID = AID_LEADERBOARD_RESOURCES;
+					else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
+						ID = AID_LEADERBOARD_COMPUTER_PLAYERS;
+				}
+			}
+			break;
+
+		case 'M':
+			if ( arg.has("EMORY", 1, 5) )
+				ID = AID_MEMORY;
+			else if ( arg.has("OVE", 1, 3) )
+			{
+				if ( arg.has("UNIT", 4, 4) )
+					ID = AID_MOVE_UNIT;
+				else if ( arg.has("LOCATION", 4, 8) )
+					ID = AID_MOVE_LOCATION;
+			}
+			else if ( arg.has("ODIFYUNIT", 1, 9) )
+			{
+				if ( arg.has("ENERGY", 10, 6) )
+					ID = AID_MODIFY_UNIT_ENERGY;
+				else if ( arg.has("HANGERCOUNT", 10, 11) )
+					ID = AID_MODIFY_UNIT_HANGER_COUNT;
+				else if ( arg.has("HITPOINTS", 10, 9) )
+					ID = AID_MODIFY_UNIT_HITPOINTS;
+				else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
+					ID = AID_MODIFY_UNIT_RESOURCE_AMOUNT;
+				else if ( arg.has("SHIELDPOINTS", 10, 12) )
+					ID = AID_MODIFY_UNIT_SHIELD_POINTS;
+			}
+			else if ( arg.has("INIMAPPING", 1, 10) )
+				ID = AID_MINIMAP_PING;
+			else if ( arg.has("UTEUNITSPEECH", 1, 13) )
+				ID = AID_MUTE_UNIT_SPEECH;
+			break;
+
+		case 'O':
+			if ( arg.has("RDER", 1, 4) )
+				ID = AID_ORDER;
+			break;
+
+		case 'P':
+			if ( arg.has("RESERVETRIGGER", 1, 14) )
+				ID = AID_PRESERVE_TRIGGER;
+			else if ( arg.has("LAYWAV", 1, 6) )
+				ID = AID_PLAY_WAV;
+			else if ( arg.has("AUSE", 1, 4) )
+			{
+				if ( arg.has("GAME", 5, 4) )
+					ID = AID_PAUSE_GAME;
+				else if ( arg.has("TIMER", 5, 5) )
+					ID = AID_PAUSE_TIMER;
+			}
+			break;
+
+		case 'R':
+			if ( arg.has("EMOVEUNIT", 1, 9) )
+			{
+				if ( arg.has("ATLOCATION", 10, 10) )
+					ID = AID_REMOVE_UNIT_AT_LOCATION;
+				else if ( arg.size() == 10 )
+					ID = AID_REMOVE_UNIT;
+			}
+			else if ( arg.has("UNAISCRIPT", 1, 10) )
+			{
+				if ( arg.has("ATLOCATION", 11, 10) )
+					ID = AID_RUN_AI_SCRIPT_AT_LOCATION;
+				else if ( arg.size() == 11 )
+					ID = AID_RUN_AI_SCRIPT;
+			}
+			break;
+
+		case 'S':
+			if ( arg.has("ET", 1, 2) )
+			{
+				if ( arg.has("DEATHS", 3, 6) )
+					ID = AID_SET_DEATHS;
+				else if ( arg.has("SWITCH", 3, 6) )
+					ID = AID_SET_SWITCH;
+				else if ( arg.has("RESOURCES", 3, 9) )
+					ID = AID_SET_RESOURCES;
+				else if ( arg.has("SCORE", 3, 5) )
+					ID = AID_SET_SCORE;
+				else if ( arg.has("ALLIANCESTATUS", 3, 14) )
+					ID = AID_SET_ALLIANCE_STATUS;
+				else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
+					ID = AID_SET_COUNTDOWN_TIMER;
+				else if ( arg.has("DOODADSTATE", 3, 11) )
+					ID = AID_SET_DOODAD_STATE;
+				else if ( arg.has("INVINCIBILITY", 3, 13) )
+					ID = AID_SET_INVINCIBILITY;
+				else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
+					ID = AID_SET_MISSION_OBJECTIVES;
+				else if ( arg.has("NEXTSCENARIO", 3, 12) )
+					ID = AID_SET_NEXT_SCENARIO;
+			}
+			break;
+
+		case 'T':
+			if ( arg.has("ALKINGPORTRAIT", 1, 14) )
+				ID = AID_TALKING_PORTRAIT;
+			else if ( arg.has("RANSMISSION", 1, 11) )
+				ID = AID_TRANSMISSION;
+			break;
+
+		case 'U':
+			if ( arg.has("NPAUSE", 1, 6) )
+			{
+				if ( arg.has("TIMER", 7, 5) )
+					ID = AID_UNPAUSE_TIMER;
+				else if ( arg.has("GAME", 7, 4) )
+					ID = AID_UNPAUSE_GAME;
+			}
+			else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
+				ID = AID_UNMUTE_UNIT_SPEECH;
+			break;
+
+		case 'V':
+			if ( arg.has("ICTORY", 1, 6) )
+				ID = AID_VICTORY;
+			break;
+
+		case 'W':
+			if ( arg.has("AIT", 1, 3) )
+				ID = AID_WAIT;
+			break;
+	}
+
+	return ID != AID_NO_ACTION;
 }
 
 bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled, u32 &ID, u8& flags, u32 &argsLeft)
@@ -1532,30 +1815,8 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			break;
 	}
 
-	const u8 actionNumArgs[] = { 0, 0, 0, 0, 1,  0, 0, 8, 2, 2,
-								 1, 5, 1, 2, 2,  1, 2, 2, 3, 2,
-								 2, 2, 2, 4, 2,  4, 4, 4, 1, 2,
-								 0, 0, 1, 3, 4,  3, 3, 3, 4, 5,
-								 1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
-								 5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
-
-	u8 defaultFlags[] = { 0, 4, 4, 4, 4,		4, 4, 0, 4, 0,
-						  4, 28, 0, 4, 4,		4, 4, 16, 16, 0,
-						  16, 0, 20, 20, 20,	20, 4, 4, 4, 20,
-						  4, 4, 4, 16, 16,		0, 16, 0, 20, 20,
-						  4, 4, 20, 20, 20,		20, 20, 0, 20, 20,
-						  20, 20, 4, 20, 4,		4, 4, 4, 0, 0 };
-
-	if ( ID >= 0 && ID < sizeof(actionNumArgs)/sizeof(const u8) )
-	{
-		argsLeft = actionNumArgs[ID];
-		flags = defaultFlags[ID];
-	}
-	else
-	{
-		argsLeft = ExtendedNumActionArgs(ID);
-		flags = 0;
-	}
+	flags = defaultActionFlags(ID);
+	argsLeft = numActionArgs(ID);
 
 	return ID != AID_NO_ACTION;
 }
@@ -2046,7 +2307,7 @@ ParseActionTextField: // 4 bytes
 			   "Expected: String or stringNum" );
 
 ParseActionWavField: // 4 bytes
-	returnMsg( ParseString(text, currAction.wavID, pos, end) ||
+	returnMsg( ParseWavName(text, currAction.wavID, pos, end) ||
 			   ParseLong(textPtr, currAction.wavID, pos, end),
 			   "Expected: Wav name or 4-byte wavID" );
 
@@ -2062,7 +2323,7 @@ ParseActionFirstGroupField: // 4 bytes
 ParseActionNumberField: // 4 bytes
 	returnMsg( ParsePlayer(text, currAction.number, pos, end) ||
 			   ParseLocationName(text, currAction.number, pos, end) ||
-			   ParseScript(textPtr, currAction.number, pos, end) ||
+			   ParseScript(text, currAction.number, pos, end) ||
 			   ParseSwitch(text, currAction.number, pos, end) ||
 			   ParseLong(textPtr, currAction.number, pos, end),
 			   "Expected: Group, location, script, switch, or 4-byte number" );
@@ -2078,7 +2339,7 @@ ParseActionSecondLocationField: // 4 bytes
 			   "Expected: Location name or 4-byte number" );
 
 ParseActionScriptField: // 4 bytes
-	returnMsg ( ParseScript(textPtr, currAction.number, pos, end) ||
+	returnMsg ( ParseScript(text, currAction.number, pos, end) ||
 				ParseLong(textPtr, currAction.number, pos, end),
 				"Expected: Script name or 4-byte script num" );
 
@@ -2203,6 +2464,12 @@ bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& 
 
 bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 {
+	if ( text.hasCaseless("No String", pos, 9) || text.hasCaseless("\"No String\"", pos, 11) )
+	{
+		dest = 0;
+		return true;
+	}
+
 	bool isExtended = false; // Will need to do something with this for extended strings
 
 	if ( text.get<u8>(pos) == '\"' )
@@ -2268,7 +2535,6 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 					{
 						if ( node.stringNum < dest )
 						{ // Replace if stringNum < prevStringNum
-							dest = 65536-node.stringNum;
 							dest = node.stringNum;
 						}
 					}
@@ -2283,16 +2549,12 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
 			node.string = str;
 			node.isExtended = isExtended;
 
-			if ( ( isExtended && extendedStrUsage.useNext(node.stringNum) ) ||
-				 ( !isExtended && strUsage.useNext(node.stringNum) ) )
+			if ( (isExtended && extendedStrUsage.useNext(node.stringNum)) ||
+				(!isExtended && strUsage.useNext(node.stringNum)) )
 			{
 				addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
-				stringTable.insert( std::pair<u32, StringTableNode>(strHash(node.string), node) ); // Add to search tree for recycling
-				if ( isExtended )
-					dest = 65536 - node.stringNum;
-				else
-					dest = node.stringNum;
-
+				stringTable.insert(std::pair<u32, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
+				dest = node.stringNum;
 				success = true;
 			}
 		}
@@ -2955,66 +3217,13 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
 
 bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
 {
-	// Redundant? Remove me?
-	int size = end-pos;
-	if ( text.get<u8>(pos) == '\"' )
+	if ( text.hasCaseless("No WAV", 0, 6) || text.hasCaseless("\"No WAV\"", 0, 8) )
 	{
-		pos ++;
-		end --;
-		size -= 2;
-	}
-	else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+		dest = 0;
 		return true;
-
-	if ( size < 1 )
-		return false;
-
-	char* wavStringPtr;
-	bool success = false;
-
-	if ( text.getPtr<char>(wavStringPtr, pos, size+1) )
-	{ // At least one character must come after the wav string
-		// Temporarily replace next char with NUL char
-		char temp = wavStringPtr[size];
-		wavStringPtr[size] = '\0';
-		std::string str(wavStringPtr);
-
-		// Grab the string hash
-		u32 hash = strHash(str);
-		int numMatching = stringTable.count(hash);
-		if ( numMatching == 1 )
-		{ // Should guarentee that you can find at least one entry
-			StringTableNode &node = stringTable.find(hash)->second;
-			if ( node.string.compare(wavStringPtr) == 0 )
-			{
-				dest = node.stringNum;
-				success = true;
-			}
-		}
-		else if ( numMatching > 1 )
-		{
-			auto range = stringTable.equal_range(hash);
-			foreachin(pair, range)
-			{
-				StringTableNode &node = pair->second;
-				if ( node.string.compare(wavStringPtr) == 0 )
-				{
-					if ( success == false ) // If no matches have previously been found
-					{
-						dest = node.stringNum;
-						success = true;
-					}
-					else // If matches have previously been found
-					{
-						if ( u32(node.stringNum) < dest )
-							dest = node.stringNum; // Replace if wavNum < previous wavNum
-					}
-				}
-			}
-		}
-		wavStringPtr[size] = temp;
 	}
-	return success;
+	else
+		return ParseString(text, dest, pos, end);
 }
 
 bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
@@ -3399,6 +3608,87 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u32 &dest, u32 pos, u32 end)
 	return success;
 }
 
+bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, u32 pos, u32 end)
+{
+	if ( text.hasCaseless("NOSCRIPT", pos, 8) || text.hasCaseless("No Script", pos, 9) || text.hasCaseless("\"No Script\"", pos, 11) )
+	{
+		dest = 0;
+		return true;
+	}
+
+	int size = end - pos;
+	bool isQuoted = text.get<u8>(pos) == '\"';
+	if ( isQuoted )
+	{
+		pos++;
+		end--;
+		size -= 2;
+	}
+
+	if ( size < 1 )
+		return false;
+
+	char* scriptStringPtr;
+	bool success = false;
+
+	if ( text.getPtr<char>(scriptStringPtr, pos, size + 1) )
+	{ // At least one character must come after the script string
+	  // Temporarily replace next char with NUL char
+		char temp = scriptStringPtr[size];
+		scriptStringPtr[size] = '\0';
+		std::string str(scriptStringPtr);
+
+		// Grab the string hash
+		u32 hash = strHash(str);
+		int numMatching = scriptTable.count(hash);
+		if ( numMatching == 1 )
+		{ // Should guarentee that you can find at least one entry
+			ScriptTableNode &node = scriptTable.find(hash)->second;
+			if ( node.scriptName.compare(scriptStringPtr) == 0 )
+			{
+				dest = node.scriptID;
+				success = true;
+			}
+		}
+		else if ( numMatching > 1 )
+		{
+			auto range = scriptTable.equal_range(hash);
+			foreachin(pair, range)
+			{
+				ScriptTableNode &node = pair->second;
+				if ( node.scriptName.compare(scriptStringPtr) == 0 && success == false ) // Compare equal and no prev matches
+				{
+					dest = node.scriptID;
+					success = true;
+					break;
+				}
+			}
+		}
+		scriptStringPtr[size] = temp;
+	}
+
+	if ( !success && size == 4 )
+	{
+		/** With scripts, the exact ascii characters entered can be the exact bytes out.
+			As a consequence, if the script name is not quoted and is comprised entirely
+			of numbers, it must be considered a script number, and this method should
+			return false so ParseByte can be called. */
+
+		bool hasNonNumericCharacter =
+			text.get<char>(pos) < '0' || text.get<char>(pos) > '9' ||
+			text.get<char>(pos + 1) < '0' || text.get<char>(pos + 1) > '9' ||
+			text.get<char>(pos + 2) < '0' || text.get<char>(pos + 2) > '9' ||
+			text.get<char>(pos + 3) < '0' || text.get<char>(pos + 3) > '9';
+
+		if ( isQuoted || hasNonNumericCharacter )
+		{
+			dest = text.get<u32>(pos);
+			success = true;
+		}
+	}
+	return success;
+}
+
 u8 TextTrigCompiler::ExtendedToRegularCID(s32 extendedCID)
 {
 	switch ( extendedCID )
@@ -3536,27 +3826,6 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 	return true;
 }
 
-bool TextTrigCompiler::PrepWavTable(ScenarioPtr map)
-{
-	WavTableNode wavNode;
-	buffer& WAV = map->WAV();
-	if ( WAV.exists() && map->STR().exists() )
-	{
-		for ( u32 i=0; i<512; i++ )
-		{
-			u32 stringID;
-			if ( WAV.get<u32>(stringID, i*4) &&
-				 stringID > 0 &&
-				 map->GetString(wavNode.wavName, stringID) )
-			{
-				wavNode.wavID = stringID;
-				wavTable.insert( std::pair<u32, WavTableNode>(strHash(wavNode.wavName), wavNode) );
-			}
-		}
-	}
-	return true;
-}
-
 bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 {
 	GroupTableNode groupNode;
@@ -3583,7 +3852,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 	if ( chk->STR().exists() )
 	{
 		StringTableNode node;
-		#define AddStrIffOverZero(index)															\
+#define AddStrIffOverZero(index)															\
 			if ( index > 0 && chk->GetString(node.string, index) ) {								\
 				node.stringNum = index;																\
 				node.isExtended = chk->isExtendedString(node.stringNum);							\
@@ -3595,7 +3864,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 		ChkLocation* loc;
 		for ( u32 i=0; i<chk->MRGN().size()/CHK_LOCATION_SIZE; i++ )
 		{
-			if ( chk->getLocation(loc, u8(i)) )
+			if ( chk->getLocation(loc, u16(i)) )
 				AddStrIffOverZero(loc->stringNum);
 		}
 
@@ -3642,6 +3911,19 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 		for ( int i=0; i<256; i++ )
 			AddStrIffOverZero( chk->SWNM().get<u32>(i*4) );
 
+	}
+	return true;
+}
+
+bool TextTrigCompiler::PrepScriptTable(ScData &scData)
+{
+	std::string aiName;
+	int numScripts = scData.aiScripts.GetNumAiScripts();
+	for ( int i = 0; i < numScripts; i++ )
+	{
+		ScriptTableNode scriptNode;
+		if ( scData.aiScripts.GetAiIdAndName(i, scriptNode.scriptID, scriptNode.scriptName) )
+			scriptTable.insert(std::pair<u32, ScriptTableNode>(strHash(scriptNode.scriptName), scriptNode));
 	}
 	return true;
 }

@@ -164,7 +164,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
 				if ( foundLitTrigs )
 				{
 					TextTrigCompiler compiler;
-					if ( compiler.CompileTriggers(litTrigs, map) )
+					if ( compiler.CompileTriggers(litTrigs, map, chkd.scData) )
 					{
 						foundLitText ? Message(litText, "LIT") : Message("Success!", "Text Trigger Compiler");
 						return true;
