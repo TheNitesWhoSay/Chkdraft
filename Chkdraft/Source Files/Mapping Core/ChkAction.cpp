@@ -1,5 +1,18 @@
 #include "ChkAction.h"
 
+void Action::ToggleDisabled()
+{
+	if ( (flags & ACTION_FLAG_DISABLED) == ACTION_FLAG_DISABLED )
+		flags &= xACTION_FLAG_DISABLED;
+	else
+		flags |= ACTION_FLAG_DISABLED;
+}
+
+bool Action::isDisabled()
+{
+	return (flags & ACTION_FLAG_DISABLED) == ACTION_FLAG_DISABLED;
+}
+
 ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 {
 	switch ( action )

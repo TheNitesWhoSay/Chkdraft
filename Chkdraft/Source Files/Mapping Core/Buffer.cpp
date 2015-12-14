@@ -209,6 +209,20 @@ bool buffer::has(const char* str, u32 location, u32 size)
 		return false;
 }
 
+bool buffer::hasCaseless(const char* str, u32 location, u32 size)
+{
+	if ( this != nullptr && location + size > location && location + size <= sizeUsed )
+	{
+		for ( u32 i = 0; i < size; i++ )
+		{
+			if ( toupper(str[i]) != toupper(data[location + i]) )
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 bool buffer::getNext(char character, u32 start, u32 &dest)
 {
 	if ( this != nullptr )

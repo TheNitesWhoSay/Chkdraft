@@ -40,6 +40,7 @@ class buffer
 /*   Searching  */	// Returns true if the sequence was found at the location
 					bool has(char character, u32 location);
 					bool has(const char* str, u32 location, u32 size);
+					bool hasCaseless(const char* str, u32 location, u32 size);
 
 					// Puts next instance of 'character' in 'dest' if found
 					bool getNext(char character, u32 start, u32 &dest);

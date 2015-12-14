@@ -4,6 +4,27 @@
 #include <fstream>
 #include <string>
 
+void MakeDirectory(std::string directory)
+{
+	mkdir(directory.c_str());
+}
+
+bool GetModuleDirectory(std::string &outModuleDirectory)
+{
+	char cModulePath[MAX_PATH] = {};
+	if ( GetModuleFileName(NULL, cModulePath, MAX_PATH) != MAX_PATH )
+	{
+		std::string modulePath(cModulePath);
+		auto lastBackslashPos = modulePath.find_last_of('\\');
+		if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
+		{
+			outModuleDirectory = modulePath.substr(0, lastBackslashPos);
+			return true;
+		}
+	}
+	return false;
+}
+
 bool FindFile(const char* filePath)
 {
 	if ( filePath != nullptr )
@@ -132,22 +153,56 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 
 bool FileToString(std::string fileName, std::string &str)
 {
-	str.clear();
-	std::ifstream file(fileName, std::ifstream::in|std::ifstream::ate); // Open at ending characters position
-	if ( file.is_open() )
-	{
-		auto size = file.tellg(); // Grab size via current position
-		str.reserve((size_t)size); // Set string size to file size
-		file.seekg(0); // Move reader to beggining of file
-		while ( !file.eof() )
-			str += file.get();
+	try {
+		str.clear();
+		std::ifstream file(fileName, std::ifstream::in | std::ifstream::ate); // Open at ending characters position
+		if ( file.is_open() )
+		{
+			auto size = file.tellg(); // Grab size via current position
+			str.reserve((size_t)size); // Set string size to file size
+			file.seekg(0); // Move reader to beggining of file
+			while ( !file.eof() )
+				str += file.get();
 
-		if ( str.length() > 0 && str[str.length() - 1] == (char)-1 )
-			str[str.length() - 1] = '\0';
+			if ( str.length() > 0 && str[str.length() - 1] == (char)-1 )
+				str[str.length() - 1] = '\0';
 
-		return true;
+			return true;
+		}
 	}
+	catch ( std::exception ) { }
 	return false;
+}
+
+bool MakeFileCopy(std::string &inFilePath, std::string &outFilePath)
+{
+	bool success = false;
+	std::ifstream inFile;
+	std::ofstream outFile;
+	try
+	{
+		inFile.open(inFilePath, std::fstream::binary);
+		if ( inFile.is_open() )
+		{
+			outFile.open(outFilePath, std::fstream::out|std::fstream::binary);
+			if ( outFile.is_open() )
+			{
+				outFile << inFile.rdbuf();
+				success = true;
+				outFile.close();
+			}
+			inFile.close();
+		}
+	}
+	catch ( std::exception ) { }
+
+	if ( inFile.is_open() )
+		inFile.close();
+
+	if ( outFile.is_open() )
+		outFile.close();
+
+	return success;
 }
 
 void RemoveFile(std::string fileName)

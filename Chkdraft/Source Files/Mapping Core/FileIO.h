@@ -3,6 +3,11 @@
 #include "Buffer.h"
 #include "SFmpqapi.h"
 #include <fstream>
+#include <direct.h>
+
+void MakeDirectory(std::string directory);
+
+bool GetModuleDirectory(std::string &outModuleDirectory);
 
 bool FindFile(const char* filePath);
 
@@ -18,7 +23,11 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
 
 bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* fileName, buffer& buf);
 
+bool StdMpqFileToBuffer(const char* fileName, buffer &buf);
+
 bool FileToString(std::string fileName, std::string &str);
+
+bool MakeFileCopy(std::string &inFilePath, std::string &outFilePath);
 
 void RemoveFile(std::string fileName);
 

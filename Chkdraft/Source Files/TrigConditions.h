@@ -3,12 +3,11 @@
 #include "Common Files/CommonFiles.h"
 #include "Mapping Core/MappingCore.h"
 #include "Windows UI/WindowsUI.h"
-#include "Suggestions.h"
-#include "ConditionsGrid.h"
+#include "CndActGrid.h"
 #include <string>
 #include <vector>
 
-class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
+class TrigConditionsWindow : public ClassWindow, public ICndActGridUser
 {
 	public:
 		TrigConditionsWindow();
@@ -18,9 +17,7 @@ class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 		void DoSize();
 		void ProcessKeyDown(WPARAM wParam, LPARAM lParam);
 		void HideSuggestions();
-		void ConditionEnableToggled(u8 conditionNum);
-		void EscapeString(std::string &str);
-		bool BuildSelectionString(std::string &str);
+		void CndActEnableToggled(u8 conditionNum);
 		virtual void CutSelection();
 		virtual void CopySelection();
 		virtual void Paste();
@@ -29,18 +26,16 @@ class TrigConditionsWindow : public ClassWindow, public IConditionGridUser
 		void InitializeArgMaps(); // Gives default values to all the argMaps
 		void CreateSubWindows(HWND hWnd);
 		void OnLeave();
+		virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
-		ConditionsGrid listConditions;
-		EditControl editListItem;
+		CndActGrid gridConditions;
 		HBRUSH hBlack;
 		u32 trigIndex;
 
 		std::vector<u8> conditionArgMaps[24];
-		std::vector<u8> actionArgMaps[64];
 
-		DropdownControl dropUnits;
 		Suggestions &suggestions;
 
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

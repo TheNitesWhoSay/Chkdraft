@@ -303,9 +303,6 @@
     <ClInclude Include="Source Files\Suggestions.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\ConditionsGrid.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\ChkdCtrlEnums.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
@@ -468,9 +465,6 @@
     <ClInclude Include="Source Files\Clipboard.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Data.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Graphics.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
@@ -525,9 +519,6 @@
     <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h">
       <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\CoreStructs.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
-    </ClInclude>
     <ClInclude Include="Source Files\Undo.h">
       <Filter>Header Files\Mapping\Undos</Filter>
     </ClInclude>
@@ -566,6 +557,21 @@
     </ClInclude>
     <ClInclude Include="Source Files\Mapping Core\EscapeStrings.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\CndActGrid.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\ChkdStringInput.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\CoreStructs.h">
+      <Filter>Header Files\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\Mapping Core\ChkCuwp.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Source Files\ScData.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -672,9 +678,6 @@
       <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Suggestions.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\ConditionsGrid.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp">
@@ -830,9 +833,6 @@
     <ClCompile Include="Source Files\Clipboard.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Data.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\Graphics.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
@@ -898,6 +898,18 @@
     </ClCompile>
     <ClCompile Include="Source Files\Mapping Core\EscapeStrings.cpp">
       <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\CndActGrid.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\ChkdStringInput.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Mapping Core\ChkCuwp.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\ScData.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

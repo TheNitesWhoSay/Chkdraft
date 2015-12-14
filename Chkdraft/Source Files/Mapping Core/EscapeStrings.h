@@ -32,7 +32,8 @@ class EscString : public std::string
 	public:
 		EscString() : std::string() { }
 		EscString(const std::string &str) : std::string(str) { }
-		EscString(const std::string &str, size_t pos, size_t len = std::string::npos) : std::string(str, pos, len) { }
+		EscString(const std::string &str, size_t pos, size_t len = std::string::npos)
+			: std::string(str, pos, len) { }
 		EscString(const char* s) : std::string(s) { }
 		EscString(const char* s, size_t n) : std::string(s, n) { }
 		EscString(size_t n, char c) : std::string(n, c) { }
@@ -48,15 +49,22 @@ class EscString : public std::string
 class ChkdString : public std::string
 {
 	public:
-		ChkdString() : std::string() { }
-		ChkdString(const std::string &str) : std::string(str) { }
-		ChkdString(const std::string &str, size_t pos, size_t len = std::string::npos) : std::string(str, pos, len) { }
-		ChkdString(const char* s) : std::string(s) { }
-		ChkdString(const char* s, size_t n) : std::string(s, n) { }
-		ChkdString(size_t n, char c) : std::string(n, c) { }
+		ChkdString(bool isOneLine = false) : std::string(), isOneLine(isOneLine) { }
+		ChkdString(const std::string &str, bool isOneLine = false) : std::string(str), isOneLine(isOneLine) { }
+		ChkdString(const std::string &str, size_t pos, bool isOneLine = false, size_t len = std::string::npos)
+			: std::string(str, pos, len), isOneLine(isOneLine) { }
+		ChkdString(const char* s, bool isOneLine = false) : std::string(s), isOneLine(isOneLine) { }
+		ChkdString(const char* s, size_t n, bool isOneLine = false) : std::string(s, n), isOneLine(isOneLine) { }
+		ChkdString(size_t n, char c, bool isOneLine = false) : std::string(n, c), isOneLine(isOneLine) { }
 		template <class InputIterator>
-		ChkdString(InputIterator first, InputIterator last) : std::string(first, last) { }
+		ChkdString(InputIterator first, InputIterator last, bool isOneLine = false)
+			: std::string(first, last), isOneLine(isOneLine) { }
 		~ChkdString() { }
+		bool IsOneLine() { return this->isOneLine; }
+		void SetOneLine(bool isOneLine) { this->isOneLine = isOneLine; }
+
+	private:
+		bool isOneLine;
 };
 
 /** Makes an EscString from a RawString using these rules...
@@ -108,7 +116,7 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes);
 	All other characters >= 32 or < 127 are added as they are.
 
 	Returns true and outChkdString on success, false and an empty outChkdString on faliure. */
-bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outEscString);
+bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString);
 bool MakeChkdStr(RawString &inRawString, ChkdString &outChkdString);
 
 bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos);
@@ -138,6 +146,5 @@ bool getOneCharOctVal(const char character, u8 &value);
 bool getTwoCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
 
 bool getThreeCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 3 characters long
-
 
 #endif

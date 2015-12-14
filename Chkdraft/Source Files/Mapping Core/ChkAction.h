@@ -59,8 +59,12 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
 
 			#define ACTION_FLAG_DONT_ALWAYS_DISPLAY (~ACTION_FLAG_ALWAYS_DISPLAY)
 
-		u8 internalData[3]; // Number of actions to process next?
+			#define xACTION_FLAG_DISABLED x8BIT_1
 
+		u8 internalData[3]; // Number of actions to process next?
+		
+		void ToggleDisabled();
+		bool isDisabled();
 		static ActionArgType TextTrigArgType(u8 argNum, u8 action);
 };
 

@@ -17,7 +17,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 		if ( extendedTable)
 			currMaxStrings = strings->get<u32>(4);
 		else
-			currMaxStrings = chk->numStrings();
+			currMaxStrings = chk->numStrSlots();
 
 		if ( stringUsed.add<u8>(0, 1+currMaxStrings) ) // Add 1 unused byte and 1 byte for each potential string
 		{

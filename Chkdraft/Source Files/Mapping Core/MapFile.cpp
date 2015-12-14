@@ -269,3 +269,19 @@ void MapFile::SetSaveType(u8 newSaveType)
 {
 	SaveType = newSaveType;
 }
+
+std::string MapFile::GetFileName()
+{
+	std::string sFilePath(filePath);
+	auto lastBackslashPos = sFilePath.find_last_of('\\');
+
+	if ( lastBackslashPos != std::string::npos && lastBackslashPos+1 < sFilePath.size() )
+		return std::string(sFilePath.substr(lastBackslashPos+1, sFilePath.size() - lastBackslashPos+1));
+	else
+		return std::string("");
+}
+
+std::string MapFile::GetFilePath()
+{
+	return std::string(filePath);
+}

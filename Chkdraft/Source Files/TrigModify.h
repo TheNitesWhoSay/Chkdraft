@@ -11,6 +11,7 @@ class TrigModifyWindow : public ClassDialog
 {
 	public:
 		TrigConditionsWindow conditionsWindow;
+		TrigActionsWindow actionsWindow;
 
 		TrigModifyWindow();
 		bool CreateThis(HWND hParent, u32 trigIndex);
@@ -19,6 +20,7 @@ class TrigModifyWindow : public ClassDialog
 		void RefreshWindow(u32 trigIndex);
 		void DoSize();
 		bool onTrigTextTab();
+		virtual void RedrawThis();
 
 	protected:
 		void CreateSubWindows(HWND hWnd);
@@ -32,7 +34,6 @@ class TrigModifyWindow : public ClassDialog
 
 		TrigGeneralWindow generalWindow;
 		TrigPlayersWindow playersWindow;
-		TrigActionsWindow actionsWindow;
 		TrigModifyTextWindow trigModifyTextWindow;
 };
 

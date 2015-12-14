@@ -5,23 +5,59 @@
 
 void StringToWindowsClipboard(std::string &str)
 {
-	OpenClipboard(NULL);
-	if ( EmptyClipboard() != 0 )
+	if ( OpenClipboard(NULL) != 0 )
 	{
-		HGLOBAL globalData = GlobalAlloc(GMEM_MOVEABLE, str.size() + 1);
-		if ( globalData != NULL )
+		if ( EmptyClipboard() != 0 )
 		{
-			LPVOID lockedData = GlobalLock(globalData);
+			HGLOBAL globalData = GlobalAlloc(GMEM_MOVEABLE, str.size() + 1);
+			if ( globalData != NULL )
+			{
+				LPVOID lockedData = GlobalLock(globalData);
+				if ( lockedData != NULL )
+				{
+					memcpy(lockedData, str.c_str(), str.size() + 1);
+					GlobalUnlock(lockedData);
+					SetClipboardData(CF_TEXT, globalData);
+				}
+				GlobalFree(globalData);
+			}
+		}
+		CloseClipboard();
+	}
+}
+
+bool WindowsClipboardToString(std::string &str)
+{
+	bool success = false;
+	if ( OpenClipboard(NULL) != 0 )
+	{
+		HANDLE clipboardData = GetClipboardData(CF_TEXT);
+		if ( clipboardData != NULL )
+		{
+			LPVOID lockedData = GlobalLock(clipboardData);
 			if ( lockedData != NULL )
 			{
-				memcpy(lockedData, str.c_str(), str.size() + 1);
+				SIZE_T maxStringSize = GlobalSize(lockedData);
+				if ( maxStringSize != 0 )
+				{
+					const char* cString = (const char*)lockedData;
+					SIZE_T nulPos = 0;
+					while ( nulPos < maxStringSize && cString[nulPos] != '\0' )
+						nulPos++;
+
+					str.clear();
+					try {
+						str.assign(cString, (size_t)nulPos);
+						success = true;
+					}
+					catch ( std::exception ) {}
+				}
 				GlobalUnlock(lockedData);
-				SetClipboardData(CF_TEXT, globalData);
 			}
-			GlobalFree(globalData);
 		}
+		CloseClipboard();
 	}
-	CloseClipboard();
+	return success;
 }
 
 CLIPBOARD::CLIPBOARD() : pasting(false), quickPaste(false)

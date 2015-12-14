@@ -1,4 +1,4 @@
- #include "StaticTrigComponentParser.h"
+#include "StaticTrigComponentParser.h"
 #include "Mapping Core/MappingCore.h"
 #include <exception>
 #include <string>
@@ -509,48 +509,6 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 &dest, u32 pos, u32 en
 			break;
 	}
 	return success;
-}
-
-bool StaticTrigComponentParser::ParseScript(char* text, u32 &dest, u32 pos, u32 end)
-{
-	/** With scripts, the exact ascii characters entered are the exact bytes out.
-		As a consequence, if the script name is not quoted and is comprised entirely
-		of numbers, it must be considered a script number, and this method should
-		return false so ParseByte can be called. */
-
-	int size = end-pos;
-	bool isQuoted = ( text[pos] == '\"' );
-	if ( isQuoted ) // Quoted argument, ignore the quotes
-	{
-		pos ++;
-		end --;
-		size -= 2;
-
-		if ( size == 4 )
-		{
-			dest = (u32 &)(text[pos]);
-			return true;
-		}
-	}
-	else // was not quoted
-	{
-		if ( size == 4 )
-		{
-			// If at least one character is not a number, treat it regularly, else, return false
-			for ( int i=0; true; i++ )
-			{
-				if ( i == 5 ) // All characters were numbers, return false
-					return false;
-				else if ( text[pos+i] < '0' || text[pos+i] > '9' ) // The current character is not a number
-				{
-					dest = (u32 &)(text[pos]);
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
 }
 
 bool StaticTrigComponentParser::ParseResourceType(char* text, u16 &dest, u32 pos, u32 end)

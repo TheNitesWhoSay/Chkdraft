@@ -1,26 +1,29 @@
-#ifndef CONDITIONSGRID_H
-#define CONDITIONSGRID_H
+#ifndef CNDACTGRID_H
+#define CNDACTGRID_H
 #include "Windows UI/WindowsUI.h"
 #include "Common Files/CommonFiles.h"
+#include "Mapping Core/MappingCore.h"
 #include "Suggestions.h"
 
-class IConditionGridUser // ~Interface
+class ICndActGridUser // ~Interface
 {
 	public:
-		virtual void ConditionEnableToggled(u8 conditionNum) = 0;
+		virtual void CndActEnableToggled(u8 cndActId) = 0;
 		virtual void CutSelection() = 0;
 		virtual void CopySelection() = 0;
 		virtual void Paste() = 0;
 };
 
-class ConditionsGrid : public GridViewControl
+enum class ArgumentEnd { TwoCharLineBreak, OneCharLineBreak, Tab, StringEnd };
+
+class CndActGrid : public GridViewControl
 {
 	public:
-		CheckBoxControl checkEnabled[16];
+		CheckBoxControl checkEnabled[64];
 
-		ConditionsGrid(IConditionGridUser &user);
+		CndActGrid(ICndActGridUser &user, int numUsedRows);
 		bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
-		void SetEnabledCheck(u8 conditionId, bool enabled);
+		void SetEnabledCheck(u8 cndActId, bool enabled);
 
 		Suggestions &GetSuggestions();
 		bool HasUpDownedThisEdit();
@@ -30,6 +33,11 @@ class ConditionsGrid : public GridViewControl
 		virtual bool allowSel(int xStart, int xEnd, int yStart, int yEnd);
 		virtual void adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd);
 		virtual void CellClicked(int x, int y);
+
+		size_t FindArgEnd(std::string &str, size_t argStart, ArgumentEnd &outEndsBy);
+		void EscapeString(std::string &str);
+		bool BuildSelectionString(std::string &str);
+		virtual void RedrawThis();
 
 	protected:
 		bool CreateSubWindows(HWND hWnd);
@@ -43,15 +51,16 @@ class ConditionsGrid : public GridViewControl
 
 	private:
 		Suggestions suggestions;
-		IConditionGridUser& user;
+		ICndActGridUser& user;
 		bool hasUpDownedThisEdit;
 		bool startedByClick;
 		bool ignoreChange;
+		int numUsedRows;
 
 		BOOL ProcessTrack(NMHEADER* nmHeader);
 		BOOL ProcessTrackW(NMHEADERW* nmHeader);
 
-		ConditionsGrid(); // Disallow ctor
+		CndActGrid(); // Disallow ctor
 };
 
 #endif

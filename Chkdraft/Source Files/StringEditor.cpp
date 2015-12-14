@@ -259,7 +259,7 @@ void StringEditorWindow::saveStrings()
 		if ( outFile.is_open() )
 		{
 			ChkdString str;
-			for ( u32 i=0; i<chkd.maps.curr->numStrings(); i++ )
+			for ( u32 i=0; i<chkd.maps.curr->numStrSlots(); i++ )
 			{
 				if ( chkd.maps.curr->GetString(str, i) && str.size() > 0 )
 					outFile << i << ": " << str << "\r\n";

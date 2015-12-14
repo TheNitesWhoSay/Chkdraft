@@ -6,12 +6,15 @@
 #include "LocationMove.h"
 #include "LocationChange.h"
 
-GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
+bool GuiMap::doAutoBackups = false;
+
+GuiMap::GuiMap(bool doAutoBackups) : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
 			 layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
 			 dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
 			 snapUnits(true), stackUnits(false),
 			 MemhDC(NULL), MemMinihDC(NULL), mapId(0),
-			 MemBitmap(NULL), MemMiniBitmap(NULL), graphics(*this), unsavedChanges(false), changeLock(false), undoStacks(*this)
+			 MemBitmap(NULL), MemMiniBitmap(NULL), graphics(*this), unsavedChanges(false), changeLock(false), undoStacks(*this),
+			 minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
 	int layerSel = chkd.mainToolbar.layerBox.GetSel();
 	if ( layerSel != CB_ERR )
@@ -64,6 +67,11 @@ bool GuiMap::CanExit()
 
 bool GuiMap::SaveFile(bool saveAs)
 {
+	bool backupCopyFailed = false;
+	TryBackup(backupCopyFailed);
+	if ( backupCopyFailed && MessageBox(NULL, "Backup failed, would you like to save anyway?", "Backup Failed!", MB_YESNO) == IDNO )
+		return false;
+
 	if ( MapFile::SaveFile(saveAs) )
 	{
 		changeLock = false;
@@ -1347,6 +1355,11 @@ void GuiMap::ReturnKeyPress()
 	}
 }
 
+void GuiMap::SetAutoBackup(bool doAutoBackups)
+{
+	GuiMap::doAutoBackups = doAutoBackups;
+}
+
 LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
@@ -2034,3 +2047,45 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 		return 0;
 }
 
+bool GuiMap::GetBackupPath(time_t currTime, std::string &outFilePath)
+{
+	std::string moduleDirectory;
+	if ( GetModuleDirectory(moduleDirectory) )
+	{
+		tm* currTimes = localtime(&currTime);
+		int year = currTimes->tm_year + 1900, month = currTimes->tm_mon + 1, day = currTimes->tm_mday,
+			hour = currTimes->tm_hour, minute = currTimes->tm_min, seconds = currTimes->tm_sec;
+
+		MakeDirectory(moduleDirectory + "\\chkd");
+		MakeDirectory(moduleDirectory + "\\chkd\\Backups");
+
+		outFilePath = moduleDirectory + std::string("\\chkd\\Backups\\") +
+			std::to_string(year) + std::string(month <= 9 ? "-0" : "-") + std::to_string(month) +
+			std::string(day <= 9 ? "-0" : "-") + std::to_string(day) + std::string(hour <= 9 ? " 0" : " ") +
+			std::to_string(hour) + std::string(minute <= 9 ? "h0" : "h") + std::to_string(minute) +
+			std::string(seconds <= 9 ? "m0" : "m") + std::to_string(seconds) + std::string("s ") + std::string(GetFileName());
+
+		return true;
+	}
+	outFilePath.clear();
+	return false;
+}
+
+bool GuiMap::TryBackup(bool &outCopyFailed)
+{
+	outCopyFailed = false;
+	if ( doAutoBackups && MapFile::GetFilePath().length() > 0 )
+	{
+		time_t currTime = time(0);
+		// If there are no previous backups or enough time has elapsed since the last...
+		if ( (lastBackupTime == -1 || difftime(lastBackupTime, currTime) >= minSecondsBetweenBackups) )
+		{
+			std::string backupPath;
+			if ( GetBackupPath(currTime, backupPath) && MakeFileCopy(MapFile::GetFilePath(), backupPath) )
+				return true;
+			else
+				outCopyFailed = true;
+		}
+	}
+	return false;
+}

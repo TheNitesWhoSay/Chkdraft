@@ -81,6 +81,7 @@ class GridViewControl : public ListViewControl
 			regular user input to the edit control */
 		virtual void EditTextChanged(std::string &str);
 
+		virtual void Paint(HWND hWnd);
 		virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
 		virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -109,7 +110,6 @@ class GridViewControl : public ListViewControl
 		void DownArrowKey();
 		void TabKey();
 		void EnterKey();
-		void Paint(HWND hWnd);
 		void DrawItems(HWND hWnd);
 		
 	//protected:

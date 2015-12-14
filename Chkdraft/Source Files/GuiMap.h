@@ -3,9 +3,8 @@
 #include "Common Files/CommonFiles.h"
 #include "Windows UI/WindowsUI.h"
 #include "Clipboard.h"
-#include "Undo.h"
-#include "Data.h"
 #include "Graphics.h"
+#include "Undo.h"
 
 #define GuiMapPtr std::shared_ptr<GuiMap>
 
@@ -13,7 +12,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
 
-/* Constructor	*/	GuiMap();
+/* Constructor	*/	GuiMap(bool doAutoBackups);
 
 /*  Destructor  */	~GuiMap();
 
@@ -125,6 +124,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 
 					bool CreateThis(HWND hClient, const char* title);
 					void ReturnKeyPress();
+					void SetAutoBackup(bool doAutoBackups);
 
 
 	protected:
@@ -147,6 +147,9 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
 					LRESULT ConfirmWindowClose(HWND hWnd);
+
+					bool GetBackupPath(time_t currTime, std::string &outFilePath);
+					bool TryBackup(bool &outCopyFailed);
 
 
 	private:
@@ -183,6 +186,10 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					HDC MemMinihDC;
 					HBITMAP MemBitmap;
 					HBITMAP MemMiniBitmap;
+
+					static bool doAutoBackups;
+					double minSecondsBetweenBackups; // The smallest interval between consecutive backups
+					time_t lastBackupTime; // -1 if there are no previous backups
 };
 
 #endif
