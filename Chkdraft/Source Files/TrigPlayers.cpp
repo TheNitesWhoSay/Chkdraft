@@ -159,10 +159,10 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 	groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", GROUP_EXECUTINGPLAYERS);
 	groupNonExecutingPlayers.CreateThis(hWnd, 340, 5, 210, 190, "Non-Executing Players", GROUP_UNUSEDPLAYERS);
 	for ( u8 i=0; i<9; i++ )
-		checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers[8+i], CHECK_PLAYER9+i);
+		checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i).c_str(), CHECK_PLAYER9+i);
 
 	for ( u8 i=0; i<6; i++ )
-		checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers[22+i], CHECK_UNUSED1+i);
+		checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i).c_str(), CHECK_UNUSED1+i);
 
 	groupRawEdit.CreateThis(hWnd, 5, 200, 545, 160, "Raw Data", GROUP_RAWEDIT);
 	textExtendedData.CreateThis(hWnd, 12, 219, 220, 60, "While not used in StarCraft modifying these bytes can be useful with 3rd party programs. Bytes 22-25 are used by Chkdraft and should not be manually altered. Numbers are in hex.", TEXT_EXTENDEDDATA);

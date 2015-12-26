@@ -31,7 +31,7 @@ void TechTree::InsertTechs()
 		for ( int j=0; j<nTreeTechs[i]; j++ )
 		{
 			u32 techId = techs[j];
-			InsertTreeItem(LastGroup, techNames[techId], TREE_TYPE_TECH|techId);
+			InsertTreeItem(LastGroup, techNames.at(techId).c_str(), TREE_TYPE_TECH|techId);
 		}
 	}
 }

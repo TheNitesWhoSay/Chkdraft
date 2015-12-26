@@ -126,8 +126,8 @@ void ForcesWindow::RefreshWindow()
 				map->getPlayerColor(player, color);
 				map->getPlayerRace(player, race);
 				std::stringstream ssplayer;
-				ssplayer << "Player " << player+1 << " - " << playerColors[color] << " - "
-						 << playerRaces[race] << " (" << playerOwners[displayOwner] << ")";
+				ssplayer << "Player " << player+1 << " - " << playerColors.at(color) << " - "
+						 << playerRaces.at(race) << " (" << playerOwners.at(displayOwner) << ")";
 				HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
 				if ( hListBox != NULL )
 					SendMessage(hListBox, LB_ADDSTRING, NULL, (LPARAM)ssplayer.str().c_str());

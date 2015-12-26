@@ -1,28 +1,35 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
+
 #include <Windows.h>
+
 #include <cstdint>
 #include <string>
+#include <tuple>
+#include <vector>
 
 /**
 	Contains constants used throughout the program,
 	such as identifiers, strings, and fonts
 */
 
-typedef uint64_t u64;
-typedef int64_t s64;
-typedef uint32_t u32;
-typedef int32_t s32;
-typedef uint16_t u16;
-typedef int16_t s16;
-typedef uint8_t u8;
-typedef int8_t s8;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u16 = std::uint16_t;
+using s16 = std::int16_t;
+using u8 = std::uint8_t;
+using s8 = std::int8_t;
 
-#define u8_max 255
-#define u16_max 65535
-#define u32_max 4294967295
+constexpr u8 u8_max = UINT8_MAX;
+constexpr u16 u16_max = UINT16_MAX;
+constexpr u32 u32_max = UINT32_MAX;
 
-#define ASCII_CHKD 1128811332 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
+// "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
+constexpr int ascii_chkd = 67 | 72 | 75 | 68; 
+
+#define DEFAULT_HOVER_TIME 10
 
 #define NO_LOCATION 0xFFFF
 
@@ -31,47 +38,33 @@ extern const HFONT defaultFont;
 extern const double zooms[];
 #define NUM_ZOOMS 10
 
-extern const u32 onOffMenuItems[];
-extern const int numOnOffMenuItems;
+extern const std::vector<u32> onOffMenuItems;
 
-#define DEFAULT_HOVER_TIME 10
+extern const std::vector<std::string> weaponNames;
 
-extern const char* weaponNames[];
-extern const int numWeaponNames;
+extern const std::vector<std::string> upgradeNames;
 
-extern const char* upgradeNames[];
-extern const int numUpgradeNames;
+extern const std::vector<std::string> techNames;
 
-extern const char* techNames[];
-extern const int numTechNames;
+extern const std::vector<std::string> playerOwners;
 
-extern const char* tilesetNames[];
-#define NUM_TILESETS 8
+extern const std::vector<std::string> playerRaces;
 
-extern const char* playerOwners[];
-extern const int numPlayerOwners;
+extern const std::vector<std::string> playerColors;
 
-extern const char* playerRaces[];
-extern const int numPlayerRaces;
+extern const std::vector<std::string> triggerPlayers;
 
-extern const char* playerColors[];
-extern const int numPlayerColors;
+extern const std::vector<std::string> triggerConditions;
 
-extern const char* triggerPlayers[];
-extern const int numTriggerPlayers;
+extern const std::vector<std::string> triggerScores;
 
-extern const char* triggerConditions[];
-extern const int numTriggerConditions;
+extern const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors;
+//bad design.....
+#define STRCOLORS_SIZE 28
 
-extern const char* triggerScores[];
-extern const int numTriggerScores;
 
-extern const COLORREF stringColors[];
-extern const char* stringColorStrings[];
-extern const char* stringColorPrefixes[];
-#define NUM_STRING_COLORS 28
-
-enum Tileset {
+enum Tileset
+{
 	TERRAIN_BADLANDS,
 	TERRAIN_SPACE,
 	TERRAIN_INSTALLATION,
@@ -81,25 +74,19 @@ enum Tileset {
 	TERRAIN_ICE,
 	TERRAIN_TWILIGHT
 };
-extern const char* badlandsInitTerrain[];
-extern const char* spaceInitTerrain[];
-extern const char* installInitTerrain[];
-extern const char* ashInitTerrain[];
-extern const char* jungInitTerrain[];
-extern const char* desertInitTerrain[];
-extern const char* iceInitTerrain[];
-extern const char* twilightInitTerrain[];
-extern const int numBadlandsInitTerrain;
-extern const int numSpaceInitTerrain;
-extern const int numInstallationInitTerrain;
-extern const int numAshInitTerrain;
-extern const int numJungInitTerrain;
-extern const int numDesertInitTerrain;
-extern const int numIceInitTerrain;
-extern const int numTwilightInitTerrain;
 
-extern const char** initTerrains[];
-extern const int numTilesetInitTerrains[];
+extern const std::vector<std::string> tilesetNames;
+
+extern const std::vector<std::string> badlandsInitTerrain;
+extern const std::vector<std::string> spaceInitTerrain;
+extern const std::vector<std::string> installInitTerrain;
+extern const std::vector<std::string> ashInitTerrain;
+extern const std::vector<std::string> jungInitTerrain;
+extern const std::vector<std::string> desertInitTerrain;
+extern const std::vector<std::string> iceInitTerrain;
+extern const std::vector<std::string> twilightInitTerrain;
+
+extern const std::vector<std::vector<std::string>> initTerrains;
 
 
 /** Values for extracting specific data types from raw bytes */

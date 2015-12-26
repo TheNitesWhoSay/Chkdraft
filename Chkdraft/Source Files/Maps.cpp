@@ -555,8 +555,8 @@ void MAPS::EnableMapping()
 
 		HMENU hMenu = GetMenu(chkd.getHandle());
 
-		for ( int i = 0; i < numOnOffMenuItems; i++ )
-			EnableMenuItem(hMenu, onOffMenuItems[i], MF_ENABLED);
+		for (auto item : onOffMenuItems)
+			EnableMenuItem(hMenu, item, MF_ENABLED);
 
 		HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
 		ShowWindow(hLeftBar, SW_SHOW);
@@ -587,8 +587,8 @@ void MAPS::DisableMapping()
 
 		HMENU hMenu = GetMenu(chkd.getHandle());
 
-		for ( int i = 0; i < numOnOffMenuItems; i++ )
-			EnableMenuItem(hMenu, onOffMenuItems[i], MF_DISABLED);
+		for (auto item : onOffMenuItems)
+			EnableMenuItem(hMenu, item, MF_DISABLED);
 
 		chkd.mainPlot.leftBar.Hide();
 

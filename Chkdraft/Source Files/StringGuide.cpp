@@ -14,11 +14,12 @@ bool StringGuideWindow::CreateThis(HWND hParent)
 		HDC hDC = GetDC(hStringGuide);
 		SelectObject(hDC, defaultFont);
 		SIZE strSize = { };
-		for ( int i=0; i<NUM_STRING_COLORS; i++ )
+		for (size_t i = 0; i < strColors.size(); i++)
 		{
-			GetTextExtentPoint32(hDC, stringColorPrefixes[i], std::strlen(stringColorPrefixes[i]), &strSize);
-			colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, stringColorPrefixes[i], 0);
-			color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, stringColorStrings[i], TEXT_COLOR_FIRST+i);
+			auto Color = strColors.at(i);
+			GetTextExtentPoint32A(hDC, std::get<2>(Color).c_str(), std::get<2>(Color).length(), &strSize);
+			colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, std::get<2>(Color).c_str(), 0);
+			color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, std::get<1>(Color).c_str(), TEXT_COLOR_FIRST+i);
 		}
 		ReleaseDC(hDC);
 		return true;
@@ -36,7 +37,7 @@ LRESULT StringGuideWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				SetBkMode((HDC)wParam, TRANSPARENT);
 				int id = GetDlgCtrlID((HWND)lParam);
 				if ( id >= TEXT_COLOR_FIRST && id <= TEXT_COLOR_LAST )
-					SetTextColor((HDC)wParam, stringColors[id-TEXT_COLOR_FIRST]);
+					SetTextColor((HDC)wParam, std::get<0>(strColors.at(id-TEXT_COLOR_FIRST)));
 				else
 					SetTextColor((HDC)wParam, RGB(16, 252, 24));
 

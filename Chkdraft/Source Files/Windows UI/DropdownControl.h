@@ -2,9 +2,14 @@
 #define DROPDOWNCONTROL_H
 #include "WindowControl.h"
 
+#include <string>
+#include <vector>
+
 class DropdownControl : public WindowControl
 {
 	public:
+		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
+			u32 id, const std::vector<std::string>& items, HFONT font);
 		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
 			u32 id, int numItems, const char** items, HFONT font);
 		void SetSel(int index);
