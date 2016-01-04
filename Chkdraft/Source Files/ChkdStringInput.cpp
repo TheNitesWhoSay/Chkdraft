@@ -1,7 +1,7 @@
 #include "ChkdStringInput.h"
 #include "Common Files/CommonFiles.h"
 
-bool ChkdStringInputDialog::GetChkdString(ChkdString &str, ChkdString &initialString, HWND hParent)
+bool ChkdStringInputDialog::GetChkdString(ChkdString &str, const ChkdString &initialString, HWND hParent)
 {
 	ChkdStringInputDialog inputDialog;
 	return inputDialog.InternalGetChkdString(str, initialString, hParent);
@@ -12,7 +12,7 @@ ChkdStringInputDialog::ChkdStringInputDialog() : gotChkdString(false), newString
 
 }
 
-bool ChkdStringInputDialog::InternalGetChkdString(ChkdString &str, ChkdString &initialString, HWND hParent)
+bool ChkdStringInputDialog::InternalGetChkdString(ChkdString &str, const ChkdString &initialString, HWND hParent)
 {
 	gotChkdString = false;
 	this->initialString = initialString;

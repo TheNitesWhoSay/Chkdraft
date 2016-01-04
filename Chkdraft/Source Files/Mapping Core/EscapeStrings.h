@@ -132,10 +132,10 @@ bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t 
 	Upon finding any NUL characters escaped or otherwise this method fails.
 
 	Returns true and outRawString on success, false and an empty outRawString on faliure. */
-bool ParseChkdStr(ChkdString &inChkdString, RawString &outRawString);
+bool ParseChkdStr(const ChkdString &inChkdString, RawString &outRawString);
 /** Parses a ChkdString into RawBytes, same rules as ParseChkdStr except...
 	All "\\0" in the ChkdString become "\0" in the RawBytes. */
-bool ParseChkdBytes(ChkdString &inChkdString, std::vector<u8> &outRawBytes);
+bool ParseChkdBytes(const ChkdString &inChkdString, std::vector<u8> &outRawBytes);
 
 bool getOneCharHexVal(const char character, u8 &value);
 

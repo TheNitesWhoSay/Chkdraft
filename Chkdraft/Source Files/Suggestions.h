@@ -9,7 +9,7 @@ class Suggestions : public ClassWindow
 		bool CreateThis(HWND hParent, int x, int y, int width, int height);
 		void ClearStrings();
 		void AddStrings(const char* strings[], int numStrings);
-		void AddString(std::string &string); // Adds a string to the stored list but does not yet display it
+		void AddString(const std::string &string); // Adds a string to the stored list but does not yet display it
 		void SetStrings(); // Sets all the strings in the stored list to the display
 		void SetStrings(const char* strings[], int numStrings);
 		void Show();

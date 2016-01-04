@@ -50,9 +50,9 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
 		void ChangeActionType(Action &action, u8 newId);
 		bool TransformAction(Action &action, u8 newId);
 		void ClearArgument(Action &action, u8 argNum);
-		void UpdateActionName(u8 actionNum, std::string &newText);
-		void UpdateActionArg(u8 actionNum, u8 argNum, std::string &newText);
-		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str);
+		void UpdateActionName(u8 actionNum, const std::string &newText);
+		void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText);
+		BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str);
 		BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
 		void DrawSelectedAction();
 		int GetGridItemWidth(int gridItemX, int gridItemY);

@@ -174,7 +174,7 @@ bool FileToString(std::string fileName, std::string &str)
 	return false;
 }
 
-bool MakeFileCopy(std::string &inFilePath, std::string &outFilePath)
+bool MakeFileCopy(const std::string &inFilePath, const std::string &outFilePath)
 {
 	bool success = false;
 	std::ifstream inFile;

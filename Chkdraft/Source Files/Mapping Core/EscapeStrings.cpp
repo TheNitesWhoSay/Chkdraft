@@ -400,7 +400,7 @@ bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t 
 	return false;
 }
 
-bool ParseChkdStr(ChkdString &inChkdString, RawString &outRawString)
+bool ParseChkdStr(const ChkdString &inChkdString, RawString &outRawString)
 {
 	size_t strLength = inChkdString.length(),
 		lastEscCharPos = 0;
@@ -442,7 +442,7 @@ bool ParseChkdStr(ChkdString &inChkdString, RawString &outRawString)
 	return false;
 }
 
-bool ParseChkdBytes(ChkdString &inChkdString, std::vector<u8> &outRawBytes)
+bool ParseChkdBytes(const ChkdString &inChkdString, std::vector<u8> &outRawBytes)
 {
 	size_t strLength = inChkdString.length(),
 		lastEscCharPos = 0;

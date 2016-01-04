@@ -416,7 +416,7 @@ bool TrigActionsWindow::TransformAction(Action &action, u8 newId)
 	return false;
 }
 
-void TrigActionsWindow::UpdateActionName(u8 actionNum, std::string &newText)
+void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText)
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
@@ -442,7 +442,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, std::string &newText)
 	}
 }
 
-void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, std::string &newText)
+void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText)
 {
 	ScenarioPtr chk = chkd.maps.curr;
 	RawString rawUpdateText, rawSuggestText;
@@ -493,7 +493,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, std::string &ne
 	}
 }
 
-BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str)
+BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str)
 {
 	if ( gridItemY >= 0 && gridItemY < NUM_TRIG_ACTIONS )
 	{
