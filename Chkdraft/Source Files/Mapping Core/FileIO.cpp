@@ -58,12 +58,11 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 {
 	BOOL success = FALSE;
 	char filePath[MAX_PATH],
-		 locateError[MAX_PATH+60],
-		 retryError[MAX_PATH+76],
-		 openFilter[MAX_PATH+28];
+		locateError[MAX_PATH + 60],
+		retryError[MAX_PATH + 76];
 
 	std::snprintf(filePath, MAX_PATH, "%s\\%s", directory, fileName);
-	std::snprintf(locateError, MAX_PATH+60, "Could not find %s!\n\nWould you like to locate it manually?", filePath);
+	std::snprintf(locateError, MAX_PATH+60, "Could not find %s!\n\nWould you like to locate it manually?", fileName);
 	std::snprintf(retryError, MAX_PATH+76, "Failed to open %s! The file may be in use.\n\nWould you like to try again?", fileName);
 
 	if ( FindFile(filePath) ) // File found
@@ -75,12 +74,11 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 	{
 		if ( MessageBox(NULL, locateError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES )
 		{
-			std::snprintf(openFilter, MAX_PATH+28, "%s\0*%s*;\0All Files\0*.*\0\0", fileName);
-
-			OPENFILENAME ofn = { };
+			OPENFILENAME ofn;
+			memset(&ofn, 0, sizeof(ofn));
 			ofn.lStructSize = sizeof(ofn);
 			ofn.hwndOwner = NULL;
-			ofn.lpstrFilter = openFilter;
+			ofn.lpstrFilter = "MPQ Files\0*.mpq\0All Files\0*.*\0";
 			ofn.lpstrFile = filePath;
 			ofn.nMaxFile = MAX_PATH;
 			ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
