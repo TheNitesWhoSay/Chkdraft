@@ -27,7 +27,7 @@ bool StdMpqFileToBuffer(const char* fileName, buffer &buf);
 
 bool FileToString(std::string fileName, std::string &str);
 
-bool MakeFileCopy(std::string &inFilePath, std::string &outFilePath);
+bool MakeFileCopy(const std::string &inFilePath, const std::string &outFilePath);
 
 void RemoveFile(std::string fileName);
 

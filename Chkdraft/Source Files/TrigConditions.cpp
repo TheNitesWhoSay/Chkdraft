@@ -319,7 +319,7 @@ bool TrigConditionsWindow::TransformCondition(Condition &condition, u8 newId)
 	return false;
 }
 
-void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, std::string &newText)
+void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string &newText)
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
@@ -345,7 +345,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, std::string &new
 	}
 }
 
-void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, std::string &newText)
+void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText)
 {
 	RawString rawUpdateText, rawSuggestText;
 	std::string suggestionString = suggestions.Take();
@@ -367,7 +367,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, std::s
 	}
 }
 
-BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, std::string& str)
+BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str)
 {
 	if ( gridItemY >= 0 && gridItemY < NUM_TRIG_CONDITIONS )
 	{

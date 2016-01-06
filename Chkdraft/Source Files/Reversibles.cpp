@@ -19,7 +19,7 @@ void ReversibleActions::Reverse(void *obj)
 {
 	if ( reversed )
 	{
-		for ( auto &it = actions.rbegin(); it != actions.rend(); ++it )
+		for ( auto it = actions.rbegin(); it != actions.rend(); ++it )
 			(*it)->Reverse(obj);
 	}
 	else

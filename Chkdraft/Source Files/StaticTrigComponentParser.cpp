@@ -599,7 +599,7 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, u32 pos, u32 en
 bool StaticTrigComponentParser::ParseTriplet(char* text, u8* dest, u32 pos, u32 end)
 {
 	u32 val;
-	bool isNegative;
+	bool isNegative = false;
 
 	if ( text[pos] == '-' ) // isNegative
 	{

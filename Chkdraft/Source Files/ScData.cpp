@@ -675,7 +675,7 @@ void ScData::Load()
 			  hBrooDat = nullptr,
 			  hPatchRt = nullptr;
 
-	char scPath[MAX_PATH];
+	char scPath[MAX_PATH] = { 0 };
 	GetRegScPath(scPath, MAX_PATH);
 
 	OpenArchive(scPath, "StarDat.mpq" , hStarDat);
