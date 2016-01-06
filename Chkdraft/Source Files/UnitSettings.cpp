@@ -121,18 +121,14 @@ void UnitSettingsWindow::RefreshWindow()
 		}
 		else
 		{
-			std::stringstream newGroundGroupText;
-			newGroundGroupText << "Ground Weapon [" << weaponNames[groundWeapon] << "]";
-			groupGroundWeapon.SetText(newGroundGroupText.str().c_str());
+			groupGroundWeapon.SetText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
 		}
 
 		if ( airWeapon == 130 || airWeapon == groundWeapon )
 		{
 			if ( airWeapon != 130 && airWeapon == groundWeapon )
 			{
-				std::stringstream newAirGroupText;
-				newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
-				groupAirWeapon.SetText(newAirGroupText.str().c_str());
+				groupAirWeapon.SetText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
 			}
 			else
 				groupAirWeapon.SetText("No Air Weapon");
@@ -147,9 +143,7 @@ void UnitSettingsWindow::RefreshWindow()
 		}
 		else
 		{
-			std::stringstream newAirGroupText;
-			newAirGroupText << "Air Weapon [" << weaponNames[airWeapon] << "]";
-			groupAirWeapon.SetText(newAirGroupText.str().c_str());
+			groupAirWeapon.SetText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
 		}
 
 		if ( useDefaultSettings )

@@ -744,12 +744,7 @@ void TrigActionsWindow::SuggestString()
 
 void TrigActionsWindow::SuggestPlayer()
 {
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( chk != nullptr )
-	{
-		for ( u8 i = 0; i < numTriggerPlayers; i++ )
-			suggestions.AddString(std::string(triggerPlayers[i]));
-	}
+	suggestions.AddStrings(triggerPlayers);
 	suggestions.Show();
 }
 
@@ -803,8 +798,7 @@ void TrigActionsWindow::SuggestAmount()
 
 void TrigActionsWindow::SuggestScoreType()
 {
-	for ( u8 i = 0; i < numTriggerScores; i++ )
-		suggestions.AddString(std::string(triggerScores[i]));
+	suggestions.AddStrings(triggerScores);
 	suggestions.Show();
 }
 
@@ -921,7 +915,7 @@ void TrigActionsWindow::SuggestType()
 
 void TrigActionsWindow::SuggestActionType()
 {
-	suggestions.AddStrings(triggerActions, numTriggerActions);
+	suggestions.AddStrings(triggerActions);
 	suggestions.Show();
 }
 

@@ -2,12 +2,17 @@
 #define SUGGESTIONS_H
 #include "Windows UI/WindowsUI.h"
 
+#include <string>
+#include <vector>
+
 class Suggestions : public ClassWindow
 {
 	public:
 		Suggestions();
 		bool CreateThis(HWND hParent, int x, int y, int width, int height);
 		void ClearStrings();
+
+		void AddStrings(const std::vector<std::string>& strings);
 		void AddStrings(const char* strings[], int numStrings);
 		void AddString(const std::string &string); // Adds a string to the stored list but does not yet display it
 		void SetStrings(); // Sets all the strings in the stored list to the display

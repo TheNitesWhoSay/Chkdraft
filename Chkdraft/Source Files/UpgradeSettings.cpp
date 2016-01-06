@@ -69,7 +69,7 @@ void UpgradeSettingsWindow::RefreshWindow()
 	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chk != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
+		chkd.mapSettingsWindow.SetTitle("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
 
 		if ( isDisabled )
 			EnableUpgradeEditing();
@@ -580,7 +580,7 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			{
 				RefreshWindow();
 				if ( selectedUpgrade != -1 )
-					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + upgradeNames[selectedUpgrade] + ']').c_str());
+					chkd.mapSettingsWindow.SetTitle("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}

@@ -1,4 +1,5 @@
 #include "MapProperties.h"
+#include "Common Files/Constants.h"
 #include "Chkdraft.h"
 #include <string>
 
@@ -87,9 +88,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		std::string sCurrHeight(std::to_string(currHeight));
 
 		textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
-		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, CB_MAPTILESET, NUM_TILESETS, (const char**)tilesetNames, defaultFont);
+		dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, CB_MAPTILESET, tilesetNames, defaultFont);
 		textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
-		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, CB_NEWMAPTERRAIN, numTilesetInitTerrains[currTileset], (const char**)initTerrains[currTileset], defaultFont);
+		dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, CB_NEWMAPTERRAIN, initTerrains[currTileset], defaultFont);
 		textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
 		editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, EDIT_NEWMAPWIDTH);
 		editMapWidth.SetText(sCurrWidth.c_str());
@@ -116,9 +117,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 
 				groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
 				textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
-				dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, CB_P1OWNER+player, numPlayerOwners, playerOwners, defaultFont);
+				dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, CB_P1OWNER+player, playerOwners, defaultFont);
 				textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
-				dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, CB_P1RACE+player, numPlayerRaces, playerRaces, defaultFont);
+				dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, CB_P1RACE+player, playerRaces, defaultFont);
 
 				if ( yBox < 2 )
 				{
@@ -126,7 +127,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 						map->getPlayerColor((u8)player, color);
 
 					textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, CB_P1COLOR+player, numPlayerColors, playerColors, defaultFont);
+					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, CB_P1COLOR+player, playerColors, defaultFont);
 				}
 			}
 		}
@@ -225,12 +226,12 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		{
 			HWND hMapTileset = GetDlgItem(hWnd, CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, CB_NEWMAPTERRAIN);
 			LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, NULL, NULL);
-			if ( currTileset != CB_ERR && currTileset < NUM_TILESETS )
+			if ( currTileset != CB_ERR && currTileset < (LRESULT)tilesetNames.size())
 			{
 				while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, NULL) != CB_ERR );
 
-				for ( int i = 0; i<numTilesetInitTerrains[currTileset]; i++ )
-					SendMessage(hMapNewTerrain, CB_ADDSTRING, NULL, (LPARAM)initTerrains[currTileset][i]);
+				for ( auto tileset : initTerrains.at(currTileset) )
+					SendMessage(hMapNewTerrain, CB_ADDSTRING, NULL, (LPARAM)tileset.c_str());
 
 				SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 				SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, NULL);

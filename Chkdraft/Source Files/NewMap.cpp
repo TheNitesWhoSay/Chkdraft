@@ -92,44 +92,44 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				switch ( ItemIndex )
 				{
 				case TERRAIN_BADLANDS: // Badlands
-					for ( int i = 0; i<numBadlandsInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
+					for (auto initTerrain : badlandsInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_SPACE: // Space Platform
-					for ( int i = 0; i<numSpaceInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)spaceInitTerrain[i]);
+					for (auto initTerrain : spaceInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_INSTALLATION: // Installation
-					for ( int i = 0; i<numInstallationInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)installInitTerrain[i]);
+					for (auto initTerrain : installInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 					break;
 				case TERRAIN_ASH: // Ash World
-					for ( int i = 0; i<numAshInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)ashInitTerrain[i]);
+					for (auto initTerrain : ashInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_JUNGLE: // Jungle World
-					for ( int i = 0; i<numJungInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)jungInitTerrain[i]);
+					for (auto initTerrain : jungInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_DESERT: // Desert World
-					for ( int i = 0; i<numDesertInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)desertInitTerrain[i]);
+					for (auto initTerrain : desertInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_ICE: // Ice World
-					for ( int i = 0; i<numIceInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)iceInitTerrain[i]);
+					for (auto initTerrain : iceInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_TWILIGHT: // Twilight World
-					for ( int i = 0; i<numTwilightInitTerrain; i++ )
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)twilightInitTerrain[i]);
+					for (auto initTerrain : twilightInitTerrain)
+						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				}
@@ -177,14 +177,14 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SetWindowText(hHeight, "128");
 
 				HWND hTileset = GetDlgItem(hWnd, IDC_LIST_TILESET);
-				for ( int i=0; i<8; i++ )
-					SendMessage(hTileset, LB_ADDSTRING, NULL, (LPARAM)tilesetNames[i]);
+				for (auto tileset : tilesetNames)
+					SendMessage(hTileset, LB_ADDSTRING, NULL, (LPARAM)tileset.c_str());
 				SendMessage(hTileset, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				SendMessage(hTileset, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 
 				HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-				for ( int i=0; i<numBadlandsInitTerrain; i++ )
-					SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)badlandsInitTerrain[i]);
+				for (auto terrain : badlandsInitTerrain)
+					SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)terrain.c_str());
 				SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				SendMessage(hInitialTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 				return TRUE;

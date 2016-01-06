@@ -54,7 +54,7 @@ void TechSettingsWindow::RefreshWindow()
 	{
 		u8 tech = (u8)selectedTech;
 		if ( selectedTech != -1 )
-			chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
+			chkd.mapSettingsWindow.SetTitle("Map Settings - [" + techNames.at(selectedTech) + "]");
 
 		if ( isDisabled )
 			EnableTechEditing();
@@ -500,7 +500,7 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				RefreshWindow();
 				if ( selectedTech != -1 )
-					chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [") + techNames[selectedTech] + ']').c_str());
+					chkd.mapSettingsWindow.SetTitle("Map Settings - [" + techNames.at(selectedTech) + "]");
 				else
 					chkd.mapSettingsWindow.SetTitle("Map Settings");
 			}

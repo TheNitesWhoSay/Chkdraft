@@ -1,5 +1,8 @@
 #include "WindowsItem.h"
 
+#include <list>
+#include <string>
+
 std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
 WindowsItem::WindowsItem() : hWnd(NULL)
@@ -284,6 +287,10 @@ void WindowsItem::SetSmallIcon(HANDLE hIcon)
 	::SendMessage(getHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
+bool WindowsItem::SetTitle(const std::string& newTitle)
+{
+	return ::SetWindowText(getHandle(), newTitle.c_str()) != 0;
+}
 bool WindowsItem::SetTitle(const char* newTitle)
 {
 	return ::SetWindowText(getHandle(), newTitle) != 0;

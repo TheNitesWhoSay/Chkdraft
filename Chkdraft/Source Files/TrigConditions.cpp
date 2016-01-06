@@ -615,8 +615,8 @@ void TrigConditionsWindow::SuggestPlayer()
 	ScenarioPtr chk = chkd.maps.curr;
 	if ( chk != nullptr )
 	{
-		for ( u8 i = 0; i < numTriggerPlayers; i++ )
-			suggestions.AddString(std::string(triggerPlayers[i]));
+		for (auto player : triggerPlayers)
+			suggestions.AddString(player);
 	}
 	suggestions.Show();
 }
@@ -644,8 +644,7 @@ void TrigConditionsWindow::SuggestResourceType()
 
 void TrigConditionsWindow::SuggestScoreType()
 {
-	for ( u8 i = 0; i < numTriggerScores; i++ )
-		suggestions.AddString(std::string(triggerScores[i]));
+	suggestions.AddStrings(triggerScores);
 	suggestions.Show();
 }
 
@@ -684,7 +683,7 @@ void TrigConditionsWindow::SuggestComparison()
 
 void TrigConditionsWindow::SuggestConditionType()
 {
-	suggestions.AddStrings(triggerConditions, numTriggerConditions);
+	suggestions.AddStrings(triggerConditions);
 	suggestions.Show();
 }
 
