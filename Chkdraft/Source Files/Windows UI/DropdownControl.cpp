@@ -1,5 +1,40 @@
 #include "DropdownControl.h"
 
+#include <string>
+#include <vector>
+
+bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
+	u32 id, const std::vector<std::string>& items, HFONT font)
+{
+	DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
+
+	if (editable)
+	{
+		if (alwaysList)
+			style |= CBS_DROPDOWNLIST;
+		else
+			style |= CBS_DROPDOWN;
+	}
+	else
+	{
+		if (alwaysList)
+			style |= CBS_SIMPLE | CBS_DROPDOWNLIST;
+		else
+			style |= CBS_SIMPLE | CBS_DROPDOWN;
+	}
+
+	if (WindowControl::CreateControl(0, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false))
+	{
+		HWND hWnd = getHandle();
+		SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
+		for (auto item : items)
+			SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)item.c_str());
+		return true;
+	}
+	else
+		return false;
+
+}
 bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
 	u32 id, int numItems, const char** items, HFONT font)
 {

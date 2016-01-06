@@ -1,6 +1,7 @@
 #include "Suggestions.h"
 #include "Common Files/CommonFiles.h"
 #include <string>
+#include <vector>
 
 bool alphabetize(const std::string &first, const std::string &second)
 {
@@ -65,6 +66,12 @@ void Suggestions::ClearStrings()
 	strList.clear();
 	listSuggestions.ClearSel();
 	listSuggestions.ClearItems();
+}
+
+void Suggestions::AddStrings(const std::vector<std::string>& strings)
+{
+	for (auto string : strings)
+		strList.push_back(string);
 }
 
 void Suggestions::AddStrings(const char* strings[], int numStrings)

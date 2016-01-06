@@ -1,14 +1,20 @@
 #include "Constants.h"
 #include "CommonFiles.h"
 
-const HFONT defaultFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
+#include <Windows.h>
+
+#include <string>
+#include <tuple>
+#include <vector>
+
+const HFONT defaultFont = CreateFontA(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
 
 const double zooms[] =
 {
 	4.0, 3.0, 2.0, 1.5, 1.0, .66, .50, .33, .25, .10
 };
 
-const u32 onOffMenuItems[] =
+const std::vector<u32> onOffMenuItems =
 {
 	ID_FILE_CLOSE1, ID_FILE_SAVE1, ID_FILE_SAVEAS1,
 	ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_CUT1, ID_EDIT_COPY1, ID_EDIT_PASTE1, ID_EDIT_SELECTALL, ID_EDIT_DELETE, ID_EDIT_CLEARSELECTIONS,
@@ -24,9 +30,7 @@ const u32 onOffMenuItems[] =
 	ID_WINDOWS_CASCADE, ID_WINDOWS_TILEHORIZONTALLY, ID_WINDOWS_TILEVERTICALLY, ID_WINDOW_CLOSE
 };
 
-const int numOnOffMenuItems = sizeof(onOffMenuItems)/sizeof(const u32);
-
-const char* weaponNames[] = {
+const std::vector<std::string> weaponNames = {
 	"Gauss Rifle",
 	"Gauss Rifle",
 	"C-10 Concussion Rifle",
@@ -160,9 +164,7 @@ const char* weaponNames[] = {
 	"None"
 };
 
-const int numWeaponNames = sizeof(weaponNames)/sizeof(const char*);
-
-const char* upgradeNames[] = {
+const std::vector<std::string> upgradeNames = {
 	"Terran Infantry Armor",
 	"Terran Vehicle Plating",
 	"Terran Ship Plating",
@@ -224,11 +226,9 @@ const char* upgradeNames[] = {
 	"Unused Upgrade (58)",
 	"Unused Upgrade (59)",
 	"Special Upgrade (60)"
-}; 
-const int numUpgradeNames = sizeof(upgradeNames)/sizeof(const char*);
+};
 
-
-const char* techNames[] = {
+const std::vector<std::string> techNames = {
 	"Stim Packs",
 	"Lockdown",
 	"EMP Shockwave",
@@ -274,36 +274,39 @@ const char* techNames[] = {
 	"Unused Tech (42)",
 	"Unused Tech (43)",
 };
-const int numTechNames = sizeof(techNames)/sizeof(const char*);
+
+const std::vector<std::string> playerOwners = { "Unused", "Rescuable", "Computer", "Human", "Neutral" };
 
 
-const char* playerOwners[] = { "Unused", "Rescuable", "Computer", "Human", "Neutral" };
-const int numPlayerOwners = sizeof(playerOwners)/sizeof(const char*);
+const std::vector<std::string> playerRaces =
+{
+	"Zerg", "Terran", "Protoss", "Independent", "Neutral", "User Select", "Inactive", "Human"
+};
 
+const std::vector<std::string> playerColors =
+{
+	"Red", "Blue", "Teal", "Purple", "Orange", "Brown", "White", "Yellow", "Green", "Pale Yellow",
+	"Tan", "Dark Aqua", "Pale Green", "Blueish Gray", "Pale Yellow", "Cyan"
+};
 
-const char* playerRaces[] = { "Zerg", "Terran", "Protoss", "Independent", "Neutral", "User Select", "Inactive", "Human" };
-const int numPlayerRaces = sizeof(playerRaces)/sizeof(const char*);
+const std::vector<std::string> triggerPlayers = {
+	"Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8",
+	"Player 9", "Player 10", "Player 11", "Player 12", "None",
+	"Current Player", "Foes", "Allies", "Neutral Players", "All Players",
+	"Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
+	"Unused 3", "Unused 4", "Non AV Players", "ID:27" };
 
-
-const char* playerColors[] = { "Red", "Blue", "Teal", "Purple", "Orange", "Brown", "White", "Yellow", "Green", "Pale Yellow",
-							   "Tan", "Dark Aqua", "Pale Green", "Blueish Gray", "Pale Yellow", "Cyan" };
-const int numPlayerColors = sizeof(playerColors)/sizeof(const char*);
-
-const char* triggerPlayers[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8",
-								 "Player 9", "Player 10", "Player 11", "Player 12", "None",
-								 "Current Player", "Foes", "Allies", "Neutral Players", "All Players",
-								 "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
-								 "Unused 3", "Unused 4", "Non AV Players", "ID:27" };
-const int numTriggerPlayers = sizeof(triggerPlayers)/sizeof(const char*);
-
-const char* triggerConditions[] = { "Accumulate", "Always", "Bring", "Command", "Command The Least",
+const std::vector<std::string> triggerConditions =
+{
+	"Accumulate", "Always", "Bring", "Command", "Command The Least",
 	"Command The Least At", "Command The Most", "Command The Most At", "Countdown Timer", "Custom",
 	"Deaths", "Elapsed Time", "Highest Score", "Kill", "Least Kills", "Least Resources", "Lowest Score",
 	"Memory", "Most Kills", "Most Resources", "Never", "Opponents", "Score", "Switch"
 };
-const int numTriggerConditions = sizeof(triggerConditions)/sizeof(const char*);
 
-const char* triggerActions[] = { "Center View", "Comment", "Create Unit", "Create Unit with Properties",
+const std::vector<std::string> triggerActions =
+{
+	"Center View", "Comment", "Create Unit", "Create Unit with Properties",
 	"Defeat", "Display Text Message", "Draw", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
 	"Leader Board Control at Location", "Leader Board Control", "Leader Board Greed", "Leader Board Kills",
 	"Leader Board Points", "Leader Board Resources", "Leader Board Goal Control At Location",
@@ -316,48 +319,96 @@ const char* triggerActions[] = { "Center View", "Comment", "Create Unit", "Creat
 	"Set Score", "Set Switch", "Talking Portrait", "Transmission", "Unmute Unit Speech", "Unpause Game", "Unpause Timer",
 	"Victory", "Wait"
 };
-const int numTriggerActions = sizeof(triggerActions) / sizeof(const char*);
 
-const char* triggerScores[] = { "Buildings", "Custom", "Kills", "Kills and Razings", "Razings",
-								"Total", "Units", "Units and Buildings" };
-const int numTriggerScores = sizeof(triggerScores) / sizeof(const char*);
+const std::vector<std::string> triggerScores =
+{
+	"Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
+	"Total", "Units", "Units and Buildings"
+};
 
-const COLORREF stringColors[] = { RGB(184, 184, 232), RGB(184, 184, 232), RGB(220, 220,  60), RGB(255, 255, 255),
-								  RGB(132, 116, 116), RGB(200,  24,  24), RGB( 16, 252,  24), RGB(244,   4,   4),
-								  RGB( 16, 252,  24), RGB( 16, 252,  24), RGB( 12,  72, 204), RGB( 44, 180, 148),
-								  RGB(132,  64, 156), RGB(248, 140,  20), RGB( 16, 252,  24), RGB( 16, 252,  24),
-								  RGB( 16, 252,  24), RGB(112,  48,  20), RGB(204, 224, 208), RGB(252, 252,  56),
-								  RGB(  8, 128,   8), RGB(252, 252, 124), RGB(184, 184, 232), RGB(236, 196, 176),
-								  RGB( 64, 104, 212), RGB(116, 164, 124), RGB(144, 144, 184), RGB(  0, 228, 252) };
-const char* stringColorStrings[] = { " - Use Default", " - Cyan", " - Yellow", " - White", " - Grey", " - Red", " - Green", " - Red (p1)",
-									 " - Invisible", " - Remove beyond", " - Blue (p2)", " - Teal (p3)", " - Purple (p4)", " - Orange (p5)",
-									 " - Right Align", " - Center Align", " - Invisible", " - Brown (p6)", " - White (p7)", " - Yellow (p8)",
-									 " - Green (p9)", " - Bright Yellow (p10)", " - Cyan", " - Pinkish (p11)", " - Dark Cyan (p12)",
-									 " - Greygreen", " - Bluegrey", " - Turquoise" };
-const char* stringColorPrefixes[] = { "<01><1>", "<02><2>", "<03><3>", "<04><4>", "<05><5>", "<06><6>", "<07><7>", "<08><8>",
-									  "<0B>", "<0C>", "<0E>", "<0F>", "<10>", "<11>", "<12><R>", "<13><C>", "<14>", "<15>",
-									  "<16>", "<17>", "<18>", "<19>", "<1A>", "<1B>", "<1C>", "<1D>", "<1E>", "<1F>" };
+const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors =
+{
+	std::make_tuple(RGB(184, 184, 232),	" - Use Default",			"<01><1>"),
+	std::make_tuple(RGB(184, 184, 232),	" - Cyan",					"<02><2>"),
+	std::make_tuple(RGB(220, 220, 60),	" - Yellow",				"<03><3>"),
+	std::make_tuple(RGB(255, 255, 255),	" - White",					"<04><4>"),
+	std::make_tuple(RGB(132, 116, 116),	" - Grey",					"<05><5>"),
+	std::make_tuple(RGB(200, 24, 24),	" - Red",					"<06><6>"),
+	std::make_tuple(RGB(16, 252, 24),	" - Green",					"<07><7>"),
+	std::make_tuple(RGB(244, 4, 4),		" - Red (p1)",				"<08><8>"),
+	std::make_tuple(RGB(16, 252,  24),	" - Invisible",				"<0B>"),
+	std::make_tuple(RGB(16, 252,  24),	" - Remove beyond",			"<0C>"),
+	std::make_tuple(RGB(12,  72, 204),	" - Blue (p2)",				"<0E>"),
+	std::make_tuple(RGB(44, 180, 148),	" - Teal (p3)",				"<0F>"),
+	std::make_tuple(RGB(132,  64, 156),	" - Purple (p4)",			"<10>"),
+	std::make_tuple(RGB(248, 140,  20),	" - Orange (p5)",			"<11>"),
+	std::make_tuple(RGB(16, 252,  24),	" - Right Align",			"<12><R>"),
+	std::make_tuple(RGB(16, 252,  24),	" - Center Align",			"<13><C>"),
+	std::make_tuple(RGB(16, 252,  24),	" - Invisible",				"<14>"),
+	std::make_tuple(RGB(112,  48,  20),	" - Brown (p6)",			"<15>"),
+	std::make_tuple(RGB(204, 224, 208),	" - White (p7)",			"<16>"),
+	std::make_tuple(RGB(252, 252,  56),	" - Yellow (p8)",			"<17>"),
+	std::make_tuple(RGB(8, 128,   8),	" - Green (p9)",			"<18>"),
+	std::make_tuple(RGB(252, 252, 124),	" - Bright Yellow (p10)",	"<19>"),
+	std::make_tuple(RGB(184, 184, 232),	" - Cyan",					"<1A>"),
+	std::make_tuple(RGB(236, 196, 176),	" - Pinkish (p11)",			"<1B>"),
+	std::make_tuple(RGB(64, 104, 212),	" - Dark Cyan (p12)",		"<1C>"),
+	std::make_tuple(RGB(116, 164, 124),	" - Greygreen",				"<1D>"),
+	std::make_tuple(RGB(144, 144, 184),	" - Bluegrey",				"<1E>"),
+	std::make_tuple(RGB(0, 228, 252),	" - Turquoise",				"<1F>")
+};
 
-const char* tilesetNames[] = { "Badlands", "Space Platform", "Installation", "Ash World", "Jungle World", "Desert World", "Ice World", "Twilight World" };
+const std::vector<std::string> tilesetNames =
+{
+	"Badlands", "Space Platform", "Installation", "Ash World", "Jungle World", "Desert World", "Ice World", "Twilight World"
+};
 
-const char* badlandsInitTerrain[] = { "Dirt", "Mud", "High Dirt", "Water", "Grass", "High Grass", "Structure", "Asphalt", "Rocky Ground", "Null Terrain" };
-const char* spaceInitTerrain[] = { "Space", "Low Platform", "Rusty Pit", "Platform", "Dark Platform", "Plating", "Solar Array", "High Platform", "High Plating", "Elevated Catwalk", "Null Terrain" };
-const char* installInitTerrain[] = { "Substructure", "Floor", "Roof", "Substructure Plating", "Plating", "Substructure Panels", "Bottomless Pit", "Null Terrain" };
-const char* ashInitTerrain[] = { "Magma", "Dirt", "Lava", "Shale", "Broken Rock", "High Dirt", "High Lava", "High Shale", "Null Terrain" };
-const char* jungInitTerrain[] = { "Water", "Dirt", "Mud", "Jungle", "Rocky Ground", "Ruins", "Raised Jungle", "Temple", "High Dirt", "High Jungle", "High Ruins", "High Raised Jungle", "High Temple", "Null Terrain" };
-const char* desertInitTerrain[] = { "Tar", "Dirt", "Dried Mud", "Sand Dunes", "Rocky Ground", "Crags", "Sandy Sunken Pit", "Compound", "High Dirt", "High Sand Dunes", "High Crags", "High Sandy Sunken Pit", "High Compound", "Null Terrain" };
-const char* iceInitTerrain[] = { "Ice", "Snow", "Moguls", "Dirt", "Rocky Snow", "Grass", "Water", "Outpost", "High Snow", "High Dirt", "High Grass", "High Water", "High Outpost", "Null Terrain" };
-const char* twilightInitTerrain[] = { "Water", "Dirt", "Mud", "Crushed Rock", "Crevices", "Flagstones", "Sunken Ground", "Basilica", "High Dirt", "High Crushed Rock", "High Flagstones", "High Sunken Ground", "High Basilica", "Null Terrain" };
-const char** initTerrains[] = { badlandsInitTerrain, spaceInitTerrain, installInitTerrain, ashInitTerrain, jungInitTerrain, desertInitTerrain, iceInitTerrain, twilightInitTerrain };
-const int numBadlandsInitTerrain = 10;
-const int numSpaceInitTerrain = 11;
-const int numInstallationInitTerrain = 8;
-const int numAshInitTerrain = 9;
-const int numJungInitTerrain = 14;
-const int numDesertInitTerrain = 14;
-const int numIceInitTerrain = 14;
-const int numTwilightInitTerrain = 14;
+const std::vector<std::string> badlandsInitTerrain =
+{
+	"Dirt", "Mud", "High Dirt", "Water", "Grass", "High Grass", "Structure", "Asphalt", "Rocky Ground", "Null Terrain"
+};
+const std::vector<std::string> spaceInitTerrain =
+{
+	"Space", "Low Platform", "Rusty Pit", "Platform", "Dark Platform", "Plating",
+	"Solar Array", "High Platform", "High Plating", "Elevated Catwalk", "Null Terrain"
+};
+const std::vector<std::string> installInitTerrain =
+{
+	"Substructure", "Floor", "Roof", "Substructure Plating", "Plating", "Substructure Panels", "Bottomless Pit", "Null Terrain"
+};
+const std::vector<std::string> ashInitTerrain =
+{
+	"Magma", "Dirt", "Lava", "Shale", "Broken Rock", "High Dirt", "High Lava", "High Shale", "Null Terrain"
+};
+const std::vector<std::string> jungInitTerrain =
+{
+	"Water", "Dirt", "Mud", "Jungle", "Rocky Ground", "Ruins", "Raised Jungle",
+	"Temple", "High Dirt", "High Jungle", "High Ruins", "High Raised Jungle", "High Temple", "Null Terrain"
+};
+const std::vector<std::string> desertInitTerrain =
+{
+	"Tar", "Dirt", "Dried Mud", "Sand Dunes", "Rocky Ground", "Crags", "Sandy Sunken Pit",
+	"Compound", "High Dirt", "High Sand Dunes", "High Crags", "High Sandy Sunken Pit", "High Compound", "Null Terrain"
+};
+const std::vector<std::string> iceInitTerrain =
+{
+	"Ice", "Snow", "Moguls", "Dirt", "Rocky Snow", "Grass", "Water", "Outpost",
+	"High Snow", "High Dirt", "High Grass", "High Water", "High Outpost", "Null Terrain"
+};
+const std::vector<std::string> twilightInitTerrain =
+{
+	"Water", "Dirt", "Mud", "Crushed Rock", "Crevices", "Flagstones", "Sunken Ground",
+	"Basilica", "High Dirt", "High Crushed Rock", "High Flagstones", "High Sunken Ground", "High Basilica", "Null Terrain"
+};
 
-const int numTilesetInitTerrains[] = { numBadlandsInitTerrain, numSpaceInitTerrain, numInstallationInitTerrain,
-									   numAshInitTerrain, numJungInitTerrain, numDesertInitTerrain,
-									   numIceInitTerrain, numTwilightInitTerrain };
+const std::vector<std::vector<std::string>> initTerrains =
+{
+	badlandsInitTerrain,
+	spaceInitTerrain,
+	installInitTerrain,
+	ashInitTerrain,
+	jungInitTerrain,
+	desertInitTerrain,
+	iceInitTerrain,
+	twilightInitTerrain
+};
