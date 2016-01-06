@@ -73,7 +73,7 @@ void Suggestions::AddStrings(const char* strings[], int numStrings)
 		strList.push_back(std::string(strings[i]));
 }
 
-void Suggestions::AddString(std::string &string)
+void Suggestions::AddString(const std::string &string)
 {
 	strList.push_back(string);
 }

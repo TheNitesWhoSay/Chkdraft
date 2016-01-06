@@ -726,7 +726,7 @@ bool Scenario::stringExists(u32 stringNum)
 		     stringNum < numStrSlots() );
 }
 
-bool Scenario::stringExists(RawString &str, u32& stringNum)
+bool Scenario::stringExists(const RawString &str, u32& stringNum)
 {
 	std::vector<StringTableNode> strList;
 	addAllUsedStrings(strList, true, true);
@@ -743,13 +743,13 @@ bool Scenario::stringExists(RawString &str, u32& stringNum)
 	return false;
 }
 
-bool Scenario::stringExists(ChkdString &str, u32 &stringNum)
+bool Scenario::stringExists(const ChkdString &str, u32 &stringNum)
 {
 	RawString rawStr;
 	return ParseChkdStr(str, rawStr) && stringExists(rawStr, stringNum);
 }
 
-bool Scenario::stringExists(RawString &str, u32& stringNum, bool extended)
+bool Scenario::stringExists(const RawString &str, u32& stringNum, bool extended)
 {
 	std::vector<StringTableNode> strList;
 	if ( extended )
@@ -769,7 +769,7 @@ bool Scenario::stringExists(RawString &str, u32& stringNum, bool extended)
 	return false;
 }
 
-bool Scenario::stringExists(RawString &str, u32& stringNum, std::vector<StringTableNode> &strList)
+bool Scenario::stringExists(const RawString &str, u32& stringNum, std::vector<StringTableNode> &strList)
 {
 	for ( auto &existingString : strList )
 	{
@@ -1414,7 +1414,7 @@ void Scenario::forceDeleteString(u32 stringNum)
 }
 
 template <typename numType> // Strings can, and can only be u16 or u32
-bool Scenario::addString(RawString &str, numType &stringNum, bool extended)
+bool Scenario::addString(const RawString &str, numType &stringNum, bool extended)
 {
 	u32 newStringNum;
 	if ( stringExists(str, newStringNum, extended) )
@@ -1507,18 +1507,18 @@ bool Scenario::addString(RawString &str, numType &stringNum, bool extended)
 	
 	return false;
 }
-template bool Scenario::addString<u16>(RawString &str, u16 &stringNum, bool extended);
-template bool Scenario::addString<u32>(RawString &str, u32 &stringNum, bool extended);
+template bool Scenario::addString<u16>(const RawString &str, u16 &stringNum, bool extended);
+template bool Scenario::addString<u32>(const RawString &str, u32 &stringNum, bool extended);
 
 template <typename numType> // Strings can, and can only be u16 or u32
-bool Scenario::addString(ChkdString &str, numType &stringNum, bool extended)
+bool Scenario::addString(const ChkdString &str, numType &stringNum, bool extended)
 {
 	RawString rawString;
 	return ParseChkdStr(str, rawString) &&
 		addString<numType>(rawString, stringNum, extended);
 }
-template bool Scenario::addString<u16>(ChkdString &str, u16 &stringNum, bool extended);
-template bool Scenario::addString<u32>(ChkdString &str, u32 &stringNum, bool extended);
+template bool Scenario::addString<u16>(const ChkdString &str, u16 &stringNum, bool extended);
+template bool Scenario::addString<u32>(const ChkdString &str, u32 &stringNum, bool extended);
 
 bool Scenario::addNonExistentString(RawString &str, u32& stringNum, bool extended, std::vector<StringTableNode> &strList)
 {

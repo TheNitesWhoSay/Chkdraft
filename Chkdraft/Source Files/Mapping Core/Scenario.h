@@ -208,10 +208,10 @@ class Scenario
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
 					bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string
 					bool stringExists(u32 stringNum); // Checks if a string is associated with this stringNum
-					bool stringExists(RawString &str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
-					bool stringExists(ChkdString &str, u32 &stringNum);
-					bool stringExists(RawString &str, u32& stringNum, bool extended); // Checks if string exists in the same table
-					bool stringExists(RawString &str, u32& stringNum, std::vector<StringTableNode> &strList);
+					bool stringExists(const RawString &str, u32& stringNum); // Checks if string exists, returns true and stringNum if so
+					bool stringExists(const ChkdString &str, u32 &stringNum);
+					bool stringExists(const RawString &str, u32& stringNum, bool extended); // Checks if string exists in the same table
+					bool stringExists(const RawString &str, u32& stringNum, std::vector<StringTableNode> &strList);
 					bool FindDifference(ChkdString &str, u32& stringNum); // Checks if there's a difference between str and string at stringNum
 					u32 extendedToRegularStr(u32 stringNum); // Returns string number for extended section
 
@@ -233,9 +233,9 @@ class Scenario
 					/** Attempt to associate a stringNum with a string
 						Returns true and stringNum if string exists or was created successfully */
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool addString(RawString &str, numType &stringNum, bool extended);
+					bool addString(const RawString &str, numType &stringNum, bool extended);
 					template <typename numType> // Strings can, and can only be u16 or u32
-					bool addString(ChkdString &str, numType &stringNum, bool extended);
+					bool addString(const ChkdString &str, numType &stringNum, bool extended);
 
 					/** Attempts to assocate a stringNum with a string that has
 						already been confirmed to not exist in the string section
