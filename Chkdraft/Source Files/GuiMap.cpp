@@ -406,8 +406,7 @@ void GuiMap::refreshScenario()
 		chkd.mapSettingsWindow.RefreshWindow();
 	if ( chkd.textTrigWindow.getHandle() != NULL )
 		chkd.textTrigWindow.RefreshWindow();
-	if ( chkd.trigEditorWindow.getHandle() != NULL )
-		chkd.trigEditorWindow.RefreshWindow();
+	chkd.trigEditorWindow.RefreshWindow();
 
 	Redraw(true);
 }

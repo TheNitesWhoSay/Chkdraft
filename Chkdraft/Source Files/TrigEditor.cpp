@@ -36,6 +36,7 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
 		ChangeTab(currTab);
 		return false;
 	}
+	RefreshWindow();
 }
 
 bool TrigEditorWindow::DestroyThis()
@@ -71,7 +72,7 @@ void TrigEditorWindow::RefreshWindow()
 	triggersWindow.RefreshWindow(false);
 	templatesWindow.RefreshWindow();
 	countersWindow.RefreshWindow();
-	cuwpsWindow.RefreshWindow();
+	cuwpsWindow.RefreshWindow(true);
 	switchesWindow.RefreshWindow();
 }
 

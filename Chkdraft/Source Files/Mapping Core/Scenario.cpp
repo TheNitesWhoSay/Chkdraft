@@ -2939,7 +2939,7 @@ bool Scenario::moveTrigger(u32 triggerId, u32 destId)
 
 bool Scenario::GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct)
 {
-	return IsCuwpUsed(cuwpIndex) && UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
+	return UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
 }
 
 bool Scenario::AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex)
@@ -2960,6 +2960,11 @@ bool Scenario::AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex)
 	return false;
 }
 
+bool Scenario::ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex)
+{
+	return UPRP().replace<ChkCuwp>((u32)cuwpIndex*sizeof(ChkCuwp), propStruct);
+}
+
 bool Scenario::IsCuwpUsed(u8 cuwpIndex)
 {
 	return UPUS().get<u8>(cuwpIndex) != 0;
@@ -2971,6 +2976,22 @@ bool Scenario::SetCuwpUsed(u8 cuwpIndex, bool isUsed)
 		return UPUS().replace<u8>(cuwpIndex, 1);
 	else
 		return UPUS().replace<u8>(cuwpIndex, 0);
+}
+
+int Scenario::CuwpCapacity()
+{
+	return 64;
+}
+
+int Scenario::NumUsedCuwps()
+{
+	int numUsedCuwps = 0;
+	for ( u8 i = 0; i < 64; i++ )
+	{
+		if ( IsCuwpUsed(i) )
+			numUsedCuwps++;
+	}
+	return numUsedCuwps;
 }
 
 bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)

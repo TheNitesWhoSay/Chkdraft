@@ -12,7 +12,7 @@ ListBoxControl::~ListBoxControl()
 		itemsToAdd.pop();
 }
 
-bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, u32 id)
+bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, u32 id)
 {
 	u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
 	if ( ownerDrawn && multiColumn )
@@ -21,6 +21,9 @@ bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 heigh
 		style |= LBS_OWNERDRAWVARIABLE|WS_VSCROLL;
 	else if ( multiColumn )
 		style |= LBS_MULTICOLUMN|LBS_EXTENDEDSEL;
+
+	if ( scrollBar )
+		style |= WS_VSCROLL;
 
 	return WindowControl::CreateControl( WS_EX_CLIENTEDGE|LVS_EX_DOUBLEBUFFER, "LISTBOX", NULL, style,
 										 x, y, width, height, hParent, (HMENU)id, true );

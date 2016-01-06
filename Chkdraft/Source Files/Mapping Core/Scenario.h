@@ -107,8 +107,11 @@ class Scenario
 
 /*	   CUWPs	*/	bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
 					bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
+					bool ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex);
 					bool IsCuwpUsed(u8 cuwpIndex);
 					bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
+					int CuwpCapacity();
+					int NumUsedCuwps();
 
 /*	   WAVs		*/	bool GetWav(u16 wavIndex, u32 &outStringIndex);
 					bool AddWav(u32 stringIndex);

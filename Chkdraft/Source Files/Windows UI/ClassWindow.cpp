@@ -96,6 +96,36 @@ LRESULT ClassWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 	return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
 }
 
+void ClassWindow::NotifyTreeSelChanged(LPARAM newValue)
+{
+
+}
+
+void ClassWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassWindow::NotifyEditFocusLost()
+{
+
+}
+
+void ClassWindow::NotifyWindowHidden()
+{
+
+}
+
+void ClassWindow::NotifyWindowShown()
+{
+
+}
+
 LRESULT ClassWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	switch ( windowType )
@@ -148,10 +178,45 @@ LRESULT CALLBACK ClassWindow::SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wPar
 
 LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	ClassWindow* classWindow = (ClassWindow*)GetWindowLong(hWnd, GWL_USERDATA);
 	switch ( msg )
 	{
-		case WM_NOTIFY: return ((ClassWindow*)GetWindowLong(hWnd, GWL_USERDATA))->Notify(hWnd, wParam, (NMHDR*)lParam); break;
-		case WM_COMMAND: return ((ClassWindow*)GetWindowLong(hWnd, GWL_USERDATA))->Command(hWnd, wParam, lParam); break;
+		case WM_SHOWWINDOW:
+		{
+			if ( (BOOL)wParam == TRUE )
+				classWindow->NotifyWindowShown();
+			else
+			{
+				classWindow->NotifyWindowHidden();
+				classWindow->NotifyEditFocusLost();
+			}
+		}
+		break;
+
+		case WM_NOTIFY:
+		{
+			switch ( ((NMHDR*)lParam)->code )
+			{
+				case TVN_SELCHANGED:
+					if ( ((NMTREEVIEW*)lParam)->action == TVN_SELCHANGED )
+						classWindow->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
+					break;
+			}
+			return classWindow->Notify(hWnd, wParam, (NMHDR*)lParam);
+		}
+		break;
+
+		case WM_COMMAND:
+		{
+			switch ( HIWORD(wParam) )
+			{
+				case BN_CLICKED: classWindow->NotifyButtonClicked(LOWORD(wParam), (HWND)lParam); break;
+				case EN_UPDATE: classWindow->NotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+				case EN_KILLFOCUS: classWindow->NotifyEditFocusLost(); break;
+			}
+			return classWindow->Command(hWnd, wParam, lParam);
+		}
+		break;
 	}
-	return ((ClassWindow*)GetWindowLong(hWnd, GWL_USERDATA))->WndProc(hWnd, msg, wParam, lParam);
+	return classWindow->WndProc(hWnd, msg, wParam, lParam);
 }

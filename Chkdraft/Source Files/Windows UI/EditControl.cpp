@@ -2,7 +2,7 @@
 #include <iostream>
 #include <type_traits>
 
-EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(true)
+EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(false)
 {
 
 }

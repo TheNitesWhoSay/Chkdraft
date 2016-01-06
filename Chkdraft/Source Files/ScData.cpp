@@ -527,15 +527,15 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 	buffer rawDat;
 	if ( FileToBuffer(hStarDat, hBrooDat, hPatchRt, filename, rawDat) )
 	{
-		if ( rawDat.get<u8>(PCX_BIT_COUNT) != 8 )
+		if ( rawDat.get<u8>((u32)PCX::DataLocs::BitCount) != 8 )
 		{
 			Error("Unsupported PCX Format");
 			return false;
 		}
 
 		u8* pal;
-		u8 ncp = rawDat.get<u8>(PCX_NCP);
-		u16 nbs = rawDat.get<u16>(PCX_NBS);
+		u8 ncp = rawDat.get<u8>((u32)PCX::DataLocs::Ncp);
+		u16 nbs = rawDat.get<u16>((u32)PCX::DataLocs::Nbs);
 		u32 palStart = rawDat.size()-768;
 
 		if ( !rawDat.getPtr(pal, palStart, 768) )
@@ -544,7 +544,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 			return false;
 		}
 
-		u32 pos = PCX_DATA,
+		u32 pos = (u32)PCX::DataLocs::Data,
 			pixel = 0;
 
 		while ( pixel < ((u32)ncp)*((u32)nbs) )
@@ -633,7 +633,7 @@ bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)
 	AIEntry aiEntry = {};
 	if ( GetAiEntry(aiNum, aiEntry) )
 	{
-		outAiId = aiEntry.id;
+		outAiId = aiEntry.identifier;
 		return true;
 	}
 	return false;
@@ -662,7 +662,7 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
 	AIEntry aiEntry = {};
 	if ( GetAiEntry(aiNum, aiEntry) )
 	{
-		outId = aiEntry.id;
+		outId = aiEntry.identifier;
 		if ( tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName) )
 			return true;
 	}
