@@ -1,7 +1,7 @@
 #ifndef PRESERVEDUNITSTATS_H
 #define PRESERVEDUNITSTATS_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include "Selections.h"
 
 class PreservedUnitStats

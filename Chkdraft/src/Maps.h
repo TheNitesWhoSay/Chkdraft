@@ -1,6 +1,6 @@
 #ifndef MAPS_H
 #define MAPS_H
-#include "Common Files/CommonFiles.h"
+#include "CommonFiles/CommonFiles.h"
 #include "GuiMap.h"
 #include <map>
 

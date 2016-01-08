@@ -1,7 +1,7 @@
 #ifndef TEXTTRIGGENERATOR_H
 #define TEXTTRIGGENERATOR_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include <vector>
 #include <string>
 #include <map>

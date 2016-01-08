@@ -1,7 +1,7 @@
 #ifndef SCDATA_H
 #define SCDATA_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include <map>
 
 class CV5Entry

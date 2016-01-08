@@ -1,8 +1,8 @@
 #ifndef ENTERPASSWORD_H
 #define ENTERPASSWORD_H
-#include "Windows UI/WindowsUI.h"
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 
 class EnterPasswordDialog : public ClassDialog
 {

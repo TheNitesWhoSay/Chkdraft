@@ -1,8 +1,8 @@
 #ifndef MAPSETTINGS_H
 #define MAPSETTINGS_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
 #include "MapProperties.h"
 #include "Forces.h"
 #include "UnitSettings.h"

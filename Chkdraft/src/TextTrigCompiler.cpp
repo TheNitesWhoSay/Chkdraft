@@ -1,5 +1,5 @@
 #include "TextTrigCompiler.h"
-#include "Mapping Core/MappingCore.h"
+#include "MappingCore/MappingCore.h"
 #include <cstdio>
 #include <cstring>
 #include <exception>

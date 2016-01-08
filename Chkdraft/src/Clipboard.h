@@ -1,7 +1,7 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include "Selections.h"
 #include "Undo.h"
 #include "ScData.h"

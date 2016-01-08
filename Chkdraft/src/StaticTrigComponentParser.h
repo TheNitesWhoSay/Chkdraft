@@ -1,6 +1,6 @@
 #ifndef STATICTRIGCOMPONENTPARSER_H
 #define STATICTRIGCOMPONENTPARSER_H
-#include "Common Files/CommonFiles.h"
+#include "CommonFiles/CommonFiles.h"
 
 class StaticTrigComponentParser
 {

@@ -1,7 +1,7 @@
 #ifndef TERRAINPALETTE_H
 #define TERRAINPALETTE_H
-#include "Common Files/CommonFiles.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "WindowsUI/WindowsUI.h"
 
 class TerrainPaletteWindow : public ClassDialog
 {

@@ -1,5 +1,5 @@
 #include "StaticTrigComponentParser.h"
-#include "Mapping Core/MappingCore.h"
+#include "MappingCore/MappingCore.h"
 #include <exception>
 #include <string>
 

@@ -1,7 +1,7 @@
 #ifndef TEXTTRIGCOMPILER_H
 #define TEXTTRIGCOMPILER_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include "StaticTrigComponentParser.h"
 #include "ScData.h"
 #include <unordered_map>

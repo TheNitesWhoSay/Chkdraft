@@ -1,6 +1,6 @@
 #ifndef NEWMAP_H
 #define NEWMAP_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 class NewMap : public ClassDialog
 {

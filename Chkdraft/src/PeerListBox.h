@@ -1,6 +1,6 @@
 #ifndef PEERLISTBOX_H
 #define PEERLISTBOX_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 /** A simple list box extension that allows certain
 	messages (only WM_MOUSESCROLL at the moment) to

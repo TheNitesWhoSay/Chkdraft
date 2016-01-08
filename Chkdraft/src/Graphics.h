@@ -1,6 +1,6 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
-#include "Common Files/CommonFiles.h"
+#include "CommonFiles/CommonFiles.h"
 #include "Clipboard.h"
 #include "ScData.h"
 #include <string>

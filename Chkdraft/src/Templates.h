@@ -1,8 +1,8 @@
 #ifndef TEMPLATES_H
 #define TEMPLATES_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
 
 class TemplatesWindow : public ClassWindow
 {

@@ -2,6 +2,7 @@
 #include "Basics.h"
 #include <iostream>
 #include <utility>
+#include <cstring>
 #define DEFAULT_SIZE_MULTIPLIER 1.2
 
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY

@@ -1,6 +1,6 @@
 #ifndef MINIMAP_H
 #define MINIMAP_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 class MiniMap : public ClassWindow
 {

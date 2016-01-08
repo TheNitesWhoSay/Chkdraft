@@ -1,6 +1,6 @@
 #include "TrigEditor.h"
 #include "Chkdraft.h"
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 enum ID {
 	TAB_TRIGGERS = 0,

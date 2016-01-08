@@ -1,8 +1,8 @@
 #ifndef STRINGEDITOR_H
 #define STRINGEDITOR_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
 #include "StringGuide.h"
 #include "StringPreview.h"
 

@@ -1,8 +1,8 @@
 #ifndef MOVETODIALOG_H
 #define MOVETODIALOG_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
 
 template <typename indexType> // Allowed types: u8, s8, u16, s16, u32, s32/int
 class MoveToDialog : public ClassDialog

@@ -1,6 +1,6 @@
 #ifndef LOCATIONTREE_H
 #define LOCATIONTREE_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 class LocationTree : public TreeViewControl
 {

@@ -1,7 +1,7 @@
 #ifndef GUIMAP_H
 #define GUIMAP_H
-#include "Common Files/CommonFiles.h"
-#include "Windows UI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
+#include "WindowsUI/WindowsUI.h"
 #include "Clipboard.h"
 #include "Graphics.h"
 #include "Undo.h"

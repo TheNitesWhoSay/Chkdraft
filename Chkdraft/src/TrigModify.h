@@ -1,6 +1,6 @@
 #ifndef TRIGMODIFY_H
 #define TRIGMODIFY_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 #include "TrigGeneral.h"
 #include "TrigPlayers.h"
 #include "TrigConditions.h"

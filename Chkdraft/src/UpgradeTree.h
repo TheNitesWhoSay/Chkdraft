@@ -1,6 +1,6 @@
 #ifndef UPGRADETREE_H
 #define UPGRADETREE_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 class UpgradeTree : public TreeViewControl
 {

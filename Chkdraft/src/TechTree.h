@@ -1,6 +1,6 @@
 #ifndef TECHTREE_H
 #define TECHTREE_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 
 class TechTree : public TreeViewControl
 {

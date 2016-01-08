@@ -2,6 +2,7 @@
 
 #include <list>
 #include <string>
+#include <algorithm>
 
 std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 

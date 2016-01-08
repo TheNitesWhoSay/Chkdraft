@@ -1,7 +1,7 @@
 #ifndef CHKDRAFT_H
 #define CHKDRAFT_H
-#include "Windows UI/WindowsUI.h"
-#include "Common Files/CommonFiles.h"
+#include "WindowsUI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
 #include "DialogWindows.h"
 #include "ChkdPlugins.h"
 #include "MainToolbar.h"

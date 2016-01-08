@@ -1,6 +1,6 @@
 #ifndef MAINPLOT_H
 #define MAINPLOT_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 #include "LeftBar.h"
 
 class MainPlot : public ClassWindow

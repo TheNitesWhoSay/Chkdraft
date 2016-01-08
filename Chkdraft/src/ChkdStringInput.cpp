@@ -1,5 +1,5 @@
 #include "ChkdStringInput.h"
-#include "Common Files/CommonFiles.h"
+#include "CommonFiles/CommonFiles.h"
 
 bool ChkdStringInputDialog::GetChkdString(ChkdString &str, const ChkdString &initialString, HWND hParent)
 {

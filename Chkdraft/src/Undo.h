@@ -1,7 +1,7 @@
 #ifndef UNDO_H
 #define UNDO_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 #include "Reversibles.h"
 #include "Selections.h"
 #include <map>

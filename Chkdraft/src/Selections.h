@@ -1,7 +1,7 @@
 #ifndef SELECTIONS_H
 #define SELECTIONS_H
-#include "Common Files/CommonFiles.h"
-#include "Mapping Core/MappingCore.h"
+#include "CommonFiles/CommonFiles.h"
+#include "MappingCore/MappingCore.h"
 
 #define FLAG_SWAPPED BIT_15
 #define FLAG_MOVED BIT_15

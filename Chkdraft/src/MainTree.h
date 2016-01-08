@@ -1,7 +1,7 @@
 #ifndef MAINTREE_H
 #define MAINTREE_H
-#include "Windows UI/WindowsUI.h"
-#include "Mapping Core/MappingCore.h"
+#include "WindowsUI/WindowsUI.h"
+#include "MappingCore/MappingCore.h"
 #include "UnitTree.h"
 #include "LocationTree.h"
 

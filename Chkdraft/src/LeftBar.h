@@ -1,6 +1,6 @@
 #ifndef LEFTBAR_H
 #define LEFTBAR_H
-#include "Windows UI/WindowsUI.h"
+#include "WindowsUI/WindowsUI.h"
 #include "MainTree.h"
 #include "MiniMap.h"
 

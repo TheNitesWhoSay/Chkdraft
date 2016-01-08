@@ -1,7 +1,7 @@
 #ifndef MAINTOOLBAR_H
 #define MAINTOOLBAR_H
-#include "Windows UI/WindowsUI.h"
-#include "Common Files/CommonFiles.h"
+#include "WindowsUI/WindowsUI.h"
+#include "CommonFiles/CommonFiles.h"
 #include "PlayerDropdown.h"
 
 class MainToolbar : public ToolbarControl
