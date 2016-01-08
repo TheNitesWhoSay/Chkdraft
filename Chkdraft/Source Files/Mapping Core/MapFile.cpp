@@ -88,7 +88,7 @@ bool MapFile::SaveFile(bool SaveAs)
 			{
 				TYPE().overwrite("RAWB", 4);
 				VER ().overwrite("Í\0", 2);
-				RemoveSection(&IVER());
+				RemoveSection(SectionId::IVER);
 				IVE2().overwrite("\13\0", 2);
 
 				if ( MRGN().size() < 5100 ) // If there's < 255 locations

@@ -25,33 +25,35 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
 	if ( !LoadCompiler(chk, scData) )
 		return false;
 
-	buffer output("TxOp");
-
-	CleanText(text);
-	char error[MAX_ERROR_MESSAGE_SIZE];
-
-	if ( ParseTriggers(text, output, error) )
+	try
 	{
-		if ( BuildNewStringTable(chk) )
+		CleanText(text);
+		Section TRIG(new buffer((u32)SectionId::TRIG));
+		char error[MAX_ERROR_MESSAGE_SIZE];
+
+		if ( ParseTriggers(text, *TRIG, error) )
 		{
-			if ( !chk->TRIG().exists() )
+			if ( BuildNewStringTable(chk) )
 			{
-				output.setTitle("TRIG");
-				if ( chk->AddSection(output) )
+				if ( !chk->TRIG().exists() )
+				{
+					if ( chk->AddSection(TRIG) )
+						return true;
+					else
+						std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+				}
+				else if ( chk->TRIG().takeAllData(*TRIG) )
 					return true;
 				else
-					std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+					std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
 			}
-			else if ( chk->TRIG().takeAllData(output) )
-				return true;
 			else
-				std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
+				std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 		}
-		else
-			std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
-	}
 
-	MessageBox(NULL, error, "Error!", MB_OK|MB_ICONEXCLAMATION);
+		MessageBox(NULL, error, "Error!", MB_OK | MB_ICONEXCLAMATION);
+	}
+	catch ( std::bad_alloc ) { MessageBox(NULL, "Compilation aborted due to low memory.", "Error!", MB_OK | MB_ICONEXCLAMATION); }
 	return false;
 }
 
@@ -66,47 +68,49 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 	if ( !LoadCompiler(chk, scData) )
 		return false;
 
-	buffer output("TxOp");
-
-	CleanText(text);
-	char error[MAX_ERROR_MESSAGE_SIZE];
-
-	if ( ParseTriggers(text, output, error) )
+	try
 	{
-		if ( BuildNewStringTable(chk) )
-		{
-			if ( !chk->TRIG().exists() )
-			{
-				output.setTitle("TRIG");
-				if ( chk->AddSection(output) )
-					return true;
-				else
-					std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
-			}
-			else
-			{
-				Trigger* trig;
-				if ( output.getPtr<Trigger>(trig, 0, TRIG_STRUCT_SIZE) )
-				{
-					trigger->internalData = trig->internalData;
-					for ( u8 i = 0; i < NUM_TRIG_PLAYERS; i++ )
-						trigger->players[i] = trig->players[i];
-					for ( u8 i = 0; i < NUM_TRIG_CONDITIONS; i++ )
-						trigger->conditions[i] = trig->conditions[i];
-					for ( u8 i = 0; i < NUM_TRIG_ACTIONS; i++ )
-						trigger->actions[i] = trig->actions[i];
+		CleanText(text);
+		Section TRIG(new buffer((u32)SectionId::TRIG));
+		char error[MAX_ERROR_MESSAGE_SIZE];
 
-					return true;
+		if ( ParseTriggers(text, *TRIG, error) )
+		{
+			if ( BuildNewStringTable(chk) )
+			{
+				if ( !chk->TRIG().exists() )
+				{
+					if ( chk->AddSection(TRIG) )
+						return true;
+					else
+						std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 				}
 				else
-					std::snprintf(error, sizeof(error), "No text errors, but trigger could not be transferred.\n\n%s", LastError);
-			}
-		}
-		else
-			std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
-	}
+				{
+					Trigger* trig;
+					if ( TRIG->getPtr<Trigger>(trig, 0, TRIG_STRUCT_SIZE) )
+					{
+						trigger->internalData = trig->internalData;
+						for ( u8 i = 0; i < NUM_TRIG_PLAYERS; i++ )
+							trigger->players[i] = trig->players[i];
+						for ( u8 i = 0; i < NUM_TRIG_CONDITIONS; i++ )
+							trigger->conditions[i] = trig->conditions[i];
+						for ( u8 i = 0; i < NUM_TRIG_ACTIONS; i++ )
+							trigger->actions[i] = trig->actions[i];
 
-	MessageBox(NULL, error, "Error!", MB_OK|MB_ICONEXCLAMATION);
+						return true;
+					}
+					else
+						std::snprintf(error, sizeof(error), "No text errors, but trigger could not be transferred.\n\n%s", LastError);
+				}
+			}
+			else
+				std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+		}
+
+		MessageBox(NULL, error, "Error!", MB_OK | MB_ICONEXCLAMATION);
+	}
+	catch ( std::bad_alloc ) { MessageBox(NULL, "Compilation aborted due to low memory.", "Error!", MB_OK | MB_ICONEXCLAMATION); }
 	return false;
 }
 
