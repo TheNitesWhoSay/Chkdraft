@@ -524,7 +524,6 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 		case AID_SET_NEXT_SCENARIO:		 // String
 			if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_STRING(action.stringNum)
 			break;
-		case AID_CREATE_UNIT:			// Player, Unit, NumUnits, Location
 		case AID_KILL_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
 			switch ( stdTextTrigArgNum ) {
 				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
@@ -533,11 +532,18 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
 			}
 			break;
-		case AID_CREATE_UNIT_WITH_PROPERTIES: // Player, Unit, NumUnits, Location, Properties
+		case AID_CREATE_UNIT: // Player, Unit, Number (NumUnits w/o 'All'), Location
 			switch ( stdTextTrigArgNum ) {
 				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
 				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
-				case 2: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.type2) break;
+				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
+			}
+		case AID_CREATE_UNIT_WITH_PROPERTIES: // Player, Unit, Number (NumUnits w/o 'All'), Location, Properties
+			switch ( stdTextTrigArgNum ) {
+				case 0: ADD_TEXTTRIG_PLAYER(action.group) break;
+				case 1: ADD_TEXTTRIG_UNIT(action.type) break;
+				case 2: ADD_TEXTTRIG_NUMBER(action.type2) break;
 				case 3: ADD_TEXTTRIG_LOCATION(action.location) break;
 				case 4: ADD_TEXTTRIG_NUMBER(action.number) break;
 			}

@@ -738,8 +738,8 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
 	buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", BUTTON_MOVEDOWN);
 	buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", BUTTON_MOVETO);
 
-	listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, LIST_GROUPS);
-	if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, LIST_TRIGGERS) )
+	listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, LIST_GROUPS);
+	if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, LIST_TRIGGERS) )
 		listGroups.SetPeer(listTriggers.getHandle());
 
 	DoSize();

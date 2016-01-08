@@ -636,15 +636,17 @@ GRID& Graphics::grid(u32 gridNum)
 
 BITMAPINFO GetBMI(s32 width, s32 height)
 {
-	BITMAPINFOHEADER bmiH = { };
+	BITMAPINFOHEADER bmiH = {};
 	bmiH.biSize = sizeof(BITMAPINFOHEADER);
-	bmiH.biWidth = width; bmiH.biHeight = -height;
+	bmiH.biWidth = width;
+	bmiH.biHeight = -height;
 	bmiH.biPlanes = 1;
 	bmiH.biBitCount = 24;
 	bmiH.biCompression = BI_RGB;
-	bmiH.biXPelsPerMeter = 1; bmiH.biYPelsPerMeter = 1;
+	bmiH.biXPelsPerMeter = 1;
+	bmiH.biYPelsPerMeter = 1;
 					
-	BITMAPINFO bmi = { };
+	BITMAPINFO bmi = {};
 	bmi.bmiHeader = bmiH;
 	return bmi;
 }

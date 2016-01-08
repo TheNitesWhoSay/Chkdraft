@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+typedef std::shared_ptr<buffer> Section;
+
 class Scenario
 {
 	public:
@@ -107,8 +109,11 @@ class Scenario
 
 /*	   CUWPs	*/	bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
 					bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
+					bool ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex);
 					bool IsCuwpUsed(u8 cuwpIndex);
 					bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
+					int CuwpCapacity();
+					int NumUsedCuwps();
 
 /*	   WAVs		*/	bool GetWav(u16 wavIndex, u32 &outStringIndex);
 					bool AddWav(u32 stringIndex);
@@ -297,9 +302,10 @@ class Scenario
 
 /*	Rebuilders	*/	void correctMTXM(); // Corrects MTXM of protected maps for view-only purposes
 
-/* Section mgmt */	bool RemoveSection(buffer* buf); // Removes section containing this buffer
-					bool AddSection(buffer& buf); // Adds a buffer as a new map section
-					buffer* AddSection(u32 sectionId); // Adds a section with the given id to the map
+/* Section mgmt */	bool RemoveSection(SectionId sectionId); // Removes section containing this buffer
+					bool RemoveSection(Section sectionToRemove);
+					bool AddSection(Section sectionToAdd); // Adds a buffer as a new map section
+					Section AddSection(u32 sectionId); // Adds a section with the given id to the map
 					void Flush(); // Deletes all sections and clears map protection
 
 					/** Referances to section buffers used by Chkdraft. All buffer methods are
@@ -324,7 +330,7 @@ class Scenario
 
 		/** Find section with the given header id
 		ie: to get a referance to VCOD call getSection(HEADER_VCOD); */
-		buffer* getSection(u32 id);
+		Section getSection(u32 id);
 
 		bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
 		bool ParseSection(buffer &chk, u32 position, u32 &nextPosition);
@@ -337,21 +343,21 @@ class Scenario
 
 	private:
 
-		std::vector<buffer> sections; // Holds all the sections of a map
+		std::vector<Section> sections; // Holds all the sections of a map
 		u8 tailLength; // 0 for no tail data, must be less than 8
 		u8 tailData[7]; // The 0-7 bytes just before the Scenario file ends, after the last valid section
 		bool mapIsProtected; // Flagged if map is protected
 		bool caching; // if true, section add/remove/moves currently result in re-caching
 
 		// Cached regular section pointers
-		buffer *type, *ver, *iver, *ive2, *vcod, *iown, *ownr, *era,
-			*dim, *side, *mtxm, *puni, *upgr, *ptec, *unit, *isom,
-			*tile, *dd2, *thg2, *mask, *str, *uprp, *upus, *mrgn,
-			*trig, *mbrf, *sprp, *forc, *wav, *unis, *upgs, *tecs,
-			*swnm, *colr, *pupx, *ptex, *unix, *upgx, *tecx;
+		Section type, ver, iver, ive2, vcod, iown, ownr, era,
+			dim, side, mtxm, puni, upgr, ptec, unit, isom,
+			tile, dd2, thg2, mask, str, uprp, upus, mrgn,
+			trig, mbrf, sprp, forc, wav, unis, upgs, tecs,
+			swnm, colr, pupx, ptex, unix, upgx, tecx;
 
 		// Cached extended section pointers
-		buffer *kstr;
+		Section kstr;
 };
 
 typedef std::shared_ptr<Scenario> ScenarioPtr;

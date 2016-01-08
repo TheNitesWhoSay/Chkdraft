@@ -1,4 +1,5 @@
 #include "ClassDialog.h"
+#include <CommCtrl.h>
 
 ClassDialog::ClassDialog()
 {
@@ -43,6 +44,36 @@ BOOL ClassDialog::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 	return FALSE;
 }
 
+void ClassDialog::NotifyTreeSelChanged(LPARAM newValue)
+{
+
+}
+
+void ClassDialog::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassDialog::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassDialog::NotifyEditFocusLost()
+{
+
+}
+
+void ClassDialog::NotifyWindowHidden()
+{
+
+}
+
+void ClassDialog::NotifyWindowShown()
+{
+
+}
+
 BOOL ClassDialog::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	return FALSE;
@@ -73,10 +104,45 @@ BOOL CALLBACK ClassDialog::SetupDialogProc(HWND hWnd, UINT msg, WPARAM wParam, L
 
 BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	ClassDialog* classDialog = (ClassDialog*)GetWindowLong(hWnd, DWL_USER);
 	switch ( msg )
 	{
-	case WM_NOTIFY: return ((ClassDialog*)GetWindowLong(hWnd, DWL_USER))->DlgNotify(hWnd, wParam, (NMHDR*)lParam); break;
-	case WM_COMMAND: return ((ClassDialog*)GetWindowLong(hWnd, DWL_USER))->DlgCommand(hWnd, wParam, lParam); break;
+		case WM_SHOWWINDOW:
+		{
+			if ( (BOOL)wParam == TRUE )
+				classDialog->NotifyWindowShown();
+			else
+			{
+				classDialog->NotifyWindowHidden();
+				classDialog->NotifyEditFocusLost();
+			}
+		}
+		break;
+
+		case WM_NOTIFY:
+		{
+			switch ( ((NMHDR*)lParam)->code )
+			{
+				case TVN_SELCHANGED:
+					if ( ((NMTREEVIEW*)lParam)->action == TVN_SELCHANGED )
+						classDialog->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
+					break;
+			}
+			return classDialog->DlgNotify(hWnd, wParam, (NMHDR*)lParam);
+		}
+		break;
+
+		case WM_COMMAND:
+		{
+			switch ( HIWORD(wParam) )
+			{
+				case BN_CLICKED: classDialog->NotifyButtonClicked(LOWORD(wParam), (HWND)lParam); break;
+				case EN_UPDATE: classDialog->NotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+				case EN_KILLFOCUS: classDialog->NotifyEditFocusLost(); break;
+			}
+			return classDialog->DlgCommand(hWnd, wParam, lParam);
+		}
+		break;
 	}
-	return ((ClassDialog*)GetWindowLong(hWnd, DWL_USER))->DlgProc(hWnd, msg, wParam, lParam);
+	return classDialog->DlgProc(hWnd, msg, wParam, lParam);
 }

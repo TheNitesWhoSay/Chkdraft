@@ -2276,7 +2276,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 		numStrs = 1;
 
 	// Create a new string section
-	buffer* newStrSection = new buffer("nStr");
+	Section newStrSection(new buffer("nStr"));
 	u32 strPortionOffset = 0;
 	if ( extendedTable )
 	{
@@ -2373,7 +2373,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 		else // Map didn't have an extended string section
 		{
 			return newStrSection->addStr((const char*)strPortion.getPtr(0), strPortion.size()) &&
-				   AddSection(*newStrSection);   
+				   AddSection(newStrSection);   
 		}
 	}
 	else
@@ -2388,7 +2388,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 		else // Map didn't have a string section
 		{
 			return newStrSection->addStr((const char*)strPortion.getPtr(0), strPortion.size()) &&
-				   AddSection(*newStrSection);
+				   AddSection(newStrSection);
 		}
 	}
 }
@@ -2401,27 +2401,26 @@ void Scenario::correctMTXM()
 	{
 		didCorrection = false;
 
-		buffer* lastInstance = nullptr;
+		Section lastInstance(nullptr);
 
 		for ( auto &section : sections ) // Cycle through all sections
 		{
-			u32 currID = (u32 &)section.title()[0]; // First four characters can also be considered a representative integer
-
-			if ( currID == (u32)SectionId::MTXM )
+			SectionId sectionId = (SectionId)section->titleVal();
+			if ( sectionId == SectionId::MTXM )
 			{
-				if ( lastInstance != nullptr && lastInstance->size() == XSize()*YSize()*2 && section.size() != XSize()*YSize()*2 )
+				if ( lastInstance != nullptr && lastInstance->size() == XSize()*YSize()*2 && section->size() != XSize()*YSize()*2 )
 					// A second MTXM section was found
 					// The second MTXM section is not long enough to hold all the tiles, but the first is
 					// However, starcraft will still read in all the tiles it can from this section first
 					// Correct by merging the second section into the first section, then deleting the second section
 				{
-					char* data = (char*)section.getPtr(0);
-					lastInstance->replaceStr(0, data, section.size());
-					RemoveSection(&section);
+					char* data = (char*)section->getPtr(0);
+					lastInstance->replaceStr(0, data, section->size());
+					RemoveSection(section);
 					didCorrection = true;
 					break; // curr section was removed, must break out of this loop
 				}
-				lastInstance = &section;
+				lastInstance = section;
 			}
 		}
 	} while ( didCorrection );
@@ -2939,7 +2938,7 @@ bool Scenario::moveTrigger(u32 triggerId, u32 destId)
 
 bool Scenario::GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct)
 {
-	return IsCuwpUsed(cuwpIndex) && UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
+	return UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
 }
 
 bool Scenario::AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex)
@@ -2960,6 +2959,11 @@ bool Scenario::AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex)
 	return false;
 }
 
+bool Scenario::ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex)
+{
+	return UPRP().replace<ChkCuwp>((u32)cuwpIndex*sizeof(ChkCuwp), propStruct);
+}
+
 bool Scenario::IsCuwpUsed(u8 cuwpIndex)
 {
 	return UPUS().get<u8>(cuwpIndex) != 0;
@@ -2971,6 +2975,22 @@ bool Scenario::SetCuwpUsed(u8 cuwpIndex, bool isUsed)
 		return UPUS().replace<u8>(cuwpIndex, 1);
 	else
 		return UPUS().replace<u8>(cuwpIndex, 0);
+}
+
+int Scenario::CuwpCapacity()
+{
+	return 64;
+}
+
+int Scenario::NumUsedCuwps()
+{
+	int numUsedCuwps = 0;
+	for ( u8 i = 0; i < 64; i++ )
+	{
+		if ( IsCuwpUsed(i) )
+			numUsedCuwps++;
+	}
+	return numUsedCuwps;
 }
 
 bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)
@@ -3091,9 +3111,9 @@ bool Scenario::ToSingleBuffer(buffer& chk)
 	{
 		for ( auto &section : sections )
 		{
-			if ( !chk.add<u32>(section.titleVal()) &&
-				chk.add<u32>(section.size()) &&
-				(section.size() == 0 || chk.addStr((const char*)section.getPtr(0), section.size())) )
+			if ( !chk.add<u32>(section->titleVal()) &&
+				chk.add<u32>(section->size()) &&
+				(section->size() == 0 || chk.addStr((const char*)section->getPtr(0), section->size())) )
 			{
 				return false;
 			}
@@ -3217,31 +3237,38 @@ void Scenario::WriteFile(FILE* pFile)
 	if ( !isProtected() )
 	{
 		for ( auto &section : sections )
-			section.write(pFile);
+			section->write(pFile);
 
 		if ( tailLength > 0 && tailLength < 8 )
 			fwrite(tailData, tailLength, 1, pFile);
 	}
 }
 
-bool Scenario::RemoveSection(buffer* buf)
+bool Scenario::RemoveSection(SectionId sectionId)
 {
-	for ( auto it = sections.begin(); it != sections.end(); ++it )
+	for ( auto &section : sections )
 	{
-		if ( it._Ptr == buf )
-		{
-			sections.erase(it);
-			CacheSections();
-			return true;
-		}
+		if ( section->titleVal() == (u32)sectionId )
+			return RemoveSection(section);
 	}
 	return false;
 }
 
-bool Scenario::AddSection(buffer& buf)
+bool Scenario::RemoveSection(Section sectionToRemove)
+{
+	auto sectionFound = std::find(sections.begin(), sections.end(), sectionToRemove);
+	if ( sectionFound != sections.end() )
+	{
+		sections.erase(sectionFound);
+		return true;
+	}
+	return false;
+}
+
+bool Scenario::AddSection(Section sectionToAdd)
 {
 	try {
-		sections.insert(sections.end(), buf);
+		sections.insert(sections.end(), sectionToAdd);
 		CacheSections();
 		return true;
 	}
@@ -3249,13 +3276,13 @@ bool Scenario::AddSection(buffer& buf)
 	return false;
 }
 
-buffer* Scenario::AddSection(u32 sectionId)
+Section Scenario::AddSection(u32 sectionId)
 {
-	auto section = sections.end();
 	try {
-		section = sections.insert(sections.end(), buffer(sectionId));
+		Section newSection(new buffer(sectionId));
+		sections.push_back(newSection);
 		CacheSections();
-		return section._Ptr;
+		return newSection;
 	}
 	catch ( std::bad_alloc ) { } // Out of memory
 	return nullptr;
@@ -3294,13 +3321,13 @@ void Scenario::CacheSections()
 	kstr = getSection((u32)SectionId::KSTR);
 }
 
-buffer* Scenario::getSection(u32 id)
+Section Scenario::getSection(u32 id)
 {
-	buffer* sectionPtr = nullptr;
+	Section sectionPtr(nullptr);
 	for ( auto &section : sections )
 	{
-		if ( id == section.titleVal() )
-			sectionPtr = &section;
+		if ( id == section->titleVal() )
+			sectionPtr = section;
 	}
 	return sectionPtr;
 	/** Referances to null buffers are

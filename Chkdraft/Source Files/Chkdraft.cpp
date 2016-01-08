@@ -5,13 +5,14 @@
 void Chkdraft::OnLoadTest()
 {
 	/*
-	maps.NewMap(128, 128, 0, 0, 0);
+
+	maps.NewMap(128, 128, 2, 0, 0);
 
 	//ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 	
 	trigEditorWindow.CreateThis(getHandle());
-	trigEditorWindow.triggersWindow.ButtonNew();
-	trigEditorWindow.triggersWindow.trigModifyWindow.ChangeTab(2);
+	trigEditorWindow.ChangeTab(3);
+
 	//*/
 }
 

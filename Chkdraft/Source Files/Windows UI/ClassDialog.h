@@ -1,6 +1,7 @@
 #ifndef CLASSDIALOG_H
 #define CLASSDIALOG_H
 #include "WindowsItem.h"
+#include <CommCtrl.h>
 
 class ClassDialog : public WindowsItem
 {
@@ -26,6 +27,15 @@ class ClassDialog : public WindowsItem
 		/** This method is called when WM_NOTIFY is sent to the dialog
 		window, override this to respond to notifications */
 		virtual BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+
+		/** When overidden, these methods serve as easy ways to process
+		notifications/commands */
+		virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+		virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+		virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+		virtual void NotifyEditFocusLost(); // Sent when focus changes or the window is hidden
+		virtual void NotifyWindowHidden(); // Sent when the window is hidden
+		virtual void NotifyWindowShown(); // Sent when the window is shown
 
 		/** This method is called when WM_COMMAND is sent to the dialog
 		window, override this to respond to commands */

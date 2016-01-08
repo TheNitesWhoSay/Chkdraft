@@ -4,6 +4,23 @@
 #include "Mapping Core/MappingCore.h"
 #include <map>
 
+class CV5Entry
+{
+	public:
+		u16 index;
+		u8 buildability;
+		u8 groundHeight;
+		u16 leftEdge;
+		u16 topEdge;
+		u16 rightEdge;
+		u16 bottomEdge;
+		u16 Unknown1;
+		u16 Unknown2;
+		u16 Unknown3;
+		u16 Unknown4;
+		u16 megaTileRef[16]; // To VF4/VX4
+};
+
 struct TileSet
 {
 	buffer cv5;
@@ -268,37 +285,39 @@ class Sprites
 		buffer iscriptBin;
 };
 
-#define PCX_MANUFACTURER	 0x00
-#define PCX_VER_INFO		 0x01
-#define PCX_ENCODING		 0x02
-#define PCX_BIT_COUNT		 0x03
-#define PCX_LEFT_MARGIN		 0x04
-#define PCX_UPPER_MARGIN	 0x06
-#define PCX_RIGHT_MARGIN	 0x08
-#define PCX_LOWER_MARGIN	 0x0A
-#define PCX_HOZ_DPI			 0x0C
-#define PCX_VERT_DPI		 0x0E
-#define PCX_PALETTE			 0x10
-#define PCX_RESERVED		 0x40
-#define PCX_NCP				 0x41
-#define PCX_NBS				 0x42
-#define PCX_PAL_INFO		 0x44
-#define PCX_HOZ_SCREEN_SIZE	 0x46
-#define PCX_VERT_SCREEN_SIZE 0x48
-#define PCX_RESERVED2		 0x4A
-#define PCX_DATA			 0x80
-
 class PCX
 {
 	public:
 		buffer pcxDat;
 		bool load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename);
+		enum class DataLocs
+		{
+			Manufacuturer = 0x00,
+			VerInfo = 0x01,
+			Encoding = 0x02,
+			BitCount = 0x03,
+			LeftMargin = 0x04,
+			UpperMargin = 0x06,
+			RightMargin = 0x08,
+			LowerMargin = 0x0A,
+			HozDpi = 0x0C,
+			VertDpi = 0x0E,
+			Palette = 0x10,
+			Reserved = 0x40,
+			Ncp = 0x41,
+			Nbs = 0x42,
+			PalInfo = 0x44,
+			HozScreenSize = 0x46,
+			VertScreenSize = 0x48,
+			Reserved2 = 0x4A,
+			Data = 0x80
+		};
 };
 
 struct AIEntry
 {
-	u32 id; // 4-byte text, stored in TRIG section
-	u32 ptr; // File pointer in this file, 0 means it's in BWScript.bin
+	u32 identifier; // 4-byte text, stored in TRIG section
+	u32 filePtr; // File pointer in this file, 0 means it's in BWScript.bin
 	u32 statStrIndex; // stat_txt.tbl string index for name
 	u32 flags;
 		// 01 - Ran in Location (Run AI Script at Location)

@@ -66,11 +66,11 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
 	buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", BUTTON_DELETESOUND);
 	buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", BUTTON_EXTRACTSOUND);
 	buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", BUTTON_PLAYSOUND);
-	listMapSounds.CreateThis(hWnd, 5, 25, 582, 200, false, false, LB_MAPSOUNDS);
+	listMapSounds.CreateThis(hWnd, 5, 25, 582, 200, false, false, false, LB_MAPSOUNDS);
 
 	textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", TEXT_VIRTUALSOUNDS);
 	buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", BUTTON_PLAYVIRTUALSOUND);
-	listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, LB_VIRTUALSOUNDS);
+	listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, false, LB_VIRTUALSOUNDS);
 	textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", TEXT_SOUNDFILENAME);
 	editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, EDIT_SOUNDFILENAME);
 	buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", BUTTON_BROWSEFORSOUND);

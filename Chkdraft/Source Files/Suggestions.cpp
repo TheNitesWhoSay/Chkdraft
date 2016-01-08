@@ -52,7 +52,7 @@ bool Suggestions::CreateThis(HWND hParent, int x, int y, int width, int height)
 		{
 			suggestParent = hParent;
 			SetWindowPos(getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
-			listSuggestions.CreateThis(getHandle(), 0, 0, width, height + 12, false, false, 0);
+			listSuggestions.CreateThis(getHandle(), 0, 0, width, height + 12, false, false, true, 0);
 			listSuggestions.SetFont(defaultFont, false);
 			DoSize();
 			return true;
