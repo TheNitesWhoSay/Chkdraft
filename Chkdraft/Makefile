@@ -1,7 +1,7 @@
 CC=g++
-CFLAGS=-m32 -fleading-underscore -g -std=gnu++11 -Isrc -fpermissive -DDEBUG -D_DEBUG -DMINGW_HAS_SECURE_API -DCHKDRAFT -DCHKD_DEBUG -DNOMINMAX -DCRT_SECURE_NO_WARNINGS
+CFLAGS=-m32 -fleading-underscore -g -std=gnu++11 -Isrc -ISFmpq -fpermissive -DDEBUG -D_DEBUG -DMINGW_HAS_SECURE_API -DCHKDRAFT -DCHKD_DEBUG -DNOMINMAX -DCRT_SECURE_NO_WARNINGS
 
-LDFLAGS=-m32 -mwindows -L. -Lsrc/MappingCore
+LDFLAGS=-m32 -mwindows -L. -LSFmpq -Lsrc/MappingCore
 LIBS=resource.o -lcomdlg32 -lcomctl32 -lSFmpq
 SOURCES=src/ChangePassword.cpp \
 src/ChkdPlugins.cpp \
@@ -117,12 +117,16 @@ src/WindowsUI/WindowMenu.cpp \
 src/WindowsUI/WindowsItem.cpp 
 
 OBJECTS=$(subst src/,build/,$(SOURCES:.cpp=.o))
-EXECUTABLE=chkdraft.exe
+OUTDIR=bin
+EXECUTABLE=$(OUTDIR)/chkdraft.exe
 
 all: $(SOURCES) $(EXECUTABLE)
 	
-$(EXECUTABLE): $(OBJECTS) 
+$(EXECUTABLE): $(OBJECTS) $(OUTDIR)/SFmpq.dll 
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
+
+$(OUTDIR)/SFmpq.dll:
+	cp SFmpq/SFmpq.dll $(OUTDIR)/
 
 build/%.o: src/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@

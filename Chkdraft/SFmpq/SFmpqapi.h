@@ -1,5 +1,8 @@
 /*
-  ShadowFlare MPQ API Library. (c) ShadowFlare Software 2002
+
+  ShadowFlare MPQ API Library. (c) ShadowFlare Software 2002-2010
+  License information for this code is in license.txt and
+  included in this file at the end of this comment.
 
   All functions below are actual functions that are part of this
   library and do not need any additional dll files.  It does not
@@ -19,6 +22,23 @@
   most likely result in a crash.
 
   Revision History:
+  (Release date) 1.08 (ShadowFlare)
+  - Fixed a buffer overflow that would occur when reading files
+    if neither using a buffer that is large enough to contain the
+    entire file nor has a size that is a multiple of 4096
+  - Added SFileOpenFileAsArchive which opens an archive that is
+    contained within an already open archive
+  - Added MpqRenameAndSetFileLocale and MpqDeleteFileWithLocale.
+    These have extra parameters that allow you to use them with
+    files having language codes other than what was last set
+    using SFileSetLocale
+  - Fixed a bug that caused (listfile) to get cleared if adding
+    files with a locale ID other than 0
+  - Added MpqOpenArchiveForUpdateEx which allows creating
+    archives with different block sizes
+  - SFileListFiles can list the contents of bncache.dat without
+    needing an external list
+
   06/12/2002 1.07 (ShadowFlare)
   - No longer requires Storm.dll to compress or decompress
     Warcraft III files
@@ -105,17 +125,34 @@
     errors that have to do with this library
   - MpqCompactArchive not implemented
 
-  This library is freeware, you can do anything you want with it but with
-  one exception.  If you use it in your program, you must specify this fact
-  in Help|About box or in similar way.  You can obtain version string using
-  SFMpqGetVersionString call.
-
-  THIS LIBRARY IS DISTRIBUTED "AS IS".  NO WARRANTY OF ANY KIND IS EXPRESSED
-  OR IMPLIED. YOU USE AT YOUR OWN RISK. THE AUTHOR WILL NOT BE LIABLE FOR 
-  DATA LOSS, DAMAGES, LOSS OF PROFITS OR ANY OTHER KIND OF LOSS WHILE USING
-  OR MISUSING THIS SOFTWARE.
-
   Any comments or suggestions are accepted at blakflare@hotmail.com (ShadowFlare)
+
+  License information:
+
+  Copyright (c) 2002-2010, ShadowFlare <blakflare@hotmail.com>
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  SUCH DAMAGE.
 */
 
 #ifndef SHADOWFLARE_MPQ_API_INCLUDED
@@ -125,7 +162,7 @@
 
 #ifndef SFMPQ_STATIC
 
-#ifndef SFMPQAPI_EXPORTS
+#ifdef SFMPQAPI_EXPORTS
 #define SFMPQAPI __declspec(dllexport)
 #else
 #define SFMPQAPI __declspec(dllimport)
@@ -155,20 +192,22 @@ float  SFMPQAPI WINAPI MpqGetVersion();
 
 void SFMPQAPI WINAPI SFMpqDestroy(); // This no longer needs to be called.  It is only provided for compatibility with older versions
 
+void SFMPQAPI WINAPI AboutSFMpq(); // Displays an about page in a web browser (this has only been tested in Internet Explorer). This is only for the dll version of SFmpq
+
 // SFMpqGetVersionString2's return value is the required length of the buffer plus
 // the terminating null, so use SFMpqGetVersionString2(0, 0); to get the length.
 LPCSTR SFMPQAPI WINAPI SFMpqGetVersionString();
-DWORD  SFMPQAPI WINAPI SFMpqGetVersionString2(LPCSTR lpBuffer, DWORD dwBufferLength);
+DWORD  SFMPQAPI WINAPI SFMpqGetVersionString2(LPSTR lpBuffer, DWORD dwBufferLength);
 SFMPQVERSION SFMPQAPI WINAPI SFMpqGetVersion();
 
 // Returns 0 if the dll version is equal to the version your program was compiled
 // with, 1 if the dll is newer, -1 if the dll is older.
-long SFMPQAPI __forceinline SFMpqCompareVersion();
+long SFMPQAPI __inline SFMpqCompareVersion();
 
 // General error codes
 #define MPQ_ERROR_MPQ_INVALID      0x85200065
 #define MPQ_ERROR_FILE_NOT_FOUND   0x85200066
-#define MPQ_ERROR_DISK_FULL        0x85200068 //Physical write file to MPQ failed. Not sure of exact meaning
+#define MPQ_ERROR_DISK_FULL        0x85200068 //Physical write file to MPQ failed
 #define MPQ_ERROR_HASH_TABLE_FULL  0x85200069
 #define MPQ_ERROR_ALREADY_EXISTS   0x8520006A
 #define MPQ_ERROR_BAD_OPEN_MODE    0x8520006C //When MOAU_READ_ONLY is used without MOAU_OPEN_EXISTING
@@ -176,43 +215,50 @@ long SFMPQAPI __forceinline SFMpqCompareVersion();
 #define MPQ_ERROR_COMPACT_ERROR    0x85300001
 
 // MpqOpenArchiveForUpdate flags
-#define MOAU_CREATE_NEW        0x00
-#define MOAU_CREATE_ALWAYS     0x08 //Was wrongly named MOAU_CREATE_NEW
-#define MOAU_OPEN_EXISTING     0x04
-#define MOAU_OPEN_ALWAYS       0x20
-#define MOAU_READ_ONLY         0x10 //Must be used with MOAU_OPEN_EXISTING
-#define MOAU_MAINTAIN_LISTFILE 0x01
+#define MOAU_CREATE_NEW          0x00 //If archive does not exist, it will be created. If it exists, the function will fail
+#define MOAU_CREATE_ALWAYS       0x08 //Will always create a new archive
+#define MOAU_OPEN_EXISTING       0x04 //If archive exists, it will be opened. If it does not exist, the function will fail
+#define MOAU_OPEN_ALWAYS         0x20 //If archive exists, it will be opened. If it does not exist, it will be created
+#define MOAU_READ_ONLY           0x10 //Must be used with MOAU_OPEN_EXISTING. Archive will be opened without write access
+#define MOAU_MAINTAIN_ATTRIBUTES 0x02 //Will be used in a future version to create the (attributes) file
+#define MOAU_MAINTAIN_LISTFILE   0x01 //Creates and maintains a list of files in archive when they are added, replaced, or deleted
+
+// MpqOpenArchiveForUpdateEx constants
+#define DEFAULT_BLOCK_SIZE 3 // 512 << number = block size
+#define USE_DEFAULT_BLOCK_SIZE 0xFFFFFFFF // Use default block size that is defined internally
 
 // MpqAddFileToArchive flags
-#define MAFA_EXISTS           0x80000000 //Will be added if not present
-#define MAFA_UNKNOWN40000000  0x40000000
-#define MAFA_MODCRYPTKEY      0x00020000
-#define MAFA_ENCRYPT          0x00010000
-#define MAFA_COMPRESS         0x00000200
-#define MAFA_COMPRESS2        0x00000100
-#define MAFA_REPLACE_EXISTING 0x00000001
+#define MAFA_EXISTS           0x80000000 //This flag will be added if not present
+#define MAFA_UNKNOWN40000000  0x40000000 //Unknown flag
+#define MAFA_SINGLEBLOCK      0x01000000 //File is stored as a single unit rather than being split by the block size
+#define MAFA_MODCRYPTKEY      0x00020000 //Used with MAFA_ENCRYPT. Uses an encryption key based on file position and size
+#define MAFA_ENCRYPT          0x00010000 //Encrypts the file. The file is still accessible when using this, so the use of this has depreciated
+#define MAFA_COMPRESS         0x00000200 //File is to be compressed when added. This is used for most of the compression methods
+#define MAFA_COMPRESS2        0x00000100 //File is compressed with standard compression only (was used in Diablo 1)
+#define MAFA_REPLACE_EXISTING 0x00000001 //If file already exists, it will be replaced
 
 // MpqAddFileToArchiveEx compression flags
 #define MAFA_COMPRESS_STANDARD 0x08 //Standard PKWare DCL compression
 #define MAFA_COMPRESS_DEFLATE  0x02 //ZLib's deflate compression
-#define MAFA_COMPRESS_WAVE     0x81 //Standard wave compression
-#define MAFA_COMPRESS_WAVE2    0x41 //Unused wave compression
+#define MAFA_COMPRESS_BZIP2    0x10 //bzip2 compression
+#define MAFA_COMPRESS_WAVE     0x81 //Stereo wave compression
+#define MAFA_COMPRESS_WAVE2    0x41 //Mono wave compression
 
 // Flags for individual compression types used for wave compression
-#define MAFA_COMPRESS_WAVECOMP1 0x80 //Main compressor for standard wave compression
-#define	MAFA_COMPRESS_WAVECOMP2 0x40 //Main compressor for unused wave compression
+#define MAFA_COMPRESS_WAVECOMP1 0x80 //Main compressor for stereo wave compression
+#define	MAFA_COMPRESS_WAVECOMP2 0x40 //Main compressor for mono wave compression
 #define MAFA_COMPRESS_WAVECOMP3 0x01 //Secondary compressor for wave compression
 
 // ZLib deflate compression level constants (used with MpqAddFileToArchiveEx and MpqAddFileFromBufferEx)
 #define Z_NO_COMPRESSION         0
 #define Z_BEST_SPEED             1
 #define Z_BEST_COMPRESSION       9
-#define Z_DEFAULT_COMPRESSION  (-1)
+#define Z_DEFAULT_COMPRESSION  (-1) //Default level is 6 with current ZLib version
 
 // MpqAddWaveToArchive quality flags
-#define MAWA_QUALITY_HIGH    1
-#define MAWA_QUALITY_MEDIUM  0
-#define MAWA_QUALITY_LOW     2
+#define MAWA_QUALITY_HIGH    1 //Higher compression, lower quality
+#define MAWA_QUALITY_MEDIUM  0 //Medium compression, medium quality
+#define MAWA_QUALITY_LOW     2 //Lower compression, higher quality
 
 // SFileGetFileInfo flags
 #define SFILE_INFO_BLOCK_SIZE      0x01 //Block size in MPQ
@@ -226,24 +272,31 @@ long SFMPQAPI __forceinline SFMpqCompareVersion();
 #define SFILE_INFO_POSITION        0x09 //Position of file pointer in files
 #define SFILE_INFO_LOCALEID        0x0A //Locale ID of file in MPQ
 #define SFILE_INFO_PRIORITY        0x0B //Priority of open MPQ
-#define SFILE_INFO_HASH_INDEX      0x0C //Hash index of file in MPQ
+#define SFILE_INFO_HASH_INDEX      0x0C //Hash table index of file in MPQ
+#define SFILE_INFO_BLOCK_INDEX     0x0D //Block table index of file in MPQ
+
+// Return values of SFileGetFileInfo when SFILE_INFO_TYPE flag is used
+#define SFILE_TYPE_MPQ  0x01
+#define SFILE_TYPE_FILE 0x02
 
 // SFileListFiles flags
 #define SFILE_LIST_MEMORY_LIST  0x01 // Specifies that lpFilelists is a file list from memory, rather than being a list of file lists
 #define SFILE_LIST_ONLY_KNOWN   0x02 // Only list files that the function finds a name for
 #define SFILE_LIST_ONLY_UNKNOWN 0x04 // Only list files that the function does not find a name for
+#define SFILE_LIST_FLAG_UNKNOWN 0x08 // Use without SFILE_LIST_ONLY_KNOWN or SFILE_LIST_FLAG_UNKNOWN to list all files, but will set dwFileExists to 3 if file's name is not found
 
-#define SFILE_TYPE_MPQ  0x01
-#define SFILE_TYPE_FILE 0x02
-
+// SFileOpenArchive flags
 #define SFILE_OPEN_HARD_DISK_FILE 0x0000 //Open archive without regard to the drive type it resides on
 #define SFILE_OPEN_CD_ROM_FILE    0x0001 //Open the archive only if it is on a CD-ROM
 #define SFILE_OPEN_ALLOW_WRITE    0x8000 //Open file with write access
 
+// SFileOpenFileEx search scopes
 #define SFILE_SEARCH_CURRENT_ONLY 0x00 //Used with SFileOpenFileEx; only the archive with the handle specified will be searched for the file
-#define SFILE_SEARCH_ALL_OPEN     0x01 //SFileOpenFileEx will look through all open archives for the file
+#define SFILE_SEARCH_ALL_OPEN     0x01 //SFileOpenFileEx will look through all open archives for the file. This flag also allows files outside the archive to be used
 
 typedef HANDLE MPQHANDLE;
+
+#include <pshpack1.h>
 
 struct FILELISTENTRY {
 	DWORD dwFileExists; // Nonzero if this entry is used
@@ -272,56 +325,66 @@ struct MPQHEADER {
 	DWORD dwBlockTableSize; // Number of entries in block table
 };
 
+#include <poppack.h>
+
 //Archive handles may be typecasted to this struct so you can access
 //some of the archive's properties and the decrypted hash table and
-//block table directly.
+//block table directly.  This struct is based on Storm's internal
+//struct for archive handles.
 struct MPQARCHIVE {
 	// Arranged according to priority with lowest priority first
-	MPQARCHIVE * lpNextArc; // Pointer to the next ARCHIVEREC struct. Pointer to addresses of first and last archives if last archive
-	MPQARCHIVE * lpPrevArc; // Pointer to the previous ARCHIVEREC struct. 0xEAFC5E23 if first archive
-	char szFileName[260]; // Filename of the archive
-	HANDLE hFile; // The archive's file handle
-	DWORD dwFlags1; // Some flags, bit 1 (0 based) seems to be set when opening an archive from a CD
-	DWORD dwPriority; // Priority of the archive set when calling SFileOpenArchive
-	MPQFILE * lpLastReadFile; // Pointer to the last read file's FILEREC struct. Only used for incomplete reads of blocks
-	DWORD dwUnk; // Seems to always be 0
-	DWORD dwBlockSize; // Size of file blocks in bytes
-	BYTE * lpLastReadBlock; // Pointer to the read buffer for archive. Only used for incomplete reads of blocks
-	DWORD dwBufferSize; // Size of the read buffer for archive. Only used for incomplete reads of blocks
-	DWORD dwMPQStart; // The starting offset of the archive
-	MPQHEADER * lpMPQHeader; // Pointer to the archive header
-	BLOCKTABLEENTRY * lpBlockTable; // Pointer to the start of the block table
-	HASHTABLEENTRY * lpHashTable; // Pointer to the start of the hash table
-	DWORD dwFileSize; // The size of the file in which the archive is contained
-	DWORD dwOpenFiles; // Count of files open in archive + 1
+	MPQARCHIVE * lpNextArc; //0// Pointer to the next MPQARCHIVE struct. Pointer to addresses of first and last archives if last archive
+	MPQARCHIVE * lpPrevArc; //4// Pointer to the previous MPQARCHIVE struct. 0xEAFC5E23 if first archive
+	char szFileName[260]; //8// Filename of the archive
+	HANDLE hFile; //10C// The archive's file handle
+	DWORD dwFlags1; //110// Some flags, bit 0 seems to be set when opening an archive from a hard drive if bit 1 in the flags for SFileOpenArchive is set, bit 1 (0 based) seems to be set when opening an archive from a CD
+	DWORD dwPriority; //114// Priority of the archive set when calling SFileOpenArchive
+	MPQFILE * lpLastReadFile; //118// Pointer to the last read file's MPQFILE struct. This is cleared when finished reading a block
+	DWORD dwUnk; //11C// Seems to always be 0
+	DWORD dwBlockSize; //120// Size of file blocks in bytes
+	BYTE * lpLastReadBlock; //124// Pointer to the read buffer for archive. This is cleared when finished reading a block
+	DWORD dwBufferSize; //128// Size of the read buffer for archive. This is cleared when finished reading a block
+	DWORD dwMPQStart; //12C// The starting offset of the archive
+	DWORD dwMPQEnd; //130// The ending offset of the archive
+	MPQHEADER * lpMPQHeader; //134// Pointer to the archive header
+	BLOCKTABLEENTRY * lpBlockTable; //138// Pointer to the start of the block table
+	HASHTABLEENTRY * lpHashTable; //13C// Pointer to the start of the hash table
+	DWORD dwReadOffset; //140// Offset to the data for a file
+	DWORD dwRefCount; //144// Count of references to this open archive.  This is incremented for each file opened from the archive, and decremented for each file closed
+	// Extra struct members used by SFmpq
 	MPQHEADER MpqHeader;
-	DWORD dwFlags; //The only flag that should be changed is MOAU_MAINTAIN_LISTFILE
+	DWORD dwFlags; //The only flags that should be changed are MOAU_MAINTAIN_LISTFILE and MOAU_MAINTAIN_ATTRIBUTES, changing any others can have unpredictable effects
 	LPSTR lpFileName;
+	DWORD dwExtraFlags;
 };
 
 //Handles to files in the archive may be typecasted to this struct
-//so you can access some of the file's properties directly.
+//so you can access some of the file's properties directly.  This
+//struct is based on Storm's internal struct for file handles.
 struct MPQFILE {
-	MPQFILE * lpNextFile; // Pointer to the next FILEREC struct. Pointer to addresses of first and last files if last file
-	MPQFILE * lpPrevFile; // Pointer to the previous FILEREC struct. 0xEAFC5E13 if first file
-	char szFileName[260]; // Filename of the file
-	HANDLE hPlaceHolder; // Always 0xFFFFFFFF
-	MPQARCHIVE * lpParentArc; // Pointer to the ARCHIVEREC struct of the archive in which the file is contained
-	BLOCKTABLEENTRY * lpBlockEntry; // Pointer to the file's block table entry
-	DWORD dwCryptKey; // Decryption key for the file
-	DWORD dwFilePointer; // Position of file pointer in the file
-	DWORD dwUnk1; // Seems to always be 0
-	DWORD dwBlockCount; // Number of blocks in file
-	DWORD * lpdwBlockOffsets; // Offsets to blocks in file. There are 1 more of these than the number of blocks
-	DWORD dwReadStarted; // Set to 1 after first read
-	DWORD dwUnk2; // Seems to always be 0
-	BYTE * lpLastReadBlock; // Pointer to the read buffer for file. Only used for incomplete reads of blocks
-	DWORD dwBytesRead; // Total bytes read from open file
-	DWORD dwBufferSize; // Size of the read buffer for file. Only used for incomplete reads of blocks
-	DWORD dwConstant; // Seems to always be 1
+	MPQFILE * lpNextFile; //0// Pointer to the next MPQFILE struct. Pointer to addresses of first and last files if last file
+	MPQFILE * lpPrevFile; //4// Pointer to the previous MPQFILE struct. 0xEAFC5E13 if first file
+	char szFileName[260]; //8// Filename of the file
+	HANDLE hFile; //10C// Always INVALID_HANDLE_VALUE for files in MPQ archives. For files not in MPQ archives, this is the file handle for the file and the rest of this struct is filled with zeros except for dwRefCount
+	MPQARCHIVE * lpParentArc; //110// Pointer to the MPQARCHIVE struct of the archive in which the file is contained
+	BLOCKTABLEENTRY * lpBlockEntry; //114// Pointer to the file's block table entry
+	DWORD dwCryptKey; //118// Decryption key for the file
+	DWORD dwFilePointer; //11C// Position of file pointer in the file
+	DWORD dwUnk; //120// Seems to always be 0
+	DWORD dwBlockCount; //124// Number of blocks in file
+	DWORD * lpdwBlockOffsets; //128// Offsets to blocks in file. There are 1 more of these than the number of blocks. The values for this are set after the first read
+	DWORD dwReadStarted; //12C// Set to 1 after first read
+	BOOL bStreaming; //130// 1 when streaming a WAVE
+	BYTE * lpLastReadBlock; //134// Pointer to the read buffer for file. This starts at the position specified in the last SFileSetFilePointer call. This is cleared when SFileSetFilePointer is called or when finished reading the block
+	DWORD dwBytesRead; //138// Total bytes read from the current block in the open file. This is cleared when SFileSetFilePointer is called or when finished reading the block
+	DWORD dwBufferSize; //13C// Size of the read buffer for file. This is cleared when SFileSetFilePointer is called or when finished reading the block
+	DWORD dwRefCount; //140// Count of references to this open file
+	// Extra struct members used by SFmpq
 	HASHTABLEENTRY *lpHashEntry;
 	LPSTR lpFileName;
 };
+
+#include <pshpack1.h>
 
 struct BLOCKTABLEENTRY {
 	DWORD dwFileOffset; // Offset to file
@@ -337,30 +400,7 @@ struct HASHTABLEENTRY {
 	DWORD dwBlockTableIndex; // Index to the block table entry for the file
 };
 
-//Archive handles may be typecasted to this struct so you can access
-//some of the archive's properties and the decrypted hash table and
-//block table directly.
-/*typedef struct {
-	MPQHEADER MpqHeader;
-	HASHTABLEENTRY *lpHashTable;
-	BLOCKTABLEENTRY *lpBlockTable;
-	DWORD dwStart; //Offset to the archive's header
-	HANDLE hFile; //The archive's file handle
-	LPSTR lpFileName;
-	DWORD dwPriority; //When searching for a file in open archives, ones with higher priority are checked first
-	DWORD dwFlags; //The only flag that should be changed is MOAU_MAINTAIN_LISTFILE
-} MPQARCHIVE;
-
-//Handles to files in the archive may be typecasted to this struct
-//so you can access some of the file's properties directly.
-typedef struct {
-	HASHTABLEENTRY *lpHashEntry;
-	MPQHANDLE hMPQ;
-	LPSTR lpFileName;
-	DWORD FilePointer;
-	DWORD *dwBlockStart;
-	DWORD dwCryptKey;
-} MPQFILE;*/
+#include <poppack.h>
 
 // Defines for backward compatibility with old lmpqapi function names
 #define MpqAddFileToArcive MpqAddFileToArchive
@@ -374,15 +414,16 @@ typedef struct {
 // Storm functions implemented by this library
 BOOL      SFMPQAPI WINAPI SFileOpenArchive(LPCSTR lpFileName, DWORD dwPriority, DWORD dwFlags, MPQHANDLE *hMPQ);
 BOOL      SFMPQAPI WINAPI SFileCloseArchive(MPQHANDLE hMPQ);
-BOOL      SFMPQAPI WINAPI SFileGetArchiveName(MPQHANDLE hMPQ, LPCSTR lpBuffer, DWORD dwBufferLength);
+BOOL      SFMPQAPI WINAPI SFileOpenFileAsArchive(MPQHANDLE hSourceMPQ, LPCSTR lpFileName, DWORD dwPriority, DWORD dwFlags, MPQHANDLE *hMPQ);
+BOOL      SFMPQAPI WINAPI SFileGetArchiveName(MPQHANDLE hMPQ, LPSTR lpBuffer, DWORD dwBufferLength);
 BOOL      SFMPQAPI WINAPI SFileOpenFile(LPCSTR lpFileName, MPQHANDLE *hFile);
 BOOL      SFMPQAPI WINAPI SFileOpenFileEx(MPQHANDLE hMPQ, LPCSTR lpFileName, DWORD dwSearchScope, MPQHANDLE *hFile);
 BOOL      SFMPQAPI WINAPI SFileCloseFile(MPQHANDLE hFile);
 DWORD     SFMPQAPI WINAPI SFileGetFileSize(MPQHANDLE hFile, LPDWORD lpFileSizeHigh);
 BOOL      SFMPQAPI WINAPI SFileGetFileArchive(MPQHANDLE hFile, MPQHANDLE *hMPQ);
-BOOL      SFMPQAPI WINAPI SFileGetFileName(MPQHANDLE hFile, LPCSTR lpBuffer, DWORD dwBufferLength);
-DWORD     SFMPQAPI WINAPI SFileSetFilePointer(MPQHANDLE hFile, long lDistanceToMove, PLONG lplDistanceToMoveHigh, DWORD dwMoveMethod);
-BOOL      SFMPQAPI WINAPI SFileReadFile(MPQHANDLE hFile,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead,LPOVERLAPPED lpOverlapped);
+BOOL      SFMPQAPI WINAPI SFileGetFileName(MPQHANDLE hFile, LPSTR lpBuffer, DWORD dwBufferLength);
+DWORD     SFMPQAPI WINAPI SFileSetFilePointer(MPQHANDLE hFile, LONG lDistanceToMove, PLONG lplDistanceToMoveHigh, DWORD dwMoveMethod);
+BOOL      SFMPQAPI WINAPI SFileReadFile(MPQHANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
 LCID      SFMPQAPI WINAPI SFileSetLocale(LCID nNewLocale);
 BOOL      SFMPQAPI WINAPI SFileGetBasePath(LPCSTR lpBuffer, DWORD dwBufferLength);
 BOOL      SFMPQAPI WINAPI SFileSetBasePath(LPCSTR lpNewBasePath);
@@ -403,10 +444,13 @@ BOOL      SFMPQAPI WINAPI MpqDeleteFile(MPQHANDLE hMPQ, LPCSTR lpFileName);
 BOOL      SFMPQAPI WINAPI MpqCompactArchive(MPQHANDLE hMPQ);
 
 // Extra archive editing functions
+MPQHANDLE SFMPQAPI WINAPI MpqOpenArchiveForUpdateEx(LPCSTR lpFileName, DWORD dwFlags, DWORD dwMaximumFilesInArchive, DWORD dwBlockSize);
 BOOL      SFMPQAPI WINAPI MpqAddFileToArchiveEx(MPQHANDLE hMPQ, LPCSTR lpSourceFileName, LPCSTR lpDestFileName, DWORD dwFlags, DWORD dwCompressionType, DWORD dwCompressLevel);
 BOOL      SFMPQAPI WINAPI MpqAddFileFromBufferEx(MPQHANDLE hMPQ, LPVOID lpBuffer, DWORD dwLength, LPCSTR lpFileName, DWORD dwFlags, DWORD dwCompressionType, DWORD dwCompressLevel);
 BOOL      SFMPQAPI WINAPI MpqAddFileFromBuffer(MPQHANDLE hMPQ, LPVOID lpBuffer, DWORD dwLength, LPCSTR lpFileName, DWORD dwFlags);
 BOOL      SFMPQAPI WINAPI MpqAddWaveFromBuffer(MPQHANDLE hMPQ, LPVOID lpBuffer, DWORD dwLength, LPCSTR lpFileName, DWORD dwFlags, DWORD dwQuality);
+BOOL      SFMPQAPI WINAPI MpqRenameAndSetFileLocale(MPQHANDLE hMPQ, LPCSTR lpcOldFileName, LPCSTR lpcNewFileName, LCID nOldLocale, LCID nNewLocale);
+BOOL      SFMPQAPI WINAPI MpqDeleteFileWithLocale(MPQHANDLE hMPQ, LPCSTR lpFileName, LCID nLocale);
 BOOL      SFMPQAPI WINAPI MpqSetFileLocale(MPQHANDLE hMPQ, LPCSTR lpFileName, LCID nOldLocale, LCID nNewLocale);
 
 // These functions do nothing.  They are only provided for
@@ -419,3 +463,4 @@ void      SFMPQAPI WINAPI StormDestroy();
 #endif
 
 #endif
+
