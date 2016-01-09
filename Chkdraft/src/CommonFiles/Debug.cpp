@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <crtdbg.h>
 
 bool debugging = false;
 
