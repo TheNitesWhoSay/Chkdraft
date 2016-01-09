@@ -924,7 +924,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 			try {
 				newBuffer = new s8[sizeAllotted];
 			} catch ( std::bad_alloc ) {
-				throw( const BadResize(0) );
+				throw(  BadResize(0) );
 			}
 
 			if ( sizeUsed <= sizeAllotted )
@@ -954,7 +954,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
 					data = new s8[sizeAllotted];
 				} catch ( std::bad_alloc ) {
 					sizeAllotted = 0;
-					throw( const BadResize(1) );
+					throw( BadResize(1) );
 				}
 			}
 		}
