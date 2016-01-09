@@ -87,7 +87,7 @@ void LocationWindow::RefreshLocationInfo()
 		SetWindowText(GetDlgItem(hWnd, IDC_LOCBOTTOM), std::to_string(locRef->yc2).c_str());
 
 		char text[20];
-		_itoa_s(locRef->elevation, text, 2);
+		_itoa_s(locRef->elevation, text, 20, 2);
 		size_t len = std::strlen(text);
 		if ( len > 0 && len < 16 )
 		{

@@ -1,5 +1,4 @@
 #include "TextTrigGenerator.h"
-#include <cstring>
 #include <string>
 
 const char* textFlags[] = { "Don't Always Display", "Always Display" };
@@ -946,7 +945,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 			if ( currTrig->internalData > 0 )
 			{
 				output.addStr("\n\nFlags:\n", 9);
-				_itoa_s(currTrig->internalData, number, 2);
+				_itoa_s(currTrig->internalData, number, 36, 2); //FIXME
 				size_t length = std::strlen(number);
 				output.addStr("00000000000000000000000000000000", (32-length));
 				output.addStr(number, length);

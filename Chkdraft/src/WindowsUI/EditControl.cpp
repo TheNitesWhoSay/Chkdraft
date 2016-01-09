@@ -91,7 +91,7 @@ bool EditControl::SetEditBinaryNum(numType num)
 	char newText[36] = { };
 	u32 temp = (u32)num;
 	u8 numBits = (sizeof(numType)*8);
-	_itoa_s(temp, newText, 2);
+	_itoa_s(temp, newText, 36, 2);
 	size_t length = std::strlen(newText);
 	if ( length > 0 && length < numBits )
 	{
