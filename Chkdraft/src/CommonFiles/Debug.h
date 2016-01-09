@@ -19,7 +19,7 @@
 
 #ifdef CHKD_DEBUG
 #define DEBUG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #include <iostream>
 #include <Windows.h>
 class CLI
