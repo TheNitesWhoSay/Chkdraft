@@ -1,6 +1,7 @@
 #include "EditControl.h"
 #include <iostream>
 #include <type_traits>
+#include <cstring>
 
 EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(false)
 {

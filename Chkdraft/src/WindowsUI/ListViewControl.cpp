@@ -1,5 +1,6 @@
 #include "ListViewControl.h"
 #include <iostream>
+#include <cstring>
 
 bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id)
 {

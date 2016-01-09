@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <cstring>
 
 bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
 	u32 id, const std::vector<std::string>& items, HFONT font)
