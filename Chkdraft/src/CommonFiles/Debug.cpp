@@ -36,7 +36,7 @@ void ShoutError(const char* file, unsigned int line, const char* msg, ...)
 	void CheckInvariant(bool condition, const char* file, int line)
 	{
 		char invarError[MAX_ERROR_LENGTH];
-		std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", strrchr(file, '\\')+1, line);
+		std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", file, line);
 
 		if ( condition == false )
 			MessageBox(NULL, invarError, "Error!", MB_OK|MB_ICONEXCLAMATION);
