@@ -17,6 +17,7 @@ const u8 ColorCycler::cctilesets[8] = { 0,1,1,2,0,3,3,3 };
 
 bool ColorCycler::CycleColors(const u16 tileset)
 {
+	bool redraw = false;
 	if ( GetTickCount() > ccticks ) // Time to update for next tick?
 	{
 		colorcycle* cc = cctable[cctilesets[tileset]]; // Get current tileset's definition table
@@ -33,12 +34,12 @@ bool ColorCycler::CycleColors(const u16 tileset)
 				for ( int i = cc[ccset].stop; i > cc[ccset].start; i-- ) // For each from start to stop
 					chkd.scData.tilesets.set[tileset].wpe.swap<u32>(i * 4, (i - 1) * 4); // Rotate right
 				
-				return true; // Tell the caller the map should be redrawn
+				redraw = true; // Tell the caller the map should be redrawn
 			}
 		}
 		ccticks = GetTickCount();
 	}
-	return false; // No need to redraw
+	return redraw;
 }
 
 inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
