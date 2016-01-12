@@ -573,6 +573,9 @@
     <ClInclude Include="Source Files\ScData.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Source Files\Updater.h">
+      <Filter>Header Files\Windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source Files\Common Files\Constants.cpp">
@@ -910,6 +913,9 @@
     </ClCompile>
     <ClCompile Include="Source Files\ScData.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Updater.cpp">
+      <Filter>Source Files\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

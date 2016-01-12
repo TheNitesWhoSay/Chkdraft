@@ -8,7 +8,7 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
+GuiMap::GuiMap() : bitmapHeight(0), bitmapWidth(0),
 			 layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
 			 dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
 			 snapUnits(true), stackUnits(false),
@@ -27,12 +27,6 @@ GuiMap::GuiMap() : lpvBits(nullptr), bitMapHeight(0), bitMapWidth(0),
 GuiMap::~GuiMap()
 {
 	chkd.tilePropWindow.DestroyThis();
-
-	if ( lpvBits != nullptr )
-	{
-		delete[] lpvBits;
-		lpvBits = nullptr;
-	}
 
 	if ( MemBitmap != NULL )
 		DeleteObject(MemBitmap);
@@ -144,10 +138,6 @@ void GuiMap::setZoom(double newScale)
 	RedrawMap = true;
 	RedrawMiniMap = true;
 
-	RECT rect;
-	GetClientRect(getHandle(), &rect);
-	bitMapWidth  = u16( ((rect.right - rect.left+32)/32*32)/zoom )/32*32;
-	bitMapHeight = u16( ((rect.bottom - rect.top+32)/32*32)/zoom )/32*32;
 	Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
 	UpdateZoomMenuItems();
 	RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -697,6 +687,27 @@ HWND GuiMap::getHandle()
 	return ClassWindow::getHandle();
 }
 
+bool GuiMap::EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight)
+{
+	if ( bitmapWidth == desiredWidth && bitmapHeight == desiredHeight )
+		return true;
+	else // ( bitmapWidth != desiredWidth || bitmapHeight != desiredHeight )
+	{
+		try
+		{
+			bitmapWidth = desiredWidth;
+			bitmapHeight = desiredHeight;
+			graphicBits.resize(bitmapWidth*bitmapHeight);
+			return true;
+		}
+		catch ( std::bad_alloc ) {}
+	}
+	bitmapWidth = 0;
+	bitmapHeight = 0;
+	graphicBits.clear();
+	return false;
+}
+
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 {
 	InvalidateRect(this->getHandle(), NULL, FALSE);
@@ -712,16 +723,11 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 	u16 scaledWidth = (u16(((double)width)/zoom))/32*32,
 		scaledHeight = (u16(((double)height)/zoom))/32*32;
 
-	u32 bitmapSize = (u32)scaledWidth*(u32)scaledHeight*3;
+	u32 bitmapSize = (u32)scaledWidth*(u32)scaledHeight*4;
 
-	if ( this->RedrawMap == true )
+	if ( this->RedrawMap == true && EnsureBitmapSize(scaledWidth, scaledHeight) )
 	{
 		this->RedrawMap = false;
-		if ( this->lpvBits != nullptr )
-			delete[] this->lpvBits;
-		this->bitMapWidth = scaledWidth;
-		this->bitMapHeight = scaledHeight;
-		this->lpvBits = new u8[bitmapSize];
 
 		DeleteObject(this->MemBitmap);
 		DeleteDC    (this->MemhDC);
@@ -734,11 +740,11 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 			RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
 
 		graphics.DrawMap(
-				 this->bitWidth(),
-				 this->bitHeight(),
+				 bitmapWidth,
+				 bitmapHeight,
 				 this->display().x,
 				 this->display().y,
-				 this->GraphicBits(),
+				 graphicBits,
 				 this->selections(),
 				 this->layer,
 				 this->GetMemhDC(),
@@ -767,7 +773,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 				 ); // Drag and paste graphics
 
 		if ( layer != LAYER_LOCATIONS )
-			DrawSelectingFrame(TemphDC, selections(), display().x, display().y, bitWidth(), bitHeight(), zoom);
+			DrawSelectingFrame(TemphDC, selections(), display().x, display().y, bitmapWidth, bitmapHeight, zoom);
 	}
 	
 	SetStretchBltMode(hDC, COLORONCOLOR);
@@ -816,8 +822,8 @@ void GuiMap::PaintMiniMap(HWND hWnd)
 			DrawMiniMapBox( MemhDC,
 							this->display().x,
 							this->display().y,
-							this->bitWidth(),
-							this->bitHeight(),
+							bitmapWidth,
+							bitmapHeight,
 							this->XSize(),
 							this->YSize(),
 							this->MiniMapScale(this->XSize(), this->YSize())
@@ -829,8 +835,8 @@ void GuiMap::PaintMiniMap(HWND hWnd)
 			DrawMiniMapBox( MemhDC,
 							this->display().x,
 							this->display().y,
-							this->bitWidth(),
-							this->bitHeight(),
+							bitmapWidth,
+							bitmapHeight,
 							this->XSize(),
 							this->YSize(),
 							this->MiniMapScale(this->XSize(), this->YSize())
@@ -846,7 +852,7 @@ void GuiMap::PaintMiniMap(HWND hWnd)
 
 void GuiMap::Redraw(bool includeMiniMap)
 {
-	if ( this )
+	if ( this != nullptr )
 	{
 		RedrawMap = true;
 		if ( includeMiniMap )
