@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-m32 -fleading-underscore -g -std=gnu++11 -Isrc -ISFmpq -fpermissive -DDEBUG -D_DEBUG -DMINGW_HAS_SECURE_API -DCHKDRAFT -DCHKD_DEBUG -DNOMINMAX -DCRT_SECURE_NO_WARNINGS
 
-LDFLAGS=-m32 -mwindows -L. -LSFmpq -Lsrc/MappingCore
+LDFLAGS=-m32 -static -mwindows -L. -LSFmpq  -Lsrc/MappingCore
 LIBS=resource.o -lcomdlg32 -lcomctl32 -lSFmpq
 SOURCES=src/ChangePassword.cpp \
 src/ChkdPlugins.cpp \
