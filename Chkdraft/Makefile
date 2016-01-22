@@ -117,12 +117,13 @@ src/WindowsUI/WindowMenu.cpp \
 src/WindowsUI/WindowsItem.cpp 
 
 OBJECTS=$(subst src/,build/,$(SOURCES:.cpp=.o))
+DEPS=$(OUTDIR)/SFmpq.dll 
 OUTDIR=bin
 EXECUTABLE=$(OUTDIR)/chkdraft.exe
 
 all: $(SOURCES) $(EXECUTABLE)
 	
-$(EXECUTABLE): $(OBJECTS) $(OUTDIR)/SFmpq.dll 
+$(EXECUTABLE): $(OBJECTS) $(DEPS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 $(OUTDIR)/SFmpq.dll:
@@ -134,4 +135,4 @@ build/%.o: src/%.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(OBJECTS) $(EXECUTABLE)
+	rm -f $(OBJECTS) $(EXECUTABLE) $(DEPS)
