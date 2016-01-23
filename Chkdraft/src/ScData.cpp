@@ -46,7 +46,7 @@ u8* GRP::data(u32 frame, u32 line)
 			return (u8*)imageDat.getPtr(globalOffset+(u32)imageDat.get<u16>(globalOffset+line*2));
 		}
 	}
-	return false;
+	return nullptr;
 }
 
 Upgrades::Upgrades()

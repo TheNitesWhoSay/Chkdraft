@@ -31,12 +31,12 @@ bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 heigh
 
 void ListBoxControl::ClearItems()
 {
-	SendMessage(getHandle(), LB_RESETCONTENT, NULL, NULL);
+	SendMessage(getHandle(), LB_RESETCONTENT, 0, 0);
 }
 
 int ListBoxControl::AddItem(u32 item)
 {
-	LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, NULL, (LPARAM)item);
+	LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)item);
 	if ( result == LB_ERR || result == LB_ERRSPACE )
 		return -1;
 	else
@@ -45,7 +45,7 @@ int ListBoxControl::AddItem(u32 item)
 
 int ListBoxControl::AddString(const char* str)
 {
-	LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, NULL, (LPARAM)str);
+	LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)str);
 	if ( result == LB_ERR || result == LB_ERRSPACE )
 		return -1;
 	else
@@ -95,12 +95,12 @@ bool ListBoxControl::SetItemHeight(int index, int height)
 
 bool ListBoxControl::RemoveItem(int index)
 {
-	return SendMessage(getHandle(), LB_DELETESTRING, index, NULL) != LB_ERR;
+	return SendMessage(getHandle(), LB_DELETESTRING, index, 0) != LB_ERR;
 }
 
 bool ListBoxControl::SetTopIndex(int index)
 {
-	return SendMessage(getHandle(), LB_SETTOPINDEX, (WPARAM)index, NULL) != LB_ERR;
+	return SendMessage(getHandle(), LB_SETTOPINDEX, (WPARAM)index, 0) != LB_ERR;
 }
 
 int ListBoxControl::GetNumItems()
@@ -114,7 +114,7 @@ int ListBoxControl::GetNumItems()
 
 int ListBoxControl::ItemHeight()
 {
-	LRESULT result = SendMessage(getHandle(), LB_GETITEMHEIGHT, 0, NULL);
+	LRESULT result = SendMessage(getHandle(), LB_GETITEMHEIGHT, 0, 0);
 	if ( result != LB_ERR )
 		return (int)result;
 	else
@@ -123,7 +123,7 @@ int ListBoxControl::ItemHeight()
 
 bool ListBoxControl::GetItemHeight(int index, int &height)
 {
-	LRESULT result = SendMessage(getHandle(), LB_GETITEMHEIGHT, (WPARAM)index, NULL);
+	LRESULT result = SendMessage(getHandle(), LB_GETITEMHEIGHT, (WPARAM)index, 0);
 	if ( result != LB_ERR )
 	{
 		height = (int)result;
@@ -156,7 +156,7 @@ bool ListBoxControl::GetCurSel(int &sel)
 
 int ListBoxControl::GetNumSel()
 {
-	LRESULT result = SendMessage(getHandle(), LB_GETSELCOUNT, NULL, NULL);
+	LRESULT result = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
 	if ( result != LB_ERR )
 		return (int)result;
 	else
@@ -165,7 +165,7 @@ int ListBoxControl::GetNumSel()
 
 bool ListBoxControl::GetSelString(int index, std::string &str)
 {
-	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, NULL, NULL);
+	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
 	if ( numSel != LB_ERR && numSel > 0 )
 	{
 		if ( index < numSel ) // Index must be within the amount of items selected
@@ -179,7 +179,7 @@ bool ListBoxControl::GetSelString(int index, std::string &str)
 			{
 				int selectedItem = selections[index];
 				delete[] selections;
-				result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, NULL);
+				result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, 0);
 				if ( result != LB_ERR )
 				{
 					int textLength = 1+(int)result;
@@ -209,7 +209,7 @@ bool ListBoxControl::GetCurSelString(std::string &str)
 	int selectedItem = -1;
 	if ( GetCurSel(selectedItem) )
 	{
-		LRESULT result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, NULL);
+		LRESULT result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, 0);
 		if ( result != LB_ERR )
 		{
 			int textLength = 1 + (int)result;
@@ -232,7 +232,7 @@ bool ListBoxControl::GetCurSelString(std::string &str)
 
 bool ListBoxControl::GetSelItem(int index, int &itemData)
 {
-	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, NULL, NULL);
+	LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
 	if ( numSel != LB_ERR && numSel > 0 )
 	{
 		if ( index < numSel ) // Index must be within the amount of items selected
@@ -244,7 +244,7 @@ bool ListBoxControl::GetSelItem(int index, int &itemData)
 			LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
 			if ( result != LB_ERR )
 			{
-				itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], NULL));
+				itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0));
 				delete[] selections;
 				return true;
 			}
@@ -257,7 +257,7 @@ bool ListBoxControl::GetSelItem(int index, int &itemData)
 
 bool ListBoxControl::GetItemData(int index, u32 &data)
 {
-	LRESULT result = SendMessage(getHandle(), LB_GETITEMDATA , (WPARAM)index, NULL);
+	LRESULT result = SendMessage(getHandle(), LB_GETITEMDATA , (WPARAM)index, 0);
 	if ( result != LB_ERR )
 	{
 		data = (u32)result;
@@ -269,7 +269,7 @@ bool ListBoxControl::GetItemData(int index, u32 &data)
 
 int ListBoxControl::GetTopIndex()
 {
-	return SendMessage(getHandle(), LB_GETTOPINDEX, NULL, NULL);
+	return SendMessage(getHandle(), LB_GETTOPINDEX, 0, 0);
 }
 
 LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -288,13 +288,13 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_SETREDRAW:
 			if ( wParam == TRUE && autoRedraw == false )
 			{
-				SendMessage(GetParent(hWnd), WM_PREMEASUREITEMS, NULL, (LPARAM)hWnd);
+				SendMessage(GetParent(hWnd), WM_PREMEASUREITEMS, 0, (LPARAM)hWnd);
 				while ( !itemsToAdd.empty() )
 				{
-					WindowControl::ControlProc(hWnd, LB_ADDSTRING, NULL, (LPARAM)itemsToAdd.front());
+					WindowControl::ControlProc(hWnd, LB_ADDSTRING, 0, (LPARAM)itemsToAdd.front());
 					itemsToAdd.pop();
 				}
-				SendMessage(GetParent(hWnd), WM_POSTMEASUREITEMS, NULL, (LPARAM)hWnd);
+				SendMessage(GetParent(hWnd), WM_POSTMEASUREITEMS, 0, (LPARAM)hWnd);
 				autoRedraw = true;
 			}
 			else if ( wParam == FALSE && autoRedraw == true )
@@ -302,10 +302,10 @@ LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			break;
 		case WM_PAINT:
 			{
-				SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
+				SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
 				LRESULT result = WindowControl::ControlProc(hWnd, msg, wParam, lParam);
 				// Could replace default drawing with double buffering
-				SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
+				SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
 				return result;
 			}
 			break;

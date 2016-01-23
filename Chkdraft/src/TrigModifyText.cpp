@@ -30,8 +30,8 @@ bool TrigModifyTextWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TrigModifyTextWindow", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "TrigModifyTextWindow", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "TrigModifyTextWindow", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "TrigModifyTextWindow", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{

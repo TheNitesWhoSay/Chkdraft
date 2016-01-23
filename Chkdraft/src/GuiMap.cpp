@@ -526,7 +526,7 @@ void GuiMap::deleteSelection()
 			case LAYER_UNITS:
 				{
 					if ( chkd.unitWindow.getHandle() != nullptr )
-						SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), NULL);
+						SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
 					else
 					{
 						ReversibleActionsPtr deletes(new ReversibleActions);
@@ -1465,7 +1465,7 @@ LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
 	chkd.maps.CloseMap(hWnd);
 	RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
-	return ClassWindow::WndProc(hWnd, WM_DESTROY, NULL, NULL);
+	return ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
 }
 
 void GuiMap::RButtonUp()
@@ -2041,7 +2041,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 {
 	if ( CanExit() )
-		return ClassWindow::WndProc(hWnd, WM_CLOSE, NULL, NULL);
+		return ClassWindow::WndProc(hWnd, WM_CLOSE, 0, 0);
 	else
 		return 0;
 }

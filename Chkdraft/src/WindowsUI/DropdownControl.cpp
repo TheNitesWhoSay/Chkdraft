@@ -76,17 +76,17 @@ void DropdownControl::SetSel(int index)
 
 void DropdownControl::ClearEditSel()
 {
-	PostMessage(getHandle(), CB_SETEDITSEL, NULL, MAKELPARAM(-1, 0));
+	PostMessage(getHandle(), CB_SETEDITSEL, 0, MAKELPARAM(-1, 0));
 }
 
 int DropdownControl::GetSel()
 {
-	return (int)SendMessage(getHandle(), CB_GETCURSEL, NULL, NULL);
+	return (int)SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
 }
 
 bool DropdownControl::GetText(int index, char* dest, int destLength)
 {
-	LRESULT textLength = SendMessage(getHandle(), CB_GETLBTEXTLEN, index, NULL);
+	LRESULT textLength = SendMessage(getHandle(), CB_GETLBTEXTLEN, index, 0);
 	if ( textLength != CB_ERR && destLength >= textLength )
 		return SendMessage(getHandle(), CB_GETLBTEXT, index, (LPARAM)dest) != CB_ERR;
 	else

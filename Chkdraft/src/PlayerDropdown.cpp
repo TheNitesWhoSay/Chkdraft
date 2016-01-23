@@ -7,7 +7,7 @@ bool PlayerDropdown::CreateThis(HWND hParent, int x, int y, int width, int heigh
 
 	if ( DropdownControl::CreateThis(hParent, x, y, width, height, true, false, id, 12, playerStrings, defaultFont) )
 	{
-		SendMessage(getHandle(), CB_LIMITTEXT, 0, NULL);
+		SendMessage(getHandle(), CB_LIMITTEXT, 0, 0);
 		DropdownControl::SetSel(0);
 		DropdownControl::ClearEditSel();
 		return true;

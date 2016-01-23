@@ -67,7 +67,7 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 
 	if ( FindFile(filePath) ) // File found
 	{
-		do { success = SFileOpenArchive((LPCSTR)filePath, 0, NULL, &hMpq); }
+		do { success = SFileOpenArchive((LPCSTR)filePath, 0, 0, &hMpq); }
 		while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES );
 	}
 	else // File not found
@@ -85,7 +85,7 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
 	
 			if ( GetOpenFileName(&ofn) )
 			{
-				do { success = SFileOpenArchive(filePath, 0, NULL, &hMpq); }
+				do { success = SFileOpenArchive(filePath, 0, 0, &hMpq); }
 				while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES );
 			}
 			else

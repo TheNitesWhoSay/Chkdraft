@@ -188,7 +188,7 @@ void MAPS::CloseMap(HWND hMap)
 
 void MAPS::CloseActive()
 {
-	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), NULL);
+	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
 }
 
 void MAPS::UpdateTreeView()
@@ -302,7 +302,7 @@ void MAPS::ChangePlayer(u8 newPlayer)
 				std::string text;
 				HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
 				if ( newPlayer < 12 )
-					SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
+					SendMessage(hOwner, CB_SETCURSEL, newPlayer, 0);
 				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
 					SetWindowText(hOwner, text.c_str());
 

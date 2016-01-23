@@ -3,7 +3,7 @@
 
 bool MainPlot::CreateThis(HWND hParent)
 {
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)(COLOR_APPWORKSPACE + 1), NULL, "Plot", NULL, false) &&
+	if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)(COLOR_APPWORKSPACE + 1), NULL, "Plot", NULL, false) &&
 		ClassWindow::CreateClassWindow(WS_EX_TRANSPARENT, NULL, WS_CHILD | WS_VISIBLE, 0, 0, 162, 500, hParent, (HMENU)IDR_MAIN_PLOT) )
 	{
 		return true;

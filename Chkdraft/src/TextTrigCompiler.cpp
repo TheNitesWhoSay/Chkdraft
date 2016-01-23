@@ -706,7 +706,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		if ( text.getNext('(', pos, conditionEnd) )
 		{
 			if ( !text.getNext('\15', pos, lineEnd) )
-				text.getNext(NULL, pos, lineEnd);
+				text.getNext('\0', pos, lineEnd);
 
 			conditionEnd = std::min(conditionEnd, lineEnd);
 
@@ -791,7 +791,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 	else if ( text.getNext('(', pos, conditionEnd) ) // Has a condition or an error
 	{
 		if ( !text.getNext('\15', pos, lineEnd) )
-			text.getNext(NULL, pos, lineEnd);
+			text.getNext('\0', pos, lineEnd);
 
 		conditionEnd = std::min(conditionEnd, lineEnd);
 
@@ -966,7 +966,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		if ( text.getNext('(', pos, actionEnd) )
 		{
 			if ( !text.getNext('\15', pos, lineEnd) )
-				text.getNext(NULL, pos, lineEnd);
+				text.getNext('\0', pos, lineEnd);
 
 			actionEnd = std::min(actionEnd, lineEnd);
 
@@ -1024,7 +1024,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 	else if ( text.getNext('(', pos, actionEnd) )
 	{
 		if ( !text.getNext('\15', pos, lineEnd) )
-			text.getNext(NULL, pos, lineEnd);
+			text.getNext('\0', pos, lineEnd);
 
 		actionEnd = std::min(actionEnd, lineEnd);
 
