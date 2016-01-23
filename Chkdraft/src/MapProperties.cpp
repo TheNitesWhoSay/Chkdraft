@@ -235,7 +235,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 				SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 				SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, NULL);
-				PostMessage(hMapNewTerrain, CB_SETEDITSEL, NULL, (-1, 0));
+				PostMessage(hMapNewTerrain, CB_SETEDITSEL, NULL, MAKELPARAM(-1, 0));
 			}
 		}
 		break;
