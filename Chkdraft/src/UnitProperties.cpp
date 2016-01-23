@@ -55,7 +55,7 @@ bool UnitWindow::CreateSubWindows(HWND hWnd)
 		 hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER),
 		 hID = GetDlgItem(hWnd, IDC_EDIT_ID);
 
-	char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
+	const char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
 							  "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
 	for ( int i=0; i<12; i++ )
 		SendMessage(hPlayer, CB_ADDSTRING, 0, (LPARAM)playerStrings[i]);

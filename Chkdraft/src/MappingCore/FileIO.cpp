@@ -221,7 +221,7 @@ void RemoveFiles(std::string firstFileName, std::string secondFileName, std::str
 	std::remove(thirdFileName.c_str());
 }
 
-OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter)
+OPENFILENAME GetOfn(char* szFileName, const char* filter, int initFilter)
 {
 	OPENFILENAME ofn = { };
 	ofn.lStructSize = sizeof(ofn);
