@@ -3746,7 +3746,6 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(s32 extendedAID)
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
 	ChkLocation* loc;
-	u16 stringNum;
 	LocationTableNode locNode;
 	buffer& MRGN = map->MRGN();
 	if ( MRGN.exists() && map->STR().exists() )
@@ -3760,7 +3759,6 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
 			{
 				locNode.locationName = "";
-				stringNum = loc->stringNum;
 
 				if ( i == 63 )
 				{

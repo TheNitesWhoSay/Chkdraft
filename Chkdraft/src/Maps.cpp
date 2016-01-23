@@ -490,8 +490,8 @@ void MAPS::updateCursor(s32 xc, s32 yc)
 						currCursor = &weCursor;
 						SetCursor(weCursor);
 					} // Invariant: is on a corner
-					else if ( xc < leftInnerBound && yc < topInnerBound ||
-						      xc > rightInnerBound && yc > bottomInnerBound )
+					else if ( ( xc < leftInnerBound && yc < topInnerBound ) ||
+						      ( xc > rightInnerBound && yc > bottomInnerBound ) )
 					{
 						currCursor = &nwseCursor;
 						SetCursor(nwseCursor);
