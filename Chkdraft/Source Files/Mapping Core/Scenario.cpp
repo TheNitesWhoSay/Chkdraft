@@ -345,8 +345,6 @@ bool Scenario::getActiveComment(Trigger* trigger, RawString &comment)
 				}
 			}
 		}
-		else if ( action.action == AID_NO_ACTION )
-			break;
 	}
 	return false;
 }

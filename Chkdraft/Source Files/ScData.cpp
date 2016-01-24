@@ -752,7 +752,7 @@ bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStar
 
 	for ( u32 i = 0; i<numGrps; i++ )
 	{
-		fileName = (char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
+        fileName = (char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
 		grps[i].LoadGrp(fileName, hPatchRt, hBrooDat, hStarDat);
 	}
 
