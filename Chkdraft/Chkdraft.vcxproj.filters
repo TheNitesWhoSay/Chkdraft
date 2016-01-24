@@ -16,9 +16,6 @@
     <Filter Include="Source Files\Common Files">
       <UniqueIdentifier>{0f51c2aa-c14c-4969-b354-b04b84db1dd0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Common Files">
-      <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Mapping">
       <UniqueIdentifier>{21d241a0-8444-40ac-8cbf-252185022492}</UniqueIdentifier>
     </Filter>
@@ -205,717 +202,714 @@
     <Filter Include="Header Files\Mapping\Undos\ChkdUndos\%2a">
       <UniqueIdentifier>{1de6c660-4988-431a-8552-e1b9c305c597}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common Files">
+      <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source Files\Common Files\Constants.h">
+    <ClInclude Include="src\CommonFiles\CommonFiles.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Common Files\Debug.h">
+    <ClInclude Include="src\CommonFiles\Constants.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Common Files\Resource.h">
+    <ClInclude Include="src\CommonFiles\Debug.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Common Files\CommonFiles.h">
+    <ClInclude Include="src\CommonFiles\Resource.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\PreservedUnitStats.h">
-      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ClassWindow.h">
-      <Filter>Header Files\Windows UI\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\StringEditor.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\StringGuide.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\StringPreview.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\WindowMenu.h">
-      <Filter>Header Files\Windows UI\Menus</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Common Files\Structs.h">
+    <ClInclude Include="src\CommonFiles\Structs.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\UnitProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
+    <ClInclude Include="src\ChkdPlugins.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\MainTree.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\Clipboard.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\UnitTree.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\Graphics.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\LocationTree.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\ScData.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\PlayerDropdown.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\Selections.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\LeftBar.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MainPlot.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MainToolbar.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MiniMap.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UpgradeTree.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TechTree.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\LocationProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TerrainPalette.h">
-      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TileProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TextTrigCompiler.h">
+    <ClInclude Include="src\StaticTrigComponentParser.h">
       <Filter>Header Files\Mapping\Trigger Text</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\StaticTrigComponentParser.h">
+    <ClInclude Include="src\TextTrigCompiler.h">
       <Filter>Header Files\Mapping\Trigger Text</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\TextTrigGenerator.h">
+    <ClInclude Include="src\TextTrigGenerator.h">
       <Filter>Header Files\Mapping\Trigger Text</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\MoveTo.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\LocationChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\PeerListBox.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\LocationCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\TrigModify.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify</Filter>
+    <ClInclude Include="src\LocationMove.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Suggestions.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\TileChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\ChkdCtrlEnums.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\UnitChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Forces.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    <ClInclude Include="src\UnitCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\MapProperties.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    <ClInclude Include="src\UnitIndexMove.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\TechSettings.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UnitSettings.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UpgradeSettings.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\WavEditor.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Triggers.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Counters.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\CUWPs.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Switches.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Templates.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ButtonControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\CheckBoxControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\DragListControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\DropdownControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\EditControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\GridItem.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\GridView.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\GroupBoxControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ListBoxControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ListViewControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\RadioButtonControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\StatusControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\TabControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\TextControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ToolbarControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\TreeViewControl.h">
-      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\MdiClient.h">
-      <Filter>Header Files\Windows UI\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\ClassDialog.h">
-      <Filter>Header Files\Windows UI\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Chkdraft.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\WindowControl.h">
-      <Filter>Header Files\Windows UI\Controls</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigEditor.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\MapSettings.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigModifyText.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigPlayers.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigConditions.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigActions.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TrigGeneral.h">
-      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\TextTrig.h">
-      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\NewMap.h">
-      <Filter>Header Files\Windows\Dialog Windows\New Map</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\DialogWindows.h">
-      <Filter>Header Files\Windows\Dialog Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Maps.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\GuiMap.h">
-      <Filter>Header Files\Windows\Main Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\StringUsage.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Basics.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Buffer.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\DefaultCHK.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\FileIO.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\MapFile.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Scenario.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\SFmpqapi.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\ChkdPlugins.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Clipboard.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Graphics.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Selections.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\DataTypes.h">
-      <Filter>Header Files\Windows UI\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\WindowsItem.h">
-      <Filter>Header Files\Windows UI\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\WindowsUI.h">
-      <Filter>Header Files\Windows UI\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Windows UI\WinUIEnums.h">
-      <Filter>Header Files\Windows UI\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\MappingCore.h">
-      <Filter>Header Files\Mapping Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\sha256.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\ChangePassword.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\EnterPassword.h">
-      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\StringTableNode.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkTrigger.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkCondition.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkUnit.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkSprite.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkLocation.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkAction.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkDoodad.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Undo.h">
-      <Filter>Header Files\Mapping\Undos</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Reversibles.h">
-      <Filter>Header Files\Mapping\Undos</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UndoTypes.h">
+    <ClInclude Include="src\UndoTypes.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\TileChange.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    <ClInclude Include="src\Reversibles.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\UnitCreateDel.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    <ClInclude Include="src\Undo.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\LocationCreateDel.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\LocationMove.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\LocationChange.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UnitChange.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\UnitIndexMove.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\LIT.h">
-      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
-    </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\Math.h">
+    <ClInclude Include="src\MappingCore\Basics.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\EscapeStrings.h">
+    <ClInclude Include="src\MappingCore\Buffer.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\CndActGrid.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\MappingCore\DefaultCHK.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\ChkdStringInput.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    <ClInclude Include="src\MappingCore\EscapeStrings.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\CoreStructs.h">
-      <Filter>Header Files\Mapping Core\Structs</Filter>
+    <ClInclude Include="src\MappingCore\FileIO.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Mapping Core\ChkCuwp.h">
+    <ClInclude Include="src\MappingCore\MapFile.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\Math.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\Scenario.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\sha256.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\StringUsage.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkAction.h">
       <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\ScData.h">
-      <Filter>Header Files\Mapping\%2a</Filter>
+    <ClInclude Include="src\MappingCore\ChkCondition.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Source Files\Updater.h">
+    <ClInclude Include="src\MappingCore\ChkCuwp.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkDoodad.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkLocation.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkSprite.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkTrigger.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkUnit.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\StringTableNode.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\CoreStructs.h">
+      <Filter>Header Files\Mapping Core\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\MappingCore.h">
+      <Filter>Header Files\Mapping Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ChkdCtrlEnums.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ChkdStringInput.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CndActGrid.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LocationTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MainTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MoveTo.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PeerListBox.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PlayerDropdown.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Suggestions.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TechTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UnitTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UpgradeTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PreservedUnitStats.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UnitProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LocationProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TerrainPalette.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TileProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ChangePassword.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EnterPassword.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Protection</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StringEditor.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StringGuide.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StringPreview.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a\StringEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Forces.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MapProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TechSettings.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UnitSettings.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UpgradeSettings.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WavEditor.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MapSettings.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NewMap.h">
+      <Filter>Header Files\Windows\Dialog Windows\New Map</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LIT.h">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TextTrig.h">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Counters.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CUWPs.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Switches.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Templates.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Triggers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigEditor.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigActions.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigConditions.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigGeneral.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigModifyText.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigPlayers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TrigModify.h">
+      <Filter>Header Files\Windows\Dialog Windows\Trig Modify</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DialogWindows.h">
+      <Filter>Header Files\Windows\Dialog Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GuiMap.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LeftBar.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MainPlot.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MainToolbar.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Maps.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MiniMap.h">
+      <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Chkdraft.h">
       <Filter>Header Files\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\DataTypes.h">
+      <Filter>Header Files\Windows UI\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\WindowsItem.h">
+      <Filter>Header Files\Windows UI\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\WindowsUI.h">
+      <Filter>Header Files\Windows UI\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\WinUIEnums.h">
+      <Filter>Header Files\Windows UI\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ButtonControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\CheckBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\DragListControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\DropdownControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\EditControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\GridItem.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\GridView.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\GroupBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ListBoxControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ListViewControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\RadioButtonControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\StatusControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\TabControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\TextControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ToolbarControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\TreeViewControl.h">
+      <Filter>Header Files\Windows UI\Controls\Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\WindowControl.h">
+      <Filter>Header Files\Windows UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\WindowMenu.h">
+      <Filter>Header Files\Windows UI\Menus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ClassDialog.h">
+      <Filter>Header Files\Windows UI\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\ClassWindow.h">
+      <Filter>Header Files\Windows UI\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WindowsUI\MdiClient.h">
+      <Filter>Header Files\Windows UI\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="SFmpq\SFmpqapi.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source Files\Common Files\Constants.cpp">
+    <ClCompile Include="src\ChkdPlugins.cpp">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CommonFiles\Constants.cpp">
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Common Files\Debug.cpp">
+    <ClCompile Include="src\CommonFiles\Debug.cpp">
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\PreservedUnitStats.cpp">
+    <ClCompile Include="src\CommonFiles\Structs.cpp">
+      <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Clipboard.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ScData.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Selections.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\StaticTrigComponentParser.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextTrigCompiler.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextTrigGenerator.cpp">
+      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LocationChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LocationCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LocationMove.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TileChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UnitChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UnitCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UnitIndexMove.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Reversibles.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Undo.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\Basics.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\Buffer.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\DefaultCHK.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\EscapeStrings.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\FileIO.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\MapFile.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\Math.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\Scenario.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\sha256.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\StringUsage.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkAction.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkCondition.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkCuwp.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkDoodad.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkLocation.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkSprite.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkTrigger.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ChkUnit.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\StringTableNode.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ChkdStringInput.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CndActGrid.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LocationTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MainTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MoveTo.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PeerListBox.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PlayerDropdown.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Suggestions.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TechTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UnitTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UpgradeTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PreservedUnitStats.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ClassWindow.cpp">
-      <Filter>Source Files\Windows UI\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\StringEditor.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\StringGuide.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\StringPreview.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\WindowMenu.cpp">
-      <Filter>Source Files\Windows UI\Menus</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Common Files\Structs.cpp">
-      <Filter>Source Files\Common Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitProperties.cpp">
+    <ClCompile Include="src\UnitProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\MainTree.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitTree.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LocationTree.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\PlayerDropdown.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MainPlot.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MainToolbar.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MiniMap.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LeftBar.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UpgradeTree.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TechTree.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LocationProperties.cpp">
+    <ClCompile Include="src\LocationProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TerrainPalette.cpp">
+    <ClCompile Include="src\TerrainPalette.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TileProperties.cpp">
+    <ClCompile Include="src\TileProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TextTrigCompiler.cpp">
-      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    <ClCompile Include="src\ChangePassword.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\StaticTrigComponentParser.cpp">
-      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    <ClCompile Include="src\EnterPassword.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TextTrigGenerator.cpp">
-      <Filter>Source Files\Mapping\Trigger Text</Filter>
+    <ClCompile Include="src\StringEditor.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\MoveTo.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    <ClCompile Include="src\StringGuide.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkUnit.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
+    <ClCompile Include="src\StringPreview.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a\String Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkSprite.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkDoodad.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkLocation.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\StringTableNode.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\PeerListBox.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigModify.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Suggestions.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\StringUsage.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Basics.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Buffer.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\DefaultCHK.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\FileIO.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\MapFile.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Scenario.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\WavEditor.cpp">
+    <ClCompile Include="src\Forces.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Forces.cpp">
+    <ClCompile Include="src\MapProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\MapProperties.cpp">
+    <ClCompile Include="src\TechSettings.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TechSettings.cpp">
+    <ClCompile Include="src\UnitSettings.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\UnitSettings.cpp">
+    <ClCompile Include="src\WavEditor.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\UpgradeSettings.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Triggers.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Counters.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\CUWPs.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Switches.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Templates.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ButtonControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\CheckBoxControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\DragListControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\DropdownControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\EditControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\GridItem.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\GridView.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\GroupBoxControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ListBoxControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ListViewControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\RadioButtonControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\StatusControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\TabControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\TextControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ToolbarControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\TreeViewControl.cpp">
-      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\MdiClient.cpp">
-      <Filter>Source Files\Windows UI\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\ClassDialog.cpp">
-      <Filter>Source Files\Windows UI\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Chkdraft.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\WindowControl.cpp">
-      <Filter>Source Files\Windows UI\Controls</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigEditor.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigActions.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigConditions.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigGeneral.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigModifyText.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TrigPlayers.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\MapSettings.cpp">
+    <ClCompile Include="src\MapSettings.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\TextTrig.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Maps.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\GuiMap.cpp">
-      <Filter>Source Files\Windows\Main Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\ChkdPlugins.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Clipboard.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Graphics.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Selections.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\NewMap.cpp">
+    <ClCompile Include="src\NewMap.cpp">
       <Filter>Source Files\Windows\Dialog Windows\New Map</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Windows UI\WindowsItem.cpp">
-      <Filter>Source Files\Windows UI\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\sha256.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\ChangePassword.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\EnterPassword.cpp">
-      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkAction.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkCondition.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkTrigger.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Undo.cpp">
-      <Filter>Source Files\Mapping\Undos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\TileChange.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Reversibles.cpp">
-      <Filter>Source Files\Mapping\Undos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitCreateDel.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LocationCreateDel.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LocationMove.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LocationChange.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitChange.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\UnitIndexMove.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\LIT.cpp">
+    <ClCompile Include="src\LIT.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\Math.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
+    <ClCompile Include="src\TextTrig.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\EscapeStrings.cpp">
-      <Filter>Source Files\Mapping Core\%2a</Filter>
+    <ClCompile Include="src\Counters.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\CndActGrid.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    <ClCompile Include="src\CUWPs.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\ChkdStringInput.cpp">
-      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    <ClCompile Include="src\Switches.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Mapping Core\ChkCuwp.cpp">
-      <Filter>Source Files\Mapping Core\Structs</Filter>
+    <ClCompile Include="src\Templates.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\ScData.cpp">
-      <Filter>Source Files\Mapping\%2a</Filter>
+    <ClCompile Include="src\Triggers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Source Files\Updater.cpp">
+    <ClCompile Include="src\TrigEditor.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigActions.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigConditions.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigGeneral.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigModifyText.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigPlayers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrigModify.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GuiMap.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LeftBar.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MainPlot.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MainToolbar.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Maps.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MiniMap.cpp">
+      <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Chkdraft.cpp">
       <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\WindowsItem.cpp">
+      <Filter>Source Files\Windows UI\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ButtonControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\CheckBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\DragListControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\DropdownControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\EditControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\GridItem.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\GridView.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\GroupBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ListBoxControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ListViewControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\RadioButtonControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\StatusControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\TabControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\TextControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ToolbarControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\TreeViewControl.cpp">
+      <Filter>Source Files\Windows UI\Controls\Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\WindowControl.cpp">
+      <Filter>Source Files\Windows UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\WindowMenu.cpp">
+      <Filter>Source Files\Windows UI\Menus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ClassDialog.cpp">
+      <Filter>Source Files\Windows UI\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\ClassWindow.cpp">
+      <Filter>Source Files\Windows UI\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\MdiClient.cpp">
+      <Filter>Source Files\Windows UI\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UpgradeSettings.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
