@@ -30,7 +30,6 @@ bool firstStartsWithSecond(const std::string &first, const std::string &second)
 	if ( firstLen < secondLen )
 		return false;
 
-	u32 i = 0;
 	for ( size_t i = 0; i < secondLen; i++ )
 	{
 		if ( tolower(first[i]) != tolower(second[i]) )
@@ -206,7 +205,7 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				std::string str;
 				if ( listSuggestions.GetCurSelString(str) )
-					SendMessage(suggestParent, WM_NEWSELTEXT, NULL, (LPARAM)&str);
+					SendMessage(suggestParent, WM_NEWSELTEXT, 0, (LPARAM)&str);
 			}
 			break;
 		default:

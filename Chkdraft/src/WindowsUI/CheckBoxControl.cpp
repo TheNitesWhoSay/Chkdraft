@@ -2,11 +2,11 @@
 
 bool CheckBoxControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool checked, const char* text, u32 id)
 {
-	if ( WindowControl::CreateControl( NULL, "BUTTON", text, WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX|BS_VCENTER,
+	if ( WindowControl::CreateControl( 0, "BUTTON", text, WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX|BS_VCENTER,
 										 x, y, width, height, hParent, (HMENU)id, false ) )
 	{
 		if ( checked )
-			SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, NULL);
+			SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, 0);
 
 		return true;
 	}
@@ -22,11 +22,11 @@ bool CheckBoxControl::CreateThis(HWND hParent, int x, int y, int width, int heig
 	else
 		style |= BS_CHECKBOX;
 
-	if ( WindowControl::CreateControl(NULL, "BUTTON", text, style,
+	if ( WindowControl::CreateControl(0, "BUTTON", text, style,
 		x, y, width, height, hParent, (HMENU)id, false) )
 	{
 		if ( checked )
-			SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, NULL);
+			SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, 0);
 
 		return true;
 	}
@@ -42,7 +42,7 @@ bool CheckBoxControl::isChecked()
 void CheckBoxControl::SetCheck(bool isChecked)
 {
 	if ( isChecked )
-		SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(getHandle(), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(getHandle(), BM_SETCHECK, BST_UNCHECKED, 0);
 }

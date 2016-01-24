@@ -52,8 +52,8 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "UpgradeSettings", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "UpgradeSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
+	if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "UpgradeSettings", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "UpgradeSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -470,7 +470,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		case CHECK_USEDEFAULTCOSTS:
 			if ( HIWORD(wParam) == BN_CLICKED )
 			{
-				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 				if ( selectedUpgrade != -1 )
 				{
 					if ( state == BST_CHECKED )
@@ -528,7 +528,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			if ( HIWORD(wParam) == BN_CLICKED && selectedUpgrade != -1 &&
 				LOWORD(wParam) >= ID_CHECK_DEFAULTUPGRADEP1 && LOWORD(wParam) <= ID_CHECK_DEFAULTUPGRADEP12 )
 			{
-				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 				int player = LOWORD(wParam) - ID_CHECK_DEFAULTUPGRADEP1;
 				bool useDefault = (state == BST_CHECKED);
 				chkd.maps.curr->setUpgradePlayerDefaults((u8)selectedUpgrade, player, useDefault);

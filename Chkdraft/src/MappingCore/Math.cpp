@@ -1,5 +1,5 @@
+#include <cmath>
 #include "Math.h"
-
 /* Allow file to be partitioned along templates */ #ifdef INCLUDE_TEMPLATES_ONLY
 
 template <typename valueType>
@@ -74,7 +74,7 @@ s32 TripletToInt(u8* triplet)
 template <typename T>
 s32 round(T value)
 {    
-	return s32(floor(static_cast<double>(value) + 0.5));
+	return s32(std::floor(static_cast<double>(value) + 0.5));
 }
 /* End templates */ #else
 

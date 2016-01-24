@@ -58,8 +58,8 @@ class Graphics
 {
 	public:
 
-		Graphics(Scenario &chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false),
-			clipLocationNames(true), chk(chk) { }
+		Graphics(Scenario &chk) : chk(chk), tileNumsFromMTXM(false), displayingTileNums(false), 
+			displayingElevations(false), clipLocationNames(true) { }
 
 		void DrawMap( u16 bitWidth, u16 bitHeight,
 					  s32 screenLeft, s32 screenTop,

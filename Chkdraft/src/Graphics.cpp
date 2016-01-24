@@ -572,7 +572,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 									}
 								}
 								else
-									ExtTextOut(hDC, leftMost, topMost, NULL, &rect, &str[0], str.length(), 0);
+									ExtTextOut(hDC, leftMost, topMost, 0, &rect, &str[0], str.length(), 0);
 							}
 						}
 					}

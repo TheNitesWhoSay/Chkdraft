@@ -706,7 +706,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		if ( text.getNext('(', pos, conditionEnd) )
 		{
 			if ( !text.getNext('\15', pos, lineEnd) )
-				text.getNext(NULL, pos, lineEnd);
+				text.getNext('\0', pos, lineEnd);
 
 			conditionEnd = std::min(conditionEnd, lineEnd);
 
@@ -791,7 +791,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 	else if ( text.getNext('(', pos, conditionEnd) ) // Has a condition or an error
 	{
 		if ( !text.getNext('\15', pos, lineEnd) )
-			text.getNext(NULL, pos, lineEnd);
+			text.getNext('\0', pos, lineEnd);
 
 		conditionEnd = std::min(conditionEnd, lineEnd);
 
@@ -966,7 +966,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 		if ( text.getNext('(', pos, actionEnd) )
 		{
 			if ( !text.getNext('\15', pos, lineEnd) )
-				text.getNext(NULL, pos, lineEnd);
+				text.getNext('\0', pos, lineEnd);
 
 			actionEnd = std::min(actionEnd, lineEnd);
 
@@ -1024,7 +1024,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 	else if ( text.getNext('(', pos, actionEnd) )
 	{
 		if ( !text.getNext('\15', pos, lineEnd) )
-			text.getNext(NULL, pos, lineEnd);
+			text.getNext('\0', pos, lineEnd);
 
 		actionEnd = std::min(actionEnd, lineEnd);
 
@@ -3746,7 +3746,6 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(s32 extendedAID)
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
 	ChkLocation* loc;
-	u16 stringNum;
 	LocationTableNode locNode;
 	buffer& MRGN = map->MRGN();
 	if ( MRGN.exists() && map->STR().exists() )
@@ -3760,7 +3759,6 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
 			{
 				locNode.locationName = "";
-				stringNum = loc->stringNum;
 
 				if ( i == 63 )
 				{
