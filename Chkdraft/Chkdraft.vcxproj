@@ -100,6 +100,7 @@
     <ClCompile Include="Source Files\MoveTo.cpp" />
     <ClCompile Include="Source Files\UnitSettings.cpp" />
     <ClCompile Include="Source Files\UnitTree.cpp" />
+    <ClCompile Include="Source Files\Updater.cpp" />
     <ClCompile Include="Source Files\UpgradeSettings.cpp" />
     <ClCompile Include="Source Files\UpgradeTree.cpp" />
     <ClCompile Include="Source Files\WavEditor.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="Source Files\MoveTo.h" />
     <ClInclude Include="Source Files\UnitSettings.h" />
     <ClInclude Include="Source Files\UnitTree.h" />
+    <ClInclude Include="Source Files\Updater.h" />
     <ClInclude Include="Source Files\UpgradeSettings.h" />
     <ClInclude Include="Source Files\UpgradeTree.h" />
     <ClInclude Include="Source Files\WavEditor.h" />
@@ -270,14 +272,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

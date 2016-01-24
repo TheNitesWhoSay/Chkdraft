@@ -1,4 +1,6 @@
 #include "Chkdraft.h"
+#include <thread>
+#include <chrono>
 
 #define ifmapopen(dothis) if ( this->maps.curr != nullptr ) dothis;
 
@@ -32,10 +34,37 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     UpdateWindow();
 	ParseCmdLine(lpCmdLine);
 	GuiMap::SetAutoBackup(true);
-
 	this->OnLoadTest();
 
-	MSG msg;
+	MSG msg = {};
+	bool keepRunning = true;
+	do
+	{
+		while ( ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) )
+		{
+			if ( msg.message == WM_QUIT )
+				keepRunning = false;
+			else
+			{
+				bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+				if ( ::IsDialogMessage(currDialog, &msg) == FALSE )
+				{
+					::TranslateMessage(&msg);
+					if ( !isDlgKey )
+						KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+					::DispatchMessage(&msg);
+				}
+			}
+		}
+
+		if ( chkd.maps.curr != nullptr && ColorCycler::CycleColors(chkd.maps.curr->getTileset()) )
+			chkd.maps.curr->Redraw(false);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
+
+	} while ( keepRunning );
+
+	/*MSG msg;
 	while ( GetMessage(&msg, NULL, 0, 0) > 0 )
 	{
 		bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
@@ -47,7 +76,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 				KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 			DispatchMessage(&msg);
 		}
-	}
+	}*/
 	return msg.wParam;
 }
 

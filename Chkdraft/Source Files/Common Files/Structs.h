@@ -30,6 +30,7 @@ class GRID // A simple grid that can be displayed over a map
 		u8 red;
 		u8 green;
 		u8 blue;
+		u8 reserved;
 
 		GRID(); // ctor
 };
