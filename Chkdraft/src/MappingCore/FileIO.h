@@ -1,7 +1,11 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 #include "Buffer.h"
+#ifdef USESTATICSFMPQ
 #include "../../SFmpq/SFmpq_static.h"
+#else
+#include "../../SFmpq/SFmpqapi.h"
+#endif
 #include <fstream>
 #include <direct.h>
 
