@@ -42,8 +42,8 @@ bool TrigPlayersWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TrigPlayers", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "TrigPlayers", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "TrigPlayers", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "TrigPlayers", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{

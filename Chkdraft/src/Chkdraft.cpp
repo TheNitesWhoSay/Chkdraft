@@ -84,7 +84,7 @@ bool Chkdraft::CreateThis()
 {
 	if ( !ClassWindow::WindowClassIsRegistered("wcChkdraft") )
 	{
-		DWORD classStyle = NULL;
+		DWORD classStyle = 0;
 		HICON hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 32, 32, 0);
 		HICON hIconSmall = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0);
 		HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -99,7 +99,7 @@ bool Chkdraft::CreateThis()
 		}
 	}
 
-	DWORD exStyle = NULL;
+	DWORD exStyle = 0;
 	LPCSTR windowName = "Chkdraft 1.0 (Beta 1.0.1)";
 	DWORD style = WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN;
 	int windowX = CW_USEDEFAULT,
@@ -190,7 +190,7 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam
 					case VK_DELETE:
 						if ( GetParent(hWnd) == unitWindow.getHandle() )
 						{
-							SendMessage(unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), NULL);
+							SendMessage(unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
 							return true;
 						}
 						break;
@@ -525,7 +525,7 @@ bool Chkdraft::CreateSubWindows()
 
 		return mainMenu.FindThis(hWnd) &&
 			mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
-			statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, NULL,
+			statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
 				WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS) &&
 			mainPlot.CreateThis(hWnd) &&
 			BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD,

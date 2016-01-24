@@ -40,29 +40,29 @@ bool LocationWindow::DestroyThis()
 void LocationWindow::RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)
 {
 	if ( (locRef->elevation&LOC_ELEVATION_LOWGROUND) == 0)
-		SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
 	if ( (locRef->elevation&LOC_ELEVATION_MEDGROUND) == 0 )
-		SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
 	if ( (locRef->elevation&LOC_ELEVATION_HIGHGROUND) == 0 )
-		SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
 	if ( (locRef->elevation&LOC_ELEVATION_LOWAIR) == 0 )
-		SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_UNCHECKED, 0);
 	if ( (locRef->elevation&LOC_ELEVATION_MEDAIR) == 0 )
-		SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_UNCHECKED, 0);
 	if ( (locRef->elevation&LOC_ELEVATION_HIGHAIR) == 0 )
-		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_UNCHECKED, 0);
 }
 
 void LocationWindow::RefreshLocationInfo()
@@ -100,9 +100,9 @@ void LocationWindow::RefreshLocationInfo()
 		RefreshLocationElevationFlags(locRef, hWnd);
 
 		if ( chkd.maps.curr->isExtendedString(locRef->stringNum) )
-			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_CHECKED, NULL);
+			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_CHECKED, 0);
 		else
-			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_UNCHECKED, NULL);
+			SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_UNCHECKED, 0);
 
 		ChkdString locName;
 		if ( chkd.maps.curr->GetString(locName, locRef->stringNum) )
@@ -192,7 +192,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				ChkLocation* locRef;
 				if ( chkd.maps.curr != nullptr && chkd.maps.curr->getLocation(locRef, locProcLocIndex) )
 				{
-					LRESULT result = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+					LRESULT result = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 					if ( result == BST_CHECKED || result == BST_UNCHECKED )
 					{
 						bool isChecked = (result == BST_CHECKED);

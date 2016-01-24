@@ -50,14 +50,12 @@ void PreservedUnitStats::convertToUndo()
 	{
 		// For each selected unit, add the corresponding undo from values
 		buffer& units = chkd.maps.curr->UNIT();
-		u32 pos = 0;
+		u32 i = 0;
 
 		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-		u32 i = 0;
 		auto &selUnits = chkd.maps.curr->selections().getUnits();
 		for ( u16 &unitIndex : selUnits )
 		{
-			pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
 			switch ( unitFieldSize[field] )
 			{
 				case 1: unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));

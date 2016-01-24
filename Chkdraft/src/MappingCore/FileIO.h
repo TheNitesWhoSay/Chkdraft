@@ -39,7 +39,7 @@ void RemoveFiles(std::string firstFileName, std::string secondFileName);
 
 void RemoveFiles(std::string firstFileName, std::string secondFileName, std::string thirdFileName);
 
-OPENFILENAME GetOfn(char* szFileName, char* filter, int initFilter);
+OPENFILENAME GetOfn(char* szFileName, const char* filter, int initFilter);
 
 OPENFILENAME GetScSaveOfn(char* szFileName);
 

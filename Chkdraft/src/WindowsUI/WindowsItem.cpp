@@ -248,9 +248,9 @@ bool WindowsItem::SetParent(HWND hParent)
 void WindowsItem::SetRedraw(bool autoRedraw)
 {
 	if ( autoRedraw )
-		::SendMessage(getHandle(), WM_SETREDRAW, TRUE, NULL);
+		::SendMessage(getHandle(), WM_SETREDRAW, TRUE, 0);
 	else
-		::SendMessage(getHandle(), WM_SETREDRAW, FALSE, NULL);
+		::SendMessage(getHandle(), WM_SETREDRAW, FALSE, 0);
 }
 
 void WindowsItem::RedrawThis()

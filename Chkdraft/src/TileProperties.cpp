@@ -34,7 +34,7 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		int TextLength = (WORD)SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0);
 		*((LPWORD)lpszTile) = TextLength;
 		SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);
-		lpszTile[TextLength] = NULL;
+		lpszTile[TextLength] = '\0';
 
 		u16 tile = atoi(lpszTile);
 		if ( tile > 65535 )
@@ -92,7 +92,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				int TextLength = WORD(SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_LINELENGTH, 0, 0));
 				*((LPWORD)lpszTile) = TextLength;
 				SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);	
-				lpszTile[TextLength] = NULL;
+				lpszTile[TextLength] = '\0';
 
 				u16 tile = atoi(lpszTile), tileset;
 				

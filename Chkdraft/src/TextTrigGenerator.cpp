@@ -1085,7 +1085,6 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 	locationTable.clear();
 	
 	ChkLocation* loc;
-	u16 stringNum;
 	ChkdString locationName(true);
 	buffer& MRGN = map->MRGN();
 
@@ -1100,7 +1099,6 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
 			{
 				locationName = "";
-				stringNum = loc->stringNum;
 
 				if ( i == 63 )
 				{
