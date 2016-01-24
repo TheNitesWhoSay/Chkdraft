@@ -8,7 +8,6 @@
 #include "MappingCore/MapFile.h"
 #include "MappingCore/Math.h"
 #include "MappingCore/Scenario.h"
-#include "MappingCore/SFmpqapi.h"
 #include "MappingCore/StringUsage.h"
 
 #include "MappingCore/CoreStructs.h"

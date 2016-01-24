@@ -1,7 +1,7 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 #include "Buffer.h"
-#include "SFmpqapi.h"
+#include "../../SFmpq/SFmpq_static.h"
 #include <fstream>
 #include <direct.h>
 
