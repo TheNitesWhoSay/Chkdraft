@@ -1,16 +1,56 @@
 #include "Graphics.h"
 #include "CommonFiles/CommonFiles.h"
 #include "Chkdraft.h"
+#include <algorithm>
 #include <string>
 
-inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue)
+DWORD ColorCycler::ccticks(0);
+
+colorcycle ColorCycler::cctable[4][8] = { // Different color cycling definition tables
+	{ { 1,8,0,1,6 },{ 1,8,0,7,13 },{ 1,8,0,248,254 },{ 0 } },
+	{ { 0 } },
+	{ { 1,8,0,1,4 },{ 1,8,0,5,8 },{ 1,8,0,9,13 },{ 0 } },
+	{ { 1,8,0,1,13 },{ 1,8,0,248,254 },{ 0 } }
+};
+
+const u8 ColorCycler::cctilesets[8] = { 0,1,1,2,0,3,3,3 };
+
+bool ColorCycler::CycleColors(const u16 tileset)
 {
-	bitmap[bitmapIndex  ] = blue ;
-	bitmap[bitmapIndex+1] = green;
-	bitmap[bitmapIndex+2] = red	 ;
+	bool redraw = false;
+	if ( GetTickCount() > ccticks ) // Time to update for next tick?
+	{
+		colorcycle* cc = cctable[cctilesets[tileset]]; // Get current tileset's definition table
+		for ( int ccset = 0; ccset < 8; ccset++ ) // For each record in table
+		{
+			if ( cc[ccset].enabled == false ) continue; // Not enabled
+			if ( cc[ccset].timer > 0 ) // Timer hasn't expired
+			{
+				cc[ccset].timer--;
+			}
+			else // Do our thing !
+			{
+				cc[ccset].timer = cc[ccset].steps; // Reset timer
+				for ( int i = cc[ccset].stop; i > cc[ccset].start; i-- ) // For each from start to stop
+					chkd.scData.tilesets.set[tileset].wpe.swap<u32>(i * 4, (i - 1) * 4); // Rotate right
+				
+				redraw = true; // Tell the caller the map should be redrawn
+			}
+		}
+		ccticks = GetTickCount();
+	}
+	return redraw;
 }
 
-void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, u8* screenBits,
+inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
+{
+	((u8*)&pixel)[0] += redOffset;
+	((u8*)&pixel)[1] += greenOffset;
+	((u8*)&pixel)[2] += blueOffset;
+	return pixel;
+}
+
+void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap,
 					   SELECTIONS& selections, u32 layer, HDC hDC, bool showAnywhere)
 {
 	this->screenLeft = screenLeft;
@@ -23,22 +63,22 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 	mapHeight = chk.YSize();
 
 	if ( displayingElevations )
-		DrawTileElevations(screenBits);
+		DrawTileElevations(bitmap);
 	else
-		DrawTerrain(screenBits);
+		DrawTerrain(bitmap);
 
-	DrawGrid(screenBits);
+	DrawGrid(bitmap);
 
-	DrawUnits(screenBits, selections);
+	DrawUnits(bitmap, selections);
 
-	DrawSprites(screenBits);
+	DrawSprites(bitmap);
 
 	if ( layer == LAYER_LOCATIONS )
-		DrawLocations(screenBits, selections, showAnywhere);
+		DrawLocations(bitmap, selections, showAnywhere);
 
 	BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
 	SetDIBitsToDevice( hDC, 0, 0, screenWidth, screenHeight, 0, 0, 0,
-					   screenHeight, screenBits, &bmi, DIB_RGB_COLORS);
+					   screenHeight, bitmap.data(), &bmi, DIB_RGB_COLORS);
 
 	if ( layer == LAYER_LOCATIONS )	
 		DrawLocationNames(hDC);
@@ -47,7 +87,7 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 		DrawTileNumbers(hDC);
 }
 
-void Graphics::DrawTerrain(u8* screenBits)
+void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 {
 	buffer& ERA  = chk.ERA (),
 		  & MTXM = chk.MTXM();
@@ -79,7 +119,7 @@ void Graphics::DrawTerrain(u8* screenBits)
 			mtxmRef = 2*(mapWidth*yTile+xTile);
 			if ( MTXM.get<u16>(TileValue, mtxmRef) )
 			{
-				TileToBits( screenBits,
+				TileToBits(bitmap,
 						    tiles,
 						    s32(xTile)*32-screenLeft,
 						    s32(yTile)*32-screenTop,
@@ -92,7 +132,7 @@ void Graphics::DrawTerrain(u8* screenBits)
 	}
 }
 
-void Graphics::DrawTileElevations(u8* screenBits)
+void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 {
 	buffer& MTXM = chk.MTXM();
 
@@ -122,13 +162,13 @@ void Graphics::DrawTileElevations(u8* screenBits)
 		for ( xc=screenLeft/32; xc<maxRowX; xc++ )
 		{
 			if ( MTXM.get<u16>(wTileHex, 2*mapWidth*yc+2*xc) )
-				TileElevationsToBits( screenBits, screenWidth, screenHeight, tiles,
+				TileElevationsToBits(bitmap, screenWidth, screenHeight, tiles,
 									  s16(xc*32-screenLeft), s16(yc*32-screenTop), wTileHex, bmi, 0 );
 		}
 	}
 }
 
-void Graphics::DrawGrid(u8* screenBits)
+void Graphics::DrawGrid(ChkdBitmap& bitmap)
 {
 	u16 gridXSize,
 		gridYSize,
@@ -145,7 +185,7 @@ void Graphics::DrawGrid(u8* screenBits)
 			for ( x = gridXSize-(screenLeft%gridXSize); x < screenWidth; x += gridXSize ) // Draw vertical lines
 			{
 				for ( y = 0; y < screenHeight; y++ )
-					Set24BitPixel(screenBits, (y*screenWidth+x)*3, currGrid.red, currGrid.green, currGrid.blue);
+					bitmap[y*screenWidth + x] = (u32&)currGrid.red;
 			}
 		}
 			
@@ -153,14 +193,14 @@ void Graphics::DrawGrid(u8* screenBits)
 		{
 			for ( y = gridYSize-(screenTop%gridYSize); y < screenHeight; y += gridYSize )
 			{
-				for ( x = 0; x<screenWidth; x++ )
-					Set24BitPixel(screenBits, (y*screenWidth+x)*3, currGrid.red, currGrid.green, currGrid.blue);
+				for ( x = 0; x < screenWidth; x++ )
+					bitmap[y*screenWidth + x] = (u32&)currGrid.red;
 			}
 		}
 	}
 }
 
-void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAnywhere)
+void Graphics::DrawLocations(ChkdBitmap& bitmap, SELECTIONS& selections, bool showAnywhere)
 {
 	buffer& MRGN = chk.MRGN();
 	ChkLocation* loc;
@@ -218,23 +258,23 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 
 							if ( leftMostOnScreen )
 							{
-								for ( s32 y=topMost; y<bottomMost; y++ )
-									Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 0, 0, 0);
+								for ( s32 y = topMost; y < bottomMost; y++ )
+									bitmap[y*screenWidth + leftMost] = 0;
 							}
 							if ( rightMostOnScreen )
 							{
-								for ( s32 y=topMost; y<bottomMost; y++ )
-									Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 0, 0, 0);
+								for ( s32 y = topMost; y < bottomMost; y++ )
+									bitmap[y*screenWidth + rightMost] = 0;
 							}
 							if ( topMostOnScreen )
 							{
-								for ( s32 x=leftMost; x<rightMost; x++ )
-									Set24BitPixel(screenBits, 3*(topMost*screenWidth+x), 0, 0, 0);
+								for ( s32 x = leftMost; x < rightMost; x++ )
+									bitmap[topMost*screenWidth + x] = 0;
 							}
 							if ( bottomMostOnScreen )
 							{
-								for ( s32 x=leftMost; x<rightMost; x++ )
-									Set24BitPixel(screenBits, 3*(bottomMost*screenWidth+x), 0, 0, 0);
+								for ( s32 x = leftMost; x < rightMost; x++ )
+									bitmap[bottomMost*screenWidth + x] = 0;
 							}
 
 							if ( inverted )
@@ -245,20 +285,20 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 								{
 									for ( s32 x=leftMost; x<rightMost; x++ )
 									{
-										if ( screenBits[3*(y*screenWidth+x)+2] < 236 )
-											screenBits[3*(y*screenWidth+x)+2] += 20;
+										if ( bitmap[y*screenWidth+x+2] < 236 )
+											bitmap[y*screenWidth+x+2] += 20;
 										else
-											screenBits[3*(y*screenWidth+x)+2] = 255;
+											bitmap[y*screenWidth+x+2] = 255;
 
-										if ( screenBits[3*(y*screenWidth+x)+1] > 9 )
-											screenBits[3*(y*screenWidth+x)+1] -= 10;
+										if ( bitmap[y*screenWidth+x+1] > 9 )
+											bitmap[y*screenWidth+x+1] -= 10;
 										else
-											screenBits[3*(y*screenWidth+x)+1] = 0;
+											bitmap[y*screenWidth+x+1] = 0;
 
-										if ( screenBits[3*(y*screenWidth+x)] > 9 )
-											screenBits[3*(y*screenWidth+x)] -= 10;
+										if ( bitmap[y*screenWidth+x] > 9 )
+											bitmap[y*screenWidth+x] -= 10;
 										else
-											screenBits[3*(y*screenWidth+x)] = 0;
+											bitmap[y*screenWidth+x] = 0;
 									}
 								}
 							}
@@ -269,20 +309,20 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 								{
 									for ( s32 x=leftMost; x<rightMost; x++ )
 									{
-										if ( screenBits[3*(y*screenWidth+x)+2] > 9 )
-											screenBits[3*(y*screenWidth+x)+2] -= 10;
+										if ( bitmap[y*screenWidth+x+2] > 9 )
+											bitmap[y*screenWidth+x+2] -= 10;
 										else
-											screenBits[3*(y*screenWidth+x)+2] = 0;
+											bitmap[y*screenWidth+x+2] = 0;
 
-										if ( screenBits[3*(y*screenWidth+x)+1] < 246 )
-											screenBits[3*(y*screenWidth+x)+1] += 10;
+										if ( bitmap[y*screenWidth+x+1] < 246 )
+											bitmap[y*screenWidth+x+1] += 10;
 										else
-											screenBits[3*(y*screenWidth+x)+1] = 0;
+											bitmap[y*screenWidth+x+1] = 0;
 
-										if ( screenBits[3*(y*screenWidth+x)] < 241 )
-											screenBits[3*(y*screenWidth+x)] += 15;
+										if ( bitmap[y*screenWidth+x] < 241 )
+											bitmap[y*screenWidth+x] += 15;
 										else
-											screenBits[3*(y*screenWidth+x)] = 255;
+											bitmap[y*screenWidth+x] = 255;
 									}
 								}
 							}
@@ -331,30 +371,30 @@ void Graphics::DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAn
 
 				if ( leftMostOnScreen )
 				{
-					for ( s32 y=topMost; y<bottomMost; y++ )
-						Set24BitPixel(screenBits, 3*(y*screenWidth+leftMost), 255, 255, 255);
+					for ( s32 y = topMost; y < bottomMost; y++ )
+						bitmap[y*screenWidth + leftMost] = RGB(255, 255, 255);
 				}
 				if ( rightMostOnScreen )
 				{
-					for ( s32 y=topMost; y<bottomMost; y++ )
-						Set24BitPixel(screenBits, 3*(y*screenWidth+rightMost), 255, 255, 255);
+					for ( s32 y = topMost; y < bottomMost; y++ )
+						bitmap[y*screenWidth + rightMost] = RGB(255, 255, 255);
 				}
 				if ( topMostOnScreen )
 				{
-					for ( s32 x=leftMost; x<rightMost; x++ )
-						Set24BitPixel(screenBits, 3*(topMost*screenWidth+x), 255, 255, 255);
+					for ( s32 x = leftMost; x < rightMost; x++ )
+						bitmap[topMost*screenWidth + x] = RGB(255, 255, 255);
 				}
 				if ( bottomMostOnScreen )
 				{
-					for ( s32 x=leftMost; x<rightMost; x++ )
-						Set24BitPixel(screenBits, 3*(bottomMost*screenWidth+x), 255, 255, 255);
+					for ( s32 x = leftMost; x < rightMost; x++ )
+						bitmap[bottomMost*screenWidth + x] = RGB(255, 255, 255);
 				}
 			}
 		}
 	}
 }
 
-void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
+void Graphics::DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections)
 {
 	buffer& UNIT = chk.UNIT(),
 		  & ERA  = chk.ERA (),
@@ -392,7 +432,7 @@ void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
 
 					bool isSelected = selections.unitIsSelected(u16(pos/UNIT_STRUCT_SIZE));
 
-					UnitToBits( screenBits, palette, color, u16(screenWidth), u16(screenHeight),
+					UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
 								screenLeft, screenTop, unit->id, unit->xc, unit->yc,
 								u16(frame), isSelected );
 				}
@@ -401,7 +441,7 @@ void Graphics::DrawUnits(u8* screenBits, SELECTIONS& selections)
 	}
 }
 
-void Graphics::DrawSprites(u8* screenBits)
+void Graphics::DrawSprites(ChkdBitmap& bitmap)
 {
 	buffer& THG2 = chk.THG2(),
 		  & ERA  = chk.ERA (),
@@ -439,10 +479,10 @@ void Graphics::DrawSprites(u8* screenBits)
 						color = sprite->owner;
 
 					if ( isSprite )
-						SpriteToBits( screenBits, palette, color, u16(screenWidth), u16(screenHeight),
+						SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
 									  screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc );
 					else
-						UnitToBits( screenBits, palette, color, u16(screenWidth), u16(screenHeight),
+						UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
 									screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc,
 									frame, false );
 				}
@@ -641,7 +681,7 @@ BITMAPINFO GetBMI(s32 width, s32 height)
 	bmiH.biWidth = width;
 	bmiH.biHeight = -height;
 	bmiH.biPlanes = 1;
-	bmiH.biBitCount = 24;
+	bmiH.biBitCount = 32;
 	bmiH.biCompression = BI_RGB;
 	bmiH.biXPelsPerMeter = 1;
 	bmiH.biYPelsPerMeter = 1;
@@ -651,7 +691,7 @@ BITMAPINFO GetBMI(s32 width, s32 height)
 	return bmi;
 }
 
-void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,
+void TileElevationsToBits(ChkdBitmap& bitmap, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,
 						   s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 miniTileSeparation )
 {
 	u32 bitMax = bitWidth*bitHeight*3,
@@ -698,7 +738,7 @@ void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSe
 							for ( u32 xc=0; xc<8; xc++ )
 							{
 								if ( xc + miniTileXC < bitWidth )
-									Set24BitPixel(screenBits, ((yc+miniTileYC)*bitWidth+xc+miniTileXC)*3, red, green, blue);
+									bitmap[(yc + miniTileYC)*bitWidth + xc + miniTileXC] = RGB(red, green, blue);
 							}
 						}
 					}
@@ -708,7 +748,7 @@ void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSe
 	}
 }
 
-void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart,
+void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart,
 				GRP* grp, u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped )
 {
 	if ( frame > grp->numFrames() )
@@ -760,30 +800,18 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 				{
 					u32 bitmapIndex;
 					if ( flipped )
-						bitmapIndex = ((line+yOffset)*bitWidth+frameWidth-x+xOffset)*3;
+						bitmapIndex = (line+yOffset)*bitWidth+frameWidth-x+xOffset;
 					else
-						bitmapIndex = ((line+yOffset)*bitWidth+x+xOffset)*3;
+						bitmapIndex = (line+yOffset)*bitWidth+x+xOffset;
 
 					if ( x+xOffset < bitWidth && x+xOffset > 0 )
 					{
 						if ( lineDat[pos] < 8 )
-						{
-							screenBits[bitmapIndex  ] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
-							screenBits[bitmapIndex+1] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
-							screenBits[bitmapIndex+2] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
-						}
+							bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>(lineDat[pos] + 16 * 4);
 						else if ( lineDat[pos] < 16 )
-						{
-							screenBits[bitmapIndex  ] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
-							screenBits[bitmapIndex+1] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
-							screenBits[bitmapIndex+2] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
-						}
+							bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
 						else
-						{
-							screenBits[bitmapIndex  ] = palette->get<u8>(lineDat[pos]*4+2); // blue
-							screenBits[bitmapIndex+1] = palette->get<u8>(lineDat[pos]*4+1); // green
-							screenBits[bitmapIndex+2] = palette->get<u8>(lineDat[pos]*4  ); // red
-						}
+							bitmap[bitmapIndex] = palette->get<u32>(lineDat[pos] * 4);
 					}
 					x++;
 				}
@@ -793,27 +821,15 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 			{
 				for ( u8 i=0; i<compSect; i++ )
 				{
-					u32 bitmapIndex = (((u32)line+(u32)yOffset)*(u32)bitWidth+(u32)x+(u32)xOffset)*3;
+					u32 bitmapIndex = ((u32)line+(u32)yOffset)*(u32)bitWidth+(u32)x+(u32)xOffset;
 					if ( x+xOffset < bitWidth && x+xOffset > 0 )
 					{
 						if ( lineDat[pos] < 8 )
-						{
-							screenBits[bitmapIndex  ] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+2); // blue
-							screenBits[bitmapIndex+1] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+1); // green
-							screenBits[bitmapIndex+2] = chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos]+16)*4+0); // red
-						}
+							bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((lineDat[pos] + 16) * 4);
 						else if ( lineDat[pos] < 16 )
-						{
-							screenBits[bitmapIndex  ] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+2); // blue
-							screenBits[bitmapIndex+1] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+1); // green
-							screenBits[bitmapIndex+2] = chkd.scData.tunit.pcxDat.get<u8>((color*8+lineDat[pos]-8)*4+0); // red
-						}
+							bitmap[bitmapIndex] = chkd.scData.tunit.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
 						else
-						{
-							screenBits[bitmapIndex  ] = palette->get<u8>(lineDat[pos]*4+2); // blue
-							screenBits[bitmapIndex+1] = palette->get<u8>(lineDat[pos]*4+1); // green
-							screenBits[bitmapIndex+2] = palette->get<u8>(lineDat[pos]*4  ); // red
-						}
+							bitmap[bitmapIndex] = palette->get<u32>(lineDat[pos] * 4);
 					}
 					x++;
 					pos++;
@@ -824,7 +840,7 @@ void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 
 	}
 }
 
-void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC,  u16 frame, bool selected )
 {
 	GRP* curr = &chkd.scData.grps[chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561];
@@ -836,7 +852,7 @@ void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bi
 		{
 			GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
 			u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
-			GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
+			GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
 		}
 	}
 	else // Extended unit, use ID:0's graphics (for now)
@@ -846,24 +862,24 @@ void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bi
 		{
 			GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
 			u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleOffset;
-			GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
+			GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
 		}
 	}
 
-	GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
+	GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
 }
 
-void SpriteToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void SpriteToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				   s32 &xStart, s32 &yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
 {
 	GRP* curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1];
-	GrpToBits(screenBits, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
+	GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
 }
 
-void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 &TileValue)
+void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 &TileValue)
 {
 	u32 cv5Ref, MegaTileRef, MiniTileRef, // Pointers and index's of tile components
-		yMiniOffset, xMiniOffset, PixelRef, // Processing optimizers
+		yMiniOffset, xMiniOffset, // Processing optimizers
 		yPixel, xPixel; // Bitmap coordinates
 
 	u16 wpeRef; // Pointer to WPE start
@@ -907,12 +923,8 @@ void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 widt
 							xPixel = negative*xMiniPixel + xMiniOffset; // The x-position within the current bitmap
 							if ( xPixel < width )
 							{
-								PixelRef = (yPixel*width + xPixel)*3; // The data position of (xPixel, yPixel)
 								wpeRef = tiles->vr4.get<u8>(MiniTileRef+yMiniPixel*8+xMiniPixel)*4; // WPE start point for the given pixel
-
-								screenBits[PixelRef  ] = palette->get<u8>(wpeRef+2); // Blue
-								screenBits[PixelRef+1] = palette->get<u8>(wpeRef+1); // Green
-								screenBits[PixelRef+2] = palette->get<u8>(wpeRef  ); // Red
+								bitmap[yPixel*width + xPixel] = palette->get<u32>(wpeRef);
 							}
 						}
 					}
@@ -926,7 +938,8 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 {
 	u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
 
-	u8 tileBits[192] = { };
+	ChkdBitmap graphicBits;
+	graphicBits.resize(64);
 
 	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
@@ -955,20 +968,22 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 
 			for ( u32 yc=0; yc<8; yc++ )
 			{
-				for ( u32 xc=0; xc<8; xc++ )
-					Set24BitPixel(tileBits, (yc*8+xc)*3, red, green, blue);
+				for ( u32 xc = 0; xc < 8; xc++ )
+					graphicBits[yc * 8 + xc] = RGB(red, green, blue);
 			}
 		}
 	}
-	SetDIBitsToDevice(hDC, xOffset, yOffset, 8, 8, 0, 0, 0, 8, tileBits, &bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hDC, xOffset, yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
 void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO &bmi)
 {
 	u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
 
-	u8 yMiniTile, xMiniTile,
-	   tileBits[3072] = { };
+	u8 yMiniTile, xMiniTile;
+
+	ChkdBitmap graphicBits;
+	graphicBits.resize(1024);
 
 	if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
@@ -1004,21 +1019,21 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 
 					for ( u32 yc=0; yc<8; yc++ )
 					{
-						for ( u32 xc=0; xc<8; xc++ )
-							Set24BitPixel(tileBits, ((yc+miniTileYC)*32+xc+miniTileXC)*3, red, green, blue);
+						for ( u32 xc = 0; xc < 8; xc++ )
+							graphicBits[(yc + miniTileYC) * 32 + xc + miniTileXC] = RGB(red, green, blue);
 					}
 				}
 			}
 		}
 	}
-	SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, tileBits, &bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 BlueOffset, u8 GreenOffset, u8 RedOffset)
+void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 blueOffset, u8 greenOffset, u8 redOffset)
 {
 	u32 cv5Ref, MegaTileRef, MiniTileRef; // Pointers and index's to tile components
 
-	u16 MiniTileOffset, yMiniOffset, PixelRef, // Processing optimizers
+	u16 MiniTileOffset, yMiniOffset, // Processing optimizers
 		wpeRef; // Pointer to WPE start
 
 	u8 yMiniTile,  xMiniTile ,
@@ -1028,7 +1043,8 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 
 	if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
 	{
-		u8 tileBits[3072] = { };
+		ChkdBitmap graphicBits;
+		graphicBits.resize(1024);
 		MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
 		for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
@@ -1038,12 +1054,12 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 			{
 				if ( tiles->vx4.get<u8>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) & 1 ) // If the MiniTile's xPixels are flipped (1st bit)
 				{
-					MiniTileOffset = (yMiniOffset + xMiniTile)*24 + 21; // Simplified: (yMiniTile*32*8 + xMiniTile*8 + 7*flipped)*3
+					MiniTileOffset = (yMiniOffset + xMiniTile)*8 + 7; // Simplified: (yMiniTile*32*8 + xMiniTile*8 + 7*flipped)
 					negative = -1;
 				}
 				else
 				{
-					MiniTileOffset = (yMiniOffset + xMiniTile)*24; // Simplified: (yMiniTile*32*8 + xMiniTile*8)*3
+					MiniTileOffset = (yMiniOffset + xMiniTile)*8; // Simplified: (yMiniTile*32*8 + xMiniTile*8)
 					negative =  1;
 				}
 
@@ -1053,17 +1069,14 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 				{
 					for ( xMiniPixel=0; xMiniPixel<8; xMiniPixel++ ) // Cycle through the 8 mini tile pixel columns
 					{
-						PixelRef = (yMiniPixel*32 + negative*xMiniPixel)*3 + MiniTileOffset; // The data position of (xPixel, yPixel)
-						wpeRef = tiles->vr4.get<u8>(MiniTileRef+yMiniPixel*8+xMiniPixel)*4; // WPE start point for the given pixel
-
-						tileBits[PixelRef  ] = tiles->wpe.get<u8>(wpeRef+2) + BlueOffset ; // Blue
-						tileBits[PixelRef+1] = tiles->wpe.get<u8>(wpeRef+1) + GreenOffset; // Green
-						tileBits[PixelRef+2] = tiles->wpe.get<u8>(wpeRef  ) + RedOffset  ; // Red
+						wpeRef = tiles->vr4.get<u8>((MiniTileRef+yMiniPixel*8+xMiniPixel))*4; // WPE start point for the given pixel
+						graphicBits[(yMiniPixel * 32 + negative*xMiniPixel) + MiniTileOffset] =
+							AdjustPx(tiles->wpe.get<u32>(wpeRef), redOffset, greenOffset, blueOffset);
 					}
 				}
 			}
 		}
-		SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, tileBits, &bmi, DIB_RGB_COLORS);
+		SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 	}
 }
 
@@ -1111,9 +1124,9 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 						  s16(tile.yc*32-screenTop),
 						  tile.value,
 						  bmi,
-						  32,
 						  0,
-						  0
+						  0,
+						  32
 						);
 
 			if ( tile.neighbors > 0 ) // if any edges need to be drawn
@@ -1225,15 +1238,11 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 	}
 	else if ( layer == LAYER_UNITS )
 	{
-		u8* screenBits;
-		try {
-			screenBits = new u8[((u32)width)*((u32)height)*3];
-		} catch ( std::bad_alloc ) {
-			return;
-		}
+		ChkdBitmap graphicBits;
+		graphicBits.resize(((u32)width)*((u32)height));
 
 		BITMAPINFO bmi = GetBMI(width, height);
-		GetDIBits(hDC, bitmap, 0, height, screenBits, &bmi, DIB_RGB_COLORS);
+		GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
 		u8 tileset;
 		if ( !chk.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
@@ -1252,15 +1261,14 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 				chk.getPlayerColor(pasteUnit.unit.owner, color);
 				if ( cursor.y+ pasteUnit.yc >= 0 )
 				{
-					UnitToBits( screenBits, palette, color, width, height, sScreenLeft, sScreenTop,
+					UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
 						pasteUnit.unit.id, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
 				}
 			}
 		}
 
 		SetDIBitsToDevice( hDC, 0, 0, width, height, 0, 0, 0,
-						   height, screenBits, &bmi, DIB_RGB_COLORS);
-		delete[] screenBits;
+						   height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 	}
 }
 
@@ -1394,7 +1402,7 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
 	DeleteObject(brush);
 }
 
-void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
+void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
 					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
 {
 	buffer& MTXM = chk.MTXM();
@@ -1411,8 +1419,7 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 	u16 TileValue,
 		yTile, xTile,
 		yc, xc,
-		wpeRef,
-		PixelReference;
+		wpeRef;
 
 	for ( yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
 	{
@@ -1442,21 +1449,17 @@ void DrawMiniMapTiles( u8 *minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 				{
 					MegaTileReference = GetMegaTileRef(tiles, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 					MiniTileRef = GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
-					PixelReference = ((yc+yOffset)*128+(xc+xOffset))*3;
-
 					wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
-					minimapBits[PixelReference  ] = tiles->wpe.get<u8>(wpeRef+2); // Blue
-					minimapBits[PixelReference+1] = tiles->wpe.get<u8>(wpeRef+1); // Green
-					minimapBits[PixelReference+2] = tiles->wpe.get<u8>(wpeRef  ); // Red
+					bitmap[(yc + yOffset) * 128 + xc + xOffset] = tiles->wpe.get<u32>(wpeRef);
 				}
 			}
 		}
 	}
 }
 
-#define MINI_MAP_MAXBIT 49152 // Maximum graphicBits position
+#define MINI_MAP_MAXBIT 65536 // Maximum graphicBits position
 
-void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
+void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
 					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
 {
 	buffer& UNIT = chk.UNIT(),
@@ -1479,13 +1482,10 @@ void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 			u32 bitIndex = (
 								((u32)((unit->yc/32)*scale)+yOffset)*128
 								+ (u32)((unit->xc/32)*scale)+xOffset
-						   )*3;
+						   );
+
 			if ( bitIndex < MINI_MAP_MAXBIT )
-			{
-				minimapBits[bitIndex  ] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+2);
-				minimapBits[bitIndex+1] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+1);
-				minimapBits[bitIndex+2] = chkd.scData.tminimap.pcxDat.get<u8>(color*4  );
-			}
+				bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
 		}
 	}
 
@@ -1503,14 +1503,10 @@ void DrawMiniMapUnits( u8* minimapBits, u16 bitWidth, u16 bitHeight, u16 xSize, 
 					color = sprite->owner;
 
 				u32 bitIndex = (((u32)((sprite->yc/32)*scale)+yOffset)*128
-								 + (u32)((sprite->xc/32)*scale)+xOffset)*3;
+								 + (u32)((sprite->xc/32)*scale)+xOffset);
 
 				if ( bitIndex < MINI_MAP_MAXBIT )
-				{
-					minimapBits[bitIndex  ] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+2);
-					minimapBits[bitIndex+1] = chkd.scData.tminimap.pcxDat.get<u8>(color*4+1);
-					minimapBits[bitIndex+2] = chkd.scData.tminimap.pcxDat.get<u8>(color*4  );
-				}
+					bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
 			}
 		}
 	}
@@ -1520,7 +1516,8 @@ void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario
 {
 	buffer& ERA  = chk.ERA ();
 
-	u8 minimapBits[65536] = { };
+	ChkdBitmap graphicBits;
+	graphicBits.resize(65536);
 
 	u16 tileset;
 
@@ -1534,9 +1531,9 @@ void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario
 		yOffset = (u16)((128-ySize*scale)/2);
 
 	tiles = &chkd.scData.tilesets.set[tileset];
-	DrawMiniMapTiles(minimapBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
-	DrawMiniMapUnits(minimapBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
-	SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, minimapBits, &bmi, DIB_RGB_COLORS);
+	DrawMiniMapTiles(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
+	DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
+	SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
 	// Draw Map Borders
 

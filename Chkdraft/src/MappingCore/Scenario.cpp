@@ -127,7 +127,10 @@ u16 Scenario::YSize()
 
 u16 Scenario::getTileset()
 {
-	return ERA().get<u16>(0);
+	if ( this != nullptr )
+		return ERA().get<u16>(0);
+
+	return 0;
 }
 
 u16 Scenario::numUnits()

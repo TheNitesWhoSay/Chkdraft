@@ -5,14 +5,35 @@
 #include "ScData.h"
 #include <string>
 #include <vector>
-
-inline void Set24BitPixel(u8* bitmap, u32 bitmapIndex, u8 red, u8 green, u8 blue);
+#include <array>
 
 /* Default Draw Order:
 	- Final Tile Data (what MTXM will be)
 	- Units & Sprites, highest YC to lowest YC
 	  in the case of a tie, the highest index
 	  is drawn first. */
+
+typedef std::vector<u32> ChkdBitmap;
+
+struct colorcycle
+{
+	char enabled; // This record is used
+	char steps; // How many frames to pause between cycling
+	char timer; // Frame counter
+	short start; // WPE index to cycle from
+	short stop; // WPE index to cycle to
+};
+
+class ColorCycler
+{
+	public:
+		static bool CycleColors(const u16 tileset); // Returns true if the map should be redrawn
+
+	private:
+		static DWORD ccticks; // GetTickCount -- updated every time GetTickCount increases (~16 ms)
+		static colorcycle cctable[4][8]; // Different color cycling definition tables
+		static const u8 cctilesets[8]; // Table to use for each tileset
+};
 
 class SpriteNode
 	// Node for unit/sprite graphics
@@ -37,19 +58,20 @@ class Graphics
 {
 	public:
 
-		Graphics(Scenario &chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), chk(chk) { }
+		Graphics(Scenario &chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false),
+			clipLocationNames(true), chk(chk) { }
 
 		void DrawMap( u16 bitWidth, u16 bitHeight,
 					  s32 screenLeft, s32 screenTop,
-					  u8* screenBits, SELECTIONS& selections,
+					  ChkdBitmap& bitmap, SELECTIONS& selections,
 					  u32 layer, HDC hDC, bool showAnywhere );
 
-		void DrawTerrain(u8* screenBits);
-		void DrawTileElevations(u8* screenBits);
-		void DrawGrid(u8* screenBits);
-		void DrawLocations(u8* screenBits, SELECTIONS& selections, bool showAnywhere);
-		void DrawUnits(u8* screenBits, SELECTIONS& selections);
-		void DrawSprites(u8* screenBits);
+		void DrawTerrain(ChkdBitmap& bitmap);
+		void DrawTileElevations(ChkdBitmap& bitmap);
+		void DrawGrid(ChkdBitmap& bitmap);
+		void DrawLocations(ChkdBitmap& bitmap, SELECTIONS& selections, bool showAnywhere);
+		void DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections);
+		void DrawSprites(ChkdBitmap& bitmap);
 		void DrawLocationNames(HDC hDC);
 		void DrawTileNumbers(HDC hDC);
 
@@ -100,26 +122,26 @@ class Graphics
 
 BITMAPINFO GetBMI(s32 width, s32 height);
 
-void GrpToBits( u8* screenBits, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart, GRP* grp,
+void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart, GRP* grp,
 				u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped );
 
-void UnitToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected );
 
-void SpriteToBits( u8* screenBits, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void SpriteToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
 				   s32 &xStart, s32 &yStart, u16 spriteID, u16 spriteXC, u16 spriteYC );
 
-void TileToBits(u8* screenBits, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 &TileValue);
+void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 &TileValue);
 
 void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, u8 miniTileX, u8 miniTileY, BITMAPINFO &bmi);
 
 void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO &bmi);
 
-void TileElevationsToBits( u8* screenBits, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,
+void TileElevationsToBits(ChkdBitmap& bitmap, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,
 						   s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 miniTileSeparation );
 
 void DrawTile( HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
-			   BITMAPINFO &bmi, u8 BlueOffset, u8 GreenOffset, u8 RedOffset );
+			   BITMAPINFO &bmi, u8 blueOffset, u8 greenOffset, u8 redOffset );
 
 void DrawTileNumbers( HDC hDC, bool tileNumsFromMTXM, u32 screenLeft, u32 screenTop,
 					  u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, Scenario &chk );

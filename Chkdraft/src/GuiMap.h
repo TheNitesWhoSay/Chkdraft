@@ -60,6 +60,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 				
 					HWND getHandle();
 
+					bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
 					void PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard);
 					void PaintMiniMap(HWND hWnd);
 					void Redraw(bool includeMiniMap);
@@ -107,9 +108,6 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 						#define SCROLL_Y		0x2
 						#define VALIDATE_BORDER 0x4
 
-					u8* GraphicBits() { return lpvBits; }
-					u16& bitWidth() { return bitMapWidth; }
-					u16& bitHeight() { return bitMapHeight; }
 					HDC GetMemhDC() { return MemhDC; }
 					HDC GetMemMinihDC() { return MemMinihDC; }
 
@@ -177,9 +175,9 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					Graphics graphics;
 					POINT displayPivot;
 
-					u8* lpvBits;
-					u16 bitMapWidth;
-					u16 bitMapHeight;
+					ChkdBitmap graphicBits;
+					u32 bitmapWidth;
+					u32 bitmapHeight;
 					bool RedrawMiniMap;
 					bool RedrawMap;
 					HDC MemhDC;
