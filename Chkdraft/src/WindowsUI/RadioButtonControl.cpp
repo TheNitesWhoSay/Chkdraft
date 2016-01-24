@@ -9,7 +9,7 @@ bool RadioButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 h
 void RadioButtonControl::SetCheck(bool isChecked)
 {
 	if ( isChecked )
-		SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, NULL);
+		SendMessage(getHandle(), BM_SETCHECK, BST_CHECKED, 0);
 	else
-		SendMessage(getHandle(), BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(getHandle(), BM_SETCHECK, BST_UNCHECKED, 0);
 }

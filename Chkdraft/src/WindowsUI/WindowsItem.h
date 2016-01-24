@@ -44,7 +44,7 @@ class WindowsItem
 		void Show();
 		void Hide();
 		void SetSmallIcon(HANDLE hIcon);
-		bool WindowsItem::SetTitle(const std::string& newTitle);
+		bool SetTitle(const std::string& newTitle);
 		bool SetTitle(const char* newTitle);
 
 		bool ReleaseDC(HDC hDC);

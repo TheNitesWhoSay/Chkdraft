@@ -3,7 +3,7 @@
 
 bool LeftBar::CreateThis(HWND hParent)
 {
-	return RegisterWindowClass(NULL, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
+	return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
 		   CreateClassWindow(WS_EX_CLIENTEDGE, NULL, WS_CHILD|WS_THICKFRAME, 0, 0, 162, 50, hParent, (HMENU)IDR_LEFT_BAR);
 }
 

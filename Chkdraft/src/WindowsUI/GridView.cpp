@@ -121,7 +121,7 @@ void GridViewControl::DeleteSelection()
 			if ( item(x, y).isSelected() || isFocused(x, y) )
 			{
 				hasDeleted = true;
-				if ( SendMessage(GetParent(getHandle()), WM_GRIDITEMDELETING, MAKEWPARAM(x, y), NULL) == TRUE )
+				if ( SendMessage(GetParent(getHandle()), WM_GRIDITEMDELETING, MAKEWPARAM(x, y), 0) == TRUE )
 				{
 					item(x, y).SetText(str.c_str());
 					EditTextChanged(str);
@@ -131,7 +131,7 @@ void GridViewControl::DeleteSelection()
 	}
 
 	if ( hasDeleted )
-		SendMessage(GetParent(getHandle()), WM_GRIDDELETEFINISHED, NULL, NULL);
+		SendMessage(GetParent(getHandle()), WM_GRIDDELETEFINISHED, 0, 0);
 }
 
 bool GridViewControl::DeleteAllItems()
@@ -221,7 +221,7 @@ void GridViewControl::FocusItem(int x, int y)
 			focusedX = x;
 			focusedY = y;
 			item(x, y).SetSelected(true);
-			SendMessage(GetParent(getHandle()), WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), NULL);
+			SendMessage(GetParent(getHandle()), WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), 0);
 		}
 	}
 }
@@ -251,7 +251,7 @@ void GridViewControl::EndEditing()
 				item(focusedX, focusedY).SetText(str.c_str());
 			}
 			RedrawThis();
-			SendMessage(GetParent(getHandle()), WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), NULL);
+			SendMessage(GetParent(getHandle()), WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), 0);
 		}
 		ending = false;
 	}
@@ -498,7 +498,7 @@ void GridViewControl::AutoSizeColumn(int x, int minWidth, int maxWidth)
 		if ( item(x, y).getText(str) &&
 			 ListViewControl::GetItemRect(focusedX, focusedY, rect) )
 		{
-			int itemWidth = SendMessage(GetParent(getHandle()), WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), NULL);
+			int itemWidth = SendMessage(GetParent(getHandle()), WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
 			if ( itemWidth > newWidth )
 				newWidth = itemWidth;
 		}
@@ -624,7 +624,7 @@ void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
 		editBox.ExpandToText();
 		RedrawThis();
 
-		SendMessage(GetParent(getHandle()), WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), NULL);
+		SendMessage(GetParent(getHandle()), WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), 0);
 
 		if ( startedByInput )
 		{
@@ -663,7 +663,7 @@ void GridViewControl::UpdateCaretPos(int xClick, int yClick)
 			SetCaretPos((int)result);
 		else
 		{
-			LRESULT result = SendMessage(editBox.getHandle(), EM_CHARFROMPOS, NULL, MAKELPARAM(cx, cy));
+			LRESULT result = SendMessage(editBox.getHandle(), EM_CHARFROMPOS, 0, MAKELPARAM(cx, cy));
 			SetCaretPos(int(LOWORD(result)));
 		}
 	}
@@ -1021,7 +1021,7 @@ void GridViewControl::DrawItems(HWND hWnd)
 							SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
 					}
 
-					SendMessage(hWndParent, WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, NULL);
+					SendMessage(hWndParent, WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
 					BitBlt(hDC, rcCli.left, rcCli.top, width, height, dis.hDC, 0, 0, SRCCOPY);
 				}
 				DeleteObject(memBitmap);
@@ -1034,9 +1034,9 @@ void GridViewControl::DrawItems(HWND hWnd)
 
 void GridViewControl::Paint(HWND hWnd)
 {
-	SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, NULL, (LPARAM)hWnd);
+	SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
 	DrawItems(hWnd);
-	SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, NULL, (LPARAM)hWnd);
+	SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
 }
 
 LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)

@@ -20,7 +20,7 @@ bool MdiClient::CreateMdiClient( HANDLE hWindowMenu, UINT idFirstChild, DWORD dw
 
 HWND MdiClient::getActive()
 {
-	return (HWND)SendMessage(getHandle(), WM_MDIGETACTIVE, NULL, NULL);
+	return (HWND)SendMessage(getHandle(), WM_MDIGETACTIVE, 0, 0);
 }
 
 void MdiClient::cascade()
@@ -30,17 +30,17 @@ void MdiClient::cascade()
 
 void MdiClient::tileHorizontally()
 {
-	SendMessage(getHandle(), WM_MDITILE, MDITILE_HORIZONTAL, NULL);
+	SendMessage(getHandle(), WM_MDITILE, MDITILE_HORIZONTAL, 0);
 }
 
 void MdiClient::tileVertically()
 {
-	SendMessage(getHandle(), WM_MDITILE, MDITILE_VERTICAL, NULL);
+	SendMessage(getHandle(), WM_MDITILE, MDITILE_VERTICAL, 0);
 }
 
 void MdiClient::destroyActive()
 {
-	SendMessage(getHandle(), WM_MDIDESTROY, (WPARAM)SendMessage(getHandle(), WM_MDIGETACTIVE, 0, 0), NULL);
+	SendMessage(getHandle(), WM_MDIDESTROY, (WPARAM)SendMessage(getHandle(), WM_MDIGETACTIVE, 0, 0), 0);
 }
 
 void MdiClient::nextMdi()
