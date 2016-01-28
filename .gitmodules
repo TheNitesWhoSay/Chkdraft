@@ -1,0 +1,6 @@
+[submodule "SFmpqapi"]
+	path = SFmpqapi
+	url = git://github.com/Shadowflare/SFmpqapi.git
+[submodule "SComp"]
+	path = SComp
+	url = git://github.com/Shadowflare/SComp.git
