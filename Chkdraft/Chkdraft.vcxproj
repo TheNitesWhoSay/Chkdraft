@@ -25,6 +25,7 @@
     <ClCompile Include="src\EnterPassword.cpp" />
     <ClCompile Include="src\Forces.cpp" />
     <ClCompile Include="src\Graphics.cpp" />
+    <ClCompile Include="src\Graphics2.cpp" />
     <ClCompile Include="src\GuiMap.cpp" />
     <ClCompile Include="src\LeftBar.cpp" />
     <ClCompile Include="src\LIT.cpp" />
@@ -144,6 +145,7 @@
     <ClInclude Include="src\CommonFiles\Structs.h" />
     <ClInclude Include="src\Counters.h" />
     <ClInclude Include="src\CUWPs.h" />
+    <ClInclude Include="src\Defines.h" />
     <ClInclude Include="src\DialogWindows.h" />
     <ClInclude Include="src\EnterPassword.h" />
     <ClInclude Include="src\Forces.h" />

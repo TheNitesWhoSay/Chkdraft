@@ -16,8 +16,11 @@ bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatch
 void CorrectWPEForWindows(buffer &WPE)
 {
 	u32 numColors = WPE.size() / 4;
-	for ( u32 i = 0; i < numColors; i++ )
+	for (u32 i = 0; i < numColors; i++)
+	{
 		WPE.swap<u8>(i * 4, i * 4 + 2);
+		WPE.replace<u8>(i * 4 + 3, i); // Palette index in A channel
+	}
 }
 
 bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* name, u8 num)
@@ -30,7 +33,15 @@ bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchR
 		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vf4").c_str(), set[num].vf4) &&
 		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vr4").c_str(), set[num].vr4) &&
 		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vx4").c_str(), set[num].vx4) &&
-		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".wpe").c_str(), set[num].wpe) )
+		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".wpe").c_str(), set[num].wpe) &&
+		set[num].remap[0].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\ofire.pcx").c_str()) &&
+		set[num].remap[1].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\gfire.pcx").c_str()) &&
+		set[num].remap[2].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\bfire.pcx").c_str()) &&
+		set[num].remap[3].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\bexpl.pcx").c_str()) &&
+		set[num].remap[4].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\trans50.pcx").c_str()) &&
+		set[num].remap[5].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\red.pcx").c_str()) &&
+		set[num].remap[6].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\green.pcx").c_str()) &&
+		set[num].shift.load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\shift.pcx").c_str()) )
 	{
 		CorrectWPEForWindows(set[num].wpe);
 		return true;
@@ -58,6 +69,17 @@ u8* GRP::data(u32 frame, u32 line)
 		}
 	}
 	return nullptr;
+}
+
+LODATA* GRP::LoGetOffset(u32 frame, u32 graphicOffset) {
+	if (frame < LoOverlayCount())
+	{
+		return imageDat.get<LODATA*>(imageDat.get<u32>(8 + frame * sizeof(u32)) + graphicOffset * sizeof(LODATA));
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 Upgrades::Upgrades()
@@ -565,10 +587,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 
 			if ( compSect < 0xC0 )
 			{
-				for ( u32 i=0; i<3; i++ )
-					pcxDat.add<u8>(pal[compSect*3+i]);
-
-				pcxDat.add<u8>(0);
+				pcxDat.add<u8>(compSect); // Now 8-bit
 				pixel ++;
 			}
 			else
@@ -578,10 +597,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 
 				for ( u32 repeat=0; repeat<((u32)compSect)-0xC0; repeat++ )
 				{
-					for ( u32 i=0; i<3; i++ )
-						pcxDat.add<u8>(pal[repeatColor*3+i]);
-
-					pcxDat.add<u8>(0);
+					pcxDat.add<u8>(repeatColor); // Now 8-bit
 					pixel ++;
 				}
 			}
@@ -680,6 +696,49 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
 	return false;
 }
 
+bool IScripts::Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
+{
+	return FileToBuffer(hStarDat, hBrooDat, hPatchRt, "scripts\\iscript.bin", iscriptBin);
+}
+
+u16 IScripts::GetHeaderOffset(u16 isid) {
+	u16 offset = iscriptBin.get<u16>(0);
+	IScriptEntry search;
+	do
+	{
+		if (iscriptBin.get<IScriptEntry>(search, offset) == false)
+		{
+			// An erorr occurred
+			search.id = 0xFFFF;
+			search.offset = 0;
+		}
+		offset += sizeof(IScriptEntry);
+		if (search.id == 0xFFFF)
+		{
+			return 0; // I guess ... SC does FatalError("script %d does not exist", isid);
+		}
+	} while (search.id != isid);
+	return search.offset;
+}
+
+u16 IScripts::GetAnimOffset(u16 headerOffset, u16 animID, bool allowInvalid)
+{
+	if (iscriptBin.get<u32>(headerOffset) == 0x45504353) // valid !
+	{
+		u16 type = iscriptBin.get<u32>(headerOffset + 4);
+		if (animID < ((type & ~1) + 2) || allowInvalid) // animID < count for type
+		{
+			u16 animOffset = iscriptBin.get<u32>(headerOffset + 8 /* ishdr size */ + animID * sizeof(u16));
+			if (animOffset != 0 || allowInvalid) // animation != [NONE]
+			{
+				return animOffset;
+			}
+		}
+	}
+	// Error! Invalid script
+	return 0; // Or something
+}
+
 void ScData::Load()
 {
 	MPQHANDLE hStarDat = nullptr,
@@ -724,6 +783,9 @@ void ScData::Load()
 
 	if ( !aiScripts.Load(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load AIScripts");
+
+	if (!iScripts.Load(hStarDat, hBrooDat, hPatchRt))
+		Error("Failed to load IScripts");
 
 	if ( !tblFiles.Load(hStarDat, hBrooDat, hPatchRt) )
 		Error("Failed to load tbl files");
