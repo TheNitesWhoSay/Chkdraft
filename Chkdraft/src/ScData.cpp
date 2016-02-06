@@ -41,7 +41,8 @@ bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchR
 		set[num].remap[4].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\trans50.pcx").c_str()) &&
 		set[num].remap[5].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\red.pcx").c_str()) &&
 		set[num].remap[6].load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\green.pcx").c_str()) &&
-		set[num].shift.load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\shift.pcx").c_str()) )
+		set[num].dark.load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\dark.pcx").c_str()) &&
+		set[num].shift.load(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + "\\shift.pcx").c_str()))
 	{
 		CorrectWPEForWindows(set[num].wpe);
 		return true;
@@ -567,8 +568,10 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 		}
 
 		u8* pal;
-		u8 ncp = rawDat.get<u8>((u32)PCX::DataLocs::Ncp);
-		u16 nbs = rawDat.get<u16>((u32)PCX::DataLocs::Nbs);
+		//u8 ncp = rawDat.get<u8>((u32)PCX::DataLocs::Ncp);
+		//u16 nbs = rawDat.get<u16>((u32)PCX::DataLocs::Nbs);
+		u16 width = rawDat.get<u16>((u32)PCX::DataLocs::RightMargin) + 1;
+		u16 height = rawDat.get<u16>((u32)PCX::DataLocs::LowerMargin) + 1;
 		u32 palStart = rawDat.size()-768;
 
 		if ( !rawDat.getPtr(pal, palStart, 768) )
@@ -580,7 +583,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 		u32 pos = (u32)PCX::DataLocs::Data,
 			pixel = 0;
 
-		while ( pixel < ((u32)ncp)*((u32)nbs) )
+		while ( pixel < ((u32)width)*((u32)height) )
 		{
 			u8 compSect = rawDat.get<u8>(pos);
 			pos ++;

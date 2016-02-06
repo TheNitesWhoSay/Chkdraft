@@ -58,6 +58,7 @@ struct TileSet
 	buffer vx4;
 	buffer wpe;
 	PCX remap[7]; // REMAP_*-1 -- 1-based values, 0-based array
+	PCX dark;
 	PCX shift;
 };
 

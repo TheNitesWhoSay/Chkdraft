@@ -111,8 +111,8 @@ const struct {
 	{ DRAW_CLOAKED,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_1 },
 	{ DRAW_DECLOAK,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
 	{ DRAW_EMP,				&Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_0 }, // &Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_1 },
-	{ DRAW_EFFECT,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_1 },
-	{ DRAW_SHADOW,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_1 },
+	{ DRAW_EFFECT,			&Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_0 }, // &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_1 },
+	{ DRAW_SHADOW,			&Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_0 }, // &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_1 },
 	{ DRAW_HPFLOATDRAW,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn11_0, &Graphics::imageRenderFxn11_0 }, // No flip function
 	{ DRAW_WARP_IN,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn12_0, &Graphics::imageRenderFxn12_1 },
 	{ DRAW_SELECTION,		&Graphics::imageRenderFxn13_0, &Graphics::imageRenderFxn13_0 }, // No flip function
@@ -4929,6 +4929,7 @@ void Graphics::updateWarpFlash(ImageNode* image) {
 }
 
 void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Normal draw -- Writes the decompressed bytes through grpReindexing[], set with the active player color, to the bitmap
 {
 	u32 bitmapIndex = screenWidth * y + x;
 
@@ -5066,6 +5067,7 @@ void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 }
 
 void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// EMP effect -- Copies the color some pixels away based on the decompressed value
 {
 	u32 bitmapIndex = screenWidth * y + x;
 	u32 maxIndex = screenWidth * screenHeight;
@@ -5226,7 +5228,297 @@ void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 	}
 }
 
+void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Remapping function -- Looks up a new color based on the palette index of the bitmap coordinate being written to and the decompressed value
+{
+	u32 bitmapIndex = screenWidth * y + x;
+	//u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom;
+	s32 drawLeft, drawRight;
+	lineDat = grp->data(frame, grpRect->top);
+
+	while (linesLeft > 0)
+	{
+		linesLeft--;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				lineDat++;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
+					lineDat++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+					lineDat++;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
+						lineDat++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+	}
+}
+
+void Graphics::imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Shadow -- Draws a shaded color based on the existing color index of the pixel being written to
+{
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 effect;
+
+	buffer& dark = chkd.scData.tilesets.set[chk.getTileset()].dark.pcxDat;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom;
+	s32 drawLeft, drawRight;
+	lineDat = grp->data(frame, grpRect->top);
+
+	while (linesLeft > 0)
+	{
+		linesLeft--;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				lineDat++;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
+					lineDat++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+					lineDat++;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
+						lineDat++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+	}
+}
+
 void Graphics::imageRenderFxn13_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Selection Circle -- calls Normal Draw, but with a selection circle color reindexing applied
 {
 	u8 tselectPrev[8];
 	for (int i = 0; i < 8; i++)
@@ -5242,6 +5534,7 @@ void Graphics::imageRenderFxn13_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
 }
 
 void Graphics::imageRenderFxn14_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Draw with Player Color -- calls Normal Draw, but with a specified player color applied
 {
 	u8 prevColor = activePlayerColor;
 
