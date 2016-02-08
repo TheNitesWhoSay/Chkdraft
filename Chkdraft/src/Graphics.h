@@ -48,6 +48,7 @@ union ColoringData
 	PCX* effect;
 	u8 selectColor;
 	u8 playerColor;
+	u8 shiftRow;
 	struct
 	{
 		u8 state;
@@ -57,6 +58,7 @@ union ColoringData
 	u32 raw32; // Direct access to the whole value
 
 	ColoringData() {} // Doesn't do anything, except make it not be mad about the next one
+	ColoringData(PCX* effect) : effect(effect) {}
 	ColoringData(u32 a) : raw32(a) {} // Initialize with a value, for passing as direct a parameter value
 };
 
@@ -556,7 +558,8 @@ class Graphics
 		// Units/Sprites/Iscripts
 
 		// SC Variables used -- we don't need all of them, and we have our own equivalents for some.
-		u8 grpReindexing[256]; // Remapping table; tunit and tselect data are copied in to here, otherwise grpReindexing[i] == i
+		u8 grpReindexing[256]; // 50CDC1 - Remapping table; tunit and tselect data are copied in to here, otherwise grpReindexing[i] == i
+		u8 cloakingTable[256]; // 5993D8 - Lookup table for cloaking effect
 		// int unk_51C610[256];             // 51C610 - random counter by source? (size = 256?)
 		// int unk_51CA10;                  // 51CA10 - Another rand seed?
 		u32 randSeed = 0;                   // 51CA14 - rand seed
@@ -732,6 +735,10 @@ class Graphics
 		void updateTrans50PlayerColors(u8 paletteType, u8 playerID);
 		void drawImage(ChkdBitmap& bitmap, ImageNode* image);
 		u16 getRand();
+
+		void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void Graphics::imageRenderFxn5_2__1_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+
 };
 
 BITMAPINFO GetBMI(s32 width, s32 height);

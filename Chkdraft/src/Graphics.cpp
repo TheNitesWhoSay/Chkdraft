@@ -57,8 +57,18 @@ Graphics::Graphics(Scenario &chk)
 	imageLastCreated(NULL), spriteLastCreated(NULL), unitLastCreated(NULL),
 	randSeed(0), unk_6CEFB5(0), unk_unit_6D11F4(NULL), activeIscriptUnit(NULL), activePlayerColor(0)
 {
-	// Initialize remapping table
-	for (int i = 0; i < 256; i++) grpReindexing[i] = i;
+	u32 r, g, b;
+	buffer* palette = &chkd.scData.tilesets.set[chk.getTileset()].wpe;
+
+	// Initialize reindexing and cloak tables
+	for (int i = 0; i < 256; i++) {
+		grpReindexing[i] = i;
+
+		r = palette->get<u8>(i * 4 + 2) * 77;
+		g = palette->get<u8>(i * 4 + 1) * 151;
+		b = palette->get<u8>(i * 4 + 0) * 28;
+		cloakingTable[i] = u8((r + g + b + 0x1000) >> 13);
+	}
 }
 
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap,

@@ -104,12 +104,12 @@ const struct {
 	// The correct functions are listed in the comment
 	{ DRAW_NORMAL,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
 	{ DRAW_UNKNOWN1,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
-	{ DRAW_ENEMY_CLOAK,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
-	{ DRAW_OWN_CLOAK,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_1 },
-	{ DRAW_ALLY_CLOAK,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
-	{ DRAW_CLOAK,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
-	{ DRAW_CLOAKED,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_1 },
-	{ DRAW_DECLOAK,			&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
+	{ DRAW_ENEMY_CLOAK,		&Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
+	{ DRAW_OWN_CLOAK,		&Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_0 }, // &Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_1 },
+	{ DRAW_ALLY_CLOAK,		&Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
+	{ DRAW_CLOAK,			&Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
+	{ DRAW_CLOAKED,			&Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_0 }, // &Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_1 },
+	{ DRAW_DECLOAK,			&Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
 	{ DRAW_EMP,				&Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_0 }, // &Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_1 },
 	{ DRAW_EFFECT,			&Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_0 }, // &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_1 },
 	{ DRAW_SHADOW,			&Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_0 }, // &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_1 },
@@ -118,7 +118,7 @@ const struct {
 	{ DRAW_SELECTION,		&Graphics::imageRenderFxn13_0, &Graphics::imageRenderFxn13_0 }, // No flip function
 	{ DRAW_PLAYER_SIDE,		&Graphics::imageRenderFxn14_0, &Graphics::imageRenderFxn14_0 }, // &Graphics::imageRenderFxn14_0, &Graphics::imageRenderFxn14_1 },
 	{ DRAW_SIZE_RECT,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn15_0, &Graphics::imageRenderFxn15_0 }, // No flip function
-	{ DRAW_HALLUCINATION,	&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn16_0, &Graphics::imageRenderFxn16_1 },
+	{ DRAW_HALLUCINATION,	&Graphics::imageRenderFxn16_0, &Graphics::imageRenderFxn16_0 }, // &Graphics::imageRenderFxn16_0, &Graphics::imageRenderFxn16_1 },
 	{ DRAW_WARP_FLASH,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 } // &Graphics::imageRenderFxn17_0, &Graphics::imageRenderFxn17_1 } };
 };
 
@@ -4786,7 +4786,7 @@ void Graphics::setSpriteColoringData(SpriteNode* sprite, u8 colordata, bool hall
 				image->renderFunction = imgRenderFxns[image->paletteType].norm;
 			}
 			image->flags |= 1; // Redraw
-			image->coloringData.playerColor = colordata;
+			image->coloringData.shiftRow = colordata;
 		}
 	}
 	return;
@@ -4834,7 +4834,7 @@ void Graphics::updateTrans50PlayerColors(u8 paletteType, u8 playerID) // unknown
 		{	
 			memmove(&trans50[0x800 + 0x100 * i], // Store to player color row
 					&trans50[chkd.scData.tunit.pcxDat.get<u8>(playerID * 8 + i) * 0x100], // From tunit color's row
-					0x40); // Amount to copy (not a full row, apparently)
+					0x100);
 		}
 	}
 }
@@ -4871,7 +4871,8 @@ void Graphics::updateCloaking(ImageNode* image)
 	}
 	image->coloringData.cloak.timer = 3;
 	image->coloringData.cloak.state++;
-	if (image->coloringData.cloak.state >= 8) { // use "==" instead ?
+	if (image->coloringData.cloak.state >= 8)
+	{
 		setImagePaletteType(image, image->paletteType + 1); // Go to next palette type, DRAW_OWN_CLOAK or DRAW_CLOAKED
 		activeIscriptUnit->statusFlags |= USTATUS_REQUIRESDETECTION | USTATUS_CLOAKED;
 	}
@@ -4889,10 +4890,12 @@ void Graphics::updateDecloaking(ImageNode* image) {
 	}
 	image->coloringData.cloak.timer = 3;
 	image->coloringData.cloak.state--;
-	if (image->coloringData.cloak.state == 0) {
+	if (image->coloringData.cloak.state == 0)
+	{
 		image->paletteType = DRAW_NORMAL;
 		image->updateFunction = imgUpdateFxns[DRAW_NORMAL].func;
-		if (image->flags & 2) { // Flipped
+		if (image->flags & 2) // Flipped
+		{
 			image->renderFunction = imgRenderFxns[DRAW_NORMAL].flip; // RenderFunc[0].flip;
 		}
 		else {
@@ -4905,18 +4908,22 @@ void Graphics::updateDecloaking(ImageNode* image) {
 	return;
 }
 
-void Graphics::updateWarpFlash(ImageNode* image) {
-	if (image->coloringData.warpFlash.timer != 0) {
+void Graphics::updateWarpFlash(ImageNode* image)
+{
+	if (image->coloringData.warpFlash.timer != 0)
+	{
 		image->coloringData.warpFlash.timer--;
 		return;
 	}
 	image->coloringData.warpFlash.timer = 2;
-	if (image->coloringData.warpFlash.state < 0x3F) {
+	if (image->coloringData.warpFlash.state < 0x3F)
+	{
 		image->coloringData.warpFlash.state++;
 		image->flags |= 1; // Redraw
 		return;
 	}
-	if (image->anim != ANIM_DEATH) {
+	if (image->anim != ANIM_DEATH)
+	{
 		image->anim = ANIM_DEATH;
 		image->sleep = 0;
 		image->iscriptReturn = 0;
@@ -5064,6 +5071,209 @@ void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 		}
 		bitmapIndex += lineOffs;
 	}
+}
+
+void Graphics::imageRenderFxn2_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Unvisioned Cloaking / Decloaking Draw -- Draws unvisioned cloak effect based on GRP, and then parts of the normal GRP based on the GRP through cloakingTable
+{
+	imageRenderFxn3_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+	imageRenderFxn5_2__0_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+}
+
+void Graphics::imageRenderFxn2_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Flipped Unvisioned Cloaking / Decloaking Draw
+{
+	//imageRenderFxn3_1(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+	//imageRenderFxn5_2__1_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+}
+
+void Graphics::imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Unvisioned Cloaked Effect -- Copies drawbuffer values some pixels away based on the cloakingTable values
+{
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom;
+	s32 drawLeft, drawRight;
+	lineDat = grp->data(frame, grpRect->top);
+
+	while (linesLeft > 0)
+	{
+		linesLeft--;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				effect = bitmapIndex + cloakingTable[*lineDat];
+				lineDat++;
+				do
+				{
+					if (effect >= maxIndex)
+					{
+						effect -= maxIndex;
+					}
+					bitmap[bitmapIndex] = bitmap[effect];
+					effect++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = bitmapIndex + cloakingTable[*lineDat];
+					lineDat++;
+					if (effect >= maxIndex)
+					{
+						effect -= maxIndex;
+					}
+					bitmap[bitmapIndex] = bitmap[effect];
+					bitmapIndex--;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					effect = bitmapIndex + cloakingTable[*lineDat];
+					lineDat++;
+					do
+					{
+						if (effect >= maxIndex)
+						{
+							effect -= maxIndex;
+						}
+						bitmap[bitmapIndex] = bitmap[effect];
+						effect++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = bitmapIndex + cloakingTable[*lineDat];
+						lineDat++;
+						if (effect >= maxIndex)
+						{
+							effect -= maxIndex;
+						}
+						bitmap[bitmapIndex] = bitmap[effect];
+						bitmapIndex--;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+	}
+}
+
+void Graphics::imageRenderFxn5_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Visioned Cloaking/Decloaking Draw -- Draws trans50 effect with GRP, then parts of GRP based on cloakingTable
+{
+	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
+	imageRenderFxn5_2__0_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+}
+
+
+void Graphics::imageRenderFxn5_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Flipped Visioned Cloaking/Decloaking Draw
+{
+	//imageRenderFxn9_1(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
+	//imageRenderFxn5_2__1_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+}
+
+void Graphics::imageRenderFxn6_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Visioned Cloaked Draw -- Draws GRP with trans50 remapping table
+{
+	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
+}
+
+void Graphics::imageRenderFxn6_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// FLipped Visioned Cloaked Draw
+{
+	//imageRenderFxn9_1(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
 }
 
 void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
@@ -5526,7 +5736,7 @@ void Graphics::imageRenderFxn13_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
 		tselectPrev[i] = grpReindexing[i + 1]; // Back up old tselect reindexing values
 		grpReindexing[i + 1] = chkd.scData.tselect.pcxDat.get<u8>(colorData.selectColor * 8 + i); // Load tselect reindex value
 	}
-	imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, 0);
+	imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
 	for (int i = 0; i < 8; i++)
 	{
 		grpReindexing[i + 1] = tselectPrev[i]; // Restore saved tselect reindexing values
@@ -5545,12 +5755,189 @@ void Graphics::imageRenderFxn14_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
 		grpReindexing[i + 1] = chkd.scData.tunit.pcxDat.get<u8>(activePlayerColor * 8 + i); // Load tunit reindex value
 	}
 
-	imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, 0);
+	imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
 
 	// Load previous player color values
 	activePlayerColor = prevColor;
 	for (int i = 0; i < 8; i++)
 	{
 		grpReindexing[i + 1] = chkd.scData.tunit.pcxDat.get<u8>(activePlayerColor * 8 + i); // Load tunit reindex value
+	}
+}
+
+void Graphics::imageRenderFxn16_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Hallucination Draw -- Fills grpReindexing table with shift.pcx data, then calls Normal Draw
+{
+	u8 tmp[0x100];
+	PCX* shift = &chkd.scData.tilesets.set[chk.getTileset()].shift;
+	for (int i = 0; i < 0x100; i++)
+	{
+		tmp[i] = grpReindexing[i];
+		grpReindexing[i] = shift->pcxDat.get<u8>(colorData.shiftRow << 8 + i); // shift.pcx only has one row, and this doesn't ever seem to be set > 0 -- But maybe mods can change it.
+	}
+	imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+	for (int i = 0; i < 0x100; i++) grpReindexing[i] = tmp[i];
+}
+
+
+void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+// Unvisioned cloaking/decloaking common -- Draws the normal-colored components of GRP based on cloakingTable, making parts transparent
+{
+	u32 bitmapIndex = screenWidth * y + x;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom;
+	s32 drawLeft, drawRight;
+	lineDat = grp->data(frame, grpRect->top);
+
+	while (linesLeft > 0)
+	{
+		linesLeft--;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				if (cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state)
+				{
+					bitmapIndex += compSect;
+				}
+				else
+				{
+					do
+					{
+						bitmap[bitmapIndex] = grpReindexing[*lineDat];
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+				lineDat++;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					if (cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state)
+					{
+						bitmap[bitmapIndex] = grpReindexing[*lineDat];
+					}
+					lineDat++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+					break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+
+					if (cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state)
+					{
+						bitmapIndex += compSect;
+					}
+					else
+					{
+						do
+						{
+							bitmap[bitmapIndex] = grpReindexing[*lineDat];
+							bitmapIndex++;
+							compSect--;
+						} while (compSect > 0);
+					}
+
+					lineDat++;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+
+					do
+					{
+						if (cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state)
+						{
+							bitmap[bitmapIndex] = grpReindexing[*lineDat];
+						}
+						lineDat++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
 	}
 }
