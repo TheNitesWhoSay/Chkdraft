@@ -122,6 +122,42 @@ const struct {
 	{ DRAW_WARP_FLASH,		&Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 } // &Graphics::imageRenderFxn17_0, &Graphics::imageRenderFxn17_1 } };
 };
 
+bool Graphics::doAnimation()
+{
+	bool redraw = false;
+	if (GetTickCount() >= gticks) // Time to update for next tick?
+	{
+		gticks = GetTickCount() + FASTEST;
+		for (int i = 0; i < THG2Graphics.size(); i++)
+		{
+			if (THG2Graphics[i].isUnit)
+			{
+				activeIscriptUnit = THG2Graphics[i].unit;
+				unk_unit_6D11F4 = activeIscriptUnit;
+				spriteToIscriptLoop(activeIscriptUnit->sprite);
+			}
+			else
+			{
+				activeIscriptUnit = nullptr;
+				unk_unit_6D11F4 = activeIscriptUnit;
+				spriteToIscriptLoop(THG2Graphics[i].sprite);
+			}
+		}
+
+		for (int i = 0; i < UNITGraphics.size(); i++)
+		{
+			activeIscriptUnit = UNITGraphics[i];
+			unk_unit_6D11F4 = activeIscriptUnit;
+			spriteToIscriptLoop(activeIscriptUnit->sprite);
+		}
+		activeIscriptUnit = nullptr;
+		unk_unit_6D11F4 = nullptr;
+		redraw = true;
+	}
+	return redraw;
+}
+
+
 UnitNode* Graphics::CreateUnitXY(int player, u16 id, int x, int y) {
 	UnitNode* tmp = CreateUnit(id, x, y, player);
 
@@ -5490,7 +5526,7 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 				}
 				do
 				{
-					effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
 					bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
 					bitmapIndex++;
 					compSect--;
@@ -5515,7 +5551,7 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 				}
 				do
 				{
-					effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+					effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
 					bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
 					lineDat++;
 					bitmapIndex++;
@@ -5553,7 +5589,7 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 					}
 					do
 					{
-						effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
 						bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
 						bitmapIndex++;
 						compSect--;
@@ -5569,7 +5605,7 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 					}
 					do
 					{
-						effect = (*lineDat << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
+						effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
 						bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
 						lineDat++;
 						bitmapIndex++;

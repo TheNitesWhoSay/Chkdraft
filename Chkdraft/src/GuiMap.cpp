@@ -1305,6 +1305,11 @@ bool GuiMap::addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags) {
 	return false;
 }
 
+bool GuiMap::doAnimation()
+{
+	return ColorCycler::CycleColors(chkd.maps.curr->getTileset()) || graphics.doAnimation();
+}
+
 void GuiMap::setMapId(u16 mapId)
 {
 	this->mapId = mapId;

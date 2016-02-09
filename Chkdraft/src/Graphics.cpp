@@ -55,6 +55,7 @@ Graphics::Graphics(Scenario &chk)
 	displayingElevations(false), clipLocationNames(true),
 	imageEmptyNode(NULL), spriteEmptyNode(NULL), unitEmptyNode(NULL),
 	imageLastCreated(NULL), spriteLastCreated(NULL), unitLastCreated(NULL),
+	gticks(0),
 	randSeed(0), unk_6CEFB5(0), unk_unit_6D11F4(NULL), activeIscriptUnit(NULL), activePlayerColor(0)
 {
 	u32 r, g, b;

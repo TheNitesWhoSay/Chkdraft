@@ -57,7 +57,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 			}
 		}
 
-		if ( chkd.maps.curr != nullptr && ColorCycler::CycleColors(chkd.maps.curr->getTileset()) )
+		if ( chkd.maps.curr != nullptr && chkd.maps.curr->doAnimation())
 			chkd.maps.curr->Redraw(false);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core

@@ -470,6 +470,7 @@ class Graphics
 		bool recreateSprite(int index, ChkSprite* thg2);
 		void updateSprite(int index, ChkSprite* thg2); // Updates stat changes, etc.
 
+		bool doAnimation();
 
 		// Update and Render functions -- Public for the sole purpose of being able to populate the array that I couldn't figure out how to get to work within the class definition
 		void updateNull(ImageNode* image) {} // Does nothing
@@ -538,6 +539,8 @@ class Graphics
 		ImageNode* imageLastCreated; // Index of the last created entity -- New entities added after this
 		SpriteNode* spriteLastCreated;
 		UnitNode* unitLastCreated;
+
+		DWORD gticks;
 
 		HWND hPane; // Handle to destination window
 		s32 screenLeft; // X-Position of the screens left edge in the map

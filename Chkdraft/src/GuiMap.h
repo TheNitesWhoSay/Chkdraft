@@ -112,6 +112,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					HDC GetMemMinihDC() { return MemMinihDC; }
 
 					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags);
+					bool doAnimation();
 
 /*	   Misc  	*/	void setMapId(u16 mapId);
 					u16 getMapId();
