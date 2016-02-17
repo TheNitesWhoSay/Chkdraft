@@ -44,14 +44,14 @@ bool ColorCycler::CycleColors(const u16 tileset)
 
 inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
 {
-	((u8*)&pixel)[0] += redOffset;
+	((u8*)&pixel)[0] += blueOffset;
 	((u8*)&pixel)[1] += greenOffset;
-	((u8*)&pixel)[2] += blueOffset;
+	((u8*)&pixel)[2] += redOffset;
 	return pixel;
 }
 
-void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap,
-					   SELECTIONS& selections, u32 layer, HDC hDC, bool showAnywhere)
+void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, u32 layer,
+                       HDC hDC, bool showAnywhere)
 {
 	this->screenLeft = screenLeft;
 	this->screenTop = screenTop;
@@ -59,8 +59,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 	screenWidth = bitWidth;
 	screenHeight = bitHeight;
 
-	mapWidth = chk.XSize();
-	mapHeight = chk.YSize();
+	mapWidth = map.XSize();
+	mapHeight = map.YSize();
 
 	if ( displayingElevations )
 		DrawTileElevations(bitmap);
@@ -69,12 +69,12 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
 	DrawGrid(bitmap);
 
-	DrawUnits(bitmap, selections);
+	DrawUnits(bitmap);
 
 	DrawSprites(bitmap);
 
 	if ( layer == LAYER_LOCATIONS )
-		DrawLocations(bitmap, selections, showAnywhere);
+		DrawLocations(bitmap, showAnywhere);
 
 	BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
 	SetDIBitsToDevice( hDC, 0, 0, screenWidth, screenHeight, 0, 0, 0,
@@ -89,8 +89,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
 void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 {
-	buffer& ERA  = chk.ERA (),
-		  & MTXM = chk.MTXM();
+	buffer& ERA  = map.ERA (),
+		  & MTXM = map.MTXM();
 
 	u32 maxRowX, maxRowY, mtxmRef;
 
@@ -134,7 +134,7 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 
 void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 {
-	buffer& MTXM = chk.MTXM();
+	buffer& MTXM = map.MTXM();
 
 	u32 maxRowX, maxRowY,
 				  xc, yc;
@@ -154,7 +154,7 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 	BITMAPINFO bmi = GetBMI(32, 32);
 
 	u8 tileset;
-	if ( !chk.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+	if ( !map.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
 	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	for ( yc=screenTop/32; yc<maxRowY; yc++ )
@@ -200,9 +200,9 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
 	}
 }
 
-void Graphics::DrawLocations(ChkdBitmap& bitmap, SELECTIONS& selections, bool showAnywhere)
+void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
-	buffer& MRGN = chk.MRGN();
+	buffer& MRGN = map.MRGN();
 	ChkLocation* loc;
 	s32 screenRight = screenLeft+screenWidth;
 	s32 screenBottom = screenTop+screenHeight;
@@ -394,11 +394,11 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, SELECTIONS& selections, bool sh
 	}
 }
 
-void Graphics::DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections)
+void Graphics::DrawUnits(ChkdBitmap& bitmap)
 {
-	buffer& UNIT = chk.UNIT(),
-		  & ERA  = chk.ERA (),
-		  & COLR = chk.COLR();
+	buffer& UNIT = map.UNIT(),
+		  & ERA  = map.ERA (),
+		  & COLR = map.COLR();
 
 	s32	UnitTableSize = UNIT.size();
 
@@ -443,9 +443,9 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections)
 
 void Graphics::DrawSprites(ChkdBitmap& bitmap)
 {
-	buffer& THG2 = chk.THG2(),
-		  & ERA  = chk.ERA (),
-		  & COLR = chk.COLR();
+	buffer& THG2 = map.THG2(),
+		  & ERA  = map.ERA (),
+		  & COLR = map.COLR();
 
 	s32	SpriteTableSize = THG2.size();
 
@@ -495,7 +495,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 {
 	s32 screenRight = screenLeft + screenWidth;
 	s32 screenBottom = screenTop + screenHeight;
-	buffer& MRGN = chk.MRGN();
+	buffer& MRGN = map.MRGN();
 	ChkLocation* loc;
 
 	HFONT NumFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
@@ -520,7 +520,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 						if ( bottomMost > screenTop )
 						{
 							ChkdString str;
-							if ( chk.getLocationName(u16(locPos/CHK_LOCATION_SIZE), str) )
+							if ( map.getLocationName(u16(locPos/CHK_LOCATION_SIZE), str) )
 							{
 								leftMost = leftMost-screenLeft+2;
 								topMost = topMost-screenTop+2;
@@ -587,9 +587,9 @@ void Graphics::DrawTileNumbers(HDC hDC)
 {
 	buffer* tileBuf = nullptr;
 	if ( tileNumsFromMTXM )
-		tileBuf = &chk.MTXM();
+		tileBuf = &map.MTXM();
 	else
-		tileBuf = &chk.TILE();
+		tileBuf = &map.TILE();
 
 	u32 maxRowX, maxRowY,
 		xc, yc;
@@ -841,7 +841,7 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
 }
 
 void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
-				 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC,  u16 frame, bool selected )
+				 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
 	GRP* curr = &chkd.scData.grps[chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561];
 	
@@ -1029,7 +1029,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 	SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 blueOffset, u8 greenOffset, u8 redOffset)
+void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
 {
 	u32 cv5Ref, MegaTileRef, MiniTileRef; // Pointers and index's to tile components
 
@@ -1080,26 +1080,26 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 	}
 }
 
-void DrawTools( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario &chk, u8 layer )
+void DrawTools(HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+    Selections &selections, bool pasting, Clipboard &clipboard, GuiMap &map, u8 layer)
 {
 	if ( layer == LAYER_TERRAIN && selections.hasTiles() ) // Draw selected tiles
-		DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, chk);
+		DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, map);
 	else if ( layer == LAYER_LOCATIONS ) // Draw Location Creation/Movement Graphics
-		DrawTempLocs(hDC, screenLeft, screenTop, selections, chk);
+		DrawTempLocs(hDC, screenLeft, screenTop, selections, map);
 
 	if ( pasting ) // Draw paste graphics
-		DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, chk, layer);
+		DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, map, layer);
 }
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk)
+void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections& selections, GuiMap &map)
 {
 	HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
 	SelectObject(hDC, pen);
 	RECT rect, rcBorder;
 
 	u16 tilesetNum;
-	if ( !chk.ERA().get<u16>(tilesetNum, 0) ) return;
+	if ( !map.ERA().get<u16>(tilesetNum, 0) ) return;
 	TileSet* tileset = &chkd.scData.tilesets.set[tilesetNum];
 
 	BITMAPINFO bmi = GetBMI(32, 32);
@@ -1168,7 +1168,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 }
 
 void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-						SELECTIONS& selections, CLIPBOARD& clipboard, Scenario &chk, u8 layer )
+						Selections &selections, Clipboard &clipboard, GuiMap &map, u8 layer )
 {
 	if ( layer == LAYER_TERRAIN )
 	{
@@ -1177,7 +1177,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 	
 		RECT rect, rcShade;
 		u16 tileset;
-		if ( !chk.ERA().get<u16>(tileset, 0) ) return;
+		if ( !map.ERA().get<u16>(tileset, 0) ) return;
 		TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 	
 		BITMAPINFO bmi = GetBMI(32, 32);
@@ -1202,7 +1202,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 			// If tile is within current map border
 			{
 				// Draw tile with a blue haze
-					DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 32, 0, 0);
+					DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
 
 				if ( tile.neighbors ) // if any edges need to be drawn
 				{
@@ -1245,7 +1245,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
 		u8 tileset;
-		if ( !chk.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+		if ( !map.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
 
 		buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 		s32 sScreenLeft = screenLeft;
@@ -1258,7 +1258,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 			for ( auto &pasteUnit : units )
 			{
 				u8 color = pasteUnit.unit.owner;
-				chk.getPlayerColor(pasteUnit.unit.owner, color);
+				map.getPlayerColor(pasteUnit.unit.owner, color);
 				if ( cursor.y+ pasteUnit.yc >= 0 )
 				{
 					UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
@@ -1272,7 +1272,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 	}
 }
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk)
+void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections, GuiMap &map)
 {
 	POINT start = selections.getStartDrag();
 	POINT end = selections.getEndDrag();
@@ -1288,7 +1288,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections
 	{
 		ChkLocation* loc;
 		u16 selectedLocation = selections.getSelectedLocation();
-		if ( selectedLocation != NO_LOCATION && chk.getLocation(loc, selectedLocation) ) // Draw location resize/movement graphics
+		if ( selectedLocation != NO_LOCATION && map.getLocation(loc, selectedLocation) ) // Draw location resize/movement graphics
 		{
 			s32 locLeft = loc->xc1-screenLeft;
 			s32 locRight = loc->xc2-screenLeft;
@@ -1335,7 +1335,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections
 	}
 }
 
-void DrawSelectingFrame(HDC hDC, SELECTIONS& selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
+void DrawSelectingFrame(HDC hDC, Selections &selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
 {
 	if ( !selections.selectionAreaIsNull() )
 	{
@@ -1403,9 +1403,9 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
 }
 
 void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
+					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
 {
-	buffer& MTXM = chk.MTXM();
+	buffer& MTXM = map.MTXM();
 
 	// minimap colors are equivilant to pixel 7, 6 of the minitile given by (MiniMapCoord%scale)
 	u32 screenWidth  = bitWidth,
@@ -1460,11 +1460,11 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 #define MINI_MAP_MAXBIT 65536 // Maximum graphicBits position
 
 void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, Scenario &chk )
+					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
 {
-	buffer& UNIT = chk.UNIT(),
-		  & THG2 = chk.THG2(),
-		  & COLR = chk.COLR();
+	buffer& UNIT = map.UNIT(),
+		  & THG2 = map.THG2(),
+		  & COLR = map.COLR();
 
 	u32 unitTableSize = UNIT.size();
 	u32 spriteTableSize = THG2.size();
@@ -1512,9 +1512,9 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 	}
 }
 
-void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario &chk)
+void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, GuiMap &map)
 {
-	buffer& ERA  = chk.ERA ();
+	buffer& ERA  = map.ERA ();
 
 	ChkdBitmap graphicBits;
 	graphicBits.resize(65536);
@@ -1531,8 +1531,8 @@ void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario
 		yOffset = (u16)((128-ySize*scale)/2);
 
 	tiles = &chkd.scData.tilesets.set[tileset];
-	DrawMiniMapTiles(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
-	DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, chk);
+	DrawMiniMapTiles(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
+	DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
 	SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
 	// Draw Map Borders

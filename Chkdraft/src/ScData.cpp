@@ -13,11 +13,11 @@ bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatch
 		   && LoadSet(hStarDat, hBrooDat, hPatchRt, "Twilight", 7);
 }
 
-void CorrectWPEForWindows(buffer &WPE)
+void CorrectPaletteForWindows(buffer &palette)
 {
-	u32 numColors = WPE.size() / 4;
+	u32 numColors = palette.size() / 4;
 	for ( u32 i = 0; i < numColors; i++ )
-		WPE.swap<u8>(i * 4, i * 4 + 2);
+		palette.swap<u8>(i * 4, i * 4 + 2);
 }
 
 bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* name, u8 num)
@@ -32,7 +32,7 @@ bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchR
 		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".vx4").c_str(), set[num].vx4) &&
 		FileToBuffer(hStarDat, hBrooDat, hPatchRt, std::string(path + std::string(name) + ".wpe").c_str(), set[num].wpe) )
 	{
-		CorrectWPEForWindows(set[num].wpe);
+        CorrectPaletteForWindows(set[num].wpe);
 		return true;
 	}
 	return false;
@@ -586,6 +586,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
 				}
 			}
 		}
+        CorrectPaletteForWindows(pcxDat);
 		return true;
 	}
 	return false;

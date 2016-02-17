@@ -10,20 +10,20 @@ bool MiniMap::CreateThis(HWND hParent)
 
 void MiniMap::MiniMapClick(LPARAM ClickPoints)
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		POINTS MiniClick = MAKEPOINTS(ClickPoints);
 
 		RECT rect;
-		GetClientRect(chkd.maps.curr->getHandle(), &rect);
+		GetClientRect(CM->getHandle(), &rect);
 
-		u16 xSize = chkd.maps.curr->XSize(),
-			ySize = chkd.maps.curr->YSize();
+		u16 xSize = CM->XSize(),
+			ySize = CM->YSize();
 
 		if ( xSize == 0 || ySize == 0 )
 			return;
 
-		HWND hMap = chkd.maps.curr->getHandle();
+		HWND hMap = CM->getHandle();
 		RECT rcMap = { };
 		GetClientRect(hMap, &rcMap);
 
@@ -46,12 +46,12 @@ void MiniMap::MiniMapClick(LPARAM ClickPoints)
 		u16 xOffset = (u16)((128-xSize*scale)/2),
 			yOffset = (u16)((128-ySize*scale)/2);
 
-		chkd.maps.curr->display().x = (s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/2);
-		chkd.maps.curr->display().y = (s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/2);
+		CM->display().x = (s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/2);
+		CM->display().y = (s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/2);
 
-		chkd.maps.curr->Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
+		CM->Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
 
-		RedrawWindow(chkd.maps.curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+		RedrawWindow(CM->getHandle(), NULL, NULL, RDW_INVALIDATE);
 	}
 }
 
@@ -75,8 +75,8 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case WM_PAINT:
 			{
-				if ( chkd.maps.curr )
-					chkd.maps.curr->PaintMiniMap(hWnd);
+				if ( CM )
+					CM->PaintMiniMap(hWnd);
 			}
 			break;
 

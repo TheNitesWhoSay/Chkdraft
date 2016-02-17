@@ -3,8 +3,9 @@
 #include "CommonFiles/CommonFiles.h"
 #include "MappingCore/MappingCore.h"
 #include "Selections.h"
-#include "Undo.h"
+#include "Undos.h"
 #include "ScData.h"
+class GuiMap;
 
 void StringToWindowsClipboard(std::string &str);
 
@@ -35,16 +36,16 @@ class PasteUnitNode
 		PasteUnitNode(); // Disallow ctor
 };
 
-class CLIPBOARD
+class Clipboard
 {
 	public:
 
-		CLIPBOARD();
-		~CLIPBOARD();
+        Clipboard();
+		~Clipboard();
 
 		bool hasTiles();
 		bool hasUnits() { return copyUnits.size() > 0; }
-		void copy(SELECTIONS* selection, Scenario* chk, u8 layer);
+		void copy(GuiMap &map, u8 layer);
 		
 		void addQuickTile(u16 index, s32 xc, s32 yc);
 		bool hasQuickTiles() { return quickTiles.size() > 0; }
@@ -55,7 +56,7 @@ class CLIPBOARD
 		void beginPasting(bool isQuickPaste);
 		void endPasting();
 
-		void doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, UNDOS& undos, bool allowStack);
+		void doPaste(u8 layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
 
 		std::vector<PasteTileNode> &getTiles();
 		std::vector<PasteUnitNode> &getUnits();

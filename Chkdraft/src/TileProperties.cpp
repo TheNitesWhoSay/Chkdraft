@@ -13,7 +13,7 @@ bool TilePropWindow::DestroyThis()
 
 void TilePropWindow::UpdateTile()
 {
-	TileNode tile = chkd.maps.curr->selections().getFirstTile();
+	TileNode tile = CM->GetSelections().getFirstTile();
 	SetWindowText(getHandle(), std::string("Tile Properties (" + std::to_string(tile.xc) + ", " + std::to_string(tile.yc) +")").c_str());
 	SetWindowText(GetDlgItem(getHandle(), IDC_EDIT_TILEVALUE), std::to_string(tile.value).c_str());
 }
@@ -40,9 +40,9 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( tile > 65535 )
 			tile %= 65536;
 
-		TileNode tileNode = chkd.maps.curr->selections().getFirstTile();
+		TileNode tileNode = CM->GetSelections().getFirstTile();
 		tileNode.value = tile;
-		chkd.maps.curr->SetTile(tileNode.xc, tileNode.yc, tile);
+		CM->SetTile(tileNode.xc, tileNode.yc, tile);
 		EndDialog(hWnd, IDOK);
 		break;
 	}
@@ -96,7 +96,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 				u16 tile = atoi(lpszTile), tileset;
 				
-				chkd.maps.curr->ERA().get<u16>(tileset, 0);
+				CM->ERA().get<u16>(tileset, 0);
 				TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 				HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));

@@ -50,8 +50,8 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 	this->trigIndex = trigIndex;
 	Trigger* trig;
 	TextTrigGenerator ttg;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
-		ttg.LoadScenario(chkd.maps.curr) )
+	if ( CM->getTrigger(trig, trigIndex) &&
+		ttg.LoadScenario(CM) )
 	{
 		for ( u8 y = 0; y<NUM_TRIG_ACTIONS; y++ )
 		{
@@ -137,14 +137,14 @@ void TrigActionsWindow::HideSuggestions()
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
 {
 	Trigger* trig;
-	if ( actionNum >= 0 && actionNum < 64 && chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( actionNum >= 0 && actionNum < 64 && CM->getTrigger(trig, trigIndex) )
 	{
 		Action &action = trig->action(actionNum);
 		if ( action.action != AID_NO_ACTION )
 		{
 			action.ToggleDisabled();
 
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			RefreshWindow(trigIndex);
 			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
@@ -408,7 +408,7 @@ bool TrigActionsWindow::TransformAction(Action &action, u8 newId)
 	if ( action.action != newId )
 	{
 		ChangeActionType(action, newId);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 		chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		return true;
@@ -423,7 +423,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
 	u8 newId = AID_NO_ACTION;
 	if ( ttc.ParseActionName(newText, newId) || ttc.ParseActionName(suggestions.Take(), newId) )
 	{
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+		if ( CM->getTrigger(trig, trigIndex) )
 		{
 			Action &action = trig->action(actionNum);
 			TransformAction(action, newId);
@@ -431,11 +431,11 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
 	}
 	else if ( newText.length() == 0 )
 	{
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
+		if ( CM->getTrigger(trig, trigIndex) &&
 			trig->actions[actionNum].action != newId )
 		{
 			trig->deleteAction((u8)actionNum);
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			RefreshWindow(trigIndex);
 			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		}
@@ -444,12 +444,11 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
 
 void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText)
 {
-	ScenarioPtr chk = chkd.maps.curr;
 	RawString rawUpdateText, rawSuggestText;
 	std::string suggestionString = suggestions.Take();
 	TextTrigCompiler ttc;
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		Action &action = trig->action(actionNum);
 		if ( action.action < 64 && argNum < actionArgMaps[action.action].size() )
@@ -463,8 +462,8 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 			if ( argType == ActionArgType::ActString || argType == ActionArgType::ActWav )
 			{
 				u32 newStringNum = 0;
-				if ( chk->stringExists(chkdSuggestText, newStringNum) ||
-					chk->stringExists(chkdNewText, newStringNum) )
+				if ( CM->stringExists(chkdSuggestText, newStringNum) ||
+					CM->stringExists(chkdNewText, newStringNum) )
 				{
 					if ( argType == ActionArgType::ActString )
 						action.stringNum = newStringNum;
@@ -478,14 +477,14 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 			{
 				std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).action];
 				madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-					ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, chk, chkd.scData)) ||
+					ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
 					(ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-						ttc.ParseActionArg(rawSuggestText, argNum, argMap, action, chk, chkd.scData));
+						ttc.ParseActionArg(rawSuggestText, argNum, argMap, action, CM, chkd.scData));
 			}
 
 			if ( madeChange )
 			{
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 				RefreshWindow(trigIndex);
 				chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 			}
@@ -519,7 +518,7 @@ BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 		u8 actionNum = (u8)gridItemY;
 
 		if ( gridItemX == 1 && // Action Name
-			chkd.maps.curr->getTrigger(trig, trigIndex) &&
+			CM->getTrigger(trig, trigIndex) &&
 			trig->actions[actionNum].action != 0 )
 		{
 			ChangeActionType(trig->actions[actionNum], 0);
@@ -538,7 +537,7 @@ void TrigActionsWindow::DrawSelectedAction()
 	if ( hDC != NULL )
 	{
 		Trigger* trig;
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+		if ( CM->getTrigger(trig, trigIndex) )
 		{
 			int focusedX = -1,
 				focusedY = -1;
@@ -547,7 +546,7 @@ void TrigActionsWindow::DrawSelectedAction()
 			{
 				u8 actionNum = (u8)focusedY;
 				TextTrigGenerator ttg;
-				ttg.LoadScenario(chkd.maps.curr);
+				ttg.LoadScenario(CM);
 				ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
 				ttg.ClearScenario();
 
@@ -694,18 +693,17 @@ void TrigActionsWindow::SuggestNothing()
 
 void TrigActionsWindow::SuggestLocation()
 {
-	ScenarioPtr chk = chkd.maps.curr;
 	ChkLocation* loc = nullptr;
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		suggestions.AddString(std::string("No Location"));
-		u16 locationCapacity = (u16)chk->locationCapacity();
+		u16 locationCapacity = (u16)CM->locationCapacity();
 		for ( u16 i = 0; i < locationCapacity; i++ )
 		{
-			if ( chk->locationIsUsed(i) )
+			if ( CM->locationIsUsed(i) )
 			{
 				ChkdString locationName(true);
-				if ( chk->getLocation(loc, u8(i)) && loc->stringNum > 0 && chk->getLocationName((u16)i, locationName) )
+				if ( CM->getLocation(loc, u8(i)) && loc->stringNum > 0 && CM->getLocationName((u16)i, locationName) )
 					suggestions.AddString(locationName);
 				else
 				{
@@ -721,21 +719,20 @@ void TrigActionsWindow::SuggestLocation()
 
 void TrigActionsWindow::SuggestString()
 {
-	ScenarioPtr chk = chkd.maps.curr;
 	ChkdString str(true);
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		suggestions.AddString(std::string("No String"));
-		u32 numRegularStrings = (u32)chk->numStrSlots();
-		u32 numExtendedStrings = chk->numKstrSlots();
+		u32 numRegularStrings = (u32)CM->numStrSlots();
+		u32 numExtendedStrings = CM->numKstrSlots();
 		for ( u32 i = 1; i <= numRegularStrings; i++ )
 		{
-			if ( chk->GetString(str, i) && str.size() > 0 )
+			if ( CM->GetString(str, i) && str.size() > 0 )
 				suggestions.AddString(str);
 		}
 		for ( u32 i = 65535; i > (65535 - numExtendedStrings); i-- )
 		{
-			if ( chk->GetString(str, i) && str.size() > 0 )
+			if ( CM->GetString(str, i) && str.size() > 0 )
 				suggestions.AddString(str);
 		}
 	}
@@ -750,12 +747,12 @@ void TrigActionsWindow::SuggestPlayer()
 
 void TrigActionsWindow::SuggestUnit()
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
 		{
 			ChkdString str(true);
-			chkd.maps.curr->getUnitName(str, i);
+			CM->getUnitName(str, i);
 			suggestions.AddString(str);
 			if ( str.compare(std::string(DefaultUnitDisplayName[i])) != 0 )
 				suggestions.AddString(std::string(DefaultUnitDisplayName[i]));
@@ -775,7 +772,7 @@ void TrigActionsWindow::SuggestCUWP()
 	bool hasCuwps = false;
 	for ( u8 i = 0; i < 64; i++ )
 	{
-		if ( chkd.maps.curr->IsCuwpUsed(i) )
+		if ( CM->IsCuwpUsed(i) )
 		{
 			hasCuwps = true;
 			suggestions.AddString(std::to_string((int)i));
@@ -836,11 +833,11 @@ void TrigActionsWindow::SuggestWav()
 {
 	for ( u16 i = 0; i < 512; i++ )
 	{
-		if ( chkd.maps.curr->IsWavUsed(i) )
+		if ( CM->IsWavUsed(i) )
 		{
 			ChkdString wavStr;
 			u32 stringIndex = 0;
-			if ( chkd.maps.curr->GetWav(i, stringIndex) && stringIndex > 0 && chkd.maps.curr->GetString(wavStr, stringIndex) )
+			if ( CM->GetWav(i, stringIndex) && stringIndex > 0 && CM->GetString(wavStr, stringIndex) )
 				suggestions.AddString(wavStr);
 			else
 				suggestions.AddString(std::to_string(stringIndex));
@@ -882,13 +879,12 @@ void TrigActionsWindow::SuggestNumericMod()
 
 void TrigActionsWindow::SuggestSwitch()
 {
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		for ( u16 i = 0; i < 256; i++ )
 		{
 			ChkdString str(true);
-			if ( chk->getSwitchName(str, (u8)i) )
+			if ( CM->getSwitchName(str, (u8)i) )
 				suggestions.AddString(str);
 			else
 			{
@@ -968,7 +964,7 @@ void TrigActionsWindow::ButtonEditString()
 	{
 		int focusedX, focusedY;
 		Trigger* trig;
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+		if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 		{
 			Action &action = trig->action((u8)focusedY);
 			u8 actionNum = action.action;
@@ -979,7 +975,7 @@ void TrigActionsWindow::ButtonEditString()
 			{
 				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
 				u32 stringNum = 0;
-				if ( argType == ActionArgType::ActString && chkd.maps.curr->addString(str, stringNum, false) )
+				if ( argType == ActionArgType::ActString && CM->addString(str, stringNum, false) )
 				{
 					action.stringNum = stringNum;
 					chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
@@ -1009,7 +1005,7 @@ void TrigActionsWindow::ButtonEditWav()
 	{
 		int focusedX = 0, focusedY = 0;
 		Trigger* trig = nullptr;
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+		if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 		{
 			Action &action = trig->action((u8)focusedY);
 			u8 actionNum = action.action;
@@ -1021,9 +1017,9 @@ void TrigActionsWindow::ButtonEditWav()
 				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
 				u32 stringNum = 0;
 
-				if ( argType == ActionArgType::ActWav && chkd.maps.curr->addString(wavStr, stringNum, false) )
+				if ( argType == ActionArgType::ActWav && CM->addString(wavStr, stringNum, false) )
 				{
-					chkd.maps.curr->AddWav(stringNum);
+					CM->AddWav(stringNum);
 					action.wavID = stringNum;
 					chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 					break;
@@ -1036,7 +1032,7 @@ void TrigActionsWindow::ButtonEditWav()
 void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		Action &action = trig->action((u8)gridItemY);
 		ActionArgType argType = ActionArgType::ActNoType;
@@ -1098,7 +1094,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 {
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		Action &action = trig->action((u8)gridItemY);
 		u8 actionNum = action.action;
@@ -1154,7 +1150,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
 {
 	int focusedX, focusedY;
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+	if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 	{
 		Action &action = trig->action((u8)focusedY);
 		u8 actionNum = action.action;
@@ -1167,7 +1163,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
 			if ( argType == ActionArgType::ActString )
 			{
 				ChkdString dest(false);
-				if ( chkd.maps.curr->GetString(dest, action.stringNum) )
+				if ( CM->GetString(dest, action.stringNum) )
 					return dest;
 			}
 		}
@@ -1179,7 +1175,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
 {
 	int focusedX, focusedY;
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+	if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 	{
 		Action &action = trig->action((u8)focusedY);
 		u8 actionNum = action.action;
@@ -1192,7 +1188,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
 			if ( argType == ActionArgType::ActWav )
 			{
 				ChkdString dest(false);
-				if ( chkd.maps.curr->GetString(dest, action.wavID) )
+				if ( CM->GetString(dest, action.wavID) )
 					return dest;
 			}
 		}

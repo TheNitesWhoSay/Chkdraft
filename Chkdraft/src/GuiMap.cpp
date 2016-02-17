@@ -1,6 +1,7 @@
 #include "GuiMap.h"
 #include "Chkdraft.h"
 #include "TileChange.h"
+#include "UnitChange.h"
 #include "UnitCreateDel.h"
 #include "LocationCreateDel.h"
 #include "LocationMove.h"
@@ -8,12 +9,12 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap() : bitmapHeight(0), bitmapWidth(0),
-			 layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
+GuiMap::GuiMap(Clipboard &clipboard) : clipboard(clipboard), selections(*this), graphics(*this, selections),
+             bitmapHeight(0), bitmapWidth(0), layer(LAYER_TERRAIN), player(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
 			 dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
 			 snapUnits(true), stackUnits(false),
 			 MemhDC(NULL), MemMinihDC(NULL), mapId(0),
-			 MemBitmap(NULL), MemMiniBitmap(NULL), graphics(*this), unsavedChanges(false), changeLock(false), undoStacks(*this),
+			 MemBitmap(NULL), MemMiniBitmap(NULL), unsavedChanges(false), changeLock(false), undos(*this),
 			 minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
 	int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -73,7 +74,7 @@ bool GuiMap::SaveFile(bool saveAs)
 		{
 			unsavedChanges = false;
 			removeAsterisk();
-			undoStacks.ResetChangeCount();
+			undos.ResetChangeCount();
 		}
 		return true;
 	}
@@ -90,7 +91,7 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 	u32 location = 2*xSize*y+2*x; // Down y rows, over x columns
 
 	//undoStacks.addUndoTile((u16)x, (u16)y, MTXM().get<u16>(location));
-	undoStacks.AddUndo(ReversiblePtr(new TileChange((u16)x, (u16)y, getTile((u16)x, (u16)y))));
+	undos.AddUndo(ReversiblePtr(new TileChange((u16)x, (u16)y, getTile((u16)x, (u16)y))));
 
 	TILE().replace<u16>(location, tileNum);
 	MTXM().replace<u16>(location, tileNum);
@@ -117,7 +118,7 @@ bool GuiMap::setLayer(u8 newLayer)
 	chkd.maps.endPaste();
 	ClipCursor(NULL);
 	Redraw(false);
-	selection.setDrags(-1, -1);
+	selections.setDrags(-1, -1);
 	this->layer = newLayer;
 	return true;
 }
@@ -185,7 +186,7 @@ u8 GuiMap::getLocSelFlags(s32 xc, s32 yc)
 {
 	if ( layer == LAYER_LOCATIONS )
 	{
-		u16 selectedLocation = selections().getSelectedLocation();
+		u16 selectedLocation = selections.getSelectedLocation();
 		if ( selectedLocation != NO_LOCATION ) // If location is selected, determine which part of it is hovered by mouse
 		{
 			ChkLocation* loc;
@@ -262,12 +263,12 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 {
 	xPos = (s32(((double)xPos)/getZoom()) + display().x),
 	yPos = (s32(((double)yPos)/getZoom()) + display().y);
-	u16 selectedLoc = selections().getSelectedLocation();
+	u16 selectedLoc = selections.getSelectedLocation();
 	if ( selectedLoc == NO_LOCATION )
 	{
-		selections().selectLocation(xPos, yPos, this, !lockAnywhere);
+		selections.selectLocation(xPos, yPos, !lockAnywhere);
 		this->Redraw(false);
-		selectedLoc = selections().getSelectedLocation();
+		selectedLoc = selections.getSelectedLocation();
 	}
 
 	if ( selectedLoc != NO_LOCATION )
@@ -304,10 +305,10 @@ void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 	
 	if ( MTXM().get<u16>(currTile, 2*(yClick/32*xSize + xClick/32)) )
 	{
-		if ( selections().hasTiles() )
-			selections().removeTiles();
+		if ( selections.hasTiles() )
+			selections.removeTiles();
 							
-		selections().addTile(currTile, u16(xClick/32), u16(yClick/32), -1);
+		selections.addTile(currTile, u16(xClick/32), u16(yClick/32), -1);
 		RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 		if ( chkd.tilePropWindow.getHandle() != NULL )
 			chkd.tilePropWindow.UpdateTile();
@@ -333,28 +334,28 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y, u8 layer)
 		if ( x == 0 ) // Cursor on the left
 		{
 			if ( (display().x+16)/32 > 0 )
-				selection.setEndDrag( ((display().x+16)/32-1)*32, selection.getEndDrag().y );
+				selections.setEndDrag( ((display().x+16)/32-1)*32, selections.getEndDrag().y );
 			if ( display().x > 0 )
-				display().x = selection.getEndDrag().x;
+				display().x = selections.getEndDrag().x;
 		}
 		else if ( x >= rcMap.right-2 ) // Cursor on the right
 		{
 			if ( (display().x+rcMap.right)/32 <XSize() )
-				selection.setEndDrag( ((display().x+rcMap.right)/32+1)*32, selection.getEndDrag().y );
-			display().x = selection.getEndDrag().x - rcMap.right;
+				selections.setEndDrag( ((display().x+rcMap.right)/32+1)*32, selections.getEndDrag().y );
+			display().x = selections.getEndDrag().x - rcMap.right;
 		}
 		if ( y == 0 ) // Cursor on the top
 		{
 			if ( (display().y+16)/32 > 0 )
-				selection.setEndDrag( selection.getEndDrag().x, ((display().y+16)/32-1)*32 );
+				selections.setEndDrag( selections.getEndDrag().x, ((display().y+16)/32-1)*32 );
 			if ( display().y > 0 )
-				display().y = selection.getEndDrag().y;
+				display().y = selections.getEndDrag().y;
 		}
 		else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
 		{
 			if ( (display().y+rcMap.bottom)/32 < YSize() )
-				selection.setEndDrag( selection.getEndDrag().x, ((display().y+rcMap.bottom)/32+1)*32 );
-			display().y = selection.getEndDrag().y - rcMap.bottom;
+				selections.setEndDrag( selections.getEndDrag().x, ((display().y+rcMap.bottom)/32+1)*32 );
+			display().y = selections.getEndDrag().y - rcMap.bottom;
 		}
 		Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
 		Redraw(false);
@@ -379,15 +380,15 @@ u8 GuiMap::getDisplayOwner(u8 player)
 
 void GuiMap::refreshScenario()
 {
-	selection.removeTiles();
-	selection.removeUnits();
+	selections.removeTiles();
+	selections.removeUnits();
 	chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
 	if ( chkd.unitWindow.getHandle() != nullptr )
 		chkd.unitWindow.RepopulateList();
 	if ( chkd.locationWindow.getHandle() != NULL )
 	{
-		if ( chkd.maps.curr->numLocations() == 0 )
+		if ( CM->numLocations() == 0 )
 			chkd.locationWindow.DestroyThis();
 		else
 			chkd.locationWindow.RefreshLocationInfo();
@@ -401,12 +402,22 @@ void GuiMap::refreshScenario()
 	Redraw(true);
 }
 
+void GuiMap::clearSelectedTiles()
+{
+    selections.removeTiles();
+}
+
+void GuiMap::clearSelectedUnits()
+{
+    selections.removeUnits();
+}
+
 void GuiMap::clearSelection()
 {
 	if ( this != nullptr )
 	{
-		selection.removeTiles();
-		selection.removeUnits();
+		selections.removeTiles();
+		selections.removeUnits();
 	}
 }
 
@@ -418,8 +429,8 @@ void GuiMap::selectAll()
 		{
 			case LAYER_TERRAIN:
 				{
-					if ( selection.hasTiles() )
-						selection.removeTiles();
+					if ( selections.hasTiles() )
+						selections.removeTiles();
 
 					u16 tileValue,
 						width = XSize(), height = YSize(),
@@ -428,33 +439,33 @@ void GuiMap::selectAll()
 					for ( x=0; x<width; x++ ) // Add the top row
 					{
 						if ( MTXM().get<u16>(tileValue, x*2) )
-							selection.addTile( tileValue, x, y, NEIGHBOR_TOP );
+							selections.addTile( tileValue, x, y, NEIGHBOR_TOP );
 					}
 
 					for ( y=0; y<height-1; y++ ) // Add the middle rows
 					{
 						if ( MTXM().get<u16>(tileValue, y*width*2) )
-							selection.addTile( tileValue, 0, y, NEIGHBOR_LEFT ); // Add the left tile
+							selections.addTile( tileValue, 0, y, NEIGHBOR_LEFT ); // Add the left tile
 
 						for ( x=1; x<width-1; x++ )
 						{
 							if ( MTXM().get<u16>(tileValue, (y*width+x)*2) )
-								selection.addTile( tileValue, x, y, 0x0 ); // Add the middle portion of the row
+								selections.addTile( tileValue, x, y, 0x0 ); // Add the middle portion of the row
 						}
 						if ( MTXM().get<u16>(tileValue, (y*width+width-1)*2) )
-							selection.addTile( tileValue, width-1, y, NEIGHBOR_RIGHT); // Add the right tile
+							selections.addTile( tileValue, width-1, y, NEIGHBOR_RIGHT); // Add the right tile
 					}
 
 					if ( MTXM().get<u16>(tileValue, (height-1)*width*2) )
-						selection.addTile( tileValue, 0, height-1, NEIGHBOR_LEFT|NEIGHBOR_BOTTOM);
+						selections.addTile( tileValue, 0, height-1, NEIGHBOR_LEFT|NEIGHBOR_BOTTOM);
 
 					for ( x=1; x<width-1; x++ ) // Add the bottom row
 					{
 						if ( MTXM().get<u16>(tileValue, ((height-1)*width+x)*2) )
-							selection.addTile( tileValue, x, height-1, NEIGHBOR_BOTTOM );
+							selections.addTile( tileValue, x, height-1, NEIGHBOR_BOTTOM );
 					}
 					if ( MTXM().get<u16>(tileValue, ((height-1)*width+width-1)*2 ) )
-						selection.addTile( tileValue, width-1, height-1, NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM );
+						selections.addTile( tileValue, width-1, height-1, NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM );
 
 					RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 				}
@@ -471,9 +482,9 @@ void GuiMap::selectAll()
 					chkd.unitWindow.SetChangeHighlightOnly(true);
 					for ( u16 i=0; i<numUnits; i++ )
 					{
-						if ( !selection.unitIsSelected(i) )
+						if ( !selections.unitIsSelected(i) )
 						{
-							selection.addUnit(i);
+							selections.addUnit(i);
 							if ( chkd.unitWindow.getHandle() != nullptr )
 							{
 								findInfo.lParam = i;
@@ -500,16 +511,16 @@ void GuiMap::deleteSelection()
 				{
 					u16 xSize = XSize();
 
-					auto &selTiles = selection.getTiles();
+					auto &selTiles = selections.getTiles();
 					for ( auto &tile : selTiles )
 					{
 						u32 location = 2*xSize*tile.yc+2*tile.xc; // Down y rows, over x columns
-						undoStacks.AddUndo(ReversiblePtr(new TileChange(tile.xc, tile.yc, getTile(tile.xc, tile.yc))));
+						undos.AddUndo(ReversiblePtr(new TileChange(tile.xc, tile.yc, getTile(tile.xc, tile.yc))));
 						TILE().replace<u16>(location, 0);
 						MTXM().replace<u16>(location, 0);
 					}
 
-					selection.removeTiles();
+					selections.removeTiles();
 				}
 				break;
 
@@ -520,11 +531,11 @@ void GuiMap::deleteSelection()
 					else
 					{
 						ReversibleActionsPtr deletes(new ReversibleActions);
-						while ( selection.hasUnits() )
+						while ( selections.hasUnits() )
 						{
 							// Get the highest index in the selection
-								u16 index = selection.getHighestIndex();
-								selection.removeUnit(index);
+								u16 index = selections.getHighestIndex();
+								selections.removeUnit(index);
 							
 								ChkUnit* delUnit;
 								if ( getUnit(delUnit, index) )
@@ -532,7 +543,7 @@ void GuiMap::deleteSelection()
 
 								deleteUnit(index);
 						}
-						undoStacks.AddUndo(deletes);
+						undos.AddUndo(deletes);
 					}
 				}
 				break;
@@ -543,10 +554,10 @@ void GuiMap::deleteSelection()
 						chkd.locationWindow.DestroyThis();
 				
 					ChkLocation* loc;
-					u16 index = selection.getSelectedLocation();
+					u16 index = selections.getSelectedLocation();
 					if ( index != NO_LOCATION && getLocation(loc, index) )
 					{
-						undoStacks.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(index)));
+						undos.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(index)));
 
 						chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
@@ -563,7 +574,7 @@ void GuiMap::deleteSelection()
 							refreshScenario();
 						}
 
-						selections().selectLocation(NO_LOCATION);
+						selections.selectLocation(NO_LOCATION);
 					}
 				}
 				break;
@@ -575,19 +586,59 @@ void GuiMap::deleteSelection()
 	}
 }
 
-void GuiMap::paste(s32 mapClickX, s32 mapClickY, CLIPBOARD &clipboard)
+void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
-	//SetFocus(getHandle());
 	s32 xc = mapClickX, yc = mapClickY;
 	if ( layer == LAYER_UNITS )
-	{
 		this->snapUnitCoordinate(xc, yc);
-		clipboard.doPaste(layer, xc, yc, scenario(), undos(), stackUnits);
-	}
-	else
-		clipboard.doPaste(layer, xc, yc, scenario(), undos(), stackUnits);
+
+    clipboard.doPaste(layer, xc, yc, *this, undos, stackUnits);
 
 	Redraw(true);
+}
+
+void GuiMap::PlayerChanged(u8 newPlayer)
+{
+    std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+    auto &selUnits = selections.getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit* unit;
+        if ( getUnit(unit, unitIndex) && newPlayer != unit->owner )
+        {
+            unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_OWNER, unit->owner)));
+            unit->owner = newPlayer;
+        }
+
+        if ( chkd.unitWindow.getHandle() != nullptr )
+        {
+            std::string text;
+            HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
+            if ( newPlayer < 12 )
+                SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
+            else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
+                SetWindowText(hOwner, text.c_str());
+
+            chkd.unitWindow.ChangeOwner(unitIndex, newPlayer);
+        }
+    }
+    undos.AddUndo(unitChanges);
+    Redraw(true);
+}
+
+Selections &GuiMap::GetSelections()
+{
+    return selections;
+}
+
+u16 GuiMap::GetSelectedLocation()
+{
+    return selections.getSelectedLocation();
+}
+
+void GuiMap::AddUndo(ReversiblePtr action)
+{
+    undos.AddUndo(action);
 }
 
 void GuiMap::undo()
@@ -595,22 +646,22 @@ void GuiMap::undo()
 	switch ( layer )
 	{
 		case LAYER_TERRAIN:
-			undoStacks.doUndo((int32_t)UndoTypes::TileChange, this);
+			undos.doUndo((int32_t)UndoTypes::TileChange, this);
 			//undoStacks.doUndo(UNDO_TERRAIN, scenario(), selections());
 			break;
 		case LAYER_UNITS:
-			undoStacks.doUndo((int32_t)UndoTypes::UnitChange, this);
+			undos.doUndo((int32_t)UndoTypes::UnitChange, this);
 			//undoStacks.doUndo(UNDO_UNIT, scenario(), selections());
 			if ( chkd.unitWindow.getHandle() != nullptr )
 				chkd.unitWindow.RepopulateList();
 			break;
 		case LAYER_LOCATIONS:
 			{
-				undoStacks.doUndo((int32_t)UndoTypes::LocationChange, this);
+				undos.doUndo((int32_t)UndoTypes::LocationChange, this);
 				//undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
 				if ( chkd.locationWindow.getHandle() != NULL )
 				{
-					if ( chkd.maps.curr->numLocations() == 0 )
+					if ( CM->numLocations() == 0 )
 						chkd.locationWindow.RefreshLocationInfo();
 					else
 						chkd.locationWindow.DestroyThis();
@@ -628,21 +679,21 @@ void GuiMap::redo()
 	switch ( layer )
 	{
 		case LAYER_TERRAIN:
-			undoStacks.doRedo((int32_t)UndoTypes::TileChange, this);
+			undos.doRedo((int32_t)UndoTypes::TileChange, this);
 			//undoStacks.doRedo(UNDO_TERRAIN, scenario(), selections());
 			break;
 		case LAYER_UNITS:
-			undoStacks.doRedo((int32_t)UndoTypes::UnitChange, this);
+			undos.doRedo((int32_t)UndoTypes::UnitChange, this);
 			//undoStacks.doRedo(UNDO_UNIT, scenario(), selections());
 			if ( chkd.unitWindow.getHandle() != nullptr )
 				chkd.unitWindow.RepopulateList();
 			break;
 		case LAYER_LOCATIONS:
-			undoStacks.doRedo((int32_t)UndoTypes::LocationChange, this);
+			undos.doRedo((int32_t)UndoTypes::LocationChange, this);
 			//undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
 			if ( chkd.locationWindow.getHandle() != NULL )
 			{
-				if ( chkd.maps.curr->numLocations() == 0 )
+				if ( CM->numLocations() == 0 )
 					chkd.locationWindow.DestroyThis();
 				else
 					chkd.locationWindow.RefreshLocationInfo();
@@ -708,7 +759,7 @@ bool GuiMap::EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight)
 	return false;
 }
 
-void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
+void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
 	InvalidateRect(this->getHandle(), NULL, FALSE);
 
@@ -739,17 +790,8 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 		if ( currMap == nullptr || currMap.get() == this ) // Only redraw minimap for active window
 			RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
 
-		graphics.DrawMap(
-				 bitmapWidth,
-				 bitmapHeight,
-				 this->display().x,
-				 this->display().y,
-				 graphicBits,
-				 this->selections(),
-				 this->layer,
-				 this->GetMemhDC(),
-				 !this->lockAnywhere
-			   ); // Terrain, Grid, Units, Sprites, Debug
+        // Terrain, Grid, Units, Sprites, Debug
+		graphics.DrawMap(bitmapWidth, bitmapHeight, display().x, display().y, graphicBits, layer, GetMemhDC(), !lockAnywhere);
 	}
 
 	HDC TemphDC = CreateCompatibleDC(hDC);
@@ -759,21 +801,11 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard )
 
 	if ( currMap == nullptr || currMap.get() == this )
 	{
-		DrawTools( TemphDC,
-				   Tempbitmap,
-				   scaledWidth,
-				   scaledHeight,
-				   this->display().x,
-				   this->display().y,
-				   this->selections(),
-				   pasting,
-				   clipboard,
-				   *this,
-				   this->getLayer()
-				 ); // Drag and paste graphics
+		DrawTools(TemphDC, Tempbitmap, scaledWidth, scaledHeight, display().x, display().y, selections, pasting, clipboard, *this,
+            getLayer()); // Drag and paste graphics
 
 		if ( layer != LAYER_LOCATIONS )
-			DrawSelectingFrame(TemphDC, selections(), display().x, display().y, bitmapWidth, bitmapHeight, zoom);
+			DrawSelectingFrame(TemphDC, selections, display().x, display().y, bitmapWidth, bitmapHeight, zoom);
 	}
 	
 	SetStretchBltMode(hDC, COLORONCOLOR);
@@ -1019,8 +1051,8 @@ void GuiMap::ToggleLockAnywhere()
 {
 	lockAnywhere = !lockAnywhere;
 	UpdateLocationMenuItems();
-	if ( selections().getSelectedLocation() == 63 )
-		selections().selectLocation(NO_LOCATION);
+	if ( selections.getSelectedLocation() == 63 )
+		selections.selectLocation(NO_LOCATION);
 	chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 	Redraw(false);
 }
@@ -1337,7 +1369,7 @@ void GuiMap::ReturnKeyPress()
 	{
 		if ( getLayer() == LAYER_UNITS )
 		{
-			if ( selection.hasUnits() )
+			if ( selections.hasUnits() )
 			{
 				if ( chkd.unitWindow.getHandle() == nullptr )
 					chkd.unitWindow.CreateThis(chkd.getHandle());
@@ -1346,7 +1378,7 @@ void GuiMap::ReturnKeyPress()
 		}
 		else if ( getLayer() == LAYER_LOCATIONS )
 		{
-			if ( selection.getSelectedLocation() != NO_LOCATION )
+			if ( selections.getSelectedLocation() != NO_LOCATION )
 			{
 				if ( chkd.locationWindow.getHandle() == NULL )
 				{
@@ -1369,7 +1401,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case WM_PAINT: PaintMap(chkd.maps.curr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard); break;
+		case WM_PAINT: PaintMap(CM, chkd.maps.clipboard.isPasting()); break;
 		case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
 		case WM_ERASEBKGND: return 0; break; // Prevent background from showing
 		case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
@@ -1489,7 +1521,7 @@ void GuiMap::LButtonDoubleClick(int x, int y)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {	
-	selection.resetMoved();
+	selections.resetMoved();
 	s32 mapClickX = (s32(((double)x)/getZoom()) + display().x),
 		mapClickY = (s32(((double)y)/getZoom()) + display().y);
 
@@ -1506,9 +1538,9 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 				if ( !chkd.maps.clipboard.isPasting() )
 				{
 					if ( layer == LAYER_TERRAIN ) // Ctrl + Click tile
-						selection.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+						selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
 					else if ( layer == LAYER_DOODADS || layer == LAYER_UNITS || layer == LAYER_SPRITES )
-						selection.setDrags(mapClickX, mapClickY);
+						selections.setDrags(mapClickX, mapClickY);
 
 					LockCursor();
 					TrackMouse(DEFAULT_HOVER_TIME);
@@ -1521,21 +1553,21 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 			{
 				chkd.tilePropWindow.DestroyThis();
 				if ( chkd.maps.clipboard.isPasting() )
-					paste(mapClickX, mapClickY, chkd.maps.clipboard);
+					paste(mapClickX, mapClickY);
 				else
 				{
-					if ( selection.hasTiles() )
-						selection.removeTiles();
+					if ( selections.hasTiles() )
+						selections.removeTiles();
 								
-					selection.setDrags(mapClickX, mapClickY);
+					selections.setDrags(mapClickX, mapClickY);
 					if ( layer == LAYER_TERRAIN )
-						selection.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+						selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
 					else if ( layer == LAYER_LOCATIONS )
 					{
 						s32 x1 = mapClickX, y1 = mapClickY;
 						if ( SnapLocationDimensions(x1, y1, x1, y1, SNAP_LOC_X1|SNAP_LOC_Y1) )
-							selection.setDrags(x1, y1);
-						selection.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+							selections.setDrags(x1, y1);
+						selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
 					}
 
 					SetCapture(getHandle());
@@ -1559,7 +1591,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 	if ( wParam & MK_LBUTTON ) // If click and dragging
 	{
 		chkd.maps.stickCursor(); // Stop cursor from reverting
-		selection.setMoved();
+		selections.setMoved();
 	}
 	else // If not click and dragging
 		chkd.maps.updateCursor(mapHoverX, mapHoverY); // Determine proper hover cursor
@@ -1579,23 +1611,23 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 				if ( x == 0 || y == 0 || x == rcMap.right-2 || y == rcMap.bottom-2 )
 					EdgeDrag(hWnd, x, y, layer);
 
-				selection.setEndDrag(mapHoverX, mapHoverY);
+				selections.setEndDrag(mapHoverX, mapHoverY);
 				if ( layer == LAYER_TERRAIN )
-					selection.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+					selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
 				else if ( layer == LAYER_LOCATIONS )
 				{
 					s32 x2 = mapHoverX, y2 = mapHoverY;
 					if ( SnapLocationDimensions(x2, y2, x2, y2, SNAP_LOC_X2|SNAP_LOC_Y2) )
-						selection.setEndDrag(x2, y2);
+						selections.setEndDrag(x2, y2);
 				}
 				else if ( layer == LAYER_UNITS )
 				{
 					s32 xc = mapHoverX, yc = mapHoverY;
 					if ( snapUnitCoordinate(xc, yc) )
-						selection.setEndDrag(xc, yc);
+						selections.setEndDrag(xc, yc);
 				}
 
-				PaintMap(nullptr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+				PaintMap(nullptr, chkd.maps.clipboard.isPasting());
 			}
 			break;
 
@@ -1608,9 +1640,9 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 					if ( layer == LAYER_UNITS )
 						snapUnitCoordinate(xc, yc);
 
-					selection.setEndDrag(xc, yc);
+					selections.setEndDrag(xc, yc);
 					if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
-						paste((s16)xc, (s16)yc, chkd.maps.clipboard);
+						paste((s16)xc, (s16)yc);
 				}
 
 				if ( isDragging() )
@@ -1620,23 +1652,23 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 					if ( x == 0 || y == 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
 						EdgeDrag(hWnd, x, y, layer);
 
-					selection.setEndDrag( mapHoverX, mapHoverY );
+					selections.setEndDrag( mapHoverX, mapHoverY );
 					if ( layer == LAYER_TERRAIN )
-						selection.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+						selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
 					else if ( layer == LAYER_LOCATIONS )
 					{
 						s32 x2 = mapHoverX, y2 = mapHoverY;
 						if ( SnapLocationDimensions(x2, y2, x2, y2, SNAP_LOC_X2|SNAP_LOC_Y2) )
-							selection.setEndDrag(x2, y2);
+							selections.setEndDrag(x2, y2);
 					}
 					else if ( layer == LAYER_UNITS )
 					{
 						s32 xc = mapHoverX, yc = mapHoverY;
 						if ( snapUnitCoordinate(xc, yc) )
-							selection.setEndDrag(xc, yc);
+							selections.setEndDrag(xc, yc);
 					}
 				}
-				PaintMap(nullptr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+				PaintMap(nullptr, chkd.maps.clipboard.isPasting());
 			}
 			break;
 
@@ -1667,8 +1699,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 					if ( layer == LAYER_UNITS )
 						snapUnitCoordinate(mapHoverX, mapHoverY);
 
-					selection.setEndDrag(mapHoverX, mapHoverY);
-					PaintMap(nullptr, chkd.maps.clipboard.isPasting(), chkd.maps.clipboard);
+					selections.setEndDrag(mapHoverX, mapHoverY);
+					PaintMap(nullptr, chkd.maps.clipboard.isPasting());
 				}
 			}
 			break;
@@ -1705,7 +1737,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 
 					x = (s32(((double)x)/getZoom())) + display().x,
 					y = (s32(((double)y)/getZoom())) + display().y;
-					selection.setEndDrag(x, y);
+					selections.setEndDrag(x, y);
 					TrackMouse(100);
 				}
 			}
@@ -1725,7 +1757,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 		y = s16(y/getZoom() + display().y);
 
 		if ( chkd.maps.clipboard.isPasting() )
-			paste((s16)x, (s16)y, chkd.maps.clipboard);
+			paste((s16)x, (s16)y);
 	
 		if ( layer == LAYER_TERRAIN )
 			TerrainLButtonUp(hWnd, x, y, wParam);
@@ -1734,8 +1766,8 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 		else if ( layer == LAYER_UNITS )
 			UnitLButtonUp(hWnd, x, y, wParam);
 
-		selection.setStartDrag(-1, -1);
-		selection.setEndDrag(-1, -1);
+		selections.setStartDrag(-1, -1);
+		selections.setEndDrag(-1, -1);
 		setDragging(false);
 		RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
 	}
@@ -1746,40 +1778,40 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 
 void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-	selection.setEndDrag((mapX+16)/32, (mapY+16)/32);
-	selection.setStartDrag(selection.getStartDrag().x/32, selection.getStartDrag().y/32);
+	selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
+	selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
 	u16 width = XSize();
 					
-	if ( wParam == MK_CONTROL && selection.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
+	if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
 	{
-		selection.setEndDrag(mapX/32, mapY/32);
+		selections.setEndDrag(mapX/32, mapY/32);
 							
 		u16 tileValue;
-		if ( MTXM().get<u16>(tileValue, (u32)((selection.getEndDrag().y*width+selection.getEndDrag().x)*2)) )
-			selection.addTile(tileValue, (u16)selection.getEndDrag().x, (u16)selection.getEndDrag().y);
+		if ( MTXM().get<u16>(tileValue, (u32)((selections.getEndDrag().y*width+selections.getEndDrag().x)*2)) )
+			selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
 	}
 	else // Add/remove multiple tiles from selection
 	{
-		selection.sortDragPoints();
+		selections.sortDragPoints();
 	
-		if ( selection.getStartDrag().y < selection.getEndDrag().y &&
-			 selection.getStartDrag().x < selection.getEndDrag().x )
+		if ( selections.getStartDrag().y < selections.getEndDrag().y &&
+			 selections.getStartDrag().x < selections.getEndDrag().x )
 		{
-			bool multiAdd = selection.getStartDrag().x + 1 < selection.getEndDrag().x ||
-							selection.getStartDrag().y + 1 < selection.getEndDrag().y;
+			bool multiAdd = selections.getStartDrag().x + 1 < selections.getEndDrag().x ||
+							selections.getStartDrag().y + 1 < selections.getEndDrag().y;
 	
-			if ( selection.getEndDrag().x > XSize() )
-				selection.setEndDrag(XSize(), selection.getEndDrag().y);
-			if ( selection.getEndDrag().y > YSize() )
-				selection.setEndDrag(selection.getEndDrag().x, YSize());
+			if ( selections.getEndDrag().x > XSize() )
+				selections.setEndDrag(XSize(), selections.getEndDrag().y);
+			if ( selections.getEndDrag().y > YSize() )
+				selections.setEndDrag(selections.getEndDrag().x, YSize());
 	
-			for ( int yRow = selection.getStartDrag().y; yRow < selection.getEndDrag().y; yRow++ )
+			for ( int yRow = selections.getStartDrag().y; yRow < selections.getEndDrag().y; yRow++ )
 			{
-				for ( int xRow = selection.getStartDrag().x; xRow < selection.getEndDrag().x; xRow++ )
+				for ( int xRow = selections.getStartDrag().x; xRow < selections.getEndDrag().x; xRow++ )
 				{
 					u16 tileValue;
 					if ( MTXM().get<u16>((u16 &)tileValue, (u32)((yRow*width+xRow)*2)) )
-						selection.addTile(tileValue, xRow, yRow);
+						selections.addTile(tileValue, xRow, yRow);
 				}
 			}
 		}
@@ -1788,16 +1820,16 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-	if ( selection.hasMoved() ) // attempt to move, resize, or create location
+	if ( selections.hasMoved() ) // attempt to move, resize, or create location
 	{
-		s32 startX = selection.getStartDrag().x,
-			startY = selection.getStartDrag().y,
+		s32 startX = selections.getStartDrag().x,
+			startY = selections.getStartDrag().y,
 			endX = mapX,
 			endY = mapY;
 		s32 dragX = endX-startX;
 		s32 dragY = endY-startY;
 
-		if ( selection.getLocationFlags() == LOC_SEL_NOTHING ) // Create location
+		if ( selections.getLocationFlags() == LOC_SEL_NOTHING ) // Create location
 		{
 			AscendingOrder(startX, endX);
 			AscendingOrder(startY, endY);
@@ -1806,20 +1838,18 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 			u16 locationIndex;
 			if ( createLocation(startX, startY, endX, endY, locationIndex) )
 			{
-				undoStacks.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex)));
-				//undos().addUndoLocationCreate(locationIndex);
-				//undos().submitUndo();
+				undos.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex)));
 				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 				refreshScenario();
 			}
 		}
 		else // Move or resize location
 		{
-			u16 selectedLocation = selection.getSelectedLocation();
+			u16 selectedLocation = selections.getSelectedLocation();
 			ChkLocation* loc;
 			if ( selectedLocation != NO_LOCATION && getLocation(loc, selectedLocation) )
 			{
-				u8 selFlags = selection.getLocationFlags();
+				u8 selFlags = selections.getLocationFlags();
 				if ( selFlags == LOC_SEL_MIDDLE ) // Move location
 				{
 					bool xInverted = loc->xc2 < loc->xc1,
@@ -1863,7 +1893,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					}
 										
 					//undos().addUndoLocationMove(selectedLocation, dragX, dragY);
-					undoStacks.AddUndo(std::shared_ptr<LocationMove>(new LocationMove(selectedLocation, -dragX, -dragY)));
+					undos.AddUndo(std::shared_ptr<LocationMove>(new LocationMove(selectedLocation, -dragX, -dragY)));
 				}
 				else // Resize location
 				{
@@ -1871,14 +1901,14 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					{
 						if ( loc->yc1 <= loc->yc2 ) // Standard yc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1)));
 							loc->yc1 += dragY;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y1);
 						}
 						else // Inverted yc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2)));
 							loc->yc2 += dragY;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y2);
@@ -1889,14 +1919,14 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					{
 						if ( loc->yc1 <= loc->yc2 ) // Standard yc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2)));
 							loc->yc2 += dragY;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y2);
 						}
 						else // Inverted yc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1)));
 							loc->yc1 += dragY;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_Y1);
@@ -1907,14 +1937,14 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					{
 						if ( loc->xc1 <= loc->xc2 ) // Standard xc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1)));
 							loc->xc1 += dragX;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X1);
 						}
 						else // Inverted xc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2)));
 							loc->xc2 += dragX;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X2);
@@ -1924,14 +1954,14 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 					{
 						if ( loc->xc1 <= loc->xc2 ) // Standard xc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2)));
 							loc->xc2 += dragX;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X2);
 						}
 						else // Inverted xc
 						{
-							undoStacks.AddUndo(std::shared_ptr<LocationChange>(new
+							undos.AddUndo(std::shared_ptr<LocationChange>(new
 								LocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1)));
 							loc->xc1 += dragX;
 							SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, SNAP_LOC_X1);
@@ -1947,19 +1977,19 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 	}
 	else // attempt to select location, if you aren't resizing
 	{
-		selection.selectLocation(selection.getStartDrag().x, selection.getStartDrag().y, this, !LockAnywhere());
+		selections.selectLocation(selections.getStartDrag().x, selections.getStartDrag().y, !LockAnywhere());
 		if ( chkd.locationWindow.getHandle() != NULL )
 			chkd.locationWindow.RefreshLocationInfo();
 	
 		Redraw(false);
 	}
-	selection.setLocationFlags(LOC_SEL_NOTHING);
+	selections.setLocationFlags(LOC_SEL_NOTHING);
 }
 
 void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-	selection.setEndDrag(mapX, mapY);
-	selection.sortDragPoints();
+	selections.setEndDrag(mapX, mapY);
+	selections.sortDragPoints();
 	if ( wParam != MK_CONTROL )
 		// Remove selected units
 	{
@@ -1967,7 +1997,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 		{
 			HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
 			chkd.unitWindow.SetChangeHighlightOnly(true);
-			auto &selUnits = selection.getUnits();
+			auto &selUnits = selections.getUnits();
 			for ( u16 &unitIndex : selUnits )
 			{
 				LVFINDINFO findInfo = { };
@@ -1979,7 +2009,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 			}
 			chkd.unitWindow.SetChangeHighlightOnly(false);
 		}
-		selection.removeUnits();
+		selections.removeUnits();
 		chkd.unitWindow.UpdateEnabledState();
 	}
 		
@@ -2007,14 +2037,14 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 				unitBottom = unit->yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
 			}
 	
-			if (	selection.getStartDrag().x <= unitRight  && selection.getEndDrag().x >= unitLeft
-				 && selection.getStartDrag().y <= unitBottom && selection.getEndDrag().y >= unitTop )
+			if (	selections.getStartDrag().x <= unitRight  && selections.getEndDrag().x >= unitLeft
+				 && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
 			{
-				bool wasSelected = selection.unitIsSelected(i);
+				bool wasSelected = selections.unitIsSelected(i);
 				if ( wasSelected )
-					selection.removeUnit(i);
+					selections.removeUnit(i);
 				else
-					selection.addUnit(i);
+					selections.addUnit(i);
 		
 				if ( chkd.unitWindow.getHandle() != nullptr )
 				{

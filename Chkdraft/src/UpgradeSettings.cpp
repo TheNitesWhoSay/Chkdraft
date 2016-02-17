@@ -65,8 +65,7 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 void UpgradeSettingsWindow::RefreshWindow()
 {
 	refreshing = true;
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && chk != nullptr )
+	if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && CM != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
 		chkd.mapSettingsWindow.SetTitle("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
@@ -74,7 +73,7 @@ void UpgradeSettingsWindow::RefreshWindow()
 		if ( isDisabled )
 			EnableUpgradeEditing();
 
-		bool useDefaultCosts = chk->upgradeUsesDefaultCosts(upgrade);
+		bool useDefaultCosts = CM->upgradeUsesDefaultCosts(upgrade);
 		checkUseDefaultCosts.SetCheck(useDefaultCosts);
 		if ( useDefaultCosts )
 			DisableCostEditing();
@@ -97,29 +96,29 @@ void UpgradeSettingsWindow::RefreshWindow()
 		}
 		else
 		{
-			if ( chk->getUpgradeMineralCost(upgrade, mineralCost) )
+			if ( CM->getUpgradeMineralCost(upgrade, mineralCost) )
 				editMineralBaseCosts.SetEditNum<u16>(mineralCost);
-			if ( chk->getUpgradeMineralFactor(upgrade, mineralFactor) )
+			if ( CM->getUpgradeMineralFactor(upgrade, mineralFactor) )
 				editMineralUpgradeFactor.SetEditNum<u16>(mineralFactor);
-			if ( chk->getUpgradeGasCost(upgrade, gasCost) )
+			if ( CM->getUpgradeGasCost(upgrade, gasCost) )
 				editGasBaseCosts.SetEditNum<u16>(gasCost);
-			if ( chk->getUpgradeGasFactor(upgrade, gasFactor) )
+			if ( CM->getUpgradeGasFactor(upgrade, gasFactor) )
 				editGasUpgradeFactor.SetEditNum<u16>(gasFactor);
-			if ( chk->getUpgradeTimeCost(upgrade, timeCost) )
+			if ( CM->getUpgradeTimeCost(upgrade, timeCost) )
 				editTimeBaseCosts.SetEditNum<u16>(timeCost/15);
-			if ( chk->getUpgradeTimeFactor(upgrade, timeFactor) )
+			if ( CM->getUpgradeTimeFactor(upgrade, timeFactor) )
 				editTimeUpgradeFactor.SetEditNum<u16>(timeFactor/15);
 		}
 
 		u8 defaultStartLevel, defaultMaxLevel;
-		if ( chk->getUpgradeDefaultStartLevel(upgrade, defaultStartLevel) )
+		if ( CM->getUpgradeDefaultStartLevel(upgrade, defaultStartLevel) )
 			editDefaultStartLevel.SetEditNum<u8>(defaultStartLevel);
-		if ( chk->getUpgradeDefaultMaxLevel(upgrade, defaultMaxLevel) )
+		if ( CM->getUpgradeDefaultMaxLevel(upgrade, defaultMaxLevel) )
 			editDefaultMaxLevel.SetEditNum<u8>(defaultMaxLevel);
 
 		for ( int player=0; player<12; player++ )
 		{
-			bool playerUsesDefault = chk->playerUsesDefaultUpgradeLevels(upgrade, player);
+			bool playerUsesDefault = CM->playerUsesDefaultUpgradeLevels(upgrade, player);
 			checkPlayerDefault[player].SetCheck(playerUsesDefault);
 			if ( playerUsesDefault )
 				DisablePlayerEditing(player);
@@ -127,9 +126,9 @@ void UpgradeSettingsWindow::RefreshWindow()
 			{
 				EnablePlayerEditing(player);
 				u8 startLevel, maxLevel;
-				if ( chk->getUpgradePlayerStartLevel(upgrade, player, startLevel) )
+				if ( CM->getUpgradePlayerStartLevel(upgrade, player, startLevel) )
 					editPlayerStartLevel[player].SetEditNum<u8>(startLevel);
-				if ( chk->getUpgradePlayerMaxLevel(upgrade, player, maxLevel) )
+				if ( CM->getUpgradePlayerMaxLevel(upgrade, player, maxLevel) )
 					editPlayerMaxLevel[player].SetEditNum<u8>(maxLevel);
 			}
 		}
@@ -220,7 +219,7 @@ void UpgradeSettingsWindow::EnableUpgradeEditing()
 {
 	checkUseDefaultCosts.EnableThis();
 
-	if ( !chkd.maps.curr->upgradeUsesDefaultCosts((u8)selectedUpgrade) )
+	if ( !CM->upgradeUsesDefaultCosts((u8)selectedUpgrade) )
 		EnableCostEditing();
 
 	groupPlayerSettings.EnableThis();
@@ -301,34 +300,32 @@ void UpgradeSettingsWindow::EnablePlayerEditing(u8 player)
 
 void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 {
-	if ( selectedUpgrade > 0 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
+	if ( selectedUpgrade > 0 && selectedUpgrade < 61 && CM != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		ScenarioPtr chk = chkd.maps.curr;
 		UPGRADEDAT* upgDat = chkd.scData.upgrades.UpgradeDat(upgrade);
 
-		chk->setUpgradeMineralCost(upgrade, upgDat->MineralCost);
-		chk->setUpgradeMineralFactor(upgrade, upgDat->MineralFactor);
-		chk->setUpgradeGasCost(upgrade, upgDat->VespeneCost);
-		chk->setUpgradeGasFactor(upgrade, upgDat->VespeneFactor);
-		chk->setUpgradeTimeCost(upgrade, upgDat->TimeCost);
-		chk->setUpgradeTimeFactor(upgrade, upgDat->TimeFactor);
+		CM->setUpgradeMineralCost(upgrade, upgDat->MineralCost);
+		CM->setUpgradeMineralFactor(upgrade, upgDat->MineralFactor);
+		CM->setUpgradeGasCost(upgrade, upgDat->VespeneCost);
+		CM->setUpgradeGasFactor(upgrade, upgDat->VespeneFactor);
+		CM->setUpgradeTimeCost(upgrade, upgDat->TimeCost);
+		CM->setUpgradeTimeFactor(upgrade, upgDat->TimeFactor);
 	}
 }
 
 void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 {
-	if ( selectedUpgrade != -1 && selectedUpgrade < 61 && chkd.maps.curr != nullptr )
+	if ( selectedUpgrade != -1 && selectedUpgrade < 61 && CM != nullptr )
 	{
 		u8 upgrade = (u8)selectedUpgrade;
-		ScenarioPtr chk = chkd.maps.curr;
 
-		chk->setUpgradeMineralCost(upgrade, 0);
-		chk->setUpgradeMineralFactor(upgrade, 0);
-		chk->setUpgradeGasCost(upgrade, 0);
-		chk->setUpgradeGasFactor(upgrade, 0);
-		chk->setUpgradeTimeCost(upgrade, 0);
-		chk->setUpgradeTimeFactor(upgrade, 0);
+		CM->setUpgradeMineralCost(upgrade, 0);
+		CM->setUpgradeMineralFactor(upgrade, 0);
+		CM->setUpgradeGasCost(upgrade, 0);
+		CM->setUpgradeGasFactor(upgrade, 0);
+		CM->setUpgradeTimeCost(upgrade, 0);
+		CM->setUpgradeTimeFactor(upgrade, 0);
 	}
 }
 
@@ -369,8 +366,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newMineralCost;
 				if ( editMineralBaseCosts.GetEditNum<u16>(newMineralCost) )
 				{
-					chkd.maps.curr->setUpgradeMineralCost((u8)selectedUpgrade, newMineralCost);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeMineralCost((u8)selectedUpgrade, newMineralCost);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -381,8 +378,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newMineralFactor;
 				if ( editMineralUpgradeFactor.GetEditNum<u16>(newMineralFactor) )
 				{
-					chkd.maps.curr->setUpgradeMineralFactor((u8)selectedUpgrade, newMineralFactor);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeMineralFactor((u8)selectedUpgrade, newMineralFactor);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -393,8 +390,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newGasCost;
 				if ( editGasBaseCosts.GetEditNum<u16>(newGasCost) )
 				{
-					chkd.maps.curr->setUpgradeGasCost((u8)selectedUpgrade, newGasCost);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeGasCost((u8)selectedUpgrade, newGasCost);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -405,8 +402,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newGasFactor;
 				if ( editGasUpgradeFactor.GetEditNum<u16>(newGasFactor) )
 				{
-					chkd.maps.curr->setUpgradeGasFactor((u8)selectedUpgrade, newGasFactor);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeGasFactor((u8)selectedUpgrade, newGasFactor);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -418,11 +415,11 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if ( editTimeBaseCosts.GetEditNum<u16>(newTimeCost) )
 				{
 					if ( newTimeCost * 15 < newTimeCost ) // Value overflow
-						chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, 65535); // Set to max
+						CM->setUpgradeTimeCost((u8)selectedUpgrade, 65535); // Set to max
 					else // Normal
-						chkd.maps.curr->setUpgradeTimeCost((u8)selectedUpgrade, newTimeCost * 15);
+						CM->setUpgradeTimeCost((u8)selectedUpgrade, newTimeCost * 15);
 
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -434,11 +431,11 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if ( editTimeUpgradeFactor.GetEditNum<u16>(newTimeFactor) )
 				{
 					if ( newTimeFactor * 15 < newTimeFactor ) // Value overflow
-						chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, 65535); // Set to max
+						CM->setUpgradeTimeFactor((u8)selectedUpgrade, 65535); // Set to max
 					else // Normal
-						chkd.maps.curr->setUpgradeTimeFactor((u8)selectedUpgrade, newTimeFactor * 15);
+						CM->setUpgradeTimeFactor((u8)selectedUpgrade, newTimeFactor * 15);
 
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -449,8 +446,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u8 newStartLevel;
 				if ( editDefaultStartLevel.GetEditNum<u8>(newStartLevel) )
 				{
-					chkd.maps.curr->setUpgradeDefaultStartLevel((u8)selectedUpgrade, newStartLevel);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeDefaultStartLevel((u8)selectedUpgrade, newStartLevel);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -461,8 +458,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u8 newMaxLevel;
 				if ( editDefaultMaxLevel.GetEditNum<u8>(newMaxLevel) )
 				{
-					chkd.maps.curr->setUpgradeDefaultMaxLevel((u8)selectedUpgrade, newMaxLevel);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradeDefaultMaxLevel((u8)selectedUpgrade, newMaxLevel);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -475,19 +472,19 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				{
 					if ( state == BST_CHECKED )
 					{
-						chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, true);
+						CM->setUpgradeUseDefaults((u8)selectedUpgrade, true);
 						ClearDefaultUpgradeCosts();
 						DisableCostEditing();
 					}
 					else
 					{
-						chkd.maps.curr->setUpgradeUseDefaults((u8)selectedUpgrade, false);
+						CM->setUpgradeUseDefaults((u8)selectedUpgrade, false);
 						SetDefaultUpgradeCosts();
 						EnableCostEditing();
 					}
 
 					RefreshWindow();
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -500,25 +497,25 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( Get_UPGS(newUPGS) )
 					{
 						newUPGS.del(0, 8);
-						chkd.maps.curr->UPGS().takeAllData(newUPGS);
+						CM->UPGS().takeAllData(newUPGS);
 					}
 					if ( Get_UPGx(newUPGx) )
 					{
 						newUPGx.del(0, 8);
-						chkd.maps.curr->UPGx().takeAllData(newUPGx);
+						CM->UPGx().takeAllData(newUPGx);
 					}
 					if ( Get_UPGR(newUPGR) )
 					{
 						newUPGR.del(0, 8);
-						chkd.maps.curr->UPGR().takeAllData(newUPGR);
+						CM->UPGR().takeAllData(newUPGR);
 					}
 					if ( Get_PUPx(newPUPx) )
 					{
 						newPUPx.del(0, 8);
-						chkd.maps.curr->PUPx().takeAllData(newPUPx);
+						CM->PUPx().takeAllData(newPUPx);
 					}
 
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 					DisableCostEditing();
 					RefreshWindow();
 				}
@@ -531,16 +528,16 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
 				int player = LOWORD(wParam) - ID_CHECK_DEFAULTUPGRADEP1;
 				bool useDefault = (state == BST_CHECKED);
-				chkd.maps.curr->setUpgradePlayerDefaults((u8)selectedUpgrade, player, useDefault);
+				CM->setUpgradePlayerDefaults((u8)selectedUpgrade, player, useDefault);
 				if ( state != BST_CHECKED )
 				{
 					u8 defaultStartLevel, defaultMaxLevel;
-					if ( chkd.maps.curr->getUpgradeDefaultStartLevel((u8)selectedUpgrade, defaultStartLevel) )
-						chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, defaultStartLevel);
-					if ( chkd.maps.curr->getUpgradeDefaultMaxLevel((u8)selectedUpgrade, defaultMaxLevel) )
-						chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, defaultMaxLevel);
+					if ( CM->getUpgradeDefaultStartLevel((u8)selectedUpgrade, defaultStartLevel) )
+						CM->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, defaultStartLevel);
+					if ( CM->getUpgradeDefaultMaxLevel((u8)selectedUpgrade, defaultMaxLevel) )
+						CM->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, defaultMaxLevel);
 				}
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
@@ -550,8 +547,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					newStartLevel;
 				if ( editPlayerStartLevel[player].GetEditNum<u8>(newStartLevel) )
 				{
-					chkd.maps.curr->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, newStartLevel);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradePlayerStartLevel((u8)selectedUpgrade, player, newStartLevel);
+					CM->notifyChange(false);
 				}
 			}
 			else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
@@ -561,8 +558,8 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					newMaxLevel;
 				if ( editPlayerMaxLevel[player].GetEditNum<u8>(newMaxLevel) )
 				{
-					chkd.maps.curr->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, newMaxLevel);
-					chkd.maps.curr->notifyChange(false);
+					CM->setUpgradePlayerMaxLevel((u8)selectedUpgrade, player, newMaxLevel);
+					CM->notifyChange(false);
 				}
 			}
 			break;

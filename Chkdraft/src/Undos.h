@@ -1,5 +1,5 @@
-#ifndef UNDO_H
-#define UNDO_H
+#ifndef UNDOS_H
+#define UNDOS_H
 #include "CommonFiles/CommonFiles.h"
 #include "MappingCore/MappingCore.h"
 #include "Reversibles.h"
@@ -18,12 +18,12 @@ class IObserveUndos
 		virtual void ChangesReversed() = 0;
 };
 
-class UNDOS
+class Undos
 {
 	public:
 
-		UNDOS(IObserveUndos &observer);
-		~UNDOS();
+        Undos(IObserveUndos &observer);
+		~Undos();
 
 		void AddUndo(ReversiblePtr action);
 		void doUndo(int32_t type, void *obj);

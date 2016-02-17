@@ -91,7 +91,7 @@
     <ClCompile Include="src\TrigModify.cpp" />
     <ClCompile Include="src\TrigModifyText.cpp" />
     <ClCompile Include="src\TrigPlayers.cpp" />
-    <ClCompile Include="src\Undo.cpp" />
+    <ClCompile Include="src\Undos.cpp" />
     <ClCompile Include="src\UnitChange.cpp" />
     <ClCompile Include="src\UnitCreateDel.cpp" />
     <ClCompile Include="src\UnitIndexMove.cpp" />
@@ -215,7 +215,7 @@
     <ClInclude Include="src\TrigModify.h" />
     <ClInclude Include="src\TrigModifyText.h" />
     <ClInclude Include="src\TrigPlayers.h" />
-    <ClInclude Include="src\Undo.h" />
+    <ClInclude Include="src\Undos.h" />
     <ClInclude Include="src\UndoTypes.h" />
     <ClInclude Include="src\UnitChange.h" />
     <ClInclude Include="src\UnitCreateDel.h" />

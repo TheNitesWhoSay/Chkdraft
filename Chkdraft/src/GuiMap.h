@@ -4,15 +4,16 @@
 #include "WindowsUI/WindowsUI.h"
 #include "Clipboard.h"
 #include "Graphics.h"
-#include "Undo.h"
+#include "Undos.h"
 
-#define GuiMapPtr std::shared_ptr<GuiMap>
+class GuiMap;
+typedef std::shared_ptr<GuiMap> GuiMapPtr;
 
 class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 {
 	public:
 
-/* Constructor	*/	GuiMap();
+/* Constructor	*/	GuiMap(Clipboard &clipboard);
 
 /*  Destructor  */	~GuiMap();
 
@@ -42,13 +43,17 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 
 					void refreshScenario();
 
-/*   Sel/Paste  */  void clearSelection();
+/*   Sel/Paste  */  void clearSelectedTiles();
+                    void clearSelectedUnits();
+                    void clearSelection();
 					void selectAll();
 					void deleteSelection();
-					SELECTIONS& selections() { return selection; };
-					void paste(s32 mapClickX, s32 mapClickY, CLIPBOARD &clipboard);
+					void paste(s32 mapClickX, s32 mapClickY);
+                    void PlayerChanged(u8 newPlayer);
+                    Selections &GetSelections();
+                    u16 GetSelectedLocation();
 
-/*   Undo Redo  */  UNDOS& undos() { return undoStacks; }
+/*   Undo Redo  */  void AddUndo(ReversiblePtr action);
 					void undo();
 					void redo();
 					virtual void ChangesMade();
@@ -61,7 +66,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					HWND getHandle();
 
 					bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
-					void PaintMap(GuiMapPtr currMap, bool pasting, CLIPBOARD& clipboard);
+					void PaintMap(GuiMapPtr currMap, bool pasting);
 					void PaintMiniMap(HWND hWnd);
 					void Redraw(bool includeMiniMap);
 					void ValidateBorder(s32 screenWidth, s32 screenHeight);
@@ -152,7 +157,12 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 
 	private:
 
-/*	   Data  	*/	u16 mapId;
+/*	   Data  	*/  Clipboard &clipboard;
+                    Selections selections;
+                    Graphics graphics;
+                    Undos undos;
+
+                    u16 mapId;
 					bool changeLock;
 					bool unsavedChanges;
 
@@ -169,12 +179,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					bool locSnapTileOverGrid;
 					bool lockAnywhere;
 
-					SELECTIONS selection;
-					UNDOS undoStacks;
-
-					Graphics graphics;
 					POINT displayPivot;
-
 					ChkdBitmap graphicBits;
 					u32 bitmapWidth;
 					u32 bitmapHeight;

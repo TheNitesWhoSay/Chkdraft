@@ -1,6 +1,7 @@
 #include "Selections.h"
+#include "GuiMap.h"
 
-SELECTIONS::SELECTIONS() : moved(false), numRecentLocations(0), locationFlags(0)
+Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0)
 {
 	startDrag.x = -1;
 	startDrag.y = -1;
@@ -8,25 +9,25 @@ SELECTIONS::SELECTIONS() : moved(false), numRecentLocations(0), locationFlags(0)
 	endDrag.y = -1;
 }
 
-SELECTIONS::~SELECTIONS()
+Selections::~Selections()
 {
 	removeTiles();
 	removeUnits();
 }
 
-void SELECTIONS::setStartDrag(s32 x, s32 y)
+void Selections::setStartDrag(s32 x, s32 y)
 {
 	startDrag.x = x;
 	startDrag.y = y;
 }
 
-void SELECTIONS::setEndDrag(s32 x, s32 y)
+void Selections::setEndDrag(s32 x, s32 y)
 {
 	endDrag.x = x;
 	endDrag.y = y;
 }
 
-void SELECTIONS::setDrags(s32 x, s32 y)
+void Selections::setDrags(s32 x, s32 y)
 {
 	startDrag.x = x;
 	startDrag.y = y;
@@ -34,12 +35,12 @@ void SELECTIONS::setDrags(s32 x, s32 y)
 	endDrag.y = y;
 }
 
-void SELECTIONS::removeTile(TileNode* &tile)
+void Selections::removeTile(TileNode* &tile)
 {
 	removeTile(tile->xc, tile->yc);
 }
 
-void SELECTIONS::removeTile(u16 xc, u16 yc)
+void Selections::removeTile(u16 xc, u16 yc)
 {
 	auto toRemove = selTiles.end();
 	for ( auto it = selTiles.begin(); it != selTiles.end(); ++it )
@@ -64,7 +65,7 @@ void SELECTIONS::removeTile(u16 xc, u16 yc)
 		selTiles.erase(toRemove);
 }
 
-void SELECTIONS::addTile(u16 value, u16 xc, u16 yc)
+void Selections::addTile(u16 value, u16 xc, u16 yc)
 {
 	TileNode tile;
 	tile.xc = xc;
@@ -111,7 +112,7 @@ void SELECTIONS::addTile(u16 value, u16 xc, u16 yc)
 	selTiles.insert(selTiles.end(), tile);
 }
 
-void SELECTIONS::addTile(u16 value, u16 xc, u16 yc, u8 neighbors)
+void Selections::addTile(u16 value, u16 xc, u16 yc, u8 neighbors)
 {
 	TileNode tile;
 	tile.value = value;
@@ -122,26 +123,26 @@ void SELECTIONS::addTile(u16 value, u16 xc, u16 yc, u8 neighbors)
 	selTiles.insert(selTiles.end(), tile);
 }
 
-void SELECTIONS::removeTiles()
+void Selections::removeTiles()
 {
 	selTiles.clear();
 }
 
-u16 SELECTIONS::getSelectedLocation()
+u16 Selections::getSelectedLocation()
 {
 	return selectedLocation;
 }
 
-void SELECTIONS::selectLocation(u16 index)
+void Selections::selectLocation(u16 index)
 {
 	selectedLocation = index;
 	numRecentLocations = 1;
 	recentLocations[0] = u8(index);
 }
 
-void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canSelectAnywhere)
+void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
-	buffer& MRGN = chk->MRGN();
+	buffer& MRGN = map.MRGN();
 	if ( MRGN.exists() )
 	{
 		ChkLocation* loc;
@@ -151,7 +152,7 @@ void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canS
 	
 		for ( u16 i=0; i<numLocations; i++ )
 		{
-			if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && chk->getLocation(loc, i) )
+			if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && map.getLocation(loc, i) )
 			{
 				s32 locLeft = std::min(loc->xc1, loc->xc2),
 					locRight = std::max(loc->xc1, loc->xc2),
@@ -215,25 +216,25 @@ void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canS
 	}
 }
 
-void SELECTIONS::addUnit(u16 index)
+void Selections::addUnit(u16 index)
 {
 	if ( !unitIsSelected(index) )
 		selUnits.insert(selUnits.begin(), index);
 }
 
-void SELECTIONS::removeUnit(u16 index)
+void Selections::removeUnit(u16 index)
 {
 	auto toErase = std::find(selUnits.begin(), selUnits.end(), index);
 	if ( toErase != selUnits.end() )
 		selUnits.erase(toErase);
 }
 
-void SELECTIONS::removeUnits()
+void Selections::removeUnits()
 {
 	selUnits.clear();
 }
 
-void SELECTIONS::ensureFirst(u16 index)
+void Selections::ensureFirst(u16 index)
 {
 	if ( selUnits.size() > 0 && selUnits[0] != index )
 	{
@@ -246,7 +247,7 @@ void SELECTIONS::ensureFirst(u16 index)
 	}
 }
 
-void SELECTIONS::sendSwap(u16 oldIndex, u16 newIndex)
+void Selections::sendSwap(u16 oldIndex, u16 newIndex)
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -257,7 +258,7 @@ void SELECTIONS::sendSwap(u16 oldIndex, u16 newIndex)
 	}
 }
 
-void SELECTIONS::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
+void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -270,7 +271,7 @@ void SELECTIONS::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved
 	}
 }
 
-void SELECTIONS::finishSwap()
+void Selections::finishSwap()
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -279,7 +280,7 @@ void SELECTIONS::finishSwap()
 	}
 }
 
-void SELECTIONS::finishMove()
+void Selections::finishMove()
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -288,7 +289,7 @@ void SELECTIONS::finishMove()
 	}
 }
 
-bool SELECTIONS::unitIsSelected(u16 index)
+bool Selections::unitIsSelected(u16 index)
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -298,7 +299,7 @@ bool SELECTIONS::unitIsSelected(u16 index)
 	return false;
 }
 
-u16 SELECTIONS::numUnits()
+u16 Selections::numUnits()
 {
 	if ( selUnits.size() < u16_max )
 		return (u16)selUnits.size();
@@ -306,7 +307,7 @@ u16 SELECTIONS::numUnits()
 		return u16_max;
 }
 
-u16 SELECTIONS::numUnitsUnder(u16 index)
+u16 Selections::numUnitsUnder(u16 index)
 {
 	u16 numUnitsBefore = 0;
 	for ( u16 &unitIndex : selUnits )
@@ -317,12 +318,12 @@ u16 SELECTIONS::numUnitsUnder(u16 index)
 	return numUnitsBefore;
 }
 
-std::vector<TileNode> &SELECTIONS::getTiles()
+std::vector<TileNode> &Selections::getTiles()
 {
 	return selTiles;
 }
 
-TileNode SELECTIONS::getFirstTile()
+TileNode Selections::getFirstTile()
 {
 	TileNode tile;
 	tile.xc = 0;
@@ -341,12 +342,12 @@ TileNode SELECTIONS::getFirstTile()
 	return tile;
 }
 
-std::vector<u16> &SELECTIONS::getUnits()
+std::vector<u16> &Selections::getUnits()
 {
 	return selUnits;
 }
 
-u16 SELECTIONS::getFirstUnit()
+u16 Selections::getFirstUnit()
 {
 	if ( selUnits.size() > 0 )
 		return selUnits[0];
@@ -354,7 +355,7 @@ u16 SELECTIONS::getFirstUnit()
 		return 0;
 }
 
-u16 SELECTIONS::getHighestIndex()
+u16 Selections::getHighestIndex()
 {
 	int highestIndex = -1;
 	for ( u16 &unitIndex : selUnits )
@@ -369,7 +370,7 @@ u16 SELECTIONS::getHighestIndex()
 		return (u16)highestIndex;
 }
 
-u16 SELECTIONS::getLowestIndex()
+u16 Selections::getLowestIndex()
 {
 	u16 highestIndex = u16_max;
 	for ( u16 &unitIndex : selUnits )
@@ -380,7 +381,7 @@ u16 SELECTIONS::getLowestIndex()
 	return highestIndex;
 }
 
-void SELECTIONS::sortUnits(bool ascending)
+void Selections::sortUnits(bool ascending)
 {
 	if ( ascending )
 		std::sort(selUnits.begin(), selUnits.end());

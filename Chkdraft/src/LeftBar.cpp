@@ -11,7 +11,7 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
 	if ( nmhdr->code == TVN_SELCHANGED && ((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
 	{
-		if ( chkd.maps.curr != nullptr )
+		if ( CM != nullptr )
 		{
 			LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
 				   itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
@@ -19,21 +19,21 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 			switch ( itemType )
 			{
 				//case TREE_TYPE_ROOT: // Same as category
-			case TREE_TYPE_CATEGORY: if ( chkd.maps.curr->getLayer() != itemData ) chkd.maps.ChangeLayer(u8(itemData)); break;
-			case TREE_TYPE_ISOM: if ( chkd.maps.curr->getLayer() != LAYER_TERRAIN ) chkd.maps.ChangeLayer(LAYER_TERRAIN); break;
-			case TREE_TYPE_UNIT: if ( chkd.maps.curr->getLayer() != LAYER_UNITS ) chkd.maps.ChangeLayer(LAYER_UNITS); break;
-			case TREE_TYPE_LOCATION: if ( chkd.maps.curr->getLayer() != LAYER_LOCATIONS ) chkd.maps.ChangeLayer(LAYER_LOCATIONS); break;
-			case TREE_TYPE_SPRITE: if ( chkd.maps.curr->getLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
-			case TREE_TYPE_DOODAD: if ( chkd.maps.curr->getLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
+			case TREE_TYPE_CATEGORY: if ( CM->getLayer() != itemData ) chkd.maps.ChangeLayer(u8(itemData)); break;
+			case TREE_TYPE_ISOM: if ( CM->getLayer() != LAYER_TERRAIN ) chkd.maps.ChangeLayer(LAYER_TERRAIN); break;
+			case TREE_TYPE_UNIT: if ( CM->getLayer() != LAYER_UNITS ) chkd.maps.ChangeLayer(LAYER_UNITS); break;
+			case TREE_TYPE_LOCATION: if ( CM->getLayer() != LAYER_LOCATIONS ) chkd.maps.ChangeLayer(LAYER_LOCATIONS); break;
+			case TREE_TYPE_SPRITE: if ( CM->getLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
+			case TREE_TYPE_DOODAD: if ( CM->getLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
 			}
 
 			switch ( itemType )
 			{
 			case TREE_TYPE_UNIT: // itemData == UnitID
 			{
-				chkd.maps.curr->selections().removeUnits();
+				CM->clearSelectedUnits();
 				chkd.maps.endPaste();
-				if ( chkd.maps.curr->getLayer() != LAYER_UNITS )
+				if ( CM->getLayer() != LAYER_UNITS )
 					chkd.maps.ChangeLayer(LAYER_UNITS);
 
 				ChkUnit unit = {};
@@ -43,7 +43,7 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 				unit.id = u16(itemData);
 				unit.link = 0;
 				unit.linkType = 0;
-				unit.owner = chkd.maps.curr->currPlayer();
+				unit.owner = CM->currPlayer();
 				unit.resources = 0;
 				unit.serial = 0;
 				unit.shields = 100;
@@ -55,15 +55,15 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 				unit.yc = 0;
 				chkd.maps.clipboard.addQuickUnit(&unit);
 				chkd.maps.startPaste(true);
-				SetFocus(chkd.maps.curr->getHandle());
+				SetFocus(CM->getHandle());
 			}
 			break;
 
 			case TREE_TYPE_LOCATION: // itemData = location index
-				chkd.maps.curr->selections().selectLocation(u16(itemData));
+				CM->GetSelections().selectLocation(u16(itemData));
 				if ( chkd.locationWindow.getHandle() != nullptr )
 					chkd.locationWindow.RefreshLocationInfo();
-				chkd.maps.curr->viewLocation(u16(itemData));
+				CM->viewLocation(u16(itemData));
 				break;
 			}
 		}

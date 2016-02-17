@@ -59,7 +59,6 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		refreshing = true;
-		GuiMapPtr map = chkd.maps.curr;
 		HWND hMapProperties = getHandle();
 
 		ChkdString mapTitle(""), mapDescription("");
@@ -67,13 +66,13 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 			currWidth = 0,
 			currHeight = 0;
 
-		if ( map != nullptr )
+		if ( CM != nullptr )
 		{
-			map->getMapTitle(mapTitle);
-			map->getMapDescription(mapDescription);
-			currTileset = map->getTileset(),
-			currWidth = map->XSize(),
-			currHeight = map->YSize();
+			CM->getMapTitle(mapTitle);
+			CM->getMapDescription(mapDescription);
+			currTileset = CM->getTileset(),
+			currWidth = CM->XSize(),
+			currHeight = CM->YSize();
 		}
 
 		textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
@@ -109,10 +108,10 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 			{
 				int player = yBox*4+xBox;
 				u8 displayOwner = 0, race = 0, color = (u8)player;
-				if ( map != nullptr )
+				if ( CM != nullptr )
 				{
-					displayOwner = map->getDisplayOwner((u8)player);
-					map->getPlayerRace((u8)player, race);
+					displayOwner = CM->getDisplayOwner((u8)player);
+					CM->getPlayerRace((u8)player, race);
 				}
 
 				groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
@@ -123,8 +122,8 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 
 				if ( yBox < 2 )
 				{
-					if ( map != nullptr )
-						map->getPlayerColor((u8)player, color);
+					if ( CM != nullptr )
+						CM->getPlayerColor((u8)player, color);
 
 					textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
 					dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, CB_P1COLOR+player, playerColors, defaultFont);
@@ -141,15 +140,14 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 void MapPropertiesWindow::RefreshWindow()
 {
 	refreshing = true;
-	GuiMapPtr map = chkd.maps.curr;
-	if ( map != nullptr )
+	if ( CM != nullptr )
 	{
 		ChkdString mapTitle, mapDescription;
-		map->getMapTitle(mapTitle);
-		map->getMapDescription(mapDescription);
-		u16 tileset = map->getTileset(),
-			currWidth = map->XSize(),
-			currHeight = map->YSize();
+		CM->getMapTitle(mapTitle);
+		CM->getMapDescription(mapDescription);
+		u16 tileset = CM->getTileset(),
+			currWidth = CM->XSize(),
+			currHeight = CM->YSize();
 
 		std::string sCurrWidth(std::to_string(currWidth));
 		std::string sCurrHeight(std::to_string(currHeight));
@@ -167,8 +165,8 @@ void MapPropertiesWindow::RefreshWindow()
 					
 		for ( int player=0; player<12; player++ )
 		{
-			u8 displayOwner(map->getDisplayOwner(player)), race(0), color(0);
-			map->getPlayerRace(player, race);
+			u8 displayOwner(CM->getDisplayOwner(player)), race(0), color(0);
+			CM->getPlayerRace(player, race);
 			dropPlayerOwner[player].SetSel(displayOwner);
 			dropPlayerOwner[player].ClearEditSel();
 			dropPlayerRaces[player].SetSel(race);
@@ -176,7 +174,7 @@ void MapPropertiesWindow::RefreshWindow()
 
 			if ( player < 8 )
 			{
-				map->getPlayerColor(player, color);
+				CM->getPlayerColor(player, color);
 				dropPlayerColor[player].SetSel(0);
 				dropPlayerColor[player].ClearEditSel();
 			}
@@ -208,15 +206,15 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( HIWORD(wParam) == BN_CLICKED )
 		{
 			LRESULT newTileset = SendMessage(GetDlgItem(hWnd, CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
-			chkd.maps.curr->setTileset((u16)newTileset);
+			CM->setTileset((u16)newTileset);
 			u16 newWidth, newHeight;
 			if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
-				chkd.maps.curr->setDimensions((u16)newWidth, (u16)newHeight);
+				CM->setDimensions((u16)newWidth, (u16)newHeight);
 
 			// Apply new terrain...
 
-			chkd.maps.curr->notifyChange(false);
-			chkd.maps.curr->Redraw(true);
+			CM->notifyChange(false);
+			CM->Redraw(true);
 		}
 	}
 	break;
@@ -259,8 +257,8 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				}
 				if ( newOwner != 0 )
 				{
-					chkd.maps.curr->setPlayerOwner((u8)player, newOwner);
-					chkd.maps.curr->notifyChange(false);
+					CM->setPlayerOwner((u8)player, newOwner);
+					CM->notifyChange(false);
 				}
 			}
 		}
@@ -275,8 +273,8 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
 			if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
 			{
-				chkd.maps.curr->setPlayerRace((u8)player, (u8)newRace);
-				chkd.maps.curr->notifyChange(false);
+				CM->setPlayerRace((u8)player, (u8)newRace);
+				CM->notifyChange(false);
 			}
 		}
 		break;
@@ -291,10 +289,10 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
 			if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
 			{
-				if ( chkd.maps.curr->setPlayerColor((u8)player, (u8)newColor) )
-					chkd.maps.curr->Redraw(true);
+				if ( CM->setPlayerColor((u8)player, (u8)newColor) )
+					CM->Redraw(true);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 		}
 		break;
@@ -304,10 +302,10 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			u8 newColor;
 			if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
 			{
-				if ( chkd.maps.curr->setPlayerColor((u8)player, newColor) )
-					chkd.maps.curr->Redraw(true);
+				if ( CM->setPlayerColor((u8)player, newColor) )
+					CM->Redraw(true);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 		}
 
@@ -348,10 +346,10 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 	if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
 	{
 		u16* mapTitleString;
-		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
-			 chkd.maps.curr->replaceString(newMapTitle, *mapTitleString, false, true) )
+		if ( CM->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
+			 CM->replaceString(newMapTitle, *mapTitleString, false, true) )
 		{
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 		}
 		possibleTitleUpdate = false;
 	}
@@ -363,10 +361,10 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
 	if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
 	{
 		u16* mapDescriptionString;
-		if ( chkd.maps.curr->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
-			 chkd.maps.curr->replaceString(newMapDescription, *mapDescriptionString, false, true) )
+		if ( CM->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
+			 CM->replaceString(newMapDescription, *mapDescriptionString, false, true) )
 		{
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 		}
 		possibleDescriptionUpdate = false;
 	}

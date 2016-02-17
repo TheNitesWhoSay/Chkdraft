@@ -49,8 +49,7 @@ bool TechSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 void TechSettingsWindow::RefreshWindow()
 {
 	refreshing = true;
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( selectedTech >= 0 && selectedTech < 44 && chk != nullptr )
+	if ( selectedTech >= 0 && selectedTech < 44 && CM != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
 		if ( selectedTech != -1 )
@@ -59,7 +58,7 @@ void TechSettingsWindow::RefreshWindow()
 		if ( isDisabled )
 			EnableTechEditing();
 
-		bool techUsesDefaultCosts = chk->techUsesDefaultCosts(tech);
+		bool techUsesDefaultCosts = CM->techUsesDefaultCosts(tech);
 		checkUseDefaultCosts.SetCheck(techUsesDefaultCosts);
 		if ( techUsesDefaultCosts )
 		{
@@ -73,18 +72,18 @@ void TechSettingsWindow::RefreshWindow()
 		{
 			u16 mineralCost, gasCost, timeCost, energyCost;
 			EnableTechCosts();
-			if ( chk->getTechMineralCost(tech, mineralCost) )
+			if ( CM->getTechMineralCost(tech, mineralCost) )
 				editMineralCosts.SetEditNum<u16>(mineralCost);
-			if ( chk->getTechGasCost(tech, gasCost) )
+			if ( CM->getTechGasCost(tech, gasCost) )
 				editGasCosts.SetEditNum<u16>(gasCost);
-			if ( chk->getTechTimeCost(tech, timeCost) )
+			if ( CM->getTechTimeCost(tech, timeCost) )
 				editTimeCosts.SetEditNum<u16>(timeCost/15);
-			if ( chk->getTechEnergyCost(tech, energyCost) )
+			if ( CM->getTechEnergyCost(tech, energyCost) )
 				editEnergyCosts.SetEditNum<u16>(energyCost);
 		}
 
-		bool enabledByDefault = chk->techAvailableByDefault(tech),
-			 researchedByDefault = chk->techResearchedByDefault(tech);
+		bool enabledByDefault = CM->techAvailableByDefault(tech),
+			 researchedByDefault = CM->techResearchedByDefault(tech);
 		
 		if ( enabledByDefault )
 		{
@@ -109,11 +108,11 @@ void TechSettingsWindow::RefreshWindow()
 
 		for ( u8 player=0; player<12; player++ )
 		{
-			checkUsePlayerDefaults[player].SetCheck(chk->playerUsesDefaultTechSettings(tech, player));
+			checkUsePlayerDefaults[player].SetCheck(CM->playerUsesDefaultTechSettings(tech, player));
 			
-			bool playerUsesDefaults = chk->playerUsesDefaultTechSettings(tech, player),
-				 playerEnabledByDefault = chk->techAvailableForPlayer(tech, player),
-				 playerResearchedByDefault = chk->techResearchedForPlayer(tech, player);
+			bool playerUsesDefaults = CM->playerUsesDefaultTechSettings(tech, player),
+				 playerEnabledByDefault = CM->techAvailableForPlayer(tech, player),
+				 playerResearchedByDefault = CM->techResearchedForPlayer(tech, player);
 
 			if ( playerUsesDefaults ) // Player uses default settings for this tech
 			{
@@ -240,7 +239,7 @@ void TechSettingsWindow::EnableTechEditing()
 {
 	checkUseDefaultCosts.EnableThis();
 
-	if ( chkd.maps.curr->techUsesDefaultCosts((u8)selectedTech) == false )
+	if ( CM->techUsesDefaultCosts((u8)selectedTech) == false )
 		EnableTechCosts();
 
 	groupDefaultPlayerSettings.EnableThis();
@@ -260,30 +259,28 @@ void TechSettingsWindow::EnableTechEditing()
 
 void TechSettingsWindow::SetDefaultTechCosts()
 {
-	if ( selectedTech > 0 && selectedTech < 44 && chkd.maps.curr != nullptr )
+	if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
-		ScenarioPtr chk = chkd.maps.curr;
 		TECHDAT* techDat = chkd.scData.techs.TechDat(tech);
 
-		chk->setTechMineralCost(tech, techDat->MineralCost);
-		chk->setTechGasCost(tech, techDat->VespeneCost);
-		chk->setTechTimeCost(tech, techDat->ResearchTime);
-		chk->setTechEnergyCost(tech, techDat->EnergyCost);
+		CM->setTechMineralCost(tech, techDat->MineralCost);
+		CM->setTechGasCost(tech, techDat->VespeneCost);
+		CM->setTechTimeCost(tech, techDat->ResearchTime);
+		CM->setTechEnergyCost(tech, techDat->EnergyCost);
 	}
 }
 
 void TechSettingsWindow::ClearDefaultTechCosts()
 {
-	if ( selectedTech > 0 && selectedTech < 44 && chkd.maps.curr != nullptr )
+	if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
 	{
 		u8 tech = (u8)selectedTech;
-		ScenarioPtr chk = chkd.maps.curr;
 
-		chk->setTechMineralCost(tech, 0);
-		chk->setTechGasCost(tech, 0);
-		chk->setTechTimeCost(tech, 0);
-		chk->setTechEnergyCost(tech, 0);
+		CM->setTechMineralCost(tech, 0);
+		CM->setTechGasCost(tech, 0);
+		CM->setTechTimeCost(tech, 0);
+		CM->setTechEnergyCost(tech, 0);
 	}
 }
 
@@ -326,25 +323,25 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( Get_TECS(newTECS) )
 					{
 						newTECS.del(0, 8);
-						chkd.maps.curr->TECS().takeAllData(newTECS);
+						CM->TECS().takeAllData(newTECS);
 					}
 					if ( Get_TECx(newTECx) )
 					{
 						newTECx.del(0, 8);
-						chkd.maps.curr->TECx().takeAllData(newTECx);
+						CM->TECx().takeAllData(newTECx);
 					}
 					if ( Get_PTEC(newPTEC) )
 					{
 						newPTEC.del(0, 8);
-						chkd.maps.curr->PTEC().takeAllData(newPTEC);
+						CM->PTEC().takeAllData(newPTEC);
 					}
 					if ( Get_PTEx(newPTEx) )
 					{
 						newPTEx.del(0, 8);
-						chkd.maps.curr->PTEx().takeAllData(newPTEx);
+						CM->PTEx().takeAllData(newPTEx);
 					}
 
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 					RefreshWindow();
 				}
 			}
@@ -358,16 +355,16 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				{
 					ClearDefaultTechCosts();
 					DisableTechCosts();
-					chkd.maps.curr->setTechUseDefaults((u8)selectedTech, true);
+					CM->setTechUseDefaults((u8)selectedTech, true);
 				}
 				else
 				{
 					SetDefaultTechCosts();
 					EnableTechCosts();
-					chkd.maps.curr->setTechUseDefaults((u8)selectedTech, false);
+					CM->setTechUseDefaults((u8)selectedTech, false);
 				}
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			break;
@@ -377,8 +374,8 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newMineralCost;
 				if ( editMineralCosts.GetEditNum<u16>(newMineralCost) )
 				{
-					chkd.maps.curr->setTechMineralCost((u8)selectedTech, newMineralCost);
-					chkd.maps.curr->notifyChange(false);
+					CM->setTechMineralCost((u8)selectedTech, newMineralCost);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -388,8 +385,8 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newGasCost;
 				if ( editGasCosts.GetEditNum<u16>(newGasCost) )
 				{
-					chkd.maps.curr->setTechGasCost((u8)selectedTech, newGasCost);
-					chkd.maps.curr->notifyChange(false);
+					CM->setTechGasCost((u8)selectedTech, newGasCost);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -400,11 +397,11 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if ( editTimeCosts.GetEditNum<u16>(newTimeCost) )
 				{
 					if ( 15 * (u32)newTimeCost > 65535 ) // Overflow
-						chkd.maps.curr->setTechTimeCost((u8)selectedTech, 65535); // Set to max
+						CM->setTechTimeCost((u8)selectedTech, 65535); // Set to max
 					else // Normal
-						chkd.maps.curr->setTechTimeCost((u8)selectedTech, newTimeCost * 15);
+						CM->setTechTimeCost((u8)selectedTech, newTimeCost * 15);
 
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 				}
 			}
 			break;
@@ -414,38 +411,38 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 newEnergyCost;
 				if ( editEnergyCosts.GetEditNum<u16>(newEnergyCost) )
 				{
-					chkd.maps.curr->setTechEnergyCost((u8)selectedTech, newEnergyCost);
-					chkd.maps.curr->notifyChange(false);
+					CM->setTechEnergyCost((u8)selectedTech, newEnergyCost);
+					CM->notifyChange(false);
 				}
 			}
 			break;
 		case RADIO_DEFAULTDISABLED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
 				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
-				chkd.maps.curr->setTechDefaultAvailability((u8)selectedTech, false) )
+				CM->setTechDefaultAvailability((u8)selectedTech, false) )
 			{
-				chkd.maps.curr->setTechDefaultResearched((u8)selectedTech, false);
-				chkd.maps.curr->notifyChange(false);
+				CM->setTechDefaultResearched((u8)selectedTech, false);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			break;
 		case RADIO_DEFAULTENABLED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
 				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
-				chkd.maps.curr->setTechDefaultAvailability((u8)selectedTech, true) )
+				CM->setTechDefaultAvailability((u8)selectedTech, true) )
 			{
-				chkd.maps.curr->setTechDefaultResearched((u8)selectedTech, false);
-				chkd.maps.curr->notifyChange(false);
+				CM->setTechDefaultResearched((u8)selectedTech, false);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			break;
 		case RADIO_DEFAULTRESEARCHED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
 				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
-				chkd.maps.curr->setTechDefaultResearched((u8)selectedTech, true) )
+				CM->setTechDefaultResearched((u8)selectedTech, true) )
 			{
-				chkd.maps.curr->setTechDefaultAvailability((u8)selectedTech, true);
-				chkd.maps.curr->notifyChange(false);
+				CM->setTechDefaultAvailability((u8)selectedTech, true);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			break;
@@ -459,8 +456,8 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					dropPlayerTechSettings[player].DisableThis();
 				else
 					dropPlayerTechSettings[player].EnableThis();
-				chkd.maps.curr->setPlayerUsesDefaultTechSettings((u8)selectedTech, player, useDefault);
-				chkd.maps.curr->notifyChange(false);
+				CM->setPlayerUsesDefaultTechSettings((u8)selectedTech, player, useDefault);
+				CM->notifyChange(false);
 				RefreshWindow();
 			}
 			if ( HIWORD(wParam) == CBN_SELCHANGE && selectedTech != -1 &&
@@ -470,21 +467,21 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				int selection = dropPlayerTechSettings[player].GetSel();
 				if ( selection == 0 ) // Disabled
 				{
-					chkd.maps.curr->setTechAvailableForPlayer((u8)selectedTech, player, false);
-					chkd.maps.curr->setTechResearchedForPlayer((u8)selectedTech, player, false);
+					CM->setTechAvailableForPlayer((u8)selectedTech, player, false);
+					CM->setTechResearchedForPlayer((u8)selectedTech, player, false);
 				}
 				else if ( selection == 1 ) // Enabled
 				{
-					chkd.maps.curr->setTechAvailableForPlayer((u8)selectedTech, player, true);
-					chkd.maps.curr->setTechResearchedForPlayer((u8)selectedTech, player, false);
+					CM->setTechAvailableForPlayer((u8)selectedTech, player, true);
+					CM->setTechResearchedForPlayer((u8)selectedTech, player, false);
 				}
 				else if ( selection == 2 ) // Researched
 				{
-					chkd.maps.curr->setTechAvailableForPlayer((u8)selectedTech, player, true);
-					chkd.maps.curr->setTechResearchedForPlayer((u8)selectedTech, player, true);
+					CM->setTechAvailableForPlayer((u8)selectedTech, player, true);
+					CM->setTechResearchedForPlayer((u8)selectedTech, player, true);
 				}
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 		}
 	}

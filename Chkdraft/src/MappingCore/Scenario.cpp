@@ -46,7 +46,7 @@ Scenario* Scenario::scenario()
 
 bool Scenario::isExpansion()
 {
-	return VER().get<u16>(0) >= 63;
+	return VER()get<u16>(0) >= 63;
 }
 
 buffer& Scenario::unitSettings()
@@ -412,19 +412,35 @@ bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
 		return UNIS().get<u16>(stringNum, unitId*2+(u32)UnitSettingsDataLoc::StringIds);
 }
 
-u16 Scenario::numStrSlots()
+u16 Scenario::strSectionCapacity()
 {
 	return STR().get<u16>(0);
 }
 
-u32 Scenario::numKstrSlots()
+u32 Scenario::kstrSectionCapacity()
 {
 	return KSTR().get<u32>(4);
 }
 
-u32 Scenario::numCombinedStringSlots()
+u32 Scenario::stringCapacity()
 {
 	return STR().get<u16>(0) + KSTR().get<u32>(4);
+}
+
+u32 Scenario::stringCapacity(bool extended)
+{
+    if ( extended )
+        return KSTR().get<u32>(4);
+    else
+        return STR().get<u16>(0);
+}
+
+bool Scenario::hasStrSection(bool extended)
+{
+    if ( extended )
+        return KSTR().exists();
+    else
+        return STR().exists();
 }
 
 bool Scenario::GetString(RawString &dest, u32 stringNum)
@@ -3414,8 +3430,8 @@ bool Scenario::ZeroOutString(u32 stringNum)
 		for ( size_t i=0; i<length; i++ ) // Zero-out characters
 			str[i] = '\0';
 
-		u32 numRegularStrings = (u32)numStrSlots();
-		if ( stringNum < numStrSlots() )
+		u32 numRegularStrings = (u32)strSectionCapacity();
+		if ( stringNum < strSectionCapacity() )
 		{
 			if ( STR().size() > numRegularStrings*2+2 ) // If you can get to start of string data
 				return STR().replace<u16>(2*stringNum, numRegularStrings*2+2); // Set string offset to start of string data (NUL)

@@ -17,7 +17,7 @@ void TextTrigWindow::RefreshWindow()
 {
 	std::string trigString;
 	TextTrigGenerator textTrigs;
-	if ( textTrigs.GenerateTextTrigs(chkd.maps.curr, trigString) )
+	if ( textTrigs.GenerateTextTrigs(CM, trigString) )
 		SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
 	else
 		Error("Failed to generate text triggers.");
@@ -28,17 +28,17 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	switch ( LOWORD(wParam) )
 	{
 	case IDC_COMPSAVE:
-		if ( chkd.maps.curr != nullptr )
+		if ( CM != nullptr )
 		{
-			if ( CompileEditText(chkd.maps.curr) )
+			if ( CompileEditText(CM) )
 			{
-				chkd.maps.curr->refreshScenario();
+				CM->refreshScenario();
 				if ( chkd.maps.SaveCurr(false) )
 					MessageBox(NULL, "Success", "Compiler", MB_OK);
 				else
 				{
 					MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
-					chkd.maps.curr->notifyChange(false);
+					CM->notifyChange(false);
 				}
 			}
 		}
@@ -46,12 +46,12 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			Error("No map open!");
 		break;
 	case ID_COMPILE_TRIGS:
-		if ( chkd.maps.curr != nullptr )
+		if ( CM != nullptr )
 		{
-			if ( CompileEditText(chkd.maps.curr) )
+			if ( CompileEditText(CM) )
 			{
-				chkd.maps.curr->notifyChange(false);
-				chkd.maps.curr->refreshScenario();
+				CM->notifyChange(false);
+				CM->refreshScenario();
 				MessageBox(NULL, "Success", "Compiler", MB_OK);
 			}
 		}

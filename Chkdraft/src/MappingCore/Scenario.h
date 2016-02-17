@@ -206,9 +206,11 @@ class Scenario
 					bool setPlayerUsesDefaultTechSettings(u8 techId, u8 player, bool playerUsesDefaultSettings);
 
 
-/*	 Strings	*/	u16 numStrSlots();
-					u32 numKstrSlots();
-					u32 numCombinedStringSlots();
+/*	 Strings	*/	u16 strSectionCapacity(); // The current capacity of the STR section
+					u32 kstrSectionCapacity(); // The current capacity of the KSTR section
+                    u32 stringCapacity(); // The sum of the capcities of the STR and KSTR section
+                    u32 stringCapacity(bool extended); // Returns the capcity of the STR or KSTR section
+                    bool hasStrSection(bool extended); // Checks if the STR or KSTR section exists
 
 					bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
 					bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string
@@ -311,7 +313,7 @@ class Scenario
 					/** Referances to section buffers used by Chkdraft. All buffer methods are
 						safe to call whether or not the map/buffer exists, though you should
 						check that they exist at some point to match the user expectations. */
-					buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
+					/*buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
 					buffer& VCOD();	buffer& IOWN();	buffer& OWNR();	buffer& ERA ();
 					buffer& DIM ();	buffer& SIDE();	buffer& MTXM();	buffer& PUNI();
 					buffer& UPGR();	buffer& PTEC();	buffer& UNIT();	buffer& ISOM();
@@ -320,7 +322,7 @@ class Scenario
 					buffer& TRIG();	buffer& MBRF();	buffer& SPRP();	buffer& FORC();
 					buffer& WAV ();	buffer& UNIS();	buffer& UPGS();	buffer& TECS();
 					buffer& SWNM();	buffer& COLR();	buffer& PUPx();	buffer& PTEx();
-					buffer& UNIx();	buffer& UPGx();	buffer& TECx();
+					buffer& UNIx();	buffer& UPGx();	buffer& TECx();*/
 
 					// Extended sections
 					buffer& KSTR();

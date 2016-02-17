@@ -9,7 +9,7 @@ class PreservedUnitStats
 	public:
 		PreservedUnitStats();
 		void flushStats();
-		void addStats(SELECTIONS &sel, u8 statField);
+		void addStats(Selections &sel, u8 statField);
 		void convertToUndo();
 
 	private:

@@ -41,7 +41,6 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
 		 ClassWindow::CreateClassWindow(NULL, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
-		GuiMapPtr map = chkd.maps.curr;
 		HWND hForces = getHandle();
 		textAboutForces.CreateThis(hForces, 5, 10, 587, 20,
 			"Designate player forces, set force names, and force properties. It is recommended to separate computer and human players", 0);
@@ -54,10 +53,10 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 				int force = x+y*2;
 				ChkdString forceName = "";
 				bool allied = false, vision = false, random = false, av = false;
-				if ( map != nullptr )
+				if ( CM != nullptr )
 				{
-					map->getForceString(forceName, force);
-					map->getForceInfo(force, allied, vision, random, av);
+					CM->getForceString(forceName, force);
+					CM->getForceInfo(force, allied, vision, random, av);
 				}
 
 				groupForce[force].CreateThis(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force], 0);
@@ -89,15 +88,14 @@ bool ForcesWindow::DestroyThis()
 void ForcesWindow::RefreshWindow()
 {
 	HWND hWnd = getHandle();
-	GuiMapPtr map = chkd.maps.curr;
-	if ( map != nullptr )
+	if ( CM != nullptr )
 	{
 		for ( int force=0; force<4; force++ )
 		{
 			ChkdString forceName;
 			bool allied = false, vision = false, random = false, av = false;
-			map->getForceString(forceName, force);
-			map->getForceInfo(force, allied, vision, random, av);
+			CM->getForceString(forceName, force);
+			CM->getForceInfo(force, allied, vision, random, av);
 
 			SetWindowText(GetDlgItem(hWnd, EDIT_F1NAME+force), forceName.c_str());
 			if ( allied ) SendMessage(GetDlgItem(hWnd, CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , NULL);
@@ -119,11 +117,11 @@ void ForcesWindow::RefreshWindow()
 
 		for ( int player=0; player<8; player++ )
 		{
-			u8 force(0), color(0), race(0), displayOwner(map->getDisplayOwner(player));
-			if ( map->getPlayerForce(player, force) )
+			u8 force(0), color(0), race(0), displayOwner(CM->getDisplayOwner(player));
+			if ( CM->getPlayerForce(player, force) )
 			{
-				map->getPlayerColor(player, color);
-				map->getPlayerRace(player, race);
+				CM->getPlayerColor(player, color);
+				CM->getPlayerRace(player, race);
 				std::stringstream ssplayer;
 				ssplayer << "Player " << player+1 << " - " << playerColors.at(color) << " - "
 						 << playerRaces.at(race) << " (" << playerOwners.at(displayOwner) << ")";
@@ -141,9 +139,8 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 	case BN_CLICKED:
 	{
-		GuiMapPtr map = chkd.maps.curr;
 		LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
-		if ( map != nullptr )
+		if ( CM != nullptr )
 		{
 			switch ( LOWORD(wParam) )
 			{
@@ -151,11 +148,11 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				int force = LOWORD(wParam) - CHECK_F1ALLIED;
 				if ( state == BST_CHECKED )
-					map->setForceAllied(force, true);
+					CM->setForceAllied(force, true);
 				else
-					map->setForceAllied(force, false);
+					CM->setForceAllied(force, false);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 			break;
 
@@ -163,11 +160,11 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				int force = LOWORD(wParam) - CHECK_F1VISION;
 				if ( state == BST_CHECKED )
-					map->setForceVision(force, true);
+					CM->setForceVision(force, true);
 				else
-					map->setForceVision(force, false);
+					CM->setForceVision(force, false);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 			break;
 
@@ -175,11 +172,11 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				int force = LOWORD(wParam) - CHECK_F1RANDOM;
 				if ( state == BST_CHECKED )
-					map->setForceRandom(force, true);
+					CM->setForceRandom(force, true);
 				else
-					map->setForceRandom(force, false);
+					CM->setForceRandom(force, false);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 			break;
 
@@ -187,11 +184,11 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				int force = LOWORD(wParam) - CHECK_F1AV;
 				if ( state == BST_CHECKED )
-					map->setForceAv(force, true);
+					CM->setForceAv(force, true);
 				else
-					map->setForceAv(force, false);
+					CM->setForceAv(force, false);
 
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 			break;
 			}
@@ -286,15 +283,14 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									if ( windowID >= LB_F1PLAYERS && windowID <= LB_F4PLAYERS )
 									{
 										int force = windowID-LB_F1PLAYERS;
-										GuiMapPtr map = chkd.maps.curr;
-										if ( map != nullptr )
+										if ( CM != nullptr )
 										{
-											map->setPlayerForce(playerBeingDragged, force);
+											CM->setPlayerForce(playerBeingDragged, force);
 											RefreshWindow();
 											std::stringstream ssPlayer;
 											ssPlayer << "Player " << playerBeingDragged+1;
 											SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
-											map->notifyChange(false);
+											CM->notifyChange(false);
 											chkd.trigEditorWindow.RefreshWindow();
 											SetFocus(getHandle());
 										}
@@ -324,11 +320,11 @@ void ForcesWindow::CheckReplaceForceName(int force)
 	if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
 	{
 		u16* mapForceString;
-		if ( chkd.maps.curr->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
-			 chkd.maps.curr->replaceString(newMapForce, *mapForceString, false, true) )
+		if ( CM->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
+			 CM->replaceString(newMapForce, *mapForceString, false, true) )
 		{
-			chkd.maps.curr->notifyChange(false);
-			chkd.maps.curr->refreshScenario();
+			CM->notifyChange(false);
+			CM->refreshScenario();
 		}
 		possibleForceNameUpdate[force] = false;
 	}

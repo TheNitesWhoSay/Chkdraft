@@ -273,9 +273,6 @@
     <ClInclude Include="src\Reversibles.h">
       <Filter>Header Files\Mapping\Undos</Filter>
     </ClInclude>
-    <ClInclude Include="src\Undo.h">
-      <Filter>Header Files\Mapping\Undos</Filter>
-    </ClInclude>
     <ClInclude Include="src\MappingCore\Basics.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
@@ -319,9 +316,6 @@
       <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
     <ClInclude Include="src\MappingCore\ChkLocation.h">
-      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MappingCore\ChkSprite.h">
       <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
     <ClInclude Include="src\MappingCore\ChkTrigger.h">
@@ -573,6 +567,12 @@
     <ClInclude Include="SFmpq\SFmpqapi.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="src\Undos.h">
+      <Filter>Header Files\Mapping\Undos</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\ChkSprite.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ChkdPlugins.cpp">
@@ -630,9 +630,6 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="src\Reversibles.cpp">
-      <Filter>Source Files\Mapping\Undos</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Undo.cpp">
       <Filter>Source Files\Mapping\Undos</Filter>
     </ClCompile>
     <ClCompile Include="src\MappingCore\Basics.cpp">
@@ -910,6 +907,9 @@
     </ClCompile>
     <ClCompile Include="src\UpgradeSettings.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Undos.cpp">
+      <Filter>Source Files\Mapping\Undos</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

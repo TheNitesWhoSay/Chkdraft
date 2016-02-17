@@ -20,7 +20,7 @@ LRESULT MainPlot::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_ERASEBKGND:
-			if ( chkd.maps.curr == nullptr )
+			if ( CM == nullptr )
 				return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 			else
 				return TRUE; // Prevent plot from drawing a background over maps

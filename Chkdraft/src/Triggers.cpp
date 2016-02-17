@@ -136,10 +136,10 @@ void TriggersWindow::DoSize()
 
 void TriggersWindow::DeleteSelection()
 {
-	if ( currTrigger != NO_TRIGGER && chkd.maps.curr->deleteTrigger(currTrigger) )
+	if ( currTrigger != NO_TRIGGER && CM->deleteTrigger(currTrigger) )
 	{
 		trigModifyWindow.DestroyThis();
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		int sel;
 		RefreshGroupList();
 		if ( listTriggers.GetCurSel(sel) && DeleteTrigListItem(sel) && (SelectTrigListItem(sel) || SelectTrigListItem(sel-1)) )
@@ -153,10 +153,10 @@ void TriggersWindow::DeleteSelection()
 
 void TriggersWindow::CopySelection()
 {
-	if ( currTrigger != NO_TRIGGER && chkd.maps.curr->copyTrigger(currTrigger) )
+	if ( currTrigger != NO_TRIGGER && CM->copyTrigger(currTrigger) )
 	{
 		trigModifyWindow.DestroyThis();
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		int sel;
 		if ( listTriggers.GetCurSel(sel) && CopyTrigListItem(sel) && SelectTrigListItem(sel+1) )
 			listTriggers.RedrawThis();
@@ -175,8 +175,8 @@ void TriggersWindow::MoveUp()
 		 listTriggers.GetItemData(sel-1, prevTrigIndex) )
 	{
 		trigModifyWindow.DestroyThis();
-		chkd.maps.curr->notifyChange(false);
-		if ( chkd.maps.curr->moveTrigger(currTrigger, prevTrigIndex) && MoveUpTrigListItem(sel, prevTrigIndex) )
+		CM->notifyChange(false);
+		if ( CM->moveTrigger(currTrigger, prevTrigIndex) && MoveUpTrigListItem(sel, prevTrigIndex) )
 		{
 			SelectTrigListItem(sel-1);
 			listTriggers.RedrawThis();
@@ -196,8 +196,8 @@ void TriggersWindow::MoveDown()
 		 listTriggers.GetItemData(sel+1, nextTrigIndex) )
 	{
 		trigModifyWindow.DestroyThis();
-		chkd.maps.curr->notifyChange(false);
-		if ( chkd.maps.curr->moveTrigger(currTrigger, nextTrigIndex) && MoveDownTrigListItem(sel, nextTrigIndex) )
+		CM->notifyChange(false);
+		if ( CM->moveTrigger(currTrigger, nextTrigIndex) && MoveDownTrigListItem(sel, nextTrigIndex) )
 		{
 			SelectTrigListItem(sel+1);
 			listTriggers.RedrawThis();
@@ -216,11 +216,11 @@ void TriggersWindow::MoveTrigTo()
 		 MoveToDialog<u32>::GetIndex(targetTrigIndex, getHandle()) &&
 		 targetTrigIndex >= 0 &&
 		 targetTrigIndex != currTrigger &&
-		 targetTrigIndex < chkd.maps.curr->numTriggers() )
+		 targetTrigIndex < CM->numTriggers() )
 	{
 		trigModifyWindow.DestroyThis();
-		chkd.maps.curr->notifyChange(false);
-		if ( chkd.maps.curr->moveTrigger(currTrigger, targetTrigIndex) )
+		CM->notifyChange(false);
+		if ( CM->moveTrigger(currTrigger, targetTrigIndex) )
 		{
 			int listIndexMovedTo = -1;
 			listTriggers.SetRedraw(false);
@@ -261,18 +261,18 @@ void TriggersWindow::ButtonNew()
 		if ( listTriggers.GetItemData(sel, newTrigId) )
 		{
 			newTrigId ++;
-			insertedTrigger = chkd.maps.curr->insertTrigger(newTrigId, trigger);
+			insertedTrigger = CM->insertTrigger(newTrigId, trigger);
 		}
 	}
-	else if ( chkd.maps.curr->addTrigger(trigger) )
+	else if ( CM->addTrigger(trigger) )
 	{
 		insertedTrigger = true;
-		newTrigId = chkd.maps.curr->numTriggers()-1;
+		newTrigId = CM->numTriggers()-1;
 	}
 
 	if ( insertedTrigger )
 	{
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		currTrigger = newTrigId;
 		RefreshWindow(true);
 		ButtonModify();
@@ -751,19 +751,18 @@ void TriggersWindow::RefreshGroupList()
 	listGroups.SetRedraw(false);
 	listGroups.ClearItems();
 
-	ScenarioPtr chk = chkd.maps.curr;
 	u8 firstNotFound = 0;
 	bool addedPlayer[NUM_TRIG_PLAYERS];
 	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
 		addedPlayer[i] = false;
 
-	if ( chk != nullptr && chk->TRIG().exists() )
+	if ( CM != nullptr && CM->TRIG().exists() )
 	{
 		Trigger* trigger;
-		u32 numTriggers = chk->numTriggers();
+		u32 numTriggers = CM->numTriggers();
 		for ( u32 i=0; i<numTriggers; i++ )
 		{
-			if ( chk->getTrigger(trigger, i) )
+			if ( CM->getTrigger(trigger, i) )
 			{
 				for ( u8 player=firstNotFound; player<NUM_TRIG_PLAYERS; player++ )
 				{
@@ -822,14 +821,13 @@ void TriggersWindow::RefreshTrigList()
 	numVisibleTrigs = 0;
 	int toSelect = -1;
 
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( chk != nullptr && chk->TRIG().exists() )
+	if ( CM != nullptr && CM->TRIG().exists() )
 	{
 		Trigger* trigger;
-		u32 numTriggers = chk->numTriggers();
+		u32 numTriggers = CM->numTriggers();
 		for ( u32 i=0; i<numTriggers; i++ )
 		{
-			if ( chk->getTrigger(trigger, i) && ShowTrigger(trigger) )
+			if ( CM->getTrigger(trigger, i) && ShowTrigger(trigger) )
 			{
 				int newListIndex = listTriggers.AddItem(i);
 				if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
@@ -1296,7 +1294,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
 			if ( this != nullptr )
 			{
-				textTrigGenerator.LoadScenario(chkd.maps.curr);
+				textTrigGenerator.LoadScenario(CM);
 				trigListDC = listTriggers.getDC();
 			}
 			break;
@@ -1308,8 +1306,8 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				Trigger* trigger;
 				u32 triggerNum = (u32)mis->itemData;
 
-				if ( chkd.maps.curr->getTrigger(trigger, triggerNum) )
-					GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, chkd.maps.curr, triggerNum, trigger);
+				if ( CM->getTrigger(trigger, triggerNum) )
+					GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, CM, triggerNum, trigger);
 				
 				return TRUE;
 			}
@@ -1341,7 +1339,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 
 		case WM_PREDRAWITEMS:
-			textTrigGenerator.LoadScenario(chkd.maps.curr);
+			textTrigGenerator.LoadScenario(CM);
 			drawingAll = true;
 			break;
 
@@ -1349,7 +1347,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 			if ( wParam == LIST_TRIGGERS )
 			{
 				if ( !drawingAll )
-					textTrigGenerator.LoadScenario(chkd.maps.curr);
+					textTrigGenerator.LoadScenario(CM);
 
 				PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
 				bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
@@ -1361,8 +1359,8 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 					Trigger* trigger;
 					u32 triggerNum = (u32)pdis->itemData;
 					
-					if ( chkd.maps.curr != nullptr && chkd.maps.curr->getTrigger(trigger, triggerNum) )
-						DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, chkd.maps.curr, triggerNum, trigger);
+					if ( CM != nullptr && CM->getTrigger(trigger, triggerNum) )
+						DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, CM, triggerNum, trigger);
 				}
 
 				if ( !drawingAll )

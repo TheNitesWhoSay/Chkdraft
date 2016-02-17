@@ -64,7 +64,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
 	refreshing = true;
 	this->trigIndex = trigIndex;
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		std::stringstream ssStats;
 		const char* strTimesExecuted[] = { "Never", "Once", "Twice", "Thrice" };
@@ -81,7 +81,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
 				for ( u8 player=0; player<8; player++ )
 				{
 					u8 playersForce;
-					if ( chkd.maps.curr->getPlayerForce(player, playersForce) && playersForce == force )
+					if ( CM->getPlayerForce(player, playersForce) && playersForce == force )
 						exec[player] ++;
 				}
 			}
@@ -176,7 +176,7 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 {
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		if ( checkId >= CHECK_PLAYER1 && checkId <= CHECK_PLAYER8 )
 		{
@@ -237,10 +237,10 @@ void TrigPlayersWindow::OnLeave()
 void TrigPlayersWindow::ParseRawPlayers()
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		if ( editRawPlayers.GetHexByteString(&trigger->players[0], 28) )
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 		
 		RefreshWindow(trigIndex);
 	}

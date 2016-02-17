@@ -7,31 +7,29 @@ StringUsageTable::StringUsageTable()
 
 bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 {
-	buffer* strings = &chk->STR();
+	/*buffer* strings = &chk->STR();
 	if ( extendedTable )
-		strings = &chk->KSTR();
+		strings = &chk->KSTR();*/
 
-	if ( strings->exists() )
+	if ( chk->hasStrSection(extendedTable) )
 	{
-		u32 currMaxStrings;
-		if ( extendedTable)
-			currMaxStrings = strings->get<u32>(4);
+        u32 currMaxStrings = 0;
+        if ( extendedTable )
+            currMaxStrings = chk->kstrSectionCapacity();
 		else
-			currMaxStrings = chk->numStrSlots();
+			currMaxStrings = chk->strSectionCapacity();
 
 		if ( stringUsed.add<u8>(0, 1+currMaxStrings) ) // Add 1 unused byte and 1 byte for each potential string
 		{
 			stringUsed.replace<u8>(0, 1); // Mark the unused byte as a 'used' string
 
-			buffer& MRGN = chk->MRGN(),
-				  & TRIG = chk->TRIG(),
+			/*buffer& MRGN = chk->MRGN(),
 				  & MBRF = chk->MBRF(),
 				  & SPRP = chk->SPRP(),
-				  & FORC = chk->FORC(),
 				  & WAV	 = chk->WAV (),
 				  & UNIS = chk->UNIS(),
 				  & SWNM = chk->SWNM(),
-				  & UNIx = chk->UNIx();
+				  & UNIx = chk->UNIx();*/
 
 			#define MarkIfOverZero(index)						  \
 				if ( index > 0 )								  \
@@ -44,7 +42,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 
 			// MRGN - location strings
 			ChkLocation* loc;
-			for ( u32 i=0; i<MRGN.size()/CHK_LOCATION_SIZE; i++ )
+			for ( u32 i=0; i<chk->locationCapacity; i++ )
 			{
 				if ( chk->getLocation(loc, u8(i)) )
 					MarkIfOverZero(loc->stringNum);

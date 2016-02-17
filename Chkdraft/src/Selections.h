@@ -2,6 +2,7 @@
 #define SELECTIONS_H
 #include "CommonFiles/CommonFiles.h"
 #include "MappingCore/MappingCore.h"
+class GuiMap;
 
 #define FLAG_SWAPPED BIT_15
 #define FLAG_MOVED BIT_15
@@ -33,12 +34,12 @@ class TileNode
 		TileNode() : value(0), xc(0), yc(0), neighbors(ALL_NEIGHBORS), next(nullptr) { }
 };
 
-class SELECTIONS
+class Selections
 {
 	public:
 
-		SELECTIONS();
-		~SELECTIONS();
+        Selections(GuiMap &map);
+		~Selections();
 
 		void setStartDrag(s32 x, s32 y);
 		void setEndDrag(s32 x, s32 y);
@@ -59,7 +60,7 @@ class SELECTIONS
 
 		u16 getSelectedLocation(); // NO_LOCATION if none are selected
 		void selectLocation(u16 index); // 0-based index, NO_LOCATION to deselect any selected locations
-		void selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canSelectAnywhere); // Based on map click
+		void selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere); // Based on map click
 		void setLocationFlags(u8 flags) { locationFlags = flags; }
 		u8 getLocationFlags() { return locationFlags; }
 		
@@ -91,6 +92,8 @@ class SELECTIONS
 		bool selectionAreaIsNull() { return startDrag.x == -1 && startDrag.y == -1; }
 
 	private:
+
+        GuiMap &map; // Reference to the map who has the selections described in this class
 
 		POINT startDrag;
 		POINT endDrag;

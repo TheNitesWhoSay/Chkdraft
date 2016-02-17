@@ -15,7 +15,7 @@ void PreservedUnitStats::flushStats()
 		delete[] values; values = nullptr;
 }
 
-void PreservedUnitStats::addStats(SELECTIONS &sel, u8 statField)
+void PreservedUnitStats::addStats(Selections &sel, u8 statField)
 {
 	flushStats();
 	field = statField;
@@ -24,14 +24,14 @@ void PreservedUnitStats::addStats(SELECTIONS &sel, u8 statField)
 	try { values = new u32[numUnits]; }
 	catch ( std::bad_alloc ) { flushStats(); return; }
 	ChkUnit* unit;
-	buffer& UNITS = chkd.maps.curr->UNIT();
+	buffer& UNITS = CM->UNIT();
 
 	u32 i = 0;
 	auto &units = sel.getUnits();
 	for ( u16 &unitIndex : units )
 	{
 		u32 pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
-		if ( chkd.maps.curr->getUnit(unit, unitIndex) )
+		if ( CM->getUnit(unit, unitIndex) )
 		{
 			switch ( unitFieldSize[field] )
 			{
@@ -49,12 +49,13 @@ void PreservedUnitStats::convertToUndo()
 	if ( numUnits > 0 && values != nullptr )
 	{
 		// For each selected unit, add the corresponding undo from values
-		buffer& units = chkd.maps.curr->UNIT();
+		buffer& units = CM->UNIT();
 		u32 pos = 0;
 
+        Selections &selections = CM->GetSelections();
 		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
 		u32 i = 0;
-		auto &selUnits = chkd.maps.curr->selections().getUnits();
+		auto &selUnits = selections.getUnits();
 		for ( u16 &unitIndex : selUnits )
 		{
 			pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
@@ -66,7 +67,7 @@ void PreservedUnitStats::convertToUndo()
 			}
 			i++;
 		}
-		chkd.maps.curr->undos().AddUndo(unitChanges);
+        CM->AddUndo(unitChanges);
 	}
 	flushStats();
 }

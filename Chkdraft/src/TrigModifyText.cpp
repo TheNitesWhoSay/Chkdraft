@@ -51,7 +51,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
 	this->trigIndex = trigIndex;
 	TextTrigGenerator textTrigs;
-	if ( textTrigs.GenerateTextTrigs(chkd.maps.curr, trigIndex, trigText) )
+	if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
 		editText.SetText(trigText.c_str());
 	else
 		mb(trigIndex, "Failed to generate text triggers.");
@@ -103,7 +103,7 @@ bool TrigModifyTextWindow::unsavedChanges()
 
 void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		std::string newText;
 		if ( editText.GetEditText(newText) )
@@ -113,8 +113,8 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
 				if ( CompileEditText(newText) )
 				{
 					trigText = newText;
-					chkd.maps.curr->notifyChange(false);
-					chkd.maps.curr->refreshScenario();
+					CM->notifyChange(false);
+					CM->refreshScenario();
 					if ( saveAfter )
 					{
 						if ( chkd.maps.SaveCurr(false) )
@@ -140,13 +140,13 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
 
 bool TrigModifyTextWindow::CompileEditText(std::string &newText)
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		Trigger* trigger;
-		if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+		if ( CM->getTrigger(trigger, trigIndex) )
 		{
 			TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
-			if ( compiler.CompileTrigger(newText, trigger, chkd.maps.curr, chkd.scData) )
+			if ( compiler.CompileTrigger(newText, trigger, CM, chkd.scData) )
 				return true;
 			else
 				MessageBox(NULL, "Compilation failed.", "Error!", MB_OK);

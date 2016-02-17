@@ -6,12 +6,11 @@
 #include <string>
 #include <vector>
 #include <array>
+class GuiMap;
 
 /* Default Draw Order:
 	- Final Tile Data (what MTXM will be)
-	- Units & Sprites, highest YC to lowest YC
-	  in the case of a tie, the highest index
-	  is drawn first. */
+	- Units & Sprites, northmost to southmost, in the case of a tie, the highest index is drawn first. */
 
 typedef std::vector<u32> ChkdBitmap;
 
@@ -58,19 +57,17 @@ class Graphics
 {
 	public:
 
-		Graphics(Scenario &chk) : displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false),
-			clipLocationNames(true), chk(chk) { }
+		Graphics(GuiMap &map, Selections &selections) : map(map), selections(selections),
+            displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true) { }
 
-		void DrawMap( u16 bitWidth, u16 bitHeight,
-					  s32 screenLeft, s32 screenTop,
-					  ChkdBitmap& bitmap, SELECTIONS& selections,
-					  u32 layer, HDC hDC, bool showAnywhere );
+		void DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, u32 layer,
+            HDC hDC, bool showAnywhere);
 
 		void DrawTerrain(ChkdBitmap& bitmap);
 		void DrawTileElevations(ChkdBitmap& bitmap);
 		void DrawGrid(ChkdBitmap& bitmap);
-		void DrawLocations(ChkdBitmap& bitmap, SELECTIONS& selections, bool showAnywhere);
-		void DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections);
+		void DrawLocations(ChkdBitmap& bitmap, bool showAnywhere);
+		void DrawUnits(ChkdBitmap& bitmap);
 		void DrawSprites(ChkdBitmap& bitmap);
 		void DrawLocationNames(HDC hDC);
 		void DrawTileNumbers(HDC hDC);
@@ -97,7 +94,8 @@ class Graphics
 
 	private:
 
-		Scenario &chk; // Pointer to the scenario file this instance of graphics renders
+		GuiMap &map; // Reference to the map this instance of graphics renders
+        Selections &selections; // Reference to the selections belonging to the corresponding map
 
 		bool isValid; // When false, requires complete sprite refresh
 		bool isSorted; // When false, requires sorting before next use
@@ -141,26 +139,26 @@ void TileElevationsToBits(ChkdBitmap& bitmap, u32 &bitWidth, u32 &bitHeight, Til
 						   s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 miniTileSeparation );
 
 void DrawTile( HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
-			   BITMAPINFO &bmi, u8 blueOffset, u8 greenOffset, u8 redOffset );
+			   BITMAPINFO &bmi, u8 redOffset, u8 greenOffset, u8 blueOffset );
 
 void DrawTileNumbers( HDC hDC, bool tileNumsFromMTXM, u32 screenLeft, u32 screenTop,
-					  u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, Scenario &chk );
+					  u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, GuiMap &map );
 
 void DrawTools( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-				SELECTIONS& selections, bool pasting, CLIPBOARD& clipboard, Scenario &chk, u8 layer );
+				Selections& selections, bool pasting, Clipboard& clipboard, GuiMap &map, u8 layer );
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk);
+void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections& selections, GuiMap &map);
 
-void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop, SELECTIONS& selections,
-					    CLIPBOARD& clipboard, Scenario &chk, u8 layer);
+void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections& selections,
+					    Clipboard& clipboard, GuiMap &map, u8 layer);
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, SELECTIONS& selections, Scenario &chk);
+void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections& selections, GuiMap &map);
 
-void DrawSelectingFrame(HDC hDC, SELECTIONS& selections, u32 screenLeft, u32 screenTop, s32 width, s32 height, double scale);
+void DrawSelectingFrame(HDC hDC, Selections& selections, u32 screenLeft, u32 screenTop, s32 width, s32 height, double scale);
 
 void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom);
 
-void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, Scenario &chk);
+void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, GuiMap &map);
 
 void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
 
