@@ -11,8 +11,11 @@ void PreservedUnitStats::flushStats()
 {
 	field = 0;
 	numUnits = 0;
-	if ( values != nullptr )
-		delete[] values; values = nullptr;
+    if ( values != nullptr )
+    {
+        delete[] values;
+        values = nullptr;
+    }
 }
 
 void PreservedUnitStats::addStats(Selections &sel, u8 statField)
@@ -50,15 +53,13 @@ void PreservedUnitStats::convertToUndo()
 	{
 		// For each selected unit, add the corresponding undo from values
 		buffer& units = CM->UNIT();
-		u32 pos = 0;
+		u32 i = 0;
 
         Selections &selections = CM->GetSelections();
 		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-		u32 i = 0;
 		auto &selUnits = selections.getUnits();
 		for ( u16 &unitIndex : selUnits )
 		{
-			pos = ((u32)unitIndex)*UNIT_STRUCT_SIZE + unitFieldLoc[field];
 			switch ( unitFieldSize[field] )
 			{
 				case 1: unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));

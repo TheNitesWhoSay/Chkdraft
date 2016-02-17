@@ -23,11 +23,11 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 		dimLength = (WORD)SendDlgItemMessage(hWnd, IDC_EDIT_WIDTH, EM_LINELENGTH, 0, 0);
 		*((LPWORD)lpszWidth) = dimLength;
-		SendDlgItemMessage(hWnd, IDC_EDIT_WIDTH, EM_GETLINE, 0, (LPARAM)lpszWidth);	lpszWidth[dimLength] = NULL;
+		SendDlgItemMessage(hWnd, IDC_EDIT_WIDTH, EM_GETLINE, 0, (LPARAM)lpszWidth);	lpszWidth[dimLength] = '\0';
 		width = atoi(lpszWidth);
 
 		dimLength = (WORD)SendDlgItemMessage(hWnd, IDC_EDIT_HEIGHT, EM_LINELENGTH, 0, 0);	*((LPWORD)lpszHeight) = dimLength;
-		SendDlgItemMessage(hWnd, IDC_EDIT_HEIGHT, EM_GETLINE, 0, (LPARAM)lpszHeight);	lpszHeight[dimLength] = NULL;
+		SendDlgItemMessage(hWnd, IDC_EDIT_HEIGHT, EM_GETLINE, 0, (LPARAM)lpszHeight);	lpszHeight[dimLength] = '\0';
 		height = atoi(lpszHeight);
 
 		tileset = SendDlgItemMessage(hWnd, IDC_LIST_TILESET, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0);
@@ -93,43 +93,43 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				{
 				case TERRAIN_BADLANDS: // Badlands
 					for (auto initTerrain : badlandsInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_SPACE: // Space Platform
 					for (auto initTerrain : spaceInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_INSTALLATION: // Installation
 					for (auto initTerrain : installInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 					break;
 				case TERRAIN_ASH: // Ash World
 					for (auto initTerrain : ashInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_JUNGLE: // Jungle World
 					for (auto initTerrain : jungInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_DESERT: // Desert World
 					for (auto initTerrain : desertInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_ICE: // Ice World
 					for (auto initTerrain : iceInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				case TERRAIN_TWILIGHT: // Twilight World
 					for (auto initTerrain : twilightInitTerrain)
-						SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)initTerrain.c_str());
+						SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					break;
 				}
@@ -164,7 +164,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							"Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
 							"Melee with observers (6 players)", "Melee with observers (7 players)"};
 						for ( int i=0; i<8; i++ )
-							SendMessage(hDefaultTrigs, CB_ADDSTRING, NULL, (LPARAM)defaultTriggerTitles[i]);
+							SendMessage(hDefaultTrigs, CB_ADDSTRING, 0, (LPARAM)defaultTriggerTitles[i]);
 					SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 					SendMessage(hDefaultTrigs, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 
@@ -178,13 +178,13 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 				HWND hTileset = GetDlgItem(hWnd, IDC_LIST_TILESET);
 				for (auto tileset : tilesetNames)
-					SendMessage(hTileset, LB_ADDSTRING, NULL, (LPARAM)tileset.c_str());
+					SendMessage(hTileset, LB_ADDSTRING, 0, (LPARAM)tileset.c_str());
 				SendMessage(hTileset, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				SendMessage(hTileset, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 
 				HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
 				for (auto terrain : badlandsInitTerrain)
-					SendMessage(hInitialTerrain, LB_ADDSTRING, NULL, (LPARAM)terrain.c_str());
+					SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)terrain.c_str());
 				SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				SendMessage(hInitialTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
 				return TRUE;

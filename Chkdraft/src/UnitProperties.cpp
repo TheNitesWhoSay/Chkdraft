@@ -55,34 +55,34 @@ bool UnitWindow::CreateSubWindows(HWND hWnd)
 		 hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER),
 		 hID = GetDlgItem(hWnd, IDC_EDIT_ID);
 
-	char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
+	const char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
 							  "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
 	for ( int i=0; i<12; i++ )
 		SendMessage(hPlayer, CB_ADDSTRING, 0, (LPARAM)playerStrings[i]);
-	SendMessage(hPlayer, CB_LIMITTEXT, 0, NULL);
+	SendMessage(hPlayer, CB_LIMITTEXT, 0, 0);
 
 	HWND hBuddy[6];
 	const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
 							  IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
 	for ( int i=0; i<6; i++ )
 	{
-		hBuddy[i] = CreateWindowExA(NULL, UPDOWN_CLASS, NULL,
+		hBuddy[i] = CreateWindowExA(0, UPDOWN_CLASS, NULL,
 									WS_CHILDWINDOW|WS_VISIBLE|WS_DISABLED|
 									UDS_SETBUDDYINT|UDS_ALIGNRIGHT|UDS_ARROWKEYS|UDS_HOTTRACK,
 									0, 0, 0, 0,
 									hWnd, (HMENU)buddyIds[i], NULL, NULL);
 	}
-	SendMessage(hBuddy[0], UDM_SETBUDDY, (WPARAM)hHP, NULL);
+	SendMessage(hBuddy[0], UDM_SETBUDDY, (WPARAM)hHP, 0);
 	SendMessage(hBuddy[0], UDM_SETRANGE32, 0, 100);
-	SendMessage(hBuddy[1], UDM_SETBUDDY, (WPARAM)hMP, NULL);
+	SendMessage(hBuddy[1], UDM_SETBUDDY, (WPARAM)hMP, 0);
 	SendMessage(hBuddy[1], UDM_SETRANGE32, 0, 100);
-	SendMessage(hBuddy[2], UDM_SETBUDDY, (WPARAM)hShield, NULL);
+	SendMessage(hBuddy[2], UDM_SETBUDDY, (WPARAM)hShield, 0);
 	SendMessage(hBuddy[2], UDM_SETRANGE32, 0, 100);
-	SendMessage(hBuddy[3], UDM_SETBUDDY, (WPARAM)hResources, NULL);
+	SendMessage(hBuddy[3], UDM_SETBUDDY, (WPARAM)hResources, 0);
 	SendMessage(hBuddy[3], UDM_SETRANGE32, 0, 50000);
-	SendMessage(hBuddy[4], UDM_SETBUDDY, (WPARAM)hHanger, NULL);
+	SendMessage(hBuddy[4], UDM_SETBUDDY, (WPARAM)hHanger, 0);
 	SendMessage(hBuddy[4], UDM_SETRANGE32, 0, 8);
-	SendMessage(hBuddy[5], UDM_SETBUDDY, (WPARAM)hID, NULL);
+	SendMessage(hBuddy[5], UDM_SETBUDDY, (WPARAM)hID, 0);
 	SendMessage(hBuddy[5], UDM_SETRANGE32, 0, 65535);
 
 	listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, IDC_UNITLIST);
@@ -287,7 +287,7 @@ void UnitWindow::EnableUnitEditing(HWND hWnd)
 	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
 	{
 		hItem = GetDlgItem(hWnd, checkBoxes[i]);
-		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, 0);
 		EnableWindow(hItem, TRUE);
 	}
 }
@@ -297,7 +297,7 @@ void UnitWindow::DisableUnitEditing(HWND hWnd)
 	SetWindowText(hWnd, "");
 
 	HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
-	SendMessage(hItem, CB_SETCURSEL, -1, NULL);
+	SendMessage(hItem, CB_SETCURSEL, -1, 0);
 	EnableWindow(hItem, FALSE);
 
 	const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
@@ -330,7 +330,7 @@ void UnitWindow::DisableUnitEditing(HWND hWnd)
 	for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
 	{
 		hItem = GetDlgItem(hWnd, checkBoxes[i]);
-		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, NULL);
+		SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, 0);
 		EnableWindow(hItem, FALSE);
 	}
 }
@@ -347,7 +347,7 @@ void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit* unit)
 		 hXc	   = GetDlgItem(hWnd, IDC_EDIT_XC			), hYc	   = GetDlgItem(hWnd, IDC_EDIT_YC		  );
 
 	if ( unit->owner < 12 )
-		SendMessage(hPlayer, CB_SETCURSEL, unit->owner, NULL);
+		SendMessage(hPlayer, CB_SETCURSEL, unit->owner, 0);
 	else
 		SetWindowText(hPlayer, std::to_string(unit->owner + 1).c_str());
 
@@ -360,11 +360,11 @@ void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit* unit)
 	SetWindowText(hXc, std::to_string(unit->xc).c_str());
 	SetWindowText(hYc, std::to_string(unit->yc).c_str());
 
-	SendMessage(hInvinc, BM_SETCHECK, unit->stateFlags&UNIT_STATE_INVINCIBLE  , NULL);
-	SendMessage(hHallu , BM_SETCHECK, unit->stateFlags&UNIT_STATE_HALLUCINATED, NULL);
-	SendMessage(hBurrow, BM_SETCHECK, unit->stateFlags&UNIT_STATE_BURROWED	  , NULL);
-	SendMessage(hCloak , BM_SETCHECK, unit->stateFlags&UNIT_STATE_CLOAKED	  , NULL);
-	SendMessage(hLifted, BM_SETCHECK, unit->stateFlags&UNIT_STATE_LIFTED	  , NULL);
+	SendMessage(hInvinc, BM_SETCHECK, unit->stateFlags&UNIT_STATE_INVINCIBLE  , 0);
+	SendMessage(hHallu , BM_SETCHECK, unit->stateFlags&UNIT_STATE_HALLUCINATED, 0);
+	SendMessage(hBurrow, BM_SETCHECK, unit->stateFlags&UNIT_STATE_BURROWED	  , 0);
+	SendMessage(hCloak , BM_SETCHECK, unit->stateFlags&UNIT_STATE_CLOAKED	  , 0);
+	SendMessage(hLifted, BM_SETCHECK, unit->stateFlags&UNIT_STATE_LIFTED	  , 0);
 	initilizing = false;
 }
 
@@ -549,7 +549,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		break;
 		case CBN_SELCHANGE:
 		{
-			u8 newPlayer = (u8)SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			u8 newPlayer = (u8)SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
 			if ( newPlayer != CB_ERR )
 				ChangeCurrOwner(newPlayer);
 		}
@@ -736,7 +736,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( MoveToDialog<u32>::GetIndex(unitMoveTo, hWnd) && unitMoveTo < u32(CM->numUnits()) )
 		{
 			if ( unitMoveTo == 0 )
-				return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), NULL);
+				return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), 0);
 			else if ( unitMoveTo > 0 )
 			{
 				Selections &selections = CM->GetSelections();
@@ -744,7 +744,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				u16 limit = CM->numUnits() - 1;
 
 				if ( unitMoveTo + numUnitsSelected > limit )
-					return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), NULL);
+					return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), 0);
 				else
 				{
 					buffer& UNIT = CM->UNIT();
@@ -802,7 +802,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		Selections& selections = CM->GetSelections();
 		HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-		SendMessage(hUnitList, WM_SETREDRAW, FALSE, NULL);
+		SendMessage(hUnitList, WM_SETREDRAW, FALSE, 0);
 		std::shared_ptr<ReversibleActions> unitDeletes(new ReversibleActions);
 		while ( selections.hasUnits() )
 		{
@@ -824,7 +824,7 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		}
 		CM->AddUndo(unitDeletes);
 		CM->Redraw(true);
-		SendMessage(hUnitList, WM_SETREDRAW, TRUE, NULL);
+		SendMessage(hUnitList, WM_SETREDRAW, TRUE, 0);
 	}
 	break;
 	default:
@@ -843,9 +843,9 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( CM->getUnit(unit, unitIndex) )
 					{
 						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
-						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
+						if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_INVINCIBLE;
-						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+						else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_INVINCIBLE;
 					}
 				}
@@ -862,9 +862,9 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( CM->getUnit(unit, unitIndex) )
 					{
 						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
-						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
+						if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_HALLUCINATED;
-						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+						else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_HALLUCINATED;
 					}
 				}
@@ -881,9 +881,9 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( CM->getUnit(unit, unitIndex) )
 					{
 						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
-						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
+						if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_BURROWED;
-						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+						else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_BURROWED;
 					}
 				}
@@ -900,9 +900,9 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( CM->getUnit(unit, unitIndex) )
 					{
 						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
-						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
+						if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_CLOAKED;
-						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+						else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_CLOAKED;
 					}
 				}
@@ -919,9 +919,9 @@ BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( CM->getUnit(unit, unitIndex) )
 					{
 						unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_STATEFLAGS, unit->stateFlags)));
-						if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED )
+						if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
 							unit->stateFlags |= UNIT_STATE_LIFTED; // Check lifted state
-						else if ( SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+						else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 							unit->stateFlags ^= UNIT_STATE_LIFTED; // Uncheck lifted state
 					}
 				}
@@ -1154,7 +1154,7 @@ BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				case VK_RETURN:
 					{
 						HWND hClose = GetDlgItem(hWnd, IDCLOSE);
-						BOOL closeSelected = SendMessage(hClose, BM_GETSTATE, NULL, NULL) & BST_PUSHED;
+						BOOL closeSelected = SendMessage(hClose, BM_GETSTATE, 0, 0) & BST_PUSHED;
 					}
 					break;
 			}

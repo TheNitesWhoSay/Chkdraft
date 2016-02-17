@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-m32 -fleading-underscore -g -std=gnu++11 -Isrc -ISFmpq -fpermissive -DDEBUG -D_DEBUG -DMINGW_HAS_SECURE_API -DCHKDRAFT -DCHKD_DEBUG -DNOMINMAX -DCRT_SECURE_NO_WARNINGS
 
-LDFLAGS=-m32 -mwindows -L. -LSFmpq -Lsrc/MappingCore
+LDFLAGS=-m32 -static -mwindows -L. -LSFmpq  -Lsrc/MappingCore
 LIBS=resource.o -lcomdlg32 -lcomctl32 -lSFmpq
 SOURCES=src/ChangePassword.cpp \
 src/ChkdPlugins.cpp \
@@ -117,12 +117,13 @@ src/WindowsUI/WindowMenu.cpp \
 src/WindowsUI/WindowsItem.cpp 
 
 OBJECTS=$(subst src/,build/,$(SOURCES:.cpp=.o))
+DEPS=$(OUTDIR)/SFmpq.dll 
 OUTDIR=bin
 EXECUTABLE=$(OUTDIR)/chkdraft.exe
 
 all: $(SOURCES) $(EXECUTABLE)
 	
-$(EXECUTABLE): $(OBJECTS) $(OUTDIR)/SFmpq.dll 
+$(EXECUTABLE): $(OBJECTS) $(DEPS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 $(OUTDIR)/SFmpq.dll:
@@ -134,4 +135,4 @@ build/%.o: src/%.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(OBJECTS) $(EXECUTABLE)
+	rm -f $(OBJECTS) $(EXECUTABLE) $(DEPS)

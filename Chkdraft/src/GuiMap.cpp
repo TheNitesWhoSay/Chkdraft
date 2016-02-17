@@ -527,7 +527,7 @@ void GuiMap::deleteSelection()
 			case LAYER_UNITS:
 				{
 					if ( chkd.unitWindow.getHandle() != nullptr )
-						SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), NULL);
+						SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
 					else
 					{
 						ReversibleActionsPtr deletes(new ReversibleActions);
@@ -615,7 +615,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
             std::string text;
             HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
             if ( newPlayer < 12 )
-                SendMessage(hOwner, CB_SETCURSEL, newPlayer, NULL);
+                SendMessage(hOwner, CB_SETCURSEL, newPlayer, 0);
             else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
                 SetWindowText(hOwner, text.c_str());
 
@@ -1503,7 +1503,7 @@ LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
 	chkd.maps.CloseMap(hWnd);
 	RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
-	return ClassWindow::WndProc(hWnd, WM_DESTROY, NULL, NULL);
+	return ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
 }
 
 void GuiMap::RButtonUp()
@@ -2077,7 +2077,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 {
 	if ( CanExit() )
-		return ClassWindow::WndProc(hWnd, WM_CLOSE, NULL, NULL);
+		return ClassWindow::WndProc(hWnd, WM_CLOSE, 0, 0);
 	else
 		return 0;
 }

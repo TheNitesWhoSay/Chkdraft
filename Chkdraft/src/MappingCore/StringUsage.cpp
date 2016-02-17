@@ -23,13 +23,13 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 		{
 			stringUsed.replace<u8>(0, 1); // Mark the unused byte as a 'used' string
 
-			/*buffer& MRGN = chk->MRGN(),
+			buffer& MRGN = chk->MRGN(),
 				  & MBRF = chk->MBRF(),
 				  & SPRP = chk->SPRP(),
 				  & WAV	 = chk->WAV (),
 				  & UNIS = chk->UNIS(),
 				  & SWNM = chk->SWNM(),
-				  & UNIx = chk->UNIx();*/
+				  & UNIx = chk->UNIx();
 
 			#define MarkIfOverZero(index)						  \
 				if ( index > 0 )								  \
@@ -42,7 +42,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 
 			// MRGN - location strings
 			ChkLocation* loc;
-			for ( u32 i=0; i<chk->locationCapacity; i++ )
+			for ( u32 i=0; i<chk->locationCapacity(); i++ )
 			{
 				if ( chk->getLocation(loc, u8(i)) )
 					MarkIfOverZero(loc->stringNum);

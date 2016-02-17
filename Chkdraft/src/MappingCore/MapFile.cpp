@@ -111,7 +111,7 @@ bool MapFile::SaveFile(bool SaveAs)
 					if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
 					{
 						BOOL addedFile = MpqAddFileToArchive(hMpq, "chk.tmp", "staredit\\scenario.chk", MAFA_COMPRESS | MAFA_REPLACE_EXISTING);
-						MpqCloseUpdatedArchive(hMpq, NULL);
+						MpqCloseUpdatedArchive(hMpq, 0);
 
 						if ( addedFile == TRUE )
 						{
@@ -191,7 +191,7 @@ bool MapFile::OpenFile()
 				if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
 				{
 					FileToBuffer(hMpq, "staredit\\scenario.chk", chk);
-					MpqCloseUpdatedArchive(hMpq, NULL);
+					MpqCloseUpdatedArchive(hMpq, 0);
 
 					if ( chk.size() > 0 && ParseScenario(chk) )
 					{

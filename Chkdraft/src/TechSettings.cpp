@@ -36,8 +36,8 @@ bool TechSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TechSettings", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "TechSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
+	if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "TechSettings", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "TechSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -251,7 +251,7 @@ void TechSettingsWindow::EnableTechEditing()
 	for ( int i=0; i<12; i++ )
 	{
 		checkUsePlayerDefaults[i].EnableThis();
-		if ( SendMessage(checkUsePlayerDefaults[i].getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+		if ( SendMessage(checkUsePlayerDefaults[i].getHandle(), BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 			dropPlayerTechSettings[i].EnableThis();
 	}
 	isDisabled = false;
@@ -350,7 +350,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		case CHECK_DEFAULTTECHCOSTS:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 )
 			{
-				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+				LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 				if ( state == BST_CHECKED )
 				{
 					ClearDefaultTechCosts();
@@ -418,7 +418,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			break;
 		case RADIO_DEFAULTDISABLED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
+				SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
 				CM->setTechDefaultAvailability((u8)selectedTech, false) )
 			{
 				CM->setTechDefaultResearched((u8)selectedTech, false);
@@ -428,7 +428,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			break;
 		case RADIO_DEFAULTENABLED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
+				SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
 				CM->setTechDefaultAvailability((u8)selectedTech, true) )
 			{
 				CM->setTechDefaultResearched((u8)selectedTech, false);
@@ -438,7 +438,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			break;
 		case RADIO_DEFAULTRESEARCHED:
 			if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-				SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED &&
+				SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
 				CM->setTechDefaultResearched((u8)selectedTech, true) )
 			{
 				CM->setTechDefaultAvailability((u8)selectedTech, true);
@@ -451,7 +451,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				LOWORD(wParam) >= CHECK_P1TECHDEFAULT && LOWORD(wParam) <= CHECK_P12TECHDEFAULT )
 			{
 				u8 player = (u8)(LOWORD(wParam) - CHECK_P1TECHDEFAULT);
-				bool useDefault = (SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL) == BST_CHECKED);
+				bool useDefault = (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED);
 				if ( useDefault )
 					dropPlayerTechSettings[player].DisableThis();
 				else

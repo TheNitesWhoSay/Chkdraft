@@ -27,8 +27,8 @@ bool TrigConditionsWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TrigConditions", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "TrigConditions", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "TrigConditions", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "TrigConditions", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{
@@ -462,7 +462,7 @@ int TrigConditionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 void TrigConditionsWindow::PreDrawItems()
 {
 	HDC hDC = GetDC(getHandle());
-	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, NULL);
+	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
 	ReleaseDC(hDC);
 	hBlack = CreateSolidBrush(RGB(0, 0, 0));
 }

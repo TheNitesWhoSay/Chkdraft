@@ -111,7 +111,7 @@ template bool EditControl::SetEditBinaryNum<int>(int num);
 
 void EditControl::MaximizeTextLimit()
 {
-	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, NULL);
+	SendMessage(getHandle(), EM_SETLIMITTEXT, 0x7FFFFFFE, 0);
 }
 
 void EditControl::ExpandToText()

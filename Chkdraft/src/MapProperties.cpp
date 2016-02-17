@@ -55,8 +55,8 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "MapProperties", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
+	if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "MapProperties", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "MapProperties", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		refreshing = true;
 		HWND hMapProperties = getHandle();
@@ -205,7 +205,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		if ( HIWORD(wParam) == BN_CLICKED )
 		{
-			LRESULT newTileset = SendMessage(GetDlgItem(hWnd, CB_MAPTILESET), CB_GETCURSEL, NULL, NULL);
+            LRESULT newTileset = SendMessage(GetDlgItem(hWnd, CB_MAPTILESET), CB_GETCURSEL, 0, 0);
 			CM->setTileset((u16)newTileset);
 			u16 newWidth, newHeight;
 			if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
@@ -223,17 +223,17 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( HIWORD(wParam) == CBN_SELCHANGE )
 		{
 			HWND hMapTileset = GetDlgItem(hWnd, CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, CB_NEWMAPTERRAIN);
-			LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, NULL, NULL);
+			LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, 0, 0);
 			if ( currTileset != CB_ERR && currTileset < (LRESULT)tilesetNames.size())
 			{
-				while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, NULL) != CB_ERR );
+				while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, 0) != CB_ERR );
 
 				for ( auto tileset : initTerrains.at(currTileset) )
-					SendMessage(hMapNewTerrain, CB_ADDSTRING, NULL, (LPARAM)tileset.c_str());
+					SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)tileset.c_str());
 
 				SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-				SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, NULL);
-				PostMessage(hMapNewTerrain, CB_SETEDITSEL, NULL, (-1, 0));
+				SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, 0);
+				PostMessage(hMapNewTerrain, CB_SETEDITSEL, 0, MAKELPARAM(-1, 0));
 			}
 		}
 		break;
@@ -244,7 +244,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		{
 			u32 player = LOWORD(wParam) - CB_P1OWNER; // 0 based player
 			u8 newOwner = 0;
-			LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
 			if ( player >= 0 && player < 12 && sel != CB_ERR )
 			{
 				switch ( sel )
@@ -270,7 +270,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		if ( HIWORD(wParam) == CBN_SELCHANGE )
 		{
 			u32 player = LOWORD(wParam) - CB_P1RACE; // 0 based player
-			LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
 			if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
 			{
 				CM->setPlayerRace((u8)player, (u8)newRace);
@@ -286,7 +286,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		case CBN_SELCHANGE:
 		{
 			u32 player = LOWORD(wParam) - CB_P1COLOR; // 0 based player
-			LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, NULL, NULL);
+			LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
 			if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
 			{
 				if ( CM->setPlayerColor((u8)player, (u8)newColor) )

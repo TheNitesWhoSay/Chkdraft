@@ -188,7 +188,7 @@ void Maps::CloseMap(HWND hMap)
 
 void Maps::CloseActive()
 {
-	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), NULL);
+	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
 }
 
 void Maps::UpdateTreeView()
@@ -285,7 +285,6 @@ void Maps::ChangePlayer(u8 newPlayer)
 		}
 
 		u16 numUnits = currentlyActiveMap->numUnits();
-
         currentlyActiveMap->PlayerChanged(newPlayer);
 	}
 
@@ -468,8 +467,8 @@ void Maps::updateCursor(s32 xc, s32 yc)
 						currCursor = &weCursor;
 						SetCursor(weCursor);
 					} // Invariant: is on a corner
-					else if ( xc < leftInnerBound && yc < topInnerBound ||
-						      xc > rightInnerBound && yc > bottomInnerBound )
+					else if ( ( xc < leftInnerBound && yc < topInnerBound ) ||
+						      ( xc > rightInnerBound && yc > bottomInnerBound ) )
 					{
 						currCursor = &nwseCursor;
 						SetCursor(nwseCursor);

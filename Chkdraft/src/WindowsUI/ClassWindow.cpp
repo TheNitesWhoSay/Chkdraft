@@ -92,8 +92,8 @@ LRESULT ClassWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 	{
 	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
 	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
+	default: return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
 	}
-	return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
 }
 
 void ClassWindow::NotifyTreeSelChanged(LPARAM newValue)
@@ -132,8 +132,8 @@ LRESULT ClassWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_COMMAND, wParam, lParam); break;
 	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_COMMAND, wParam, lParam); break;
+	default: return DefWindowProc(hWnd, WM_COMMAND, wParam, lParam);
 	}
-	return DefWindowProc(hWnd, WM_COMMAND, wParam, lParam);
 }
 
 LRESULT ClassWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -142,8 +142,8 @@ LRESULT ClassWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, msg, wParam, lParam); break;
 	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
+	default: return DefWindowProc(hWnd, msg, wParam, lParam);
 	}
-	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -157,8 +157,7 @@ LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 		else
 			return FALSE;
 	}
-	else
-		return DefWindowProc(hWnd, msg, wParam, lParam);
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK ClassWindow::SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -172,8 +171,7 @@ LRESULT CALLBACK ClassWindow::SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wPar
 		else
 			return FALSE;
 	}
-	else
-		return DefMDIChildProc(hWnd, msg, wParam, lParam);
+	return DefMDIChildProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

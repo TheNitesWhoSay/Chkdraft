@@ -53,8 +53,8 @@ bool UnitSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "UnitSettings", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "UnitSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
+	if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "UnitSettings", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "UnitSettings", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		CreateSubWindows(getHandle());
 		return true;
@@ -398,7 +398,7 @@ void UnitSettingsWindow::EnableUnitProperties()
 	groupUnitName.EnableThis();
 	checkUseDefaultName.EnableThis();
 
-	if ( SendMessage((HWND)checkUseDefaultName.getHandle(), BM_GETCHECK, NULL, NULL) == BST_UNCHECKED )
+	if ( SendMessage((HWND)checkUseDefaultName.getHandle(), BM_GETCHECK, 0, 0) == BST_UNCHECKED )
 		editUnitName.EnableThis();
 }
 
@@ -578,7 +578,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case CHECK_USEUNITDEFAULTS:
 		if ( HIWORD(wParam) == BN_CLICKED )
 		{
-			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 			if ( selectedUnit != -1 )
 			{
 				if ( state == BST_CHECKED )
@@ -604,7 +604,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case CHECK_USEDEFAULTUNITNAME:
 		if ( HIWORD(wParam) == BN_CLICKED )
 		{
-			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 			if ( selectedUnit != -1 )
 			{
 				if ( state == BST_CHECKED )
@@ -628,7 +628,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case CHECK_ENABLEDBYDEFAULT:
 		if ( HIWORD(wParam) == BN_CLICKED )
 		{
-			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+			LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 			if ( selectedUnit != -1 )
 			{
 				CM->setUnitEnabled((u16)selectedUnit, state == BST_CHECKED);

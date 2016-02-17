@@ -46,7 +46,7 @@ Scenario* Scenario::scenario()
 
 bool Scenario::isExpansion()
 {
-	return VER()get<u16>(0) >= 63;
+	return ver->get<u16>(0) >= 63;
 }
 
 buffer& Scenario::unitSettings()
@@ -730,7 +730,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 
 bool Scenario::isExtendedString(u32 stringNum)
 {
-	return stringNum >= numStrSlots() &&
+	return stringNum >= strSectionCapacity() &&
 		   stringNum < 65536 &&
 		   KSTR().exists() &&
 		   (u32(65536-stringNum)) <= KSTR().get<u32>(4);
@@ -740,7 +740,7 @@ bool Scenario::stringExists(u32 stringNum)
 {
 	return isExtendedString(stringNum) ||
 		   ( STR().exists() &&
-		     stringNum < numStrSlots() );
+		     stringNum < strSectionCapacity() );
 }
 
 bool Scenario::stringExists(const RawString &str, u32& stringNum)
@@ -2172,12 +2172,12 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 {
 	std::hash<std::string> strHash;
 	std::unordered_multimap<u32, StringTableNode> stringSearchTable;
-	strList.reserve(strList.size()+numCombinedStringSlots());
+	strList.reserve(strList.size()+stringCapacity());
 	StringTableNode node;
 	int numMatching = 0;
 	u32 hash = 0;
-	u32 standardNumStrings = numStrSlots();
-	u32 extendedNumStrings = numKstrSlots();
+	u32 standardNumStrings = strSectionCapacity();
+	u32 extendedNumStrings = kstrSectionCapacity();
 
 	#define AddStrIfOverZero(index)														\
 		if ( index > 0 &&																\
@@ -2266,7 +2266,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	{
 		for ( auto &str : strList )
 		{
-			if ( str.stringNum >= numStrSlots() )
+			if ( str.stringNum >= strSectionCapacity() )
 				str.stringNum = 65536 - str.stringNum;
 		}
 	}
@@ -2277,9 +2277,9 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	// Decide what the max strings should be
 	u32 prevNumStrings;
 	if ( extendedTable )
-		prevNumStrings = numKstrSlots();
+		prevNumStrings = kstrSectionCapacity();
 	else
-		prevNumStrings = numStrSlots();
+		prevNumStrings = strSectionCapacity();
 
 	u32 numStrs = 0;
 	if ( strList.size() > 0 )

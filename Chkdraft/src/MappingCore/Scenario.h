@@ -313,7 +313,7 @@ class Scenario
 					/** Referances to section buffers used by Chkdraft. All buffer methods are
 						safe to call whether or not the map/buffer exists, though you should
 						check that they exist at some point to match the user expectations. */
-					/*buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
+					buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
 					buffer& VCOD();	buffer& IOWN();	buffer& OWNR();	buffer& ERA ();
 					buffer& DIM ();	buffer& SIDE();	buffer& MTXM();	buffer& PUNI();
 					buffer& UPGR();	buffer& PTEC();	buffer& UNIT();	buffer& ISOM();
@@ -322,7 +322,7 @@ class Scenario
 					buffer& TRIG();	buffer& MBRF();	buffer& SPRP();	buffer& FORC();
 					buffer& WAV ();	buffer& UNIS();	buffer& UPGS();	buffer& TECS();
 					buffer& SWNM();	buffer& COLR();	buffer& PUPx();	buffer& PTEx();
-					buffer& UNIx();	buffer& UPGx();	buffer& TECx();*/
+					buffer& UNIx();	buffer& UPGx();	buffer& TECx();
 
 					// Extended sections
 					buffer& KSTR();

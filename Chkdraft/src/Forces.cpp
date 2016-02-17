@@ -38,8 +38,8 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
 
-	if ( ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
+	if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
 	{
 		HWND hForces = getHandle();
 		textAboutForces.CreateThis(hForces, 5, 10, 587, 20,
@@ -98,21 +98,21 @@ void ForcesWindow::RefreshWindow()
 			CM->getForceInfo(force, allied, vision, random, av);
 
 			SetWindowText(GetDlgItem(hWnd, EDIT_F1NAME+force), forceName.c_str());
-			if ( allied ) SendMessage(GetDlgItem(hWnd, CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , NULL);
-			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-			if ( vision ) SendMessage(GetDlgItem(hWnd, CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , NULL);
-			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1VISION+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-			if ( random ) SendMessage(GetDlgItem(hWnd, CHECK_F1RANDOM+force), BM_SETCHECK, BST_CHECKED  , NULL);
-			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1RANDOM+force), BM_SETCHECK, BST_UNCHECKED, NULL);
-			if ( av		) SendMessage(GetDlgItem(hWnd, CHECK_F1AV	 +force), BM_SETCHECK, BST_CHECKED  , NULL);
-			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1AV	 +force), BM_SETCHECK, BST_UNCHECKED, NULL);
+			if ( allied ) SendMessage(GetDlgItem(hWnd, CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , 0);
+			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, 0);
+			if ( vision ) SendMessage(GetDlgItem(hWnd, CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , 0);
+			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1VISION+force), BM_SETCHECK, BST_UNCHECKED, 0);
+			if ( random ) SendMessage(GetDlgItem(hWnd, CHECK_F1RANDOM+force), BM_SETCHECK, BST_CHECKED  , 0);
+			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1RANDOM+force), BM_SETCHECK, BST_UNCHECKED, 0);
+			if ( av		) SendMessage(GetDlgItem(hWnd, CHECK_F1AV	 +force), BM_SETCHECK, BST_CHECKED  , 0);
+			else		  SendMessage(GetDlgItem(hWnd, CHECK_F1AV	 +force), BM_SETCHECK, BST_UNCHECKED, 0);
 		}
 
 		for ( int i=0; i<4; i++ )
 		{
 			HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+i);
 			if ( hListBox != NULL )
-				while ( SendMessage(hListBox, LB_DELETESTRING, 0, NULL) != LB_ERR );
+				while ( SendMessage(hListBox, LB_DELETESTRING, 0, 0) != LB_ERR );
 		}
 
 		for ( int player=0; player<8; player++ )
@@ -127,7 +127,7 @@ void ForcesWindow::RefreshWindow()
 						 << playerRaces.at(race) << " (" << playerOwners.at(displayOwner) << ")";
 				HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
 				if ( hListBox != NULL )
-					SendMessage(hListBox, LB_ADDSTRING, NULL, (LPARAM)ssplayer.str().c_str());
+					SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)ssplayer.str().c_str());
 			}
 		}
 	}
@@ -139,7 +139,7 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 	case BN_CLICKED:
 	{
-		LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, NULL, NULL);
+        LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
 		if ( CM != nullptr )
 		{
 			switch ( LOWORD(wParam) )
@@ -236,7 +236,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						case DL_BEGINDRAG:
 							{
 								int index = LBItemFromPt(dragInfo->hWnd, dragInfo->ptCursor, FALSE);
-								LRESULT length = SendMessage(dragInfo->hWnd, LB_GETTEXTLEN, index, NULL)+1;
+								LRESULT length = SendMessage(dragInfo->hWnd, LB_GETTEXTLEN, index, 0)+1;
 								char* str;
 								try { str = new char[length]; } catch ( std::bad_alloc ) { return FALSE; }
 								length = SendMessage(dragInfo->hWnd, LB_GETTEXT, index, (LPARAM)str);
@@ -247,7 +247,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									{
 										HWND hForceLb = GetDlgItem(hWnd, id);
 										if ( hForceLb != dragInfo->hWnd && hForceLb != NULL )
-											SendMessage(GetDlgItem(hWnd, id), LB_SETCURSEL, -1, NULL);
+											SendMessage(GetDlgItem(hWnd, id), LB_SETCURSEL, -1, 0);
 									}
 									return TRUE;
 								}

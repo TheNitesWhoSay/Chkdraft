@@ -7,8 +7,8 @@ bool TemplatesWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Templates", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "Templates", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Templates", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "Templates", WS_CHILD,
 			5, 22, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{

@@ -26,8 +26,8 @@ bool TrigActionsWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "TrigActions", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "TrigActions", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "TrigActions", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "TrigActions", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{
@@ -231,7 +231,7 @@ void TrigActionsWindow::Paste()
 void TrigActionsWindow::RedrawThis()
 {
 	HDC hDC = GetDC(getHandle());
-	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, NULL);
+	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
 	ReleaseDC(hDC);
 	ClassWindow::RedrawThis();
 	gridActions.RedrawThis();
@@ -586,7 +586,7 @@ int TrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 void TrigActionsWindow::PreDrawItems()
 {
 	HDC hDC = GetDC(getHandle());
-	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, NULL);
+	EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
 	ReleaseDC(hDC);
 	hBlack = CreateSolidBrush(RGB(0, 0, 0));
 }
@@ -723,8 +723,8 @@ void TrigActionsWindow::SuggestString()
 	if ( CM != nullptr )
 	{
 		suggestions.AddString(std::string("No String"));
-		u32 numRegularStrings = (u32)CM->numStrSlots();
-		u32 numExtendedStrings = CM->numKstrSlots();
+		u32 numRegularStrings = (u32)CM->strSectionCapacity();
+		u32 numExtendedStrings = CM->kstrSectionCapacity();
 		for ( u32 i = 1; i <= numRegularStrings; i++ )
 		{
 			if ( CM->GetString(str, i) && str.size() > 0 )

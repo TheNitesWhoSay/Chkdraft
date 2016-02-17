@@ -85,7 +85,7 @@ class buffer
 					bool takeAllData(buffer& source);
 
 					// Gives the section a new name
-					bool setTitle(char* newTitle);
+					bool setTitle(const char* newTitle);
 					bool setTitle(u32 newTitle);
 
 					// Deletes a part of the buffer
@@ -124,9 +124,9 @@ class buffer
 
 	private:
 
-/*	   Data	    */  u32 sizeAllotted; // Size allocated for data
+/*	   Data	    */  s8* data; // The actual data contained by the buffer
 					u32 sizeUsed; // Size of data being used
-					s8* data; // The actual data contained by the buffer
+					u32 sizeAllotted; // Size allocated for data
 					char bufTitle[5]; // Title of the buffer
 
 /* Priv Methods */  /** Called to increase or decrease buffer size
@@ -147,7 +147,7 @@ class buffer
 class BadResize : public std::bad_alloc
 {
 	public:
-		explicit BadResize(u8 inExNum) { }
+		explicit BadResize(u8 inExNum) : exNum(inExNum) { }
 		virtual const char* what() const throw();
 		virtual ~BadResize() throw() { }
 

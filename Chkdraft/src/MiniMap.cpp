@@ -3,7 +3,7 @@
 
 bool MiniMap::CreateThis(HWND hParent)
 {
-	return ClassWindow::RegisterWindowClass( NULL, NULL, LoadCursor(NULL, IDC_ARROW),
+	return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),
 											 CreateSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&
 		   ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, NULL, WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)IDR_MINIMAP);
 }

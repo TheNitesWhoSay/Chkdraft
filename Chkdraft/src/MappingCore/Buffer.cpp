@@ -667,7 +667,7 @@ bool buffer::takeAllData(buffer& source)
 	return false;
 }
 
-bool buffer::setTitle(char* newTitle)
+bool buffer::setTitle(const char* newTitle)
 {
 	if ( this != nullptr )
 	{

@@ -7,8 +7,8 @@ bool CountersWindow::CreateThis(HWND hParent, u32 windowId)
 
 	RECT rcCli;
 	if ( GetWindowRect(hParent, &rcCli) &&
-		 ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "Counters", NULL, false) &&
-		 ClassWindow::CreateClassWindow(NULL, "Counters", WS_CHILD,
+		 ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Counters", NULL, false) &&
+		 ClassWindow::CreateClassWindow(0, "Counters", WS_CHILD,
 			5, 62, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top,
 			hParent, (HMENU)windowId) )
 	{
