@@ -107,12 +107,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 			for ( int xBox=0; xBox<4; xBox++ )
 			{
 				int player = yBox*4+xBox;
-				u8 displayOwner = 0, race = 0, color = (u8)player;
+				u8 race = 0, color = (u8)player;
 				if ( CM != nullptr )
-				{
-					displayOwner = CM->getDisplayOwner((u8)player);
 					CM->getPlayerRace((u8)player, race);
-				}
 
 				groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
 				textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
@@ -165,7 +162,7 @@ void MapPropertiesWindow::RefreshWindow()
 					
 		for ( int player=0; player<12; player++ )
 		{
-			u8 displayOwner(CM->getDisplayOwner(player)), race(0), color(0);
+			u8 displayOwner(CM->GetPlayerOwnerStringIndex(player)), race(0), color(0);
 			CM->getPlayerRace(player, race);
 			dropPlayerOwner[player].SetSel(displayOwner);
 			dropPlayerOwner[player].ClearEditSel();

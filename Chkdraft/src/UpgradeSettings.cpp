@@ -336,11 +336,11 @@ LRESULT UpgradeSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 		nmhdr->code == TVN_SELCHANGED &&
 		((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
 	{
-		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
-			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
+		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeTypePortion,
+			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
 		u8 upgradeId = (u8)itemData;
-		if ( itemType == TREE_TYPE_UPGRADE && upgradeId < 61 )
+		if ( itemType == TreeTypeUpgrade && upgradeId < 61 )
 		{
 			selectedUpgrade = upgradeId;
 			RefreshWindow();

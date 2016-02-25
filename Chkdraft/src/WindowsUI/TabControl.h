@@ -5,6 +5,9 @@
 class TabControl : public WindowControl
 {
 	public:
+
+        bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id);
+
 		u32 GetCurSel();
 		bool SetCurSel(u32 tabId);
 

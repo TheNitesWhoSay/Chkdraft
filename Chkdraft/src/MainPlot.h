@@ -7,7 +7,7 @@ class MainPlot : public ClassWindow
 {
 	public:
 		LeftBar leftBar;
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 id);
 
 	protected:
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

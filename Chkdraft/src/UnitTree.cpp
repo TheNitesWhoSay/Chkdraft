@@ -67,10 +67,10 @@ void UnitTree::InsertZergItems(HTREEITEM hParent)
 		"Ground Units", "Heroes", "Special",
 		"Special Buildings", "Zerg" };
 
-	HTREEITEM LastRace = InsertTreeItem(hParent, "Zerg", TREE_TYPE_CATEGORY|LAYER_UNITS);
+    HTREEITEM LastRace = InsertTreeItem(hParent, "Zerg", TreeTypeCategory | (LPARAM)Layer::Units);
 	for ( int i=0; i<sizeof(TreeZerg)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeZerg[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+        HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeZerg[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		InsertUnits(LastGroup, TreeZerg[i], nTreeZerg[i]);
 	}
 }
@@ -100,10 +100,10 @@ void UnitTree::InsertTerranItems(HTREEITEM hParent)
 		"Buildings", "Ground Units", "Heroes",
 		"Special", "Special Buildings", "Terran" };
 
-	HTREEITEM LastRace = InsertTreeItem(hParent, "Terran", TREE_TYPE_CATEGORY|LAYER_UNITS);
+	HTREEITEM LastRace = InsertTreeItem(hParent, "Terran", TreeTypeCategory | (LPARAM)Layer::Units);
 	for ( int i=0; i<sizeof(TreeTerran)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeTerran[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeTerran[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		InsertUnits(LastGroup, TreeTerran[i], nTreeTerran[i]);
 	}
 }
@@ -131,10 +131,10 @@ void UnitTree::InsertProtossItems(HTREEITEM hParent)
 		"Heroes", "Protoss", "Special",
 		"Special Buildings" };
 
-	HTREEITEM LastRace = InsertTreeItem(hParent, "Protoss", TREE_TYPE_CATEGORY|LAYER_UNITS);
+	HTREEITEM LastRace = InsertTreeItem(hParent, "Protoss", TreeTypeCategory | (LPARAM)Layer::Units);
 	for ( int i=0; i<sizeof(TreeProtoss)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeProtoss[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeProtoss[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		InsertUnits(LastGroup, TreeProtoss[i], nTreeProtoss[i]);
 	}
 }
@@ -164,10 +164,10 @@ void UnitTree::InsertNeutralItems(HTREEITEM hParent)
 		"Powerups", "Protoss", "Resources",
 		"Special", "Start Location", "Zerg" };
 
-	HTREEITEM LastRace = InsertTreeItem(hParent, "Neutral", TREE_TYPE_CATEGORY|LAYER_UNITS);
+	HTREEITEM LastRace = InsertTreeItem(hParent, "Neutral", TreeTypeCategory | (LPARAM)Layer::Units);
 	for ( int i=0; i<sizeof(TreeNeutral)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeNeutral[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeNeutral[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		InsertUnits(LastGroup, TreeNeutral[i], nTreeNeutral[i]);
 	}
 }
@@ -180,10 +180,10 @@ void UnitTree::InsertUndefinedItems(HTREEITEM hParent)
 	const int nTreeUndefined[] = { sizeof(Units_Independent)/sizeof(const int) };
 	const char* sTreeUndefined[] = { "Independent" };
 
-	HTREEITEM LastRace = InsertTreeItem(hParent, "Undefined", TREE_TYPE_CATEGORY|LAYER_UNITS);
+	HTREEITEM LastRace = InsertTreeItem(hParent, "Undefined", TreeTypeCategory | (LPARAM)Layer::Units);
 	for ( int i=0; i<sizeof(TreeUndefined)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeUndefined[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeUndefined[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		InsertUnits(LastGroup, TreeUndefined[i], nTreeUndefined[i]);
 	}
 }
@@ -191,5 +191,5 @@ void UnitTree::InsertUndefinedItems(HTREEITEM hParent)
 void UnitTree::InsertUnits(HTREEITEM hParent, const int* items, int amount)
 {
 	for ( int i=0; i<amount; i++ )
-		UnitItems[items[i]] = InsertTreeItem(hParent, UnitDisplayName[items[i]], TREE_TYPE_UNIT|items[i]);
+		UnitItems[items[i]] = InsertTreeItem(hParent, UnitDisplayName[items[i]], TreeTypeUnit|items[i]);
 }

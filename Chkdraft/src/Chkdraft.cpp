@@ -2,6 +2,15 @@
 #include <thread>
 #include <chrono>
 
+enum MainWindow {
+    IDR_MAIN_TOOLBAR = ID_FIRST,
+    IDR_MAIN_STATUS,
+    IDR_MAIN_MDI,
+    IDR_MAIN_PLOT,
+    NextToLastId,
+    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
+};
+
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
 void Chkdraft::OnLoadTest()
@@ -40,7 +49,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	bool keepRunning = true;
 	do
 	{
-		while ( ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) )
+		while ( ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0 )
 		{
 			if ( msg.message == WM_QUIT )
 				keepRunning = false;
@@ -253,16 +262,16 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									}
 								}
 								break;
-							case 'D': maps.ChangeLayer(LAYER_DOODADS); return; break;
+                            case 'D': maps.ChangeLayer(Layer::Doodads); return; break;
 							case 'E': FindLeaks(); return; break;
-							case 'F': maps.ChangeLayer(LAYER_FOG); return; break;
-							case 'L': maps.ChangeLayer(LAYER_LOCATIONS);return; break;
+                            case 'F': maps.ChangeLayer(Layer::FogEdit); return; break;
+                            case 'L': maps.ChangeLayer(Layer::Locations);return; break;
 							case 'N': newMap.CreateThis(getHandle()); return; break;
 							case 'O': maps.OpenMap(); return; break;
-							case 'R': maps.ChangeLayer(LAYER_SPRITES); return; break;
+                            case 'R': maps.ChangeLayer(Layer::Sprites); return; break;
 							case 'S': maps.SaveCurr(false); return; break;
-							case 'T': maps.ChangeLayer(LAYER_TERRAIN); return; break;
-							case 'U': maps.ChangeLayer(LAYER_UNITS); return; break;
+                            case 'T': maps.ChangeLayer(Layer::Terrain); return; break;
+                            case 'U': maps.ChangeLayer(Layer::Units); return; break;
 							case 'Y': CM->redo(); return; break;
 							case 'Z': CM->undo(); return; break;
 							case VK_OEM_PLUS: maps.ChangeZoom(true); return; break;
@@ -303,8 +312,8 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	if ( CM && editFocused == false && GetActiveWindow() == getHandle() )
 	{
-		u8 layer = CM->getLayer();
-		if ( layer == LAYER_UNITS || layer == LAYER_FOG || layer == LAYER_SPRITES )
+		Layer layer = CM->getLayer();
+		if ( layer == Layer::Units || layer == Layer::FogEdit || layer == Layer::Sprites )
 		{
 			u8 newPlayer;
 			switch ( wParam )
@@ -384,16 +393,16 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case ID_COLOR_BLUE: maps.SetGridColor(36, 36, 252); break;
 	case ID_COLOR_OTHER: break;
 		// Zoom
-	case ID_ZOOM_400: CM->setZoom(zooms[0]); break;
-	case ID_ZOOM_300: CM->setZoom(zooms[1]); break;
-	case ID_ZOOM_200: CM->setZoom(zooms[2]); break;
-	case ID_ZOOM_150: CM->setZoom(zooms[3]); break;
-	case ID_ZOOM_100: CM->setZoom(zooms[4]); break;
-	case ID_ZOOM_66:  CM->setZoom(zooms[5]); break;
-	case ID_ZOOM_50:  CM->setZoom(zooms[6]); break;
-	case ID_ZOOM_33:  CM->setZoom(zooms[7]); break;
-	case ID_ZOOM_25:  CM->setZoom(zooms[8]); break;
-	case ID_ZOOM_10:  CM->setZoom(zooms[9]); break;
+	case ID_ZOOM_400: CM->setZoom(defaultZooms[0]); break;
+	case ID_ZOOM_300: CM->setZoom(defaultZooms[1]); break;
+	case ID_ZOOM_200: CM->setZoom(defaultZooms[2]); break;
+	case ID_ZOOM_150: CM->setZoom(defaultZooms[3]); break;
+	case ID_ZOOM_100: CM->setZoom(defaultZooms[4]); break;
+	case ID_ZOOM_66:  CM->setZoom(defaultZooms[5]); break;
+	case ID_ZOOM_50:  CM->setZoom(defaultZooms[6]); break;
+	case ID_ZOOM_33:  CM->setZoom(defaultZooms[7]); break;
+	case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
+	case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
 		// Terrain
 	case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;
 	case ID_TERRAIN_DISPLAYTILEVALUES: CM->ToggleTileNumSource(false); break;
@@ -405,9 +414,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case ID_UNITS_ALLOWSTACK: CM->ToggleUnitStack(); break;
 
 		// Locations
-	case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(SNAP_LOCATION_TO_TILE); break;
-	case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(SNAP_LOCATION_TO_GRID); break;
-	case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(NO_LOCATION_SNAP); break;
+    case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToTile); break;
+    case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToGrid); break;
+    case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(GuiMap::LocationSnap::NoSnap); break;
 	case ID_LOCATIONS_LOCKANYWHERE: CM->ToggleLockAnywhere(); break;
 	case ID_LOCATIONS_CLIPNAMES: CM->ToggleLocationNameClip(); break;
 
@@ -527,10 +536,10 @@ bool Chkdraft::CreateSubWindows()
 			mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
 			statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
 				WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS) &&
-			mainPlot.CreateThis(hWnd) &&
+			mainPlot.CreateThis(hWnd, IDR_MAIN_PLOT) &&
 			BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD,
 				WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-				0, 0, 0, 0, getHandle(), (HMENU)IDR_MAIN_MDI);
+				0, 0, 0, 0, (HMENU)IDR_MAIN_MDI);
 	}
 	else
 		return false;
@@ -575,10 +584,10 @@ void Chkdraft::SizeSubWindows()
 			rcMain.right - rcMain.left, rcMain.bottom - rcMain.top - (rcTool.bottom - rcTool.top) - (rcStatus.bottom - rcStatus.top),
 			SWP_NOZORDER | SWP_NOACTIVATE);
 
-		// Fit left bar to the area between the toolbar and statusbar without changing width
-		SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
-			rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
-			SWP_NOZORDER | SWP_NOACTIVATE);
+        // Fit left bar to the area between the toolbar and statusbar without changing width
+        SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
+            rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
+            SWP_NOZORDER | SWP_NOACTIVATE);
 
 		// Fit the map MDIClient to the area right of the left bar and between the toolbar and statusbar
 		SetWindowPos(maps.getHandle(), HWND_TOP, rcLeftBar.right - rcLeftBar.left - xBorder - 2, rcTool.bottom - rcTool.top,
@@ -622,8 +631,8 @@ void Chkdraft::OpenWebPage(const char* address)
 
 void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 {
-	if ( comboId == ID_COMBOBOX_PLAYER )
-	{
+    if ( hCombo = mainToolbar.playerBox.getHandle() )
+    {
 		u8 newPlayer;
 		if ( mainToolbar.playerBox.GetPlayerNum(newPlayer) )
 			maps.ChangePlayer(newPlayer);
@@ -633,20 +642,21 @@ void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
 {
 	int itemIndex = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
-	switch ( comboId )
-	{
-		case ID_COMBOBOX_LAYER: maps.ChangeLayer(itemIndex); break;
-		case ID_COMBOBOX_PLAYER: maps.ChangePlayer(itemIndex); break;
-		case ID_COMBOBOX_ZOOM:
-			if ( itemIndex >= 0 && itemIndex < 10 )
-				CM->setZoom(zooms[itemIndex]);
-			break;
-		case ID_COMBOBOX_TERRAIN:
-			if ( itemIndex == 3 )
-			{
-				terrainPalWindow.CreateThis(getHandle());
-				ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
-			}
-			break;
-	}
+    if ( hCombo == mainToolbar.layerBox.getHandle() )
+        maps.ChangeLayer((Layer)itemIndex);
+    else if ( hCombo == mainToolbar.playerBox.getHandle() )
+        maps.ChangePlayer(itemIndex);
+    else if ( hCombo == mainToolbar.zoomBox.getHandle() )
+    {
+        if ( itemIndex >= 0 && itemIndex < 10 )
+            CM->setZoom(defaultZooms[itemIndex]);
+    }
+    else if ( hCombo == mainToolbar.terrainBox.getHandle() )
+    {
+        if ( itemIndex == 3 )
+        {
+            terrainPalWindow.CreateThis(getHandle());
+            ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
+        }
+    }
 }

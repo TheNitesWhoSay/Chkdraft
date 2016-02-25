@@ -4,17 +4,18 @@
 #include <cstdio>
 #include <time.h>
 
-#define MapFilePtr std::shared_ptr<MapFile>
+class MapFile;
+using MapFilePtr = std::shared_ptr<MapFile>;
 
 class MapFile : public Scenario // MapFile is a scenario file + the stuff here
 {
 	public:
 		MapFile();
 
+        virtual bool SaveFile(bool SaveAs);
+
 		bool LoadFile(const char* &path); // If you're not providing a path, pass in nullptr
 		bool LoadFile();
-
-		bool SaveFile(bool SaveAs);
 
 		bool GetPath();
 		bool SetPath(const char* newPath);

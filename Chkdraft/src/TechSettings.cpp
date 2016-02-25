@@ -288,11 +288,11 @@ LRESULT TechSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
 	if ( refreshing == false && nmhdr->code == TVN_SELCHANGED && ((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
 	{
-		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
-			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
+		LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeTypePortion,
+			itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
 		u16 techId = (u16)itemData;
-		if ( itemType == TREE_TYPE_TECH && techId < 44 )
+		if ( itemType == TreeTypeTech && techId < 44 )
 		{
 			EnableTechEditing();
 			selectedTech = (u32)techId;

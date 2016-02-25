@@ -5,29 +5,26 @@ GridControlItem::GridControlItem() : selected(false), data(0)
 	text = "";
 }
 
-void GridControlItem::SetText(const char* text)
+void GridControlItem::SetText(const char* newText)
 {
-	try { this->text = text; }
+	try { this->text = newText; }
 	catch ( std::exception ) { }
 }
 
-void GridControlItem::SetText(int text)
+void GridControlItem::SetText(int newNumber)
 {
-	try
-	{
-		this->text = std::to_string(text);
-	}
+	try { this->text = std::to_string(newNumber); }
 	catch ( std::exception ) { }
 }
 
-void GridControlItem::SetData(u32 data)
+void GridControlItem::SetData(u32 newData)
 {
-	this->data = data;
+	this->data = newData;
 }
 
-void GridControlItem::SetSelected(bool selected)
+void GridControlItem::SetSelected(bool isItemSelected)
 {
-	this->selected = selected;
+	this->selected = isItemSelected;
 }
 
 void GridControlItem::Clear()
@@ -37,9 +34,9 @@ void GridControlItem::Clear()
 	text = "";
 }
 
-bool GridControlItem::getText(std::string &text)
+bool GridControlItem::getText(std::string &outText)
 {
-	try { text = this->text; return true; }
+	try { outText = this->text; return true; }
 	catch ( std::exception ) { return false; }
 }
 

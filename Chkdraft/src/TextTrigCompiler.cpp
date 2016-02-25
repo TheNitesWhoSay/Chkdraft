@@ -28,6 +28,7 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
 	try
 	{
 		CleanText(text);
+
 		Section TRIG(new buffer((u32)SectionId::TRIG));
 		char error[MAX_ERROR_MESSAGE_SIZE];
 
@@ -114,24 +115,31 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 	return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(std::string text, u8 &ID)
+bool TextTrigCompiler::ParseConditionName(std::string text, ConditionId &conditionId)
 {
 	buffer txcd("TxCd");
 	if ( txcd.addStr(text.c_str(), text.size()) )
 	{
 		CleanText(txcd);
-		u32 CID = CID_NO_CONDITION;
-		if ( ParseConditionName(txcd, CID) && CID != CID_CUSTOM )
+		ConditionId CID = ConditionId::NoCondition;
+		if ( ParseConditionName(txcd, CID) && CID != ConditionId::Custom )
 		{
 			if ( ((s32)CID) < 0 )
-				ID = ExtendedToRegularCID((s32)CID);
+				conditionId = (ConditionId)ExtendedToRegularCID(CID);
 			else
-				ID = (u8)CID;
+				conditionId = CID;
 
 			return true;
 		}
-		else if ( ParseByte((char*)txcd.getPtr(0), ID, 0, txcd.size()) )
-			return true;
+        else
+        {
+            u8 temp = 0;
+            if ( ParseByte((char*)txcd.getPtr(0), temp, 0, txcd.size()) )
+            {
+                conditionId = (ConditionId)temp;
+                return true;
+            }
+        }
 	}
 	return false;
 }
@@ -148,8 +156,8 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
 		 txcd.add<u8>(0) )
 	{
 		char error[256] = { };
-		u32 argsLeft = numConditionArgs(condition.condition) - argMap[argNum];
-		if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, condition.condition, argsLeft, error) )
+		u32 argsLeft = numConditionArgs((ConditionId)condition.condition) - argMap[argNum];
+		if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (ConditionId)condition.condition, argsLeft, error) )
 			return true;
 		else
 			CHKD_ERR("Unable to parse condition.\n\n%s", error);
@@ -157,24 +165,31 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
 	return false;
 }
 
-bool TextTrigCompiler::ParseActionName(std::string text, u8 &ID)
+bool TextTrigCompiler::ParseActionName(std::string text, ActionId &id)
 {
 	buffer txac("TxAc");
 	if ( txac.addStr(text.c_str(), text.size()) )
 	{
 		CleanText(txac);
-		u32 AID = AID_NO_ACTION;
-		if ( ParseActionName(txac, AID) && AID != AID_CUSTOM )
+		ActionId AID = ActionId::NoAction;
+		if ( ParseActionName(txac, AID) && AID != ActionId::Custom )
 		{
 			if ( ((s32)AID) < 0 )
-				ID = ExtendedToRegularAID((s32)AID);
+				id = (ActionId)ExtendedToRegularAID(AID);
 			else
-				ID = (u8)AID;
+				id = AID;
 
 			return true;
 		}
-		else if ( ParseByte((char*)txac.getPtr(0), ID, 0, txac.size()) )
-			return true;
+        else
+        {
+            u8 temp = 0;
+            if ( ParseByte((char*)txac.getPtr(0), temp, 0, txac.size()) )
+            {
+                id = (ActionId)temp;
+                return true;
+            }
+        }
 	}
 	return false;
 }
@@ -191,8 +206,8 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
 		txac.add<u8>(0) )
 	{
 		char error[256] = {};
-		u32 argsLeft = numActionArgs(action.action) - argMap[argNum];
-		if ( ParseActionArg(txac, action, 0, txac.size() - 1, action.action, argsLeft, error) )
+		u32 argsLeft = numActionArgs((ActionId)action.action) - argMap[argNum];
+		if ( ParseActionArg(txac, action, 0, txac.size() - 1, (ActionId)action.action, argsLeft, error) )
 			return true;
 		else
 			CHKD_ERR("Unable to parse action.\n\n%s", error);
@@ -200,19 +215,19 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
 	return false;
 }
 
-u8 TextTrigCompiler::defaultConditionFlags(u8 CID)
+u8 TextTrigCompiler::defaultConditionFlags(ConditionId conditionId)
 {
 	u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
 						  0, 0, 0, 0, 0,	16, 16, 16, 16, 0,
 						  0, 0, 0, 0 };
 
-	if ( CID >= 0 && CID < sizeof(defaultFlags)/sizeof(const u8) )
-		return defaultFlags[CID];
+	if ( (s32)conditionId >= 0 && (s32)conditionId < sizeof(defaultFlags)/sizeof(const u8) )
+		return defaultFlags[(s32)conditionId];
 	else
 		return 0;
 }
 
-u8 TextTrigCompiler::defaultActionFlags(u8 AID)
+u8 TextTrigCompiler::defaultActionFlags(ActionId AID)
 {
 	u8 defaultFlags[] = { 0, 4, 4, 4, 4,		4, 4, 0, 4, 0,
 						  4, 28, 0, 4, 4,		4, 4, 16, 16, 0,
@@ -221,25 +236,25 @@ u8 TextTrigCompiler::defaultActionFlags(u8 AID)
 						  4, 4, 20, 20, 20,		20, 20, 0, 20, 20,
 						  20, 20, 4, 20, 4,		4, 4, 4, 0, 0 };
 
-	if ( AID >= 0 && AID < sizeof(defaultFlags) / sizeof(const u8) )
-		return defaultFlags[AID];
+	if ( (u8)AID >= 0 && (u8)AID < sizeof(defaultFlags) / sizeof(const u8) )
+		return defaultFlags[(u8)AID];
 	else
 		return 0;
 }
 
-u8 TextTrigCompiler::numConditionArgs(s32 CID)
+u8 TextTrigCompiler::numConditionArgs(ConditionId conditionId)
 {
 	const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
 	1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
 	1, 4, 0, 0 };
 
-	if ( CID >= 0 && CID < sizeof(conditionNumArgs) / sizeof(const u8) )
-		return conditionNumArgs[CID];
+	if ( (s32)conditionId >= 0 && (s32)conditionId < sizeof(conditionNumArgs) / sizeof(const u8) )
+		return conditionNumArgs[(s32)conditionId];
 	else
-		return 0;
+		return ExtendedNumConditionArgs(conditionId);
 }
 
-u8 TextTrigCompiler::numActionArgs(s32 AID)
+u8 TextTrigCompiler::numActionArgs(ActionId actionId)
 {
 	const u8 actionNumArgs[] = { 0, 0, 0, 0, 1,  0, 0, 8, 2, 2,
 		1, 5, 1, 2, 2,  1, 2, 2, 3, 2,
@@ -248,10 +263,10 @@ u8 TextTrigCompiler::numActionArgs(s32 AID)
 		1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
 		5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
 
-	if ( AID >= 0 && AID < sizeof(actionNumArgs) / sizeof(const u8) )
-		return actionNumArgs[AID];
+	if ( (s32)actionId >= 0 && (s32)actionId < sizeof(actionNumArgs) / sizeof(const u8) )
+		return actionNumArgs[(s32)actionId];
 	else
-		return ExtendedNumActionArgs(AID);
+		return ExtendedNumActionArgs(actionId);
 }
 
 // protected
@@ -313,7 +328,7 @@ void TextTrigCompiler::CleanText(buffer &text)
 				{
 					for ( pos; pos<skipTo; pos++ )
 					{
-						char curr = text.get<u8>(pos);
+						u8 curr = text.get<u8>(pos);
 						if ( curr == '\\' ) // Escape Character
 						{
 							pos ++;
@@ -350,9 +365,35 @@ void TextTrigCompiler::CleanText(buffer &text)
 							{
 								dest.add<u8>('\t');
 							}
-							else if ( text.get<char>(curr, pos) )
+							else if ( text.get<u8>(curr, pos) )
 								dest.add<u8>(curr);
 						}
+                        else if ( curr == '<' && text.get<u8>(pos + 3) == '>' &&
+                            (text.get<u8>(pos + 1) >= '0' && text.get<u8>(pos + 1) <= '9' ||
+                             text.get<u8>(pos + 1) >= 'A' && text.get<u8>(pos + 1) <= 'F') &&
+                            (text.get<u8>(pos + 2) >= '0' && text.get<u8>(pos + 2) <= '9' ||
+                             text.get<u8>(pos + 2) >= 'A' && text.get<u8>(pos + 2) <= 'F') )
+                        {
+                            pos++;
+
+                            u8 targetVal = 0;
+
+                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                targetVal += 16 * (text.get<u8>(pos) - '0');
+                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
+
+                            pos++;
+
+                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                targetVal += text.get<u8>(pos) - '0';
+                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                targetVal += text.get<u8>(pos) - 'A' + 10;
+
+                            dest.add<u8>(targetVal);
+
+                            pos++; // Skip over '>'
+                        }
 						else
 							dest.add<u8>(curr);
 					}
@@ -405,12 +446,15 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 		expecting = 0,
 		line = 1,
 		playerEnd,
-		conditionEnd, conditionIndex,
-		actionEnd, actionIndex,
+		conditionEnd,
+		actionEnd,
 		flagsEnd,
 		argEnd, argsLeft = 0,
 		lineEnd,
 		numConditions = 0, numActions = 0;
+
+    ConditionId conditionId;
+    ActionId actionId;
 
 	Trigger currTrig = { };
 	Condition* currCondition = &currTrig.conditions[0];
@@ -460,7 +504,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 						// or	actions:
 						// or	flags:
 						// or	}
-					if ( !ParsePartFour(text, output, error, pos, line, expecting, conditionEnd, lineEnd, conditionIndex,
+					if ( !ParsePartFour(text, output, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
 							flags, argsLeft, numConditions, currCondition, currTrig) )
 						return false;
 					break;
@@ -468,7 +512,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 				case 5: //		);
 						// or	%ConditionArg,
 						// or	%ConditionArg);
-					if ( !ParsePartFive(text, output, error, pos, line, expecting, argsLeft, argEnd, currCondition, conditionIndex) )
+					if ( !ParsePartFive(text, output, error, pos, line, expecting, argsLeft, argEnd, currCondition, conditionId) )
 						return false;
 					break;
 	
@@ -484,14 +528,14 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 						// or	flags:
 						// or	}
 					if ( !ParsePartSeven(text, output, error, pos, line, expecting, flags, actionEnd, lineEnd,
-										 actionIndex, argsLeft, numActions, currAction, currTrig) )
+										 actionId, argsLeft, numActions, currAction, currTrig) )
 						return false;
 					break;
 	
 				case 8: //		);
 						// or	%ActionArg,
 						// or	%ActionArg);
-					if ( !ParsePartEight(text, output, error, pos, line, expecting, argsLeft, argEnd, currAction, actionIndex) )
+					if ( !ParsePartEight(text, output, error, pos, line, expecting, argsLeft, argEnd, currAction, actionId) )
 						return false;
 					break;
 	
@@ -550,7 +594,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
 	else if ( text.has("TRIGGER", pos, 7) )
 	{
 		pos += 7;
-		while ( text.has('\15', pos) )
+		while ( text.has('\r', pos) )
 		{
 			pos += 2;
 			line ++;
@@ -687,7 +731,7 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
 }
 
 inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-	u32 &conditionEnd, u32 &lineEnd, u32 &conditionIndex, u8 &flags, u32 &argsLeft, u32 &numConditions,
+	u32 &conditionEnd, u32 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
 	Condition*& currCondition, Trigger &currTrig)
 {
 	//		%ConditionName(
@@ -705,12 +749,12 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 		pos ++;
 		if ( text.getNext('(', pos, conditionEnd) )
 		{
-			if ( !text.getNext('\15', pos, lineEnd) )
+			if ( !text.getNext('\r', pos, lineEnd) )
 				text.getNext('\0', pos, lineEnd);
 
 			conditionEnd = std::min(conditionEnd, lineEnd);
 
-			if ( ParseCondition(text, pos, conditionEnd, true, conditionIndex, flags, argsLeft) )
+			if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags, argsLeft) )
 			{
 				if ( numConditions > NUM_TRIG_CONDITIONS )
 				{
@@ -718,15 +762,15 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 					return false;
 				}
 				currCondition = &currTrig.conditions[numConditions];
-				currCondition->flags = flags | CONDITION_FLAG_DISABLED;
-				if ( ((s32)conditionIndex) < 0 )
-					currCondition->condition = ExtendedToRegularCID(conditionIndex);
+				currCondition->flags = flags | (u8)Condition::Flags::Disabled;
+				if ( (s32)conditionId < 0 )
+					currCondition->condition = ExtendedToRegularCID(conditionId);
 				else
-					currCondition->condition = u8(conditionIndex);
+					currCondition->condition = (u8)conditionId;
 				numConditions ++;
 				
 				pos = conditionEnd;
-				while ( text.has('\15', pos) )
+				while ( text.has('\r', pos) )
 				{
 					pos += 2;
 					line ++;
@@ -795,7 +839,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 
 		conditionEnd = std::min(conditionEnd, lineEnd);
 
-		if ( ParseCondition(text, pos, conditionEnd, false, conditionIndex, flags, argsLeft) )
+		if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags, argsLeft) )
 		{
 			if ( numConditions > NUM_TRIG_CONDITIONS )
 			{
@@ -804,10 +848,10 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 			}
 			currCondition = &currTrig.conditions[numConditions];
 			currCondition->flags = flags;
-			if ( ((s32)conditionIndex) < 0 )
-				currCondition->condition = ExtendedToRegularCID(conditionIndex);
+			if ( (s32)conditionId < 0 )
+				currCondition->condition = ExtendedToRegularCID(conditionId);
 			else
-				currCondition->condition = u8(conditionIndex);
+				currCondition->condition = (u8)conditionId;
 			numConditions ++;
 
 			pos = conditionEnd;
@@ -843,7 +887,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
 }
 
 inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
-											Condition*& currCondition, u32 &conditionIndex)
+											Condition*& currCondition, ConditionId &conditionId)
 {
 	//		);
 	// or	%ConditionArg,
@@ -876,14 +920,14 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 	}
 	else if ( argsLeft == 0 )
 	{
-		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \'(\' or \'}\'", line);
+		std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \')\'%u", line, pos);
 		return false;
 	}
 	else if ( argsLeft == 1 )
 	{
 		if ( text.getNextUnquoted(')', pos, argEnd) )
 		{
-			if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionIndex, argsLeft, error) )
+			if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, error) )
 			{
 				pos = argEnd;
 				argsLeft --;
@@ -902,7 +946,7 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
 	}
 	else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
 	{
-		if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionIndex, argsLeft, error) )
+		if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, error) )
 		{
 			pos = argEnd+1;
 			argsLeft --;
@@ -953,7 +997,7 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, char* e
 }
 
 inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-	u8 &flags, u32 &actionEnd, u32 &lineEnd, u32 &actionIndex, u32 &argsLeft, u32 &numActions,
+	u8 &flags, u32 &actionEnd, u32 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
 	Action*& currAction, Trigger &currTrig)
 {
 	//		%ActionName(
@@ -970,7 +1014,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 
 			actionEnd = std::min(actionEnd, lineEnd);
 
-			if ( ParseAction(text, pos, actionEnd, true, actionIndex, flags, argsLeft) )
+			if ( ParseAction(text, pos, actionEnd, true, actionId, flags, argsLeft) )
 			{
 				if ( numActions > NUM_TRIG_ACTIONS )
 				{
@@ -979,12 +1023,12 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 				}
 
 				currAction = &currTrig.actions[numActions];
-				currAction->flags = flags | ACTION_FLAG_DISABLED;
-				if ( ((s32)actionIndex) < 0 )
-					currAction->action = ExtendedToRegularAID(actionIndex);
+				currAction->flags = flags | Action::Flags::Disabled;
+				if ( (s32)actionId < 0 )
+					currAction->action = ExtendedToRegularAID(actionId);
 				else
-					currAction->action = u8(actionIndex);
-				currAction->action = u8(actionIndex);
+					currAction->action = u8(actionId);
+				currAction->action = u8(actionId);
 				numActions ++;
 
 				pos = actionEnd+1;
@@ -1028,7 +1072,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 
 		actionEnd = std::min(actionEnd, lineEnd);
 
-		if ( ParseAction(text, pos, actionEnd, false, actionIndex, flags, argsLeft) )
+		if ( ParseAction(text, pos, actionEnd, false, actionId, flags, argsLeft) )
 		{
 			if ( numActions > NUM_TRIG_ACTIONS )
 			{
@@ -1037,10 +1081,10 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 			}
 			currAction = &currTrig.actions[numActions];
 			currAction->flags = flags;
-			if ( ((s32)actionIndex) < 0 )
-				currAction->action = ExtendedToRegularAID(actionIndex);
+			if ( (s32)actionId < 0 )
+				currAction->action = (u8)ExtendedToRegularAID(actionId);
 			else
-				currAction->action = u8(actionIndex);
+				currAction->action = (u8)actionId;
 			numActions ++;
 
 			pos = actionEnd+1;
@@ -1061,7 +1105,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
 }
 
 inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-	u32 &argsLeft, u32 &argEnd, Action*& currAction, u32 &actionIndex)
+	u32 &argsLeft, u32 &argEnd, Action*& currAction, ActionId &actionId)
 {
 	//		);
 	// or	%ActionArg,
@@ -1101,7 +1145,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 	{
 		if ( text.getNextUnquoted(')', pos, argEnd) )
 		{
-			if ( ParseActionArg(text, *currAction, pos, argEnd, actionIndex, argsLeft, error) )
+			if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, error) )
 			{
 				pos = argEnd;
 				argsLeft --;
@@ -1120,7 +1164,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
 	}
 	else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
 	{
-		if ( ParseActionArg(text, *currAction, pos, argEnd, actionIndex, argsLeft, error) )
+		if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, error) )
 		{
 			pos = argEnd+1;
 			argsLeft --;
@@ -1235,7 +1279,7 @@ bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32
 	return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(buffer &arg, u32 &ID)
+bool TextTrigCompiler::ParseConditionName(buffer &arg, ConditionId &conditionId)
 {
 	char currChar = arg.get<u8>(0);
 	switch ( currChar )
@@ -1243,15 +1287,15 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, u32 &ID)
 		case 'A':
 			{
 				if ( arg.has("CCUMULATE", 1, 9) )
-					ID = CID_ACCUMULATE;
+                    conditionId = ConditionId::Accumulate;
 				else if ( arg.has("LWAYS", 1, 5) )
-					ID = CID_ALWAYS;
+                    conditionId = ConditionId::Always;
 			}
 			break;
 		
 		case 'B':
 			if ( arg.has("RING", 1, 4) )
-				ID = CID_BRING;
+                conditionId = ConditionId::Bring;
 			break;
 
 		case 'C':
@@ -1260,96 +1304,96 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, u32 &ID)
 				if ( arg.has("THELEAST", 7, 8) )
 				{
 					if ( arg.has("AT", 15, 2) )
-						ID = CID_COMMAND_THE_LEAST_AT;
+                        conditionId = ConditionId::CommandTheLeastAt;
 					else if ( arg.size() == 15 )
-						ID = CID_COMMAND_THE_LEAST;
+                        conditionId = ConditionId::CommandTheLeast;
 				}
 				else if ( arg.has("THEMOST", 7, 7) )
 				{
 					if ( arg.has("AT", 14, 2) )
-						ID = CID_COMMAND_THE_MOST_AT;
+                        conditionId = ConditionId::CommandTheMostAt;
 					else if ( arg.size() == 14 )
-						ID = CID_COMMAND_THE_MOST;
+                        conditionId = ConditionId::CommandTheMost;
 				}
 				else if ( arg.has("STHEMOSTAT", 7, 10) ) // command'S', added for backwards compatibility
-					ID = CID_COMMAND_THE_MOST_AT;
+                    conditionId = ConditionId::CommandTheMostAt;
 				else if ( arg.size() == 7 )
-					ID = CID_COMMAND;
+                    conditionId = ConditionId::Command;
 			}
 			else if ( arg.has("OUNTDOWNTIMER", 1, 13) )
-				ID = CID_COUNTDOWN_TIMER;
+                conditionId = ConditionId::CountdownTimer;
 			else if ( arg.has("USTOM", 1, 5) )
-				ID = CID_CUSTOM;
+                conditionId = ConditionId::Custom;
 			break;
 
 		case 'D':
 			if ( arg.has("EATHS", 1, 5) )
-				ID = CID_DEATHS;
+                conditionId = ConditionId::Deaths;
 			break;
 
 		case 'E':
 			if ( arg.has("LAPSEDTIME", 1, 10) )
-				ID = CID_ELAPSED_TIME;
+                conditionId = ConditionId::ElapsedTime;
 			break;
 
 		case 'H':
 			if ( arg.has("IGHESTSCORE", 1, 11) )
-				ID = CID_HIGHEST_SCORE;
+                conditionId = ConditionId::HighestScore;
 			break;
 
 		case 'K':
 			if ( arg.has("ILL", 1, 3) )
-				ID = CID_KILL;
+                conditionId = ConditionId::Kill;
 			break;
 
 		case 'L':
 			if ( arg.has("EAST", 1, 4) )
 			{
 				if ( arg.has("KILLS", 5, 5) )
-					ID = CID_LEAST_KILLS;
+                    conditionId = ConditionId::LeastKills;
 				else if ( arg.has("RESOURCES", 5, 9) )
-					ID = CID_LEAST_RESOURCES;
+                    conditionId = ConditionId::LeastResources;
 			}
 			else if ( arg.has("OWESTSCORE", 1, 10) )
-				ID = CID_LOWEST_SCORE;
+                conditionId = ConditionId::LowestScore;
 			break;
 
 		case 'M':
 			if ( arg.has("EMORY", 1, 5) )
-				ID = CID_MEMORY;
+                conditionId = ConditionId::Memory;
 			else if ( arg.has("OST", 1, 3) )
 			{
 				if ( arg.has("KILLS", 4, 5) )
-					ID = CID_MOST_KILLS;
+                    conditionId = ConditionId::MostKills;
 				else if ( arg.has("RESOURCES", 4, 9) )
-					ID = CID_MOST_RESOURCES;
+                    conditionId = ConditionId::MostResources;
 			}
 			break;
 
 		case 'N':
 			if ( arg.has("EVER", 1, 4) )
-				ID = CID_NEVER;
+                conditionId = ConditionId::Never;
 			break;
 
 		case 'O':
 			if ( arg.has("PPONENTS", 1, 8) )
-				ID = CID_OPPONENTS;
+                conditionId = ConditionId::Opponents;
 			break;
 
 		case 'S':
 			if ( arg.has("CORE", 1, 4) )
-				ID = CID_SCORE;
+                conditionId = ConditionId::Score;
 			else if ( arg.has("WITCH", 1, 5) )
-				ID = CID_SWITCH;
+                conditionId = ConditionId::Switch;
 			break;
 	}
 
-	return ID != CID_NO_CONDITION;
+	return conditionId != ConditionId::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft)
 {
-	ID = CID_NO_CONDITION;
+	conditionId = ConditionId::NoCondition;
 	u16 number = 0;
 
 	u32 size = end - pos;
@@ -1370,56 +1414,56 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 			arg.del<u8>(i);
 	}
 
-	ParseConditionName(arg, ID);
+	ParseConditionName(arg, conditionId);
 
-	flags = defaultConditionFlags(ID);
-	argsLeft = numConditionArgs(ID);
+	flags = defaultConditionFlags(conditionId);
+	argsLeft = numConditionArgs(conditionId);
 	
-	return ID != CID_NO_CONDITION;
+	return conditionId != ConditionId::NoCondition;
 }
 
-bool TextTrigCompiler::ParseActionName(buffer &arg, u32 &ID)
+bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
 {
 	char currChar = arg.get<u8>(0);
 	switch ( currChar )
 	{
 		case 'C':
 			if ( arg.has("OMMENT", 1, 6) )
-				ID = AID_COMMENT;
+                id = ActionId::Comment;
 			else if ( arg.has("REATEUNIT", 1, 9) )
 			{
 				if ( arg.has("WITHPROPERTIES", 10, 14) )
-					ID = AID_CREATE_UNIT_WITH_PROPERTIES;
+                    id = ActionId::CreateUnitWithProperties;
 				else if ( arg.size() == 10 )
-					ID = AID_CREATE_UNIT;
+                    id = ActionId::CreateUnit;
 			}
 			else if ( arg.has("ENTERVIEW", 1, 9) )
-				ID = AID_CENTER_VIEW;
+                id = ActionId::CenterView;
 			else if ( arg.has("USTOM", 1, 5) )
-				ID = AID_CUSTOM;
+                id = ActionId::Custom;
 			break;
 
 		case 'D':
 			if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
-				ID = AID_DISPLAY_TEXT_MESSAGE;
+                id = ActionId::DisplayTextMessage;
 			else if ( arg.has("EFEAT", 1, 5) )
-				ID = AID_DEFEAT;
+                id = ActionId::Defeat;
 			else if ( arg.has("RAW", 1, 3) )
-				ID = AID_DRAW;
+                id = ActionId::Draw;
 			break;
 
 		case 'G':
 			if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
-				ID = AID_GIVE_UNITS_TO_PLAYER;
+                id = ActionId::GiveUnitsToPlayer;
 			break;
 
 		case 'K':
 			if ( arg.has("ILLUNIT", 1, 7) )
 			{
 				if ( arg.has("ATLOCATION", 8, 10) )
-					ID = AID_KILL_UNIT_AT_LOCATION;
+                    id = ActionId::KillUnitAtLocation;
 				else if ( arg.size() == 8 )
-					ID = AID_KILL_UNIT;
+                    id = ActionId::KillUnit;
 			}
 			break;
 
@@ -1431,85 +1475,85 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, u32 &ID)
 					if ( arg.has("CONTROL", 15, 7) )
 					{
 						if ( arg.has("ATLOCATION", 22, 10) )
-							ID = AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION;
+                            id = ActionId::LeaderboardGoalCtrlAtLoc;
 						else if ( arg.size() == 22 )
-							ID = AID_LEADERBOARD_GOAL_CONTROL;
+                            id = ActionId::LeaderboardGoalCtrl;
 					}
 					else if ( arg.has("KILLS", 15, 5) )
-						ID = AID_LEADERBOARD_GOAL_KILLS;
+                        id = ActionId::LeaderboardGoalKills;
 					else if ( arg.has("POINTS", 15, 6) )
-						ID = AID_LEADERBOARD_GOAL_POINTS;
+                        id = ActionId::LeaderboardGoalPoints;
 					else if ( arg.has("RESOURCES", 15, 9) )
-						ID = AID_LEADERBOARD_GOAL_RESOURCES;
+                        id = ActionId::LeaderboardGoalResources;
 				}
 				else
 				{
 					if ( arg.has("CONTROL", 11, 7) )
 					{
 						if ( arg.has("ATLOCATION", 18, 10) )
-							ID = AID_LEADERBOARD_CONTROL_AT_LOCATION;
+                            id = ActionId::LeaderboardCtrlAtLoc;
 						else if ( arg.size() == 18 )
-							ID = AID_LEADERBOARD_CONTROL;
+                            id = ActionId::LeaderboardCtrl;
 					}
 					else if ( arg.has("GREED", 11, 5) )
-						ID = AID_LEADERBOARD_GREED;
+                        id = ActionId::LeaderboardGreed;
 					else if ( arg.has("KILLS", 11, 5) )
-						ID = AID_LEADERBOARD_KILLS;
+                        id = ActionId::LeaderboardKills;
 					else if ( arg.has("POINTS", 11, 6) )
-						ID = AID_LEADERBOARD_POINTS;
+                        id = ActionId::LeaderboardPoints;
 					else if ( arg.has("RESOURCES", 11, 9) )
-						ID = AID_LEADERBOARD_RESOURCES;
+                        id = ActionId::LeaderboardResources;
 					else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
-						ID = AID_LEADERBOARD_COMPUTER_PLAYERS;
+                        id = ActionId::LeaderboardCompPlayers;
 				}
 			}
 			break;
 
 		case 'M':
 			if ( arg.has("EMORY", 1, 5) )
-				ID = AID_MEMORY;
+                id = ActionId::Memory;
 			else if ( arg.has("OVE", 1, 3) )
 			{
 				if ( arg.has("UNIT", 4, 4) )
-					ID = AID_MOVE_UNIT;
+                    id = ActionId::MoveUnit;
 				else if ( arg.has("LOCATION", 4, 8) )
-					ID = AID_MOVE_LOCATION;
+                    id = ActionId::MoveLocation;
 			}
 			else if ( arg.has("ODIFYUNIT", 1, 9) )
 			{
 				if ( arg.has("ENERGY", 10, 6) )
-					ID = AID_MODIFY_UNIT_ENERGY;
+                    id = ActionId::ModifyUnitEnergy;
 				else if ( arg.has("HANGERCOUNT", 10, 11) )
-					ID = AID_MODIFY_UNIT_HANGER_COUNT;
+                    id = ActionId::ModifyUnitHangerCount;
 				else if ( arg.has("HITPOINTS", 10, 9) )
-					ID = AID_MODIFY_UNIT_HITPOINTS;
+                    id = ActionId::ModifyUnitHitpoints;
 				else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
-					ID = AID_MODIFY_UNIT_RESOURCE_AMOUNT;
+                    id = ActionId::ModifyUnitResourceAmount;
 				else if ( arg.has("SHIELDPOINTS", 10, 12) )
-					ID = AID_MODIFY_UNIT_SHIELD_POINTS;
+                    id = ActionId::ModifyUnitShieldPoints;
 			}
 			else if ( arg.has("INIMAPPING", 1, 10) )
-				ID = AID_MINIMAP_PING;
+                id = ActionId::MinimapPing;
 			else if ( arg.has("UTEUNITSPEECH", 1, 13) )
-				ID = AID_MUTE_UNIT_SPEECH;
+                id = ActionId::MuteUnitSpeech;
 			break;
 
 		case 'O':
 			if ( arg.has("RDER", 1, 4) )
-				ID = AID_ORDER;
+                id = ActionId::Order;
 			break;
 
 		case 'P':
 			if ( arg.has("RESERVETRIGGER", 1, 14) )
-				ID = AID_PRESERVE_TRIGGER;
+                id = ActionId::PreserveTrigger;
 			else if ( arg.has("LAYWAV", 1, 6) )
-				ID = AID_PLAY_WAV;
+                id = ActionId::PlayWav;
 			else if ( arg.has("AUSE", 1, 4) )
 			{
 				if ( arg.has("GAME", 5, 4) )
-					ID = AID_PAUSE_GAME;
+                    id = ActionId::PauseGame;
 				else if ( arg.has("TIMER", 5, 5) )
-					ID = AID_PAUSE_TIMER;
+                    id = ActionId::PauseTimer;
 			}
 			break;
 
@@ -1517,16 +1561,16 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, u32 &ID)
 			if ( arg.has("EMOVEUNIT", 1, 9) )
 			{
 				if ( arg.has("ATLOCATION", 10, 10) )
-					ID = AID_REMOVE_UNIT_AT_LOCATION;
+                    id = ActionId::RemoveUnitAtLocation;
 				else if ( arg.size() == 10 )
-					ID = AID_REMOVE_UNIT;
+                    id = ActionId::RemoveUnit;
 			}
 			else if ( arg.has("UNAISCRIPT", 1, 10) )
 			{
 				if ( arg.has("ATLOCATION", 11, 10) )
-					ID = AID_RUN_AI_SCRIPT_AT_LOCATION;
+                    id = ActionId::RunAiScriptAtLocation;
 				else if ( arg.size() == 11 )
-					ID = AID_RUN_AI_SCRIPT;
+                    id = ActionId::RunAiScript;
 			}
 			break;
 
@@ -1534,64 +1578,64 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, u32 &ID)
 			if ( arg.has("ET", 1, 2) )
 			{
 				if ( arg.has("DEATHS", 3, 6) )
-					ID = AID_SET_DEATHS;
+                    id = ActionId::SetDeaths;
 				else if ( arg.has("SWITCH", 3, 6) )
-					ID = AID_SET_SWITCH;
+                    id = ActionId::SetSwitch;
 				else if ( arg.has("RESOURCES", 3, 9) )
-					ID = AID_SET_RESOURCES;
+                    id = ActionId::SetResources;
 				else if ( arg.has("SCORE", 3, 5) )
-					ID = AID_SET_SCORE;
+                    id = ActionId::SetScore;
 				else if ( arg.has("ALLIANCESTATUS", 3, 14) )
-					ID = AID_SET_ALLIANCE_STATUS;
+                    id = ActionId::SetAllianceStatus;
 				else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
-					ID = AID_SET_COUNTDOWN_TIMER;
+                    id = ActionId::SetCountdownTimer;
 				else if ( arg.has("DOODADSTATE", 3, 11) )
-					ID = AID_SET_DOODAD_STATE;
+                    id = ActionId::SetDoodadState;
 				else if ( arg.has("INVINCIBILITY", 3, 13) )
-					ID = AID_SET_INVINCIBILITY;
+                    id = ActionId::SetInvincibility;
 				else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
-					ID = AID_SET_MISSION_OBJECTIVES;
+                    id = ActionId::SetMissionObjectives;
 				else if ( arg.has("NEXTSCENARIO", 3, 12) )
-					ID = AID_SET_NEXT_SCENARIO;
+                    id = ActionId::SetNextScenario;
 			}
 			break;
 
 		case 'T':
 			if ( arg.has("ALKINGPORTRAIT", 1, 14) )
-				ID = AID_TALKING_PORTRAIT;
+                id = ActionId::TalkingPortrait;
 			else if ( arg.has("RANSMISSION", 1, 11) )
-				ID = AID_TRANSMISSION;
+                id = ActionId::Transmission;
 			break;
 
 		case 'U':
 			if ( arg.has("NPAUSE", 1, 6) )
 			{
 				if ( arg.has("TIMER", 7, 5) )
-					ID = AID_UNPAUSE_TIMER;
+                    id = ActionId::UnpauseTimer;
 				else if ( arg.has("GAME", 7, 4) )
-					ID = AID_UNPAUSE_GAME;
+                    id = ActionId::UnpauseGame;
 			}
 			else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
-				ID = AID_UNMUTE_UNIT_SPEECH;
+                id = ActionId::MuteUnitSpeech;
 			break;
 
 		case 'V':
 			if ( arg.has("ICTORY", 1, 6) )
-				ID = AID_VICTORY;
+                id = ActionId::Victory;
 			break;
 
 		case 'W':
 			if ( arg.has("AIT", 1, 3) )
-				ID = AID_WAIT;
+                id = ActionId::Wait;
 			break;
 	}
 
-	return ID != AID_NO_ACTION;
+	return id != ActionId::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled, u32 &ID, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled, ActionId &id, u8& flags, u32 &argsLeft)
 {
-	ID = AID_NO_ACTION;
+	id = ActionId::NoAction;
 	u16 number = 0;
 
 	u32 size = end - pos;
@@ -1618,41 +1662,41 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 	{
 		case 'C':
 			if ( arg.has("OMMENT", 1, 6) )
-				ID = AID_COMMENT;
+				id = ActionId::Comment;
 			else if ( arg.has("REATEUNIT", 1, 9) )
 			{
 				if ( arg.has("WITHPROPERTIES", 10, 14) )
-					ID = AID_CREATE_UNIT_WITH_PROPERTIES;
+                    id = ActionId::CreateUnitWithProperties;
 				else if ( arg.size() == 10 )
-					ID = AID_CREATE_UNIT;
+                    id = ActionId::CreateUnit;
 			}
 			else if ( arg.has("ENTERVIEW", 1, 9) )
-				ID = AID_CENTER_VIEW;
+                id = ActionId::CenterView;
 			else if ( arg.has("USTOM", 1, 5) )
-				ID = AID_CUSTOM;
+                id = ActionId::Custom;
 			break;
 
 		case 'D':
 			if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
-				ID = AID_DISPLAY_TEXT_MESSAGE;
+                id = ActionId::DisplayTextMessage;
 			else if ( arg.has("EFEAT", 1, 5) )
-				ID = AID_DEFEAT;
+                id = ActionId::Defeat;
 			else if ( arg.has("RAW", 1, 3) )
-				ID = AID_DRAW;
+                id = ActionId::Draw;
 			break;
 
 		case 'G':
 			if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
-				ID = AID_GIVE_UNITS_TO_PLAYER;
+                id = ActionId::GiveUnitsToPlayer;
 			break;
 
 		case 'K':
 			if ( arg.has("ILLUNIT", 1, 7) )
 			{
 				if ( arg.has("ATLOCATION", 8, 10) )
-					ID = AID_KILL_UNIT_AT_LOCATION;
+                    id = ActionId::KillUnitAtLocation;
 				else if ( arg.size() == 8 )
-					ID = AID_KILL_UNIT;
+                    id = ActionId::KillUnit;
 			}
 			break;
 
@@ -1664,85 +1708,85 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 					if ( arg.has("CONTROL", 15, 7) )
 					{
 						if ( arg.has("ATLOCATION", 22, 10) )
-							ID = AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION;
+                            id = ActionId::LeaderboardGoalCtrlAtLoc;
 						else if ( arg.size() == 22 )
-							ID = AID_LEADERBOARD_GOAL_CONTROL;
+                            id = ActionId::LeaderboardGoalCtrl;
 					}
 					else if ( arg.has("KILLS", 15, 5) )
-						ID = AID_LEADERBOARD_GOAL_KILLS;
+                        id = ActionId::LeaderboardGoalKills;
 					else if ( arg.has("POINTS", 15, 6) )
-						ID = AID_LEADERBOARD_GOAL_POINTS;
+                        id = ActionId::LeaderboardGoalPoints;
 					else if ( arg.has("RESOURCES", 15, 9) )
-						ID = AID_LEADERBOARD_GOAL_RESOURCES;
+                        id = ActionId::LeaderboardGoalResources;
 				}
 				else
 				{
 					if ( arg.has("CONTROL", 11, 7) )
 					{
 						if ( arg.has("ATLOCATION", 18, 10) )
-							ID = AID_LEADERBOARD_CONTROL_AT_LOCATION;
+                            id = ActionId::LeaderboardCtrlAtLoc;
 						else if ( arg.size() == 18 )
-							ID = AID_LEADERBOARD_CONTROL;
+                            id = ActionId::LeaderboardCtrl;
 					}
 					else if ( arg.has("GREED", 11, 5) )
-						ID = AID_LEADERBOARD_GREED;
+                        id = ActionId::LeaderboardGreed;
 					else if ( arg.has("KILLS", 11, 5) )
-						ID = AID_LEADERBOARD_KILLS;
+                        id = ActionId::LeaderboardKills;
 					else if ( arg.has("POINTS", 11, 6) )
-						ID = AID_LEADERBOARD_POINTS;
+                        id = ActionId::LeaderboardPoints;
 					else if ( arg.has("RESOURCES", 11, 9) )
-						ID = AID_LEADERBOARD_RESOURCES;
+                        id = ActionId::LeaderboardResources;
 					else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
-						ID = AID_LEADERBOARD_COMPUTER_PLAYERS;
+                        id = ActionId::LeaderboardCompPlayers;
 				}
 			}
 			break;
 
 		case 'M':
 			if ( arg.has("EMORY", 1, 5) )
-				ID = AID_MEMORY;
+                id = ActionId::Memory;
 			else if ( arg.has("OVE", 1, 3) )
 			{
 				if ( arg.has("UNIT", 4, 4) )
-					ID = AID_MOVE_UNIT;
+                    id = ActionId::MoveUnit;
 				else if ( arg.has("LOCATION", 4, 8) )
-					ID = AID_MOVE_LOCATION;
+                    id = ActionId::MoveLocation;
 			}
 			else if ( arg.has("ODIFYUNIT", 1, 9) )
 			{
 				if ( arg.has("ENERGY", 10, 6) )
-					ID = AID_MODIFY_UNIT_ENERGY;
+                    id = ActionId::ModifyUnitEnergy;
 				else if ( arg.has("HANGERCOUNT", 10, 11) )
-					ID = AID_MODIFY_UNIT_HANGER_COUNT;
+                    id = ActionId::ModifyUnitHangerCount;
 				else if ( arg.has("HITPOINTS", 10, 9) )
-					ID = AID_MODIFY_UNIT_HITPOINTS;
+                    id = ActionId::ModifyUnitHitpoints;
 				else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
-					ID = AID_MODIFY_UNIT_RESOURCE_AMOUNT;
+                    id = ActionId::ModifyUnitResourceAmount;
 				else if ( arg.has("SHIELDPOINTS", 10, 12) )
-					ID = AID_MODIFY_UNIT_SHIELD_POINTS;
+                    id = ActionId::ModifyUnitShieldPoints;
 			}
 			else if ( arg.has("INIMAPPING", 1, 10) )
-				ID = AID_MINIMAP_PING;
+                id = ActionId::MinimapPing;
 			else if ( arg.has("UTEUNITSPEECH", 1, 13) )
-				ID = AID_MUTE_UNIT_SPEECH;
+                id = ActionId::MuteUnitSpeech;
 			break;
 
 		case 'O':
 			if ( arg.has("RDER", 1, 4) )
-				ID = AID_ORDER;
+                id = ActionId::Order;
 			break;
 
 		case 'P':
 			if ( arg.has("RESERVETRIGGER", 1, 14) )
-				ID = AID_PRESERVE_TRIGGER;
+                id = ActionId::PreserveTrigger;
 			else if ( arg.has("LAYWAV", 1, 6) )
-				ID = AID_PLAY_WAV;
+                id = ActionId::PlayWav;
 			else if ( arg.has("AUSE", 1, 4) )
 			{
 				if ( arg.has("GAME", 5, 4) )
-					ID = AID_PAUSE_GAME;
+                    id = ActionId::PauseGame;
 				else if ( arg.has("TIMER", 5, 5) )
-					ID = AID_PAUSE_TIMER;
+                    id = ActionId::PauseTimer;
 			}
 			break;
 
@@ -1750,16 +1794,16 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			if ( arg.has("EMOVEUNIT", 1, 9) )
 			{
 				if ( arg.has("ATLOCATION", 10, 10) )
-					ID = AID_REMOVE_UNIT_AT_LOCATION;
+                    id = ActionId::RemoveUnitAtLocation;
 				else if ( arg.size() == 10 )
-					ID = AID_REMOVE_UNIT;
+                    id = ActionId::RemoveUnit;
 			}
 			else if ( arg.has("UNAISCRIPT", 1, 10) )
 			{
 				if ( arg.has("ATLOCATION", 11, 10) )
-					ID = AID_RUN_AI_SCRIPT_AT_LOCATION;
+                    id = ActionId::RunAiScriptAtLocation;
 				else if ( arg.size() == 11 )
-					ID = AID_RUN_AI_SCRIPT;
+                    id = ActionId::RunAiScript;
 			}
 			break;
 
@@ -1767,72 +1811,72 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 			if ( arg.has("ET", 1, 2) )
 			{
 				if ( arg.has("DEATHS", 3, 6) )
-					ID = AID_SET_DEATHS;
+                    id = ActionId::SetDeaths;
 				else if ( arg.has("SWITCH", 3, 6) )
-					ID = AID_SET_SWITCH;
+                    id = ActionId::SetSwitch;
 				else if ( arg.has("RESOURCES", 3, 9) )
-					ID = AID_SET_RESOURCES;
+                    id = ActionId::SetResources;
 				else if ( arg.has("SCORE", 3, 5) )
-					ID = AID_SET_SCORE;
+                    id = ActionId::SetScore;
 				else if ( arg.has("ALLIANCESTATUS", 3, 14) )
-					ID = AID_SET_ALLIANCE_STATUS;
+                    id = ActionId::SetAllianceStatus;
 				else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
-					ID = AID_SET_COUNTDOWN_TIMER;
+                    id = ActionId::SetCountdownTimer;
 				else if ( arg.has("DOODADSTATE", 3, 11) )
-					ID = AID_SET_DOODAD_STATE;
+                    id = ActionId::SetDoodadState;
 				else if ( arg.has("INVINCIBILITY", 3, 13) )
-					ID = AID_SET_INVINCIBILITY;
+                    id = ActionId::SetInvincibility;
 				else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
-					ID = AID_SET_MISSION_OBJECTIVES;
+                    id = ActionId::SetMissionObjectives;
 				else if ( arg.has("NEXTSCENARIO", 3, 12) )
-					ID  = AID_SET_NEXT_SCENARIO;
+                    id = ActionId::SetNextScenario;
 			}
 			break;
 
 		case 'T':
 			if ( arg.has("ALKINGPORTRAIT", 1, 14) )
-				ID = AID_TALKING_PORTRAIT;
+                id = ActionId::TalkingPortrait;
 			else if ( arg.has("RANSMISSION", 1, 11) )
-				ID = AID_TRANSMISSION;
+                id = ActionId::Transmission;
 			break;
 
 		case 'U':
 			if ( arg.has("NPAUSE", 1, 6) )
 			{
 				if ( arg.has("TIMER", 7, 5) )
-					ID = AID_UNPAUSE_TIMER;
+                    id = ActionId::UnpauseTimer;
 				else if ( arg.has("GAME", 7, 4) )
-					ID = AID_UNPAUSE_GAME;
+                    id = ActionId::UnpauseGame;
 			}
 			else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
-				ID = AID_UNMUTE_UNIT_SPEECH;
+                id = ActionId::UnmuteUnitSpeech;
 			break;
 
 		case 'V':
 			if ( arg.has("ICTORY", 1, 6) )
-				ID = AID_VICTORY;
+                id = ActionId::Victory;
 			break;
 
 		case 'W':
 			if ( arg.has("AIT", 1, 3) )
-				ID = AID_WAIT;
+                id = ActionId::Wait;
 			break;
 	}
 
-	flags = defaultActionFlags(ID);
-	argsLeft = numActionArgs(ID);
+	flags = defaultActionFlags(id);
+	argsLeft = numActionArgs(id);
 
-	return ID != AID_NO_ACTION;
+	return id != ActionId::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, u32 pos, u32 end, u32 CID, u32 argsLeft, char *error)
+bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, char *error)
 {
 	char* textPtr = (char*)text.getPtr(0);
 
 	// Search for condition ID
-	switch ( CID )
+	switch ( conditionId )
 	{
-		case CID_CUSTOM:
+        case ConditionId::Custom:
 			switch ( argsLeft ) {
 				case 9: goto ParseConditionLocationField	; break;
 				case 8: goto ParseConditionPlayerField		; break;
@@ -1845,14 +1889,14 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 				case 1: goto ParseConditionInternalDataField; break;
 			}
 			break;
-		case CID_MEMORY: // deathTable+, mod, num
+        case ConditionId::Memory: // deathTable+, mod, num
 			switch ( argsLeft ) {
 				case 3: goto ParseConditionDeathOffsetField		 ; break;
 				case 2: goto ParseConditionNumericComparisonField; break;
 				case 1: goto ParseConditionAmountField			 ; break;
 			}
 			break;
-		case CID_ACCUMULATE: // player, mod, num, resouce
+        case ConditionId::Accumulate: // player, mod, num, resouce
 			switch ( argsLeft ) {
 				case 4: goto ParseConditionPlayerField			 ; break;
 				case 3: goto ParseConditionNumericComparisonField; break;
@@ -1860,7 +1904,7 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 				case 1: goto ParseConditionResourceTypeField	 ; break;
 			}
 			break;
-		case CID_BRING: // player, mod, num, unit, location
+        case ConditionId::Bring: // player, mod, num, unit, location
 			switch ( argsLeft ) {
 				case 5: goto ParseConditionPlayerField			 ; break;
 				case 4: goto ParseConditionUnitField			 ; break;
@@ -1869,9 +1913,9 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 				case 1: goto ParseConditionAmountField			 ; break;
 			}
 			break;
-		case CID_COMMAND: // Player, Unit, NumericComparison, Amount
-		case CID_DEATHS:  // Player, Unit, NumericComparison, Amount
-		case CID_KILL:	  // Player, Unit, NumericComparison, Amount
+        case ConditionId::Command: // Player, Unit, NumericComparison, Amount
+        case ConditionId::Deaths:  // Player, Unit, NumericComparison, Amount
+        case ConditionId::Kill:	  // Player, Unit, NumericComparison, Amount
 			switch ( argsLeft ) {
 				case 4: goto ParseConditionPlayerField			 ; break;
 				case 3: goto ParseConditionUnitField			 ; break;
@@ -1880,42 +1924,42 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 				
 			}
 			break;
-		case CID_COMMAND_THE_LEAST: // unit
-		case CID_COMMAND_THE_MOST:	// unit
-		case CID_LEAST_KILLS:		// unit
-		case CID_MOST_KILLS:		// unit
+        case ConditionId::CommandTheLeast: // unit
+        case ConditionId::CommandTheMost:	// unit
+        case ConditionId::LeastKills:		// unit
+        case ConditionId::MostKills:		// unit
 			if ( argsLeft == 1 ) goto ParseConditionUnitField;
 			break;
-		case CID_COMMAND_THE_LEAST_AT: // unit, location
-		case CID_COMMAND_THE_MOST_AT:  // unit, location
+        case ConditionId::CommandTheLeastAt: // unit, location
+        case ConditionId::CommandTheMostAt:  // unit, location
 			switch ( argsLeft ) {
 				case 2: goto ParseConditionUnitField	; break;
 				case 1: goto ParseConditionLocationField; break;
 			}
 			break;
-		case CID_COUNTDOWN_TIMER: // NumericComparison, Amount
-		case CID_ELAPSED_TIME: // NumericComparison, Amount
+        case ConditionId::CountdownTimer: // NumericComparison, Amount
+        case ConditionId::ElapsedTime: // NumericComparison, Amount
 			switch ( argsLeft ) {
 				case 2: goto ParseConditionNumericComparisonField; break;
 				case 1: goto ParseConditionAmountField			 ; break;
 			}
 			break;
-		case CID_HIGHEST_SCORE: // scoreType
-		case CID_LOWEST_SCORE: // scoreType
+        case ConditionId::HighestScore: // scoreType
+        case ConditionId::LowestScore: // scoreType
 			if ( argsLeft == 1 ) goto ParseConditionScoreTypeField;
 			break;
-		case CID_LEAST_RESOURCES: // resource
-		case CID_MOST_RESOURCES: // resource
+        case ConditionId::LeastResources: // resource
+        case ConditionId::MostResources: // resource
 			if ( argsLeft == 1 ) goto ParseConditionResourceTypeField;
 			break;
-		case CID_OPPONENTS: // Player, NumericComparison, Amount
+        case ConditionId::Opponents: // Player, NumericComparison, Amount
 			switch ( argsLeft ) {
 				case 3: goto ParseConditionPlayerField			 ; break;
 				case 2: goto ParseConditionNumericComparisonField; break;
 				case 1: goto ParseConditionAmountField			 ; break;
 			}
 			break;
-		case CID_SCORE: // Player, ScoreType, NumericComparison, Amount
+        case ConditionId::Score: // Player, ScoreType, NumericComparison, Amount
 			switch ( argsLeft ) {
 				case 4: goto ParseConditionPlayerField			 ; break;
 				case 3: goto ParseConditionScoreTypeField		 ; break;
@@ -1923,7 +1967,7 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 				case 1: goto ParseConditionAmountField			 ; break;
 			}
 			break;
-		case CID_SWITCH: // Switch, SwitchState
+        case ConditionId::Switch: // Switch, SwitchState
 			switch ( argsLeft ) {
 				case 2: goto ParseConditionSwitchField	   ; break;
 				case 1: goto ParseConditionSwitchStateField; break;
@@ -2017,13 +2061,13 @@ ParseConditionDeathOffsetField: // 4 bytes
 			   "Expected: 4-byte death table offset" );
 }
 
-bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, u32 AID, u32 argsLeft, char *error)
+bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, char *error)
 {
 	char* textPtr = (char*)text.getPtr(0);
 
-	switch ( AID )
+	switch ( actionId )
 	{
-		case AID_CUSTOM: // bytes: 4, 4, 4, 4, 4, 4, 2, 1, 1, 1, 3
+        case ActionId::Custom: // bytes: 4, 4, 4, 4, 4, 4, 2, 1, 1, 1, 3
 			switch ( argsLeft ) {
 				case 11: goto ParseActionLocationField	  ; break;
 				case 10: goto ParseActionTextField		  ; break;
@@ -2038,24 +2082,24 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case  1: goto ParseActionInternalDataField; break;
 			}
 			break;
-		case AID_MEMORY: // deathTable+, mod, num
+        case ActionId::Memory: // deathTable+, mod, num
 			switch ( argsLeft ) {
 				case 3: goto ParseActionDeathOffsetField	; break;
 				case 2: goto ParseActionNumericModifierField; break;
 				case 1: goto ParseActionAmountField			; break;
 			}
 			break;
-		case AID_CENTER_VIEW:  // Location
-		case AID_MINIMAP_PING: // Location
+        case ActionId::CenterView:  // Location
+		case ActionId::MinimapPing: // Location
 			if ( argsLeft == 1 ) goto ParseActionLocationField;
 			break;
-		case AID_COMMENT:				 // String
-		case AID_SET_MISSION_OBJECTIVES: // String
-		case AID_SET_NEXT_SCENARIO:		 // String
+        case ActionId::Comment:				 // String
+        case ActionId::SetMissionObjectives: // String
+        case ActionId::SetNextScenario:		 // String
 			if ( argsLeft == 1 ) goto ParseActionTextField;
 			break;
-		case AID_CREATE_UNIT:			// Player, Unit, NumUnits, Location
-		case AID_KILL_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
+        case ActionId::CreateUnit:			// Player, Unit, NumUnits, Location
+        case ActionId::KillUnitAtLocation: // Player, Unit, NumUnits, Location
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionUnitField; break;
@@ -2063,7 +2107,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_CREATE_UNIT_WITH_PROPERTIES: // Player, Unit, NumUnits, Location, Amount
+        case ActionId::CreateUnitWithProperties: // Player, Unit, NumUnits, Location, Amount
 			switch ( argsLeft ) {
 				case 5: goto ParseActionFirstGroupField; break;
 				case 4: goto ParseActionUnitField; break;
@@ -2072,13 +2116,13 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionAmountField; break;
 			}
 			break;
-		case AID_DISPLAY_TEXT_MESSAGE: // TextFlags, String
+        case ActionId::DisplayTextMessage: // TextFlags, String
 			switch ( argsLeft ) {
 				case 2: goto ParseActionTextFlagField; break;
 				case 1: goto ParseActionTextField; break;
 			}
 			break;
-		case AID_GIVE_UNITS_TO_PLAYER: // Player, SecondPlayer, Unit, NumUnits, Location
+        case ActionId::GiveUnitsToPlayer: // Player, SecondPlayer, Unit, NumUnits, Location
 			switch ( argsLeft ) {
 				case 5: goto ParseActionFirstGroupField; break;
 				case 4: goto ParseActionSecondGroupField; break;
@@ -2087,46 +2131,46 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_KILL_UNIT:	  // Player, Unit
-		case AID_REMOVE_UNIT: // Player, Unit
+        case ActionId::KillUnit:	  // Player, Unit
+        case ActionId::RemoveUnit: // Player, Unit
 			switch ( argsLeft ) {
 				case 2: goto ParseActionFirstGroupField; break;
 				case 1: goto ParseActionUnitField; break;
 			}
 			break;
-		case AID_LEADERBOARD_CONTROL_AT_LOCATION: // String, Unit, Location
+        case ActionId::LeaderboardCtrlAtLoc: // String, Unit, Location
 			switch ( argsLeft ) {
 				case 3: goto ParseActionTextField; break;
 				case 2: goto ParseActionUnitField; break;
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_LEADERBOARD_CONTROL: // String, Unit
-		case AID_LEADERBOARD_KILLS:	  // String, Unit
+        case ActionId::LeaderboardCtrl: // String, Unit
+        case ActionId::LeaderboardKills:	  // String, Unit
 			switch ( argsLeft ) {
 				case 2: goto ParseActionTextField; break;
 				case 1: goto ParseActionUnitField; break;
 			}
 			break;
-		case AID_LEADERBOARD_GREED: // Amount
+        case ActionId::LeaderboardGreed: // Amount
 			if ( argsLeft == 1 ) goto ParseActionAmountField;
 			break;
-		case AID_LEADERBOARD_POINTS: // String, ScoreType
+        case ActionId::LeaderboardPoints: // String, ScoreType
 			switch ( argsLeft ) {
 				case 2: goto ParseActionTextField; break;
 				case 1: goto ParseActionScoreTypeField; break;
 			}
 			break;
-		case AID_LEADERBOARD_RESOURCES: // String, ResourceType
+        case ActionId::LeaderboardResources: // String, ResourceType
 			switch ( argsLeft ) {
 				case 2: goto ParseActionTextField; break;
 				case 1: goto ParseActionResourceTypeField; break;
 			}
 			break;
-		case AID_LEADERBOARD_COMPUTER_PLAYERS: // StateModifier
+        case ActionId::LeaderboardCompPlayers: // StateModifier
 			if ( argsLeft == 1 ) goto ParseActionStateModifierField;
 			break;
-		case AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION: // String, Unit, Amount, Location
+        case ActionId::LeaderboardGoalCtrlAtLoc: // String, Unit, Amount, Location
 			switch ( argsLeft ) {
 				case 4: goto ParseActionTextField	 ; break;
 				case 3: goto ParseActionUnitField	 ; break;
@@ -2134,32 +2178,32 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_CONTROL: // String, Unit, Amount
-		case AID_LEADERBOARD_GOAL_KILLS:   // String, Unit, Amount
+        case ActionId::LeaderboardGoalCtrl: // String, Unit, Amount
+        case ActionId::LeaderboardGoalKills:   // String, Unit, Amount
 			switch ( argsLeft ) {
 				case 3: goto ParseActionTextField; break;
 				case 2: goto ParseActionUnitField; break;
 				case 1: goto ParseActionAmountField; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_POINTS: // String, ScoreType, Amount
+        case ActionId::LeaderboardGoalPoints: // String, ScoreType, Amount
 			switch ( argsLeft ) {
 				case 3: goto ParseActionTextField	  ; break;
 				case 2: goto ParseActionScoreTypeField; break;
 				case 1: goto ParseActionAmountField	  ; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_RESOURCES: // String, Amount, ResourceType
+        case ActionId::LeaderboardGoalResources: // String, Amount, ResourceType
 			switch ( argsLeft ) {
 				case 3: goto ParseActionTextField; break;
 				case 2: goto ParseActionAmountField; break;
 				case 1: goto ParseActionResourceTypeField; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_ENERGY:		// Player, Unit, Amount, NumUnits, Location
-		case AID_MODIFY_UNIT_HANGER_COUNT:	// Player, Unit, Amount, NumUnits, Location
-		case AID_MODIFY_UNIT_HITPOINTS:		// Player, Unit, Amount, NumUnits, Location
-		case AID_MODIFY_UNIT_SHIELD_POINTS:	// Player, Unit, Amount, NumUnits, Location
+        case ActionId::ModifyUnitEnergy:		// Player, Unit, Amount, NumUnits, Location
+        case ActionId::ModifyUnitHangerCount:	// Player, Unit, Amount, NumUnits, Location
+        case ActionId::ModifyUnitHitpoints:		// Player, Unit, Amount, NumUnits, Location
+        case ActionId::ModifyUnitShieldPoints:	// Player, Unit, Amount, NumUnits, Location
 			switch ( argsLeft ) {
 				case 5: goto ParseActionFirstGroupField; break;
 				case 4: goto ParseActionUnitField; break;
@@ -2168,7 +2212,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_RESOURCE_AMOUNT: // Player, Amount, NumUnits, Location
+        case ActionId::ModifyUnitResourceAmount: // Player, Amount, NumUnits, Location
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionAmountField; break;
@@ -2176,7 +2220,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_MOVE_LOCATION: // Player, Unit, LocDest, Location
+        case ActionId::MoveLocation: // Player, Unit, LocDest, Location
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionUnitField; break;
@@ -2184,7 +2228,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionSecondLocationField; break;
 			}
 			break;
-		case AID_MOVE_UNIT: // Player, Unit, NumUnits, Location, LocDest
+        case ActionId::MoveUnit: // Player, Unit, NumUnits, Location, LocDest
 			switch ( argsLeft ) {
 				case 5: goto ParseActionFirstGroupField; break;
 				case 4: goto ParseActionUnitField; break;
@@ -2193,7 +2237,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionSecondLocationField; break;
 			}
 			break;
-		case AID_ORDER: // Player, Unit, Location, LocDest, OrderType
+        case ActionId::Order: // Player, Unit, Location, LocDest, OrderType
 			switch ( argsLeft ) {
 				case 5: goto ParseActionFirstGroupField; break;
 				case 4: goto ParseActionUnitField; break;
@@ -2202,13 +2246,13 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionOrderField; break;
 			}
 			break;
-		case AID_PLAY_WAV: // Wav, Duration
+        case ActionId::PlayWav: // Wav, Duration
 			switch ( argsLeft ) {
 				case 2: goto ParseActionWavField; break;
 				case 1: goto ParseActionDurationField; break;
 			}
 			break;
-		case AID_REMOVE_UNIT_AT_LOCATION: // Player, Unit, NumUnits, Location
+        case ActionId::RemoveUnitAtLocation: // Player, Unit, NumUnits, Location
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionUnitField; break;
@@ -2216,36 +2260,36 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_RUN_AI_SCRIPT: // Script
+        case ActionId::RunAiScript: // Script
 			if ( argsLeft == 1 ) goto ParseActionScriptField;
 			break;
-		case AID_RUN_AI_SCRIPT_AT_LOCATION: // Script, Location
+        case ActionId::RunAiScriptAtLocation: // Script, Location
 			switch ( argsLeft ) {
 				case 2: goto ParseActionScriptField	 ; break;
 				case 1: goto ParseActionLocationField; break;
 			}
 			break;
-		case AID_SET_ALLIANCE_STATUS: // Player, AllyState
+        case ActionId::SetAllianceStatus: // Player, AllyState
 			switch ( argsLeft ) {
 				case 2: goto ParseActionFirstGroupField	   ; break;
 				case 1: goto ParseActionAllianceStatusField; break;
 			}
 			break;
-		case AID_SET_COUNTDOWN_TIMER: // NumericModifier, Duration
+        case ActionId::SetCountdownTimer: // NumericModifier, Duration
 			switch ( argsLeft ) {
 				case 2: goto ParseActionNumericModifierField; break;
 				case 1: goto ParseActionDurationField; break;
 			}
 			break;
-		case AID_SET_DEATHS: // Player, Unit, NumericModifier, Amount
+        case ActionId::SetDeaths: // Player, Unit, NumericModifier, Amount
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionUnitField; break;
 				case 2: goto ParseActionNumericModifierField; break;
 				case 1: goto ParseActionAmountField; break;
 			}
-		case AID_SET_DOODAD_STATE:	// Player, Unit, Location, StateMod
-		case AID_SET_INVINCIBILITY: // Player, Unit, Location, StateMod
+        case ActionId::SetDoodadState:	// Player, Unit, Location, StateMod
+        case ActionId::SetInvincibility: // Player, Unit, Location, StateMod
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField; break;
 				case 3: goto ParseActionUnitField; break;
@@ -2253,14 +2297,14 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionStateModifierField; break;
 			}
 			break;
-		case AID_SET_RESOURCES: // Player, NumericModifier, Amount, ResourceType
+        case ActionId::SetResources: // Player, NumericModifier, Amount, ResourceType
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField		; break;
 				case 3: goto ParseActionNumericModifierField; break;
 				case 2: goto ParseActionAmountField			; break;
 				case 1: goto ParseActionResourceTypeField	; break;
 			}
-		case AID_SET_SCORE:	// Player, NumericModifier, Amount, ScoreType
+        case ActionId::SetScore:	// Player, NumericModifier, Amount, ScoreType
 			switch ( argsLeft ) {
 				case 4: goto ParseActionFirstGroupField		; break;
 				case 3: goto ParseActionNumericModifierField; break;
@@ -2268,19 +2312,19 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionScoreTypeField		; break;
 			}
 			break;
-		case AID_SET_SWITCH: // Switch, SwitchMod
+        case ActionId::SetSwitch: // Switch, SwitchMod
 			switch ( argsLeft ) {
 				case 2: goto ParseActionSwitchField; break;
 				case 1: goto ParseActionSwitchModifierField; break;
 			}
 			break;
-		case AID_TALKING_PORTRAIT: // Unit, Duration
+        case ActionId::TalkingPortrait: // Unit, Duration
 			switch ( argsLeft ) {
 				case 2: goto ParseActionUnitField	 ; break;
 				case 1: goto ParseActionDurationField; break;
 			}
 			break;
-		case AID_TRANSMISSION: // TextFlags, String, Unit, Location, NumericModifier, SecondAmount, Wav, Duration
+        case ActionId::Transmission: // TextFlags, String, Unit, Location, NumericModifier, SecondAmount, Wav, Duration
 			switch ( argsLeft ) {
 				case 8: goto ParseActionTextFlagField; break;
 				case 7: goto ParseActionTextField; break;
@@ -2292,7 +2336,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
 				case 1: goto ParseActionDurationField; break;
 			}
 			break;
-		case AID_WAIT: // Duration
+        case ActionId::Wait: // Duration
 			if ( argsLeft == 1 ) goto ParseActionDurationField;
 			break;
 	}
@@ -2322,7 +2366,7 @@ ParseActionDurationField: // 4 bytes
 ParseActionFirstGroupField: // 4 bytes
 	returnMsg( ParsePlayer(text, currAction.group, pos, end) ||
 			   ParseLong(textPtr, currAction.group, pos, end),
-			   "Expected: 4-byte groupID" );
+			   "Expected: Group name or 4-byte groupID" );
 
 ParseActionNumberField: // 4 bytes
 	returnMsg( ParsePlayer(text, currAction.number, pos, end) ||
@@ -2577,6 +2621,11 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
 	}
 	else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
 		return true;
+    else if ( text.has("NOLOCATION", pos, size) )
+    {
+        dest = 0;
+        return true;
+    }
 
 	if ( size < 1 )
 		return false;
@@ -3268,7 +3317,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 	}
 	arg.add<u8>('\0');
 
-	char currChar = arg.get<u8>(0);
+	char currChar = toupper(arg.get<u8>(0));
 	char* argPtr;
 
 	if ( currChar == 'P' )
@@ -3276,7 +3325,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 		currChar = arg.get<u8>(1);
 		if ( currChar == 'L' )
 		{
-			if ( arg.has("AYER", 2, 4) )
+			if ( arg.hasCaseless("AYER", 2, 4) )
 			{
 				argPtr = (char*)arg.getPtr(6);
 				if ( number = atoi(argPtr) )
@@ -3306,10 +3355,10 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 	}
 	else if ( currChar == 'F' )
 	{
-		currChar = arg.get<u8>(1);
+		currChar = toupper(arg.get<u8>(1));
 		if ( currChar == 'O' )
 		{
-			if ( arg.has("RCE", 2, 3) )
+			if ( arg.hasCaseless("RCE", 2, 3) )
 			{
 				argPtr = (char*)arg.getPtr(5);
 
@@ -3323,7 +3372,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 					}
 				}
 			}
-			else if ( arg.has("ES", 2, 2) )
+			else if ( arg.hasCaseless("ES", 2, 2) )
 			{
 				// Do something with foes
 				dest = 14;
@@ -3347,16 +3396,16 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 	}
 	else if ( currChar == 'A' )
 	{
-		currChar = arg.get<u8>(1);
+		currChar = toupper(arg.get<u8>(1));
 		if ( currChar == 'L' )
 		{
-			if ( arg.has("LPLAYERS", 2, 8) )
+			if ( arg.hasCaseless("LPLAYERS", 2, 8) )
 			{
 				// Do something with all players
 				dest = 17;
 				return true;
 			}
-			else if ( arg.has("LIES", 2, 4) )
+			else if ( arg.hasCaseless("LIES", 2, 4) )
 			{
 				// Do something with allies
 				dest = 15;
@@ -3372,7 +3421,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 	}
 	else if ( currChar == 'C' )
 	{
-		if ( arg.has("URRENTPLAYER", 1, 12) )
+		if ( arg.hasCaseless("URRENTPLAYER", 1, 12) )
 		{
 			// Do something with current player
 			dest = 13;
@@ -3693,49 +3742,49 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, u32 pos, u32 end)
 	return success;
 }
 
-u8 TextTrigCompiler::ExtendedToRegularCID(s32 extendedCID)
+u8 TextTrigCompiler::ExtendedToRegularCID(ConditionId extendedCID)
 {
 	switch ( extendedCID )
 	{
 		// Don't include CID_CUSTOM, that is set while parsing args
-		case CID_MEMORY:
-			return CID_MEMORY_BASE;
+        case ConditionId::Memory:
+			return (u8)ExtendedConditionBase::Memory;
 			break;
 	}
 	return (u8)extendedCID;
 }
 
-u8 TextTrigCompiler::ExtendedToRegularAID(s32 extendedAID)
+u8 TextTrigCompiler::ExtendedToRegularAID(ActionId actionId)
 {
-	switch ( extendedAID )
+	switch ( actionId )
 	{
 		// Don't include AID_CUSTOM, that is set while parsing args
-		case AID_MEMORY:
-			return AID_MEMORY_BASE;
+        case ActionId::Memory:
+			return (u8)ExtendedActionBase::Memory;
 			break;
 	}
 	return 0;
 }
 
-s32 TextTrigCompiler::ExtendedNumConditionArgs(s32 extendedCID)
+s32 TextTrigCompiler::ExtendedNumConditionArgs(ConditionId conditionId)
 {
-	switch ( extendedCID )
+	switch ( conditionId )
 	{
-		case CID_CUSTOM:
+        case ConditionId::Custom:
 			return 8;
-		case CID_MEMORY:
+        case ConditionId::Memory:
 			return 3;
 	}
 	return 0;
 }
 
-s32 TextTrigCompiler::ExtendedNumActionArgs(s32 extendedAID)
+s32 TextTrigCompiler::ExtendedNumActionArgs(ActionId actionId)
 {
-	switch ( extendedAID )
+	switch ( actionId )
 	{
-		case AID_CUSTOM:
+        case ActionId::Custom:
 			return 11;
-		case AID_MEMORY:
+        case ActionId::Memory:
 			return 3;
 	}
 	return 0;

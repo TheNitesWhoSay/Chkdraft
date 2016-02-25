@@ -147,7 +147,7 @@ bool Maps::OpenMap(const char* fileName)
 				mb("Map is protected and will be opened as view only");
 
 			SetFocus(chkd.getHandle());
-            currentlyActiveMap->Scroll(SCROLL_X|SCROLL_Y);
+            currentlyActiveMap->Scroll(true, true, false);
             currentlyActiveMap->Redraw(true);
             currentlyActiveMap->refreshScenario();
 			return true;
@@ -202,22 +202,23 @@ void Maps::UpdateTreeView()
 void Maps::SetGrid(s16 xSize, s16 ySize)
 {
 	if ( currentlyActiveMap != nullptr )
-        currentlyActiveMap->SetGrid(xSize, ySize);
+        currentlyActiveMap->SetGridSize(xSize, ySize);
 }
 
-void Maps::ChangeLayer(u8 newLayer)
+void Maps::ChangeLayer(Layer newLayer)
 {
 	if ( currentlyActiveMap != nullptr && currentlyActiveMap->getLayer() != newLayer )
 	{
         currentlyActiveMap->clearSelectedTiles();
 
-		if ( chkd.mainToolbar.layerBox.GetSel() != newLayer )
-			chkd.mainToolbar.layerBox.SetSel(newLayer);
+		if ( chkd.mainToolbar.layerBox.GetSel() != (int)newLayer )
+			chkd.mainToolbar.layerBox.SetSel((int)newLayer);
 
-		if ( newLayer == LAYER_FOG || newLayer == LAYER_UNITS || newLayer == LAYER_SPRITES || newLayer == LAYER_VIEW_FOG )
+		if ( newLayer == Layer::FogEdit || newLayer == Layer::Units ||
+             newLayer == Layer::Sprites || newLayer == Layer::FogView )
 			// Layers where player#'s are relevant
 		{
-			ChangePlayer(currentlyActiveMap->currPlayer());
+            ChangePlayer(currentlyActiveMap->getCurrPlayer());
 			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_SHOW);
 		}
 		else // Layers where player#'s are irrelevant
@@ -226,7 +227,7 @@ void Maps::ChangeLayer(u8 newLayer)
 			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
 		}
 
-		if ( newLayer == LAYER_TERRAIN )
+		if ( newLayer == Layer::Terrain )
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_SHOW);
 		else
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
@@ -236,7 +237,7 @@ void Maps::ChangeLayer(u8 newLayer)
 		chkd.tilePropWindow.DestroyThis();
         currentlyActiveMap->Redraw(false);
 		char layerString[32];
-		if ( chkd.mainToolbar.layerBox.GetText(newLayer, layerString, 31) )
+		if ( chkd.mainToolbar.layerBox.GetText((int)newLayer, layerString, 31) )
 			chkd.statusBar.SetText(1, layerString);
 	}
 }
@@ -249,9 +250,9 @@ void Maps::ChangeZoom(bool increment)
 	{
 		for ( int i=1; i<10; i++ )
 		{
-			if ( zoom == zooms[i] )
+			if ( zoom == defaultZooms[i] )
 			{
-                currentlyActiveMap->setZoom(zooms[i-1]);
+                currentlyActiveMap->setZoom(defaultZooms[i-1]);
 				chkd.mainToolbar.zoomBox.SetSel(i-1);
 				break;
 			}
@@ -261,9 +262,9 @@ void Maps::ChangeZoom(bool increment)
 	{
 		for ( int i=0; i<9; i++ )
 		{
-			if ( zoom == zooms[i] )
+			if ( zoom == defaultZooms[i] )
 			{
-                currentlyActiveMap->setZoom(zooms[i+1]);
+                currentlyActiveMap->setZoom(defaultZooms[i+1]);
 				chkd.mainToolbar.zoomBox.SetSel(i+1);
 				break;
 			}
@@ -273,9 +274,9 @@ void Maps::ChangeZoom(bool increment)
 
 void Maps::ChangePlayer(u8 newPlayer)
 {
-    currentlyActiveMap->currPlayer() = newPlayer;
+    currentlyActiveMap->setCurrPlayer(newPlayer);
 
-	if ( currentlyActiveMap->getLayer() == LAYER_UNITS )
+	if ( currentlyActiveMap->getLayer() == Layer::Units )
 	{
 		if ( clipboard.isPasting() )
 		{
@@ -291,7 +292,7 @@ void Maps::ChangePlayer(u8 newPlayer)
 	char color[32], race[32], playerText[64];
 	std::snprintf(color, sizeof(color), "Red");
 	std::snprintf(race, sizeof(race), "Terran");
-	std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->currPlayer()+1, color, race);
+    std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
 	chkd.statusBar.SetText(2, playerText);
 }
 
@@ -344,7 +345,7 @@ void Maps::startPaste(bool isQuickPaste)
 {
 	if ( currentlyActiveMap == nullptr )
 		return;
-	else if ( currentlyActiveMap->getLayer() == LAYER_TERRAIN )
+	else if ( currentlyActiveMap->getLayer() == Layer::Terrain )
 	{
 		if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
 		{
@@ -357,11 +358,11 @@ void Maps::startPaste(bool isQuickPaste)
 			tme.cbSize = sizeof(TRACKMOUSEEVENT);
 			tme.dwFlags = TME_HOVER;
 			tme.hwndTrack = currentlyActiveMap->getHandle();
-			tme.dwHoverTime = DEFAULT_HOVER_TIME;
+			tme.dwHoverTime = defaultHoverTime;
 			TrackMouseEvent(&tme);
 		}
 	}
-	else if ( currentlyActiveMap->getLayer() == LAYER_UNITS )
+	else if ( currentlyActiveMap->getLayer() == Layer::Units )
 	{
 		if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
 		{
@@ -372,7 +373,7 @@ void Maps::startPaste(bool isQuickPaste)
 			tme.cbSize = sizeof(TRACKMOUSEEVENT);
 			tme.dwFlags = TME_HOVER;
 			tme.hwndTrack = currentlyActiveMap->getHandle();
-			tme.dwHoverTime = DEFAULT_HOVER_TIME;
+			tme.dwHoverTime = defaultHoverTime;
 			TrackMouseEvent(&tme);
 		}
 	}
@@ -387,14 +388,14 @@ void Maps::endPaste()
 
 void Maps::properties()
 {
-	if ( currentlyActiveMap->getLayer() == LAYER_TERRAIN )
+	if ( currentlyActiveMap->getLayer() == Layer::Terrain )
 	{
         Selections &selections = currentlyActiveMap->GetSelections();
 		if ( selections.hasTiles() )
 		{
 			TileNode tile = selections.getFirstTile();
 			selections.removeTiles();
-			selections.addTile(tile.value, tile.xc, tile.yc, NEIGHBOR_LEFT|NEIGHBOR_TOP|NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM);
+			selections.addTile(tile.value, tile.xc, tile.yc, TileNeighbor::All);
 
 			RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 			if ( chkd.tilePropWindow.getHandle() != NULL )
@@ -415,7 +416,7 @@ void Maps::stickCursor()
 void Maps::updateCursor(s32 xc, s32 yc)
 {
     Selections &selections = currentlyActiveMap->GetSelections();
-	if ( currentlyActiveMap->getLayer() == LAYER_LOCATIONS )
+	if ( currentlyActiveMap->getLayer() == Layer::Locations )
 	{
 		u16 selectedLocation = selections.getSelectedLocation();
 		if ( selectedLocation != NO_LOCATION )

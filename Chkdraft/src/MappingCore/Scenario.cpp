@@ -330,9 +330,9 @@ bool Scenario::getActiveComment(Trigger* trigger, RawString &comment)
 	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
 	{
 		Action action = trigger->actions[i];
-		if ( action.action == AID_COMMENT )
+		if ( action.action == (u8)ActionId::Comment )
 		{
-			if ( (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
+			if ( (action.flags&(u8)Action::Flags::Disabled) != (u8)Action::Flags::Disabled )
 			{
 				if ( action.stringNum != 0 && GetString(comment, action.stringNum) )
 					return true;
@@ -497,8 +497,8 @@ bool Scenario::GetString(ChkdString &dest, u32 stringNum)
 {
 	dest.clear();
 
-	char* srcStr;
-	size_t length;
+    char* srcStr = nullptr;
+    size_t length = 0;
 
 	if ( GetStrInfo(srcStr, length, stringNum) )
 	{
@@ -2033,13 +2033,13 @@ bool Scenario::repairStringTable(bool extendedTable)
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
 			stringNum = trig->actions[i].stringNum;
-			u8 action = trig->actions[i].action;
-			if ( action == AID_COMMENT || action == AID_DISPLAY_TEXT_MESSAGE || action == AID_LEADERBOARD_CONTROL_AT_LOCATION ||
-				 action == AID_LEADERBOARD_CONTROL || action == AID_LEADERBOARD_KILLS || action == AID_LEADERBOARD_POINTS ||
-				 action == AID_LEADERBOARD_RESOURCES || action == AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION ||
-				 action == AID_LEADERBOARD_GOAL_CONTROL || action == AID_LEADERBOARD_GOAL_KILLS || action == AID_LEADERBOARD_GOAL_POINTS ||
-				 action == AID_LEADERBOARD_GOAL_RESOURCES || action == AID_SET_MISSION_OBJECTIVES || action == AID_SET_NEXT_SCENARIO ||
-				 action == AID_TRANSMISSION )
+			ActionId action = (ActionId)trig->actions[i].action;
+			if ( action == ActionId::Comment || action == ActionId::DisplayTextMessage || action == ActionId::LeaderboardCtrlAtLoc ||
+				 action == ActionId::LeaderboardCtrl || action == ActionId::LeaderboardKills || action == ActionId::LeaderboardPoints ||
+				 action == ActionId::LeaderboardResources || action == ActionId::LeaderboardGoalCtrlAtLoc ||
+				 action == ActionId::LeaderboardGoalCtrl || action == ActionId::LeaderboardGoalKills ||
+                 action == ActionId::LeaderboardGoalPoints || action == ActionId::LeaderboardGoalResources ||
+                 action == ActionId::SetMissionObjectives || action == ActionId::SetNextScenario || action == ActionId::Transmission )
 			{
 				if ( RepairString(stringNum, false) )
 					trig->actions[i].stringNum = stringNum;
@@ -2051,8 +2051,8 @@ bool Scenario::repairStringTable(bool extendedTable)
 			}
 
 			stringNum = trig->actions[i].wavID;
-			action = trig->actions[i].action;
-			if ( action == AID_PLAY_WAV || action == AID_TRANSMISSION )
+			action = (ActionId)trig->actions[i].action;
+			if ( action == ActionId::PlayWav || action == ActionId::Transmission )
 			{
 				if ( RepairString(stringNum, false) )
 					trig->actions[i].wavID = stringNum;

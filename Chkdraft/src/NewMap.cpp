@@ -42,7 +42,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				if ( chkd.maps.NewMap(width, height, tileset, terrain, triggers) )
 				{
-					CM->Scroll(SCROLL_X | SCROLL_Y);
+                    CM->Scroll(true, true, false);
 
 					// Tiling Code
 					u16 tilenum = 0;

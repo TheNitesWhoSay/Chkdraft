@@ -55,8 +55,8 @@ class TextTrigGenerator
 	
 	protected:
 
-		inline void AddConditionArgument(buffer &output, Condition &condition, u8 &CID, u8 &stdTextTrigArgNum);
-		inline void AddActionArgument(buffer &output, Action &action, u8 &AID, u8 &stdTextTrigArgNum);
+		inline void AddConditionArgument(buffer &output, Condition &condition, ConditionId CID, u8 &stdTextTrigArgNum);
+		inline void AddActionArgument(buffer &output, Action &action, ActionId AID, u8 &stdTextTrigArgNum);
 		bool GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std::string &trigString);
 		bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
 		bool CorrectLineEndings(buffer& buf); // Corrects any improperly formatted line endings

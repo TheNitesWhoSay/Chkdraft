@@ -13,9 +13,13 @@ class WindowsItem
 	public:
 		WindowsItem();
 
+		void DestroyThis();
+
 		bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
 		HWND getHandle();
+		HWND getParent();
 
+		std::string GetTitle();
 		bool getWindowRect(RECT &rect);
 		int Width();
 		int Height();
@@ -29,6 +33,9 @@ class WindowsItem
 		HDC getDC(); // Gets the current device context
 		bool isEnabled();
 
+		LONG GetWinLong(int index);
+		void SetWinLong(int index, LONG newLong);
+
 		void SetFont(HFONT font, bool redrawImmediately);
 		void ReplaceChildFonts(HFONT hFont);
 		void LockCursor(); // Prevents cursor from leaving this window
@@ -37,6 +44,7 @@ class WindowsItem
 		bool SetParent(HWND hParent);
 		void SetRedraw(bool autoRedraw);
 		virtual void RedrawThis();
+		void RefreshFrame();
 
 		void MoveTo(int x, int y);
 		void SetPos(int x, int y, int width, int height);
@@ -44,8 +52,9 @@ class WindowsItem
 		void Show();
 		void Hide();
 		void SetSmallIcon(HANDLE hIcon);
+		void SetMedIcon(HANDLE hIcon);
 		bool SetTitle(const std::string& newTitle);
-		bool SetTitle(const char* newTitle);
+		bool AddTooltip(const char* text);
 
 		bool ReleaseDC(HDC hDC);
 		void FocusThis();
@@ -53,6 +62,8 @@ class WindowsItem
 		void DisableThis();
 		void EnableThis();
 		void SetWidth(int newWidth);
+		void SetHeight(int newHeight);
+		void SetSize(int newWidth, int newHeight);
 
 	protected:
 		virtual void setHandle(HWND hWnd);
@@ -77,10 +88,31 @@ class WindowsItem
 
 		std::string &WindowClassName();
 
+		HDC StartSimplePaint();
+		HDC StartBufferedPaint();
+        HDC GetPaintDc();
+		void EndPaint();
+
+		int PaintWidth();
+		int PaintHeight();
+
+		void FillPaintArea(HBRUSH hBrush);
+		void FrameRect(HBRUSH hBrush, RECT &rect);
+
 	private:
-		HWND hWnd; // Handle to the window this class encapsulates
+		HWND windowsItemHandle; // Handle to the window this class encapsulates
+		HWND tooltipHandle; // Handle to any tooltip created for this class
 		std::string windowClassName; // May contain the window class title before the window is created
 		static std::list<std::string> registeredClasses; // Contains the names of all window classes registered by this class
+
+		RECT paintRect;
+		int paintWidth;
+		int paintHeight;
+		HDC paintDc;
+		HDC paintFinalDc;
+		HBITMAP paintMemBitmap;
+		enum class PaintStatus { NotPainting, SimplePaint, BufferedPaint };
+		PaintStatus paintStatus;
 };
 
 #endif

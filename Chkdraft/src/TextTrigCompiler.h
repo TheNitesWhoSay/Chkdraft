@@ -43,14 +43,14 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		bool CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
 
 		// Attempts to compile the argNum'th condition argument into the given condition
-		bool ParseConditionName(std::string text, u8 &ID);
+		bool ParseConditionName(std::string text, ConditionId &conditionId);
 		bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk, ScData &scData);
-		bool ParseActionName(std::string text, u8 &ID);
+		bool ParseActionName(std::string text, ActionId &id);
 		bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> &argMap, Action &action, ScenarioPtr chk, ScData &scData);
-		static u8 defaultConditionFlags(u8 CID);
-		static u8 defaultActionFlags(u8 AID);
-		static u8 numConditionArgs(s32 CID);
-		static u8 numActionArgs(s32 AID);
+		static u8 defaultConditionFlags(ConditionId CID);
+		static u8 defaultActionFlags(ActionId AID);
+		static u8 numConditionArgs(ConditionId CID);
+		static u8 numActionArgs(ActionId actionId);
 
 
 	protected:
@@ -65,28 +65,28 @@ class TextTrigCompiler : public StaticTrigComponentParser
 		inline bool ParsePartTwo(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 		inline bool ParsePartThree(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 		inline bool ParsePartFour(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-			u32 &conditionEnd, u32 &lineEnd, u32 &conditionIndex, u8 &flags, u32 &argsLeft, u32 &numConditions,
+			u32 &conditionEnd, u32 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
 			Condition*& currCondition, Trigger &currTrig);
 		inline bool ParsePartFive(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
-			Condition*& currCondition, u32 &conditionIndex);
+			Condition*& currCondition, ConditionId &conditionId);
 		inline bool ParsePartSix(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 		inline bool ParsePartSeven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-			u8 &flags, u32 &actionEnd, u32 &lineEnd, u32 &actionIndex, u32 &argsLeft, u32 &numActions,
+			u8 &flags, u32 &actionEnd, u32 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
 			Action*& currAction, Trigger &currTrig);
 		inline bool ParsePartEight(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
-			u32 &argsLeft, u32 &argEnd, Action*& currAction, u32 &actionIndex);
+			u32 &argsLeft, u32 &argEnd, Action*& currAction, ActionId &actionId);
 		inline bool ParsePartNine(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 		inline bool ParsePartTen(buffer& text, buffer& output, char*error, u32 &pos, u32 &line, u32 &expecting,
 			u32 &flagsEnd, Trigger& currTrig);
 		inline bool ParsePartEleven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
 
 		bool ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32 pos, u32 end); // Parse a player that the trigger is executed by
-		bool ParseConditionName(buffer &arg, u32 &ID);
-		bool ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, u32 &ID, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
-		bool ParseActionName(buffer &arg, u32 &ID);
-		bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, u32& ID, u8& flags, u32& argsLeft); // Find the equivilant actionID
-		bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, u32 CID, u32 argsLeft, char* error); // Parse an argument belonging to a condition
-		bool ParseActionArg(buffer& text, Action& currAction, u32 pos, u32 end, u32 AID, u32 argsLeft, char* error); // Parse an argument belonging to an action
+		bool ParseConditionName(buffer &arg, ConditionId &conditionId);
+		bool ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
+		bool ParseActionName(buffer &arg, ActionId &id);
+		bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, ActionId &id, u8& flags, u32& argsLeft); // Find the equivilant actionID
+		bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, char* error); // Parse an argument belonging to a condition
+		bool ParseActionArg(buffer& text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, char* error); // Parse an argument belonging to an action
 		bool ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags);
 
 		bool ParseString(buffer &text, u32& dest, u32 pos, u32 end); // Find a given string in the map, prepare to add it if necessary
@@ -99,11 +99,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
 		bool ParseSwitch(buffer &text, u32 &dest, u32 pos, u32 end); // Accelerator for 4-byte switches
 
-		u8 ExtendedToRegularCID(s32 extendedCID); // Returns the conditionID the extended condition is based on
-		u8 ExtendedToRegularAID(s32 extendedAID); // Returns the actionID the extended action is based on
+		u8 ExtendedToRegularCID(ConditionId extendedCID); // Returns the conditionID the extended condition is based on
+		u8 ExtendedToRegularAID(ActionId extendedAID); // Returns the actionID the extended action is based on
 
-		static s32 ExtendedNumConditionArgs(s32 extendedCID); // Returns the number of arguments for the extended condition
-		static s32 ExtendedNumActionArgs(s32 extendedAID); // Returns the number of arguments for the extended action
+		static s32 ExtendedNumConditionArgs(ConditionId extendedCID); // Returns the number of arguments for the extended condition
+		static s32 ExtendedNumActionArgs(ActionId extendedAID); // Returns the number of arguments for the extended action
 
 
 	private:

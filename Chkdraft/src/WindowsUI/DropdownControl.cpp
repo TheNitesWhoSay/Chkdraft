@@ -1,41 +1,5 @@
 #include "DropdownControl.h"
 
-#include <string>
-#include <vector>
-#include <cstring>
-
-bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-	u32 id, const std::vector<std::string>& items, HFONT font)
-{
-	DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
-
-	if (editable)
-	{
-		if (alwaysList)
-			style |= CBS_DROPDOWNLIST;
-		else
-			style |= CBS_DROPDOWN;
-	}
-	else
-	{
-		if (alwaysList)
-			style |= CBS_SIMPLE | CBS_DROPDOWNLIST;
-		else
-			style |= CBS_SIMPLE | CBS_DROPDOWN;
-	}
-
-	if (WindowControl::CreateControl(0, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false))
-	{
-		HWND hWnd = getHandle();
-		SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
-		for (auto item : items)
-			SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)item.c_str());
-		return true;
-	}
-	else
-		return false;
-
-}
 bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
 	u32 id, int numItems, const char** items, HFONT font)
 {
@@ -64,9 +28,38 @@ bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int heig
 			SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)items[i]);
 		return true;
 	}
-	else
-		return false;
+	return false;
+}
 
+bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
+    u32 id, const std::vector<std::string>& items, HFONT font)
+{
+    DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
+
+    if ( editable )
+    {
+        if ( alwaysList )
+            style |= CBS_DROPDOWNLIST;
+        else
+            style |= CBS_DROPDOWN;
+    }
+    else
+    {
+        if ( alwaysList )
+            style |= CBS_SIMPLE | CBS_DROPDOWNLIST;
+        else
+            style |= CBS_SIMPLE | CBS_DROPDOWN;
+    }
+
+    if ( WindowControl::CreateControl(0, "COMBOBOX", NULL, style, x, y, width, height, hParent, (HMENU)id, false) )
+    {
+        HWND hWnd = getHandle();
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
+        for ( size_t i = 0; i < items.size(); i++ )
+            SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)items[i].c_str());
+        return true;
+    }
+    return false;
 }
 
 void DropdownControl::SetSel(int index)
@@ -110,24 +103,24 @@ bool DropdownControl::GetEditText(std::string& dest)
 template <typename numType>
 bool DropdownControl::GetEditNum(numType &dest)
 {
-	bool success = false;
-	char* text;
+	std::string text;
 	if ( GetEditText(text) )
 	{
-		int temp;
-		if ( temp = atoi(text) )
+		errno = 0;
+		char* endPtr = nullptr;
+		long long temp = std::strtoll(text.c_str(), &endPtr, 0);
+		if ( temp != 0 )
 		{
-			dest = temp;
-			success = true;
+			dest = (numType)temp;
+			return true;
 		}
-		else if ( std::strlen(text) > 0 && text[0] == '0' )
+		else if ( errno == 0 && endPtr == &text[text.size()] )
 		{
 			dest = 0;
-			success = true;
+			return true;
 		}
-		delete[] text;
 	}
-	return success;
+	return false;
 }
 template bool DropdownControl::GetEditNum<u8>(u8 &dest);
 template bool DropdownControl::GetEditNum<s8>(s8 &dest);

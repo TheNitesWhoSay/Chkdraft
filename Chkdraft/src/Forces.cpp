@@ -117,7 +117,7 @@ void ForcesWindow::RefreshWindow()
 
 		for ( int player=0; player<8; player++ )
 		{
-			u8 force(0), color(0), race(0), displayOwner(CM->getDisplayOwner(player));
+			u8 force(0), color(0), race(0), displayOwner(CM->GetPlayerOwnerStringIndex(player));
 			if ( CM->getPlayerForce(player, force) )
 			{
 				CM->getPlayerColor(player, color);

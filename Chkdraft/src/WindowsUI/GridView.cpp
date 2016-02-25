@@ -23,41 +23,39 @@ EditControl &GridViewControl::EditBox()
 	return editBox;
 }
 
-bool GridViewControl::allowKeyNavDuringEdit(GVKey key)
+bool GridViewControl::allowKeyNavDuringEdit(GVKey)
 {
 	return true;
 }
 
-bool GridViewControl::allowSel(int x, int y)
+bool GridViewControl::allowSel(int, int)
 {
 	return true; // Always allow, descendants may alter
 }
 
-bool GridViewControl::allowSel(int xStart, int xEnd, int yStart, int yEnd)
+bool GridViewControl::allowSel(int, int, int, int)
 {
 	return true; // Always allow, decendants may alter
 }
 
-void GridViewControl::adjustSel(int &x, int &y)
+void GridViewControl::adjustSel(int &, int &)
 {
 	return; // Do nothing, let descendants alter selections
 }
 
-void GridViewControl::adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd)
+void GridViewControl::adjustSel(int &, int &, int &, int &)
 {
 	return; // Do nothing, let descendants alter selections
 }
 
-void GridViewControl::CellClicked(int x, int y)
+void GridViewControl::CellClicked(int, int)
 {
 	return; // Do nothing, let descendants respond if they wish
 }
 
-bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, u32 id)
+bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)
 {
-	u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
-	//if ( editable )
-	//	style |= LVS_EDITLABELS;
+	u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;\
 
 	if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, WC_LISTVIEW, "", style,
 									  x, y, width, height, hParent, (HMENU)id, false) )
@@ -73,10 +71,10 @@ bool GridViewControl::AddColumn(int insertAt, const char* title, int width, int 
 		   ListViewControl::AddColumn(insertAt, title, width, alignmentFlags);
 }
 
-void GridViewControl::AddRow(int numColumns, LPARAM lParam)
+void GridViewControl::AddRow(int numColumnsInRow, LPARAM lParam)
 {
-	if ( resize(numRows+1, this->numColumns) )
-		ListViewControl::AddRow(numColumns, lParam);
+	if ( resize(numRows+1, std::max(this->numColumns, numColumnsInRow)) )
+		ListViewControl::AddRow(numColumnsInRow, lParam);
 }
 
 void GridViewControl::RemoveRow(int rowNum)
@@ -442,20 +440,20 @@ bool GridViewControl::contentHitTest(int x, int y, bool &outsideLeft, bool &outs
 	return false;
 }
 
-bool GridViewControl::resize(int numRows, int numColumns)
+bool GridViewControl::resize(int newNumRows, int newNumColumns)
 {
-	if ( numRows > 0 && numColumns > 0 )
+	if ( newNumRows > 0 && newNumColumns > 0 )
 	{
 		GridControlItem** newGridItems;
 		try {
-			newGridItems = new GridControlItem*[numRows];
-			for ( int y=0; y<numRows; y++ )
-				newGridItems[y] = new GridControlItem[numColumns];
+			newGridItems = new GridControlItem*[newNumRows];
+			for ( int y=0; y<newNumRows; y++ )
+				newGridItems[y] = new GridControlItem[newNumColumns];
 		}
 		catch ( std::bad_alloc ) { return false; }
 
-		int maxCopyRow = std::min(numRows, this->numRows);
-		int maxCopyColumn = std::min(numColumns, this->numColumns);
+		int maxCopyRow = std::min(newNumRows, this->numRows);
+		int maxCopyColumn = std::min(newNumColumns, this->numColumns);
 		for ( int y=0; y<maxCopyRow; y++ )
 		{
 			for ( int x=0; x<maxCopyColumn; x++ )
@@ -467,11 +465,11 @@ bool GridViewControl::resize(int numRows, int numColumns)
 		delete[] gridItems;
 
 		gridItems = newGridItems;
-		this->numRows = numRows;
-		this->numColumns = numColumns;
+		this->numRows = newNumRows;
+		this->numColumns = newNumColumns;
 		return true;
 	}
-	else if ( numRows == 0 || numColumns == 0 )
+	else if ( newNumRows == 0 || newNumColumns == 0 )
 	{
 
 		if ( this->numRows > 0 && this->numColumns > 0 )
@@ -481,8 +479,8 @@ bool GridViewControl::resize(int numRows, int numColumns)
 			delete[] gridItems;
 		}
 		gridItems = nullptr;
-		this->numRows = numRows;
-		this->numColumns = numColumns;
+		this->numRows = newNumRows;
+		this->numColumns = newNumColumns;
 		return true;
 	}
 	return false;
@@ -663,7 +661,7 @@ void GridViewControl::UpdateCaretPos(int xClick, int yClick)
 			SetCaretPos((int)result);
 		else
 		{
-			LRESULT result = SendMessage(editBox.getHandle(), EM_CHARFROMPOS, 0, MAKELPARAM(cx, cy));
+			result = SendMessage(editBox.getHandle(), EM_CHARFROMPOS, 0, MAKELPARAM(cx, cy));
 			SetCaretPos(int(LOWORD(result)));
 		}
 	}
@@ -701,7 +699,7 @@ void GridViewControl::KeyDown(WPARAM wParam)
 	RedrawThis();
 }
 
-void GridViewControl::EditTextChanged(std::string &str)
+void GridViewControl::EditTextChanged(std::string &)
 {
 
 }
@@ -988,7 +986,7 @@ void GridViewControl::DrawItems(HWND hWnd)
 	LPARAM rectPointer = LPARAM(&dis.rcItem);
 	LPARAM disPointer = LPARAM(&dis);
 
-	RECT rcCli;
+    RECT rcCli = {};
 	HDC hDC = BeginPaint(hWnd, &ps);
 	if ( hDC != NULL && GetClientRect((HWND)hWnd, &rcCli) != 0 )
 	{
@@ -1029,7 +1027,7 @@ void GridViewControl::DrawItems(HWND hWnd)
 			DeleteDC(dis.hDC);
 		}
 	}
-	EndPaint(hWnd, &ps);
+	::EndPaint(hWnd, &ps);
 }
 
 void GridViewControl::Paint(HWND hWnd)
@@ -1052,12 +1050,6 @@ LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 
 LRESULT GridViewControl::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-	switch ( HIWORD(wParam) )
-	{
-		default:
-			return WindowControl::Command(hWnd, wParam, lParam);
-			break;
-	}
 	return WindowControl::Command(hWnd, wParam, lParam);
 }
 
@@ -1065,8 +1057,6 @@ LRESULT GridViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 {
 	switch ( msg )
 	{
-		//case WM_COMMAND: return Command(hWnd, msg, wParam, lParam); break;
-		//case WM_NOTIFY: return Notify(hWnd, msg, wParam, lParam); break;
 		case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
 		case WM_KEYDOWN: KeyDown(wParam); break;
 		case WM_CHAR: Char(wParam); break;

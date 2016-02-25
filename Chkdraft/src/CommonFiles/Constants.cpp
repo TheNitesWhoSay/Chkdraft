@@ -9,9 +9,9 @@
 
 const HFONT defaultFont = CreateFontA(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
 
-const double zooms[] =
+const std::vector<double> defaultZooms =
 {
-	4.0, 3.0, 2.0, 1.5, 1.0, .66, .50, .33, .25, .10
+    4.0, 3.0, 2.0, 1.5, 1.0, .66, .50, .33, .25, .10
 };
 
 const std::vector<u32> onOffMenuItems =
@@ -276,7 +276,6 @@ const std::vector<std::string> techNames = {
 };
 
 const std::vector<std::string> playerOwners = { "Unused", "Rescuable", "Computer", "Human", "Neutral" };
-
 
 const std::vector<std::string> playerRaces =
 {

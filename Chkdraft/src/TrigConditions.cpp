@@ -115,7 +115,7 @@ void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
 	if ( conditionNum >= 0 && conditionNum < 16 && CM->getTrigger(trig, trigIndex) )
 	{
 		Condition &condition = trig->condition(conditionNum);
-		if ( condition.condition != CID_NO_CONDITION )
+		if ( condition.condition != (u8)ConditionId::NoCondition )
 		{
 			condition.ToggleDisabled();
 
@@ -278,12 +278,12 @@ LRESULT TrigConditionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam
 	return result;
 }
 
-void TrigConditionsWindow::ChangeConditionType(Condition &condition, u8 newId)
+void TrigConditionsWindow::ChangeConditionType(Condition &condition, ConditionId newId)
 {
-	if ( condition.condition != newId )
+	if ( condition.condition != (u8)newId )
 	{
-		if ( newId == CID_COMMAND || newId == CID_BRING ||
-			newId == CID_COMMAND_THE_MOST_AT || newId == CID_COMMAND_THE_LEAST_AT )
+		if ( newId == ConditionId::Command || newId == ConditionId::Bring ||
+			newId == ConditionId::CommandTheMostAt || newId == ConditionId::CommandTheLeastAt )
 		{
 			condition.locationNum = 64;
 		}
@@ -294,21 +294,21 @@ void TrigConditionsWindow::ChangeConditionType(Condition &condition, u8 newId)
 		condition.amount = 0;
 		condition.unitID = 0;
 
-		if ( newId == CID_SWITCH )
+		if ( newId == ConditionId::Switch )
 			condition.comparison = 3;
 		else
 			condition.comparison = 0;
 
-		condition.condition = newId;
+		condition.condition = (u8)newId;
 		condition.typeIndex = 0;
 		condition.flags = TextTrigCompiler::defaultConditionFlags(newId);
 		condition.internalData = 0;
 	}
 }
 
-bool TrigConditionsWindow::TransformCondition(Condition &condition, u8 newId)
+bool TrigConditionsWindow::TransformCondition(Condition &condition, ConditionId newId)
 {
-	if ( condition.condition != newId )
+	if ( condition.condition != (u8)newId )
 	{
 		ChangeConditionType(condition, newId);
 		CM->notifyChange(false);
@@ -323,7 +323,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
-	u8 newId = CID_NO_CONDITION;
+	ConditionId newId = ConditionId::NoCondition;
 	if ( ttc.ParseConditionName(newText, newId) || ttc.ParseConditionName(suggestions.Take(), newId) )
 	{
 		if ( CM->getTrigger(trig, trigIndex) )
@@ -335,7 +335,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 	else if ( newText.length() == 0 )
 	{
 		if ( CM->getTrigger(trig, trigIndex) &&
-			 trig->conditions[conditionNum].condition != newId )
+			 trig->conditions[conditionNum].condition != (u8)newId )
 		{
 			trig->deleteCondition((u8)conditionNum);
 			CM->notifyChange(false);
@@ -396,7 +396,7 @@ BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 			 CM->getTrigger(trig, trigIndex) &&
 			 trig->conditions[conditionNum].condition != 0 )
 		{
-			ChangeConditionType(trig->conditions[conditionNum], 0);
+			ChangeConditionType(trig->conditions[conditionNum], ConditionId::NoCondition);
 		}
 		else if ( gridItemX > 1 ) // Condition Arg
 		{
@@ -497,7 +497,7 @@ void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &
 	rcFill.left = xStart - 1;
 	rcFill.right = xStart + width;
 
-	FrameRect(hDC, &rcFill, hBlack);
+	::FrameRect(hDC, &rcFill, hBlack);
 }
 
 void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
@@ -544,12 +544,12 @@ void TrigConditionsWindow::DrawTouchups(HDC hDC)
 		rect.left -= 1;
 		rect.top -= 1;
 		HBRUSH hHighlight = CreateSolidBrush(RGB(0, 0, 200));
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		rect.left -= 1;
 		rect.top -= 1;
 		rect.right += 1;
 		rect.bottom += 1;
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		DeleteBrush(hHighlight);
 	}
 	gridConditions.RedrawHeader();
@@ -571,7 +571,7 @@ void TrigConditionsWindow::SuggestUnit()
 {
 	if ( CM != nullptr )
 	{
-		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
+		for ( u16 i = 0; i < NumUnitNames; i++ )
 		{
 			ChkdString str(true);
 			CM->getUnitName(str, i);
@@ -728,21 +728,21 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 		suggestions.ClearStrings();
 		switch ( argType )
 		{
-			case CndNoType: SuggestNothing(); break;
-			case CndUnit: SuggestUnit(); break;
-			case CndLocation: SuggestLocation(); break;
-			case CndPlayer: SuggestPlayer(); break;
-			case CndAmount: SuggestAmount(); break;
-			case CndNumericComparison: SuggestNumericComparison(); break;
-			case CndResourceType: SuggestResourceType(); break;
-			case CndScoreType: SuggestScoreType(); break;
-			case CndSwitch: SuggestSwitch(); break;
-			case CndSwitchState: SuggestSwitchState(); break;
-			case CndComparison: SuggestComparison(); break;
-			case CndConditionType: SuggestConditionType(); break;
-			case CndTypeIndex: SuggestTypeIndex(); break;
-			case CndFlags: SuggestFlags(); break;
-			case CndInternalData: SuggestInternalData(); break;
+            case ConditionArgType::CndNoType: SuggestNothing(); break;
+            case ConditionArgType::CndUnit: SuggestUnit(); break;
+            case ConditionArgType::CndLocation: SuggestLocation(); break;
+            case ConditionArgType::CndPlayer: SuggestPlayer(); break;
+            case ConditionArgType::CndAmount: SuggestAmount(); break;
+            case ConditionArgType::CndNumericComparison: SuggestNumericComparison(); break;
+            case ConditionArgType::CndResourceType: SuggestResourceType(); break;
+            case ConditionArgType::CndScoreType: SuggestScoreType(); break;
+            case ConditionArgType::CndSwitch: SuggestSwitch(); break;
+            case ConditionArgType::CndSwitchState: SuggestSwitchState(); break;
+            case ConditionArgType::CndComparison: SuggestComparison(); break;
+            case ConditionArgType::CndConditionType: SuggestConditionType(); break;
+            case ConditionArgType::CndTypeIndex: SuggestTypeIndex(); break;
+            case ConditionArgType::CndFlags: SuggestFlags(); break;
+            case ConditionArgType::CndInternalData: SuggestInternalData(); break;
 		}
 	}
 }

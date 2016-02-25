@@ -140,7 +140,7 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
 	if ( actionNum >= 0 && actionNum < 64 && CM->getTrigger(trig, trigIndex) )
 	{
 		Action &action = trig->action(actionNum);
-		if ( action.action != AID_NO_ACTION )
+		if ( (ActionId)action.action != ActionId::NoAction )
 		{
 			action.ToggleDisabled();
 
@@ -370,9 +370,9 @@ LRESULT TrigActionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, L
 	return result;
 }
 
-void TrigActionsWindow::ChangeActionType(Action &action, u8 newId)
+void TrigActionsWindow::ChangeActionType(Action &action, ActionId newId)
 {
-	if ( action.action != newId )
+	if ( (ActionId)action.action != newId )
 	{
 		action.location = 0;
 		action.stringNum = 0;
@@ -381,15 +381,15 @@ void TrigActionsWindow::ChangeActionType(Action &action, u8 newId)
 		action.group = 0;
 		action.number = 0;
 		action.type = 0;
-		action.action = newId;
+		action.action = (u8)newId;
 
-		if ( newId == AID_SET_SWITCH || newId == AID_LEADERBOARD_COMPUTER_PLAYERS || newId == AID_SET_DOODAD_STATE ||
-			newId == AID_SET_INVINCIBILITY )
+		if ( newId == ActionId::SetSwitch || newId == ActionId::LeaderboardCompPlayers || newId == ActionId::SetDoodadState ||
+			newId == ActionId::SetInvincibility )
 		{
 			action.type2 = 5;
 		}
-		else if ( newId == AID_SET_COUNTDOWN_TIMER || newId == AID_SET_DEATHS || newId == AID_SET_RESOURCES ||
-			newId == AID_SET_SCORE || newId == AID_TRANSMISSION )
+		else if ( newId == ActionId::SetCountdownTimer || newId == ActionId::SetDeaths || newId == ActionId::SetResources ||
+			newId == ActionId::SetScore || newId == ActionId::Transmission )
 		{
 			action.type2 = 7;
 		}
@@ -403,9 +403,9 @@ void TrigActionsWindow::ChangeActionType(Action &action, u8 newId)
 	}
 }
 
-bool TrigActionsWindow::TransformAction(Action &action, u8 newId)
+bool TrigActionsWindow::TransformAction(Action &action, ActionId newId)
 {
-	if ( action.action != newId )
+	if ( (ActionId)action.action != newId )
 	{
 		ChangeActionType(action, newId);
 		CM->notifyChange(false);
@@ -420,7 +420,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
-	u8 newId = AID_NO_ACTION;
+	ActionId newId = ActionId::NoAction;
 	if ( ttc.ParseActionName(newText, newId) || ttc.ParseActionName(suggestions.Take(), newId) )
 	{
 		if ( CM->getTrigger(trig, trigIndex) )
@@ -432,7 +432,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
 	else if ( newText.length() == 0 )
 	{
 		if ( CM->getTrigger(trig, trigIndex) &&
-			trig->actions[actionNum].action != newId )
+			(ActionId)trig->actions[actionNum].action != newId )
 		{
 			trig->deleteAction((u8)actionNum);
 			CM->notifyChange(false);
@@ -454,7 +454,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 		if ( action.action < 64 && argNum < actionArgMaps[action.action].size() )
 		{
 			u8 textTrigArgNum = actionArgMaps[action.action][argNum];
-			ActionArgType argType = action.TextTrigArgType(textTrigArgNum, action.action);
+			ActionArgType argType = action.TextTrigArgType(textTrigArgNum, (ActionId)action.action);
 			ChkdString chkdSuggestText = ChkdString(suggestionString, true);
 			ChkdString chkdNewText = ChkdString(newText, true);
 
@@ -521,7 +521,7 @@ BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 			CM->getTrigger(trig, trigIndex) &&
 			trig->actions[actionNum].action != 0 )
 		{
-			ChangeActionType(trig->actions[actionNum], 0);
+			ChangeActionType(trig->actions[actionNum], ActionId::NoAction);
 		}
 		else if ( gridItemX > 1 ) // Action Arg
 		{
@@ -621,7 +621,7 @@ void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xSt
 	rcFill.left = xStart - 1;
 	rcFill.right = xStart + width;
 
-	FrameRect(hDC, &rcFill, hBlack);
+	::FrameRect(hDC, &rcFill, hBlack);
 }
 
 void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
@@ -668,12 +668,12 @@ void TrigActionsWindow::DrawTouchups(HDC hDC)
 		rect.left -= 1;
 		rect.top -= 1;
 		HBRUSH hHighlight = CreateSolidBrush(RGB(0, 0, 200));
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		rect.left -= 1;
 		rect.top -= 1;
 		rect.right += 1;
 		rect.bottom += 1;
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		DeleteBrush(hHighlight);
 	}
 	gridActions.RedrawHeader();
@@ -749,7 +749,7 @@ void TrigActionsWindow::SuggestUnit()
 {
 	if ( CM != nullptr )
 	{
-		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
+		for ( u16 i = 0; i < NumUnitNames; i++ )
 		{
 			ChkdString str(true);
 			CM->getUnitName(str, i);
@@ -967,13 +967,13 @@ void TrigActionsWindow::ButtonEditString()
 		if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 		{
 			Action &action = trig->action((u8)focusedY);
-			u8 actionNum = action.action;
+			u8 actionId = action.action;
 
-			std::vector<u8> &argMap = actionArgMaps[actionNum];
-			u8 numArgs = (u8)actionArgMaps[actionNum].size();
+			std::vector<u8> &argMap = actionArgMaps[actionId];
+			u8 numArgs = (u8)actionArgMaps[actionId].size();
 			for ( u8 i = 0; i < numArgs; i++ )
 			{
-				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+				ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionId);
 				u32 stringNum = 0;
 				if ( argType == ActionArgType::ActString && CM->addString(str, stringNum, false) )
 				{
@@ -1008,13 +1008,13 @@ void TrigActionsWindow::ButtonEditWav()
 		if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
 		{
 			Action &action = trig->action((u8)focusedY);
-			u8 actionNum = action.action;
+			u8 actionId = action.action;
 
-			std::vector<u8> &argMap = actionArgMaps[actionNum];
-			u8 numArgs = (u8)actionArgMaps[actionNum].size();
+			std::vector<u8> &argMap = actionArgMaps[actionId];
+			u8 numArgs = (u8)actionArgMaps[actionId].size();
 			for ( u8 i = 0; i < numArgs; i++ )
 			{
-				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+				ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionId);
 				u32 stringNum = 0;
 
 				if ( argType == ActionArgType::ActWav && CM->addString(wavStr, stringNum, false) )
@@ -1044,7 +1044,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 			if ( action.action <= 59 && actionArgMaps[action.action].size() > actionArgNum )
 			{
 				u8 textTrigArgNum = actionArgMaps[action.action][actionArgNum];
-				argType = action.TextTrigArgType(textTrigArgNum, action.action);
+				argType = action.TextTrigArgType(textTrigArgNum, (ActionId)action.action);
 			}
 		}
 
@@ -1058,35 +1058,35 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 		suggestions.ClearStrings();
 		switch ( argType )
 		{
-			case ActNoType: SuggestNothing(); break;
-			case ActLocation: SuggestLocation(); break;
-			case ActString: SuggestString(); break;
-			case ActPlayer: SuggestPlayer(); break;
-			case ActUnit: SuggestUnit(); break;
-			case ActNumUnits: SuggestNumUnits(); break;
-			case ActCUWP: SuggestCUWP(); break;
-			case ActTextFlags: SuggestTextFlags(); break;
-			case ActAmount: SuggestAmount(); break;
-			case ActScoreType: SuggestScoreType(); break;
-			case ActResourceType: SuggestResourceType(); break;
-			case ActStateMod: SuggestStateMod(); break;
-			case ActPercent: SuggestPercent(); break;
-			case ActOrder: SuggestOrder(); break;
-			case ActWav: SuggestWav(); break;
-			case ActDuration: SuggestDuration(); break;
-			case ActScript: SuggestScript(); break;
-			case ActAllyState: SuggestAllyState(); break;
-			case ActNumericMod: SuggestNumericMod(); break;
-			case ActSwitch: SuggestSwitch(); break;
-			case ActSwitchMod: SuggestSwitchMod(); break;
-			case ActType: SuggestType(); break;
-			case ActActionType: SuggestActionType(); break;
-			case ActSecondaryType: SuggestSecondaryType(); break;
-			case ActFlags: SuggestFlags(); break;
-			case ActNumber: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-			case ActTypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
-			case ActSecondaryTypeIndex: SuggestSecondaryTypeIndex(); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-			case ActInternalData: SuggestInternalData(); break;
+            case ActionArgType::ActNoType: SuggestNothing(); break;
+			case ActionArgType::ActLocation: SuggestLocation(); break;
+			case ActionArgType::ActString: SuggestString(); break;
+			case ActionArgType::ActPlayer: SuggestPlayer(); break;
+			case ActionArgType::ActUnit: SuggestUnit(); break;
+			case ActionArgType::ActNumUnits: SuggestNumUnits(); break;
+			case ActionArgType::ActCUWP: SuggestCUWP(); break;
+			case ActionArgType::ActTextFlags: SuggestTextFlags(); break;
+			case ActionArgType::ActAmount: SuggestAmount(); break;
+			case ActionArgType::ActScoreType: SuggestScoreType(); break;
+			case ActionArgType::ActResourceType: SuggestResourceType(); break;
+			case ActionArgType::ActStateMod: SuggestStateMod(); break;
+			case ActionArgType::ActPercent: SuggestPercent(); break;
+			case ActionArgType::ActOrder: SuggestOrder(); break;
+			case ActionArgType::ActWav: SuggestWav(); break;
+			case ActionArgType::ActDuration: SuggestDuration(); break;
+			case ActionArgType::ActScript: SuggestScript(); break;
+			case ActionArgType::ActAllyState: SuggestAllyState(); break;
+			case ActionArgType::ActNumericMod: SuggestNumericMod(); break;
+			case ActionArgType::ActSwitch: SuggestSwitch(); break;
+			case ActionArgType::ActSwitchMod: SuggestSwitchMod(); break;
+			case ActionArgType::ActType: SuggestType(); break;
+			case ActionArgType::ActActionType: SuggestActionType(); break;
+			case ActionArgType::ActSecondaryType: SuggestSecondaryType(); break;
+			case ActionArgType::ActFlags: SuggestFlags(); break;
+			case ActionArgType::ActNumber: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+			case ActionArgType::ActTypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
+			case ActionArgType::ActSecondaryTypeIndex: SuggestSecondaryTypeIndex(); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+			case ActionArgType::ActInternalData: SuggestInternalData(); break;
 		}
 	}
 }
@@ -1105,14 +1105,14 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 			u8 numArgs = (u8)actionArgMaps[actionNum].size();
 			for ( u8 i = 0; i < numArgs; i++ )
 			{
-				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+				ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
 				if ( argType == ActionArgType::ActString )
 					includesString = true;
 			}
 
 			for ( u8 i = 0; i < numArgs; i++ )
 			{
-				ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+				ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
 				if ( argType == ActionArgType::ActWav )
 					includesWav = true;
 			}
@@ -1159,7 +1159,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
 		u8 numArgs = (u8)actionArgMaps[actionNum].size();
 		for ( u8 i = 0; i < numArgs; i++ )
 		{
-			ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+			ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
 			if ( argType == ActionArgType::ActString )
 			{
 				ChkdString dest(false);
@@ -1184,7 +1184,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
 		u8 numArgs = (u8)actionArgMaps[actionNum].size();
 		for ( u8 i = 0; i < numArgs; i++ )
 		{
-			ActionArgType argType = action.TextTrigArgType(argMap[i], actionNum);
+			ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
 			if ( argType == ActionArgType::ActWav )
 			{
 				ChkdString dest(false);

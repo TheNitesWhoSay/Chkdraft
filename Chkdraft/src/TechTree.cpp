@@ -26,12 +26,12 @@ void TechTree::InsertTechs()
 
 	for ( int i=0; i<sizeof(TreeTechs)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(NULL, sTreeTechs[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(NULL, sTreeTechs[i], TreeTypeCategory | (LPARAM)Layer::Units);
 		const int* techs = TreeTechs[i];
 		for ( int j=0; j<nTreeTechs[i]; j++ )
 		{
 			u32 techId = techs[j];
-			InsertTreeItem(LastGroup, techNames.at(techId).c_str(), TREE_TYPE_TECH|techId);
+			InsertTreeItem(LastGroup, techNames.at(techId).c_str(), TreeTypeTech|techId);
 		}
 	}
 }

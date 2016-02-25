@@ -17,9 +17,9 @@ class PasteTileNode
 		u16 value;
 		s32 xc;
 		s32 yc;
-		u8 neighbors; // Same as in TileNode
+		TileNeighbor neighbors; // Same as in TileNode
 
-		PasteTileNode(u16 value, s32 xc, s32 yc, u8 neighbors) :
+		PasteTileNode(u16 value, s32 xc, s32 yc, TileNeighbor neighbors) :
 			value(value), xc(xc), yc(yc), neighbors(neighbors) { }
 };
 
@@ -45,7 +45,7 @@ class Clipboard
 
 		bool hasTiles();
 		bool hasUnits() { return copyUnits.size() > 0; }
-		void copy(GuiMap &map, u8 layer);
+		void copy(GuiMap &map, Layer layer);
 		
 		void addQuickTile(u16 index, s32 xc, s32 yc);
 		bool hasQuickTiles() { return quickTiles.size() > 0; }
@@ -56,7 +56,7 @@ class Clipboard
 		void beginPasting(bool isQuickPaste);
 		void endPasting();
 
-		void doPaste(u8 layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
+		void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
 
 		std::vector<PasteTileNode> &getTiles();
 		std::vector<PasteUnitNode> &getUnits();

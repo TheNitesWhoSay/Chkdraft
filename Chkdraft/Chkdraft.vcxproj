@@ -114,6 +114,7 @@
     <ClCompile Include="src\WindowsUI\ListBoxControl.cpp" />
     <ClCompile Include="src\WindowsUI\ListViewControl.cpp" />
     <ClCompile Include="src\WindowsUI\MdiClient.cpp" />
+    <ClCompile Include="src\WindowsUI\PaintBuffer.cpp" />
     <ClCompile Include="src\WindowsUI\RadioButtonControl.cpp" />
     <ClCompile Include="src\WindowsUI\StatusControl.cpp" />
     <ClCompile Include="src\WindowsUI\TabControl.cpp" />
@@ -240,6 +241,7 @@
     <ClInclude Include="src\WindowsUI\ListBoxControl.h" />
     <ClInclude Include="src\WindowsUI\ListViewControl.h" />
     <ClInclude Include="src\WindowsUI\MdiClient.h" />
+    <ClInclude Include="src\WindowsUI\PaintBuffer.h" />
     <ClInclude Include="src\WindowsUI\RadioButtonControl.h" />
     <ClInclude Include="src\WindowsUI\StatusControl.h" />
     <ClInclude Include="src\WindowsUI\TabControl.h" />

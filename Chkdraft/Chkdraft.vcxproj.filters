@@ -216,9 +216,6 @@
     <ClInclude Include="src\CommonFiles\Debug.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\CommonFiles\Resource.h">
-      <Filter>Header Files\Common Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\CommonFiles\Structs.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
@@ -573,11 +570,14 @@
     <ClInclude Include="src\MappingCore\ChkSprite.h">
       <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="src\WindowsUI\PaintBuffer.h">
+      <Filter>Header Files\Windows UI\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CommonFiles\Resource.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\ChkdPlugins.cpp">
-      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
-    </ClCompile>
     <ClCompile Include="src\CommonFiles\Constants.cpp">
       <Filter>Source Files\Common Files</Filter>
     </ClCompile>
@@ -910,6 +910,12 @@
     </ClCompile>
     <ClCompile Include="src\Undos.cpp">
       <Filter>Source Files\Mapping\Undos</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WindowsUI\PaintBuffer.cpp">
+      <Filter>Source Files\Windows UI\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ChkdPlugins.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

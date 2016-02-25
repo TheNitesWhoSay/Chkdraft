@@ -81,10 +81,10 @@ bool Clipboard::hasTiles()
 	return copyTiles.size() > 0;
 }
 
-void Clipboard::copy(GuiMap &map, u8 layer)
+void Clipboard::copy(GuiMap &map, Layer layer)
 {
     Selections &selections = map.GetSelections();
-	if ( layer == LAYER_TERRAIN )
+	if ( layer == Layer::Terrain )
 	{
 		ClearCopyTiles(); // Clear whatever was previously copied
 		if ( selections.hasTiles() )
@@ -120,7 +120,7 @@ void Clipboard::copy(GuiMap &map, u8 layer)
 			}
 		}
 	}
-	else if ( layer == LAYER_UNITS )
+	else if ( layer == Layer::Units )
 	{
 		ClearCopyUnits();
 		if ( selections.hasUnits() )
@@ -167,7 +167,7 @@ void Clipboard::copy(GuiMap &map, u8 layer)
 
 void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 {
-	quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, ALL_NEIGHBORS));
+	quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, TileNeighbor::All));
 }
 
 void Clipboard::addQuickUnit(ChkUnit* unitRef)
@@ -207,11 +207,11 @@ void Clipboard::endPasting()
 	}
 }
 
-void Clipboard::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack)
+void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack)
 {
 	switch ( layer )
 	{
-		case LAYER_TERRAIN:
+        case Layer::Terrain:
 			{
 				mapClickX += 16;
 				mapClickY += 16;
@@ -249,7 +249,7 @@ void Clipboard::doPaste(u8 layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Und
 				}
 			}
 			break;
-		case LAYER_UNITS:
+        case Layer::Units:
 			{
 				std::shared_ptr<ReversibleActions> unitCreates(new ReversibleActions);
 				auto &pasteUnits = getUnits();

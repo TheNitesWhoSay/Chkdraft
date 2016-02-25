@@ -1,22 +1,50 @@
 #include "WindowsItem.h"
-
-#include <list>
-#include <string>
-#include <algorithm>
+#include <CommCtrl.h>
 
 std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
-WindowsItem::WindowsItem() : hWnd(NULL)
+WindowsItem::WindowsItem() : windowsItemHandle(NULL), tooltipHandle(NULL), paintWidth(0), paintHeight(0),
+	paintDc(NULL), paintFinalDc(NULL), paintMemBitmap(NULL), paintStatus(PaintStatus::NotPainting)
 {
+	paintRect.left = 0;
+	paintRect.top = 0;
+	paintRect.right = 0;
+	paintRect.bottom = 0;
+}
 
+void WindowsItem::DestroyThis()
+{
+	if ( getHandle() != NULL )
+		::DestroyWindow(getHandle());
+	windowsItemHandle = NULL;
+
+	if ( tooltipHandle != NULL )
+		::DestroyWindow(tooltipHandle);
+	tooltipHandle = NULL;
+
+	paintWidth = 0;
+	paintHeight = 0;
+	paintDc = NULL;
+	paintFinalDc = NULL;
+	paintMemBitmap = NULL;
+	paintStatus = PaintStatus::NotPainting;
+	paintRect.left = 0;
+	paintRect.top = 0;
+	paintRect.right = 0;
+	paintRect.bottom = 0;
 }
 
 HWND WindowsItem::getHandle()
 {
-	//if ( this != nullptr )
-		return hWnd;
-	//else
-	//	return NULL;
+    if ( this != nullptr )
+        return windowsItemHandle;
+    else
+        return NULL;
+}
+
+HWND WindowsItem::getParent()
+{
+	return ::GetParent(getHandle());
 }
 
 bool WindowsItem::operator==(HWND hWnd)
@@ -26,7 +54,7 @@ bool WindowsItem::operator==(HWND hWnd)
 
 void WindowsItem::setHandle(HWND hWnd)
 {
-	this->hWnd = hWnd;
+	windowsItemHandle = hWnd;
 }
 
 bool WindowsItem::RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
@@ -77,19 +105,123 @@ bool WindowsItem::WindowClassIsRegistered(LPCTSTR lpszClassName)
 		return true;
 }
 
-int WindowsItem::CompareLvItems(LPARAM index1, LPARAM index2)
+int WindowsItem::CompareLvItems(LPARAM, LPARAM)
 {
 	return 0; // No sort unless this method is overridden
 }
 
 int CALLBACK WindowsItem::ForwardCompareLvItems(LPARAM index1, LPARAM index2, LPARAM lParam)
 {
-	return ((WindowsItem*)lParam)->CompareLvItems(index1, index2);
+return ((WindowsItem*)lParam)->CompareLvItems(index1, index2);
 }
 
 std::string &WindowsItem::WindowClassName()
 {
 	return windowClassName;
+}
+
+HDC WindowsItem::StartSimplePaint()
+{
+	if ( paintStatus == PaintStatus::NotPainting )
+	{
+		getClientRect(paintRect);
+		paintWidth = paintRect.right - paintRect.left;
+		paintHeight = paintRect.bottom - paintRect.top;
+		paintDc = getDC();
+		paintStatus = PaintStatus::SimplePaint;
+		return paintDc;
+	}
+	return NULL;
+}
+
+HDC WindowsItem::StartBufferedPaint()
+{
+	if ( paintStatus == PaintStatus::NotPainting )
+	{
+		getClientRect(paintRect);
+		paintWidth = paintRect.right - paintRect.left;
+		paintHeight = paintRect.bottom - paintRect.top;
+		paintFinalDc = getDC();
+		paintDc = ::CreateCompatibleDC(paintFinalDc);
+		paintMemBitmap = ::CreateCompatibleBitmap(paintFinalDc, paintWidth, paintHeight);
+		::SelectObject(paintDc, paintMemBitmap);
+		paintStatus = PaintStatus::BufferedPaint;
+		return paintDc;
+	}
+	return NULL;
+}
+
+HDC WindowsItem::GetPaintDc()
+{
+    return paintDc;
+}
+
+void WindowsItem::EndPaint()
+{
+	if ( paintStatus == PaintStatus::SimplePaint )
+	{
+		ReleaseDC(paintDc);
+        ValidateRect(getHandle(), NULL);
+
+		paintRect.left = 0;
+		paintRect.top = 0;
+		paintRect.right = 0;
+		paintRect.bottom = 0;
+		paintWidth = 0;
+		paintHeight = 0;
+		paintDc = NULL;
+		paintStatus = PaintStatus::NotPainting;
+	}
+	else if ( paintStatus == PaintStatus::BufferedPaint )
+	{
+		::BitBlt(paintFinalDc, paintRect.left, paintRect.top, paintWidth, paintHeight, paintDc, 0, 0, SRCCOPY);
+		::DeleteObject(paintMemBitmap);
+		::DeleteDC(paintDc);
+		ReleaseDC(paintFinalDc);
+        ValidateRect(getHandle(), NULL);
+
+		paintRect.left = 0;
+		paintRect.top = 0;
+		paintRect.right = 0;
+		paintRect.bottom = 0;
+		paintWidth = 0;
+		paintHeight = 0;
+		paintDc = NULL;
+		paintFinalDc = NULL;
+		paintMemBitmap = NULL;
+		paintStatus = PaintStatus::NotPainting;
+	}
+}
+
+int WindowsItem::PaintWidth()
+{
+	return paintWidth;
+}
+
+int WindowsItem::PaintHeight()
+{
+	return paintHeight;
+}
+
+void WindowsItem::FillPaintArea(HBRUSH hBrush)
+{
+	if ( paintStatus != PaintStatus::NotPainting )
+		::FillRect(paintDc, &paintRect, hBrush);
+}
+
+void WindowsItem::FrameRect(HBRUSH hBrush, RECT &rect)
+{
+	if ( rect.left < rect.right || rect.top < rect.bottom )
+		::FrameRect(paintDc, &rect, hBrush);
+}
+
+std::string WindowsItem::GetTitle()
+{
+	char windowTitle[MAX_PATH] = {};
+	if ( ::GetWindowText(getHandle(), windowTitle, MAX_PATH) > 0 )
+		return std::string(windowTitle);
+
+	return std::string("");
 }
 
 bool WindowsItem::getWindowRect(RECT &rect)
@@ -176,6 +308,16 @@ bool WindowsItem::isEnabled()
 	return ::IsWindowEnabled(getHandle()) != 0;
 }
 
+LONG WindowsItem::GetWinLong(int index)
+{
+	return ::GetWindowLong(getHandle(), index);
+}
+
+void WindowsItem::SetWinLong(int index, LONG newLong)
+{
+	::SetWindowLong(getHandle(), index, newLong);
+}
+
 BOOL CALLBACK SetFont(HWND hWnd, LPARAM hFont) // Callback function for ReplaceChildFonts
 {
 	::SendMessage(hWnd, WM_SETFONT, hFont, TRUE);
@@ -258,6 +400,11 @@ void WindowsItem::RedrawThis()
 	::RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
+void WindowsItem::RefreshFrame()
+{
+	::SetWindowPos(getHandle(), NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOZORDER | SWP_NOSIZE);
+}
+
 void WindowsItem::MoveTo(int x, int y)
 {
 	::SetWindowPos(getHandle(), NULL, x, y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
@@ -288,13 +435,42 @@ void WindowsItem::SetSmallIcon(HANDLE hIcon)
 	::SendMessage(getHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
+void WindowsItem::SetMedIcon(HANDLE hIcon)
+{
+	::SendMessage(getHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+}
+
 bool WindowsItem::SetTitle(const std::string& newTitle)
 {
 	return ::SetWindowText(getHandle(), newTitle.c_str()) != 0;
 }
-bool WindowsItem::SetTitle(const char* newTitle)
+
+bool WindowsItem::AddTooltip(const char* text)
 {
-	return ::SetWindowText(getHandle(), newTitle) != 0;
+	tooltipHandle = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		getParent(), 0, ::GetModuleHandle(NULL), NULL);
+
+	if ( tooltipHandle != NULL )
+	{
+		TOOLINFO toolInfo = {};
+		toolInfo.cbSize = sizeof(TOOLINFO);
+		toolInfo.hwnd = getParent();
+		toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+		toolInfo.uId = (UINT_PTR)getHandle();
+		toolInfo.lpszText = (LPSTR)text;
+		if ( ::SendMessage(tooltipHandle, TTM_ADDTOOL, 0, (LPARAM)&toolInfo) == TRUE )
+		{
+			::SendMessage(tooltipHandle, TTM_ACTIVATE, TRUE, 0);
+			return true;
+		}
+		else
+		{
+			::DestroyWindow(tooltipHandle);
+			tooltipHandle = NULL;
+		}
+	}
+	return false;
 }
 
 bool WindowsItem::ReleaseDC(HDC hDC)
@@ -325,4 +501,14 @@ void WindowsItem::EnableThis()
 void WindowsItem::SetWidth(int newWidth)
 {
 	::SetWindowPos(getHandle(), NULL, 0, 0, newWidth, Height(), SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE);
+}
+
+void WindowsItem::SetHeight(int newHeight)
+{
+	::SetWindowPos(getHandle(), NULL, 0, 0, Width(), newHeight, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE);
+}
+
+void WindowsItem::SetSize(int newWidth, int newHeight)
+{
+	::SetWindowPos(getHandle(), NULL, 0, 0, newWidth, newHeight, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE);
 }

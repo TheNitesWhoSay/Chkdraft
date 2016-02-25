@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <string>
 
+enum class MaxUnitBounds
+{
+    Left = 128, Right = 127, Up = 80, Down = 79
+};
+
 DWORD ColorCycler::ccticks(0);
 
 colorcycle ColorCycler::cctable[4][8] = { // Different color cycling definition tables
@@ -50,8 +55,58 @@ inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
 	return pixel;
 }
 
-void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, u32 layer,
-                       HDC hDC, bool showAnywhere)
+inline void BoundedAdjustPx(u32 &pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
+{
+    u8 result = ((u8*)&pixel)[0] + (u8)blueOffset;
+    if ( blueOffset > 0 )
+    {
+        if ( result > ((u8*)&pixel)[0] ) // No overflow
+            ((u8*)&pixel)[0] = result;
+        else
+            ((u8*)&pixel)[0] = 255;
+    }
+    else if ( blueOffset < 0 )
+    {
+        if ( result < ((u8*)&pixel)[0] ) // No underflow
+            ((u8*)&pixel)[0] = result;
+        else
+            ((u8*)&pixel)[0] = 0;
+    }
+
+    result = ((u8*)&pixel)[1] + (u8)greenOffset;
+    if ( greenOffset > 0 )
+    {
+        if ( result > ((u8*)&pixel)[1] ) // No overflow
+            ((u8*)&pixel)[1] += (u8)greenOffset;
+        else
+            ((u8*)&pixel)[1] = 255;
+    }
+    else if ( greenOffset < 0 )
+    {
+        if ( result < ((u8*)&pixel)[1] ) // No underflow
+            ((u8*)&pixel)[1] += (u8)greenOffset;
+        else
+            ((u8*)&pixel)[1] = 0;
+    }
+
+    result = ((u8*)&pixel)[2] + (u8)redOffset;
+    if ( redOffset > 0 )
+    {
+        if ( result > ((u8*)&pixel)[2] ) // No overflow
+            ((u8*)&pixel)[2] += (u8)redOffset;
+        else
+            ((u8*)&pixel)[2] = 255;
+    }
+    else if ( redOffset < 0 )
+    {
+        if ( result < ((u8*)&pixel)[2] ) // No underflow
+            ((u8*)&pixel)[2] += (u8)redOffset;
+        else
+            ((u8*)&pixel)[2] = 0;
+    }
+}
+
+void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, HDC hDC, bool showAnywhere)
 {
 	this->screenLeft = screenLeft;
 	this->screenTop = screenTop;
@@ -73,14 +128,14 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
 	DrawSprites(bitmap);
 
-	if ( layer == LAYER_LOCATIONS )
+	if ( map.getLayer() == Layer::Locations )
 		DrawLocations(bitmap, showAnywhere);
 
 	BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
 	SetDIBitsToDevice( hDC, 0, 0, screenWidth, screenHeight, 0, 0, 0,
 					   screenHeight, bitmap.data(), &bmi, DIB_RGB_COLORS);
 
-	if ( layer == LAYER_LOCATIONS )	
+	if ( map.getLayer() == Layer::Locations )	
 		DrawLocationNames(hDC);
 
 	if ( displayingTileNums )
@@ -102,12 +157,12 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 
 	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
-	if ( screenHeight > u32(mapHeight*32) )
+	if ( screenHeight > (s32)mapHeight*32 )
 		maxRowY = mapHeight;
 	else
 		maxRowY = (screenTop+screenHeight)/32+1;
 
-	if ( screenWidth > u32(mapWidth*32) )
+	if ( screenWidth > (s32)mapWidth*32 )
 		maxRowX = mapWidth;
 	else
 		maxRowX = (screenLeft+screenWidth)/32+1;
@@ -141,12 +196,12 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 
 	u16 wTileHex;
 
-	if ( screenHeight > u32(mapHeight*32) )
+	if ( screenHeight > (s32)mapHeight*32 )
 		maxRowY = mapHeight;
 	else
 		maxRowY = (screenTop+screenHeight)/32+1;
 
-	if ( screenWidth > u32(mapWidth*32) )
+	if ( screenWidth > (s32)mapWidth*32 )
 		maxRowX = mapWidth;
 	else
 		maxRowX = (screenLeft+screenWidth)/32+1;
@@ -170,13 +225,13 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 
 void Graphics::DrawGrid(ChkdBitmap& bitmap)
 {
-	u16 gridXSize,
-		gridYSize,
-		x, y;
+	u16 gridXSize = 0,
+		gridYSize = 0,
+		x = 0, y = 0;
 
 	for ( u32 i=0; i<2; i++ )
 	{
-		GRID& currGrid = grids[i];
+		MapGrid currGrid = grids[i];
 		gridXSize = currGrid.size.x;
 		gridYSize = currGrid.size.y;
 
@@ -284,22 +339,7 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 								for ( s32 y=topMost; y<bottomMost; y++ )
 								{
 									for ( s32 x=leftMost; x<rightMost; x++ )
-									{
-										if ( bitmap[y*screenWidth+x+2] < 236 )
-											bitmap[y*screenWidth+x+2] += 20;
-										else
-											bitmap[y*screenWidth+x+2] = 255;
-
-										if ( bitmap[y*screenWidth+x+1] > 9 )
-											bitmap[y*screenWidth+x+1] -= 10;
-										else
-											bitmap[y*screenWidth+x+1] = 0;
-
-										if ( bitmap[y*screenWidth+x] > 9 )
-											bitmap[y*screenWidth+x] -= 10;
-										else
-											bitmap[y*screenWidth+x] = 0;
-									}
+                                        BoundedAdjustPx(bitmap[y*screenWidth + x], 20, -10, -10);
 								}
 							}
 							else
@@ -308,22 +348,7 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 								for ( s32 y=topMost; y<bottomMost; y++ )
 								{
 									for ( s32 x=leftMost; x<rightMost; x++ )
-									{
-										if ( bitmap[y*screenWidth+x+2] > 9 )
-											bitmap[y*screenWidth+x+2] -= 10;
-										else
-											bitmap[y*screenWidth+x+2] = 0;
-
-										if ( bitmap[y*screenWidth+x+1] < 246 )
-											bitmap[y*screenWidth+x+1] += 10;
-										else
-											bitmap[y*screenWidth+x+1] = 0;
-
-										if ( bitmap[y*screenWidth+x] < 241 )
-											bitmap[y*screenWidth+x] += 15;
-										else
-											bitmap[y*screenWidth+x] = 255;
-									}
+                                        BoundedAdjustPx(bitmap[y*screenWidth + x], -10, 10, 15);
 								}
 							}
 						}
@@ -402,7 +427,7 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
 
 	s32	UnitTableSize = UNIT.size();
 
-	u32 screenRight = screenLeft+screenWidth,
+	s32 screenRight = screenLeft+screenWidth,
 		screenBottom = screenTop+screenHeight;
 
 	u8 tileset;
@@ -415,12 +440,12 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
 	{
 		if ( UNIT.getPtr(unit, pos, UNIT_STRUCT_SIZE) )
 		{
-			if ( unit->xc+MAX_UNIT_RIGHT > (s64)screenLeft &&
-				 unit->xc-MAX_UNIT_LEFT < (s64)screenRight )
+			if ( (s32)unit->xc+(s32)MaxUnitBounds::Right > screenLeft &&
+				 (s32)unit->xc-(s32)MaxUnitBounds::Left < screenRight )
 				// If within screen x-bounds
 			{
-				if ( unit->yc+MAX_UNIT_DOWN > (s64)screenTop &&
-					 unit->yc-MAX_UNIT_UP < (s64)screenBottom )
+				if ( (s32)unit->yc+(s32)MaxUnitBounds::Down > screenTop &&
+					 (s32)unit->yc-(s32)MaxUnitBounds::Up < screenBottom )
 					// If within screen y-bounds
 				{
 					u16 frame = 0;
@@ -449,7 +474,7 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
 
 	s32	SpriteTableSize = THG2.size();
 
-	u32 screenRight = screenLeft + screenWidth,
+	s32 screenRight = screenLeft + screenWidth,
 		screenBottom = screenTop + screenHeight;
 
 	u8 tileset;
@@ -462,16 +487,16 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
 	{
 		if ( THG2.getPtr(sprite, pos, SPRITE_STRUCT_SIZE) )
 		{
-			if ( sprite->xc+MAX_UNIT_RIGHT > (s64)screenLeft &&
-				 sprite->xc-MAX_UNIT_LEFT < (s64)screenRight )
+			if ( (s32)sprite->xc+(s32)MaxUnitBounds::Right > screenLeft &&
+				 (s32)sprite->xc-(s32)MaxUnitBounds::Left < screenRight )
 				 // If within screen x-bounds
 			{
-				if ( sprite->yc+MAX_UNIT_DOWN > (s64)screenTop &&
-					 sprite->yc-MAX_UNIT_UP < (s64)screenBottom )
+				if ( (s32)sprite->yc+(s32)MaxUnitBounds::Down > screenTop &&
+					 (s32)sprite->yc-(s32)MaxUnitBounds::Up < screenBottom )
 					 // If within screen y-bounds
 				{
 					u16 frame = 0;
-					bool isSprite = (sprite->flags & FLAG_DRAW_AS_SPRITE) > 0;
+                    bool isSprite = sprite->IsDrawnAsSprite();;
 					u8 color;
 					if ( sprite->owner < 8 )
 						color = COLR.get<u8>(sprite->owner);
@@ -596,12 +621,12 @@ void Graphics::DrawTileNumbers(HDC hDC)
 
 	u16 wTileHex;
 
-	if ( screenHeight > u32(mapHeight*32) )
+	if ( screenHeight > (s32)mapHeight*32 )
 		maxRowY = mapHeight;
 	else
 		maxRowY = (screenTop+screenHeight)/32+1;
 
-	if ( screenWidth > u32(mapWidth*32) )
+	if ( screenWidth > (s32)mapWidth*32 )
 		maxRowX = mapWidth;
 	else
 		maxRowX = (screenLeft+screenWidth)/32+1;
@@ -666,12 +691,82 @@ bool Graphics::DisplayingElevations()
 	return displayingElevations;
 }
 
-GRID& Graphics::grid(u32 gridNum)
+/*bool Graphics::GetGrid(u32 gridNum, GRID &outGrid)
 {
-	if ( gridNum >=0 && gridNum < 2 )
-		return grids[gridNum];
-	else
-		return grids[0];
+    if ( gridNum >= 0 && gridNum < 2 )
+        outGrid = grids[gridNum];
+    else
+        outGrid = grids[0];
+
+    return gridNum >= 0 && gridNum < 2;
+}*/
+
+bool Graphics::GetGridSize(u32 gridNum, u16 &outWidth, u16 &outHeight)
+{
+    if ( gridNum >= 0 && gridNum < 2 )
+    {
+        outWidth = grids[gridNum].size.x;
+        outHeight = grids[gridNum].size.y;
+    }
+    else
+    {
+        outWidth = grids[0].size.x;
+        outHeight = grids[0].size.y;
+    }
+    return gridNum >= 0 && gridNum < 2;
+}
+
+bool Graphics::GetGridOffset(u32 gridNum, u16 &outX, u16 &outY)
+{
+    if ( gridNum >= 0 && gridNum < 2 )
+    {
+        outX = grids[gridNum].offset.x;
+        outY = grids[gridNum].offset.y;
+    }
+    else
+    {
+        outX = grids[0].offset.x;
+        outY = grids[0].offset.y;
+    }
+    return gridNum >= 0 && gridNum < 2;
+}
+
+bool Graphics::GetGridColor(u32 gridNum, u8 &red, u8 &green, u8 &blue)
+{
+    if ( gridNum >= 0 && gridNum < 2 )
+    {
+        red = grids[gridNum].red;
+        green = grids[gridNum].green;
+        blue = grids[gridNum].blue;
+    }
+    else
+    {
+        red = grids[0].red;
+        green = grids[0].green;
+        blue = grids[0].blue;
+    }
+    return gridNum >= 0 && gridNum < 2;
+}
+
+bool Graphics::SetGridSize(u32 gridNum, u16 xSize, u16 ySize)
+{
+    if ( gridNum >= 0 && gridNum < 2 )
+    {
+        grids[gridNum].size.x = xSize;
+        grids[gridNum].size.y = ySize;
+    }
+    return gridNum >= 0 && gridNum < 2;
+}
+
+bool Graphics::SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue)
+{
+    if ( gridNum >= 0 && gridNum < 2 )
+    {
+        grids[gridNum].red = red;
+        grids[gridNum].green = green;
+        grids[gridNum].blue = blue;
+    }
+    return gridNum >= 0 && gridNum < 2;
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
@@ -691,7 +786,7 @@ BITMAPINFO GetBMI(s32 width, s32 height)
 	return bmi;
 }
 
-void TileElevationsToBits(ChkdBitmap& bitmap, u32 &bitWidth, u32 &bitHeight, TileSet* tiles,
+void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
 						   s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 miniTileSeparation )
 {
 	u32 bitMax = bitWidth*bitHeight*3,
@@ -733,11 +828,11 @@ void TileElevationsToBits(ChkdBitmap& bitmap, u32 &bitWidth, u32 &bitHeight, Til
 
 					for ( u32 yc=0; yc<8; yc++ )
 					{
-						if ( yc + miniTileYC < bitHeight )
+						if ( yc + miniTileYC < (u32)bitHeight )
 						{
 							for ( u32 xc=0; xc<8; xc++ )
 							{
-								if ( xc + miniTileXC < bitWidth )
+								if ( xc + miniTileXC < (u32)bitWidth )
 									bitmap[(yc + miniTileYC)*bitWidth + xc + miniTileXC] = RGB(red, green, blue);
 							}
 						}
@@ -1081,15 +1176,15 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 }
 
 void DrawTools(HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-    Selections &selections, bool pasting, Clipboard &clipboard, GuiMap &map, u8 layer)
+    Selections &selections, bool pasting, Clipboard &clipboard, GuiMap &map)
 {
-	if ( layer == LAYER_TERRAIN && selections.hasTiles() ) // Draw selected tiles
+	if ( map.getLayer() == Layer::Terrain && selections.hasTiles() ) // Draw selected tiles
 		DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, map);
-	else if ( layer == LAYER_LOCATIONS ) // Draw Location Creation/Movement Graphics
+	else if ( map.getLayer() == Layer::Locations ) // Draw Location Creation/Movement Graphics
 		DrawTempLocs(hDC, screenLeft, screenTop, selections, map);
 
 	if ( pasting ) // Draw paste graphics
-		DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, map, layer);
+		DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
 }
 
 void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections& selections, GuiMap &map)
@@ -1129,19 +1224,19 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 						  32
 						);
 
-			if ( tile.neighbors > 0 ) // if any edges need to be drawn
+			if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
 			{
 				rect.left	= tile.xc*32 - screenLeft;
 				rect.right	= tile.xc*32 - screenLeft + 32;
 				rect.top	= tile.yc*32 - screenTop;
 				rect.bottom = tile.yc*32 - screenTop + 32;
 
-				if ( tile.neighbors & NEIGHBOR_TOP )
+				if ( ((u8)tile.neighbors & (u8)TileNeighbor::Top) == (u8)TileNeighbor::Top )
 				{
 					MoveToEx(hDC, rect.left , rect.top, NULL);
 					LineTo	(hDC, rect.right, rect.top		);
 				}
-				if ( tile.neighbors & NEIGHBOR_RIGHT )
+				if ( ((u8)tile.neighbors & (u8)TileNeighbor::Right) == (u8)TileNeighbor::Right )
 				{
 					if ( rect.right >= width )
 						rect.right --;
@@ -1149,7 +1244,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 					MoveToEx(hDC, rect.right, rect.top	   , NULL);
 					LineTo	(hDC, rect.right, rect.bottom+1		 );
 				}
-				if ( tile.neighbors & NEIGHBOR_BOTTOM )
+				if ( ((u8)tile.neighbors & (u8)TileNeighbor::Bottom) == (u8)TileNeighbor::Bottom )
 				{
 					if ( rect.bottom >= height )
 						rect.bottom --;
@@ -1157,7 +1252,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 					MoveToEx(hDC, rect.left	, rect.bottom, NULL);
 					LineTo	(hDC, rect.right, rect.bottom	   );
 				}
-				if ( tile.neighbors & NEIGHBOR_LEFT )
+				if ( ((u8)tile.neighbors & (u8)TileNeighbor::Left) == (u8)TileNeighbor::Left )
 				{
 					MoveToEx(hDC, rect.left, rect.bottom, NULL);
 					LineTo	(hDC, rect.left, rect.top-1		  );
@@ -1168,9 +1263,9 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 }
 
 void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-						Selections &selections, Clipboard &clipboard, GuiMap &map, u8 layer )
+						Selections &selections, Clipboard &clipboard, GuiMap &map, Layer layer )
 {
-	if ( layer == LAYER_TERRAIN )
+	if ( layer == Layer::Terrain )
 	{
 		HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
 		SelectObject(hDC, pen);
@@ -1204,14 +1299,14 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 				// Draw tile with a blue haze
 					DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
 
-				if ( tile.neighbors ) // if any edges need to be drawn
+				if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
 				{
-					if ( tile.neighbors & NEIGHBOR_TOP )
+					if ( ((u8)tile.neighbors & (u8)TileNeighbor::Top) == (u8)TileNeighbor::Top )
 					{
 						MoveToEx(hDC, rect.left	, rect.top, NULL);
 						LineTo	(hDC, rect.right, rect.top		);
 					}
-					if ( tile.neighbors & NEIGHBOR_RIGHT )
+					if ( ((u8)tile.neighbors & (u8)TileNeighbor::Right) == (u8)TileNeighbor::Right )
 					{
 						if ( rect.right >= width )
 							rect.right --;
@@ -1219,7 +1314,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 						MoveToEx(hDC, rect.right, rect.top, NULL);
 						LineTo	(hDC, rect.right, rect.bottom+1	);
 					}
-					if ( tile.neighbors & NEIGHBOR_BOTTOM )
+					if ( ((u8)tile.neighbors & (u8)TileNeighbor::Bottom) == (u8)TileNeighbor::Bottom )
 					{
 						if ( rect.bottom >= height )
 							rect.bottom --;
@@ -1227,7 +1322,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 						MoveToEx(hDC, rect.left	, rect.bottom, NULL);
 						LineTo	(hDC, rect.right, rect.bottom	   );
 					}
-					if ( tile.neighbors & NEIGHBOR_LEFT )
+					if ( ((u8)tile.neighbors & (u8)TileNeighbor::Left) == (u8)TileNeighbor::Left )
 					{
 						MoveToEx(hDC, rect.left, rect.bottom, NULL);
 						LineTo	(hDC, rect.left, rect.top-1		  );
@@ -1236,7 +1331,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 			}
 		}
 	}
-	else if ( layer == LAYER_UNITS )
+	else if ( layer == Layer::Units )
 	{
 		ChkdBitmap graphicBits;
 		graphicBits.resize(((u32)width)*((u32)height));
@@ -1276,7 +1371,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections
 {
 	POINT start = selections.getStartDrag();
 	POINT end = selections.getEndDrag();
-	if ( selections.getLocationFlags() == LOC_SEL_NOTHING ) // Draw location creation preview
+	if ( selections.getLocationFlags() == LocSelFlags::None ) // Draw location creation preview
 	{
 		s32 left = start.x-screenLeft,
 			top = start.y-screenTop,
@@ -1297,37 +1392,37 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections
 			s32 dragX = end.x-start.x;
 			s32 dragY = end.y-start.y;
 
-			u8 locFlags = selections.getLocationFlags();
-			if ( locFlags != LOC_SEL_MIDDLE )
+			LocSelFlags locFlags = selections.getLocationFlags();
+			if ( locFlags != LocSelFlags::Middle )
 			{
 				if ( locTop > locBottom )
 				{
-					if ( locFlags & LOC_SEL_NORTH )
-						locFlags = locFlags&(~LOC_SEL_NORTH)|LOC_SEL_SOUTH;
-					else if ( locFlags & LOC_SEL_SOUTH )
-						locFlags = locFlags&(~LOC_SEL_SOUTH)|LOC_SEL_NORTH;
+					if ( ((u8)locFlags & (u8)LocSelFlags::North) == (u8)LocSelFlags::North )
+						locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::North)|(u8)LocSelFlags::South);
+					else if ( ((u8)locFlags & (u8)LocSelFlags::South) == (u8)LocSelFlags::South )
+						locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::South)|(u8)LocSelFlags::North);
 				}
 
 				if ( locLeft > locRight )
 				{
-					if ( locFlags & LOC_SEL_WEST )
-						locFlags = locFlags&(~LOC_SEL_WEST)|LOC_SEL_EAST;
-					else if ( locFlags & LOC_SEL_EAST )
-						locFlags = locFlags&(~LOC_SEL_EAST)|LOC_SEL_WEST;
+					if ( ((u8)locFlags & (u8)LocSelFlags::West) == (u8)LocSelFlags::West )
+						locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::West)|(u8)LocSelFlags::East);
+					else if ( ((u8)locFlags & (u8)LocSelFlags::East) == (u8)LocSelFlags::East )
+						locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::East)|(u8)LocSelFlags::West);
 				}
 			}
 
 			switch ( locFlags )
 			{
-				case LOC_SEL_NORTH : DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight, locBottom); break;
-				case LOC_SEL_SOUTH : DrawLocationFrame(hDC, locLeft, locTop, locRight, locBottom+dragY); break;
-				case LOC_SEL_EAST  : DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom); break;
-				case LOC_SEL_WEST  : DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom); break;
-				case LOC_SEL_NW	   : DrawLocationFrame(hDC, locLeft+dragX, locTop+dragY, locRight, locBottom); break;
-				case LOC_SEL_NE	   : DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight+dragX, locBottom); break;
-				case LOC_SEL_SW	   : DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom+dragY); break;
-				case LOC_SEL_SE	   : DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom+dragY); break;
-				case LOC_SEL_MIDDLE:
+                case LocSelFlags::North: DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight, locBottom); break;
+                case LocSelFlags::South: DrawLocationFrame(hDC, locLeft, locTop, locRight, locBottom+dragY); break;
+                case LocSelFlags::East: DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom); break;
+                case LocSelFlags::West: DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom); break;
+                case LocSelFlags::NorthWest: DrawLocationFrame(hDC, locLeft+dragX, locTop+dragY, locRight, locBottom); break;
+                case LocSelFlags::NorthEast: DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight+dragX, locBottom); break;
+                case LocSelFlags::SouthWest: DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom+dragY); break;
+                case LocSelFlags::SouthEast: DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom+dragY); break;
+                case LocSelFlags::Middle:
 					DrawLocationFrame(hDC, locLeft+dragX, locTop+dragY, locRight+dragX, locBottom+dragY);
 					break;
 			}
@@ -1494,7 +1589,7 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 		ChkSprite* sprite;
 		if ( THG2.getPtr(sprite, pos, SPRITE_STRUCT_SIZE) )
 		{
-			if ( sprite->flags & FLAG_DRAW_AS_SPRITE )
+			if ( sprite->IsDrawnAsSprite() )
 			{
 				u8 color;
 				if ( sprite->owner < 8 )
@@ -1512,7 +1607,7 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 	}
 }
 
-void DrawMiniMap(HDC hDC, HWND hWnd, u16 xSize, u16 ySize, float scale, GuiMap &map)
+void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap &map)
 {
 	buffer& ERA  = map.ERA ();
 

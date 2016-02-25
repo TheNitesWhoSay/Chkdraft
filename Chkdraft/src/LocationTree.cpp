@@ -9,8 +9,8 @@ bool LocationTree::AddThis(HWND hTree, HTREEITEM hParent)
 
 void LocationTree::InsertLocationItem(const char* text, u32 index)
 {
-	if ( index <= TREE_ITEM_DATA )
-		InsertTreeItem(hLocationRoot, text, index|TREE_TYPE_LOCATION);
+	if ( index <= TreeDataPortion )
+		InsertTreeItem(hLocationRoot, text, index|TreeTypeLocation);
 }
 
 void LocationTree::RebuildLocationTree()
@@ -36,7 +36,7 @@ void LocationTree::RebuildLocationTree()
 		}
 	}
 
-	if ( CM->getLayer() == LAYER_LOCATIONS )
+	if ( CM->getLayer() == Layer::Locations )
 		ExpandItem(hLocationRoot);
 
 	RedrawThis();

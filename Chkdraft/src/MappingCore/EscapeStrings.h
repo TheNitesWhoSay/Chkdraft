@@ -60,6 +60,7 @@ class ChkdString : public std::string
 		ChkdString(InputIterator first, InputIterator last, bool isOneLine = false)
 			: std::string(first, last), isOneLine(isOneLine) { }
 		~ChkdString() { }
+        void operator= (const char* s) { this->clear(); this->append(s); }
 		bool IsOneLine() { return this->isOneLine; }
 		void SetOneLine(bool isOneLine) { this->isOneLine = isOneLine; }
 
