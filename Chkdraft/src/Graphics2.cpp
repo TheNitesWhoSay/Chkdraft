@@ -135,6 +135,13 @@ bool Graphics::doAnimation()
 				activeIscriptUnit = THG2Graphics[i].unit;
 				unk_unit_6D11F4 = activeIscriptUnit;
 				spriteToIscriptLoop(activeIscriptUnit->sprite);
+				if (THG2Graphics[i].unit != NULL) // I dunno how subunits are supposed to be handled
+				{
+
+					activeIscriptUnit = THG2Graphics[i].unit;
+					unk_unit_6D11F4 = activeIscriptUnit;
+					spriteToIscriptLoop(activeIscriptUnit->sprite);
+				}
 			}
 			else
 			{
@@ -149,6 +156,13 @@ bool Graphics::doAnimation()
 			activeIscriptUnit = UNITGraphics[i];
 			unk_unit_6D11F4 = activeIscriptUnit;
 			spriteToIscriptLoop(activeIscriptUnit->sprite);
+			if (UNITGraphics[i]->subUnit != NULL) // I dunno how subunits are supposed to be handled
+			{
+
+				activeIscriptUnit = UNITGraphics[i]->subUnit;
+				unk_unit_6D11F4 = activeIscriptUnit;
+				spriteToIscriptLoop(activeIscriptUnit->sprite);
+			}
 		}
 		activeIscriptUnit = nullptr;
 		unk_unit_6D11F4 = nullptr;
@@ -320,71 +334,36 @@ void Graphics::updateUnitStatsFinishBuilding(UnitNode* unit) {
 
 bool Graphics::unknown_0049EC30(UnitNode* unit)
 {
-	// !!! To do !
-	/*
-	unknown_0049EC30
-	0049EC30  /$ 55             PUSH EBP
-	0049EC31  |. 8BEC           MOV EBP,ESP
-	0049EC33  |. 83EC 0C        SUB ESP,0C
-	0049EC36  |. 8B46 0C        MOV EAX,DWORD PTR DS:[ESI+C]
-	0049EC39  |. F640 0E 20     TEST BYTE PTR DS:[EAX+E],20
-	0049EC3D  |. 0F84 95000000  JE StarCraf.0049ECD8
-	0049EC43  |. 66:8B48 14     MOV CX,WORD PTR DS:[EAX+14]
-	0049EC47  |. 66:8B50 16     MOV DX,WORD PTR DS:[EAX+16]
-	0049EC4B  |. 6A 00          PUSH 0                                   ; /Arg5 = 00000000
-	0049EC4D  |. 6A 00          PUSH 0                                   ; |Arg4 = 00000000
-	0049EC4F  |. 8D45 F4        LEA EAX,DWORD PTR SS:[EBP-C]             ; |
-	0049EC52  |. 50             PUSH EAX                                 ; |Arg3
-	0049EC53  |. 66:894D FC     MOV WORD PTR SS:[EBP-4],CX               ; |
-	0049EC57  |. 8D4D FC        LEA ECX,DWORD PTR SS:[EBP-4]             ; |
-	0049EC5A  |. 51             PUSH ECX                                 ; |Arg2
-	0049EC5B  |. 56             PUSH ESI                                 ; |Arg1
-	0049EC5C  |. 33C0           XOR EAX,EAX                              ; |
-	0049EC5E  |. 66:8955 FE     MOV WORD PTR SS:[EBP-2],DX               ; |
-	0049EC62  |. E8 79E7FFFF    CALL StarCraf.0049D3E0                   ; \canMoveUnit
-	0049EC67  |. 85C0           TEST EAX,EAX
-	0049EC69  |. 75 11          JNZ SHORT StarCraf.0049EC7C
-	0049EC6B  |. 33D2           XOR EDX,EDX
-	0049EC6D  |. 8A56 4C        MOV DL,BYTE PTR DS:[ESI+4C]
-	0049EC70  |. 52             PUSH EDX                                 ; /Arg1
-	0049EC71  |. E8 BAF8FFFF    CALL StarCraf.0049E530                   ; \displayLastNetErrForPlayer
-	0049EC76  |. 33C0           XOR EAX,EAX
-	0049EC78  |. 8BE5           MOV ESP,EBP
-	0049EC7A  |. 5D             POP EBP
-	0049EC7B  |. C3             RETN
-	0049EC7C  |> 8B45 F4        MOV EAX,DWORD PTR SS:[EBP-C]
-	0049EC7F  |. 53             PUSH EBX
-	0049EC80  |. 8B5D F6        MOV EBX,DWORD PTR SS:[EBP-A]
-	0049EC83  |. 57             PUSH EDI
-	0049EC84  |. 8BCB           MOV ECX,EBX
-	0049EC86  |. 8BD6           MOV EDX,ESI
-	0049EC88  |. E8 63CD0400    CALL StarCraf.004EB9F0 ; MoveUnit
-	0049EC8D  |. 8B7E 70        MOV EDI,DWORD PTR DS:[ESI+70]
-	0049EC90  |. 85FF           TEST EDI,EDI
-	0049EC92  |. 74 42          JE SHORT StarCraf.0049ECD6
-	0049EC94  |. 0FB746 64      MOVZX EAX,WORD PTR DS:[ESI+64]
-	0049EC98  |. F60485 8040660>TEST BYTE PTR DS:[EAX*4+664080],10
-	0049ECA0  |. 75 34          JNZ SHORT StarCraf.0049ECD6
-	0049ECA2  |. 6A 00          PUSH 0                                   ; /Arg1 = 00000000
-	0049ECA4  |. B9 01000000    MOV ECX,1                                ; |
-	0049ECA9  |. E8 A2A0FEFF    CALL StarCraf.00488D50                   ; \incrementUnitScoresEx
-	0049ECAE  |. 8B46 70        MOV EAX,DWORD PTR DS:[ESI+70]
-	0049ECB1  |. 8388 DC000000 >OR DWORD PTR DS:[EAX+DC],1
-	0049ECB8  |. 8B46 70        MOV EAX,DWORD PTR DS:[ESI+70]
-	0049ECBB  |. 0FB748 64      MOVZX ECX,WORD PTR DS:[EAX+64]
-	0049ECBF  |. 8B148D 5023660>MOV EDX,DWORD PTR DS:[ECX*4+662350]
-	0049ECC6  |. 8950 08        MOV DWORD PTR DS:[EAX+8],EDX
-	0049ECC9  |. 8B45 F4        MOV EAX,DWORD PTR SS:[EBP-C]
-	0049ECCC  |. 8B56 70        MOV EDX,DWORD PTR DS:[ESI+70]
-	0049ECCF  |. 8BCB           MOV ECX,EBX
-	0049ECD1  |. E8 1ACD0400    CALL StarCraf.004EB9F0 ; MoveUnit
-	0049ECD6  |> 5F             POP EDI
-	0049ECD7  |. 5B             POP EBX
-	0049ECD8  |> B8 01000000    MOV EAX,1
-	0049ECDD  |. 8BE5           MOV ESP,EBP
-	0049ECDF  |. 5D             POP EBP
-	0049ECE0  \. C3             RETN
-	*/
+	if(unit->sprite->flags & 0x20)
+	{
+		points pos = {unit->sprite->position.x, unit->sprite->position.y};
+		int EBPC; // ?
+		//EDX = unit->position.y
+		//ECX = &[EBP-4]
+		//EAX = 0
+		//if(!canMoveUnit(0, unit, &pos, &EBPC, 0, 0)) // (EAX , ESI, push, push, push, push)
+		//{
+		//	displayLastNetErrForPlayer(unit->playerID); // ?
+		//	return false;
+		//}
+		//EAX = [EBP-C]
+		//EBX = [EBP-A]
+		//ECX = [EBP-A]
+		//EDX = unit
+		//MoveUnit( ? )
+		//EDI = unit->subUnit
+		
+		if(unit->subUnit != NULL && (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x10) == 0) // Is Subunit
+		{
+			//incrementUnitScoresEx(1, 0);
+			unit->subUnit->statusFlags |= 1;
+			unit->subUnit->hitPoints = chkd.scData.UnitDat(unit->subUnit->unitType)->HitPoints;
+			//EAX = [EBP-C]
+			//EDX = unit->subUnit
+			//ECX = 0
+			//MoveUnit( ? )
+		}
+	}
 	return true;
 }
 
@@ -392,86 +371,63 @@ void Graphics::updateUnitStrengthAndApplyDefaultOrders(UnitNode* unit)
 {
 	// !!! To do !
 	/*
-	updateUnitStrengthAndApplyDefaultOrders 0049FA40 000002B3
-	0049FA40 / $ 55             PUSH EBP
-	0049FA41 | . 8BEC           MOV EBP, ESP
-	0049FA43 | . 83EC 08        SUB ESP, 8
-	0049FA46 | . 53             PUSH EBX
-	0049FA47 | . 56             PUSH ESI
-	0049FA48 | . 8BF0           MOV ESI, EAX
-	0049FA4A | . 0FB746 64      MOVZX EAX, WORD PTR DS : [ESI + 64]
-	0049FA4E | . 8B0C85 8040660>MOV ECX, DWORD PTR DS : [EAX * 4 + 664080]
-	0049FA55 | .F6C5 04        TEST CH, 4
-	0049FA58 | . 57             PUSH EDI
-	0049FA59 | . 74 23          JE SHORT StarCraf.0049FA7E
-	0049FA5B | . 6A FF          PUSH - 1; / Arg1 = FFFFFFFF
-	0049FA5D | . 8BC6           MOV EAX, ESI; |
-	0049FA5F | .E8 8C91FEFF    CALL StarCraf.00488BF0; \incrementUnitScores
-	0049FA64 | . 8B8E DC000000  MOV ECX, DWORD PTR DS : [ESI + DC]
-	0049FA6A | . 83C9 01        OR ECX, 1
-	0049FA6D | . 6A 01          PUSH 1; / Arg1 = 00000001
-	0049FA6F | . 8BC6           MOV EAX, ESI; |
-	0049FA71 | . 898E DC000000  MOV DWORD PTR DS : [ESI + DC], ECX; |
-	0049FA77 | .E8 7491FEFF    CALL StarCraf.00488BF0; \incrementUnitScores
-	0049FA7C | .EB 07          JMP SHORT StarCraf.0049FA85
-	0049FA7E | > 838E DC000000 >OR DWORD PTR DS : [ESI + DC], 1
-	0049FA85 | > 6A 01          PUSH 1; / Arg1 = 00000001
-	0049FA87 | . 8BFE           MOV EDI, ESI; |
-	0049FA89 | .B9 01000000    MOV ECX, 1; |
-	0049FA8E | .E8 BD92FEFF    CALL StarCraf.00488D50; \incrementUnitScoresEx
-	0049FA93 | . 0FB74E 64      MOVZX ECX, WORD PTR DS : [ESI + 64]
-	0049FA97 | .F7048D 8040660>TEST DWORD PTR DS : [ECX * 4 + 664080], 400000
-	0049FAA2 | . 74 0C          JE SHORT StarCraf.0049FAB0
-	0049FAA4 | .B9 11010000    MOV ECX, 111
-	0049FAA9 | . 8BC6           MOV EAX, ESI
-	0049FAAB | .E8 00BBFFFF    CALL StarCraf.0049B5B0; PlaySoundFromDirect
-	0049FAB0 | > 66:8B46 64     MOV AX, WORD PTR DS : [ESI + 64]
-	0049FAB4 | . 66:3D 2100     CMP AX, 21
-	0049FAB8 | . 0F84 DD000000  JE StarCraf.0049FB9B
-	0049FABE | . 66:3D 6500     CMP AX, 65
-	0049FAC2 | . 0F84 D3000000  JE StarCraf.0049FB9B
-	0049FAC8 | . 8B56 0C        MOV EDX, DWORD PTR DS : [ESI + C]
-	0049FACB | .F642 0E 20     TEST BYTE PTR DS : [EDX + E], 20
-	0049FACF | . 74 13          JE SHORT StarCraf.0049FAE4
-	0049FAD1 | . 66:3D 4900     CMP AX, 49
-	0049FAD5 | . 74 0D          JE SHORT StarCraf.0049FAE4
-	0049FAD7 | . 66:3D 5500     CMP AX, 55
-	0049FADB | . 74 07          JE SHORT StarCraf.0049FAE4
-	0049FADD | . 8BFE           MOV EDI, ESI
-	0049FADF | .E8 AC690400    CALL StarCraf.004E6490; initUnitTrapDoodad
-	0049FAE4 | > 33DB           XOR EBX, EBX
-	0049FAE6 | > 66:8B4E 64     MOV CX, WORD PTR DS : [ESI + 64]
-	0049FAEA | . 66:81F9 CB00   CMP CX, 0CB
-	0049FAEF | . 74 23          JE SHORT StarCraf.0049FB14
-	0049FAF1 | . 66:81F9 D100   CMP CX, 0D1
-	0049FAF6 | . 74 1C          JE SHORT StarCraf.0049FB14
-	0049FAF8 | . 66:81F9 D200   CMP CX, 0D2
-	0049FAFD | . 74 15          JE SHORT StarCraf.0049FB14
-	0049FAFF | . 66:81F9 D300   CMP CX, 0D3
-	0049FB04 | . 74 0E          JE SHORT StarCraf.0049FB14
-	0049FB06 | . 66:81F9 D400   CMP CX, 0D4
-	0049FB0B | . 74 07          JE SHORT StarCraf.0049FB14
-	0049FB0D | . 66:81F9 D500   CMP CX, 0D5
-	0049FB12 | . 75 1A          JNZ SHORT StarCraf.0049FB2E
-	0049FB14 | > 818E DC000000 >OR DWORD PTR DS : [ESI + DC], 300
-	0049FB1E | .C786 E4000000 >MOV DWORD PTR DS : [ESI + E4], 80000000
-	0049FB28 | . 889E 91000000  MOV BYTE PTR DS : [ESI + 91], BL
-	0049FB2E | > 0FB646 4C      MOVZX EAX, BYTE PTR DS : [ESI + 4C]
-	0049FB32 | . 8D04C0         LEA EAX, DWORD PTR DS : [EAX + EAX * 8]
-	0049FB35 | . 8A0485 E8EE570>MOV AL, BYTE PTR DS : [EAX * 4 + 57EEE8]
+	ESI = unit
+	unit->unitType
+	if(abilflags[unit->unitType] & 0x400)
+	{
+		incrementUnitScores(unit, -1);
+		unit->statusFlags |= 1;
+		incrementUnitScores(unit, 1);
+	}
+	else
+	{
+		unit->statusFlags |= 1;
+	}
+	incrementUnitScoresEx(unit, 1, 1);
+	ECX = unit->unitType
+	if(abilflags[unit->unitType]) & 0x400000)
+	{
+		PlaySoundFromDirect(unit, 0x111);
+	}
+	EAX = unit->unitType
+	if(unit->unitType != 0x21 && unit->unitType != 0x65)
+	{
+		EDX = unit->sprite
+		if((unit->sprite->flags & 0x20) && // Hidden
+			unit->unitType != 0x49 && // Interceptor
+			unit->unitType != 0x55) // Scarab
+		{
+			initUnitTrapDoodad(unit); // (EDI)
+		}
+		EBX = 0
+		ECX = unit->unitType
+		if(unit->unitType == 0xCB || // Floor Missile Trap
+			unit->unitType == 0xD1 || // Flooor Gun Trap
+			unit->unitType == 0xD2 || // Left Wall Missile Trap
+			unit->unitType == 0xD3 || // Left Wall Flame Trap
+			unit->unitType == 0xD4 || // Right Wall Missile Trap
+			unit->unitType == 0xD5) // Right Wall Flame Trap
+		{
+			unit->statusFlags |= 0x300;
+			unit->visibilityStatus = 0x80000000;
+			unit->secondaryOrderTimer = 0;
+		}
+		EAX = unit->playerID
+		EAX = TYPE(unit->playerID)
+		if(TYPE(unit->playerID == rescuable))
 	0049FB3C | . 3C 03          CMP AL, 3
 	0049FB3E | . 0F85 00010000  JNZ StarCraf.0049FC44
-	0049FB44 | . 8A8E 93000000  MOV CL, BYTE PTR DS : [ESI + 93]
-	0049FB4A | . 8A46 4D        MOV AL, BYTE PTR DS : [ESI + 4D]
-	0049FB4D | . 80C9 01        OR CL, 1
-	0049FB50 | . 33FF           XOR EDI, EDI
-	0049FB52 | . 3AC3           CMP AL, BL
-	0049FB54 | . 888E 93000000  MOV BYTE PTR DS : [ESI + 93], CL
-	0049FB5A | . 66:895D FA     MOV WORD PTR SS : [EBP - 6], BX
-	0049FB5E | . 66:895D F8     MOV WORD PTR SS : [EBP - 8], BX
-	0049FB62 | . 0F84 D3000000  JE StarCraf.0049FC3B
-	0049FB68 | .EB 06          JMP SHORT StarCraf.0049FB70
-	0049FB6A | 8D9B 00000000  LEA EBX, DWORD PTR DS : [EBX]
+		{
+			CL = unit->userActionFlags | 1
+			AL = unit->orderID
+			EDI = 0
+			unit->userActionFlags |= 1;
+			[EBP-6] = 0;
+			[EBP-8] = 0;
+			if(unit->orderID == 0) goto a thing 0049FC3B
+			do
+			{
+	
 	0049FB70 | > 8B46 78 / MOV EAX, DWORD PTR DS : [ESI + 78]
 	0049FB73 | . 3BC3 | CMP EAX, EBX
 	0049FB75 | . 0F84 AB000000 | JE StarCraf.0049FC26
@@ -484,6 +440,8 @@ void Graphics::updateUnitStrengthAndApplyDefaultOrders(UnitNode* unit)
 	0049FB92 | > 8BCE | MOV ECX, ESI
 	0049FB94 | .E8 3747FDFF | CALL StarCraf.004742D0; removeOrderFromUnitQueue
 	0049FB99 | .^EB D5          \JMP SHORT StarCraf.0049FB70
+			}
+	}
 	0049FB9B | > 3935 EC836200  CMP DWORD PTR DS : [6283EC], ESI
 	0049FBA1 | . 75 08          JNZ SHORT StarCraf.0049FBAB
 	0049FBA3 | . 8B46 04        MOV EAX, DWORD PTR DS : [ESI + 4]
@@ -535,9 +493,11 @@ void Graphics::updateUnitStrengthAndApplyDefaultOrders(UnitNode* unit)
 	0049FC32 | .B3 A1          MOV BL, 0A1; |
 	0049FC34 | .E8 B749FDFF    CALL StarCraf.004745F0; \QueueOrderEx
 	0049FC39 | . 33DB           XOR EBX, EBX
+	wtf:
 	0049FC3B | > 8BCE           MOV ECX, ESI
 	0049FC3D | .E8 BE53FDFF    CALL StarCraf.00475000; orders_Nothing2
 	0049FC42 | .EB 25          JMP SHORT StarCraf.0049FC69
+		}
 	0049FC44 | > 3C 07          CMP AL, 7
 	0049FC46 | . 75 04          JNZ SHORT StarCraf.0049FC4C
 	0049FC48 | .B1 A2          MOV CL, 0A2
@@ -4680,7 +4640,6 @@ void Graphics::image_Insert(ImageNode* image, ImageNode* newImage, ImageNode** p
 	}
 	newImage->prev = image->prev;
 	newImage->next = image;
-	*pImageHead = image->prev; // Check
 	if (image->prev != NULL)
 	{
 		image->prev->next = newImage;

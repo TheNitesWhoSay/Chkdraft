@@ -73,13 +73,13 @@ u8* GRP::data(u32 frame, u32 line)
 }
 
 LODATA* GRP::LoGetOffset(u32 frame, u32 graphicOffset) {
-	if (frame < LoOverlayCount())
+	if (frame < numFrames() && graphicOffset < LoOverlayCount())
 	{
-		return imageDat.get<LODATA*>(imageDat.get<u32>(8 + frame * sizeof(u32)) + graphicOffset * sizeof(LODATA));
+		return (LODATA*)imageDat.getPtr(imageDat.get<u32>(8 + frame * sizeof(u32)) + graphicOffset * sizeof(LODATA));
 	}
 	else
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 

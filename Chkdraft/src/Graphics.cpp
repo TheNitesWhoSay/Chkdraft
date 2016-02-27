@@ -451,6 +451,10 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap, SELECTIONS& selections)
 					if (id < UNITGraphics.size())
 					{
 						updateAndDrawThingy(bitmap, UNITGraphics[id]->sprite);
+						if (UNITGraphics[id]->subUnit != NULL) // I dunno how subunits are supposed to be handled
+						{
+							updateAndDrawThingy(bitmap, UNITGraphics[id]->subUnit->sprite);
+						}
 					}
 					else
 					{
@@ -873,6 +877,7 @@ bool Graphics::initSprite(THG2Ref& thing, ChkSprite* thg2)
 			thg2SpecialDIsableUnit(thing.unit);
 		}
 	}
+	return true;
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
