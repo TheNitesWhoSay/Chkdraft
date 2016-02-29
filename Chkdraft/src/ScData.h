@@ -4,6 +4,35 @@
 #include "MappingCore/MappingCore.h"
 #include <map>
 
+class PCX
+{
+public:
+	buffer pcxDat;
+	bool load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename);
+	enum class DataLocs
+	{
+		Manufacuturer = 0x00,
+		VerInfo = 0x01,
+		Encoding = 0x02,
+		BitCount = 0x03,
+		LeftMargin = 0x04,
+		UpperMargin = 0x06,
+		RightMargin = 0x08,
+		LowerMargin = 0x0A,
+		HozDpi = 0x0C,
+		VertDpi = 0x0E,
+		Palette = 0x10,
+		Reserved = 0x40,
+		Ncp = 0x41,
+		Nbs = 0x42,
+		PalInfo = 0x44,
+		HozScreenSize = 0x46,
+		VertScreenSize = 0x48,
+		Reserved2 = 0x4A,
+		Data = 0x80
+	};
+};
+
 class CV5Entry
 {
 	public:
@@ -28,6 +57,9 @@ struct TileSet
 	buffer vr4;
 	buffer vx4;
 	buffer wpe;
+	PCX remap[7]; // REMAP_* -1 -- 1-based values, 0-based array (e.g. REMAP_CLOAK - 1)
+	PCX dark;
+	PCX shift;
 };
 
 class Tiles
@@ -208,6 +240,12 @@ struct FRAME
 	u8 frameHeight;
 };
 
+struct LODATA
+{
+	s8 xOffset;
+	s8 yOffset;
+};
+
 class GRP
 {
 	private:
@@ -223,6 +261,9 @@ class GRP
 		u8 frameWidth(u32 frame) { return imageDat.get<u8>(0x8+frame*8); }
 		u8 frameHeight(u32 frame) { return imageDat.get<u8>(0x9+frame*8); }
 		u8* data(u32 frame, u32 line);
+
+		u32 LoOverlayCount() { return imageDat.get<u32>(4); }
+		LODATA* LoGetOffset(u32 frame, u32 graphicOffset);
 };
 
 class Upgrades
@@ -285,35 +326,6 @@ class Sprites
 		buffer iscriptBin;
 };
 
-class PCX
-{
-	public:
-		buffer pcxDat;
-		bool load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename);
-		enum class DataLocs
-		{
-			Manufacuturer = 0x00,
-			VerInfo = 0x01,
-			Encoding = 0x02,
-			BitCount = 0x03,
-			LeftMargin = 0x04,
-			UpperMargin = 0x06,
-			RightMargin = 0x08,
-			LowerMargin = 0x0A,
-			HozDpi = 0x0C,
-			VertDpi = 0x0E,
-			Palette = 0x10,
-			Reserved = 0x40,
-			Ncp = 0x41,
-			Nbs = 0x42,
-			PalInfo = 0x44,
-			HozScreenSize = 0x46,
-			VertScreenSize = 0x48,
-			Reserved2 = 0x4A,
-			Data = 0x80
-		};
-};
-
 struct AIEntry
 {
 	u32 identifier; // 4-byte text, stored in TRIG section
@@ -355,6 +367,21 @@ class AiScripts
 		TblFiles &tblFiles;
 };
 
+struct IScriptEntry
+{
+	u16 id;
+	u16 offset;
+};
+
+class IScripts
+{
+public:
+	bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
+	u16 GetHeaderOffset(u16 isid);
+	u16 GetAnimOffset(u16 headerOffset, u16 animID, bool allowInvalid);
+	buffer iscriptBin;
+};
+
 class ScData
 {
 	public:
@@ -369,6 +396,7 @@ class ScData
 		Sprites sprites;
 		TblFiles tblFiles;
 		AiScripts aiScripts;
+		IScripts iScripts;
 		PCX tminimap;
 		PCX tunit;
 		PCX tselect;

@@ -14,6 +14,14 @@ struct point // Mirrors win32 POINT
 	s32 y;
 };
 
+struct rect // Mirrors win32 RECT
+{
+	s32 left;
+	s32 top;
+	s32 right;
+	s32 bottom;
+};
+
 class MapGrid // A simple grid that can be displayed over a map
 {
 	public:

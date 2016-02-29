@@ -108,6 +108,9 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					void Scroll(bool scrollX, bool scrollY, bool validateBorder);
 
 
+					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags);
+					bool doAnimation();
+
 /*	   Misc  	*/	void setMapId(u16 mapId);
 					u16 getMapId();
 					void notifyChange(bool undoable); // Notifies that a change occured, if it's not undoable changes are locked
