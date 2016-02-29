@@ -115,9 +115,6 @@
     <Filter Include="Header Files\Mapping Core\%2a">
       <UniqueIdentifier>{339f49c3-2005-46d1-9d01-34300e94fcd6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Mapping\Trigger Text">
-      <UniqueIdentifier>{c9cf20fc-eabc-4d33-b65f-a64bbb89f3a7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Windows UI">
       <UniqueIdentifier>{05cdf24d-a653-4c2a-a71a-fc349d252cfc}</UniqueIdentifier>
     </Filter>
@@ -205,6 +202,9 @@
     <Filter Include="Header Files\Common Files">
       <UniqueIdentifier>{894c00d4-1b96-4f55-b71f-49ca34ede871}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Mapping\%2a\Trigger Text">
+      <UniqueIdentifier>{c9cf20fc-eabc-4d33-b65f-a64bbb89f3a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\CommonFiles\CommonFiles.h">
@@ -235,13 +235,13 @@
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
     <ClInclude Include="src\StaticTrigComponentParser.h">
-      <Filter>Header Files\Mapping\Trigger Text</Filter>
+      <Filter>Header Files\Mapping\%2a\Trigger Text</Filter>
     </ClInclude>
     <ClInclude Include="src\TextTrigCompiler.h">
-      <Filter>Header Files\Mapping\Trigger Text</Filter>
+      <Filter>Header Files\Mapping\%2a\Trigger Text</Filter>
     </ClInclude>
     <ClInclude Include="src\TextTrigGenerator.h">
-      <Filter>Header Files\Mapping\Trigger Text</Filter>
+      <Filter>Header Files\Mapping\%2a\Trigger Text</Filter>
     </ClInclude>
     <ClInclude Include="src\LocationChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
@@ -575,6 +575,9 @@
     </ClInclude>
     <ClInclude Include="src\CommonFiles\Resource.h">
       <Filter>Header Files\Common Files</Filter>
+	</ClInclude>
+    <ClInclude Include="src\Defines.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -915,6 +918,9 @@
       <Filter>Source Files\Windows UI\%2a</Filter>
     </ClCompile>
     <ClCompile Include="src\ChkdPlugins.cpp">
+		<Filter>Source Files\Mapping\%2a</Filter>
+	</ClCompile>
+    <ClCompile Include="src\Graphics2.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>

@@ -10,8 +10,14 @@ public:
 	u16 yc;
 	u16 id;
 	u16 linkType;
-	u16 special;
+	u16 special; // Uses UNIT_STATE_* flags
 	u16 validFlags;
+		#define UNIT_VALID_OWNER	BIT_0
+		#define UNIT_VALID_HP		BIT_1
+		#define UNIT_VALID_SP		BIT_2
+		#define UNIT_VALID_ENERGY	BIT_3
+		#define UNIT_VALID_RESOURCE	BIT_4
+		#define UNIT_VALID_HANGAR	BIT_5
 	u8 owner;
 	u8 hitpoints;
 	u8 shields;
