@@ -20,14 +20,14 @@ class UnitWindow : public ClassDialog
 		void ChangeCurrOwner(u8 newPlayer);
 		void ChangeOwner(int index, u8 newPlayer);
 		void SetListRedraw(bool redraw);
-		bool AddUnitItem(u16 index, ChkUnit* unit);
+		bool AddUnitItem(u16 index, ChkUnit unit);
 		void UpdateEnabledState();
 		void RepopulateList();
 
 	protected:
 		void EnableUnitEditing(HWND hWnd);
 		void DisableUnitEditing(HWND hWnd);
-		void SetUnitFieldText(HWND hWnd, ChkUnit* unit);
+		void SetUnitFieldText(HWND hWnd, ChkUnit unit);
 		void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2);
 		void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam);
 		int CompareLvItems(LPARAM index1, LPARAM index2);

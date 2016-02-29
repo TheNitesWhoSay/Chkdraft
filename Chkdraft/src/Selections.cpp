@@ -142,11 +142,10 @@ void Selections::selectLocation(u16 index)
 
 void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
-	buffer& MRGN = map.MRGN();
-	if ( MRGN.exists() )
+	if ( map.HasLocationSection() )
 	{
 		ChkLocation* loc;
-		u16 numLocations = u16(MRGN.size()/CHK_LOCATION_SIZE);
+        u16 numLocations = map.locationCapacity();
 		u16 firstRecentlySelected = NO_LOCATION;
 		bool madeSelection = false;
 	

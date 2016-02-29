@@ -10,7 +10,8 @@
 #include <string>
 #include <vector>
 
-typedef std::shared_ptr<buffer> Section;
+using Section = std::shared_ptr<buffer>;
+using TrigSegment = Section;
 
 class Scenario
 {
@@ -25,14 +26,27 @@ class Scenario
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*	Expansion	*/	bool isExpansion(); // Check if the map uses expansion settings
-					buffer& unitSettings(); // Gets settings from UNIS/UNIx based on whether the map is expansion
+protected:      	buffer& unitSettings(); // Gets settings from UNIS/UNIx based on whether the map is expansion
 					buffer& upgradeSettings(); // Gets settings from UPGS/UPGx based on whether the map is expansion
 					buffer& upgradeRestrictions(); // Gets upgradeAvailability from UPGR/PUPx based on whether the map is expansion
 					buffer& techSettings(); // Gets settings from TECS/TECx based on whether the map is expansion
-					buffer& techRestrictions(); // Gets PTEC/PTEx based on whether the map is expansion
+                    buffer& techRestrictions(); // Gets PTEC/PTEx based on whether the map is expansion
+public:
+/*   Version    */  bool HasVerSection();
+                    bool IsScOrig();
+                    bool IsHybrid();
+                    bool IsScExp();
+                    bool ChangeToScOrig();
+                    bool ChangeToHybrid();
+                    bool ChangeToScExp();
 
-/*  Description	*/	bool getMapTitle(ChkdString &dest);
+
+/*  Description	*/	u16 GetMapTitleStrIndex();
+                    u16 GetMapDescriptionStrIndex();
+                    bool getMapTitle(ChkdString &dest);
 					bool getMapDescription(ChkdString &dest);
+                    bool SetMapTitle(ChkdString &newMapTitle);
+                    bool SetMapDescription(ChkdString &newMapDescription);
 
 
 /*	 Players	*/	bool getPlayerOwner(u8 player, u8& owner); // Gets the current owner of a player
@@ -43,7 +57,8 @@ class Scenario
 					bool setPlayerColor(u8 player, u8 newColor); // Sets a new color for a player
 
 
-/*	  Forces	*/	u32 getForceStringNum(u8 index); // Gets the string number of the force at the given index
+/*	  Forces	*/  bool hasForceSection();
+                    u32 getForceStringNum(u8 index); // Gets the string number of the force at the given index
 					bool getForceString(ChkdString &str, u8 forceNum); // Gets the name of the given force num
 					bool getForceInfo(u8 forceNum, bool &allied, bool &vision, bool &random, bool &av); // Attempts to get info for given force num
 					bool getPlayerForce(u8 playerNum, u8 &force); // Attempts to get the force a player belongs to
@@ -52,6 +67,7 @@ class Scenario
 					bool setForceVision(u8 forceNum, bool sharedVision); // Specifies whether a force's players have shared vision
 					bool setForceRandom(u8 forceNum, bool randomStartLocs); // Specifies whether a force has randomized start locations
 					bool setForceAv(u8 forceNum, bool alliedVictory); // Specifies whether a force's players have allied victory
+                    bool setForceName(u8 forceNum, ChkdString &newName);
 
 
 /*	Dimensions	*/	u16 XSize(); // Get width of map
@@ -64,22 +80,40 @@ class Scenario
 
 
 /*	  Tiles		*/	u16 getTile(u16 xc, u16 yc);
+                    u16 getTileSectionTile(u16 xc, u16 yc);
+                    bool getTile(u16 xc, u16 yc, u16 &tileValue);
+                    bool getTileSectionTile(u16 xc, u16 yc, u16 &tileValue);
 					bool setTile(u16 xc, u16 yc, u16 value);
 
 
 /*	  Units		*/	u16 numUnits(); // Returns number of units in UNIT section
 					ChkUnit getUnit(u16 index);
 					bool insertUnit(u16 index, ChkUnit &unit);
-					bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
+					//bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
 					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
+                    bool addUnit(ChkUnit unit);
 					bool getUnitName(RawString &dest, u16 unitID);
 					bool getUnitName(ChkdString &dest, u16 unitID);
 					bool deleteUnit(u16 index);
-					u32 GetUnitFieldData(u16 unitIndex, u8 field);
-					bool SetUnitFieldData(u16 unitIndex, u8 field, u32 data);
+                    bool SwapUnits(u16 firstIndex, u16 secondIndex);
+					u32 GetUnitFieldData(u16 unitIndex, ChkUnitField field);
+					bool SetUnitFieldData(u16 unitIndex, ChkUnitField field, u32 data);
+                    bool SetUnitHitpoints(u16 unitIndex, u8 newHitpoints);
+                    bool SetUnitEnergy(u16 unitIndex, u8 newEnergy);
+                    bool SetUnitShields(u16 unitIndex, u8 newShields);
+                    bool SetUnitResources(u16 unitIndex, u32 newResources);
+                    bool SetUnitHanger(u16 unitIndex, u16 newHanger);
+                    bool SetUnitTypeId(u16 unitIndex, u16 newTypeId);
+                    bool SetUnitXc(u16 unitIndex, u16 newXc);
+                    bool SetUnitYc(u16 unitIndex, u16 newYc);
 
 
-/*	Locations	*/	bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
+/*   Sprites    */  u16 SpriteSectionCapacity();
+                    bool GetSpriteRef(ChkSprite* &spriteRef, u16 index);
+                    
+
+/*	Locations	*/  bool HasLocationSection();
+                    bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
 					ChkLocation getLocation(u16 locationIndex);
 					bool getLocationName(u16 locationIndex, RawString &str);
 					bool getLocationName(u16 locationIndex, ChkdString &str);
@@ -96,7 +130,9 @@ class Scenario
 					bool stringUsedWithLocs(u32 stringNum); // Returns whether the string is used for a location
 
 
-/*	 Triggers	*/	u32 numTriggers(); // Returns the number of triggers in this scenario
+/*	 Triggers	*/  bool HasTrigSection();
+                    bool ReplaceTrigSection(Section newTrigSection);
+                    u32 numTriggers(); // Returns the number of triggers in this scenario
 					bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index
 					bool getActiveComment(Trigger* trigger, RawString &comment);
 					bool addTrigger(Trigger &trigger);
@@ -106,6 +142,7 @@ class Scenario
 					bool moveTriggerUp(u32 triggerId); // Moves the given trigger up one absolute index
 					bool moveTriggerDown(u32 triggerId); // Moves the given trigger down one absolute index
 					bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
+                    TrigSegment GetTrigSection();
 
 /*	   CUWPs	*/	bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
 					bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
@@ -115,21 +152,27 @@ class Scenario
 					int CuwpCapacity();
 					int NumUsedCuwps();
 
-/*	   WAVs		*/	bool GetWav(u16 wavIndex, u32 &outStringIndex);
+/*	   WAVs		*/  u32 WavSectionCapacity();
+                    bool GetWav(u16 wavIndex, u32 &outStringIndex);
 					bool AddWav(u32 stringIndex);
 					bool IsWavUsed(u16 wavIndex);
 					bool IsStringUsedWithWavs(u32 stringIndex);
 
-/*	 Switches	*/	bool getSwitchName(ChkdString &dest, u8 switchID);
-
+/*	 Switches	*/  bool getSwitchStrId(u8 switchId, u32 &stringNum);
+                    bool getSwitchName(ChkdString &dest, u8 switchID);
+                    bool hasSwitchSection();
 
 /*	 Briefing	*/	bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
 
 
-/* UnitSettings */	bool getUnitStringNum(u16 unitId, u16 &stringNum);
+/* UnitSettings */  bool ReplaceUNISSection(buffer &newUNISSection);
+                    bool ReplaceUNIxSection(buffer &newUNIxSection);
+                    bool ReplacePUNISection(buffer &newPUNISection);
+                    bool getUnitStringNum(u16 unitId, u16 &stringNum);
 					bool unitUsesDefaultSettings(u16 unitId);
 					bool unitIsEnabled(u16 unitId);
 					UnitEnabledState getUnitEnabledState(u16 unitId, u8 player);
+                    bool hasUnitSettingsSection();
 
 
 					bool getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints);
@@ -141,6 +184,12 @@ class Scenario
 					bool getUnitSettingsGasCost(u16 unitId, u16 &gasCost);
 					bool getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage);
 					bool getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage);
+
+                    bool getUnisStringId(u16 unitId, u16 &stringId);
+                    bool getUnixStringId(u16 unitId, u16 &stringId);
+                    bool setUnisStringId(u16 unitId, u16 newStringId);
+                    bool setUnixStringId(u16 unitId, u16 newStringId);
+
 					bool setUnitUseDefaults(u16 unitID, bool useDefaults); // Specifies whether a unit uses default settings
 					bool setUnitEnabled(u16 unitId, bool enabled);
 					bool setUnitEnabledState(u16 unitId, u8 player, UnitEnabledState enabledState);
@@ -158,7 +207,11 @@ class Scenario
 					bool setUnitName(u16 unitId, ChkdString &newName);
 
 
-/* UpgrSettings */	bool upgradeUsesDefaultCosts(u8 upgradeId);
+/* UpgrSettings */  bool ReplaceUPGSSection(buffer &newUPGSSection);
+                    bool ReplaceUPGxSection(buffer &newUPGxSection);
+                    bool ReplaceUPGRSection(buffer &newUPGRSection);
+                    bool ReplacePUPxSection(buffer &newPUPxSection);
+                    bool upgradeUsesDefaultCosts(u8 upgradeId);
 					bool getUpgradeMineralCost(u8 upgradeId, u16 &mineralCost);
 					bool getUpgradeMineralFactor(u8 upgradeId, u16 &mineralFactor);
 					bool getUpgradeGasCost(u8 upgradeId, u16 &gasCost);
@@ -184,7 +237,11 @@ class Scenario
 					bool setUpgradeDefaultMaxLevel(u8 upgradeId, u8 newMaxLevel);
 
 
-/* TechSettings */	bool techUsesDefaultCosts(u8 techId);
+/* TechSettings */  bool ReplaceTECSSection(buffer &newTECSSection);
+                    bool ReplaceTECxSection(buffer &newTECxSection);
+                    bool ReplacePTECSection(buffer &newPTECSection);
+                    bool ReplacePTExSection(buffer &newPTExSection);
+                    bool techUsesDefaultCosts(u8 techId);
 					bool getTechMineralCost(u8 techId, u16 &mineralCost);
 					bool getTechGasCost(u8 techId, u16 &gasCost);
 					bool getTechTimeCost(u8 techId, u16 &timeCost);
@@ -310,10 +367,13 @@ class Scenario
 					Section AddSection(u32 sectionId); // Adds a section with the given id to the map
 					void Flush(); // Deletes all sections and clears map protection
 
+
+    private:
+                    
 					/** Referances to section buffers used by Chkdraft. All buffer methods are
 						safe to call whether or not the map/buffer exists, though you should
 						check that they exist at some point to match the user expectations. */
-					buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
+        			buffer& TYPE();	buffer& VER ();	buffer& IVER();	buffer& IVE2();
 					buffer& VCOD();	buffer& IOWN();	buffer& OWNR();	buffer& ERA ();
 					buffer& DIM ();	buffer& SIDE();	buffer& MTXM();	buffer& PUNI();
 					buffer& UPGR();	buffer& PTEC();	buffer& UNIT();	buffer& ISOM();
@@ -328,7 +388,7 @@ class Scenario
 					buffer& KSTR();
 
 
-	protected:
+    protected:
 
 		/** Find section with the given header id
 		ie: to get a referance to VCOD call getSection(HEADER_VCOD); */

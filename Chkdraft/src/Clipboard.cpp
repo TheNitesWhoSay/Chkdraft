@@ -125,31 +125,25 @@ void Clipboard::copy(GuiMap &map, Layer layer)
 		ClearCopyUnits();
 		if ( selections.hasUnits() )
 		{
-			ChkUnit* currUnit;
-
 			u16 firstUnitIndex = selections.getFirstUnit();
-			if ( map.getUnit(currUnit, firstUnitIndex) )
-			{
-				edges.left	 = currUnit->xc;
-				edges.right	 = currUnit->xc;
-				edges.top	 = currUnit->yc;
-				edges.bottom = currUnit->yc;
-			}
+            ChkUnit currUnit = map.getUnit(firstUnitIndex);
+			edges.left	 = currUnit.xc;
+			edges.right	 = currUnit.xc;
+			edges.top	 = currUnit.yc;
+			edges.bottom = currUnit.yc;
 
 			auto &selectedUnits = selections.getUnits();
 			for ( u16 &unitIndex : selectedUnits )
 			{
-				if ( map.getUnit(currUnit, unitIndex) )
-				{
-					PasteUnitNode add(currUnit);
+                ChkUnit currUnit = map.getUnit(unitIndex);
+				PasteUnitNode add(currUnit);
 
-					if		( add.xc < edges.left	) edges.left   = add.xc;
-					else if ( add.xc > edges.right	) edges.right  = add.xc;
-					if		( add.yc < edges.top	) edges.top	   = add.yc;
-					else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
+				if		( add.xc < edges.left	) edges.left   = add.xc;
+				else if ( add.xc > edges.right	) edges.right  = add.xc;
+				if		( add.yc < edges.top	) edges.top	   = add.yc;
+				else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
 
-					copyUnits.insert(copyUnits.end(), add);
-				}
+				copyUnits.insert(copyUnits.end(), add);
 			}
 
 			POINT middle; // Determine where the new middle of the paste is
@@ -170,7 +164,7 @@ void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 	quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, TileNeighbor::All));
 }
 
-void Clipboard::addQuickUnit(ChkUnit* unitRef)
+void Clipboard::addQuickUnit(ChkUnit &unitRef)
 {
 	quickUnits.insert(quickUnits.end(), PasteUnitNode(unitRef));
 }
@@ -236,11 +230,10 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
 							if ( yc >= 0 && yc < ySize )
 							{
 								u32 startLocation = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
-								if ( map.MTXM().get<u16>(startLocation) != tile.value )
+								if ( map.getTile(xc, yc) != tile.value )
 								{
-									tileChanges->Insert(std::shared_ptr<TileChange>(new TileChange(xc, yc, map.MTXM().get<u16>(startLocation))));
-									map.TILE().replace<u16>(startLocation, tile.value);
-									map.MTXM().replace<u16>(startLocation, tile.value);
+									tileChanges->Insert(std::shared_ptr<TileChange>(new TileChange(xc, yc, map.getTile(xc, yc))));
+                                    map.setTile(xc, yc, tile.value);
 								}
 							}
 						}
@@ -267,22 +260,19 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
 								unitTop	   = pasteUnit.unit.yc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeUp,
 								unitBottom = pasteUnit.unit.yc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeDown;
 
-							ChkUnit* unit;
 							u16 numUnits = map.numUnits();
 							for ( u16 i=0; i<numUnits; i++ )
 							{
-								if ( map.getUnit(unit, i) )
-								{
-									s32 left   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft,
-										right  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight,
-										top	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp,
-										bottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
+                                ChkUnit unit = map.getUnit(i);
+								s32 left   = unit.xc - chkd.scData.units.UnitDat(unit.id)->UnitSizeLeft,
+									right  = unit.xc + chkd.scData.units.UnitDat(unit.id)->UnitSizeRight,
+									top	   = unit.yc - chkd.scData.units.UnitDat(unit.id)->UnitSizeUp,
+									bottom = unit.yc + chkd.scData.units.UnitDat(unit.id)->UnitSizeDown;
 
-									if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
-									{
-										canPaste = false;
-										break;
-									}
+								if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
+								{
+									canPaste = false;
+									break;
 								}
 							}
 						}
@@ -292,11 +282,11 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
 							prevPaste.x = pasteUnit.unit.xc;
 							prevPaste.y = pasteUnit.unit.yc;
 							u16 numUnits = map.numUnits();
-							if ( map.UNIT().add<ChkUnit&>(pasteUnit.unit) )
+							if ( map.addUnit(pasteUnit.unit) )
 							{
 								unitCreates->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(numUnits)));
 								if ( chkd.unitWindow.getHandle() != nullptr )
-									chkd.unitWindow.AddUnitItem(numUnits, &pasteUnit.unit);
+									chkd.unitWindow.AddUnitItem(numUnits, pasteUnit.unit);
 							}
 						}
 					}

@@ -319,26 +319,28 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				if ( MessageBox(hWnd, "Are you sure you want to reset all tech settings?", "Confirm", MB_YESNO) == IDYES )
 				{
-					buffer newTECS("TECS"), newTECx("TECx"), newPTEC("PTEC"), newPTEx("PTEx");
+                    buffer newTECS((u32)SectionId::TECS), newTECx((u32)SectionId::TECx),
+                        newPTEC((u32)SectionId::PTEC), newPTEx((u32)SectionId::PTEx);
+
 					if ( Get_TECS(newTECS) )
 					{
 						newTECS.del(0, 8);
-						CM->TECS().takeAllData(newTECS);
+                        CM->ReplaceTECSSection(newTECS);
 					}
 					if ( Get_TECx(newTECx) )
 					{
 						newTECx.del(0, 8);
-						CM->TECx().takeAllData(newTECx);
+                        CM->ReplaceTECxSection(newTECx);
 					}
 					if ( Get_PTEC(newPTEC) )
 					{
 						newPTEC.del(0, 8);
-						CM->PTEC().takeAllData(newPTEC);
+                        CM->ReplacePTECSection(newPTEC);
 					}
 					if ( Get_PTEx(newPTEx) )
 					{
 						newPTEx.del(0, 8);
-						CM->PTEx().takeAllData(newPTEx);
+                        CM->ReplacePTExSection(newPTEx);
 					}
 
 					CM->notifyChange(false);

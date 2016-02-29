@@ -23,13 +23,13 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 		{
 			stringUsed.replace<u8>(0, 1); // Mark the unused byte as a 'used' string
 
-			buffer& MRGN = chk->MRGN(),
+			/*buffer& MRGN = chk->MRGN(),
 				  & MBRF = chk->MBRF(),
 				  & SPRP = chk->SPRP(),
 				  & WAV	 = chk->WAV (),
 				  & UNIS = chk->UNIS(),
 				  & SWNM = chk->SWNM(),
-				  & UNIx = chk->UNIx();
+				  & UNIx = chk->UNIx();*/
 
 			#define MarkIfOverZero(index)						  \
 				if ( index > 0 )								  \
@@ -78,30 +78,44 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 			}
 	
 			// SPRP - scenario property strings
-			u16 strIndex = SPRP.get<u16>(0); // Scenario Name
-			MarkIfOverZero(strIndex);
-			strIndex = SPRP.get<u16>(2); // Scenario Description
-			MarkIfOverZero(strIndex);
+			MarkIfOverZero(chk->GetMapTitleStrIndex());
+			MarkIfOverZero(chk->GetMapDescriptionStrIndex());
 
 			// FORC - force strings
 			for ( int i=0; i<4; i++ )
 				MarkIfOverZero( chk->getForceStringNum(i) );
 
 			// WAV  - sound strings
-			for ( u32 i=0; i<WAV.size()/4; i++ )
-				MarkIfOverZero( WAV.get<u32>(i*4) );
+            for ( u32 i = 0; i < chk->WavSectionCapacity(); i++ )
+            {
+                u32 stringId = 0;
+                if ( chk->GetWav(i, stringId) )
+                    MarkIfOverZero(stringId);
+            }
 
 			// UNIS - unit settings strings (vanilla)
-			for ( int i=0; i<228; i++ )
-				MarkIfOverZero( UNIS.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
+            for ( int i = 0; i < 228; i++ )
+            {
+                u16 stringId = 0;
+                if ( chk->getUnisStringId(i, stringId) )
+                       MarkIfOverZero(stringId);
+            }
 
 			// SWNM - switch strings
-			for ( int i=0; i<256; i++ )
-				MarkIfOverZero( SWNM.get<u32>(i*4) );
+            for ( int i = 0; i < 256; i++ )
+            {
+                u32 stringId = 0;
+                if ( chk->getSwitchStrId(i, stringId) )
+                    MarkIfOverZero(stringId);
+            }
 
-			// UNIx - unit settings strings (brood war)
-			for ( int i=0; i<228; i++ )
-				MarkIfOverZero( UNIx.get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
+            // UNIx - unit settings strings (brood war)
+            for ( int i = 0; i < 228; i++ )
+            {
+                u16 stringId = 0;
+                if ( chk->getUnixStringId(i, stringId) )
+                    MarkIfOverZero(stringId);
+            }
 
 			return true;
 		}

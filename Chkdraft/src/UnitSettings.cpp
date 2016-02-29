@@ -432,10 +432,11 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 		u16 unitId = (u16)selectedUnit;
 
 		// Remove Custom Unit Name
-		u16 origName = CM->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
-			expName  = CM->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
-		CM->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
-		CM->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+        u16 origName = 0, expName = 0;
+        CM->getUnisStringId(selectedUnit, origName);
+        CM->getUnixStringId(selectedUnit, expName);
+        CM->setUnisStringId(selectedUnit, 0);
+        CM->setUnixStringId(selectedUnit, 0);
 		ChkdString unitName;
 		CM->getUnitName(unitName, (u16)selectedUnit);
 		editUnitName.SetText(unitName.c_str());
@@ -496,10 +497,11 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 		u32 groundWeapon = (u32)chkd.scData.UnitDat(unitId)->GroundWeapon,
 			airWeapon	 = (u32)chkd.scData.UnitDat(unitId)->AirWeapon;
 
-		u16 origName = CM->UNIS().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds),
-			expName  = CM->UNIx().get<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds);
-		CM->UNIS().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
-		CM->UNIx().replace<u16>(2*selectedUnit+(u32)UnitSettingsDataLoc::StringIds, 0);
+        u16 origName = 0, expName = 0;
+        CM->getUnisStringId(selectedUnit, origName);
+        CM->getUnixStringId(selectedUnit, expName);
+        CM->setUnisStringId(selectedUnit, 0);
+        CM->setUnixStringId(selectedUnit, 0);
 		CM->removeUnusedString(origName);
 		CM->removeUnusedString(expName);
 
@@ -549,21 +551,21 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		{
 			if ( MessageBox(hWnd, "Are you sure you want to reset all unit settings?", "Confirm", MB_YESNO) == IDYES )
 			{
-				buffer newUNIS("UNIS"), newUNIx("UNIx"), newPUNI("PUNI");
+                buffer newUNIS((u32)SectionId::UNIS), newUNIx((u32)SectionId::UNIx), newPUNI((u32)SectionId::PUNI);
 				if ( Get_UNIS(newUNIS) )
 				{
 					newUNIS.del(0, 8);
-					CM->UNIS().takeAllData(newUNIS);
+                    CM->ReplaceUNISSection(newUNIS);
 				}
 				if ( Get_UNIx(newUNIx) )
 				{
 					newUNIx.del(0, 8);
-					CM->UNIx().takeAllData(newUNIx);
+                    CM->ReplaceUNIxSection(newUNIx);
 				}
 				if ( Get_PUNI(newPUNI) )
 				{
 					newPUNI.del(0, 8);
-					CM->PUNI().takeAllData(newPUNI);
+                    CM->ReplacePUNISection(newPUNI);
 				}
 
 				CM->cleanStringTable(false);
@@ -610,8 +612,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if ( state == BST_CHECKED )
 				{
 					editUnitName.DisableThis();
-					CM->UNIS().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
-					CM->UNIx().replace<u16>(2 * selectedUnit + (u32)UnitSettingsDataLoc::StringIds, 0);
+                    CM->setUnisStringId(selectedUnit, 0);
+                    CM->setUnixStringId(selectedUnit, 0);
 					ChkdString unitName;
 					CM->getUnitName(unitName, (u16)selectedUnit);
 					editUnitName.SetText(unitName.c_str());

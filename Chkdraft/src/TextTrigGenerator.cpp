@@ -145,18 +145,18 @@ TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTa
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string &trigString)
 {
-	return this != nullptr && map != nullptr && GenerateTextTrigs(map, map->TRIG(), trigString);
+	return this != nullptr && map != nullptr && BuildTextTrigs(map, map->GetTrigSection(), trigString);
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, std::string &trigString)
 {
 	Trigger* trig;
-	buffer trigBuff("TRIG");
+    TrigSegment trigBuff(new buffer((u32)SectionId::TRIG));
 	return this != nullptr &&
 		   map != nullptr &&
 		   map->getTrigger(trig, trigId) &&
-		   trigBuff.add<Trigger>(*trig) &&
-		   GenerateTextTrigs(map, trigBuff, trigString);
+		   trigBuff->add<Trigger>(*trig) &&
+		   BuildTextTrigs(map, trigBuff, trigString);
 }
 
 bool TextTrigGenerator::LoadScenario(ScenarioPtr map)
@@ -791,15 +791,14 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
 	}
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std::string &trigString)
+bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSegment trigData, std::string &trigString)
 {
 	if ( !LoadScenario(map, true, false) )
 		return false;
 
-	buffer& TRIG = triggers;
 	buffer output("TeOu");
 
-	u32 numTrigs = TRIG.size()/TRIG_STRUCT_SIZE;
+	u32 numTrigs = trigData->size()/TRIG_STRUCT_SIZE;
 	Trigger* currTrig;
 	Condition* conditions;
 	Action* actions;
@@ -822,7 +821,7 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 
 	for ( u32 trigNum=0; trigNum<numTrigs; trigNum++ )
 	{
-		if ( TRIG.getPtr<Trigger>(currTrig, trigNum*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE) )
+		if ( trigData->getPtr<Trigger>(currTrig, trigNum*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE) )
 		{
 			output.addStr("Trigger(", 8);
 
@@ -866,9 +865,9 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 				if ( CID != (ConditionId)ConditionId::NoCondition )
 				{
 					if ( (condition.flags&(u8)Condition::Flags::Disabled) == (u8)Condition::Flags::Disabled )
-						output.addStr("\n;	", 3);
+						output.addStr("\n;\t", 3);
 					else
-						output.addStr("\n	", 2);
+						output.addStr("\n\t", 2);
 
 					// Add condition name
 					if ( CID == ConditionId::Deaths && condition.players > 28 ) // Memory condition
@@ -913,9 +912,9 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, buffer &triggers, std
 				if ( AID != ActionId::NoAction )
 				{
 					if ( (action.flags&(u8)Action::Flags::Disabled) == (u8)Action::Flags::Disabled )
-						output.addStr("\n;	", 3);
+						output.addStr("\n;\t", 3);
 					else
-						output.addStr("\n	", 2);
+						output.addStr("\n\t", 2);
 
 					// Add action name
 					if ( (s32)AID < (s32)actionTable.size() )
@@ -1087,16 +1086,15 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 	
 	ChkLocation* loc;
 	ChkdString locationName(true);
-	buffer& MRGN = map->MRGN();
 
     locationTable.push_back(ChkdString("No Location", true));
 
-	if ( MRGN.exists() && map->STR().exists() )
+	if ( map->HasLocationSection() && map->hasStrSection(false) )
 	{
-		int numLocations = MRGN.size()/sizeof(ChkLocation);
+		int numLocations = map->locationCapacity();
 		for ( int i=0; i<numLocations; i++ )
 		{
-			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
+			if ( map->getLocation(loc, i) )
 			{
 				locationName = "";
 
@@ -1130,8 +1128,7 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 	unitTable.clear();
 
 	ChkdString unitName(true);
-	buffer& unitSettings = map->unitSettings();
-	if ( unitSettings.exists() && map->STR().exists() )
+	if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
 	{
 		for ( int unitID=0; unitID<=232; unitID++ )
 		{
@@ -1165,13 +1162,12 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 	switchTable.clear();
 
 	ChkdString switchName(true);
-	buffer& SWNM = map->SWNM();
-	if ( SWNM.exists() && map->STR().exists() )
+	if ( map->hasSwitchSection() && map->hasStrSection(false) )
 	{
-		u32 stringID;
+        u32 stringID = 0;
 		for ( u32 switchID=0; switchID<256; switchID++ )
 		{
-			if ( SWNM.get<u32>(stringID, switchID*4) &&
+			if ( map->getSwitchStrId((u8)switchID, stringID) &&
 				 stringID > 0 &&
 				 map->GetString(switchName, stringID) )
 			{
@@ -1199,8 +1195,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 	groupTable.clear();
 
 	ChkdString groupName(true);
-	buffer& FORC = map->FORC();
-	bool hasForcStrings = FORC.exists() && map->STR().exists();
+	bool hasForcStrings = map->hasForceSection() && map->hasStrSection(false);
 
 	const char** legacyLowerGroupNames;
 	const char** legacyUpperGroupNames;
@@ -1242,11 +1237,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 	for ( u32 i=0; i<4; i++ )
 	{
 		DebugIf( i == 3 );
-		u16 stringID;
-		if ( hasForcStrings &&
-			 FORC.get<u16>(stringID, 8+i*2) &&
-			 stringID > 0 &&
-			 map->GetString(groupName, stringID) )
+		if ( hasForcStrings && map->getForceString(groupName, i) )
 		{
 			if ( quoteArgs )
 				groupName = "\"" + groupName + "\"";
@@ -1321,7 +1312,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
 	stringTable.clear();
 	extendedStringTable.clear();
 
-	if ( map->STR().exists() || map->KSTR().exists() )
+	if ( map->hasStrSection(false) || map->hasStrSection(true) )
 	{
 		StringUsageTable standardStringUsage;
 		StringUsageTable extendedStringUsage;

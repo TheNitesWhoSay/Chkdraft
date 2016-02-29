@@ -53,9 +53,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 						{
 							for ( u16 xc = (u16)xStart; xc<xStart + 16; xc++ )
 							{
-								u32 location = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
-								CM->TILE().replace<u16>(location, tilenum);
-								CM->MTXM().replace<u16>(location, tilenum);
+                                CM->SetTile(xc, yc, tilenum);
 								tilenum++;
 							}
 						}

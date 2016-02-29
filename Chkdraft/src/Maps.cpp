@@ -195,7 +195,7 @@ void Maps::UpdateTreeView()
 {
 	if ( currentlyActiveMap != nullptr )
 	{
-		buffer& settings = currentlyActiveMap->unitSettings();
+
 	}
 }
 

@@ -94,9 +94,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SendDlgItemMessage(hWnd, IDC_EDIT_TILEVALUE, EM_GETLINE, 0, (LPARAM)lpszTile);	
 				lpszTile[TextLength] = '\0';
 
-				u16 tile = atoi(lpszTile), tileset;
-				
-				CM->ERA().get<u16>(tileset, 0);
+                u16 tile = atoi(lpszTile), tileset = CM->getTileset();
 				TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 				HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));

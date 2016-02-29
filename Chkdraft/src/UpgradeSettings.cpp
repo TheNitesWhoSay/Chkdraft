@@ -497,22 +497,22 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 					if ( Get_UPGS(newUPGS) )
 					{
 						newUPGS.del(0, 8);
-						CM->UPGS().takeAllData(newUPGS);
+                        CM->ReplaceUPGSSection(newUPGS);
 					}
 					if ( Get_UPGx(newUPGx) )
 					{
 						newUPGx.del(0, 8);
-						CM->UPGx().takeAllData(newUPGx);
+                        CM->ReplaceUPGxSection(newUPGx);
 					}
 					if ( Get_UPGR(newUPGR) )
 					{
 						newUPGR.del(0, 8);
-						CM->UPGR().takeAllData(newUPGR);
+                        CM->ReplaceUPGRSection(newUPGR);
 					}
 					if ( Get_PUPx(newPUPx) )
 					{
 						newPUPx.del(0, 8);
-						CM->PUPx().takeAllData(newPUPx);
+                        CM->ReplacePUPxSection(newPUPx);
 					}
 
 					CM->notifyChange(false);

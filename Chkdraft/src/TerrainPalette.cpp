@@ -186,8 +186,7 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 					BITMAPINFO bmi = GetBMI(32, 32);
 
-					u16 tileset;
-					CM->ERA().get<u16>(tileset, 0);
+                    u16 tileset = CM->getTileset();
 					TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 					u16 tileValue = u16(tilesetIndexedYC/PIXELS_PER_TILE*TILES_PER_ROW);

@@ -342,12 +342,9 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 	ChkdString newMapTitle;
 	if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
 	{
-		u16* mapTitleString;
-		if ( CM->SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
-			 CM->replaceString(newMapTitle, *mapTitleString, false, true) )
-		{
+        if ( CM->SetMapTitle(newMapTitle) )
 			CM->notifyChange(false);
-		}
+		
 		possibleTitleUpdate = false;
 	}
 }
@@ -357,12 +354,9 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
 	ChkdString newMapDescription;
 	if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
 	{
-		u16* mapDescriptionString;
-		if ( CM->SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
-			 CM->replaceString(newMapDescription, *mapDescriptionString, false, true) )
-		{
+        if ( CM->SetMapDescription(newMapDescription) )
 			CM->notifyChange(false);
-		}
+		
 		possibleDescriptionUpdate = false;
 	}
 }

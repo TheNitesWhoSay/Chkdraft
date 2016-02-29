@@ -36,14 +36,14 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
 		{
 			if ( BuildNewStringTable(chk) )
 			{
-				if ( !chk->TRIG().exists() )
+				if ( !chk->HasTrigSection() )
 				{
 					if ( chk->AddSection(TRIG) )
 						return true;
 					else
 						std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
 				}
-				else if ( chk->TRIG().takeAllData(*TRIG) )
+				else if ( chk->ReplaceTrigSection(TRIG) )
 					return true;
 				else
 					std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
@@ -79,7 +79,7 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
 		{
 			if ( BuildNewStringTable(chk) )
 			{
-				if ( !chk->TRIG().exists() )
+				if ( !chk->HasTrigSection() )
 				{
 					if ( chk->AddSection(TRIG) )
 						return true;
@@ -305,7 +305,7 @@ void TextTrigCompiler::CleanText(buffer &text)
 		switch ( text.get<u8>(pos) )
 		{
 			case ' ': // Space
-			case '	': // Tab
+			case '\t': // Tab
 				pos ++;
 				break;
 			case '\15': // CR (line ending)
@@ -1410,7 +1410,7 @@ bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disab
 	{
 		if ( arg.get<u8>(i) == ' ' ) // Del spacing
 			arg.del<u8>(i);
-		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+		else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
 			arg.del<u8>(i);
 	}
 
@@ -1652,7 +1652,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 	{
 		if ( arg.get<u8>(i) == ' ' ) // Del spacing
 			arg.del<u8>(i);
-		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+		else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
 			arg.del<u8>(i);
 	}
 
@@ -2502,7 +2502,7 @@ bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& 
 	{
 		if ( arg.get<u8>(i) == ' ' ) // Del spacing
 			arg.del<u8>(i);
-		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+		else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
 			arg.del<u8>(i);
 	}
 
@@ -3312,7 +3312,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 	{
 		if ( arg.get<u8>(i) == ' ' ) // Del Spacing
 			arg.del<u8>(i);
-		else if ( arg.get<u8>(i) == '	' ) // Del tabbing
+		else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
 			arg.del<u8>(i);
 	}
 	arg.add<u8>('\0');
@@ -3794,32 +3794,28 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(ActionId actionId)
 
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
-	ChkLocation* loc;
 	LocationTableNode locNode;
-	buffer& MRGN = map->MRGN();
-	if ( MRGN.exists() && map->STR().exists() )
+    if ( map->hasStrSection(false) )
 	{
-		locationTable.reserve(MRGN.size()/sizeof(ChkLocation)+1);
+		locationTable.reserve(map->locationCapacity()+1);
 		locNode.locationNum = 0;
 		locNode.locationName = "No Location";
 		locationTable.insert(std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode));
-		for ( u32 i=0; i<MRGN.size()/sizeof(ChkLocation); i++ )
+		for ( u32 i=0; i<map->locationCapacity(); i++ )
 		{
-			if ( MRGN.getPtr(loc, i*sizeof(ChkLocation), sizeof(ChkLocation)) )
-			{
-				locNode.locationName = "";
+            ChkLocation loc = map->getLocation(i);
+			locNode.locationName = "";
 
-				if ( i == 63 )
-				{
-					locNode.locationNum = 64;
-					locNode.locationName = "Anywhere";
-					locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
-				}
-				else if ( loc->stringNum > 0 && map->GetString(locNode.locationName, loc->stringNum) )
-				{
-					locNode.locationNum = u8(i+1);
-					locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
-				}
+			if ( i == 63 )
+			{
+				locNode.locationNum = 64;
+				locNode.locationName = "Anywhere";
+				locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
+			}
+			else if ( loc.stringNum > 0 && map->GetString(locNode.locationName, loc.stringNum) )
+			{
+				locNode.locationNum = u8(i+1);
+				locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
 			}
 		}
 		locationTable.reserve(locationTable.size());
@@ -3830,13 +3826,12 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 {
 	UnitTableNode unitNode;
-	buffer& unitSettings = map->unitSettings();
-	if ( unitSettings.exists() && map->STR().exists() )
+	if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
 	{
 		u16 stringID;
 		for ( int unitID=0; unitID<228; unitID++ )
 		{
-			if ( unitSettings.get<u16>(stringID, unitID*2+(u32)UnitSettingsDataLoc::StringIds) &&
+			if ( map->getUnitStringNum(unitID, stringID) &&
 				 stringID > 0 )
 			{
 				unitNode.unitID = unitID;
@@ -3859,13 +3854,12 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 {
 	SwitchTableNode switchNode;
-	buffer& SWNM = map->SWNM();
-	if ( SWNM.exists() && map->STR().exists() )
+	if ( map->hasSwitchSection() && map->hasStrSection(false) )
 	{
 		u32 stringID;
 		for ( u32 switchID=0; switchID<256; switchID++ )
 		{
-			if ( SWNM.get<u32>(stringID, switchID*4) &&
+			if ( map->getSwitchStrId((u8)switchID, stringID) &&
 				 stringID > 0 &&
 				 map->GetString(switchNode.switchName, stringID) )
 			{
@@ -3880,13 +3874,12 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 {
 	GroupTableNode groupNode;
-	buffer& FORC = map->FORC();
-	if ( FORC.exists() && map->STR().exists() )
+	if ( map->hasForceSection() && map->hasStrSection(false) )
 	{
 		for ( u32 i=0; i<4; i++ )
 		{
-			u16 stringID;
-			if ( FORC.get<u16>(stringID, 8+i*2) &&
+            u16 stringID = 0;
+			if ( map->getForceStringNum(i) &&
 				 stringID > 0 &&
 				 map->GetString(groupNode.groupName, stringID) )
 			{
@@ -3900,7 +3893,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 
 bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 {
-	if ( chk->STR().exists() )
+	if ( chk->hasStrSection(false) )
 	{
 		StringTableNode node;
 #define AddStrIffOverZero(index)															\
@@ -3913,7 +3906,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 			}
 
 		ChkLocation* loc;
-		for ( u32 i=0; i<chk->MRGN().size()/CHK_LOCATION_SIZE; i++ )
+		for ( u32 i=0; i<chk->locationCapacity(); i++ )
 		{
 			if ( chk->getLocation(loc, u16(i)) )
 				AddStrIffOverZero(loc->stringNum);
@@ -3944,24 +3937,34 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
 			trigNum ++;
 		}
 	
-		AddStrIffOverZero( chk->SPRP().get<u16>(0) ); // Scenario Name
-		AddStrIffOverZero( chk->SPRP().get<u16>(2) ); // Scenario Description
+		AddStrIffOverZero( chk->GetMapTitleStrIndex() ); // Scenario Name
+		AddStrIffOverZero( chk->GetMapDescriptionStrIndex() ); // Scenario Description
 
 		for ( int i=0; i<4; i++ )
 			AddStrIffOverZero( chk->getForceStringNum(i) );
 
-		for ( u32 i=0; i<chk->WAV().size()/4; i++ )
-			AddStrIffOverZero( chk->WAV().get<u32>(i*4) );
+        for ( u32 i = 0; i < chk->WavSectionCapacity(); i++ )
+        {
+            u32 wavStrIndex = 0;
+            if ( chk->GetWav(i, wavStrIndex) )
+                AddStrIffOverZero(wavStrIndex);
+        }
 
 		for ( int i=0; i<228; i++ )
 		{
-			AddStrIffOverZero( chk->UNIS().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
-			AddStrIffOverZero( chk->UNIx().get<u16>(i*2+(u32)UnitSettingsDataLoc::StringIds) );
+            u16 stringId = 0;
+            if ( chk->getUnisStringId(i, stringId) )
+                AddStrIffOverZero(stringId);
+            if ( chk->getUnixStringId(i, stringId) )
+                AddStrIffOverZero(stringId);
 		}
 
-		for ( int i=0; i<256; i++ )
-			AddStrIffOverZero( chk->SWNM().get<u32>(i*4) );
-
+        for ( int i = 0; i < 256; i++ )
+        {
+            u32 stringId = 0;
+            if ( chk->getSwitchStrId(i, stringId) )
+                AddStrIffOverZero(stringId);
+        }
 	}
 	return true;
 }
@@ -4000,7 +4003,7 @@ bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
 	if ( map->addAllUsedStrings(standardStrList, true, false) &&
 		 map->rebuildStringTable(standardStrList, false) )
 	{
-		if ( map->KSTR().exists() && extendedStrList.size() > 0 ) // Has extended strings
+		if ( map->hasStrSection(true) && extendedStrList.size() > 0 ) // Has extended strings
 		{
 			return map->addAllUsedStrings(extendedStrList, false, true) && 
 				   map->rebuildStringTable(extendedStrList, true);

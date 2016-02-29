@@ -71,16 +71,12 @@ bool GuiMap::SaveFile(bool saveAs)
 bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 {
 	u16 xSize = XSize();
-	if ( DIM().size() < 4 || x > xSize || y > YSize() )
+	if ( x > xSize || y > YSize() )
 		return false;
 
-	u32 location = 2*xSize*y+2*x; // Down y rows, over x columns
-
-	//undoStacks.addUndoTile((u16)x, (u16)y, MTXM().get<u16>(location));
 	undos.AddUndo(ReversiblePtr(new TileChange((u16)x, (u16)y, getTile((u16)x, (u16)y))));
 
-	TILE().replace<u16>(location, tileNum);
-	MTXM().replace<u16>(location, tileNum);
+    setTile(x, y, tileNum);
 
 	RECT rcTile;
 	rcTile.left	  = x*32-screenLeft;
@@ -295,7 +291,7 @@ void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 	u16 xSize = XSize();
 	u16 currTile;
 	
-	if ( MTXM().get<u16>(currTile, 2*(yClick/32*xSize + xClick/32)) )
+    if ( getTile(xClick/32, yClick/32, currTile) )
 	{
 		if ( selections.hasTiles() )
 			selections.removeTiles();
@@ -430,33 +426,33 @@ void GuiMap::selectAll()
 
 					for ( x=0; x<width; x++ ) // Add the top row
 					{
-						if ( MTXM().get<u16>(tileValue, x*2) )
+                        if ( getTile(x, 0, tileValue) )
 							selections.addTile(tileValue, x, y, TileNeighbor::Top);
 					}
 
 					for ( y=0; y<height-1; y++ ) // Add the middle rows
 					{
-						if ( MTXM().get<u16>(tileValue, y*width*2) )
+                        if ( getTile(0, y, tileValue) )
 							selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
 
 						for ( x=1; x<width-1; x++ )
 						{
-							if ( MTXM().get<u16>(tileValue, (y*width+x)*2) )
+                            if ( getTile(x, y, tileValue) )
 								selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
 						}
-						if ( MTXM().get<u16>(tileValue, (y*width+width-1)*2) )
+                        if ( getTile(width-1, y) )
 							selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
 					}
 
-					if ( MTXM().get<u16>(tileValue, (height-1)*width*2) )
+                    if ( getTile(0, height-1) )
 						selections.addTile(tileValue, 0, height-1, (TileNeighbor)((u8)TileNeighbor::Left|(u8)TileNeighbor::Bottom));
 
 					for ( x=1; x<width-1; x++ ) // Add the bottom row
 					{
-						if ( MTXM().get<u16>(tileValue, ((height-1)*width+x)*2) )
+                        if ( getTile(x, height-1) )
 							selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
 					}
-					if ( MTXM().get<u16>(tileValue, ((height-1)*width+width-1)*2 ) )
+                    if ( getTile(width-1, height-1) )
 						selections.addTile(tileValue, width-1, height-1, (TileNeighbor)((u8)TileNeighbor::Right|(u8)TileNeighbor::Bottom));
 
 					RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -464,15 +460,12 @@ void GuiMap::selectAll()
 				break;
             case Layer::Units:
 				{
-					u32 unitTableSize = UNIT().size(),
-						numUnits = unitTableSize/UNIT_STRUCT_SIZE;
-
 					HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
 					LVFINDINFO findInfo = { };
 					findInfo.flags = LVFI_PARAM;
 
 					chkd.unitWindow.SetChangeHighlightOnly(true);
-					for ( u16 i=0; i<numUnits; i++ )
+					for ( u16 i=0; i<numUnits(); i++ )
 					{
 						if ( !selections.unitIsSelected(i) )
 						{
@@ -506,10 +499,8 @@ void GuiMap::deleteSelection()
 					auto &selTiles = selections.getTiles();
 					for ( auto &tile : selTiles )
 					{
-						u32 location = 2*xSize*tile.yc+2*tile.xc; // Down y rows, over x columns
 						undos.AddUndo(ReversiblePtr(new TileChange(tile.xc, tile.yc, getTile(tile.xc, tile.yc))));
-						TILE().replace<u16>(location, 0);
-						MTXM().replace<u16>(location, 0);
+                        setTile(tile.xc, tile.yc, 0);
 					}
 
 					selections.removeTiles();
@@ -529,10 +520,8 @@ void GuiMap::deleteSelection()
 								u16 index = selections.getHighestIndex();
 								selections.removeUnit(index);
 							
-								ChkUnit* delUnit;
-								if ( getUnit(delUnit, index) )
-									deletes->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, *delUnit)));
-
+                                ChkUnit delUnit = getUnit(index);
+								deletes->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, delUnit)));
 								deleteUnit(index);
 						}
 						undos.AddUndo(deletes);
@@ -595,12 +584,9 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     auto &selUnits = selections.getUnits();
     for ( u16 &unitIndex : selUnits )
     {
-        ChkUnit* unit;
-        if ( getUnit(unit, unitIndex) && newPlayer != unit->owner )
-        {
-            unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_OWNER, unit->owner)));
-            unit->owner = newPlayer;
-        }
+        ChkUnit unit = getUnit(unitIndex);
+        unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, ChkUnitField::Owner, unit.owner)));
+        unit.owner = newPlayer;
 
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
@@ -1728,8 +1714,8 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 	{
 		selections.setEndDrag(mapX/32, mapY/32);
 							
-		u16 tileValue;
-		if ( MTXM().get<u16>(tileValue, (u32)((selections.getEndDrag().y*width+selections.getEndDrag().x)*2)) )
+        u16 tileValue = 0;
+        if ( getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y, tileValue) )
 			selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
 	}
 	else // Add/remove multiple tiles from selection
@@ -1751,8 +1737,8 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 			{
 				for ( int xRow = selections.getStartDrag().x; xRow < selections.getEndDrag().x; xRow++ )
 				{
-					u16 tileValue;
-					if ( MTXM().get<u16>((u16 &)tileValue, (u32)((yRow*width+xRow)*2)) )
+                    u16 tileValue = 0;
+                    if ( getTile(xRow, yRow, tileValue) )
 						selections.addTile(tileValue, xRow, yRow);
 				}
 			}
@@ -1961,57 +1947,55 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 		int unitLeft = 0, unitRight	 = 0,
 			unitTop	 = 0, unitBottom = 0;
 	
-		ChkUnit* unit;
-		if ( getUnit(unit, i) )
-		{
-			if ( unit->id < 228 )
-			{
-				unitLeft   = unit->xc - chkd.scData.units.UnitDat(unit->id)->UnitSizeLeft;
-				unitRight  = unit->xc + chkd.scData.units.UnitDat(unit->id)->UnitSizeRight;
-				unitTop	   = unit->yc - chkd.scData.units.UnitDat(unit->id)->UnitSizeUp;
-				unitBottom = unit->yc + chkd.scData.units.UnitDat(unit->id)->UnitSizeDown;
-			}
-			else
-			{
-				unitLeft   = unit->xc - chkd.scData.units.UnitDat(0)->UnitSizeLeft;
-				unitRight  = unit->xc + chkd.scData.units.UnitDat(0)->UnitSizeRight;
-				unitTop	   = unit->yc - chkd.scData.units.UnitDat(0)->UnitSizeUp;
-				unitBottom = unit->yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
-			}
+        ChkUnit unit = getUnit(i);
+		
+        if ( unit.id < 228 )
+        {
+            unitLeft = unit.xc - chkd.scData.units.UnitDat(unit.id)->UnitSizeLeft;
+            unitRight = unit.xc + chkd.scData.units.UnitDat(unit.id)->UnitSizeRight;
+            unitTop = unit.yc - chkd.scData.units.UnitDat(unit.id)->UnitSizeUp;
+            unitBottom = unit.yc + chkd.scData.units.UnitDat(unit.id)->UnitSizeDown;
+        }
+        else
+        {
+            unitLeft = unit.xc - chkd.scData.units.UnitDat(0)->UnitSizeLeft;
+            unitRight = unit.xc + chkd.scData.units.UnitDat(0)->UnitSizeRight;
+            unitTop = unit.yc - chkd.scData.units.UnitDat(0)->UnitSizeUp;
+            unitBottom = unit.yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
+        }
 	
-			if (	selections.getStartDrag().x <= unitRight  && selections.getEndDrag().x >= unitLeft
-				 && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
-			{
-				bool wasSelected = selections.unitIsSelected(i);
-				if ( wasSelected )
-					selections.removeUnit(i);
-				else
-					selections.addUnit(i);
-		
-				if ( chkd.unitWindow.getHandle() != nullptr )
-				{
-					HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
-					LVFINDINFO findInfo = { };
-					findInfo.flags = LVFI_PARAM;
-					findInfo.lParam = i;
-		
-					int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
-					if ( wasSelected )
-					{
-						chkd.unitWindow.SetChangeHighlightOnly(true);
-						ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED|LVIS_SELECTED);
-						chkd.unitWindow.SetChangeHighlightOnly(false);
-					}
-					else
-					{
-						chkd.unitWindow.SetChangeHighlightOnly(true);
-						ListView_SetItemState(hUnitTree, lvIndex, LVIS_FOCUSED|LVIS_SELECTED, LVIS_FOCUSED|LVIS_SELECTED);
-						chkd.unitWindow.SetChangeHighlightOnly(false);
-					}
-				}
-				chkd.unitWindow.UpdateEnabledState();
-			}
-		}
+        if ( selections.getStartDrag().x <= unitRight  && selections.getEndDrag().x >= unitLeft
+            && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
+        {
+            bool wasSelected = selections.unitIsSelected(i);
+            if ( wasSelected )
+                selections.removeUnit(i);
+            else
+                selections.addUnit(i);
+
+            if ( chkd.unitWindow.getHandle() != nullptr )
+            {
+                HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
+                LVFINDINFO findInfo = {};
+                findInfo.flags = LVFI_PARAM;
+                findInfo.lParam = i;
+
+                int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
+                if ( wasSelected )
+                {
+                    chkd.unitWindow.SetChangeHighlightOnly(true);
+                    ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED | LVIS_SELECTED);
+                    chkd.unitWindow.SetChangeHighlightOnly(false);
+                }
+                else
+                {
+                    chkd.unitWindow.SetChangeHighlightOnly(true);
+                    ListView_SetItemState(hUnitTree, lvIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+                    chkd.unitWindow.SetChangeHighlightOnly(false);
+                }
+            }
+            chkd.unitWindow.UpdateEnabledState();
+        }
 	}
 	Redraw(true);
 }

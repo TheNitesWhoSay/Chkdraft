@@ -319,9 +319,7 @@ void ForcesWindow::CheckReplaceForceName(int force)
 	ChkdString newMapForce;
 	if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
 	{
-		u16* mapForceString;
-		if ( CM->FORC().getPtr<u16>(mapForceString, 8+2*force, 2) &&
-			 CM->replaceString(newMapForce, *mapForceString, false, true) )
+		if ( CM->setForceName(force, newMapForce) )
 		{
 			CM->notifyChange(false);
 			CM->refreshScenario();

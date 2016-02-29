@@ -60,7 +60,7 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 				unit.validFlags = 0;
 				unit.xc = 0;
 				unit.yc = 0;
-				chkd.maps.clipboard.addQuickUnit(&unit);
+				chkd.maps.clipboard.addQuickUnit(unit);
 				chkd.maps.startPaste(true);
 				SetFocus(CM->getHandle());
 			}

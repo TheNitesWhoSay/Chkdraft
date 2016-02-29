@@ -756,7 +756,7 @@ void TriggersWindow::RefreshGroupList()
 	for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
 		addedPlayer[i] = false;
 
-	if ( CM != nullptr && CM->TRIG().exists() )
+	if ( CM != nullptr && CM->HasTrigSection() )
 	{
 		Trigger* trigger;
 		u32 numTriggers = CM->numTriggers();
@@ -821,7 +821,7 @@ void TriggersWindow::RefreshTrigList()
 	numVisibleTrigs = 0;
 	int toSelect = -1;
 
-	if ( CM != nullptr && CM->TRIG().exists() )
+	if ( CM != nullptr && CM->HasTrigSection() )
 	{
 		Trigger* trigger;
 		u32 numTriggers = CM->numTriggers();

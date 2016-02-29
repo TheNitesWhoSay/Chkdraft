@@ -144,16 +144,10 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
 void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 {
-	buffer& ERA  = map.ERA (),
-		  & MTXM = map.MTXM();
+	u32 maxRowX, maxRowY;
 
-	u32 maxRowX, maxRowY, mtxmRef;
-
-	u16 TileValue,
-		yTile, xTile,
-		tileset;
-
-	if ( !ERA.get<u16>(tileset, 0) ) return; // Map must have a tileset
+    u16 yTile, xTile,
+        tileset = map.getTileset();
 
 	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
@@ -171,30 +165,15 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
 	{
 		for ( xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
 		{
-			mtxmRef = 2*(mapWidth*yTile+xTile);
-			if ( MTXM.get<u16>(TileValue, mtxmRef) )
-			{
-				TileToBits(bitmap,
-						    tiles,
-						    s32(xTile)*32-screenLeft,
-						    s32(yTile)*32-screenTop,
-						    u16(screenWidth),
-						    u16(screenHeight),
-						    TileValue
-						  );
-			}
+		    TileToBits(bitmap, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
+			    u16(screenWidth), u16(screenHeight), map.getTile(xTile, yTile));
 		}
 	}
 }
 
 void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 {
-	buffer& MTXM = map.MTXM();
-
-	u32 maxRowX, maxRowY,
-				  xc, yc;
-
-	u16 wTileHex;
+	u32 maxRowX, maxRowY, xc, yc;
 
 	if ( screenHeight > (s32)mapHeight*32 )
 		maxRowY = mapHeight;
@@ -208,17 +187,15 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 
 	BITMAPINFO bmi = GetBMI(32, 32);
 
-	u8 tileset;
-	if ( !map.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+    u16 tileset = map.getTileset();
 	TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 	for ( yc=screenTop/32; yc<maxRowY; yc++ )
 	{
 		for ( xc=screenLeft/32; xc<maxRowX; xc++ )
 		{
-			if ( MTXM.get<u16>(wTileHex, 2*mapWidth*yc+2*xc) )
-				TileElevationsToBits(bitmap, screenWidth, screenHeight, tiles,
-									  s16(xc*32-screenLeft), s16(yc*32-screenTop), wTileHex, bmi, 0 );
+			TileElevationsToBits(bitmap, screenWidth, screenHeight, tiles,
+                s16(xc*32-screenLeft), s16(yc*32-screenTop), map.getTile(xc, yc), bmi, 0 );
 		}
 	}
 }
@@ -257,270 +234,247 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
 
 void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
-	buffer& MRGN = map.MRGN();
 	ChkLocation* loc;
 	s32 screenRight = screenLeft+screenWidth;
 	s32 screenBottom = screenTop+screenHeight;
 	u32 bitMax = screenWidth*screenHeight;
 
-	for ( u32 locPos=0; locPos<MRGN.size(); locPos+=CHK_LOCATION_SIZE )
-	{
-		if ( MRGN.getPtr<ChkLocation>(loc, locPos, CHK_LOCATION_SIZE) && ( locPos != 63*CHK_LOCATION_SIZE || showAnywhere ) )
-		{
-			s32 leftMost = std::min(loc->xc1, loc->xc2);
-			if ( leftMost < screenRight )
-			{
-				s32 rightMost = std::max(loc->xc1, loc->xc2);
-				if ( rightMost > screenLeft )
-				{
-					s32 topMost = std::min(loc->yc1, loc->yc2);
-					if ( topMost < screenBottom )
-					{
-						s32 bottomMost = std::max(loc->yc1, loc->yc2);
-						if ( bottomMost > screenTop )
-						{
-							bool leftMostOnScreen	= true,
-								 rightMostOnScreen	= true,
-								 topMostOnScreen	= true,
-								 bottomMostOnScreen = true,
-								 inverted = (loc->xc1 > loc->xc2 || loc->yc1 > loc->yc2);
+    for ( u16 locNum = 0; locNum < map.locationCapacity(); locNum++ )
+    {
+        if ( map.getLocation(loc, locNum) )
+        {
+            s32 leftMost = std::min(loc->xc1, loc->xc2);
+            if ( leftMost < screenRight )
+            {
+                s32 rightMost = std::max(loc->xc1, loc->xc2);
+                if ( rightMost > screenLeft )
+                {
+                    s32 topMost = std::min(loc->yc1, loc->yc2);
+                    if ( topMost < screenBottom )
+                    {
+                        s32 bottomMost = std::max(loc->yc1, loc->yc2);
+                        if ( bottomMost > screenTop )
+                        {
+                            bool leftMostOnScreen = true,
+                                rightMostOnScreen = true,
+                                topMostOnScreen = true,
+                                bottomMostOnScreen = true,
+                                inverted = (loc->xc1 > loc->xc2 || loc->yc1 > loc->yc2);
 
-							if ( leftMost < screenLeft )
-							{
-								leftMost = screenLeft;
-								leftMostOnScreen = false;
-							}
-							if ( rightMost > screenRight )
-							{
-								rightMost = screenRight;
-								rightMostOnScreen = false;
-							}
-							if ( topMost < screenTop )
-							{
-								topMost = screenTop;
-								topMostOnScreen = false;
-							}
-							if ( bottomMost > screenBottom )
-							{
-								bottomMost = screenBottom;
-								bottomMostOnScreen = false;
-							}
+                            if ( leftMost < screenLeft )
+                            {
+                                leftMost = screenLeft;
+                                leftMostOnScreen = false;
+                            }
+                            if ( rightMost > screenRight )
+                            {
+                                rightMost = screenRight;
+                                rightMostOnScreen = false;
+                            }
+                            if ( topMost < screenTop )
+                            {
+                                topMost = screenTop;
+                                topMostOnScreen = false;
+                            }
+                            if ( bottomMost > screenBottom )
+                            {
+                                bottomMost = screenBottom;
+                                bottomMostOnScreen = false;
+                            }
 
-							leftMost -= screenLeft;
-							rightMost -= screenLeft;
-							topMost -= screenTop;
-							bottomMost -= screenTop;
+                            leftMost -= screenLeft;
+                            rightMost -= screenLeft;
+                            topMost -= screenTop;
+                            bottomMost -= screenTop;
 
-							if ( leftMostOnScreen )
-							{
-								for ( s32 y = topMost; y < bottomMost; y++ )
-									bitmap[y*screenWidth + leftMost] = 0;
-							}
-							if ( rightMostOnScreen )
-							{
-								for ( s32 y = topMost; y < bottomMost; y++ )
-									bitmap[y*screenWidth + rightMost] = 0;
-							}
-							if ( topMostOnScreen )
-							{
-								for ( s32 x = leftMost; x < rightMost; x++ )
-									bitmap[topMost*screenWidth + x] = 0;
-							}
-							if ( bottomMostOnScreen )
-							{
-								for ( s32 x = leftMost; x < rightMost; x++ )
-									bitmap[bottomMost*screenWidth + x] = 0;
-							}
+                            if ( leftMostOnScreen )
+                            {
+                                for ( s32 y = topMost; y < bottomMost; y++ )
+                                    bitmap[y*screenWidth + leftMost] = 0;
+                            }
+                            if ( rightMostOnScreen )
+                            {
+                                for ( s32 y = topMost; y < bottomMost; y++ )
+                                    bitmap[y*screenWidth + rightMost] = 0;
+                            }
+                            if ( topMostOnScreen )
+                            {
+                                for ( s32 x = leftMost; x < rightMost; x++ )
+                                    bitmap[topMost*screenWidth + x] = 0;
+                            }
+                            if ( bottomMostOnScreen )
+                            {
+                                for ( s32 x = leftMost; x < rightMost; x++ )
+                                    bitmap[bottomMost*screenWidth + x] = 0;
+                            }
 
-							if ( inverted )
-							{
-								// Base: +20, -10, -10
+                            if ( inverted )
+                            {
+                                // Base: +20, -10, -10
 
-								for ( s32 y=topMost; y<bottomMost; y++ )
-								{
-									for ( s32 x=leftMost; x<rightMost; x++ )
+                                for ( s32 y = topMost; y<bottomMost; y++ )
+                                {
+                                    for ( s32 x = leftMost; x<rightMost; x++ )
                                         BoundedAdjustPx(bitmap[y*screenWidth + x], 20, -10, -10);
-								}
-							}
-							else
-							{
-								// Base: -10, +10, +15
-								for ( s32 y=topMost; y<bottomMost; y++ )
-								{
-									for ( s32 x=leftMost; x<rightMost; x++ )
+                                }
+                            }
+                            else
+                            {
+                                // Base: -10, +10, +15
+                                for ( s32 y = topMost; y<bottomMost; y++ )
+                                {
+                                    for ( s32 x = leftMost; x<rightMost; x++ )
                                         BoundedAdjustPx(bitmap[y*screenWidth + x], -10, 10, 15);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 	u16 selectedLoc = selections.getSelectedLocation();
 	if ( selectedLoc != NO_LOCATION )
 	{
-		if ( MRGN.getPtr<ChkLocation>(loc, selectedLoc*CHK_LOCATION_SIZE, CHK_LOCATION_SIZE) )
-		{
-			s32 leftMost = std::min(loc->xc1, loc->xc2);
-			s32 rightMost = std::max(loc->xc1, loc->xc2);
-			s32 topMost = std::min(loc->yc1, loc->yc2);
-			s32 bottomMost = std::max(loc->yc1, loc->yc2);
-			if ( leftMost < screenRight && rightMost > screenLeft && topMost < screenBottom && bottomMost > screenTop )
-			{
-				bool leftMostOnScreen	= leftMost >= screenLeft,
-					 rightMostOnScreen	= rightMost <= screenRight,
-					 topMostOnScreen	= topMost >= screenTop,
-					 bottomMostOnScreen = bottomMost <= screenBottom;
+        if ( map.getLocation(loc, selectedLoc) )
+        {
+            s32 leftMost = std::min(loc->xc1, loc->xc2);
+            s32 rightMost = std::max(loc->xc1, loc->xc2);
+            s32 topMost = std::min(loc->yc1, loc->yc2);
+            s32 bottomMost = std::max(loc->yc1, loc->yc2);
+            if ( leftMost < screenRight && rightMost > screenLeft && topMost < screenBottom && bottomMost > screenTop )
+            {
+                bool leftMostOnScreen = leftMost >= screenLeft,
+                    rightMostOnScreen = rightMost <= screenRight,
+                    topMostOnScreen = topMost >= screenTop,
+                    bottomMostOnScreen = bottomMost <= screenBottom;
 
-				if ( !leftMostOnScreen )
-					leftMost = 0;
-				else
-					leftMost -= screenLeft;
+                if ( !leftMostOnScreen )
+                    leftMost = 0;
+                else
+                    leftMost -= screenLeft;
 
-				if ( !rightMostOnScreen )
-					rightMost = screenWidth;
-				else
-					rightMost -= screenLeft;
+                if ( !rightMostOnScreen )
+                    rightMost = screenWidth;
+                else
+                    rightMost -= screenLeft;
 
-				if ( !topMostOnScreen )
-					topMost = 0;
-				else
-					topMost -= screenTop;
+                if ( !topMostOnScreen )
+                    topMost = 0;
+                else
+                    topMost -= screenTop;
 
-				if ( !bottomMostOnScreen )
-					bottomMost = screenHeight;
-				else
-					bottomMost -= screenTop;
+                if ( !bottomMostOnScreen )
+                    bottomMost = screenHeight;
+                else
+                    bottomMost -= screenTop;
 
-				if ( leftMostOnScreen )
-				{
-					for ( s32 y = topMost; y < bottomMost; y++ )
-						bitmap[y*screenWidth + leftMost] = RGB(255, 255, 255);
-				}
-				if ( rightMostOnScreen )
-				{
-					for ( s32 y = topMost; y < bottomMost; y++ )
-						bitmap[y*screenWidth + rightMost] = RGB(255, 255, 255);
-				}
-				if ( topMostOnScreen )
-				{
-					for ( s32 x = leftMost; x < rightMost; x++ )
-						bitmap[topMost*screenWidth + x] = RGB(255, 255, 255);
-				}
-				if ( bottomMostOnScreen )
-				{
-					for ( s32 x = leftMost; x < rightMost; x++ )
-						bitmap[bottomMost*screenWidth + x] = RGB(255, 255, 255);
-				}
-			}
-		}
+                if ( leftMostOnScreen )
+                {
+                    for ( s32 y = topMost; y < bottomMost; y++ )
+                        bitmap[y*screenWidth + leftMost] = RGB(255, 255, 255);
+                }
+                if ( rightMostOnScreen )
+                {
+                    for ( s32 y = topMost; y < bottomMost; y++ )
+                        bitmap[y*screenWidth + rightMost] = RGB(255, 255, 255);
+                }
+                if ( topMostOnScreen )
+                {
+                    for ( s32 x = leftMost; x < rightMost; x++ )
+                        bitmap[topMost*screenWidth + x] = RGB(255, 255, 255);
+                }
+                if ( bottomMostOnScreen )
+                {
+                    for ( s32 x = leftMost; x < rightMost; x++ )
+                        bitmap[bottomMost*screenWidth + x] = RGB(255, 255, 255);
+                }
+            }
+        }
 	}
 }
 
 void Graphics::DrawUnits(ChkdBitmap& bitmap)
 {
-	buffer& UNIT = map.UNIT(),
-		  & ERA  = map.ERA (),
-		  & COLR = map.COLR();
-
-	s32	UnitTableSize = UNIT.size();
-
 	s32 screenRight = screenLeft+screenWidth,
 		screenBottom = screenTop+screenHeight;
 
-	u8 tileset;
-	if ( !ERA.get<u8>(tileset, 0) ) return; // Map must have a tileset
+    u16 tileset = map.getTileset();
 
 	buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
-	ChkUnit* unit;
 
-	for ( s32 pos = 0; pos < UnitTableSize; pos+=UNIT_STRUCT_SIZE )
-	{
-		if ( UNIT.getPtr(unit, pos, UNIT_STRUCT_SIZE) )
-		{
-			if ( (s32)unit->xc+(s32)MaxUnitBounds::Right > screenLeft &&
-				 (s32)unit->xc-(s32)MaxUnitBounds::Left < screenRight )
-				// If within screen x-bounds
-			{
-				if ( (s32)unit->yc+(s32)MaxUnitBounds::Down > screenTop &&
-					 (s32)unit->yc-(s32)MaxUnitBounds::Up < screenBottom )
-					// If within screen y-bounds
-				{
-					u16 frame = 0;
-					u8 color;
-					if ( unit->owner < 8 )
-						color = COLR.get<u8>(unit->owner);
-					else
-						color = unit->owner;
+    for ( u16 unitNum = 0; unitNum < map.numUnits(); unitNum++ )
+    {
+        ChkUnit unit = map.getUnit(unitNum);
+        if ( (s32)unit.xc + (s32)MaxUnitBounds::Right > screenLeft &&
+            (s32)unit.xc - (s32)MaxUnitBounds::Left < screenRight )
+            // If within screen x-bounds
+        {
+            if ( (s32)unit.yc + (s32)MaxUnitBounds::Down > screenTop &&
+                (s32)unit.yc - (s32)MaxUnitBounds::Up < screenBottom )
+                // If within screen y-bounds
+            {
+                u16 frame = 0;
+                u8 color = 0;
+                if ( !map.getPlayerColor(unit.owner, color) )
+                    color = unit.owner;
 
-					bool isSelected = selections.unitIsSelected(u16(pos/UNIT_STRUCT_SIZE));
+                bool isSelected = selections.unitIsSelected(unitNum);
 
-					UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-								screenLeft, screenTop, unit->id, unit->xc, unit->yc,
-								u16(frame), isSelected );
-				}
-			}
-		}
-	}
+                UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                    screenLeft, screenTop, unit.id, unit.xc, unit.yc,
+                    u16(frame), isSelected);
+            }
+        }
+    }
 }
 
 void Graphics::DrawSprites(ChkdBitmap& bitmap)
 {
-	buffer& THG2 = map.THG2(),
-		  & ERA  = map.ERA (),
-		  & COLR = map.COLR();
-
-	s32	SpriteTableSize = THG2.size();
-
 	s32 screenRight = screenLeft + screenWidth,
 		screenBottom = screenTop + screenHeight;
 
-	u8 tileset;
-	if ( !ERA.get<u8>(tileset, 0) ) return; // Map must have a tileset
+    u16 tileset = map.getTileset();
 
 	buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 	ChkSprite* sprite;
 
-	for ( s32 pos = 0; pos < SpriteTableSize; pos += SPRITE_STRUCT_SIZE )
-	{
-		if ( THG2.getPtr(sprite, pos, SPRITE_STRUCT_SIZE) )
-		{
-			if ( (s32)sprite->xc+(s32)MaxUnitBounds::Right > screenLeft &&
-				 (s32)sprite->xc-(s32)MaxUnitBounds::Left < screenRight )
-				 // If within screen x-bounds
-			{
-				if ( (s32)sprite->yc+(s32)MaxUnitBounds::Down > screenTop &&
-					 (s32)sprite->yc-(s32)MaxUnitBounds::Up < screenBottom )
-					 // If within screen y-bounds
-				{
-					u16 frame = 0;
+    for ( s32 spriteId = 0; spriteId < map.SpriteSectionCapacity(); spriteId++ )
+    {
+        if ( map.GetSpriteRef(sprite, spriteId) )
+        {
+            if ( (s32)sprite->xc + (s32)MaxUnitBounds::Right > screenLeft &&
+                (s32)sprite->xc - (s32)MaxUnitBounds::Left < screenRight )
+                // If within screen x-bounds
+            {
+                if ( (s32)sprite->yc + (s32)MaxUnitBounds::Down > screenTop &&
+                    (s32)sprite->yc - (s32)MaxUnitBounds::Up < screenBottom )
+                    // If within screen y-bounds
+                {
+                    u16 frame = 0;
                     bool isSprite = sprite->IsDrawnAsSprite();;
-					u8 color;
-					if ( sprite->owner < 8 )
-						color = COLR.get<u8>(sprite->owner);
-					else
-						color = sprite->owner;
+                    u8 color = 0;
+                    if ( !map.getPlayerColor(sprite->owner, color) )
+                        color = sprite->owner;
 
-					if ( isSprite )
-						SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-									  screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc );
-					else
-						UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-									screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc,
-									frame, false );
-				}
-			}
-		}
-	}
+                    if ( isSprite )
+                        SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                            screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc);
+                    else
+                        UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                            screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc,
+                            frame, false);
+                }
+            }
+        }
+    }
 }
 
 void Graphics::DrawLocationNames(HDC hDC)
 {
 	s32 screenRight = screenLeft + screenWidth;
 	s32 screenBottom = screenTop + screenHeight;
-	buffer& MRGN = map.MRGN();
 	ChkLocation* loc;
 
 	HFONT NumFont = CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
@@ -528,93 +482,93 @@ void Graphics::DrawLocationNames(HDC hDC)
 	SetBkMode( hDC, TRANSPARENT );
 	SetTextColor(hDC, RGB(255, 255, 0));
 
-	for ( u32 locPos=0; locPos<MRGN.size(); locPos+=CHK_LOCATION_SIZE )
-	{
-		if ( MRGN.getPtr<ChkLocation>(loc, locPos, CHK_LOCATION_SIZE) && locPos != 63*CHK_LOCATION_SIZE )
-		{
-			s32 leftMost = std::min(loc->xc1, loc->xc2);
-			if ( leftMost < screenRight )
-			{
-				s32 rightMost = std::max(loc->xc1, loc->xc2);
-				if ( rightMost > screenLeft )
-				{
-					s32 topMost = std::min(loc->yc1, loc->yc2);
-					if ( topMost < screenBottom )
-					{
-						s32 bottomMost = std::max(loc->yc1, loc->yc2);
-						if ( bottomMost > screenTop )
-						{
-							ChkdString str;
-							if ( map.getLocationName(u16(locPos/CHK_LOCATION_SIZE), str) )
-							{
-								leftMost = leftMost-screenLeft+2;
-								topMost = topMost-screenTop+2;
-								RECT rect = { };
-								SIZE strSize = { };
-								GetTextExtentPoint32(hDC, &str[0], str.size(), &strSize);
-								s32 lineHeight = strSize.cy;
-								if ( clipLocationNames )
-								{
-									rect.left = (leftMost < 0)? 0 : leftMost;
-									rect.top  = ( topMost < 0)? 0 : topMost;
-									rect.bottom = bottomMost-screenTop-1;
-									rect.right = rightMost-screenLeft-1;
-									LONG rectWidth = rect.right-rect.left,
-										 rectHeight = rect.bottom-rect.top;
+    for ( u32 locId = 0; locId < map.locationCapacity(); locId++ )
+    {
+        if ( locId != 63 && map.getLocation(loc, locId) )
+        {
+            s32 leftMost = std::min(loc->xc1, loc->xc2);
+            if ( leftMost < screenRight )
+            {
+                s32 rightMost = std::max(loc->xc1, loc->xc2);
+                if ( rightMost > screenLeft )
+                {
+                    s32 topMost = std::min(loc->yc1, loc->yc2);
+                    if ( topMost < screenBottom )
+                    {
+                        s32 bottomMost = std::max(loc->yc1, loc->yc2);
+                        if ( bottomMost > screenTop )
+                        {
+                            ChkdString str;
+                            if ( map.getLocationName(locId, str) )
+                            {
+                                leftMost = leftMost - screenLeft + 2;
+                                topMost = topMost - screenTop + 2;
+                                RECT rect = {};
+                                SIZE strSize = {};
+                                GetTextExtentPoint32(hDC, &str[0], str.size(), &strSize);
+                                s32 lineHeight = strSize.cy;
+                                if ( clipLocationNames )
+                                {
+                                    rect.left = (leftMost < 0) ? 0 : leftMost;
+                                    rect.top = (topMost < 0) ? 0 : topMost;
+                                    rect.bottom = bottomMost - screenTop - 1;
+                                    rect.right = rightMost - screenLeft - 1;
+                                    LONG rectWidth = rect.right - rect.left,
+                                        rectHeight = rect.bottom - rect.top;
 
-									if ( strSize.cx < rectWidth )
-										ExtTextOut(hDC, leftMost, topMost, ETO_CLIPPED, &rect, &str[0], str.length(), 0);
-									else if ( rectHeight > lineHeight ) // Can word wrap
-									{
-										u32 lastCharPos = str.size()-1;
-										s32 prevBottom = rect.top;
+                                    if ( strSize.cx < rectWidth )
+                                        ExtTextOut(hDC, leftMost, topMost, ETO_CLIPPED, &rect, &str[0], str.length(), 0);
+                                    else if ( rectHeight > lineHeight ) // Can word wrap
+                                    {
+                                        u32 lastCharPos = str.size() - 1;
+                                        s32 prevBottom = rect.top;
 
-										while ( rect.bottom-prevBottom > lineHeight && str.size() > 0 )
-										{
-											// Binary search for the character length of this line
-											u32 floor = 0;
-											u32 ceil = str.size();
-											while ( ceil-1 > floor )
-											{
-												lastCharPos = (ceil-floor)/2 + floor;
-												GetTextExtentPoint32(hDC, &str[0], lastCharPos, &strSize);
-												if ( strSize.cx > rectWidth )
-													ceil = lastCharPos;
-												else
-													floor = lastCharPos;
-											}
-											GetTextExtentPoint32(hDC, &str[0], floor+1, &strSize); // Correct last character if needed
-											if ( strSize.cx > rectWidth )
-												lastCharPos = floor;
-											else
-												lastCharPos = ceil;
-											// End binary search
+                                        while ( rect.bottom - prevBottom > lineHeight && str.size() > 0 )
+                                        {
+                                            // Binary search for the character length of this line
+                                            u32 floor = 0;
+                                            u32 ceil = str.size();
+                                            while ( ceil - 1 > floor )
+                                            {
+                                                lastCharPos = (ceil - floor) / 2 + floor;
+                                                GetTextExtentPoint32(hDC, &str[0], lastCharPos, &strSize);
+                                                if ( strSize.cx > rectWidth )
+                                                    ceil = lastCharPos;
+                                                else
+                                                    floor = lastCharPos;
+                                            }
+                                            GetTextExtentPoint32(hDC, &str[0], floor + 1, &strSize); // Correct last character if needed
+                                            if ( strSize.cx > rectWidth )
+                                                lastCharPos = floor;
+                                            else
+                                                lastCharPos = ceil;
+                                            // End binary search
 
-											ExtTextOut(hDC, leftMost, prevBottom, ETO_CLIPPED, &rect, &str[0], lastCharPos, 0);
-											str = str.substr(lastCharPos, str.size());
-											prevBottom += lineHeight;
-										}
-									}
-								}
-								else
-									ExtTextOut(hDC, leftMost, topMost, 0, &rect, &str[0], str.length(), 0);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                                            ExtTextOut(hDC, leftMost, prevBottom, ETO_CLIPPED, &rect, &str[0], lastCharPos, 0);
+                                            str = str.substr(lastCharPos, str.size());
+                                            prevBottom += lineHeight;
+                                        }
+                                    }
+                                }
+                                else
+                                    ExtTextOut(hDC, leftMost, topMost, 0, &rect, &str[0], str.length(), 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 	DeleteObject(NumFont);
 }
 
 void Graphics::DrawTileNumbers(HDC hDC)
 {
-	buffer* tileBuf = nullptr;
-	if ( tileNumsFromMTXM )
-		tileBuf = &map.MTXM();
-	else
-		tileBuf = &map.TILE();
+	//buffer* tileBuf = nullptr;
+	//if ( tileNumsFromMTXM )
+	//	tileBuf = &map.MTXM();
+	//else
+	//	tileBuf = &map.TILE();
 
 	u32 maxRowX, maxRowY,
 		xc, yc;
@@ -642,9 +596,11 @@ void Graphics::DrawTileNumbers(HDC hDC)
 	{
 		for ( xc=screenLeft/32; xc<maxRowX; xc++ )
 		{
-			if ( tileBuf->get<u16>(wTileHex, 2 * mapWidth*yc + 2 * xc) )
-				TileHex = std::to_string(wTileHex);
-			else
+            if ( tileNumsFromMTXM && map.getTile(xc, yc, wTileHex) )
+                TileHex = std::to_string(wTileHex);
+            else if ( !tileNumsFromMTXM && map.getTileSectionTile(xc, yc, wTileHex) )
+                TileHex = std::to_string(wTileHex);
+            else
 				TileHex = "DNE";
 
 			ExtTextOut(hDC, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, ETO_OPAQUE, &nullRect, TileHex.c_str(), TileHex.length(), 0);
@@ -787,7 +743,7 @@ BITMAPINFO GetBMI(s32 width, s32 height)
 }
 
 void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
-						   s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 miniTileSeparation )
+						   s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO &bmi, u8 miniTileSeparation )
 {
 	u32 bitMax = bitWidth*bitHeight*3,
 		cv5Ref, MegaTileRef; // Pointers and index's to tile components
@@ -971,7 +927,7 @@ void SpriteToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u
 	GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
 }
 
-void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 &TileValue)
+void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 TileValue)
 {
 	u32 cv5Ref, MegaTileRef, MiniTileRef, // Pointers and index's of tile components
 		yMiniOffset, xMiniOffset, // Processing optimizers
@@ -1193,8 +1149,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 	SelectObject(hDC, pen);
 	RECT rect, rcBorder;
 
-	u16 tilesetNum;
-	if ( !map.ERA().get<u16>(tilesetNum, 0) ) return;
+    u16 tilesetNum = map.getTileset();
 	TileSet* tileset = &chkd.scData.tilesets.set[tilesetNum];
 
 	BITMAPINFO bmi = GetBMI(32, 32);
@@ -1271,8 +1226,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		SelectObject(hDC, pen);
 	
 		RECT rect, rcShade;
-		u16 tileset;
-		if ( !map.ERA().get<u16>(tileset, 0) ) return;
+        u16 tileset = map.getTileset();
 		TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 	
 		BITMAPINFO bmi = GetBMI(32, 32);
@@ -1339,8 +1293,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 		BITMAPINFO bmi = GetBMI(width, height);
 		GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
-		u8 tileset;
-		if ( !map.ERA().get<u8>(tileset, 0) ) return; // Map must have a tileset
+        u16 tileset = map.getTileset();
 
 		buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 		s32 sScreenLeft = screenLeft;
@@ -1500,8 +1453,6 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
 void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
 					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
 {
-	buffer& MTXM = map.MTXM();
-
 	// minimap colors are equivilant to pixel 7, 6 of the minitile given by (MiniMapCoord%scale)
 	u32 screenWidth  = bitWidth,
 		screenHeight = bitHeight,
@@ -1538,7 +1489,7 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 	
 			mtxmReference = 2*(xSize*yTile+xTile);
 	
-			if ( MTXM.get<u16>(TileValue, mtxmReference) )
+			if ( map.getTile(xTile, yTile, TileValue) )
 			{
 				if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
 				{
@@ -1557,68 +1508,51 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
 					   u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
 {
-	buffer& UNIT = map.UNIT(),
-		  & THG2 = map.THG2(),
-		  & COLR = map.COLR();
+    for ( u16 i = 0; i < map.numUnits(); i++ )
+    {
+        ChkUnit unit = map.getUnit(i);
+        u8 color = 0;
+        if ( !map.getPlayerColor(unit.owner, color) )
+            color = unit.owner;
 
-	u32 unitTableSize = UNIT.size();
-	u32 spriteTableSize = THG2.size();
-	ChkUnit* unit;
-	for ( u32 pos = 0; pos < unitTableSize; pos += UNIT_STRUCT_SIZE )
-	{
-		if ( UNIT.getPtr(unit, pos, UNIT_STRUCT_SIZE) )
-		{
-			u8 color;
-			if ( unit->owner < 8 )
-				color = COLR.get<u8>(unit->owner);
-			else
-				color = unit->owner;
+        u32 bitIndex = (
+            ((u32)((unit.yc / 32)*scale) + yOffset) * 128
+            + (u32)((unit.xc / 32)*scale) + xOffset
+            );
 
-			u32 bitIndex = (
-								((u32)((unit->yc/32)*scale)+yOffset)*128
-								+ (u32)((unit->xc/32)*scale)+xOffset
-						   );
+        if ( bitIndex < MINI_MAP_MAXBIT )
+            bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
+    }
 
-			if ( bitIndex < MINI_MAP_MAXBIT )
-				bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
-		}
-	}
+    for ( u16 i = 0; i < map.SpriteSectionCapacity(); i++ )
+    {
+        ChkSprite* sprite = nullptr;
+        if ( map.GetSpriteRef(sprite, i) )
+        {
+            if ( sprite->IsDrawnAsSprite() )
+            {
+                u8 color = 0;
+                if ( !map.getPlayerColor(sprite->owner, color) )
+                    color = sprite->owner;
 
-	for ( u32 pos = 0; pos < spriteTableSize; pos += SPRITE_STRUCT_SIZE )
-	{
-		ChkSprite* sprite;
-		if ( THG2.getPtr(sprite, pos, SPRITE_STRUCT_SIZE) )
-		{
-			if ( sprite->IsDrawnAsSprite() )
-			{
-				u8 color;
-				if ( sprite->owner < 8 )
-					color = COLR.get<u8>(sprite->owner);
-				else
-					color = sprite->owner;
+                u32 bitIndex = (((u32)((sprite->yc / 32)*scale) + yOffset) * 128
+                    + (u32)((sprite->xc / 32)*scale) + xOffset);
 
-				u32 bitIndex = (((u32)((sprite->yc/32)*scale)+yOffset)*128
-								 + (u32)((sprite->xc/32)*scale)+xOffset);
-
-				if ( bitIndex < MINI_MAP_MAXBIT )
-					bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
-			}
-		}
-	}
+                if ( bitIndex < MINI_MAP_MAXBIT )
+                    bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
+            }
+        }
+    }
 }
 
 void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap &map)
 {
-	buffer& ERA  = map.ERA ();
-
 	ChkdBitmap graphicBits;
 	graphicBits.resize(65536);
 
-	u16 tileset;
+    u16 tileset = map.getTileset();
 
 	BITMAPINFO bmi = GetBMI(128, 128);
-
-	if ( !ERA.get<u16>(tileset, 0) ) return; // Map must have a tileset
 
 	TileSet* tiles = nullptr;		
 

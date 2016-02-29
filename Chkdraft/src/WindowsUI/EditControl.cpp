@@ -427,7 +427,7 @@ LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 					DWORD selStart, selEnd;
 					SendMessage(hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd);
 					SendMessage(hWnd, EM_SETSEL, (WPARAM)selStart, (LPARAM)selEnd);
-					SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"	");
+					SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"\t");
 					return 0; // Prevent default selection update
 				}
 				break;
