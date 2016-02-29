@@ -8,17 +8,17 @@
 
 class TextTrigWindow : public ClassDialog
 {
-	public:
-		bool CreateThis(HWND hParent);
-		void RefreshWindow();
+    public:
+        bool CreateThis(HWND hParent);
+        void RefreshWindow();
 
-	protected:
-		bool CompileEditText(ScenarioPtr map);
-		virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
-		virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        bool CompileEditText(ScenarioPtr map);
+        virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+        virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		EditControl editControl;
+    private:
+        EditControl editControl;
 };
 
 #endif

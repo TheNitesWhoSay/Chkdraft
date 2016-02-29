@@ -3,12 +3,12 @@
 #include "Buffer.h"
 
 /** 
-	This file contains section data for an empty starcraft 1.16.1 hybrid map
+    This file contains section data for an empty starcraft 1.16.1 hybrid map
 
-	Oct notation is used for all characters below space on the ascii table,
-	as well as for all otherwise invisible characters.
+    Oct notation is used for all characters below space on the ascii table,
+    as well as for all otherwise invisible characters.
 
-	Details about CHK sections can be found at: http://www.staredit.net/starcraft/Scenario.chk
+    Details about CHK sections can be found at: http://www.staredit.net/starcraft/Scenario.chk
 */
 
 bool Get_TYPE(buffer &c);

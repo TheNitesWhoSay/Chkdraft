@@ -10,28 +10,28 @@ using MapFilePtr = std::shared_ptr<MapFile>;
 
 class MapFile : public Scenario // MapFile is a scenario file + the stuff here
 {
-	public:
-		MapFile();
+    public:
+        MapFile();
 
         virtual bool SaveFile(bool SaveAs);
 
-		bool LoadFile(const char* &path); // If you're not providing a path, pass in nullptr
-		bool LoadFile();
+        bool LoadFile(const char* &path); // If you're not providing a path, pass in nullptr
+        bool LoadFile();
 
-		bool GetPath();
-		bool SetPath(const char* newPath);
-		const char* FilePath();
-		void SetSaveType(SaveType newSaveType);
+        bool GetPath();
+        bool SetPath(const char* newPath);
+        const char* FilePath();
+        void SetSaveType(SaveType newSaveType);
 
-		std::string GetFileName();
-		std::string GetFilePath();
+        std::string GetFileName();
+        std::string GetFilePath();
 
-	protected:
-		bool OpenFile();
+    protected:
+        bool OpenFile();
 
-	private:
-		char filePath[FILENAME_MAX];
-		SaveType saveType;
+    private:
+        char filePath[FILENAME_MAX];
+        SaveType saveType;
 };
 
 /** The types of files a map can be saved as, one

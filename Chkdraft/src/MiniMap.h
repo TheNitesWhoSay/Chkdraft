@@ -4,12 +4,12 @@
 
 class MiniMap : public ClassWindow
 {
-	public:
-		bool CreateThis(HWND hParent, u32 id);
+    public:
+        bool CreateThis(HWND hParent, u32 id);
 
-	protected:
-		void MiniMapClick(LPARAM ClickPoints);
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        void MiniMapClick(LPARAM ClickPoints);
+        LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

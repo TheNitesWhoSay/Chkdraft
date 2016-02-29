@@ -4,8 +4,8 @@
 
 class DragListControl : public WindowControl
 {
-	public:
-		bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
+    public:
+        bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
 };
 
 #endif

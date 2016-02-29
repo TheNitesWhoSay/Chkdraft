@@ -6,32 +6,32 @@
 #include <vector>
 
 #ifdef CHKDRAFT // Globally defined in project properties if this is used in CHKDraft
-	void Debug();
-	void DebugIf(bool condition);
-	void NoDebug();
-	void mb(const char* text); // Basic message box message
-	void mb(int i, const char* text);
-	void Error(const char* ErrorMessage); // Basic error message box
-	bool RetryError(const char* text); // Error box with yes/no confirm
-	extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
-	void ShoutError(const char* file, unsigned int line, const char* msg, ...);
+    void Debug();
+    void DebugIf(bool condition);
+    void NoDebug();
+    void mb(const char* text); // Basic message box message
+    void mb(int i, const char* text);
+    void Error(const char* ErrorMessage); // Basic error message box
+    bool RetryError(const char* text); // Error box with yes/no confirm
+    extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
+    void ShoutError(const char* file, unsigned int line, const char* msg, ...);
     #if defined(_MSC_VER)
-	#define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__) // Prints a detailed error
-	#define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, __VA_ARGS__) // Shouts an error message
+    #define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__) // Prints a detailed error
+    #define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, __VA_ARGS__) // Shouts an error message
     #elif defined(__GNUC__)
-	#define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Prints a detailed error
-	#define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Shouts an error message
+    #define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Prints a detailed error
+    #define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Shouts an error message
     #else
     #error Other compiler!
     #endif 
 #else
-	void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message
+    void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message
     #if defined(_MSC_VER)
-	#define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
-	#define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
+    #define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
+    #define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
     #elif defined(__GNUC__)
-	#define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, ##__VA_ARGS__)
-	#define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, ##__VA_ARGS__)
+    #define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, ##__VA_ARGS__)
+    #define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, ##__VA_ARGS__)
     #else
     #error Other compiler!
     #endif
@@ -147,50 +147,50 @@ using s8 = std::int8_t;
 #define x32BIT_31 0x7FFFFFFF
 
 const u32 u32Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
-						BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15,
-						BIT_16, BIT_17, BIT_18, BIT_19, BIT_20, BIT_21, BIT_22, BIT_23,
-						BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };
+                        BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15,
+                        BIT_16, BIT_17, BIT_18, BIT_19, BIT_20, BIT_21, BIT_22, BIT_23,
+                        BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };
 
 const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
-						BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
+                        BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 
 enum class SectionId : uint32_t {
-	TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
-	VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
-	DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
-	UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
-	TILE = 1162627412, DD2 = 540165188, THG2 = 843532372, MASK = 1263747405,
-	STR = 542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
-	TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
-	WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
-	SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
-	UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
+    TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
+    VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
+    DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
+    UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
+    TILE = 1162627412, DD2 = 540165188, THG2 = 843532372, MASK = 1263747405,
+    STR = 542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
+    TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
+    WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
+    SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
+    UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
 
-	KSTR = 1381258059
+    KSTR = 1381258059
 };
 
 enum class ForceFlags : uint8_t {
-	None = 0,
-	RandomizeStartLocation = BIT_0,
-	Allied = BIT_1,
-	AlliedVictory = BIT_2,
-	SharedVision = BIT_3
+    None = 0,
+    RandomizeStartLocation = BIT_0,
+    Allied = BIT_1,
+    AlliedVictory = BIT_2,
+    SharedVision = BIT_3
 };
 
 enum class UnitEnabledState : uint8_t
 {
-	Default = 0,
-	Enabled = 1,
-	Disabled = 2
+    Default = 0,
+    Enabled = 1,
+    Disabled = 2
 };
 
 enum class UnitSettingsDataLoc {
-	HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,
-	MineralCost = 2280, GasCost = 2736, StringIds = 3192, BaseWeapon = 3648,
+    HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,
+    MineralCost = 2280, GasCost = 2736, StringIds = 3192, BaseWeapon = 3648,
 };
 #define UnitSettingsDataLocBonusWeapon(isExpansion) (isExpansion?3908:3848)
 enum class PlayerUnitSettingsDataLoc {
-	GlobalAvailability = 2736, PlayerUsesDefault = 2964
+    GlobalAvailability = 2736, PlayerUsesDefault = 2964
 };
 
 #define UpgradeSettingsDataLocMineralCost(isExpansion) (isExpansion?62:46)

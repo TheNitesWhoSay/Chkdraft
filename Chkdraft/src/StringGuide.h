@@ -6,15 +6,15 @@
 
 class StringGuideWindow : public ClassWindow
 {
-	public:
-		bool CreateThis(HWND hParent);
+    public:
+        bool CreateThis(HWND hParent);
 
-	protected:
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		TextControl colorPrefix[numScStringColors];
-		TextControl color[numScStringColors];
+    private:
+        TextControl colorPrefix[numScStringColors];
+        TextControl color[numScStringColors];
 };
 
 #endif

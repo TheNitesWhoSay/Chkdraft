@@ -3,47 +3,47 @@
 #include "WindowControl.h"
 #include <queue>
 /** May use some or all of of the LB:: messages
-	from Enumerations.h */
+    from Enumerations.h */
 
 class ListBoxControl : public WindowControl
 {
-	public:
-		ListBoxControl();
-		~ListBoxControl();
+    public:
+        ListBoxControl();
+        ~ListBoxControl();
 
-		// Attempts to create a list box
-		bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, u32 id);
-		void ClearItems();
-		int AddItem(u32 item);
-		int AddString(const char* str);
-		bool InsertString(int index, const char* str);
-		bool InsertItem(int index, u32 item);
-		bool ClearSel();
-		bool SetCurSel(int index); // Used with single-selection list boxes
-		bool SelectItem(int index); // Used with multi-selection list boxes
-		bool SetItemData(int index, u32 data);
-		bool SetItemHeight(int index, int height);
-		bool RemoveItem(int index);
-		bool SetTopIndex(int index);
+        // Attempts to create a list box
+        bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, u32 id);
+        void ClearItems();
+        int AddItem(u32 item);
+        int AddString(const char* str);
+        bool InsertString(int index, const char* str);
+        bool InsertItem(int index, u32 item);
+        bool ClearSel();
+        bool SetCurSel(int index); // Used with single-selection list boxes
+        bool SelectItem(int index); // Used with multi-selection list boxes
+        bool SetItemData(int index, u32 data);
+        bool SetItemHeight(int index, int height);
+        bool RemoveItem(int index);
+        bool SetTopIndex(int index);
 
-		int GetNumItems();
-		int ItemHeight();
-		bool GetItemHeight(int index, int &height);
-		int ColumnWidth();
-		bool GetCurSel(int &sel); // Used with single-selection list boxes
-		int GetNumSel(); // Gets the number of items selected (in a multi-selection list box)
-		bool GetSelString(int n, std::string &str); // Attempts to get the nth selected item's string (in a multi-selection list box)
-		bool GetCurSelString(std::string &str); // Attempts to get the currently selected item's string
-		bool GetSelItem(int n, int &itemData); // Attempts to get the nth selected item's data (in a multi-selection list box)
-		bool GetItemData(int index, u32 &data);
-		int GetTopIndex();
+        int GetNumItems();
+        int ItemHeight();
+        bool GetItemHeight(int index, int &height);
+        int ColumnWidth();
+        bool GetCurSel(int &sel); // Used with single-selection list boxes
+        int GetNumSel(); // Gets the number of items selected (in a multi-selection list box)
+        bool GetSelString(int n, std::string &str); // Attempts to get the nth selected item's string (in a multi-selection list box)
+        bool GetCurSelString(std::string &str); // Attempts to get the currently selected item's string
+        bool GetSelItem(int n, int &itemData); // Attempts to get the nth selected item's data (in a multi-selection list box)
+        bool GetItemData(int index, u32 &data);
+        int GetTopIndex();
 
-	protected:
-		virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		bool autoRedraw;
-		std::queue<u32> itemsToAdd;
+    private:
+        bool autoRedraw;
+        std::queue<u32> itemsToAdd;
 };
 
 #endif

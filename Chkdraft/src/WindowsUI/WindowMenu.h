@@ -6,13 +6,13 @@
 
 class WindowMenu
 {
-	public:
-		WindowMenu();
-		bool FindThis(HWND hParent);
-		void SetCheck(u32 itemId, bool checked);
-		
-	private:
-		HMENU hMenu;
+    public:
+        WindowMenu();
+        bool FindThis(HWND hParent);
+        void SetCheck(u32 itemId, bool checked);
+        
+    private:
+        HMENU hMenu;
 };
 
 #endif

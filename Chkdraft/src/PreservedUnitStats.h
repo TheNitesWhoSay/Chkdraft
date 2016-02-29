@@ -6,16 +6,16 @@
 
 class PreservedUnitStats
 {
-	public:
-		PreservedUnitStats();
-		void flushStats();
-		void addStats(Selections &sel, ChkUnitField statField);
-		void convertToUndo();
+    public:
+        PreservedUnitStats();
+        void flushStats();
+        void addStats(Selections &sel, ChkUnitField statField);
+        void convertToUndo();
 
-	private:
+    private:
         ChkUnitField field;
-		int numUnits;
-		u32* values;
+        int numUnits;
+        u32* values;
 };
 
 #endif

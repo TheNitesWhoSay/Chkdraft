@@ -15,88 +15,88 @@ enum class TileNeighbor : u8 { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom 
 
 class TileNode
 {
-	public:
-		u16 value;
-		u16 xc;
-		u16 yc;
+    public:
+        u16 value;
+        u16 xc;
+        u16 yc;
         TileNeighbor neighbors;
-		TileNode() : value(0), xc(0), yc(0), neighbors(TileNeighbor::All) { }
+        TileNode() : value(0), xc(0), yc(0), neighbors(TileNeighbor::All) { }
 };
 
 class Selections
 {
-	public:
+    public:
 
         Selections(GuiMap &map);
-		~Selections();
+        ~Selections();
 
-		void setStartDrag(s32 x, s32 y);
-		void setEndDrag(s32 x, s32 y);
-		void setDrags(s32 x, s32 y);
-		POINT& getStartDrag() { return startDrag; }
-		POINT& getEndDrag() { return endDrag; }
-		void setMoved() { moved = true; }
-		void resetMoved() { moved = false; }
-		bool hasMoved() { return moved; }
-		bool startEqualsEndDrag() { return startDrag.x == endDrag.x && startDrag.y == endDrag.y; }
-		void sortDragPoints() { AscendingOrder(startDrag.x, endDrag.x); AscendingOrder(startDrag.y, endDrag.y); }
+        void setStartDrag(s32 x, s32 y);
+        void setEndDrag(s32 x, s32 y);
+        void setDrags(s32 x, s32 y);
+        POINT& getStartDrag() { return startDrag; }
+        POINT& getEndDrag() { return endDrag; }
+        void setMoved() { moved = true; }
+        void resetMoved() { moved = false; }
+        bool hasMoved() { return moved; }
+        bool startEqualsEndDrag() { return startDrag.x == endDrag.x && startDrag.y == endDrag.y; }
+        void sortDragPoints() { AscendingOrder(startDrag.x, endDrag.x); AscendingOrder(startDrag.y, endDrag.y); }
 
-		void addTile(u16 value, u16 xc, u16 yc);
-		void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);
-		void removeTile(TileNode* &tile);
-		void removeTile(u16 xc, u16 yc);
-		void removeTiles();
+        void addTile(u16 value, u16 xc, u16 yc);
+        void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);
+        void removeTile(TileNode* &tile);
+        void removeTile(u16 xc, u16 yc);
+        void removeTiles();
 
-		u16 getSelectedLocation(); // NO_LOCATION if none are selected
-		void selectLocation(u16 index); // 0-based index, NO_LOCATION to deselect any selected locations
-		void selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere); // Based on map click
-		void setLocationFlags(LocSelFlags flags) { locSelFlags = flags; }
-		LocSelFlags getLocationFlags() { return locSelFlags; }
-		
-		void addUnit(u16 index);
-		void removeUnit(u16 index);
-		void removeUnits();
-		void ensureFirst(u16 index); // Moves the unit @ index
-		void sendSwap(u16 oldIndex, u16 newIndex);
-		void sendMove(u16 oldIndex, u16 newIndex);
-		void finishSwap();
-		void finishMove();
+        u16 getSelectedLocation(); // NO_LOCATION if none are selected
+        void selectLocation(u16 index); // 0-based index, NO_LOCATION to deselect any selected locations
+        void selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere); // Based on map click
+        void setLocationFlags(LocSelFlags flags) { locSelFlags = flags; }
+        LocSelFlags getLocationFlags() { return locSelFlags; }
+        
+        void addUnit(u16 index);
+        void removeUnit(u16 index);
+        void removeUnits();
+        void ensureFirst(u16 index); // Moves the unit @ index
+        void sendSwap(u16 oldIndex, u16 newIndex);
+        void sendMove(u16 oldIndex, u16 newIndex);
+        void finishSwap();
+        void finishMove();
 
-		bool unitIsSelected(u16 index);
-		bool hasUnits() { return selUnits.size() > 0; }
-		bool hasTiles() { return selTiles.size() > 0; }
-		u16 numUnits();
-		u16 numUnitsUnder(u16 index);
+        bool unitIsSelected(u16 index);
+        bool hasUnits() { return selUnits.size() > 0; }
+        bool hasTiles() { return selTiles.size() > 0; }
+        u16 numUnits();
+        u16 numUnitsUnder(u16 index);
 
-		std::vector<TileNode> &getTiles();
-		TileNode getFirstTile();
-		std::vector<u16> &getUnits();
-		u16 getFirstUnit();
-		u16 getLastUnit();
-		u16 getHighestIndex();
-		u16 getLowestIndex();
+        std::vector<TileNode> &getTiles();
+        TileNode getFirstTile();
+        std::vector<u16> &getUnits();
+        u16 getFirstUnit();
+        u16 getLastUnit();
+        u16 getHighestIndex();
+        u16 getLowestIndex();
 
-		void sortUnits(bool ascending);
+        void sortUnits(bool ascending);
 
-		bool selectionAreaIsNull() { return startDrag.x == -1 && startDrag.y == -1; }
+        bool selectionAreaIsNull() { return startDrag.x == -1 && startDrag.y == -1; }
 
-	private:
+    private:
 
         GuiMap &map; // Reference to the map who has the selections described in this class
 
-		POINT startDrag;
-		POINT endDrag;
+        POINT startDrag;
+        POINT endDrag;
 
-		std::vector<u16> selUnits;
-		std::vector<TileNode> selTiles;
+        std::vector<u16> selUnits;
+        std::vector<TileNode> selTiles;
 
-		u16 selectedLocation;
-		u8 numRecentLocations;
-		u8 recentLocations[255];
+        u16 selectedLocation;
+        u8 numRecentLocations;
+        u8 recentLocations[255];
         LocSelFlags locSelFlags;
-		u8 locationFlags;
+        u8 locationFlags;
 
-		bool moved;
+        bool moved;
 };
 
 #endif

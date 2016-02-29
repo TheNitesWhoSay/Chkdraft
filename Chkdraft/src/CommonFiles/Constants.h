@@ -9,8 +9,8 @@
 #include <vector>
 
 /**
-	Contains constants used throughout the program,
-	such as identifiers, strings, and fonts
+    Contains constants used throughout the program,
+    such as identifiers, strings, and fonts
 */
 
 using u64 = std::uint64_t;
@@ -64,14 +64,14 @@ constexpr int numScStringColors = 28; // Could make StringGuide dynamic with res
 
 enum Tileset
 {
-	TERRAIN_BADLANDS,
-	TERRAIN_SPACE,
-	TERRAIN_INSTALLATION,
-	TERRAIN_ASH,
-	TERRAIN_JUNGLE,
-	TERRAIN_DESERT,
-	TERRAIN_ICE,
-	TERRAIN_TWILIGHT
+    TERRAIN_BADLANDS,
+    TERRAIN_SPACE,
+    TERRAIN_INSTALLATION,
+    TERRAIN_ASH,
+    TERRAIN_JUNGLE,
+    TERRAIN_DESERT,
+    TERRAIN_ICE,
+    TERRAIN_TWILIGHT
 };
 
 extern const std::vector<std::string> tilesetNames;
@@ -89,7 +89,7 @@ extern const std::vector<std::vector<std::string>> initTerrains;
 
 
 /** Used for identifying layers, should be equivilant
-	to the zero-based position in the layer combobox */
+    to the zero-based position in the layer combobox */
 enum class Layer {
     Terrain,
     Doodads,
@@ -102,7 +102,7 @@ enum class Layer {
 };
 
 // Generally for trees...
-//	- LPARAM First 4 bits: defines the item type
+//  - LPARAM First 4 bits: defines the item type
 //  - LPARAM Last 28 bits: defines data specific to the type of item
 // 'AND' with the following to retrieve either from the LPARAM
 constexpr DWORD TreeDataPortion = 0x0FFFFFFF;
@@ -121,12 +121,12 @@ constexpr DWORD TreeTypeTech = (0x80000000);
 
 /*###############################*\
 ## CHKDraft's Window Identifiers ##
-## ID_CHKD through 65535		 ##
+## ID_CHKD through 65535         ##
 \*###############################*/
 
 /*###############################*\
 ## Application specific messages ##
-## WM_APP through 0xBFFF		 ##
+## WM_APP through 0xBFFF         ##
 \*###############################*/
 
 #endif
