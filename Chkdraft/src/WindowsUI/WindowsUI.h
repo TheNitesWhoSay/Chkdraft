@@ -28,4 +28,7 @@
 #include "ClassDialog.h"
 #include "MdiClient.h"
 
+// Misc
+#include "PaintBuffer.h"
+
 #endif

@@ -1,29 +1,29 @@
 #include "MiniMap.h"
 #include "Chkdraft.h"
 
-bool MiniMap::CreateThis(HWND hParent)
+bool MiniMap::CreateThis(HWND hParent, u32 id)
 {
 	return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),
 											 CreateSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&
-		   ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, NULL, WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)IDR_MINIMAP);
+		   ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, NULL, WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)id);
 }
 
 void MiniMap::MiniMapClick(LPARAM ClickPoints)
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		POINTS MiniClick = MAKEPOINTS(ClickPoints);
 
 		RECT rect;
-		GetClientRect(chkd.maps.curr->getHandle(), &rect);
+		GetClientRect(CM->getHandle(), &rect);
 
-		u16 xSize = chkd.maps.curr->XSize(),
-			ySize = chkd.maps.curr->YSize();
+		u16 xSize = CM->XSize(),
+			ySize = CM->YSize();
 
 		if ( xSize == 0 || ySize == 0 )
 			return;
 
-		HWND hMap = chkd.maps.curr->getHandle();
+		HWND hMap = CM->getHandle();
 		RECT rcMap = { };
 		GetClientRect(hMap, &rcMap);
 
@@ -46,12 +46,10 @@ void MiniMap::MiniMapClick(LPARAM ClickPoints)
 		u16 xOffset = (u16)((128-xSize*scale)/2),
 			yOffset = (u16)((128-ySize*scale)/2);
 
-		chkd.maps.curr->display().x = (s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/2);
-		chkd.maps.curr->display().y = (s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/2);
-
-		chkd.maps.curr->Scroll(SCROLL_X|SCROLL_Y|VALIDATE_BORDER);
-
-		RedrawWindow(chkd.maps.curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+        CM->SetScreenLeft((s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/2));
+		CM->SetScreenTop((s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/2));
+        CM->Scroll(true, true, true);
+		RedrawWindow(CM->getHandle(), NULL, NULL, RDW_INVALIDATE);
 	}
 }
 
@@ -74,10 +72,11 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_PAINT:
-			{
-				if ( chkd.maps.curr )
-					chkd.maps.curr->PaintMiniMap(hWnd);
-			}
+            if ( WindowsItem::StartBufferedPaint() )
+            {
+                CM->PaintMiniMap(WindowsItem::GetPaintDc(), WindowsItem::PaintWidth(), WindowsItem::PaintHeight());
+                WindowsItem::EndPaint();
+            }
 			break;
 
 		default:

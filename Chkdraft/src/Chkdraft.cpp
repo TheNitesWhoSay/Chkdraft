@@ -2,7 +2,16 @@
 #include <thread>
 #include <chrono>
 
-#define ifmapopen(dothis) if ( this->maps.curr != nullptr ) dothis;
+enum MainWindow {
+    IDR_MAIN_TOOLBAR = ID_FIRST,
+    IDR_MAIN_STATUS,
+    IDR_MAIN_MDI,
+    IDR_MAIN_PLOT,
+    NextToLastId,
+    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
+};
+
+#define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
 void Chkdraft::OnLoadTest()
 {
@@ -40,7 +49,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 	bool keepRunning = true;
 	do
 	{
-		while ( ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) )
+		while ( ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0 )
 		{
 			if ( msg.message == WM_QUIT )
 				keepRunning = false;
@@ -57,8 +66,8 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 			}
 		}
 
-		if ( chkd.maps.curr != nullptr && ColorCycler::CycleColors(chkd.maps.curr->getTileset()) )
-			chkd.maps.curr->Redraw(false);
+		if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset()) )
+			CM->Redraw(false);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
 
@@ -205,7 +214,7 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam
 			}
 			break;
 		case WM_KEYUP:
-			if ( wParam == VK_SPACE && maps.curr && maps.clipboard.isPasting() )
+			if ( wParam == VK_SPACE && CM != nullptr && maps.clipboard.isPasting() )
 			{
 				UnlockCursor();
 				return true;
@@ -223,10 +232,10 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				switch ( wParam )
 				{
-					case VK_SPACE: maps.curr->LockCursor(); return; break;
-					case VK_DELETE: maps.curr->deleteSelection(); return; break;
+					case VK_SPACE: CM->LockCursor(); return; break;
+					case VK_DELETE: CM->deleteSelection(); return; break;
 					case VK_ESCAPE: maps.endPaste(); return; break;
-					case VK_RETURN: maps.curr->ReturnKeyPress(); return; break;
+					case VK_RETURN: CM->ReturnKeyPress(); return; break;
 				}
 
 				if ( GetKeyState(VK_CONTROL) & 0x8000 ) // Control is down
@@ -246,25 +255,25 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								{
 									switch ( wParam )
 									{
-										case 'A': maps.curr->selectAll(); return; break;
+										case 'A': CM->selectAll(); return; break;
 										case 'C': maps.copy(); return; break;
 										case 'X': maps.cut(); return; break;
 										case 'V': maps.startPaste(false); return; break;
 									}
 								}
 								break;
-							case 'D': maps.ChangeLayer(LAYER_DOODADS); return; break;
+                            case 'D': maps.ChangeLayer(Layer::Doodads); return; break;
 							case 'E': FindLeaks(); return; break;
-							case 'F': maps.ChangeLayer(LAYER_FOG); return; break;
-							case 'L': maps.ChangeLayer(LAYER_LOCATIONS);return; break;
+                            case 'F': maps.ChangeLayer(Layer::FogEdit); return; break;
+                            case 'L': maps.ChangeLayer(Layer::Locations);return; break;
 							case 'N': newMap.CreateThis(getHandle()); return; break;
 							case 'O': maps.OpenMap(); return; break;
-							case 'R': maps.ChangeLayer(LAYER_SPRITES); return; break;
+                            case 'R': maps.ChangeLayer(Layer::Sprites); return; break;
 							case 'S': maps.SaveCurr(false); return; break;
-							case 'T': maps.ChangeLayer(LAYER_TERRAIN); return; break;
-							case 'U': maps.ChangeLayer(LAYER_UNITS); return; break;
-							case 'Y': maps.curr->redo(); return; break;
-							case 'Z': maps.curr->undo(); return; break;
+                            case 'T': maps.ChangeLayer(Layer::Terrain); return; break;
+                            case 'U': maps.ChangeLayer(Layer::Units); return; break;
+							case 'Y': CM->redo(); return; break;
+							case 'Z': CM->undo(); return; break;
 							case VK_OEM_PLUS: maps.ChangeZoom(true); return; break;
 							case VK_OEM_MINUS: maps.ChangeZoom(false); return; break;
 							case VK_F4: maps.CloseActive(); return; break;
@@ -301,10 +310,10 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 	}
 
-	if ( maps.curr && editFocused == false && GetActiveWindow() == getHandle() )
+	if ( CM && editFocused == false && GetActiveWindow() == getHandle() )
 	{
-		u8 layer = maps.curr->getLayer();
-		if ( layer == LAYER_UNITS || layer == LAYER_FOG || layer == LAYER_SPRITES )
+		Layer layer = CM->getLayer();
+		if ( layer == Layer::Units || layer == Layer::FogEdit || layer == Layer::Sprites )
 		{
 			u8 newPlayer;
 			switch ( wParam )
@@ -358,13 +367,13 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case ID_FILE_QUIT1: PostQuitMessage(0); break;
 
 		// Edit
-	case ID_EDIT_UNDO1: maps.curr->undo(); break;
-	case ID_EDIT_REDO1: maps.curr->redo(); break;
+	case ID_EDIT_UNDO1: CM->undo(); break;
+	case ID_EDIT_REDO1: CM->redo(); break;
 	case ID_EDIT_CUT1: maps.cut(); break;
 	case ID_EDIT_COPY1: maps.copy(); break;
 	case ID_EDIT_PASTE1: maps.startPaste(true); break;
-	case ID_EDIT_SELECTALL: maps.curr->selectAll(); break;
-	case ID_EDIT_DELETE: maps.curr->deleteSelection(); break;
+	case ID_EDIT_SELECTALL: CM->selectAll(); break;
+	case ID_EDIT_DELETE: CM->deleteSelection(); break;
 	case ID_EDIT_PROPERTIES: maps.properties(); break;
 
 		// View
@@ -384,32 +393,32 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	case ID_COLOR_BLUE: maps.SetGridColor(36, 36, 252); break;
 	case ID_COLOR_OTHER: break;
 		// Zoom
-	case ID_ZOOM_400: maps.curr->setZoom(zooms[0]); break;
-	case ID_ZOOM_300: maps.curr->setZoom(zooms[1]); break;
-	case ID_ZOOM_200: maps.curr->setZoom(zooms[2]); break;
-	case ID_ZOOM_150: maps.curr->setZoom(zooms[3]); break;
-	case ID_ZOOM_100: maps.curr->setZoom(zooms[4]); break;
-	case ID_ZOOM_66:  maps.curr->setZoom(zooms[5]); break;
-	case ID_ZOOM_50:  maps.curr->setZoom(zooms[6]); break;
-	case ID_ZOOM_33:  maps.curr->setZoom(zooms[7]); break;
-	case ID_ZOOM_25:  maps.curr->setZoom(zooms[8]); break;
-	case ID_ZOOM_10:  maps.curr->setZoom(zooms[9]); break;
+	case ID_ZOOM_400: CM->setZoom(defaultZooms[0]); break;
+	case ID_ZOOM_300: CM->setZoom(defaultZooms[1]); break;
+	case ID_ZOOM_200: CM->setZoom(defaultZooms[2]); break;
+	case ID_ZOOM_150: CM->setZoom(defaultZooms[3]); break;
+	case ID_ZOOM_100: CM->setZoom(defaultZooms[4]); break;
+	case ID_ZOOM_66:  CM->setZoom(defaultZooms[5]); break;
+	case ID_ZOOM_50:  CM->setZoom(defaultZooms[6]); break;
+	case ID_ZOOM_33:  CM->setZoom(defaultZooms[7]); break;
+	case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
+	case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
 		// Terrain
-	case ID_TERRAIN_DISPLAYTILEELEVATIONS: maps.curr->ToggleDisplayElevations(); break;
-	case ID_TERRAIN_DISPLAYTILEVALUES: maps.curr->ToggleTileNumSource(false); break;
-	case ID_TERRAIN_DISPLAYTILEVALUESMTXM: maps.curr->ToggleTileNumSource(true); break;
+	case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;
+	case ID_TERRAIN_DISPLAYTILEVALUES: CM->ToggleTileNumSource(false); break;
+	case ID_TERRAIN_DISPLAYTILEVALUESMTXM: CM->ToggleTileNumSource(true); break;
 
 		// Editor
 		// Units
-	case ID_UNITS_UNITSSNAPTOGRID: maps.curr->ToggleUnitSnap(); break;
-	case ID_UNITS_ALLOWSTACK: maps.curr->ToggleUnitStack(); break;
+	case ID_UNITS_UNITSSNAPTOGRID: CM->ToggleUnitSnap(); break;
+	case ID_UNITS_ALLOWSTACK: CM->ToggleUnitStack(); break;
 
 		// Locations
-	case ID_LOCATIONS_SNAPTOTILE: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_TILE); break;
-	case ID_LOCATIONS_SNAPTOACTIVEGRID: maps.curr->SetLocationSnap(SNAP_LOCATION_TO_GRID); break;
-	case ID_LOCATIONS_NOSNAP: maps.curr->SetLocationSnap(NO_LOCATION_SNAP); break;
-	case ID_LOCATIONS_LOCKANYWHERE: maps.curr->ToggleLockAnywhere(); break;
-	case ID_LOCATIONS_CLIPNAMES: maps.curr->ToggleLocationNameClip(); break;
+    case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToTile); break;
+    case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToGrid); break;
+    case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(GuiMap::LocationSnap::NoSnap); break;
+	case ID_LOCATIONS_LOCKANYWHERE: CM->ToggleLockAnywhere(); break;
+	case ID_LOCATIONS_CLIPNAMES: CM->ToggleLocationNameClip(); break;
 
 		// Scenario
 	case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
@@ -491,9 +500,9 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_CLOSE:
-			while ( maps.curr != nullptr )
+			while ( CM != nullptr )
 			{
-				if ( maps.curr->CanExit() )
+				if ( CM->CanExit() )
 					maps.destroyActive();
 				else
 					return 0; // Abort close
@@ -527,10 +536,10 @@ bool Chkdraft::CreateSubWindows()
 			mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
 			statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
 				WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS) &&
-			mainPlot.CreateThis(hWnd) &&
+			mainPlot.CreateThis(hWnd, IDR_MAIN_PLOT) &&
 			BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD,
 				WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-				0, 0, 0, 0, getHandle(), (HMENU)IDR_MAIN_MDI);
+				0, 0, 0, 0, (HMENU)IDR_MAIN_MDI);
 	}
 	else
 		return false;
@@ -575,10 +584,10 @@ void Chkdraft::SizeSubWindows()
 			rcMain.right - rcMain.left, rcMain.bottom - rcMain.top - (rcTool.bottom - rcTool.top) - (rcStatus.bottom - rcStatus.top),
 			SWP_NOZORDER | SWP_NOACTIVATE);
 
-		// Fit left bar to the area between the toolbar and statusbar without changing width
-		SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
-			rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
-			SWP_NOZORDER | SWP_NOACTIVATE);
+        // Fit left bar to the area between the toolbar and statusbar without changing width
+        SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
+            rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
+            SWP_NOZORDER | SWP_NOACTIVATE);
 
 		// Fit the map MDIClient to the area right of the left bar and between the toolbar and statusbar
 		SetWindowPos(maps.getHandle(), HWND_TOP, rcLeftBar.right - rcLeftBar.left - xBorder - 2, rcTool.bottom - rcTool.top,
@@ -622,8 +631,8 @@ void Chkdraft::OpenWebPage(const char* address)
 
 void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 {
-	if ( comboId == ID_COMBOBOX_PLAYER )
-	{
+    if ( hCombo = mainToolbar.playerBox.getHandle() )
+    {
 		u8 newPlayer;
 		if ( mainToolbar.playerBox.GetPlayerNum(newPlayer) )
 			maps.ChangePlayer(newPlayer);
@@ -633,20 +642,21 @@ void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
 {
 	int itemIndex = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
-	switch ( comboId )
-	{
-		case ID_COMBOBOX_LAYER: maps.ChangeLayer(itemIndex); break;
-		case ID_COMBOBOX_PLAYER: maps.ChangePlayer(itemIndex); break;
-		case ID_COMBOBOX_ZOOM:
-			if ( itemIndex >= 0 && itemIndex < 10 )
-				maps.curr->setZoom(zooms[itemIndex]);
-			break;
-		case ID_COMBOBOX_TERRAIN:
-			if ( itemIndex == 3 )
-			{
-				terrainPalWindow.CreateThis(getHandle());
-				ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
-			}
-			break;
-	}
+    if ( hCombo == mainToolbar.layerBox.getHandle() )
+        maps.ChangeLayer((Layer)itemIndex);
+    else if ( hCombo == mainToolbar.playerBox.getHandle() )
+        maps.ChangePlayer(itemIndex);
+    else if ( hCombo == mainToolbar.zoomBox.getHandle() )
+    {
+        if ( itemIndex >= 0 && itemIndex < 10 )
+            CM->setZoom(defaultZooms[itemIndex]);
+    }
+    else if ( hCombo == mainToolbar.terrainBox.getHandle() )
+    {
+        if ( itemIndex == 3 )
+        {
+            terrainPalWindow.CreateThis(getHandle());
+            ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
+        }
+    }
 }

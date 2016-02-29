@@ -1,5 +1,4 @@
 #include "WindowControl.h"
-#include <iostream>
 
 WindowControl::WindowControl() : defaultProc(NULL)
 {
@@ -63,7 +62,7 @@ bool WindowControl::RedirectProc()
 		return false;
 }
 
-bool WindowControl::CreateThis(HWND hParent, int x, int y, int width, int height)
+bool WindowControl::CreateThis(HWND, int, int, int, int)
 {
 	return false;
 }

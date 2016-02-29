@@ -4,15 +4,15 @@
 #include "GuiMap.h"
 #include <map>
 
-class MAPS : public MdiClient
+class Maps : public MdiClient
 {
 	public:
-		GuiMapPtr curr;
+		GuiMapPtr currentlyActiveMap;
 
-		CLIPBOARD clipboard;
+		Clipboard clipboard;
 
-		MAPS();
-		~MAPS();
+        Maps();
+		~Maps();
 
 		bool isInOpenMaps(GuiMapPtr guiMap);
 		bool Focus(HWND hGuiMap);
@@ -31,7 +31,7 @@ class MAPS : public MdiClient
 		void UpdateTreeView();
 		void SetGrid(s16 xSize, s16 ySize);
 		void SetGridColor(u8 red, u8 green, u8 blue);
-		void ChangeLayer(u8 newLayer);
+		void ChangeLayer(Layer newLayer);
 		void ChangeZoom(bool increment);
 		void ChangePlayer(u8 newPlayer);
 		void cut();

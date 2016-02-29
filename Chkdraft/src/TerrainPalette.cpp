@@ -168,7 +168,7 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 		case WM_PAINT:
 			{
-				if ( chkd.maps.curr != nullptr )
+				if ( CM != nullptr )
 				{
 					RECT rect;
 					GetClientRect(hWnd, &rect);
@@ -186,8 +186,7 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 					BITMAPINFO bmi = GetBMI(32, 32);
 
-					u16 tileset;
-					chkd.maps.curr->ERA().get<u16>(tileset, 0);
+                    u16 tileset = CM->getTileset();
 					TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
 					u16 tileValue = u16(tilesetIndexedYC/PIXELS_PER_TILE*TILES_PER_ROW);
@@ -224,11 +223,11 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 							}
 							else
 							{
-								if ( chkd.maps.curr->DisplayingElevations() )
+								if ( CM->DisplayingElevations() )
 									DrawTileElevation(MemhDC, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE-yOffset), tileValue, bmi);
 								else
 									DrawTile(MemhDC, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE-yOffset), tileValue, bmi, 0, 0, 0);
-								if ( chkd.maps.curr->DisplayingTileNums() )
+								if ( CM->DisplayingTileNums() )
 								{
 									HFONT NumFont = CreateFont(14, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
 									SelectObject(MemhDC, NumFont);

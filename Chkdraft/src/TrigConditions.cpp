@@ -51,8 +51,8 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
 	this->trigIndex = trigIndex;
 	Trigger* trig;
 	TextTrigGenerator ttg;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
-		 ttg.LoadScenario(chkd.maps.curr) )
+	if ( CM->getTrigger(trig, trigIndex) &&
+		 ttg.LoadScenario(CM) )
 	{
 		for ( u8 y=0; y<NUM_TRIG_CONDITIONS; y++ )
 		{
@@ -112,14 +112,14 @@ void TrigConditionsWindow::HideSuggestions()
 void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
 {
 	Trigger* trig;
-	if ( conditionNum >= 0 && conditionNum < 16 && chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( conditionNum >= 0 && conditionNum < 16 && CM->getTrigger(trig, trigIndex) )
 	{
 		Condition &condition = trig->condition(conditionNum);
-		if ( condition.condition != CID_NO_CONDITION )
+		if ( condition.condition != (u8)ConditionId::NoCondition )
 		{
 			condition.ToggleDisabled();
 
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			RefreshWindow(trigIndex);
 			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
@@ -278,12 +278,12 @@ LRESULT TrigConditionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam
 	return result;
 }
 
-void TrigConditionsWindow::ChangeConditionType(Condition &condition, u8 newId)
+void TrigConditionsWindow::ChangeConditionType(Condition &condition, ConditionId newId)
 {
-	if ( condition.condition != newId )
+	if ( condition.condition != (u8)newId )
 	{
-		if ( newId == CID_COMMAND || newId == CID_BRING ||
-			newId == CID_COMMAND_THE_MOST_AT || newId == CID_COMMAND_THE_LEAST_AT )
+		if ( newId == ConditionId::Command || newId == ConditionId::Bring ||
+			newId == ConditionId::CommandTheMostAt || newId == ConditionId::CommandTheLeastAt )
 		{
 			condition.locationNum = 64;
 		}
@@ -294,24 +294,24 @@ void TrigConditionsWindow::ChangeConditionType(Condition &condition, u8 newId)
 		condition.amount = 0;
 		condition.unitID = 0;
 
-		if ( newId == CID_SWITCH )
+		if ( newId == ConditionId::Switch )
 			condition.comparison = 3;
 		else
 			condition.comparison = 0;
 
-		condition.condition = newId;
+		condition.condition = (u8)newId;
 		condition.typeIndex = 0;
 		condition.flags = TextTrigCompiler::defaultConditionFlags(newId);
 		condition.internalData = 0;
 	}
 }
 
-bool TrigConditionsWindow::TransformCondition(Condition &condition, u8 newId)
+bool TrigConditionsWindow::TransformCondition(Condition &condition, ConditionId newId)
 {
-	if ( condition.condition != newId )
+	if ( condition.condition != (u8)newId )
 	{
 		ChangeConditionType(condition, newId);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 		chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		return true;
@@ -323,10 +323,10 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 {
 	Trigger* trig;
 	TextTrigCompiler ttc;
-	u8 newId = CID_NO_CONDITION;
+	ConditionId newId = ConditionId::NoCondition;
 	if ( ttc.ParseConditionName(newText, newId) || ttc.ParseConditionName(suggestions.Take(), newId) )
 	{
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+		if ( CM->getTrigger(trig, trigIndex) )
 		{
 			Condition &condition = trig->condition(conditionNum);
 			TransformCondition(condition, newId);
@@ -334,11 +334,11 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 	}
 	else if ( newText.length() == 0 )
 	{
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) &&
-			 trig->conditions[conditionNum].condition != newId )
+		if ( CM->getTrigger(trig, trigIndex) &&
+			 trig->conditions[conditionNum].condition != (u8)newId )
 		{
 			trig->deleteCondition((u8)conditionNum);
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			RefreshWindow(trigIndex);
 			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		}
@@ -351,16 +351,16 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
 	std::string suggestionString = suggestions.Take();
 	Trigger* trig;
 	TextTrigCompiler ttc;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
 			   ttc.ParseConditionArg(rawUpdateText, argNum, conditionArgMaps[trig->condition(conditionNum).condition],
-				trig->condition(conditionNum), chkd.maps.curr, chkd.scData) ) ||
+				trig->condition(conditionNum), CM, chkd.scData) ) ||
 			 ( ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
 			   ttc.ParseConditionArg(rawSuggestText, argNum, conditionArgMaps[trig->condition(conditionNum).condition],
-				trig->condition(conditionNum), chkd.maps.curr, chkd.scData) ) )
+				trig->condition(conditionNum), CM, chkd.scData) ) )
 		{
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			RefreshWindow(trigIndex);
 			chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 		}
@@ -393,10 +393,10 @@ BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 		u8 conditionNum = (u8)gridItemY;
 
 		if ( gridItemX == 1 && // Condition Name
-			 chkd.maps.curr->getTrigger(trig, trigIndex) &&
+			 CM->getTrigger(trig, trigIndex) &&
 			 trig->conditions[conditionNum].condition != 0 )
 		{
-			ChangeConditionType(trig->conditions[conditionNum], 0);
+			ChangeConditionType(trig->conditions[conditionNum], ConditionId::NoCondition);
 		}
 		else if ( gridItemX > 1 ) // Condition Arg
 		{
@@ -412,7 +412,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 	if ( hDC != NULL )
 	{
 		Trigger* trig;
-		if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+		if ( CM->getTrigger(trig, trigIndex) )
 		{
 			int focusedX = -1,
 				focusedY = -1;
@@ -422,7 +422,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 				u8 conditionNum = (u8)focusedY;
 				TextTrigGenerator ttg;
 				std::string str;
-				ttg.LoadScenario(chkd.maps.curr);
+				ttg.LoadScenario(CM);
 				str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);
 				ttg.ClearScenario();
 
@@ -497,7 +497,7 @@ void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &
 	rcFill.left = xStart - 1;
 	rcFill.right = xStart + width;
 
-	FrameRect(hDC, &rcFill, hBlack);
+	::FrameRect(hDC, &rcFill, hBlack);
 }
 
 void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
@@ -544,12 +544,12 @@ void TrigConditionsWindow::DrawTouchups(HDC hDC)
 		rect.left -= 1;
 		rect.top -= 1;
 		HBRUSH hHighlight = CreateSolidBrush(RGB(0, 0, 200));
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		rect.left -= 1;
 		rect.top -= 1;
 		rect.right += 1;
 		rect.bottom += 1;
-		FrameRect(hDC, &rect, hHighlight);
+		::FrameRect(hDC, &rect, hHighlight);
 		DeleteBrush(hHighlight);
 	}
 	gridConditions.RedrawHeader();
@@ -569,12 +569,12 @@ void TrigConditionsWindow::SuggestNothing()
 
 void TrigConditionsWindow::SuggestUnit()
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
-		for ( u16 i = 0; i < NUM_UNIT_NAMES; i++ )
+		for ( u16 i = 0; i < NumUnitNames; i++ )
 		{
 			ChkdString str(true);
-			chkd.maps.curr->getUnitName(str, i);
+			CM->getUnitName(str, i);
 			suggestions.AddString(str);
 			if ( str.compare(std::string(DefaultUnitDisplayName[i])) != 0 )
 				suggestions.AddString(std::string(DefaultUnitDisplayName[i]));
@@ -585,18 +585,17 @@ void TrigConditionsWindow::SuggestUnit()
 
 void TrigConditionsWindow::SuggestLocation()
 {
-	ScenarioPtr chk = chkd.maps.curr;
 	ChkLocation* loc = nullptr;
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		suggestions.AddString(std::string("No Location"));
-		u16 locationCapacity = (u16)chk->locationCapacity();
+		u16 locationCapacity = (u16)CM->locationCapacity();
 		for ( u16 i = 0; i < locationCapacity; i++ )
 		{
-			if ( chk->locationIsUsed(i) )
+			if ( CM->locationIsUsed(i) )
 			{
 				ChkdString locationName(true);
-				if ( chk->getLocation(loc, u8(i)) && loc->stringNum > 0 && chk->getLocationName((u16)i, locationName) )
+				if ( CM->getLocation(loc, u8(i)) && loc->stringNum > 0 && CM->getLocationName((u16)i, locationName) )
 					suggestions.AddString(locationName);
 				else
 				{
@@ -612,8 +611,7 @@ void TrigConditionsWindow::SuggestLocation()
 
 void TrigConditionsWindow::SuggestPlayer()
 {
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		for (auto player : triggerPlayers)
 			suggestions.AddString(player);
@@ -650,13 +648,12 @@ void TrigConditionsWindow::SuggestScoreType()
 
 void TrigConditionsWindow::SuggestSwitch()
 {
-	ScenarioPtr chk = chkd.maps.curr;
-	if ( chk != nullptr )
+	if ( CM != nullptr )
 	{
 		for ( u16 i = 0; i < 256; i++ )
 		{
 			ChkdString str(true);
-			if ( chk->getSwitchName(str, (u8)i) )
+			if ( CM->getSwitchName(str, (u8)i) )
 				suggestions.AddString(str);
 			else
 			{
@@ -705,7 +702,7 @@ void TrigConditionsWindow::SuggestInternalData()
 void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
 	Trigger* trig;
-	if ( chkd.maps.curr->getTrigger(trig, trigIndex) )
+	if ( CM->getTrigger(trig, trigIndex) )
 	{
 		Condition &condition = trig->condition((u8)gridItemY);
 		ConditionArgType argType = ConditionArgType::CndNoType;
@@ -731,21 +728,21 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 		suggestions.ClearStrings();
 		switch ( argType )
 		{
-			case CndNoType: SuggestNothing(); break;
-			case CndUnit: SuggestUnit(); break;
-			case CndLocation: SuggestLocation(); break;
-			case CndPlayer: SuggestPlayer(); break;
-			case CndAmount: SuggestAmount(); break;
-			case CndNumericComparison: SuggestNumericComparison(); break;
-			case CndResourceType: SuggestResourceType(); break;
-			case CndScoreType: SuggestScoreType(); break;
-			case CndSwitch: SuggestSwitch(); break;
-			case CndSwitchState: SuggestSwitchState(); break;
-			case CndComparison: SuggestComparison(); break;
-			case CndConditionType: SuggestConditionType(); break;
-			case CndTypeIndex: SuggestTypeIndex(); break;
-			case CndFlags: SuggestFlags(); break;
-			case CndInternalData: SuggestInternalData(); break;
+            case ConditionArgType::CndNoType: SuggestNothing(); break;
+            case ConditionArgType::CndUnit: SuggestUnit(); break;
+            case ConditionArgType::CndLocation: SuggestLocation(); break;
+            case ConditionArgType::CndPlayer: SuggestPlayer(); break;
+            case ConditionArgType::CndAmount: SuggestAmount(); break;
+            case ConditionArgType::CndNumericComparison: SuggestNumericComparison(); break;
+            case ConditionArgType::CndResourceType: SuggestResourceType(); break;
+            case ConditionArgType::CndScoreType: SuggestScoreType(); break;
+            case ConditionArgType::CndSwitch: SuggestSwitch(); break;
+            case ConditionArgType::CndSwitchState: SuggestSwitchState(); break;
+            case ConditionArgType::CndComparison: SuggestComparison(); break;
+            case ConditionArgType::CndConditionType: SuggestConditionType(); break;
+            case ConditionArgType::CndTypeIndex: SuggestTypeIndex(); break;
+            case ConditionArgType::CndFlags: SuggestFlags(); break;
+            case ConditionArgType::CndInternalData: SuggestInternalData(); break;
 		}
 	}
 }

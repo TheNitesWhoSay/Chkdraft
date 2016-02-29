@@ -26,12 +26,12 @@ void UpgradeTree::InsertUpgrades()
 
 	for ( int i=0; i<sizeof(TreeUpgrades)/sizeof(const int*); i++ )
 	{
-		HTREEITEM LastGroup = InsertTreeItem(NULL, sTreeUpgrades[i], TREE_TYPE_CATEGORY|LAYER_UNITS);
+		HTREEITEM LastGroup = InsertTreeItem(NULL, sTreeUpgrades[i], TreeTypeCategory|(LPARAM)Layer::Units);
 		const int* upgrades = TreeUpgrades[i];
 		for ( int j=0; j<nTreeUpgrades[i]; j++ )
 		{
 			u32 upgradeId = upgrades[j];
-			InsertTreeItem(LastGroup, upgradeNames.at(upgradeId).c_str(), TREE_TYPE_UPGRADE|upgradeId);
+			InsertTreeItem(LastGroup, upgradeNames.at(upgradeId).c_str(), TreeTypeUpgrade|upgradeId);
 		}
 	}
 }

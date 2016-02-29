@@ -16,7 +16,7 @@ class Chkdraft : public ClassWindow
 					void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */	ScData scData; // Data from StarCraft files
-					MAPS maps; // Main map container
+					Maps maps; // Main map container
 
 /* Dialog Boxes */	NewMap newMap; // New map DialogBox
 
@@ -79,5 +79,10 @@ class Chkdraft : public ClassWindow
 	arbitrary .cpp files can include this header and
 	access various parts of the program as needed */
 extern Chkdraft chkd; // The main instance of Chkdraft
+
+/** Current Map (CM); this define retrieves a
+    pointer to the map which is currently activated
+    (only one is activated at once) */
+#define CM chkd.maps.currentlyActiveMap
 
 #endif

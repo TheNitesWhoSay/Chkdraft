@@ -23,8 +23,7 @@
 	#define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Shouts an error message
     #else
     #error Other compiler!
-    #endif
-    
+    #endif 
 #else
 	void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message
     #if defined(_MSC_VER)
@@ -38,14 +37,14 @@
     #endif
 #endif
 
-typedef uint64_t u64;
-typedef int64_t s64;
-typedef uint32_t u32;
-typedef int32_t s32;
-typedef uint16_t u16;
-typedef int16_t s16;
-typedef uint8_t u8;
-typedef int8_t s8;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u16 = std::uint16_t;
+using s16 = std::int16_t;
+using u8 = std::uint8_t;
+using s8 = std::int8_t;
 
 #define BIT_0  0x1
 #define BIT_1  0x2
@@ -222,8 +221,7 @@ extern const char* DefaultUnitDisplayName[233];
 
 extern const char* LegacyTextTrigDisplayName[233];
 
-#define NUM_UNIT_NAMES 233
-
-#define NUM_REAL_UNITS 227
+constexpr s32 NumUnitNames = 233;
+constexpr s32 NumRealUnits = 227;
 
 #endif

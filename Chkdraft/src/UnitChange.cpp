@@ -1,7 +1,7 @@
 #include "UnitChange.h"
 #include "GuiMap.h"
 
-UnitChange::UnitChange(u16 unitIndex, u8 field, u32 data)
+UnitChange::UnitChange(u16 unitIndex, ChkUnitField field, u32 data)
 	: unitIndex(unitIndex), field(field), data(data)
 {
 

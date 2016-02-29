@@ -4,7 +4,7 @@
 
 bool ChangePasswordDialog::CreateThis(HWND hParent)
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		if ( getHandle() != NULL )
 			Show();
@@ -39,11 +39,11 @@ void ChangePasswordDialog::ButtonApply()
 	editNewPass.GetEditText(newPass);
 	editOldPass.SetText("");
 	editNewPass.SetText("");
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
-		if ( chkd.maps.curr->SetPassword(oldPass, newPass) )
+		if ( CM->SetPassword(oldPass, newPass) )
 		{
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 			mb("Password Set Successfully.");
 		}
 		else

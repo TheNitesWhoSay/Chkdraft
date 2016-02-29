@@ -1,8 +1,7 @@
 #include "ClassWindow.h"
 #include <sstream>
-#include <iostream>
 
-ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowTypes::None)
+ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowTypes::None), allowEditNotify(true)
 {
 	WindowClassName().clear();
 }
@@ -50,6 +49,15 @@ bool ClassWindow::CreateClassWindow( DWORD dwExStyle, LPCSTR lpWindowName, DWORD
 	return false;
 }
 
+void ClassWindow::DestroyThis()
+{
+	WindowsItem::DestroyThis();
+	hWndMDIClient = NULL;
+	windowType = WindowTypes::None;
+	allowEditNotify = true;
+	WindowClassName().clear();
+}
+
 bool ClassWindow::CreateMdiChild( LPCSTR lpWindowName, DWORD dwStyle,
 								  int x, int y, int nWidth, int nHeight,
 								  HWND hParent )
@@ -71,8 +79,8 @@ bool ClassWindow::CreateMdiChild( LPCSTR lpWindowName, DWORD dwStyle,
 	return false;
 }
 
-bool ClassWindow::BecomeMDIFrame( MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
-	int X, int Y, int nWidth, int nHeight, HWND hParent, HMENU hMenu )
+bool ClassWindow::BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
+	int X, int Y, int nWidth, int nHeight, HMENU hMenu)
 {
 	WindowTypes prev = windowType;
 	windowType = WindowTypes::MDIFrame;
@@ -90,28 +98,28 @@ LRESULT ClassWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
 	switch ( windowType )
 	{
-	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
-	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
-	default: return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
+	    case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
+	    case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
 	}
+	return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
 }
 
-void ClassWindow::NotifyTreeSelChanged(LPARAM newValue)
+void ClassWindow::NotifyTreeSelChanged(LPARAM)
 {
 
 }
 
-void ClassWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+void ClassWindow::NotifyButtonClicked(int, HWND)
 {
 
 }
 
-void ClassWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+void ClassWindow::NotifyEditUpdated(int, HWND)
 {
 
 }
 
-void ClassWindow::NotifyEditFocusLost()
+void ClassWindow::NotifyEditFocusLost(int, HWND)
 {
 
 }
@@ -130,20 +138,20 @@ LRESULT ClassWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	switch ( windowType )
 	{
-	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_COMMAND, wParam, lParam); break;
-	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_COMMAND, wParam, lParam); break;
-	default: return DefWindowProc(hWnd, WM_COMMAND, wParam, lParam);
+	    case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_COMMAND, wParam, lParam); break;
+	    case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_COMMAND, wParam, lParam); break;
 	}
+	return DefWindowProc(hWnd, WM_COMMAND, wParam, lParam);
 }
 
 LRESULT ClassWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( windowType )
 	{
-	case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, msg, wParam, lParam); break;
-	case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
-	default: return DefWindowProc(hWnd, msg, wParam, lParam);
+	    case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, msg, wParam, lParam); break;
+	    case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
 	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -158,6 +166,16 @@ LRESULT CALLBACK ClassWindow::SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 			return FALSE;
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+void ClassWindow::SendNotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+	if ( allowEditNotify )
+	{
+		allowEditNotify = false;
+		NotifyEditUpdated(idFrom, hWndFrom);
+		allowEditNotify = true;
+	}
 }
 
 LRESULT CALLBACK ClassWindow::SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -186,8 +204,9 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			else
 			{
 				classWindow->NotifyWindowHidden();
-				classWindow->NotifyEditFocusLost();
+				classWindow->NotifyEditFocusLost(0, NULL);
 			}
+            return classWindow->WndProc(hWnd, msg, wParam, lParam);
 		}
 		break;
 
@@ -196,8 +215,7 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			switch ( ((NMHDR*)lParam)->code )
 			{
 				case TVN_SELCHANGED:
-					if ( ((NMTREEVIEW*)lParam)->action == TVN_SELCHANGED )
-						classWindow->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
+					classWindow->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
 					break;
 			}
 			return classWindow->Notify(hWnd, wParam, (NMHDR*)lParam);
@@ -209,8 +227,8 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			switch ( HIWORD(wParam) )
 			{
 				case BN_CLICKED: classWindow->NotifyButtonClicked(LOWORD(wParam), (HWND)lParam); break;
-				case EN_UPDATE: classWindow->NotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
-				case EN_KILLFOCUS: classWindow->NotifyEditFocusLost(); break;
+				case EN_UPDATE: classWindow->SendNotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+				case EN_KILLFOCUS: classWindow->NotifyEditFocusLost(LOWORD(wParam), (HWND)lParam); break;
 			}
 			return classWindow->Command(hWnd, wParam, lParam);
 		}

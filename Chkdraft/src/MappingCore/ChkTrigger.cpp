@@ -24,7 +24,7 @@ u8 Trigger::numUsedConditions()
 	u8 total = 0;
 	for ( u8 i=0; i<16; i++ )
 	{
-		if ( conditions[i].condition != CID_NO_CONDITION )
+		if ( conditions[i].condition != (u8)ConditionId::NoCondition )
 			total ++;
 	}
 	return total;
@@ -35,7 +35,7 @@ u8 Trigger::numUsedActions()
 	u8 total = 0;
 	for ( u8 i=0; i<64; i++ )
 	{
-		if ( actions[i].action != AID_NO_ACTION )
+		if ( actions[i].action != (u8)ActionId::NoAction )
 			total ++;
 	}
 	return total;
@@ -174,12 +174,12 @@ void Trigger::alignTop()
 {
 	for ( u8 i=0; i<NUM_TRIG_CONDITIONS; i++ )
 	{
-		if ( conditions[i].condition == CID_NO_CONDITION )
+		if ( conditions[i].condition == (u8)ConditionId::NoCondition )
 		{
 			u8 firstUsedAfter = u8(-1);
 			for ( u8 j=i+1; j<NUM_TRIG_CONDITIONS; j++ )
 			{
-				if ( conditions[j].condition != CID_NO_CONDITION )
+				if ( conditions[j].condition != (u8)ConditionId::NoCondition )
 				{
 					firstUsedAfter = j;
 					break;

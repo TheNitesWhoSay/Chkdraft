@@ -51,10 +51,10 @@ bool Scenario::isExpansion()
 
 buffer& Scenario::unitSettings()
 {
-	if ( isExpansion() && this->UNIx().exists() )
-		return this->UNIx();
+	if ( isExpansion() && UNIx().exists() )
+		return UNIx();
 	else
-		return this->UNIS();
+		return UNIS();
 }
 
 buffer& Scenario::upgradeSettings()
@@ -89,6 +89,63 @@ buffer& Scenario::techRestrictions()
 		return this->PTEC();
 }
 
+bool Scenario::HasVerSection()
+{
+    return VER().exists();
+}
+
+bool Scenario::IsScOrig()
+{
+    return VER().get<u16>(0) < 63;
+}
+
+bool Scenario::IsHybrid()
+{
+    return VER().get<u16>(0) >= 63 && VER().get<u16>(0) < 205;
+}
+
+bool Scenario::IsScExp()
+{
+    return VER().get<u16>(0) >= 205;
+}
+
+bool Scenario::ChangeToScOrig()
+{
+    return TYPE().overwrite("RAWS", 4) &&
+        VER().overwrite(";\0", 2) &&
+        IVER().overwrite("\12\0", 2) &&
+        IVE2().overwrite("\13\0", 2) &&
+        (MRGN().size() <= 1280 || MRGN().delRange(1280, MRGN().size()));
+}
+
+bool Scenario::ChangeToHybrid()
+{
+    return TYPE().overwrite("RAWS", 4) &&
+        VER().overwrite("?\0", 2) &&
+        IVER().overwrite("\12\0", 2) &&
+        IVE2().overwrite("\13\0", 2) &&
+        (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+}
+
+bool Scenario::ChangeToScExp()
+{
+    return TYPE().overwrite("RAWB", 4) &&
+        VER().overwrite("Í\0", 2) &&
+        RemoveSection(SectionId::IVER) &&
+        IVE2().overwrite("\13\0", 2) &&
+        (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+}
+
+u16 Scenario::GetMapTitleStrIndex()
+{
+    return SPRP().get<u16>(0);
+}
+
+u16 Scenario::GetMapDescriptionStrIndex()
+{
+    return SPRP().get<u16>(2);
+}
+
 bool Scenario::getMapTitle(ChkdString &dest)
 {
 	dest = "";
@@ -113,6 +170,20 @@ bool Scenario::getMapDescription(ChkdString &dest)
 	}
 	dest = "Destroy all enemy buildings.";
 	return false;
+}
+
+bool Scenario::SetMapTitle(ChkdString &newMapTitle)
+{
+    u16* mapTitleString = nullptr;
+    return SPRP().getPtr<u16>(mapTitleString, 0, 2) &&
+        replaceString(newMapTitle, *mapTitleString, false, true);
+}
+
+bool Scenario::SetMapDescription(ChkdString &newMapDescription)
+{
+    u16* mapDescriptionString = nullptr;
+    return SPRP().getPtr<u16>(mapDescriptionString, 2, 2) &&
+        replaceString(newMapDescription, *mapDescriptionString, false, true);
 }
 
 u16 Scenario::XSize()
@@ -158,9 +229,14 @@ bool Scenario::insertUnit(u16 index, ChkUnit &unit)
 		return UNIT().insert<ChkUnit>(UNIT_STRUCT_SIZE*(u32)index, unit);
 }
 
-bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
+/*bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
 {
 	return UNIT().getPtr(unitRef, index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
+}*/
+
+bool Scenario::HasLocationSection()
+{
+    return MRGN().exists();
 }
 
 bool Scenario::getLocation(ChkLocation* &locRef, u16 index)
@@ -315,6 +391,16 @@ bool Scenario::locationIsUsed(u16 locationIndex)
 	return false;
 }
 
+bool Scenario::HasTrigSection()
+{
+    return TRIG().exists();
+}
+
+bool Scenario::ReplaceTrigSection(Section newTrigSection)
+{
+    return TRIG().takeAllData(*newTrigSection);
+}
+
 u32 Scenario::numTriggers()
 {
 	return u32(TRIG().size()/TRIG_STRUCT_SIZE);
@@ -330,9 +416,9 @@ bool Scenario::getActiveComment(Trigger* trigger, RawString &comment)
 	for ( u32 i=0; i<NUM_TRIG_ACTIONS; i++ )
 	{
 		Action action = trigger->actions[i];
-		if ( action.action == AID_COMMENT )
+		if ( action.action == (u8)ActionId::Comment )
 		{
-			if ( (action.flags&ACTION_FLAG_DISABLED) != ACTION_FLAG_DISABLED )
+			if ( (action.flags&(u8)Action::Flags::Disabled) != (u8)Action::Flags::Disabled )
 			{
 				if ( action.stringNum != 0 && GetString(comment, action.stringNum) )
 					return true;
@@ -352,6 +438,11 @@ bool Scenario::getActiveComment(Trigger* trigger, RawString &comment)
 bool Scenario::getBriefingTrigger(Trigger* &trigRef, u32 index)
 {
 	return MBRF().getPtr(trigRef, index*TRIG_STRUCT_SIZE, TRIG_STRUCT_SIZE);
+}
+
+bool Scenario::hasForceSection()
+{
+    return FORC().exists();
 }
 
 u32 Scenario::getForceStringNum(u8 index)
@@ -404,6 +495,21 @@ bool Scenario::getPlayerForce(u8 playerNum, u8 &force)
 		return false;
 }
 
+bool Scenario::ReplaceUNISSection(buffer &newUNISSection)
+{
+    return UNIS().takeAllData(newUNISSection);
+}
+
+bool Scenario::ReplaceUNIxSection(buffer &newUNIxSection)
+{
+    return UNIx().takeAllData(newUNIxSection);
+}
+
+bool Scenario::ReplacePUNISection(buffer &newPUNISection)
+{
+    return PUNI().takeAllData(newPUNISection);
+}
+
 bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
 {
 	if ( isExpansion() )
@@ -412,19 +518,35 @@ bool Scenario::getUnitStringNum(u16 unitId, u16 &stringNum)
 		return UNIS().get<u16>(stringNum, unitId*2+(u32)UnitSettingsDataLoc::StringIds);
 }
 
-u16 Scenario::numStrSlots()
+u16 Scenario::strSectionCapacity()
 {
 	return STR().get<u16>(0);
 }
 
-u32 Scenario::numKstrSlots()
+u32 Scenario::kstrSectionCapacity()
 {
 	return KSTR().get<u32>(4);
 }
 
-u32 Scenario::numCombinedStringSlots()
+u32 Scenario::stringCapacity()
 {
 	return STR().get<u16>(0) + KSTR().get<u32>(4);
+}
+
+u32 Scenario::stringCapacity(bool extended)
+{
+    if ( extended )
+        return KSTR().get<u32>(4);
+    else
+        return STR().get<u16>(0);
+}
+
+bool Scenario::hasStrSection(bool extended)
+{
+    if ( extended )
+        return KSTR().exists();
+    else
+        return STR().exists();
 }
 
 bool Scenario::GetString(RawString &dest, u32 stringNum)
@@ -481,8 +603,8 @@ bool Scenario::GetString(ChkdString &dest, u32 stringNum)
 {
 	dest.clear();
 
-	char* srcStr;
-	size_t length;
+    char* srcStr = nullptr;
+    size_t length = 0;
 
 	if ( GetStrInfo(srcStr, length, stringNum) )
 	{
@@ -512,6 +634,11 @@ bool Scenario::GetExtendedString(ChkdString &dest, u32 extendedStringSectionInde
 	return GetString(dest, 65535 - extendedStringSectionIndex);
 }
 
+bool Scenario::getSwitchStrId(u8 switchId, u32 &stringId)
+{
+    return SWNM().get<u32>(stringId, 4 * (u32)switchId);
+}
+
 bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
 {
 	buffer &SWNM = this->SWNM();
@@ -520,6 +647,11 @@ bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
 		return GetString(dest, stringNum);
 	else
 		return false;
+}
+
+bool Scenario::hasSwitchSection()
+{
+    return SWNM().exists();
 }
 
 bool Scenario::getUnitName(RawString &dest, u16 unitID)
@@ -593,28 +725,110 @@ bool Scenario::deleteUnit(u16 index)
 	return UNIT().del(index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
 }
 
-u32 Scenario::GetUnitFieldData(u16 unitIndex, u8 field)
+bool Scenario::SwapUnits(u16 firstIndex, u16 secondIndex)
 {
-	u32 pos = UNIT_STRUCT_SIZE*(u32)unitIndex + (u32)unitFieldLoc[field];
-	switch ( unitFieldSize[field] )
-	{
-		case 1: return (u32)UNIT().get<u8>(pos); break;
-		case 2: return (u32)UNIT().get<u16>(pos); break;
-		case 4: return UNIT().get<u32>(pos); break;
-	}
-	return 0;
+    return UNIT().swap<ChkUnit>(((u32)firstIndex)*UNIT_STRUCT_SIZE, (secondIndex)*UNIT_STRUCT_SIZE);
 }
 
-bool Scenario::SetUnitFieldData(u16 unitIndex, u8 field, u32 data)
+u32 Scenario::GetUnitFieldData(u16 unitIndex, ChkUnitField field)
 {
-	u32 pos = UNIT_STRUCT_SIZE*(u32)unitIndex + (u32)unitFieldLoc[field];
-	switch ( unitFieldSize[field] )
-	{
-		case 1: return UNIT().replace<u8>(pos, (u8)data); break;
-		case 2: return UNIT().replace<u16>(pos, (u16)data); break;
-		case 4: return UNIT().replace<u32>(pos, data); break;
-	}
-	return false;
+    ChkUnit unit = getUnit(unitIndex);
+    switch ( field )
+    {
+        case ChkUnitField::Serial: return unit.serial; break;
+        case ChkUnitField::Xc: return unit.xc; break;
+        case ChkUnitField::Yc: return unit.yc; break;
+        case ChkUnitField::Id: return unit.id; break;
+        case ChkUnitField::LinkType: return unit.linkType; break;
+        case ChkUnitField::Special: return unit.special; break;
+        case ChkUnitField::ValidFlags: return unit.validFlags; break;
+        case ChkUnitField::Owner: return unit.owner; break;
+        case ChkUnitField::Hitpoints: return unit.hitpoints; break;
+        case ChkUnitField::Shields: return unit.shields; break;
+        case ChkUnitField::Energy: return unit.energy; break;
+        case ChkUnitField::Resources: return unit.resources; break;
+        case ChkUnitField::Hanger: return unit.hanger; break;
+        case ChkUnitField::StateFlags: return unit.stateFlags; break;
+        case ChkUnitField::Unused: return unit.unused; break;
+        case ChkUnitField::Link: return unit.link; break;
+    }
+    return 0;
+}
+
+bool Scenario::SetUnitFieldData(u16 unitIndex, ChkUnitField field, u32 data)
+{
+    ChkUnit unit = getUnit(unitIndex);
+    switch ( field )
+    {
+        case ChkUnitField::Serial: unit.serial = data; break;
+        case ChkUnitField::Xc: unit.xc = data; break;
+        case ChkUnitField::Yc: unit.yc = data; break;
+        case ChkUnitField::Id: unit.id = data; break;
+        case ChkUnitField::LinkType: unit.linkType = data; break;
+        case ChkUnitField::Special: unit.special = data; break;
+        case ChkUnitField::ValidFlags: unit.validFlags = data; break;
+        case ChkUnitField::Owner: unit.owner = data; break;
+        case ChkUnitField::Hitpoints: unit.hitpoints = data; break;
+        case ChkUnitField::Shields: unit.shields = data; break;
+        case ChkUnitField::Energy: unit.energy = data; break;
+        case ChkUnitField::Resources: unit.resources = data; break;
+        case ChkUnitField::Hanger: unit.hanger = data; break;
+        case ChkUnitField::StateFlags: unit.stateFlags = data; break;
+        case ChkUnitField::Unused: unit.unused = data; break;
+        case ChkUnitField::Link: unit.link = data; break;
+        default: return false; break;
+    }
+    return true;
+}
+
+bool Scenario::SetUnitHitpoints(u16 unitIndex, u8 newHitpoints)
+{
+    return UNIT().replace<u8>(17 + UNIT_STRUCT_SIZE*(u32)unitIndex, newHitpoints);
+}
+
+bool Scenario::SetUnitEnergy(u16 unitIndex, u8 newEnergy)
+{
+    return UNIT().replace<u8>(19 + UNIT_STRUCT_SIZE*(u32)unitIndex, newEnergy);
+}
+
+bool Scenario::SetUnitShields(u16 unitIndex, u8 newShields)
+{
+    return UNIT().replace<u8>(18 + UNIT_STRUCT_SIZE*(u32)unitIndex, newShields);
+}
+
+bool Scenario::SetUnitResources(u16 unitIndex, u32 newResources)
+{
+    return UNIT().replace<u32>(20 + UNIT_STRUCT_SIZE*(u32)unitIndex, newResources);
+}
+
+bool Scenario::SetUnitHanger(u16 unitIndex, u16 newHanger)
+{
+    return UNIT().replace<u16>(24 + UNIT_STRUCT_SIZE*(u32)unitIndex, newHanger);
+}
+
+bool Scenario::SetUnitTypeId(u16 unitIndex, u16 newTypeId)
+{
+    return UNIT().replace<u16>(8 + UNIT_STRUCT_SIZE*(u32)unitIndex, newTypeId);
+}
+
+bool Scenario::SetUnitXc(u16 unitIndex, u16 newXc)
+{
+    return UNIT().replace<u16>(4 + UNIT_STRUCT_SIZE*(u32)unitIndex, newXc);
+}
+
+bool Scenario::SetUnitYc(u16 unitIndex, u16 newYc)
+{
+    return UNIT().replace<u16>(6 + UNIT_STRUCT_SIZE*(u32)unitIndex, newYc);
+}
+
+u16 Scenario::SpriteSectionCapacity()
+{
+    return THG2().size() / SPRITE_STRUCT_SIZE;
+}
+
+bool Scenario::GetSpriteRef(ChkSprite* &spriteRef, u16 index)
+{
+    return THG2().getPtr(spriteRef, SPRITE_STRUCT_SIZE*(u32)index, SPRITE_STRUCT_SIZE);
 }
 
 bool Scenario::stringIsUsed(u32 stringNum)
@@ -714,7 +928,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 
 bool Scenario::isExtendedString(u32 stringNum)
 {
-	return stringNum >= numStrSlots() &&
+	return stringNum >= strSectionCapacity() &&
 		   stringNum < 65536 &&
 		   KSTR().exists() &&
 		   (u32(65536-stringNum)) <= KSTR().get<u32>(4);
@@ -724,7 +938,7 @@ bool Scenario::stringExists(u32 stringNum)
 {
 	return isExtendedString(stringNum) ||
 		   ( STR().exists() &&
-		     stringNum < numStrSlots() );
+		     stringNum < strSectionCapacity() );
 }
 
 bool Scenario::stringExists(const RawString &str, u32& stringNum)
@@ -978,6 +1192,11 @@ UnitEnabledState Scenario::getUnitEnabledState(u16 unitId, u8 player)
 		return UnitEnabledState::Default;
 }
 
+bool Scenario::hasUnitSettingsSection()
+{
+    return unitSettings().exists();
+}
+
 bool Scenario::getUnitSettingsHitpoints(u16 unitId, u32 &hitpoints)
 {
 	u32 untrimmedHitpoints;
@@ -1035,6 +1254,46 @@ bool Scenario::getUnitSettingsBaseWeapon(u32 weaponId, u16 &baseDamage)
 bool Scenario::getUnitSettingsBonusWeapon(u32 weaponId, u16 &bonusDamage)
 {
 	return unitSettings().get<u16>(bonusDamage, UnitSettingsDataLocBonusWeapon(isExpansion())+2*weaponId);
+}
+
+bool Scenario::getUnisStringId(u16 unitId, u16 &stringId)
+{
+    return UNIS().get<u16>(stringId, 2 * (u32)unitId + (u32)UnitSettingsDataLoc::StringIds);
+}
+
+bool Scenario::getUnixStringId(u16 unitId, u16 &stringId)
+{
+    return UNIx().get<u16>(stringId, 2 * (u32)unitId + (u32)UnitSettingsDataLoc::StringIds);
+}
+
+bool Scenario::setUnisStringId(u16 unitId, u16 newStringId)
+{
+    return UNIS().replace<u16>(2 * (u32)unitId + (u32)UnitSettingsDataLoc::StringIds, newStringId);
+}
+
+bool Scenario::setUnixStringId(u16 unitId, u16 newStringId)
+{
+    return UNIx().replace<u16>(2 * (u32)unitId + (u32)UnitSettingsDataLoc::StringIds, newStringId);
+}
+
+bool Scenario::ReplaceUPGSSection(buffer &newUPGSSection)
+{
+    return UPGS().takeAllData(newUPGSSection);
+}
+
+bool Scenario::ReplaceUPGxSection(buffer &newUPGxSection)
+{
+    return UPGx().takeAllData(newUPGxSection);
+}
+
+bool Scenario::ReplaceUPGRSection(buffer &newUPGRSection)
+{
+    return UPGR().takeAllData(newUPGRSection);
+}
+
+bool Scenario::ReplacePUPxSection(buffer &newPUPxSection)
+{
+    return PUPx().takeAllData(newPUPxSection);
 }
 
 bool Scenario::upgradeUsesDefaultCosts(u8 upgradeId)
@@ -1103,6 +1362,26 @@ bool Scenario::getUpgradePlayerMaxLevel(u8 upgradeId, u8 player, u8 &maxLevel)
 	return upgradeRestrictions().get<u8>(maxLevel, UpgradeSettingsDataLocPlayerMaxLevel(isExpansion(), player)+(u32)upgradeId);
 }
 
+bool Scenario::ReplaceTECSSection(buffer &newTECSSection)
+{
+    return TECS().takeAllData(newTECSSection);
+}
+
+bool Scenario::ReplaceTECxSection(buffer &newTECxSection)
+{
+    return TECx().takeAllData(newTECxSection);
+}
+
+bool Scenario::ReplacePTECSection(buffer &newPTECSection)
+{
+    return PTEC().takeAllData(newPTECSection);
+}
+
+bool Scenario::ReplacePTExSection(buffer &newPTExSection)
+{
+    return PTEx().takeAllData(newPTExSection);
+}
+
 bool Scenario::techUsesDefaultCosts(u8 techId)
 {
 	return techSettings().get<u8>((u32)techId) == 1;
@@ -1161,6 +1440,21 @@ bool Scenario::setTileset(u16 newTileset)
 u16 Scenario::getTile(u16 xc, u16 yc)
 {
 	return MTXM().get<u16>(2 * (u32)XSize() * (u32)yc + 2 * (u32)xc);
+}
+
+u16 Scenario::getTileSectionTile(u16 xc, u16 yc)
+{
+    return TILE().get<u16>(2 * (u32)XSize() * (u32)yc + 2 * (u32)xc);
+}
+
+bool Scenario::getTile(u16 xc, u16 yc, u16 &tileValue)
+{
+    return MTXM().get<u16>(tileValue, 2 * (u32)XSize()*(u32)yc + 2 * (u32)xc);
+}
+
+bool Scenario::getTileSectionTile(u16 xc, u16 yc, u16 &tileValue)
+{
+    return TILE().get<u16>(tileValue, 2 * (u32)XSize()*(u32)yc + 2 * (u32)xc);
 }
 
 bool Scenario::setTile(u16 xc, u16 yc, u16 value)
@@ -1238,6 +1532,11 @@ bool Scenario::addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags)
 	unit.stateFlags = stateFlags;
 
 	return UNIT().add<ChkUnit&>(unit);
+}
+
+bool Scenario::addUnit(ChkUnit unit)
+{
+    return UNIT().add<ChkUnit&>(unit);
 }
 
 bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationIndex)
@@ -2017,13 +2316,13 @@ bool Scenario::repairStringTable(bool extendedTable)
 		for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
 		{
 			stringNum = trig->actions[i].stringNum;
-			u8 action = trig->actions[i].action;
-			if ( action == AID_COMMENT || action == AID_DISPLAY_TEXT_MESSAGE || action == AID_LEADERBOARD_CONTROL_AT_LOCATION ||
-				 action == AID_LEADERBOARD_CONTROL || action == AID_LEADERBOARD_KILLS || action == AID_LEADERBOARD_POINTS ||
-				 action == AID_LEADERBOARD_RESOURCES || action == AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION ||
-				 action == AID_LEADERBOARD_GOAL_CONTROL || action == AID_LEADERBOARD_GOAL_KILLS || action == AID_LEADERBOARD_GOAL_POINTS ||
-				 action == AID_LEADERBOARD_GOAL_RESOURCES || action == AID_SET_MISSION_OBJECTIVES || action == AID_SET_NEXT_SCENARIO ||
-				 action == AID_TRANSMISSION )
+			ActionId action = (ActionId)trig->actions[i].action;
+			if ( action == ActionId::Comment || action == ActionId::DisplayTextMessage || action == ActionId::LeaderboardCtrlAtLoc ||
+				 action == ActionId::LeaderboardCtrl || action == ActionId::LeaderboardKills || action == ActionId::LeaderboardPoints ||
+				 action == ActionId::LeaderboardResources || action == ActionId::LeaderboardGoalCtrlAtLoc ||
+				 action == ActionId::LeaderboardGoalCtrl || action == ActionId::LeaderboardGoalKills ||
+                 action == ActionId::LeaderboardGoalPoints || action == ActionId::LeaderboardGoalResources ||
+                 action == ActionId::SetMissionObjectives || action == ActionId::SetNextScenario || action == ActionId::Transmission )
 			{
 				if ( RepairString(stringNum, false) )
 					trig->actions[i].stringNum = stringNum;
@@ -2035,8 +2334,8 @@ bool Scenario::repairStringTable(bool extendedTable)
 			}
 
 			stringNum = trig->actions[i].wavID;
-			action = trig->actions[i].action;
-			if ( action == AID_PLAY_WAV || action == AID_TRANSMISSION )
+			action = (ActionId)trig->actions[i].action;
+			if ( action == ActionId::PlayWav || action == ActionId::Transmission )
 			{
 				if ( RepairString(stringNum, false) )
 					trig->actions[i].wavID = stringNum;
@@ -2156,12 +2455,12 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
 {
 	std::hash<std::string> strHash;
 	std::unordered_multimap<u32, StringTableNode> stringSearchTable;
-	strList.reserve(strList.size()+numCombinedStringSlots());
+	strList.reserve(strList.size()+stringCapacity());
 	StringTableNode node;
 	int numMatching = 0;
 	u32 hash = 0;
-	u32 standardNumStrings = numStrSlots();
-	u32 extendedNumStrings = numKstrSlots();
+	u32 standardNumStrings = strSectionCapacity();
+	u32 extendedNumStrings = kstrSectionCapacity();
 
 	#define AddStrIfOverZero(index)														\
 		if ( index > 0 &&																\
@@ -2250,7 +2549,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	{
 		for ( auto &str : strList )
 		{
-			if ( str.stringNum >= numStrSlots() )
+			if ( str.stringNum >= strSectionCapacity() )
 				str.stringNum = 65536 - str.stringNum;
 		}
 	}
@@ -2261,9 +2560,9 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
 	// Decide what the max strings should be
 	u32 prevNumStrings;
 	if ( extendedTable )
-		prevNumStrings = numKstrSlots();
+		prevNumStrings = kstrSectionCapacity();
 	else
-		prevNumStrings = numStrSlots();
+		prevNumStrings = strSectionCapacity();
 
 	u32 numStrs = 0;
 	if ( strList.size() > 0 )
@@ -2481,6 +2780,13 @@ bool Scenario::setForceAv(u8 forceNum, bool alliedVictory)
 		return FORC().setBit(16+forceNum, 2, alliedVictory);
 	else
 		return false;
+}
+
+bool Scenario::setForceName(u8 forceNum, ChkdString &newName)
+{
+    u16* mapForceString = nullptr;
+    return FORC().getPtr<u16>(mapForceString, 8 + 2 * (u32)forceNum, 2) &&
+        replaceString(newName, *mapForceString, false, true);
 }
 
 bool Scenario::setUnitUseDefaults(u16 unitID, bool useDefaults)
@@ -2937,6 +3243,11 @@ bool Scenario::moveTrigger(u32 triggerId, u32 destId)
 	return false;
 }
 
+TrigSegment Scenario::GetTrigSection()
+{
+    return trig;
+}
+
 bool Scenario::GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct)
 {
 	return UPRP().get<ChkCuwp>(outPropStruct, (u32)cuwpIndex*sizeof(ChkCuwp));
@@ -2992,6 +3303,11 @@ int Scenario::NumUsedCuwps()
 			numUsedCuwps++;
 	}
 	return numUsedCuwps;
+}
+
+u32 Scenario::WavSectionCapacity()
+{
+    return WAV().size() / 4;
 }
 
 bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)
@@ -3414,8 +3730,8 @@ bool Scenario::ZeroOutString(u32 stringNum)
 		for ( size_t i=0; i<length; i++ ) // Zero-out characters
 			str[i] = '\0';
 
-		u32 numRegularStrings = (u32)numStrSlots();
-		if ( stringNum < numStrSlots() )
+		u32 numRegularStrings = (u32)strSectionCapacity();
+		if ( stringNum < strSectionCapacity() )
 		{
 			if ( STR().size() > numRegularStrings*2+2 ) // If you can get to start of string data
 				return STR().replace<u16>(2*stringNum, numRegularStrings*2+2); // Set string offset to start of string data (NUL)

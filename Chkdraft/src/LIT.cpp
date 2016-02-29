@@ -21,12 +21,12 @@ void LitWindow::RefreshWindow()
 
 void LitWindow::ButtonLit()
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
-		if ( RunLit(chkd.maps.curr) )
+		if ( RunLit(CM) )
 		{
-			chkd.maps.curr->notifyChange(false);
-			chkd.maps.curr->refreshScenario();
+			CM->notifyChange(false);
+			CM->refreshScenario();
 		}
 	}
 	else
@@ -35,15 +35,15 @@ void LitWindow::ButtonLit()
 
 void LitWindow::ButtonLitSave()
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
-		if ( RunLit(chkd.maps.curr) )
+		if ( RunLit(CM) )
 		{
-			chkd.maps.curr->refreshScenario();
+			CM->refreshScenario();
 			if ( !chkd.maps.SaveCurr(false) )
 			{
 				MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
-				chkd.maps.curr->notifyChange(false);
+				CM->notifyChange(false);
 			}
 		}
 	}

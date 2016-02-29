@@ -9,11 +9,10 @@ UnitIndexMove::UnitIndexMove(u16 oldIndex, u16 newIndex)
 
 void UnitIndexMove::Reverse(void *guiMap)
 {
-	ChkUnit preserve;
-	((GuiMap*)guiMap)->UNIT().get<ChkUnit>(preserve, newIndex*UNIT_STRUCT_SIZE);
-	((GuiMap*)guiMap)->UNIT().del<ChkUnit>(newIndex*UNIT_STRUCT_SIZE);
-	((GuiMap*)guiMap)->UNIT().insert<ChkUnit&>(oldIndex*UNIT_STRUCT_SIZE, preserve);
-	((GuiMap*)guiMap)->selections().sendMove(oldIndex, newIndex);
+	ChkUnit preserve = ((GuiMap*)guiMap)->getUnit(newIndex);
+    ((GuiMap*)guiMap)->deleteUnit(newIndex);
+    ((GuiMap*)guiMap)->insertUnit(oldIndex, preserve);
+	((GuiMap*)guiMap)->GetSelections().sendMove(oldIndex, newIndex);
 	std::swap(oldIndex, newIndex);
 }
 
@@ -29,7 +28,7 @@ UnitIndexMoveBoundary::UnitIndexMoveBoundary()
 
 void UnitIndexMoveBoundary::Reverse(void *guiMap)
 {
-	((GuiMap*)guiMap)->selections().finishMove();
+	((GuiMap*)guiMap)->GetSelections().finishMove();
 }
 
 int32_t UnitIndexMoveBoundary::GetType()

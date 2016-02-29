@@ -1,5 +1,13 @@
 #include "MainToolbar.h"
 
+enum ID
+{
+    COMBOBOX_LAYER = ID_FIRST,
+    COMBOBOX_PLAYER,
+    COMBOBOX_ZOOM,
+    COMBOBOX_TERRAIN
+};
+
 bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
 {
 	// Initilize primary toolbar
@@ -44,24 +52,24 @@ bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
 		// Add layer ComboBox to toolbar
 		const char* layerStrings[] = { "Terrain", "Doodads", "Fog of War", "Locations", "Units", "Sprites", "Preview Fog",
 									   "Copy\\Cut\\Paste\\Brush" };
-		layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, ID_COMBOBOX_LAYER, 8, layerStrings, defaultFont);
+		layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, COMBOBOX_LAYER, 8, layerStrings, defaultFont);
 		layerBox.SetSel(0);
 		ShowWindow(layerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
 		// Add zoom ComboBox to toolbar
 		const char* zoomStrings[] = { "400% Zoom", "300% Zoom", "200% Zoom", "150% Zoom", "100% Zoom", "66% Zoom",
 									  "50% Zoom", "33% Zoom", "25% Zoom", "10% Zoom"};
-		zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, ID_COMBOBOX_ZOOM, 10, zoomStrings, defaultFont);
+		zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, COMBOBOX_ZOOM, 10, zoomStrings, defaultFont);
 		zoomBox.SetSel(4);
 		ShowWindow(zoomBox.getHandle(), SW_HIDE); // Hide until a map is open
 
 		// Add player ComboBox to toolbar
-		playerBox.CreateThis(hTool, 483, 2, 75, 200, ID_COMBOBOX_PLAYER);
+		playerBox.CreateThis(hTool, 483, 2, 75, 200, COMBOBOX_PLAYER);
 		ShowWindow(playerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
 		// Add terrain ComboBox to toolbar			
 		const char* terrPalette[] = { "Isometrical", "Rectangular", "Subtile", "Tileset Indexed", "Copy/Cut/Paste" };
-		terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, ID_COMBOBOX_TERRAIN, 5, terrPalette, defaultFont);
+		terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, COMBOBOX_TERRAIN, 5, terrPalette, defaultFont);
 		terrainBox.SetSel(0);
 		ShowWindow(terrainBox.getHandle(), SW_HIDE); // Hide until a map is open
 

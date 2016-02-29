@@ -2,22 +2,22 @@
 
 void Condition::ToggleDisabled()
 {
-	if ( (flags & CONDITION_FLAG_DISABLED) == CONDITION_FLAG_DISABLED )
-		flags &= xCONDITION_FLAG_DISABLED;
+	if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )
+		flags &= (u8)Flags::xDisabled;
 	else
-		flags |= CONDITION_FLAG_DISABLED;
+		flags |= (u8)Flags::Disabled;
 }
 
 bool Condition::isDisabled()
 {
-	return (flags & CONDITION_FLAG_DISABLED) == CONDITION_FLAG_DISABLED;
+	return (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled;
 }
 
-ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
+ConditionArgType Condition::TextTrigArgType(u8 argNum, ConditionId condition)
 {
 	switch ( condition )
 	{
-		case CID_ACCUMULATE:
+        case ConditionId::Accumulate:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndNumericComparison; break;
@@ -25,8 +25,8 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 3: return ConditionArgType::CndResourceType; break;
 			}
 			break;
-		case CID_ALWAYS: break;
-		case CID_BRING:
+        case ConditionId::Always: break;
+        case ConditionId::Bring:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndUnit; break;
@@ -35,7 +35,7 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 4: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_COMMAND:
+        case ConditionId::Command:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndUnit; break;
@@ -43,33 +43,33 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 3: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_COMMAND_THE_LEAST:
+        case ConditionId::CommandTheLeast:
 			if ( argNum == 0 )
 				return ConditionArgType::CndUnit;
 			break;
-		case CID_COMMAND_THE_LEAST_AT:
+        case ConditionId::CommandTheLeastAt:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndUnit; break;
 				case 1: return ConditionArgType::CndLocation; break;
 			}
 			break;
-		case CID_COMMAND_THE_MOST:
+        case ConditionId::CommandTheMost:
 			if ( argNum == 0 )
 				return ConditionArgType::CndUnit;
 			break;
-		case CID_COMMAND_THE_MOST_AT:
+        case ConditionId::CommandTheMostAt:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndUnit; break;
 				case 1: return ConditionArgType::CndLocation; break;
 			}
 			break;
-		case CID_COUNTDOWN_TIMER:
+        case ConditionId::CountdownTimer:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndNumericComparison; break;
 				case 1: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_DEATHS:
+        case ConditionId::Deaths:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndUnit; break;
@@ -77,17 +77,17 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 3: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_ELAPSED_TIME:
+        case ConditionId::ElapsedTime:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndNumericComparison; break;
 				case 1: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_HIGHEST_SCORE:
+        case ConditionId::HighestScore:
 			if ( argNum == 0 )
 				return ConditionArgType::CndScoreType;
 			break;
-		case CID_KILL:
+        case ConditionId::Kill:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndUnit; break;
@@ -95,36 +95,36 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 3: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_LEAST_KILLS:
+        case ConditionId::LeastKills:
 			if ( argNum == 0 )
 				return ConditionArgType::CndUnit;
 			break;
-		case CID_LEAST_RESOURCES:
+        case ConditionId::LeastResources:
 			if ( argNum == 0 )
 				return ConditionArgType::CndResourceType;
 			break;
-		case CID_LOWEST_SCORE:
+        case ConditionId::LowestScore:
 			if ( argNum == 0 )
 				return ConditionArgType::CndScoreType;
 			break;
-		case CID_MOST_KILLS:
+        case ConditionId::MostKills:
 			if ( argNum == 0 )
 				return ConditionArgType::CndUnit;
 			break;
-		case CID_MOST_RESOURCES:
+        case ConditionId::MostResources:
 			if ( argNum == 0 )
 				return ConditionArgType::CndResourceType;
 			break;
-		case CID_NEVER: break;
-		case CID_NEVER_ALT: break;
-		case CID_OPPONENTS:
+        case ConditionId::Never: break;
+        case ConditionId::NeverAlt: break;
+        case ConditionId::Opponents:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndNumericComparison; break;
 				case 2: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_SCORE:
+        case ConditionId::Score:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndPlayer; break;
 				case 1: return ConditionArgType::CndScoreType; break;
@@ -132,7 +132,7 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 				case 3: return ConditionArgType::CndAmount; break;
 			}
 			break;
-		case CID_SWITCH:
+        case ConditionId::Switch:
 			switch ( argNum ) {
 				case 0: return ConditionArgType::CndSwitch; break;
 				case 1: return ConditionArgType::CndSwitchState; break;
@@ -157,5 +157,5 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum, u8 condition)
 
 ConditionArgType Condition::TextTrigArgType(u8 argNum)
 {
-	return TextTrigArgType(argNum, this->condition);
+	return TextTrigArgType(argNum, (ConditionId)condition);
 }

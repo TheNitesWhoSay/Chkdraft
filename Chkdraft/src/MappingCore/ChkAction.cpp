@@ -2,30 +2,30 @@
 
 void Action::ToggleDisabled()
 {
-	if ( (flags & ACTION_FLAG_DISABLED) == ACTION_FLAG_DISABLED )
-		flags &= xACTION_FLAG_DISABLED;
+	if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )
+		flags &= (u8)Flags::xDisabled;
 	else
-		flags |= ACTION_FLAG_DISABLED;
+		flags |= (u8)Flags::Disabled;
 }
 
 bool Action::isDisabled()
 {
-	return (flags & ACTION_FLAG_DISABLED) == ACTION_FLAG_DISABLED;
+	return (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled;
 }
 
-ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
+ActionArgType Action::TextTrigArgType(u8 argNum, ActionId actionId)
 {
-	switch ( action )
+	switch ( actionId )
 	{
-		case AID_CENTER_VIEW:
+        case ActionId::CenterView:
 			if ( argNum == 0 )
 				return ActionArgType::ActLocation;
 			break;
-		case AID_COMMENT:
+        case ActionId::Comment:
 			if ( argNum == 0 )
 				return ActionArgType::ActString;
 			break;
-		case AID_CREATE_UNIT:
+		case ActionId::CreateUnit:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -33,7 +33,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_CREATE_UNIT_WITH_PROPERTIES:
+		case ActionId::CreateUnitWithProperties:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -42,15 +42,15 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActCUWP; break;
 			}
 			break;
-		case AID_DEFEAT: break;
-		case AID_DISPLAY_TEXT_MESSAGE:
+        case ActionId::Defeat: break;
+		case ActionId::DisplayTextMessage:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActTextFlags; break;
 				case 1: return ActionArgType::ActString; break;
 			}
 			break;
-		case AID_DRAW: break;
-		case AID_GIVE_UNITS_TO_PLAYER:
+		case ActionId::Draw: break;
+		case ActionId::GiveUnitsToPlayer:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActPlayer; break;
@@ -59,13 +59,13 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_KILL_UNIT:
+		case ActionId::KillUnit:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
 			}
 			break;
-		case AID_KILL_UNIT_AT_LOCATION:
+		case ActionId::KillUnitAtLocation:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -73,46 +73,46 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_LEADERBOARD_CONTROL_AT_LOCATION:
+        case ActionId::LeaderboardCtrlAtLoc:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
 				case 2: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_LEADERBOARD_CONTROL:
+		case ActionId::LeaderboardCtrl:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
 			}
 			break;
-		case AID_LEADERBOARD_GREED:
+		case ActionId::LeaderboardGreed:
 			if ( argNum == 0 )
 				return ActionArgType::ActAmount;
 			break;
-		case AID_LEADERBOARD_KILLS:
+		case ActionId::LeaderboardKills:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
 			}
 			break;
-		case AID_LEADERBOARD_POINTS:
+        case ActionId::LeaderboardPoints:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActScoreType; break;
 			}
 			break;
-		case AID_LEADERBOARD_RESOURCES:
+		case ActionId::LeaderboardResources:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActResourceType; break;
 			}
 			break;
-		case AID_LEADERBOARD_COMPUTER_PLAYERS:
+		case ActionId::LeaderboardCompPlayers:
 			if ( argNum == 0 )
 				return ActionArgType::ActStateMod;
 			break;
-		case AID_LEADERBOARD_GOAL_CONTROL_AT_LOCATION:
+		case ActionId::LeaderboardGoalCtrlAtLoc:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -120,39 +120,39 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_CONTROL:
+		case ActionId::LeaderboardGoalCtrl:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
 				case 2: return ActionArgType::ActAmount; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_KILLS:
+		case ActionId::LeaderboardGoalKills:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActUnit; break;
 				case 2: return ActionArgType::ActAmount; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_POINTS:
+		case ActionId::LeaderboardGoalPoints:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActScoreType; break;
 				case 2: return ActionArgType::ActAmount; break;
 			}
 			break;
-		case AID_LEADERBOARD_GOAL_RESOURCES:
+		case ActionId::LeaderboardGoalResources:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActString; break;
 				case 1: return ActionArgType::ActAmount; break;
 				case 2: return ActionArgType::ActResourceType; break;
 			}
 			break;
-		case AID_MINIMAP_PING:
+		case ActionId::MinimapPing:
 			if ( argNum == 0 )
 				return ActionArgType::ActLocation;
 			break;
-		case AID_MODIFY_UNIT_ENERGY:
+		case ActionId::ModifyUnitEnergy:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -161,7 +161,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_HANGER_COUNT:
+		case ActionId::ModifyUnitHangerCount:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -170,7 +170,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_HITPOINTS:
+		case ActionId::ModifyUnitHitpoints:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -179,7 +179,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_RESOURCE_AMOUNT:
+		case ActionId::ModifyUnitResourceAmount:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActAmount; break;
@@ -187,7 +187,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MODIFY_UNIT_SHIELD_POINTS:
+		case ActionId::ModifyUnitShieldPoints:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -196,7 +196,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MOVE_LOCATION:
+		case ActionId::MoveLocation:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -204,7 +204,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MOVE_UNIT:
+		case ActionId::MoveUnit:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -213,9 +213,9 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_MUTE_UNIT_SPEECH: break;
-		case AID_NO_ACTION: break;
-		case AID_ORDER:
+		case ActionId::MuteUnitSpeech: break;
+		case ActionId::NoAction: break;
+		case ActionId::Order:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -224,22 +224,22 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 4: return ActionArgType::ActOrder; break;
 			}
 			break;
-		case AID_PAUSE_GAME: break;
-		case AID_PAUSE_TIMER: break;
-		case AID_PLAY_WAV:
+		case ActionId::PauseGame: break;
+		case ActionId::PauseTimer: break;
+		case ActionId::PlayWav:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActWav; break;
 				case 1: return ActionArgType::ActDuration; break;
 			}
 			break;
-		case AID_PRESERVE_TRIGGER: break;
-		case AID_REMOVE_UNIT:
+		case ActionId::PreserveTrigger: break;
+		case ActionId::RemoveUnit:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
 			}
 			break;
-		case AID_REMOVE_UNIT_AT_LOCATION:
+		case ActionId::RemoveUnitAtLocation:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -247,29 +247,29 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_RUN_AI_SCRIPT:
+		case ActionId::RunAiScript:
 			if ( argNum == 0 )
 				return ActionArgType::ActScript; break;
 			break;
-		case AID_RUN_AI_SCRIPT_AT_LOCATION:
+		case ActionId::RunAiScriptAtLocation:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActScript; break;
 				case 1: return ActionArgType::ActLocation; break;
 			}
 			break;
-		case AID_SET_ALLIANCE_STATUS:
+		case ActionId::SetAllianceStatus:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActAllyState; break;
 			}
 			break;
-		case AID_SET_COUNTDOWN_TIMER:
+		case ActionId::SetCountdownTimer:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActNumericMod; break;
 				case 1: return ActionArgType::ActAmount; break;
 			}
 			break;
-		case AID_SET_DEATHS:
+		case ActionId::SetDeaths:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -277,7 +277,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActAmount; break;
 			}
 			break;
-		case AID_SET_DOODAD_STATE:
+		case ActionId::SetDoodadState:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -285,7 +285,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActStateMod; break;
 			}
 			break;
-		case AID_SET_INVINCIBILITY:
+		case ActionId::SetInvincibility:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActUnit; break;
@@ -293,15 +293,15 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActStateMod; break;
 			}
 			break;
-		case AID_SET_MISSION_OBJECTIVES:
+		case ActionId::SetMissionObjectives:
 			if ( argNum == 0 )
 				return ActionArgType::ActString;
 			break;
-		case AID_SET_NEXT_SCENARIO:
+		case ActionId::SetNextScenario:
 			if ( argNum == 0 )
 				return ActionArgType::ActString;
 			break;
-		case AID_SET_RESOURCES:
+		case ActionId::SetResources:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActNumericMod; break;
@@ -309,7 +309,7 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActResourceType; break;
 			}
 			break;
-		case AID_SET_SCORE:
+		case ActionId::SetScore:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActPlayer; break;
 				case 1: return ActionArgType::ActNumericMod; break;
@@ -317,19 +317,19 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 3: return ActionArgType::ActScoreType; break;
 			}
 			break;
-		case AID_SET_SWITCH:
+		case ActionId::SetSwitch:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActSwitch; break;
 				case 1: return ActionArgType::ActSwitchMod; break;
 			}
 			break;
-		case AID_TALKING_PORTRAIT:
+		case ActionId::TalkingPortrait:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActUnit; break;
 				case 1: return ActionArgType::ActDuration; break;
 			}
 			break;
-		case AID_TRANSMISSION:
+		case ActionId::Transmission:
 			switch ( argNum ) {
 				case 0: return ActionArgType::ActTextFlags; break;
 				case 1: return ActionArgType::ActString; break;
@@ -340,11 +340,11 @@ ActionArgType Action::TextTrigArgType(u8 argNum, u8 action)
 				case 6: return ActionArgType::ActWav; break;
 			}
 			break;
-		case AID_UNMUTE_UNIT_SPEECH: break;
-		case AID_UNPAUSE_GAME: break;
-		case AID_UNPAUSE_TIMER: break;
-		case AID_VICTORY: break;
-		case AID_WAIT:
+		case ActionId::UnmuteUnitSpeech: break;
+		case ActionId::UnpauseGame: break;
+		case ActionId::UnpauseTimer: break;
+		case ActionId::Victory: break;
+		case ActionId::Wait:
 			if ( argNum == 0 )
 				return ActionArgType::ActDuration;
 			break;

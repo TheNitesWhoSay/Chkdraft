@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-MAPS::MAPS() : curr(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
+Maps::Maps() : currentlyActiveMap(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
 	nonStandardCursor(false), currCursor(nullptr), standardCursor(NULL), sizeAllCursor(NULL),
 	neswCursor(NULL), nwseCursor(NULL), nsCursor(NULL), weCursor(NULL)
 {
@@ -17,12 +17,12 @@ MAPS::MAPS() : curr(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsed
 	weCursor = LoadCursor(NULL, IDC_SIZEWE);
 }
 
-MAPS::~MAPS()
+Maps::~Maps()
 {
 
 }
 
-bool MAPS::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
+bool Maps::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
 {
 	for ( auto &pair : openMaps )
 	{
@@ -32,7 +32,7 @@ bool MAPS::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
 	return false;
 }
 
-bool MAPS::Focus(HWND hGuiMap)
+bool Maps::Focus(HWND hGuiMap)
 {
 	for ( auto &pair : openMaps )
 	{
@@ -42,26 +42,26 @@ bool MAPS::Focus(HWND hGuiMap)
 	return false;
 }
 
-bool MAPS::Focus(std::shared_ptr<GuiMap> guiMap)
+bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
 {
 	if ( guiMap != nullptr && isInOpenMaps(guiMap) )
 	{
-		curr = guiMap;
+        currentlyActiveMap = guiMap;
 		chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-		curr->updateMenu();
+        currentlyActiveMap->updateMenu();
 		return true;
 	}
 	else
 	{
-		curr = nullptr;
+        currentlyActiveMap = nullptr;
 		return false;
 	}
 }
 
-std::shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
+std::shared_ptr<GuiMap> Maps::GetMap(HWND hGuiMap)
 {
-	if ( hGuiMap == curr->getHandle() )
-		return curr;
+	if ( hGuiMap == currentlyActiveMap->getHandle() )
+		return currentlyActiveMap;
 
 	for ( auto &pair : openMaps)
 	{
@@ -72,10 +72,10 @@ std::shared_ptr<GuiMap> MAPS::GetMap(HWND hGuiMap)
 	return nullptr;
 }
 
-std::shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
+std::shared_ptr<GuiMap> Maps::GetMap(u16 mapId)
 {
-	if ( mapId == 0 || mapId == curr->getMapId() )
-		return curr;
+	if ( mapId == 0 || mapId == currentlyActiveMap->getMapId() )
+		return currentlyActiveMap;
 
 	auto it = openMaps.find(mapId);
 	if ( it != openMaps.end() )
@@ -84,7 +84,7 @@ std::shared_ptr<GuiMap> MAPS::GetMap(u16 mapId)
 		return nullptr;
 }
 
-u16 MAPS::GetMapID(std::shared_ptr<GuiMap> guiMap)
+u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
 {
 	if ( guiMap != nullptr )
 		return guiMap->getMapId();
@@ -92,7 +92,7 @@ u16 MAPS::GetMapID(std::shared_ptr<GuiMap> guiMap)
 		return 0;
 }
 
-bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
+bool Maps::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 {
 	if ( width == 0 || height == 0 )
 	{
@@ -113,7 +113,7 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 			UntitledNumber++;
 			EnableMapping();
 			Focus(newMap);
-			curr->Redraw(true);
+            currentlyActiveMap->Redraw(true);
 			return true;
 		}
 		else
@@ -129,7 +129,7 @@ bool MAPS::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
 	return false;
 }
 
-bool MAPS::OpenMap(const char* fileName)
+bool Maps::OpenMap(const char* fileName)
 {
 	auto newMap = AddEmptyMap();
 
@@ -147,9 +147,9 @@ bool MAPS::OpenMap(const char* fileName)
 				mb("Map is protected and will be opened as view only");
 
 			SetFocus(chkd.getHandle());
-			curr->Scroll(SCROLL_X|SCROLL_Y);
-			curr->Redraw(true);
-			curr->refreshScenario();
+            currentlyActiveMap->Scroll(true, true, false);
+            currentlyActiveMap->Redraw(true);
+            currentlyActiveMap->refreshScenario();
 			return true;
 		} 
 		else
@@ -160,23 +160,23 @@ bool MAPS::OpenMap(const char* fileName)
 	return false;
 }
 
-bool MAPS::OpenMap()
+bool Maps::OpenMap()
 {
 	return OpenMap(nullptr);
 }
 
-bool MAPS::SaveCurr(bool saveAs)
+bool Maps::SaveCurr(bool saveAs)
 {
-	if ( curr->SaveFile(saveAs) )
+	if ( currentlyActiveMap->SaveFile(saveAs) )
 	{
-		SetWindowText(curr->getHandle(), curr->FilePath());
+		SetWindowText(currentlyActiveMap->getHandle(), currentlyActiveMap->FilePath());
 		return true;
 	}
 	else
 		return false;
 }
 
-void MAPS::CloseMap(HWND hMap)
+void Maps::CloseMap(HWND hMap)
 {
 	std::shared_ptr<GuiMap> map = GetMap(hMap);
 	if ( map != nullptr )
@@ -186,38 +186,39 @@ void MAPS::CloseMap(HWND hMap)
 		DisableMapping();
 }
 
-void MAPS::CloseActive()
+void Maps::CloseActive()
 {
 	SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
 }
 
-void MAPS::UpdateTreeView()
+void Maps::UpdateTreeView()
 {
-	if ( curr != nullptr )
+	if ( currentlyActiveMap != nullptr )
 	{
-		buffer& settings = curr->unitSettings();
+
 	}
 }
 
-void MAPS::SetGrid(s16 xSize, s16 ySize)
+void Maps::SetGrid(s16 xSize, s16 ySize)
 {
-	if ( curr != nullptr )
-		curr->SetGrid(xSize, ySize);
+	if ( currentlyActiveMap != nullptr )
+        currentlyActiveMap->SetGridSize(xSize, ySize);
 }
 
-void MAPS::ChangeLayer(u8 newLayer)
+void Maps::ChangeLayer(Layer newLayer)
 {
-	if ( curr != nullptr && curr->getLayer() != newLayer )
+	if ( currentlyActiveMap != nullptr && currentlyActiveMap->getLayer() != newLayer )
 	{
-		curr->selections().removeTiles();
+        currentlyActiveMap->clearSelectedTiles();
 
-		if ( chkd.mainToolbar.layerBox.GetSel() != newLayer )
-			chkd.mainToolbar.layerBox.SetSel(newLayer);
+		if ( chkd.mainToolbar.layerBox.GetSel() != (int)newLayer )
+			chkd.mainToolbar.layerBox.SetSel((int)newLayer);
 
-		if ( newLayer == LAYER_FOG || newLayer == LAYER_UNITS || newLayer == LAYER_SPRITES || newLayer == LAYER_VIEW_FOG )
+		if ( newLayer == Layer::FogEdit || newLayer == Layer::Units ||
+             newLayer == Layer::Sprites || newLayer == Layer::FogView )
 			// Layers where player#'s are relevant
 		{
-			ChangePlayer(curr->currPlayer());
+            ChangePlayer(currentlyActiveMap->getCurrPlayer());
 			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_SHOW);
 		}
 		else // Layers where player#'s are irrelevant
@@ -226,32 +227,32 @@ void MAPS::ChangeLayer(u8 newLayer)
 			ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);
 		}
 
-		if ( newLayer == LAYER_TERRAIN )
+		if ( newLayer == Layer::Terrain )
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_SHOW);
 		else
 			ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
-		curr->setLayer(newLayer);
+        currentlyActiveMap->setLayer(newLayer);
 
 		chkd.tilePropWindow.DestroyThis();
-		curr->Redraw(false);
+        currentlyActiveMap->Redraw(false);
 		char layerString[32];
-		if ( chkd.mainToolbar.layerBox.GetText(newLayer, layerString, 31) )
+		if ( chkd.mainToolbar.layerBox.GetText((int)newLayer, layerString, 31) )
 			chkd.statusBar.SetText(1, layerString);
 	}
 }
 
-void MAPS::ChangeZoom(bool increment)
+void Maps::ChangeZoom(bool increment)
 {
-	double zoom = curr->getZoom();
+	double zoom = currentlyActiveMap->getZoom();
 
 	if ( increment )
 	{
 		for ( int i=1; i<10; i++ )
 		{
-			if ( zoom == zooms[i] )
+			if ( zoom == defaultZooms[i] )
 			{
-				curr->setZoom(zooms[i-1]);
+                currentlyActiveMap->setZoom(defaultZooms[i-1]);
 				chkd.mainToolbar.zoomBox.SetSel(i-1);
 				break;
 			}
@@ -261,9 +262,9 @@ void MAPS::ChangeZoom(bool increment)
 	{
 		for ( int i=0; i<9; i++ )
 		{
-			if ( zoom == zooms[i] )
+			if ( zoom == defaultZooms[i] )
 			{
-				curr->setZoom(zooms[i+1]);
+                currentlyActiveMap->setZoom(defaultZooms[i+1]);
 				chkd.mainToolbar.zoomBox.SetSel(i+1);
 				break;
 			}
@@ -271,11 +272,11 @@ void MAPS::ChangeZoom(bool increment)
 	}
 }
 
-void MAPS::ChangePlayer(u8 newPlayer)
+void Maps::ChangePlayer(u8 newPlayer)
 {
-	curr->currPlayer() = newPlayer;
+    currentlyActiveMap->setCurrPlayer(newPlayer);
 
-	if ( curr->getLayer() == LAYER_UNITS )
+	if ( currentlyActiveMap->getLayer() == Layer::Units )
 	{
 		if ( clipboard.isPasting() )
 		{
@@ -284,143 +285,119 @@ void MAPS::ChangePlayer(u8 newPlayer)
 				pasteUnit.unit.owner = newPlayer;
 		}
 
-		u16 numUnits = curr->numUnits();
-
-		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-		auto &selUnits = curr->selections().getUnits();
-		for ( u16 &unitIndex : selUnits )
-		{
-			ChkUnit* unit;
-			if ( curr->getUnit(unit, unitIndex) && newPlayer != unit->owner )
-			{
-				unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, UNIT_FIELD_OWNER, unit->owner)));
-				unit->owner = newPlayer;
-			}
-
-			if ( chkd.unitWindow.getHandle() != nullptr )
-			{
-				std::string text;
-				HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
-				if ( newPlayer < 12 )
-					SendMessage(hOwner, CB_SETCURSEL, newPlayer, 0);
-				else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
-					SetWindowText(hOwner, text.c_str());
-
-				chkd.unitWindow.ChangeOwner(unitIndex, newPlayer);
-			}
-		}
-		curr->undos().AddUndo(unitChanges);
-		curr->Redraw(true);
+		u16 numUnits = currentlyActiveMap->numUnits();
+        currentlyActiveMap->PlayerChanged(newPlayer);
 	}
 
 	char color[32], race[32], playerText[64];
 	std::snprintf(color, sizeof(color), "Red");
 	std::snprintf(race, sizeof(race), "Terran");
-	std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", curr->currPlayer()+1, color, race);
+    std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
 	chkd.statusBar.SetText(2, playerText);
 }
 
-void MAPS::cut()
+void Maps::cut()
 {
-	if ( curr != nullptr )
+	if ( currentlyActiveMap != nullptr )
 	{
-		if ( curr->isProtected() )
+		if ( currentlyActiveMap->isProtected() )
 			Error("Cannot copy from protected maps!");
 		else
 		{
-			clipboard.copy(&curr->selections(), curr->scenario(), curr->getLayer());
-			curr->deleteSelection();
+			clipboard.copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
+            currentlyActiveMap->deleteSelection();
 			if ( clipboard.isPasting() )
 			{
 				endPaste();
-				RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+				RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 			}
 			ClipCursor(NULL);
 		}
 	}
 }
 
-void MAPS::copy()
+void Maps::copy()
 {
-	if ( curr != nullptr )
+	if ( currentlyActiveMap != nullptr )
 	{
-		if ( curr->isProtected() )
+		if ( currentlyActiveMap->isProtected() )
 			Error("Cannot copy from protected maps!");
 		else
 		{
-			clipboard.copy(&curr->selections(), curr->scenario(), curr->getLayer());
+			clipboard.copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
 			if ( clipboard.isPasting() )
 			{
 				endPaste();
-				RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+				RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 			}
 			ClipCursor(NULL);
 		}
 	}
 }
 
-void MAPS::SetGridColor(u8 red, u8 green, u8 blue)
+void Maps::SetGridColor(u8 red, u8 green, u8 blue)
 {
-	if ( curr != nullptr )
-		curr->SetGridColor(red, green, blue);
+	if ( currentlyActiveMap != nullptr )
+        currentlyActiveMap->SetGridColor(red, green, blue);
 }
 
-void MAPS::startPaste(bool isQuickPaste)
+void Maps::startPaste(bool isQuickPaste)
 {
-	if ( curr == nullptr )
+	if ( currentlyActiveMap == nullptr )
 		return;
-	else if ( curr->getLayer() == LAYER_TERRAIN )
+	else if ( currentlyActiveMap->getLayer() == Layer::Terrain )
 	{
 		if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
 		{
-			curr->selections().removeTiles();
+            currentlyActiveMap->clearSelectedTiles();
 			clipboard.beginPasting(isQuickPaste);
 
-			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
 			TRACKMOUSEEVENT tme;
 			tme.cbSize = sizeof(TRACKMOUSEEVENT);
 			tme.dwFlags = TME_HOVER;
-			tme.hwndTrack = curr->getHandle();
-			tme.dwHoverTime = DEFAULT_HOVER_TIME;
+			tme.hwndTrack = currentlyActiveMap->getHandle();
+			tme.dwHoverTime = defaultHoverTime;
 			TrackMouseEvent(&tme);
 		}
 	}
-	else if ( curr->getLayer() == LAYER_UNITS )
+	else if ( currentlyActiveMap->getLayer() == Layer::Units )
 	{
 		if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
 		{
-			curr->selections().removeUnits();
+            currentlyActiveMap->clearSelectedUnits();
 			clipboard.beginPasting(isQuickPaste);
 
 			TRACKMOUSEEVENT tme;
 			tme.cbSize = sizeof(TRACKMOUSEEVENT);
 			tme.dwFlags = TME_HOVER;
-			tme.hwndTrack = curr->getHandle();
-			tme.dwHoverTime = DEFAULT_HOVER_TIME;
+			tme.hwndTrack = currentlyActiveMap->getHandle();
+			tme.dwHoverTime = defaultHoverTime;
 			TrackMouseEvent(&tme);
 		}
 	}
 }
 
-void MAPS::endPaste()
+void Maps::endPaste()
 {
 	clipboard.endPasting();
-	if ( curr != nullptr )
-		curr->Redraw(false);
+	if ( currentlyActiveMap != nullptr )
+        currentlyActiveMap->Redraw(false);
 }
 
-void MAPS::properties()
+void Maps::properties()
 {
-	if ( curr->getLayer() == LAYER_TERRAIN )
+	if ( currentlyActiveMap->getLayer() == Layer::Terrain )
 	{
-		if ( curr->selections().hasTiles() )
+        Selections &selections = currentlyActiveMap->GetSelections();
+		if ( selections.hasTiles() )
 		{
-			TileNode tile = curr->selections().getFirstTile();
-			curr->selections().removeTiles();
-			curr->selections().addTile(tile.value, tile.xc, tile.yc, NEIGHBOR_LEFT|NEIGHBOR_TOP|NEIGHBOR_RIGHT|NEIGHBOR_BOTTOM);
+			TileNode tile = selections.getFirstTile();
+			selections.removeTiles();
+			selections.addTile(tile.value, tile.xc, tile.yc, TileNeighbor::All);
 
-			RedrawWindow(curr->getHandle(), NULL, NULL, RDW_INVALIDATE);
+			RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 			if ( chkd.tilePropWindow.getHandle() != NULL )
 				chkd.tilePropWindow.UpdateTile();
 			else
@@ -430,21 +407,22 @@ void MAPS::properties()
 	}
 }
 
-void MAPS::stickCursor()
+void Maps::stickCursor()
 {
 	if ( nonStandardCursor && currCursor != nullptr )
 		SetCursor(*currCursor);
 }
 
-void MAPS::updateCursor(s32 xc, s32 yc)
+void Maps::updateCursor(s32 xc, s32 yc)
 {
-	if ( curr->getLayer() == LAYER_LOCATIONS )
+    Selections &selections = currentlyActiveMap->GetSelections();
+	if ( currentlyActiveMap->getLayer() == Layer::Locations )
 	{
-		u16 selectedLocation = curr->selections().getSelectedLocation();
+		u16 selectedLocation = selections.getSelectedLocation();
 		if ( selectedLocation != NO_LOCATION )
 		{
 			ChkLocation* loc;
-			if ( curr->getLocation(loc, selectedLocation) )
+			if ( currentlyActiveMap->getLocation(loc, selectedLocation) )
 			{
 				s32 locationLeft = std::min(loc->xc1, loc->xc2),
 					locationRight = std::max(loc->xc1, loc->xc2),
@@ -509,7 +487,7 @@ void MAPS::updateCursor(s32 xc, s32 yc)
 		SetCursor(standardCursor);
 }
 
-u16 MAPS::NextId()
+u16 Maps::NextId()
 {
 	if ( lastUsedMapID < 65535 )
 	{
@@ -533,7 +511,7 @@ u16 MAPS::NextId()
 	}
 }
 
-void MAPS::EnableMapping()
+void Maps::EnableMapping()
 {
 	if ( !mappingEnabled ) // Enable mapping functionality
 	{
@@ -564,7 +542,7 @@ void MAPS::EnableMapping()
 	}
 }
 
-void MAPS::DisableMapping()
+void Maps::DisableMapping()
 {
 	if ( mappingEnabled )
 	{
@@ -598,12 +576,12 @@ void MAPS::DisableMapping()
 	}
 }
 
-std::shared_ptr<GuiMap> MAPS::AddEmptyMap()
+std::shared_ptr<GuiMap> Maps::AddEmptyMap()
 {
 	u16 id = NextId();
 	if ( id < u16_max )
 	{
-		auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap)));
+		auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap(clipboard))));
 		if ( it != openMaps.end() )
 		{
 			it->second->setMapId(id);
@@ -613,7 +591,7 @@ std::shared_ptr<GuiMap> MAPS::AddEmptyMap()
 	return nullptr;
 }
 
-bool MAPS::RemoveMap(std::shared_ptr<GuiMap> guiMap)
+bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)
 {
 	if ( guiMap == nullptr )
 		return false;
@@ -630,8 +608,8 @@ bool MAPS::RemoveMap(std::shared_ptr<GuiMap> guiMap)
 
 	if ( toDelete != u16_max )
 	{
-		if ( guiMap == curr )
-			curr = nullptr;
+		if ( guiMap == currentlyActiveMap )
+            currentlyActiveMap = nullptr;
 
 		openMaps.erase(toDelete);
 		return true;

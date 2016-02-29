@@ -5,7 +5,7 @@
 class MiniMap : public ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent);
+		bool CreateThis(HWND hParent, u32 id);
 
 	protected:
 		void MiniMapClick(LPARAM ClickPoints);

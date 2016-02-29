@@ -39,20 +39,20 @@ bool StringEditorWindow::CreateThis(HWND hParent, u32 windowId)
 
 void StringEditorWindow::RefreshWindow()
 {
-	if ( chkd.maps.curr != nullptr )
+	if ( CM != nullptr )
 	{
 		listStrings.SetRedraw(false);
 		listStrings.ClearItems();
 		numVisibleStrings = 0;
 		int toSelect = -1;
 		StringUsageTable strUse;
-		if ( strUse.populateTable(chkd.maps.curr->scenario(), false) )
+		if ( strUse.populateTable(CM->scenario(), false) )
 		{
 			RawString str;
 			u32 lastUsed = strUse.lastUsedString();
 			for ( u32 i=0; i<=lastUsed; i++ )
 			{
-				if ( strUse.isUsed(i) && chkd.maps.curr->GetString(str, i) && str.size() > 0 )
+				if ( strUse.isUsed(i) && CM->GetString(str, i) && str.size() > 0 )
 				{
 					int newListIndex = listStrings.AddItem(i);
 					if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
@@ -111,13 +111,13 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			if ( listStrings.GetCurSel(lbIndex) )
 			{
 				ChkdString str;
-				if ( listStrings.GetItemData(lbIndex, currSelString) && chkd.maps.curr != nullptr &&
-					chkd.maps.curr->GetString(str, currSelString) && str.length() > 0 )
+				if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr &&
+					CM->GetString(str, currSelString) && str.length() > 0 )
 				{
 					editString.SetText(str.c_str());
 
 					u32 locs, trigs, briefs, props, forces, wavs, units, switches;
-					chkd.maps.curr->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
+					CM->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
 					addUseItem("Locations", locs);
 					addUseItem("Triggers", trigs);
 					addUseItem("Briefing Triggers", briefs);
@@ -140,22 +140,22 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		break;
 	case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
 		if ( LOWORD(wParam) == LB_STRINGS && currSelString != 0 && updateString(currSelString) )
-			chkd.maps.curr->refreshScenario();
+			CM->refreshScenario();
 		break;
 	case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
 		if ( LOWORD(wParam) == EDIT_STRING && currSelString != 0 && updateString(currSelString) )
-			chkd.maps.curr->refreshScenario();
+			CM->refreshScenario();
 		break;
 	case BN_CLICKED:
 		if ( LOWORD(wParam) == DELETE_STRING  &&
 			MessageBox(hWnd, "Forcefully deleting a string could cause problems, continue?", "Warning", MB_ICONEXCLAMATION | MB_YESNO) == IDYES &&
-			chkd.maps.curr != nullptr && currSelString != 0 && chkd.maps.curr->stringExists(currSelString)
+			CM != nullptr && currSelString != 0 && CM->stringExists(currSelString)
 			)
 		{
-			chkd.maps.curr->forceDeleteString(currSelString);
-			chkd.maps.curr->refreshScenario();
+			CM->forceDeleteString(currSelString);
+			CM->refreshScenario();
 		}
-		else if ( LOWORD(wParam) == SAVE_TO && chkd.maps.curr != nullptr )
+		else if ( LOWORD(wParam) == SAVE_TO && CM != nullptr )
 			saveStrings();
 		break;
 	}
@@ -186,7 +186,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
 				RawString str;
 
-				if ( chkd.maps.curr->GetString(str, mis->itemData) && str.size() > 0 &&
+				if ( CM->GetString(str, mis->itemData) && str.size() > 0 &&
 					 GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, str) )
 				{
 					mis->itemWidth += 5;
@@ -214,7 +214,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
 				{	
 					RawString str;
-					if ( chkd.maps.curr != nullptr && chkd.maps.curr->GetString(str, pdis->itemData) && str.size() > 0 )
+					if ( CM != nullptr && CM->GetString(str, pdis->itemData) && str.size() > 0 )
 					{
 						HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
 						if ( hBackground != NULL )
@@ -259,9 +259,9 @@ void StringEditorWindow::saveStrings()
 		if ( outFile.is_open() )
 		{
 			ChkdString str;
-			for ( u32 i=0; i<chkd.maps.curr->numStrSlots(); i++ )
+			for ( u32 i=0; i<CM->strSectionCapacity(); i++ )
 			{
-				if ( chkd.maps.curr->GetString(str, i) && str.size() > 0 )
+				if ( CM->GetString(str, i) && str.size() > 0 )
 					outFile << i << ": " << str << "\r\n";
 			}
 			outFile.close();
@@ -278,12 +278,12 @@ void StringEditorWindow::addUseItem(std::string str, u32 amount)
 bool StringEditorWindow::updateString(u32 stringNum)
 {
 	ChkdString editStr;
-	if ( chkd.maps.curr != nullptr && editString.GetEditText(editStr) && chkd.maps.curr->FindDifference(editStr, stringNum) )
+	if ( CM != nullptr && editString.GetEditText(editStr) && CM->FindDifference(editStr, stringNum) )
 	{
-		if ( chkd.maps.curr->editString<u32>(editStr, stringNum, chkd.maps.curr->isExtendedString(stringNum), false) )
+		if ( CM->editString<u32>(editStr, stringNum, CM->isExtendedString(stringNum), false) )
 		{
-			chkd.maps.curr->notifyChange(false);
-			if ( chkd.maps.curr->stringUsedWithLocs(currSelString) )
+			CM->notifyChange(false);
+			if ( CM->stringUsedWithLocs(currSelString) )
 				chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 			editString.RedrawThis();
 			return true;

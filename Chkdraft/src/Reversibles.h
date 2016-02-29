@@ -11,7 +11,7 @@ class Reversible
 		virtual int32_t Count() = 0;
 };
 
-#define ReversiblePtr std::shared_ptr<Reversible>
+typedef std::shared_ptr<Reversible> ReversiblePtr;
 
 class ReversibleAction : public Reversible
 {
@@ -35,6 +35,6 @@ class ReversibleActions : public Reversible
 		bool reversed;
 };
 
-#define ReversibleActionsPtr std::shared_ptr<ReversibleActions>
+typedef std::shared_ptr<ReversibleActions> ReversibleActionsPtr;
 
 #endif

@@ -33,7 +33,7 @@ class GridViewControl : public ListViewControl
 		virtual void adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd);
 		virtual void CellClicked(int x, int y);
 
-		bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, u32 id);
+		bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
 		bool AddColumn(int insertAt, const char* title, int width, int alignmentFlags);
 		void AddRow(int numColumns, LPARAM lParam);
 		void RemoveRow(int rowNum);

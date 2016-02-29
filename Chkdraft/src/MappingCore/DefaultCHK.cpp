@@ -220,7 +220,7 @@ bool Get_COLR(buffer &c)
 
 bool Get_PUPx(buffer &c)
 {
-	return c.addStr("PUPx\16	\0\0", 8)
+	return c.addStr("PUPx\16\t\0\0", 8)
 		&& c.add<u8>(0, 1464)
 		&& c.add<u8>(3, 16)
 		&& c.addStr("\1\1\0\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\0\0\1\0\1\0\1\1\1\1", 39)

@@ -66,8 +66,8 @@ bool getThreeCharOctVal(const char* firstCharPtr, u8 &value)
 		firstCharPtr[1] >= '0' && firstCharPtr[1] <= '7' &&
 		firstCharPtr[2] >= '0' && firstCharPtr[2] <= '7' )
 	{
-		value = (u8)(firstCharPtr[0] - '0');
-		value += (u8)(firstCharPtr[1] - '0');
+		value = (u8)((firstCharPtr[0] - '0') << 6);
+		value += (u8)((firstCharPtr[1] - '0') << 3);
 		value += (u8)(firstCharPtr[2] - '0');
 		return true;
 	}

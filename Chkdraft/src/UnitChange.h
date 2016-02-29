@@ -6,13 +6,13 @@
 class UnitChange : public ReversibleAction
 {
 	public:
-		UnitChange(u16 unitIndex, u8 field, u32 data);
+		UnitChange(u16 unitIndex, ChkUnitField field, u32 data);
 		virtual void Reverse(void *guiMap);
 		virtual int32_t GetType();
 
 	private:
 		u16 unitIndex;
-		u8 field;
+		ChkUnitField field;
 		u32 data;
 };
 
