@@ -2210,7 +2210,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
 			{
 				isptr += 2;
 				if (unk_arg2) break;
-				u16 frame = is_get(u16, isptr - 2) + chkd.maps.curr->getTileset();
+				u16 frame = is_get(u16, isptr - 2) + map.getTileset();
 				if (frame >= (image->GRPFile->numFrames() & 0x7FFF)) break;
 				ISCRIPT_PlayFrame(image, frame);
 				break;
@@ -3729,7 +3729,7 @@ void Graphics::InitializeImageData(ImageNode* image, SpriteNode* sprite, int ima
 		}
 		else // More error checking is probably good
 		{
-			image->coloringData.effect = &chkd.scData.tilesets.set[chkd.maps.curr->getTileset()].remap[imagesdat->Remapping - 1]; // No 0 entry, so -1
+			image->coloringData.effect = &chkd.scData.tilesets.set[map.getTileset()].remap[imagesdat->Remapping - 1]; // No 0 entry, so -1
 		}
 	}
 	return;
@@ -4823,7 +4823,7 @@ void Graphics::updateTrans50PlayerColors(u8 paletteType, u8 playerID) // unknown
 	if (paletteType >= DRAW_CLOAK && paletteType <= DRAW_DECLOAK) // Is Cloaked ?
 	{
 		// Get pointer so we don't have this whole line, every time
-		u8* trans50 = (u8*)chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK].pcxDat.getPtr(0);
+		u8* trans50 = (u8*)chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK].pcxDat.getPtr(0);
 
 		for (int i = 0; i < 8; i++) // For each color in the player color
 		{	
@@ -4842,7 +4842,7 @@ void Graphics::drawImage(ChkdBitmap& bitmap, ImageNode* image)
 		((image->flags & 1) /*|| isImageRefreshable(image)*/)) // Is refreshable? Probably.
 	{
 		RECT grpBounds = { image->grpBounds.left, image->grpBounds.top, image->grpBounds.right, image->grpBounds.bottom };
-		(this->*image->renderFunction)(bitmap, &chkd.scData.tilesets.set[chk.getTileset()].wpe,
+		(this->*image->renderFunction)(bitmap, &chkd.scData.tilesets.set[map.getTileset()].wpe,
 			image->screenPosition.x, image->screenPosition.y, image->GRPFile, image->frameIndex,
 			&grpBounds, image->coloringData);
 	}
@@ -5247,7 +5247,7 @@ void Graphics::imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 void Graphics::imageRenderFxn5_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Visioned Cloaking/Decloaking Draw -- Draws trans50 effect with GRP, then parts of GRP based on cloakingTable
 {
-	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
+	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK - 1]);
 	imageRenderFxn5_2__0_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
 }
 
@@ -5262,7 +5262,7 @@ void Graphics::imageRenderFxn5_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
 void Graphics::imageRenderFxn6_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Visioned Cloaked Draw -- Draws GRP with trans50 remapping table
 {
-	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
+	imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK - 1]);
 }
 
 void Graphics::imageRenderFxn6_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
@@ -5583,7 +5583,7 @@ void Graphics::imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
 	u32 bitmapIndex = screenWidth * y + x;
 	u32 effect;
 
-	buffer& dark = chkd.scData.tilesets.set[chk.getTileset()].dark.pcxDat;
+	buffer& dark = chkd.scData.tilesets.set[map.getTileset()].dark.pcxDat;
 
 	u8* lineDat;
 	u8 compSect;
@@ -5764,7 +5764,7 @@ void Graphics::imageRenderFxn16_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
 // Hallucination Draw -- Fills grpReindexing table with shift.pcx data, then calls Normal Draw
 {
 	u8 tmp[0x100];
-	PCX* shift = &chkd.scData.tilesets.set[chk.getTileset()].shift;
+	PCX* shift = &chkd.scData.tilesets.set[map.getTileset()].shift;
 	for (int i = 0; i < 0x100; i++)
 	{
 		tmp[i] = grpReindexing[i];

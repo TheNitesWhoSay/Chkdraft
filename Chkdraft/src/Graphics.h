@@ -461,6 +461,7 @@ class Graphics
 		bool addUnit(ChkUnit* unit); // Adds unit node and unit to graphic list
 		bool insertUnit(u16 index, ChkUnit* unit); // Adds unit node and inserts in to graphic list
 		void removeUnit(int index); // Deletes unit node and removes from graphic list
+		void removeAllUnits(); // Deletes and removes every unit node from the graphic list
 		bool recreateUnit(int index, ChkUnit* unit); // Recreates the unit at index in the graphic list, such as for when entirely changing a unit's type
 		void updateUnit(int index, ChkUnit* unit); // Used for stat changes, etc.
 

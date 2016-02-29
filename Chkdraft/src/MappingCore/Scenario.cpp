@@ -229,10 +229,10 @@ bool Scenario::insertUnit(u16 index, ChkUnit &unit)
 		return UNIT().insert<ChkUnit>(UNIT_STRUCT_SIZE*(u32)index, unit);
 }
 
-/*bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
+bool Scenario::getUnit(ChkUnit* &unitRef, u16 index)
 {
 	return UNIT().getPtr(unitRef, index*UNIT_STRUCT_SIZE, UNIT_STRUCT_SIZE);
-}*/
+}
 
 bool Scenario::HasLocationSection()
 {

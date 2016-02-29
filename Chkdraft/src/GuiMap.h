@@ -108,7 +108,13 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 					void Scroll(bool scrollX, bool scrollY, bool validateBorder);
 
 
-					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags);
+					virtual bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags);
+					virtual bool addUnit(ChkUnit unit);
+					virtual bool deleteUnit(u16 index);
+					virtual bool insertUnit(u16 index, ChkUnit &unit);
+					void UnitAdded();
+					void UnitInserted(u16 index);
+					void UnitDeleted(u16 index);
 					bool doAnimation();
 
 /*	   Misc  	*/	void setMapId(u16 mapId);

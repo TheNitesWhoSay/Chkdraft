@@ -88,13 +88,13 @@ public:
 
 /*	  Units		*/	u16 numUnits(); // Returns number of units in UNIT section
 					ChkUnit getUnit(u16 index);
-					bool insertUnit(u16 index, ChkUnit &unit);
-					//bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
-					bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
-                    bool addUnit(ChkUnit unit);
+					virtual bool insertUnit(u16 index, ChkUnit &unit);
+					bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
+					virtual bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
+					virtual bool addUnit(ChkUnit unit);
 					bool getUnitName(RawString &dest, u16 unitID);
 					bool getUnitName(ChkdString &dest, u16 unitID);
-					bool deleteUnit(u16 index);
+					virtual bool deleteUnit(u16 index);
                     bool SwapUnits(u16 firstIndex, u16 secondIndex);
 					u32 GetUnitFieldData(u16 unitIndex, ChkUnitField field);
 					bool SetUnitFieldData(u16 unitIndex, ChkUnitField field, u32 data);

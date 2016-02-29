@@ -784,6 +784,15 @@ void Graphics::removeUnit(int index)
 	UNITGraphics.erase(UNITGraphics.begin() + index);
 }
 
+void Graphics::removeAllUnits()
+{
+	for ( int i = 0; i < UNITGraphics.size(); i++ )
+	{
+		UnitDestructor(UNITGraphics[i]);
+		UNITGraphics.erase(UNITGraphics.begin()+i);
+	}
+}
+
 bool Graphics::recreateUnit(int index, ChkUnit* unit)
 {
 	UnitNode* newUnit = UNITGraphics[index];
