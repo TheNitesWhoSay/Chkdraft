@@ -42,26 +42,24 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			{
 				if ( chkd.maps.NewMap(width, height, tileset, terrain, triggers) )
 				{
-					chkd.maps.curr->Scroll(SCROLL_X | SCROLL_Y);
+                    CM->Scroll(true, true, false);
 
 					// Tiling Code
 					u16 tilenum = 0;
-					u16 xSize = chkd.maps.curr->XSize();
-					for ( u32 xStart = 0; xStart<chkd.maps.curr->XSize(); xStart += 16 )
+					u16 xSize = CM->XSize();
+					for ( u32 xStart = 0; xStart<CM->XSize(); xStart += 16 )
 					{
-						for ( u16 yc = 0; yc<chkd.maps.curr->YSize(); yc++ )
+						for ( u16 yc = 0; yc<CM->YSize(); yc++ )
 						{
 							for ( u16 xc = (u16)xStart; xc<xStart + 16; xc++ )
 							{
-								u32 location = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
-								chkd.maps.curr->TILE().replace<u16>(location, tilenum);
-								chkd.maps.curr->MTXM().replace<u16>(location, tilenum);
+                                CM->SetTile(xc, yc, tilenum);
 								tilenum++;
 							}
 						}
 					}
 
-					chkd.maps.curr->Redraw(true);
+					CM->Redraw(true);
 				}
 				EndDialog(hWnd, ID_CREATEMAP);
 			}

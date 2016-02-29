@@ -52,19 +52,19 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
 	if ( includeTree )
 	{
 		cuwpTree.EmptySubTree(NULL);
-		int cuwpCapacity = chkd.maps.curr->CuwpCapacity();
+		int cuwpCapacity = CM->CuwpCapacity();
 		for ( int i = 0; i < cuwpCapacity; i++ )
 		{
-			if ( chkd.maps.curr->IsCuwpUsed(i) )
+			if ( CM->IsCuwpUsed(i) )
 				cuwpTree.InsertTreeItem(NULL, std::string("CUWP #" + std::to_string(i)).c_str(), i);
 			else
 				cuwpTree.InsertTreeItem(NULL, std::string("(#" + std::to_string(i) + ")").c_str(), i);
 		}
 	}
 
-	if ( selectedCuwp != -1 && chkd.maps.curr->GetCuwp(selectedCuwp, cuwp) )
+	if ( selectedCuwp != -1 && CM->GetCuwp(selectedCuwp, cuwp) )
 	{
-		checkUsed.SetCheck(chkd.maps.curr->IsCuwpUsed(selectedCuwp));
+		checkUsed.SetCheck(CM->IsCuwpUsed(selectedCuwp));
 		editHitpointPercent.SetEditNum<u8>(cuwp.percentHitpoints);
 		editManaPercent.SetEditNum<u8>(cuwp.percentEnergyPoints);
 		editShieldPercent.SetEditNum<u8>(cuwp.percentShieldPoints);
@@ -188,7 +188,7 @@ void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
 	ChkCuwp cuwp = {};
-	if ( chkd.maps.curr->GetCuwp(selectedCuwp, cuwp) )
+	if ( CM->GetCuwp(selectedCuwp, cuwp) )
 	{
 		switch ( idFrom )
 		{
@@ -198,7 +198,7 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 			case CheckHallucinated: cuwp.SetUnitIsHallucinated(checkHallucinated.isChecked()); break;
 			case CheckCloaked: cuwp.SetUnitIsCloaked(checkCloaked.isChecked()); break;
 		}
-		chkd.maps.curr->ReplaceCuwp(cuwp, selectedCuwp);
+		CM->ReplaceCuwp(cuwp, selectedCuwp);
 	}
 	std::cout << "CUWP Notify Button Clicked" << std::endl;
 }

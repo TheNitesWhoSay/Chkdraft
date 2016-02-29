@@ -1,7 +1,5 @@
 #include "EditControl.h"
-#include <iostream>
 #include <type_traits>
-#include <cstring>
 
 EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(false)
 {
@@ -48,34 +46,36 @@ bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, 
 										 hParent, (HMENU)id, true );
 }
 
-void EditControl::SetForwardArrowKeys(bool forwardArrowKeys)
+void EditControl::SetForwardArrowKeys(bool forwardArrowKeyToParent)
 {
-	this->forwardArrowKeys = forwardArrowKeys;
+	forwardArrowKeys = forwardArrowKeyToParent;
 }
 
-void EditControl::SetStopForwardOnClick(bool stopFowardingOnClick)
+void EditControl::SetStopForwardOnClick(bool stopForwardingKeysOnClick)
 {
-	this->stopFowardingOnClick = stopFowardingOnClick;
+	this->stopFowardingOnClick = stopForwardingKeysOnClick;
 }
 
 bool EditControl::SetText(const char* newText)
 {
-	return SetWindowText(getHandle(), newText) != 0;
+	if ( getHandle() == ::GetFocus() )
+	{
+		DWORD selStart = 0, selEnd = 0;
+		::SendMessage(getHandle(), EM_GETSEL, (WPARAM)&selStart, (WPARAM)&selEnd);
+		bool success = ::SetWindowText(getHandle(), newText) != 0;
+		if ( success )
+			::SendMessage(getHandle(), EM_SETSEL, selStart, selEnd);
+
+		return success;
+	}
+	else
+		return ::SetWindowText(getHandle(), newText) != 0;
 }
 
 template <typename numType>
 bool EditControl::SetEditNum(numType num)
 {
-	if ( std::is_signed<numType>::value == true ) // Signed
-	{
-		s32 temp = (s32)num;
-		return SetText(std::to_string(temp).c_str());
-	}
-	else // Unsigned or irrelevantly signed
-	{
-		u32 temp = (u32)num;
-		return SetText(std::to_string(temp).c_str());
-	}
+	return SetText(std::to_string(num).c_str());
 }
 template bool EditControl::SetEditNum<u8>(u8 num);
 template bool EditControl::SetEditNum<s8>(s8 num);
@@ -108,6 +108,11 @@ template bool EditControl::SetEditBinaryNum<s16>(s16 num);
 template bool EditControl::SetEditBinaryNum<u32>(u32 num);
 template bool EditControl::SetEditBinaryNum<s32>(s32 num);
 template bool EditControl::SetEditBinaryNum<int>(int num);
+
+void EditControl::SetTextLimit(u32 newLimit)
+{
+	SendMessage(getHandle(), EM_SETLIMITTEXT, (WPARAM)newLimit, 0);
+}
 
 void EditControl::MaximizeTextLimit()
 {
@@ -354,24 +359,24 @@ bool EditControl::SetHexByteString(u8* bytes, u32 numBytes)
 template <typename numType>
 bool EditControl::GetEditNum(numType &dest)
 {
-	bool success = false;
-	char* text;
+	std::string text;
 	if ( GetEditText(text) )
 	{
-		int temp;
-		if ( temp = atoi(text) )
+		errno = 0;
+		char* endPtr = nullptr;
+		long long temp = std::strtoll(text.c_str(), &endPtr, 0);
+		if ( temp != 0 )
 		{
-			dest = temp;
-			success = true;
+			dest = (numType)temp;
+			return true;
 		}
-		else if ( std::strlen(text) > 0 && text[0] == '0' )
+		else if ( errno == 0 && endPtr == &text[text.size()] )
 		{
 			dest = 0;
-			success = true;
+			return true;
 		}
-		delete[] text;
 	}
-	return success;
+	return false;
 }
 template bool EditControl::GetEditNum<u8>(u8 &dest);
 template bool EditControl::GetEditNum<s8>(s8 &dest);
@@ -422,7 +427,7 @@ LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 					DWORD selStart, selEnd;
 					SendMessage(hWnd, EM_GETSEL, (WPARAM)&selStart, (LPARAM)&selEnd);
 					SendMessage(hWnd, EM_SETSEL, (WPARAM)selStart, (LPARAM)selEnd);
-					SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"	");
+					SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)"\t");
 					return 0; // Prevent default selection update
 				}
 				break;

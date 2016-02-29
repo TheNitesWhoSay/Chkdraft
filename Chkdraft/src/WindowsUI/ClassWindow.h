@@ -36,6 +36,8 @@ class ClassWindow : public WindowsItem
 											int x, int y, int nWidth, int nHeight,
 											HWND hWndParent, HMENU hMenu );
 
+					void DestroyThis();
+
 					/** Attempts to create a window as an MDI child
 						The variables are used the same as in CreateMDIWindow */
 					bool CreateMdiChild( LPCSTR lpWindowName, DWORD dwStyle,
@@ -45,8 +47,8 @@ class ClassWindow : public WindowsItem
 					/** This method attempts to turn the current window into a MDI frame
 						by creating a client window (out of MdiClient) and changing message
 						handling so DefFrameProc is called for the new client window */
-					bool BecomeMDIFrame( MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
-						int X, int Y, int nWidth, int nHeight, HWND hParent, HMENU hMenu );
+					bool BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
+						int X, int Y, int nWidth, int nHeight, HMENU hMenu);
 
 /*  Overridden  */	/** This method is called when WM_NOTIFY is sent to the
 						window, override this to respond to notifications */
@@ -57,7 +59,9 @@ class ClassWindow : public WindowsItem
 					virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
 					virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
 					virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
-					virtual void NotifyEditFocusLost(); // Sent when focus changes or the window is hidden
+					virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); /* Sent when focus changes or the window is hidden;
+																					if this is the result of the window being hidden,
+																					idFrom = 0 and hWndFrom = NULL */
 					virtual void NotifyWindowHidden(); // Sent when the window is hidden
 					virtual void NotifyWindowShown(); // Sent when the window is shown
 
@@ -69,13 +73,18 @@ class ClassWindow : public WindowsItem
 						Override this in descendant classes to handle window messages */
 					virtual LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
 	private:
 
 /*     Data     */	HWND hWndMDIClient; // Handle to the MDI client if applicable, NULL otherwise
 					enum WindowTypes { None, Regular, MDIFrame, MDIChild, Dialog };
 					WindowTypes windowType; // Specifies what type of window this is, see enumerated WindowTypes
+					bool allowEditNotify; // Used to prevent edit update recursion
 
-/*   Internal   */	/** This method is used until WM_NCCREATE is handled, at which point
+/*   Internal   */	/* Calls NotifyEditUpdated and ensures the function is not called again until it returns */
+					void SendNotifyEditUpdated(int idFrom, HWND hWndFrom);
+
+					/** This method is used until WM_NCCREATE is handled, at which point
 					    ForwardWndProc is used to forward window messages to the WndProc method */
 					static LRESULT CALLBACK SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

@@ -1,6 +1,13 @@
 #include "LeftBar.h"
 #include "Chkdraft.h"
 
+enum ID
+{
+    IDR_MAIN_TREE,
+    IDR_LEFT_BAR,
+    IDR_MINIMAP
+};
+
 bool LeftBar::CreateThis(HWND hParent)
 {
 	return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
@@ -11,30 +18,30 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
 	if ( nmhdr->code == TVN_SELCHANGED && ((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
 	{
-		if ( chkd.maps.curr != nullptr )
+		if ( CM != nullptr )
 		{
-			LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_TYPE,
-				   itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TREE_ITEM_DATA;
+			LPARAM itemType = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeTypePortion,
+				   itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
 			switch ( itemType )
 			{
 				//case TREE_TYPE_ROOT: // Same as category
-			case TREE_TYPE_CATEGORY: if ( chkd.maps.curr->getLayer() != itemData ) chkd.maps.ChangeLayer(u8(itemData)); break;
-			case TREE_TYPE_ISOM: if ( chkd.maps.curr->getLayer() != LAYER_TERRAIN ) chkd.maps.ChangeLayer(LAYER_TERRAIN); break;
-			case TREE_TYPE_UNIT: if ( chkd.maps.curr->getLayer() != LAYER_UNITS ) chkd.maps.ChangeLayer(LAYER_UNITS); break;
-			case TREE_TYPE_LOCATION: if ( chkd.maps.curr->getLayer() != LAYER_LOCATIONS ) chkd.maps.ChangeLayer(LAYER_LOCATIONS); break;
-			case TREE_TYPE_SPRITE: if ( chkd.maps.curr->getLayer() != LAYER_SPRITES ) chkd.maps.ChangeLayer(LAYER_SPRITES); break;
-			case TREE_TYPE_DOODAD: if ( chkd.maps.curr->getLayer() != LAYER_DOODADS ) chkd.maps.ChangeLayer(LAYER_DOODADS); break;
+			case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break;
+            case TreeTypeIsom: if ( CM->getLayer() != Layer::Terrain ) chkd.maps.ChangeLayer(Layer::Terrain); break;
+            case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
+            case TreeTypeLocation: if ( CM->getLayer() != Layer::Locations ) chkd.maps.ChangeLayer(Layer::Locations); break;
+            case TreeTypeSprite: if ( CM->getLayer() != Layer::Sprites ) chkd.maps.ChangeLayer(Layer::Sprites); break;
+            case TreeTypeDoodad: if ( CM->getLayer() != Layer::Doodads ) chkd.maps.ChangeLayer(Layer::Doodads); break;
 			}
 
 			switch ( itemType )
 			{
-			case TREE_TYPE_UNIT: // itemData == UnitID
+			case TreeTypeUnit: // itemData == UnitID
 			{
-				chkd.maps.curr->selections().removeUnits();
+				CM->clearSelectedUnits();
 				chkd.maps.endPaste();
-				if ( chkd.maps.curr->getLayer() != LAYER_UNITS )
-					chkd.maps.ChangeLayer(LAYER_UNITS);
+				if ( CM->getLayer() != Layer::Units )
+					chkd.maps.ChangeLayer(Layer::Units);
 
 				ChkUnit unit = {};
 				unit.energy = 100;
@@ -43,7 +50,7 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 				unit.id = u16(itemData);
 				unit.link = 0;
 				unit.linkType = 0;
-				unit.owner = chkd.maps.curr->currPlayer();
+				unit.owner = CM->getCurrPlayer();
 				unit.resources = 0;
 				unit.serial = 0;
 				unit.shields = 100;
@@ -53,17 +60,17 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 				unit.validFlags = 0;
 				unit.xc = 0;
 				unit.yc = 0;
-				chkd.maps.clipboard.addQuickUnit(&unit);
+				chkd.maps.clipboard.addQuickUnit(unit);
 				chkd.maps.startPaste(true);
-				SetFocus(chkd.maps.curr->getHandle());
+				SetFocus(CM->getHandle());
 			}
 			break;
 
-			case TREE_TYPE_LOCATION: // itemData = location index
-				chkd.maps.curr->selections().selectLocation(u16(itemData));
+			case TreeTypeLocation: // itemData = location index
+				CM->GetSelections().selectLocation(u16(itemData));
 				if ( chkd.locationWindow.getHandle() != nullptr )
 					chkd.locationWindow.RefreshLocationInfo();
-				chkd.maps.curr->viewLocation(u16(itemData));
+				CM->viewLocation(u16(itemData));
 				break;
 			}
 		}
@@ -75,8 +82,8 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 		item.hItem = TreeView_GetSelection(nmhdr->hwndFrom);
 		if ( item.hItem != NULL && TreeView_GetItem(nmhdr->hwndFrom, &item) == TRUE )
 		{
-			LPARAM itemType = item.lParam&TREE_ITEM_TYPE;
-			if ( itemType == TREE_TYPE_LOCATION )
+			LPARAM itemType = item.lParam&TreeTypePortion;
+			if ( itemType == TreeTypeLocation )
 			{
 				if ( chkd.locationWindow.getHandle() == NULL )
 				{
@@ -103,8 +110,8 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_SIZE:
 			{
-				HWND hTree	  = GetDlgItem(hWnd , IDR_MAIN_TREE	 ), 
-					 hMiniMap = GetDlgItem(hWnd , IDR_MINIMAP	 );
+                HWND hTree = mainTree.getHandle();
+                HWND hMiniMap = miniMap.getHandle();
 				RECT rcMain, rcTool, rcStatus, rcLeftBar;
 
 				//Get the size of the client area, toolbar, status bar, and left bar
@@ -143,13 +150,13 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_GETMINMAXINFO:
 			{
 				LPMINMAXINFO minmax = (LPMINMAXINFO)lParam;
-							 minmax -> ptMinTrackSize.x = 151;
+							 minmax->ptMinTrackSize.x = 151;
 			}
 			break;
 
 		case WM_CREATE:
 			{
-				miniMap.CreateThis(hWnd);
+				miniMap.CreateThis(hWnd, IDR_MINIMAP);
 
 				if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, IDR_MAIN_TREE) )
 				{

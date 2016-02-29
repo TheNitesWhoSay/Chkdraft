@@ -33,7 +33,9 @@ class ClassDialog : public WindowsItem
 		virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
 		virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
 		virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
-		virtual void NotifyEditFocusLost(); // Sent when focus changes or the window is hidden
+		virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); /* Sent when focus changes or the window is hidden;
+																		if this is the result of the window being hidden,
+																		idFrom = 0 and hWndFrom = NULL */
 		virtual void NotifyWindowHidden(); // Sent when the window is hidden
 		virtual void NotifyWindowShown(); // Sent when the window is shown
 
@@ -45,7 +47,13 @@ class ClassDialog : public WindowsItem
 		Override this in descendant classes to handle dialog messages */
 		virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
 	private:
+
+		bool allowEditNotify; // Used to prevent edit update recursion
+
+		/* Calls NotifyEditUpdated and ensures the function is not called again until it returns */
+		void SendNotifyEditUpdated(int idFrom, HWND hWndFrom);
 
 		/** This method is used by Dialog windows until WM_INITDIALOG is handled, at which point
 		ForwardDlgProc is used to forward messages to the WndProc method */

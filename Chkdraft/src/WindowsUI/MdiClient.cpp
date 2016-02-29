@@ -20,7 +20,7 @@ bool MdiClient::CreateMdiClient( HANDLE hWindowMenu, UINT idFirstChild, DWORD dw
 
 HWND MdiClient::getActive()
 {
-	return (HWND)SendMessage(getHandle(), WM_MDIGETACTIVE, 0, 0);
+	return (HWND)SendMessage(getHandle(), WM_MDIGETACTIVE, 0, NULL);
 }
 
 void MdiClient::cascade()

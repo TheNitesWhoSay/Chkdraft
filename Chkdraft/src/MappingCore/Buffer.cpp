@@ -202,6 +202,14 @@ bool buffer::has(char character, u32 location)
 		return false;
 }
 
+bool buffer::hasCaseless(char character, u32 location)
+{
+    if ( this != nullptr && location < sizeUsed && toupper(data[location]) == toupper(character) )
+        return true;
+    else
+        return false;
+}
+
 bool buffer::has(const char* str, u32 location, u32 size)
 {
 	if ( this != nullptr && location+size > location && location+size <= sizeUsed )

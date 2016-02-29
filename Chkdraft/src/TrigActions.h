@@ -47,8 +47,8 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
 
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-		void ChangeActionType(Action &action, u8 newId);
-		bool TransformAction(Action &action, u8 newId);
+		void ChangeActionType(Action &action, ActionId newId);
+		bool TransformAction(Action &action, ActionId newId);
 		void ClearArgument(Action &action, u8 argNum);
 		void UpdateActionName(u8 actionNum, const std::string &newText);
 		void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText);

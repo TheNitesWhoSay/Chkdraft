@@ -40,8 +40,8 @@ class TrigConditionsWindow : public ClassWindow, public ICndActGridUser
 
 		LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 		LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-		void ChangeConditionType(Condition &condition, u8 newId);
-		bool TransformCondition(Condition &condition, u8 newId);
+		void ChangeConditionType(Condition &condition, ConditionId newId);
+		bool TransformCondition(Condition &condition, ConditionId newId);
 		void ClearArgument(Condition &condition, u8 argNum);
 		void UpdateConditionName(u8 conditionNum, const std::string &newText);
 		void UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText);

@@ -1,6 +1,7 @@
 #include "Selections.h"
+#include "GuiMap.h"
 
-SELECTIONS::SELECTIONS() : moved(false), numRecentLocations(0), locationFlags(0)
+Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0)
 {
 	startDrag.x = -1;
 	startDrag.y = -1;
@@ -8,25 +9,25 @@ SELECTIONS::SELECTIONS() : moved(false), numRecentLocations(0), locationFlags(0)
 	endDrag.y = -1;
 }
 
-SELECTIONS::~SELECTIONS()
+Selections::~Selections()
 {
 	removeTiles();
 	removeUnits();
 }
 
-void SELECTIONS::setStartDrag(s32 x, s32 y)
+void Selections::setStartDrag(s32 x, s32 y)
 {
 	startDrag.x = x;
 	startDrag.y = y;
 }
 
-void SELECTIONS::setEndDrag(s32 x, s32 y)
+void Selections::setEndDrag(s32 x, s32 y)
 {
 	endDrag.x = x;
 	endDrag.y = y;
 }
 
-void SELECTIONS::setDrags(s32 x, s32 y)
+void Selections::setDrags(s32 x, s32 y)
 {
 	startDrag.x = x;
 	startDrag.y = y;
@@ -34,12 +35,12 @@ void SELECTIONS::setDrags(s32 x, s32 y)
 	endDrag.y = y;
 }
 
-void SELECTIONS::removeTile(TileNode* &tile)
+void Selections::removeTile(TileNode* &tile)
 {
 	removeTile(tile->xc, tile->yc);
 }
 
-void SELECTIONS::removeTile(u16 xc, u16 yc)
+void Selections::removeTile(u16 xc, u16 yc)
 {
 	auto toRemove = selTiles.end();
 	for ( auto it = selTiles.begin(); it != selTiles.end(); ++it )
@@ -47,13 +48,13 @@ void SELECTIONS::removeTile(u16 xc, u16 yc)
 		// If an edge is matched to the tile being removed, un-match the edge
 		if ( it->yc == yc ) // Tile is in the same row
 		{
-			if ( it->xc == xc - 1 ) it->neighbors |= NEIGHBOR_RIGHT; // OR 0100, flips on the RIGHT edge bit
-			else if ( it->xc == xc + 1 ) it->neighbors |= NEIGHBOR_LEFT;	// OR 0001, flips on the LEFT edge bit
+			if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
+			else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
 		}
 		else if ( it->xc == xc ) // Tile is in the same column
 		{
-			if ( it->yc == yc - 1 ) it->neighbors |= NEIGHBOR_BOTTOM; // OR 1000, flips on the BOTTOM edge bit
-			else if ( it->yc == yc + 1 ) it->neighbors |= NEIGHBOR_TOP;	 // OR 0010, flips on the TOP edge bit
+			if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
+			else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
 		}
 
 		if ( it->xc == xc && it->yc == yc )
@@ -64,12 +65,12 @@ void SELECTIONS::removeTile(u16 xc, u16 yc)
 		selTiles.erase(toRemove);
 }
 
-void SELECTIONS::addTile(u16 value, u16 xc, u16 yc)
+void Selections::addTile(u16 value, u16 xc, u16 yc)
 {
 	TileNode tile;
 	tile.xc = xc;
 	tile.yc = yc;
-	tile.neighbors = ALL_NEIGHBORS;
+	tile.neighbors = TileNeighbor::All;
 	tile.value = value;
 
 	for ( auto &selTile : selTiles )
@@ -84,26 +85,26 @@ void SELECTIONS::addTile(u16 value, u16 xc, u16 yc)
 			}
 			else if ( selTile.xc == xc - 1 ) // 'track' is just left of 'tile'
 			{
-				tile.neighbors &= NEIGHBOR_xLEFT; // AND 1110, flips off the LEFT edge bit
-				selTile.neighbors &= NEIGHBOR_xRIGHT; // AND 1011, flips off the RIGHT edge bit
+				(u8 &)tile.neighbors &= (u8)TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
+				(u8 &)selTile.neighbors &= (u8)TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
 			}
 			else if ( selTile.xc == xc + 1 ) // 'track' is just right of 'tile'
 			{
-				tile.neighbors &= NEIGHBOR_xRIGHT; // AND 1011, flips off the RIGHT edge bit
-				selTile.neighbors &= NEIGHBOR_xLEFT; // AND 1110, flips off the LEFT edge bit
+				(u8 &)tile.neighbors &= (u8)TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
+				(u8 &)selTile.neighbors &= (u8)TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
 			}
 		}
 		else if ( selTile.xc == xc ) // Tile is in same column
 		{
 			if ( selTile.yc == yc - 1 ) // 'track' is just above 'tile'
 			{
-				tile.neighbors &= NEIGHBOR_xTOP; // AND 1101, flips off the TOP edge bit
-				selTile.neighbors &= NEIGHBOR_xBOTTOM; // AND 0111, flips off the BOTTOM edge bit
+                (u8 &)tile.neighbors &= (u8)TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
+                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
 			}
 			else if ( selTile.yc == yc + 1 ) // 'track' is just below 'tile'
 			{
-				tile.neighbors &= NEIGHBOR_xBOTTOM; // AND 0111, flips off the BOTTOM edge bit
-				selTile.neighbors &= NEIGHBOR_xTOP; // AND 1101, flips off the TOP edge bit
+                (u8 &)tile.neighbors &= (u8)TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
+                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
 			}
 		}
 	}
@@ -111,7 +112,7 @@ void SELECTIONS::addTile(u16 value, u16 xc, u16 yc)
 	selTiles.insert(selTiles.end(), tile);
 }
 
-void SELECTIONS::addTile(u16 value, u16 xc, u16 yc, u8 neighbors)
+void Selections::addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors)
 {
 	TileNode tile;
 	tile.value = value;
@@ -122,36 +123,35 @@ void SELECTIONS::addTile(u16 value, u16 xc, u16 yc, u8 neighbors)
 	selTiles.insert(selTiles.end(), tile);
 }
 
-void SELECTIONS::removeTiles()
+void Selections::removeTiles()
 {
 	selTiles.clear();
 }
 
-u16 SELECTIONS::getSelectedLocation()
+u16 Selections::getSelectedLocation()
 {
 	return selectedLocation;
 }
 
-void SELECTIONS::selectLocation(u16 index)
+void Selections::selectLocation(u16 index)
 {
 	selectedLocation = index;
 	numRecentLocations = 1;
 	recentLocations[0] = u8(index);
 }
 
-void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canSelectAnywhere)
+void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
-	buffer& MRGN = chk->MRGN();
-	if ( MRGN.exists() )
+	if ( map.HasLocationSection() )
 	{
 		ChkLocation* loc;
-		u16 numLocations = u16(MRGN.size()/CHK_LOCATION_SIZE);
+        u16 numLocations = map.locationCapacity();
 		u16 firstRecentlySelected = NO_LOCATION;
 		bool madeSelection = false;
 	
 		for ( u16 i=0; i<numLocations; i++ )
 		{
-			if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && chk->getLocation(loc, i) )
+			if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && map.getLocation(loc, i) )
 			{
 				s32 locLeft = std::min(loc->xc1, loc->xc2),
 					locRight = std::max(loc->xc1, loc->xc2),
@@ -215,25 +215,25 @@ void SELECTIONS::selectLocation(s32 clickX, s32 clickY, Scenario* chk, bool canS
 	}
 }
 
-void SELECTIONS::addUnit(u16 index)
+void Selections::addUnit(u16 index)
 {
 	if ( !unitIsSelected(index) )
 		selUnits.insert(selUnits.begin(), index);
 }
 
-void SELECTIONS::removeUnit(u16 index)
+void Selections::removeUnit(u16 index)
 {
 	auto toErase = std::find(selUnits.begin(), selUnits.end(), index);
 	if ( toErase != selUnits.end() )
 		selUnits.erase(toErase);
 }
 
-void SELECTIONS::removeUnits()
+void Selections::removeUnits()
 {
 	selUnits.clear();
 }
 
-void SELECTIONS::ensureFirst(u16 index)
+void Selections::ensureFirst(u16 index)
 {
 	if ( selUnits.size() > 0 && selUnits[0] != index )
 	{
@@ -246,23 +246,23 @@ void SELECTIONS::ensureFirst(u16 index)
 	}
 }
 
-void SELECTIONS::sendSwap(u16 oldIndex, u16 newIndex)
+void Selections::sendSwap(u16 oldIndex, u16 newIndex)
 {
 	for ( u16 &unitIndex : selUnits )
 	{
 		if ( unitIndex == newIndex )
-			unitIndex = oldIndex | FLAG_SWAPPED;
+			unitIndex = oldIndex | (u16)UnitSortFlags::Swapped;
 		else if ( unitIndex == oldIndex )
 			unitIndex = newIndex;
 	}
 }
 
-void SELECTIONS::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
+void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
 {
 	for ( u16 &unitIndex : selUnits )
 	{
 		if ( unitIndex == newIndex )
-			unitIndex = oldIndex | FLAG_MOVED;
+			unitIndex = oldIndex | (u16)UnitSortFlags::Moved;
 		else if ( newIndex > unitIndex && oldIndex <= unitIndex ) // The moved unit was somewhere ahead of track and is now behind track
 			unitIndex++; // Selected unit index needs to be moved forward
 		else if ( newIndex < unitIndex && oldIndex >= unitIndex ) // The moved unit was somewhere behind track and is now ahead of track
@@ -270,25 +270,25 @@ void SELECTIONS::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved
 	}
 }
 
-void SELECTIONS::finishSwap()
+void Selections::finishSwap()
 {
 	for ( u16 &unitIndex : selUnits )
 	{
-		if ( unitIndex & FLAG_SWAPPED )
-			unitIndex &= UNSWAP_FLAG;
+		if ( unitIndex & (u16)UnitSortFlags::Swapped )
+			unitIndex &= (u16)UnitSortFlags::Unswap;
 	}
 }
 
-void SELECTIONS::finishMove()
+void Selections::finishMove()
 {
 	for ( u16 &unitIndex : selUnits )
 	{
-		if ( unitIndex & FLAG_MOVED )
-			unitIndex &= UNMOVE_FLAG;
+		if ( unitIndex & (u16)UnitSortFlags::Moved )
+			unitIndex &= (u16)UnitSortFlags::Unmove;
 	}
 }
 
-bool SELECTIONS::unitIsSelected(u16 index)
+bool Selections::unitIsSelected(u16 index)
 {
 	for ( u16 &unitIndex : selUnits )
 	{
@@ -298,7 +298,7 @@ bool SELECTIONS::unitIsSelected(u16 index)
 	return false;
 }
 
-u16 SELECTIONS::numUnits()
+u16 Selections::numUnits()
 {
 	if ( selUnits.size() < u16_max )
 		return (u16)selUnits.size();
@@ -306,7 +306,7 @@ u16 SELECTIONS::numUnits()
 		return u16_max;
 }
 
-u16 SELECTIONS::numUnitsUnder(u16 index)
+u16 Selections::numUnitsUnder(u16 index)
 {
 	u16 numUnitsBefore = 0;
 	for ( u16 &unitIndex : selUnits )
@@ -317,17 +317,17 @@ u16 SELECTIONS::numUnitsUnder(u16 index)
 	return numUnitsBefore;
 }
 
-std::vector<TileNode> &SELECTIONS::getTiles()
+std::vector<TileNode> &Selections::getTiles()
 {
 	return selTiles;
 }
 
-TileNode SELECTIONS::getFirstTile()
+TileNode Selections::getFirstTile()
 {
 	TileNode tile;
 	tile.xc = 0;
 	tile.yc = 0;
-	tile.neighbors = 0;
+	tile.neighbors = TileNeighbor::None;
 	tile.value = 0;
 
 	if ( selTiles.size() > 0 )
@@ -341,12 +341,12 @@ TileNode SELECTIONS::getFirstTile()
 	return tile;
 }
 
-std::vector<u16> &SELECTIONS::getUnits()
+std::vector<u16> &Selections::getUnits()
 {
 	return selUnits;
 }
 
-u16 SELECTIONS::getFirstUnit()
+u16 Selections::getFirstUnit()
 {
 	if ( selUnits.size() > 0 )
 		return selUnits[0];
@@ -354,7 +354,7 @@ u16 SELECTIONS::getFirstUnit()
 		return 0;
 }
 
-u16 SELECTIONS::getHighestIndex()
+u16 Selections::getHighestIndex()
 {
 	int highestIndex = -1;
 	for ( u16 &unitIndex : selUnits )
@@ -369,7 +369,7 @@ u16 SELECTIONS::getHighestIndex()
 		return (u16)highestIndex;
 }
 
-u16 SELECTIONS::getLowestIndex()
+u16 Selections::getLowestIndex()
 {
 	u16 highestIndex = u16_max;
 	for ( u16 &unitIndex : selUnits )
@@ -380,7 +380,7 @@ u16 SELECTIONS::getLowestIndex()
 	return highestIndex;
 }
 
-void SELECTIONS::sortUnits(bool ascending)
+void Selections::sortUnits(bool ascending)
 {
 	if ( ascending )
 		std::sort(selUnits.begin(), selUnits.end());

@@ -62,7 +62,7 @@ void TrigGeneralWindow::RefreshWindow(u32 trigIndex)
 	refreshing = true;
 	this->trigIndex = trigIndex;
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		editRawFlags.SetEditBinaryNum<s32>(trigger->internalData);
 		checkPreservedFlag.SetCheck(trigger->preserveTriggerFlagged());
@@ -197,10 +197,10 @@ void TrigGeneralWindow::OnLeave()
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setPreserveTriggerFlagged(preserve);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -208,10 +208,10 @@ void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setDisabled(disabled);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -219,10 +219,10 @@ void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreConditionsOnce(ignoreConditionsOnce);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -230,10 +230,10 @@ void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -241,10 +241,10 @@ void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -252,10 +252,10 @@ void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setIgnoreDefeatDraw(ignoreDefeatDraw);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -263,10 +263,10 @@ void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		trigger->setFlagPaused(paused);
-		chkd.maps.curr->notifyChange(false);
+		CM->notifyChange(false);
 		RefreshWindow(trigIndex);
 	}
 }
@@ -274,10 +274,10 @@ void TrigGeneralWindow::SetPausedTrigger(bool paused)
 void TrigGeneralWindow::ParseRawFlagsText()
 {
 	Trigger* trigger;
-	if ( chkd.maps.curr->getTrigger(trigger, trigIndex) )
+	if ( CM->getTrigger(trigger, trigIndex) )
 	{
 		if ( editRawFlags.GetEditBinaryNum(trigger->internalData) )
-			chkd.maps.curr->notifyChange(false);
+			CM->notifyChange(false);
 		
 		RefreshWindow(trigIndex);
 	}		

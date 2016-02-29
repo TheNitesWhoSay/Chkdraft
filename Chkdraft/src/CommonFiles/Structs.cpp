@@ -1,6 +1,6 @@
 #include "Structs.h"
 
-GRID::GRID() : red(0), green(0), blue(0)
+MapGrid::MapGrid() : red(0), green(0), blue(0)
 {
 	size.x = 0;
 	size.y = 0;

@@ -13,8 +13,8 @@ class StringGuideWindow : public ClassWindow
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
-		TextControl colorPrefix[STRCOLORS_SIZE];
-		TextControl color[STRCOLORS_SIZE];
+		TextControl colorPrefix[numScStringColors];
+		TextControl color[numScStringColors];
 };
 
 #endif

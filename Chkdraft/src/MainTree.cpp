@@ -5,10 +5,10 @@ void MainTree::BuildMainTree()
 {
 	HWND hWnd = getHandle();
 
-	InsertTreeItem(NULL, "Terrain", LAYER_TERRAIN);
-	locTree.AddThis(hWnd, InsertTreeItem(NULL, "Locations", LAYER_LOCATIONS));
-	unitTree.AddThis(hWnd, InsertTreeItem(NULL, "Units", LAYER_UNITS));
+	InsertTreeItem(NULL, "Terrain", (LPARAM)Layer::Terrain);
+	locTree.AddThis(hWnd, InsertTreeItem(NULL, "Locations", (LPARAM)Layer::Locations));
+	unitTree.AddThis(hWnd, InsertTreeItem(NULL, "Units", (LPARAM)Layer::Units));
 	
-	InsertTreeItem(NULL, "Sprites", LAYER_SPRITES);
-	InsertTreeItem(NULL, "Doodads", LAYER_DOODADS);
+	InsertTreeItem(NULL, "Sprites", (LPARAM)Layer::Sprites);
+	InsertTreeItem(NULL, "Doodads", (LPARAM)Layer::Doodads);
 }

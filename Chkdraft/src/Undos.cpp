@@ -1,18 +1,18 @@
-#include "Undo.h"
+#include "Undos.h"
 #include "GuiMap.h"
 
-UNDOS::UNDOS(IObserveUndos &observer) : observer(observer)
+Undos::Undos(IObserveUndos &observer) : observer(observer)
 {
 	
 }
 
-UNDOS::~UNDOS()
+Undos::~Undos()
 {
 	undos.clear();
 	redos.clear();
 }
 
-void UNDOS::AddUndo(ReversiblePtr action)
+void Undos::AddUndo(ReversiblePtr action)
 {
 	if ( action->Count() > 0 )
 	{
@@ -21,7 +21,7 @@ void UNDOS::AddUndo(ReversiblePtr action)
 	}
 }
 
-void UNDOS::doUndo(int32_t type, void *obj)
+void Undos::doUndo(int32_t type, void *obj)
 {
 	ReversiblePtr reversible = popUndo(type);
 
@@ -33,7 +33,7 @@ void UNDOS::doUndo(int32_t type, void *obj)
 	}
 }
 
-void UNDOS::doRedo(int32_t type, void *obj)
+void Undos::doRedo(int32_t type, void *obj)
 {
 	ReversiblePtr reversible = popRedo(type);
 
@@ -45,12 +45,12 @@ void UNDOS::doRedo(int32_t type, void *obj)
 	}
 }
 
-void UNDOS::ResetChangeCount()
+void Undos::ResetChangeCount()
 {
 	changeCounters.clear();
 }
 
-ReversiblePtr UNDOS::popUndo(int32_t type)
+ReversiblePtr Undos::popUndo(int32_t type)
 {
 	auto it = undos.begin();
 	while ( it != undos.end() )
@@ -65,7 +65,7 @@ ReversiblePtr UNDOS::popUndo(int32_t type)
 	return nullptr;
 }
 
-ReversiblePtr UNDOS::popRedo(int32_t type)
+ReversiblePtr Undos::popRedo(int32_t type)
 {
 	auto it = redos.begin();
 	while ( it != redos.end() )
@@ -81,7 +81,7 @@ ReversiblePtr UNDOS::popRedo(int32_t type)
 	return nullptr;
 }
 
-void UNDOS::AdjustChangeCount(int32_t type, int32_t adjustBy)
+void Undos::AdjustChangeCount(int32_t type, int32_t adjustBy)
 {
 	auto typeCounter = changeCounters.find(type);
 	if ( typeCounter != changeCounters.end() )

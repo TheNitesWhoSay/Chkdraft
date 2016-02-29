@@ -9,11 +9,11 @@ class PreservedUnitStats
 	public:
 		PreservedUnitStats();
 		void flushStats();
-		void addStats(SELECTIONS &sel, u8 statField);
+		void addStats(Selections &sel, ChkUnitField statField);
 		void convertToUndo();
 
 	private:
-		u8 field;
+        ChkUnitField field;
 		int numUnits;
 		u32* values;
 };

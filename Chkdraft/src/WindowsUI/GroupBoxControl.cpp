@@ -1,7 +1,5 @@
 #include "GroupBoxControl.h"
 
-#include <string>
-
 bool GroupBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const char* initText, u32 id)
 {
 	return WindowControl::CreateControl( 0, "BUTTON", initText, WS_CHILD|WS_VISIBLE|BS_GROUPBOX,
@@ -10,9 +8,5 @@ bool GroupBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 heig
 
 bool GroupBoxControl::SetText(const std::string& newText)
 {
-	return SetWindowText(getHandle(), newText.c_str()) == TRUE;
-}
-bool GroupBoxControl::SetText(const char* newText)
-{
-	return SetWindowText(getHandle(), (LPCSTR)newText) == TRUE;
+	return SetWindowText(getHandle(), (LPCSTR)newText.c_str()) == TRUE;
 }

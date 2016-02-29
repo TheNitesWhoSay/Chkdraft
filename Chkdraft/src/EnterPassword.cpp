@@ -18,7 +18,7 @@ void EnterPasswordDialog::ButtonLogin()
 	if ( editPassword.GetEditText(password) )
 	{
 		editPassword.SetText("");
-		bool success = chkd.maps.curr->Login(password);
+		bool success = CM->Login(password);
 		password.clear();
 		if ( success )
 		{
@@ -56,7 +56,7 @@ BOOL EnterPasswordDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 		return TRUE;
 		break;
 	case WM_CLOSE:
-		if ( chkd.maps.curr->isProtected() )
+		if ( CM->isProtected() )
 			mb("Map is protected and will be treated as view-only.");
 		ClassDialog::DestroyDialog();
 		break;

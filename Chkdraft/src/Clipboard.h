@@ -3,8 +3,9 @@
 #include "CommonFiles/CommonFiles.h"
 #include "MappingCore/MappingCore.h"
 #include "Selections.h"
-#include "Undo.h"
+#include "Undos.h"
 #include "ScData.h"
+class GuiMap;
 
 void StringToWindowsClipboard(std::string &str);
 
@@ -16,9 +17,9 @@ class PasteTileNode
 		u16 value;
 		s32 xc;
 		s32 yc;
-		u8 neighbors; // Same as in TileNode
+		TileNeighbor neighbors; // Same as in TileNode
 
-		PasteTileNode(u16 value, s32 xc, s32 yc, u8 neighbors) :
+		PasteTileNode(u16 value, s32 xc, s32 yc, TileNeighbor neighbors) :
 			value(value), xc(xc), yc(yc), neighbors(neighbors) { }
 };
 
@@ -29,33 +30,33 @@ class PasteUnitNode
 		s32 xc;
 		s32 yc;
 
-		PasteUnitNode(ChkUnit* unitRef) { std::memcpy(&unit, unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
+		PasteUnitNode(ChkUnit &unitRef) { std::memcpy(&unit, &unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
 
 	private:
 		PasteUnitNode(); // Disallow ctor
 };
 
-class CLIPBOARD
+class Clipboard
 {
 	public:
 
-		CLIPBOARD();
-		~CLIPBOARD();
+        Clipboard();
+		~Clipboard();
 
 		bool hasTiles();
 		bool hasUnits() { return copyUnits.size() > 0; }
-		void copy(SELECTIONS* selection, Scenario* chk, u8 layer);
+		void copy(GuiMap &map, Layer layer);
 		
 		void addQuickTile(u16 index, s32 xc, s32 yc);
 		bool hasQuickTiles() { return quickTiles.size() > 0; }
 
-		void addQuickUnit(ChkUnit* unitRef);
+		void addQuickUnit(ChkUnit &unitRef);
 		bool hasQuickUnits() { return quickUnits.size() > 0; }
 
 		void beginPasting(bool isQuickPaste);
 		void endPasting();
 
-		void doPaste(u8 layer, s32 mapClickX, s32 mapClickY, Scenario* chk, UNDOS& undos, bool allowStack);
+		void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
 
 		std::vector<PasteTileNode> &getTiles();
 		std::vector<PasteUnitNode> &getUnits();

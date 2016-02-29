@@ -1,7 +1,7 @@
 #include "ClassDialog.h"
 #include <CommCtrl.h>
 
-ClassDialog::ClassDialog()
+ClassDialog::ClassDialog() : allowEditNotify(true)
 {
 	WindowClassName().clear();
 }
@@ -33,33 +33,34 @@ bool ClassDialog::DestroyDialog()
 	if ( getHandle() != NULL && EndDialog(getHandle(), IDCLOSE) != 0 )
 	{
 		setHandle(NULL);
+		allowEditNotify = true;
 		return true;
 	}
 	else
 		return false;
 }
 
-BOOL ClassDialog::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+BOOL ClassDialog::DlgNotify(HWND, WPARAM, NMHDR*)
 {
 	return FALSE;
 }
 
-void ClassDialog::NotifyTreeSelChanged(LPARAM newValue)
+void ClassDialog::NotifyTreeSelChanged(LPARAM)
 {
 
 }
 
-void ClassDialog::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+void ClassDialog::NotifyButtonClicked(int, HWND)
 {
 
 }
 
-void ClassDialog::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+void ClassDialog::NotifyEditUpdated(int, HWND)
 {
 
 }
 
-void ClassDialog::NotifyEditFocusLost()
+void ClassDialog::NotifyEditFocusLost(int, HWND)
 {
 
 }
@@ -74,14 +75,24 @@ void ClassDialog::NotifyWindowShown()
 
 }
 
-BOOL ClassDialog::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+BOOL ClassDialog::DlgCommand(HWND, WPARAM, LPARAM)
 {
 	return FALSE;
 }
 
-BOOL ClassDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL ClassDialog::DlgProc(HWND, UINT, WPARAM, LPARAM)
 {
 	return FALSE;
+}
+
+void ClassDialog::SendNotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+	if ( allowEditNotify )
+	{
+		allowEditNotify = false;
+		NotifyEditUpdated(idFrom, hWndFrom);
+		allowEditNotify = true;
+	}
 }
 
 BOOL CALLBACK ClassDialog::SetupDialogProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -114,7 +125,7 @@ BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 			else
 			{
 				classDialog->NotifyWindowHidden();
-				classDialog->NotifyEditFocusLost();
+				classDialog->NotifyEditFocusLost(0, NULL);
 			}
 		}
 		break;
@@ -123,10 +134,7 @@ BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 		{
 			switch ( ((NMHDR*)lParam)->code )
 			{
-				case TVN_SELCHANGED:
-					if ( ((NMTREEVIEW*)lParam)->action == TVN_SELCHANGED )
-						classDialog->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
-					break;
+				case TVN_SELCHANGED: classDialog->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam); break;
 			}
 			return classDialog->DlgNotify(hWnd, wParam, (NMHDR*)lParam);
 		}
@@ -137,8 +145,8 @@ BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 			switch ( HIWORD(wParam) )
 			{
 				case BN_CLICKED: classDialog->NotifyButtonClicked(LOWORD(wParam), (HWND)lParam); break;
-				case EN_UPDATE: classDialog->NotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
-				case EN_KILLFOCUS: classDialog->NotifyEditFocusLost(); break;
+				case EN_UPDATE: classDialog->SendNotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+				case EN_KILLFOCUS: classDialog->NotifyEditFocusLost(LOWORD(wParam), (HWND)lParam); break;
 			}
 			return classDialog->DlgCommand(hWnd, wParam, lParam);
 		}

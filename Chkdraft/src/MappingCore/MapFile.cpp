@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-MapFile::MapFile() : SaveType(0)
+MapFile::MapFile() : saveType(SaveType::Unknown)
 {
 	filePath[0] = '\0';
 }
@@ -34,28 +34,34 @@ bool MapFile::SaveFile(bool SaveAs)
 			OPENFILENAME ofn = GetScSaveOfn(filePath);
 			if ( GetSaveFileName(&ofn) )
 			{
-				SaveType = (u8)ofn.nFilterIndex;
+				saveType = (SaveType)ofn.nFilterIndex;
 
 				char* ext = std::strrchr(filePath, '.'); // Find the last occurrence of '.'
 				if ( ext == nullptr ) // No extension specified, need to add
 				{
-					if ( SaveType == 1 || SaveType == 2 )
+					if ( saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm )
 						std::strcat(filePath, ".scm");
-					else if ( SaveType == 3 || SaveType == 7 )
+					else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::AllMaps )
 						std::strcat(filePath, ".scx");
-					else if ( SaveType >= 4 && SaveType <= 6 )
-						std::strcat(filePath, ".chk");
+                    else if ( saveType == SaveType::StarCraftChk || saveType == SaveType::HybridChk ||
+                        saveType == SaveType::ExpansionChk )
+                    {
+                        std::strcat(filePath, ".chk");
+                    }
 				}
 				else // Extension specified, give it precedence over filterIndex
 				{
-					if ( std::strcmp(ext, ".chk") == 0 && SaveType < 4 )
-						SaveType = 5;
-					else if ( std::strcmp(ext, ".scm") == 0 && SaveType > 1 )
-						SaveType = 2;
+                    if ( std::strcmp(ext, ".chk") == 0 && (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
+                        saveType == SaveType::ExpansionScx) )
+                    {
+                        saveType = SaveType::HybridChk;
+                    }
+					else if ( std::strcmp(ext, ".scm") == 0 && saveType != SaveType::StarCraftScm )
+						saveType = SaveType::HybridScm;
 					else if ( std::strcmp(ext, ".scx") == 0 )
-						SaveType = 3;
-					else if ( SaveType == 7 )
-						SaveType = 3;
+						saveType = SaveType::ExpansionScx;
+					else if ( saveType == SaveType::AllMaps )
+						saveType = SaveType::ExpansionScx;
 				}
 			}
 		}
@@ -64,38 +70,18 @@ bool MapFile::SaveFile(bool SaveAs)
 		{
 			FILE* pFile(nullptr);
 
-			if ( SaveType == 1 || SaveType == 4 ) // StarCraft Map, edit to match
-			{
-				TYPE().overwrite("RAWS", 4);
-				VER ().overwrite(";\0", 2);
-				IVER().overwrite("\12\0", 2);
-				IVE2().overwrite("\13\0", 2);
+			if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
+                ChangeToScOrig();
+			else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
+                ChangeToHybrid();
+            else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk ||
+                saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
+            {
+                ChangeToScExp();
+            }
 
-				if ( MRGN().size() > 1280 ) // If there's over 64 locations
-					MRGN().delRange(1280, MRGN().size()); // Remove the extras
-			}
-			else if ( SaveType == 2 || SaveType == 5 ) // Hybrid Map, edit to match
-			{
-				TYPE().overwrite("RAWS", 4);
-				VER ().overwrite("?\0", 2);
-				IVER().overwrite("\12\0", 2);
-				IVE2().overwrite("\13\0", 2);
-
-				if ( MRGN().size() < 5100 ) // If there's < 255 locations
-					MRGN().add<u8>(0, 5100-MRGN().size()); // Add space for 255
-			}
-			else if ( SaveType == 3 || SaveType == 6 || SaveType == 7 ) // BroodWar Map, edit to match
-			{
-				TYPE().overwrite("RAWB", 4);
-				VER ().overwrite("Í\0", 2);
-				RemoveSection(SectionId::IVER);
-				IVE2().overwrite("\13\0", 2);
-
-				if ( MRGN().size() < 5100 ) // If there's < 255 locations
-					MRGN().add<u8>(0, 5100-MRGN().size()); // Add space for 255
-			}
-
-			if ( (SaveType > 0 && SaveType <= 3) || SaveType == 7 ) // Must be packed into an MPQ
+			if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx)
+                 || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
 			{
 				pFile = std::fopen(filePath, "wb");
 				if ( pFile != nullptr )
@@ -195,19 +181,19 @@ bool MapFile::OpenFile()
 
 					if ( chk.size() > 0 && ParseScenario(chk) )
 					{
-						if ( VER().exists() )
+						if ( HasVerSection() )
 						{
-							if ( VER().get<u16>(0) < 63 )
-								SaveType = 1; // Vanilla
-							else if ( VER().get<u16>(0) < 205 )
-								SaveType = 2; // Hybrid
+							if ( IsScOrig() )
+								saveType = SaveType::StarCraftScm; // Vanilla
+							else if ( IsHybrid() )
+								saveType = SaveType::HybridScm; // Hybrid
 							else
-								SaveType = 3; // Expansion
+								saveType = SaveType::ExpansionScx; // Expansion
 						}
 						else if ( strcmp(ext, ".scx") == 0 )
-							SaveType = 3; // Expansion
+							saveType = SaveType::ExpansionScx; // Expansion
 						else if ( true ) // Could search for clues to map version here
-							SaveType = 6; // Otherwise set to expansion to prevent data loss
+							saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
 
 						return true;
 					}
@@ -225,17 +211,17 @@ bool MapFile::OpenFile()
 				{
 					if ( ParseScenario(chk) )
 					{
-						if ( VER().exists() )
+						if ( HasVerSection() )
 						{
-							if ( VER().get<u16>(0) < 63 )
-								SaveType = 4; // Vanilla chk
-							else if ( VER().get<u16>(0) < 205 )
-								SaveType = 5; // Hybrid chk
+							if ( IsScOrig() )
+								saveType = SaveType::StarCraftChk; // Vanilla chk
+							else if ( IsHybrid() )
+								saveType = SaveType::HybridChk; // Hybrid chk
 							else
-								SaveType = 6; // Expansion chk
+								saveType = SaveType::ExpansionChk; // Expansion chk
 						}
 						else if ( true ) // Could search for clues to map version here
-							SaveType = 6; // Otherwise set to expansion to prevent data loss
+							saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
 
 						return true;
 					}
@@ -265,9 +251,9 @@ const char* MapFile::FilePath()
 	return filePath;
 }
 
-void MapFile::SetSaveType(u8 newSaveType)
+void MapFile::SetSaveType(SaveType newSaveType)
 {
-	SaveType = newSaveType;
+	saveType = newSaveType;
 }
 
 std::string MapFile::GetFileName()
