@@ -10,83 +10,92 @@
 #include <list>
 
 /** A class wrapper for generic windows, purposed to forward
-	message handling to the WndProc method inside descendant classes
-	GWL_USERDATA and GWL_WNDPROC (or DWL_USER and DWL_DLGPROC for
-	dialog windows) are used and modified by this class and should
-	not be modified elsewhere */
+    message handling to the WndProc method inside descendant classes
+    GWL_USERDATA and GWL_WNDPROC (or DWL_USER and DWL_DLGPROC for
+    dialog windows) are used and modified by this class and should
+    not be modified elsewhere */
 class ClassWindow : public WindowsItem
 {
-	public:
+    public:
 
-/* Constructor  */	ClassWindow();
+/* Constructor  */  ClassWindow();
 
-/*  Destructor  */	~ClassWindow();
+/*  Destructor  */  ClassWindow();
 
-	protected:
+    protected:
 
-/*   Setup    */	/** Attempts to register a class for creating the window
-						If the class has been registered before this returns false
-						Do not register different classes with the same name */
-					bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-						LPCTSTR lpszMenuName, LPCTSTR lpszClassName, HICON hIconSm, bool isMDIChild);
+/*     Setup    */  /** Attempts to register a class for creating the window
+                        If the class has been registered before this returns false
+                        Do not register different classes with the same name */
+                    bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
+                        LPCTSTR lpszMenuName, LPCTSTR lpszClassName, HICON hIconSm, bool isMDIChild);
 
-					/** Attemps to create a window
-						The variables are used the same as in CreateWindowEx */
-					bool CreateClassWindow( DWORD dwExStyle, LPCSTR lpWindowName, DWORD dwStyle,
-											int x, int y, int nWidth, int nHeight,
-											HWND hWndParent, HMENU hMenu );
+                    /** Attemps to create a window
+                        The variables are used the same as in CreateWindowEx */
+                    bool CreateClassWindow( DWORD dwExStyle, LPCSTR lpWindowName, DWORD dwStyle,
+                                            int x, int y, int nWidth, int nHeight,
+                                            HWND hWndParent, HMENU hMenu );
 
-					/** Attempts to create a window as an MDI child
-						The variables are used the same as in CreateMDIWindow */
-					bool CreateMdiChild( LPCSTR lpWindowName, DWORD dwStyle,
-										 int x, int y, int nWidth, int nHeight,
-										 HWND hParent );
+                    void DestroyThis();
 
-					/** This method attempts to turn the current window into a MDI frame
-						by creating a client window (out of MdiClient) and changing message
-						handling so DefFrameProc is called for the new client window */
-					bool BecomeMDIFrame( MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
-						int X, int Y, int nWidth, int nHeight, HWND hParent, HMENU hMenu );
+                    /** Attempts to create a window as an MDI child
+                        The variables are used the same as in CreateMDIWindow */
+                    bool CreateMdiChild( LPCSTR lpWindowName, DWORD dwStyle,
+                                         int x, int y, int nWidth, int nHeight,
+                                         HWND hParent );
 
-/*  Overridden  */	/** This method is called when WM_NOTIFY is sent to the
-						window, override this to respond to notifications */
-					virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+                    /** This method attempts to turn the current window into a MDI frame
+                        by creating a client window (out of MdiClient) and changing message
+                        handling so DefFrameProc is called for the new client window */
+                    bool BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
+                        int X, int Y, int nWidth, int nHeight, HMENU hMenu);
 
-					/** When overidden, these methods serve as easy ways to process
-					notifications/commands */
-					virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
-					virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
-					virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
-					virtual void NotifyEditFocusLost(); // Sent when focus changes or the window is hidden
-					virtual void NotifyWindowHidden(); // Sent when the window is hidden
-					virtual void NotifyWindowShown(); // Sent when the window is shown
+/*  Overridden  */  /** This method is called when WM_NOTIFY is sent to the
+                        window, override this to respond to notifications */
+                    virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
 
-					/** This method is called when WM_COMMAND is sent to the
-						window, override this to respond to commands */
-					virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
+                    /** When overidden, these methods serve as easy ways to process
+                    notifications/commands */
+                    virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+                    virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+                    virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+                    virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); /* Sent when focus changes or the window is hidden;
+                                                                                    if this is the result of the window being hidden,
+                                                                                    idFrom = 0 and hWndFrom = NULL */
+                    virtual void NotifyWindowHidden(); // Sent when the window is hidden
+                    virtual void NotifyWindowShown(); // Sent when the window is shown
 
-					/** This method is where all windows messages are processed
-						Override this in descendant classes to handle window messages */
-					virtual LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+                    /** This method is called when WM_COMMAND is sent to the
+                        window, override this to respond to commands */
+                    virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
 
-	private:
+                    /** This method is where all windows messages are processed
+                        Override this in descendant classes to handle window messages */
+                    virtual LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-/*     Data     */	HWND hWndMDIClient; // Handle to the MDI client if applicable, NULL otherwise
-					enum WindowTypes { None, Regular, MDIFrame, MDIChild, Dialog };
-					WindowTypes windowType; // Specifies what type of window this is, see enumerated WindowTypes
 
-/*   Internal   */	/** This method is used until WM_NCCREATE is handled, at which point
-					    ForwardWndProc is used to forward window messages to the WndProc method */
-					static LRESULT CALLBACK SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    private:
 
-					/** This method is used by MDIChild windows until WM_NCCREATE is handled, at which point
-						ForwardWndProc is used to forward window messages to the WndProc method */
-					static LRESULT CALLBACK SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+/*     Data     */  HWND hWndMDIClient; // Handle to the MDI client if applicable, NULL otherwise
+                    enum WindowTypes { None, Regular, MDIFrame, MDIChild, Dialog };
+                    WindowTypes windowType; // Specifies what type of window this is, see enumerated WindowTypes
+                    bool allowEditNotify; // Used to prevent edit update recursion
 
-					/** This method simply returns the value given by WndProc with the same parameters
-						This replaces SetupWndProc to remove the overhead of checking for WM_NCCREATE
-							and ensuring that the class pointer is set */
-					static LRESULT CALLBACK ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+/*   Internal   */  /* Calls NotifyEditUpdated and ensures the function is not called again until it returns */
+                    void SendNotifyEditUpdated(int idFrom, HWND hWndFrom);
+
+                    /** This method is used until WM_NCCREATE is handled, at which point
+                        ForwardWndProc is used to forward window messages to the WndProc method */
+                    static LRESULT CALLBACK SetupWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+                    /** This method is used by MDIChild windows until WM_NCCREATE is handled, at which point
+                        ForwardWndProc is used to forward window messages to the WndProc method */
+                    static LRESULT CALLBACK SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+                    /** This method simply returns the value given by WndProc with the same parameters
+                        This replaces SetupWndProc to remove the overhead of checking for WM_NCCREATE
+                            and ensuring that the class pointer is set */
+                    static LRESULT CALLBACK ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

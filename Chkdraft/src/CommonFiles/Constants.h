@@ -9,8 +9,8 @@
 #include <vector>
 
 /**
-	Contains constants used throughout the program,
-	such as identifiers, strings, and fonts
+    Contains constants used throughout the program,
+    such as identifiers, strings, and fonts
 */
 
 using u64 = std::uint64_t;
@@ -29,14 +29,13 @@ constexpr u32 u32_max = UINT32_MAX;
 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 constexpr int ascii_chkd = 67 | 72 | 75 | 68; 
 
-#define DEFAULT_HOVER_TIME 10
+constexpr DWORD defaultHoverTime = 10;
 
-#define NO_LOCATION 0xFFFF
+constexpr u16 NO_LOCATION = 0xFFFF;
 
 extern const HFONT defaultFont;
 
-extern const double zooms[];
-#define NUM_ZOOMS 10
+extern const std::vector<double> defaultZooms;
 
 extern const std::vector<u32> onOffMenuItems;
 
@@ -61,19 +60,18 @@ extern const std::vector<std::string> triggerActions;
 extern const std::vector<std::string> triggerScores;
 
 extern const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors;
-//bad design.....
-#define STRCOLORS_SIZE 28
+constexpr int numScStringColors = 28; // Could make StringGuide dynamic with respect to the size of strColors
 
 enum Tileset
 {
-	TERRAIN_BADLANDS,
-	TERRAIN_SPACE,
-	TERRAIN_INSTALLATION,
-	TERRAIN_ASH,
-	TERRAIN_JUNGLE,
-	TERRAIN_DESERT,
-	TERRAIN_ICE,
-	TERRAIN_TWILIGHT
+    TERRAIN_BADLANDS,
+    TERRAIN_SPACE,
+    TERRAIN_INSTALLATION,
+    TERRAIN_ASH,
+    TERRAIN_JUNGLE,
+    TERRAIN_DESERT,
+    TERRAIN_ICE,
+    TERRAIN_TWILIGHT
 };
 
 extern const std::vector<std::string> tilesetNames;
@@ -90,77 +88,45 @@ extern const std::vector<std::string> twilightInitTerrain;
 extern const std::vector<std::vector<std::string>> initTerrains;
 
 
-/** Values for extracting specific data types from raw bytes */
-
-#define TYPE_SIZE_1 u8
-#define TYPE_SIZE_2 u16
-#define TYPE_SIZE_4 u32
-
-
 /** Used for identifying layers, should be equivilant
-	to the zero-based position in the layer combobox */
-enum Layers {
-	LAYER_TERRAIN,
-	LAYER_DOODADS,
-	LAYER_FOG,
-	LAYER_LOCATIONS,
-	LAYER_UNITS,
-	LAYER_SPRITES,
-	LAYER_VIEW_FOG,
-	LAYER_COPY_PASTE
+    to the zero-based position in the layer combobox */
+enum class Layer {
+    Terrain,
+    Doodads,
+    FogEdit,
+    Locations,
+    Units,
+    Sprites,
+    FogView,
+    CutCopyPaste
 };
 
 // Generally for trees...
-//	- LPARAM First 4 bits: defines the item type
+//  - LPARAM First 4 bits: defines the item type
 //  - LPARAM Last 28 bits: defines data specific to the type of item
 // 'AND' with the following to retrieve either from the LPARAM
-#define TREE_ITEM_DATA (0x0FFFFFFF)
-#define TREE_ITEM_TYPE (0xF0000000)
+constexpr DWORD TreeDataPortion = 0x0FFFFFFF;
+constexpr DWORD TreeTypePortion = 0xF0000000;
 
-#define TREE_TYPE_ROOT			(0x00000000) // Roots are AND'd with an associated layer (found in TREE_ITEM_DATA), must be 0
-#define TREE_TYPE_CATEGORY		(0x10000000) // Categories are AND'd with an associated layer (found in TREE_ITEM_DATA)
-#define TREE_TYPE_ISOM			(0x20000000)
-#define TREE_TYPE_UNIT			(0x30000000)
-#define TREE_TYPE_LOCATION		(0x40000000)
-#define TREE_TYPE_SPRITE		(0x50000000)
-#define TREE_TYPE_DOODAD		(0x60000000)
-#define TREE_TYPE_UPGRADE		(0x70000000)
-#define TREE_TYPE_TECH			(0x80000000)
+constexpr DWORD TreeTypeRoot = (0x00000000); // Roots are AND'd with an associated layer (found in TREE_ITEM_DATA), must be 0
+constexpr DWORD TreeTypeCategory = (0x10000000); // Categories are AND'd with an associated layer (found in TREE_ITEM_DATA)
+constexpr DWORD TreeTypeIsom = (0x20000000);
+constexpr DWORD TreeTypeUnit = (0x30000000);
+constexpr DWORD TreeTypeLocation = (0x40000000);
+constexpr DWORD TreeTypeSprite = (0x50000000);
+constexpr DWORD TreeTypeDoodad = (0x60000000);
+constexpr DWORD TreeTypeUpgrade = (0x70000000);
+constexpr DWORD TreeTypeTech = (0x80000000);
 
 
 /*###############################*\
 ## CHKDraft's Window Identifiers ##
-## ID_CHKD through 65535		 ##
+## ID_CHKD through 65535         ##
 \*###############################*/
-
-enum {
-	ID_CHKD = 41000, // Should be higher than any window ids defined in Resource.h
-	ID_FIRST		 // First identifier used by a set of sub-windows in Chkdraft
-};
-
-// Main Window Identifiers
-enum MainWindow {
-	ID_COMBOBOX_LAYER = ID_FIRST,
-	ID_COMBOBOX_PLAYER,
-	ID_COMBOBOX_ZOOM,
-	ID_COMBOBOX_TERRAIN,
-	IDR_MAIN_TOOLBAR,
-	IDR_MAIN_STATUS,
-	IDR_MAIN_MDI,
-	IDR_MAIN_PLOT,
-	IDR_MAIN_TREE,
-	IDR_LEFT_BAR,
-	IDR_MINIMAP,
-	ID_MDI_FIRSTCHILD // Keep this higher than all other main window identifiers
-};
-
 
 /*###############################*\
 ## Application specific messages ##
-## WM_APP through 0xBFFF		 ##
+## WM_APP through 0xBFFF         ##
 \*###############################*/
-
-// In ListBoxControl.h
-// LBN_DBLCLKITEM = (WM_APP+1)
 
 #endif

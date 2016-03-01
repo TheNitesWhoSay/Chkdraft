@@ -5,11 +5,11 @@
 
 enum CG
 {
-	/** Sent to the parent when a condition has been enabled
-		WPARAM:	LOWORD = conditionNumber
-				HIWORD = 0 if enabled, nonzero (typically 1)
-				if disabled*/
-	WM_CONDITIONENABLED
+    /** Sent to the parent when a condition has been enabled
+        WPARAM: LOWORD = conditionNumber
+                HIWORD = 0 if enabled, nonzero (typically 1)
+                if disabled*/
+    WM_CONDITIONENABLED
 };
 
 #endif

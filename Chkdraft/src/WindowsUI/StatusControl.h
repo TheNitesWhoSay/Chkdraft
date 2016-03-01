@@ -4,12 +4,12 @@
 
 class StatusControl : public WindowControl
 {
-	public:
-		bool CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu);
-		void AutoSize();
-		void SetText(int index, const char* newText);
+    public:
+        bool CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu);
+        void AutoSize();
+        void SetText(int index, const char* newText);
 
-	private:
+    private:
 
 };
 

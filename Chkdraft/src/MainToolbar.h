@@ -6,16 +6,16 @@
 
 class MainToolbar : public ToolbarControl
 {
-	public:
-		DropdownControl layerBox;
-		DropdownControl zoomBox;
-		PlayerDropdown playerBox;
-		DropdownControl terrainBox;
+    public:
+        DropdownControl layerBox;
+        DropdownControl zoomBox;
+        PlayerDropdown playerBox;
+        DropdownControl terrainBox;
 
-		bool CreateThis(HWND hParent, u32 windowId);
-		void AutoSize();
+        bool CreateThis(HWND hParent, u32 windowId);
+        void AutoSize();
 
-	private:
+    private:
 
 };
 

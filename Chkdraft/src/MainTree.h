@@ -7,15 +7,15 @@
 
 class MainTree : public TreeViewControl
 {
-	public:
+    public:
 
-		UnitTree unitTree;
-		LocationTree locTree;
+        UnitTree unitTree;
+        LocationTree locTree;
 
-		void BuildMainTree();
+        void BuildMainTree();
 
 
-	private:
+    private:
 
 };
 

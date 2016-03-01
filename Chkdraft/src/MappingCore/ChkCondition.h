@@ -2,82 +2,89 @@
 #define CONDITION_H
 #include "Basics.h"
 
-enum ConditionArgType
-{
-	CndNoType,
-	CndUnit,
-	CndLocation,
-	CndPlayer,
-	CndAmount,
-	CndNumericComparison,
-	CndResourceType,
-	CndScoreType,
-	CndSwitch,
-	CndSwitchState,
-	CndComparison, // NumericComparison, SwitchState
-	CndConditionType,
-	CndTypeIndex, // ResourceType, ScoreType, Switch
-	CndFlags,
-	CndInternalData
-};
+enum class ConditionArgType;
+enum class ConditionId;
 
 class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Trigger
 {
-	public:
-		u32 locationNum; // 1 based
-		u32 players;
-		u32 amount;
-		u16 unitID;
-		u8 comparison;
-		u8 condition;
-		u8 typeIndex; // Resource type/score type/switch num
-		u8 flags;
-			#define CONDITION_FLAG_UNKNOWN_0			BIT_0
-			#define CONDITION_FLAG_DISABLED				BIT_1
-			#define CONDITION_FLAG_ALWAYS_DISPLAY		BIT_2
-			#define CONDITION_FLAG_UNIT_PROPERTIES_USED BIT_3
-			#define CONDITION_FLAG_UNIT_TYPE_USED		BIT_4 // Possibly unnecessary
-			#define CONDITION_FLAG_UNITID_USED			BIT_5 // Probably unnecessary
-			#define CONDITION_FLAG_UKNOWN_6				BIT_6
-			#define CONDITION_FLAG_UNNOWN_7				BIT_7
+    public:
+        u32 locationNum; // 1 based
+        u32 players;
+        u32 amount;
+        u16 unitID;
+        u8 comparison;
+        u8 condition;
+        u8 typeIndex; // Resource type/score type/switch num
+        u8 flags;
+        u16 internalData; // Number of which condition to process next?
 
-			#define xCONDITION_FLAG_DISABLED x8BIT_1
-		u16 internalData; // Number of which condition to process next?
+        enum Flags
+        {
+            Unknown_0 = BIT_0, Disabled = BIT_1, AlwaysDisplay = BIT_2, UnitPropertiesUsed = BIT_3,
+            UnitTypeUsed = BIT_4 /* Possibly Unnecessary */, UnitIdUsed = BIT_5, /* Probably Unnecessary */
+            Unknown_6 = BIT_6, Unknown_7 = BIT_7,
+            xDisabled = x8BIT_1,
+        };
 
-		void ToggleDisabled();
-		bool isDisabled();
-		static ConditionArgType TextTrigArgType(u8 argNum, u8 condition);
-		ConditionArgType TextTrigArgType(u8 argNum);
+        void ToggleDisabled();
+        bool isDisabled();
+        static ConditionArgType TextTrigArgType(u8 argNum, ConditionId condition);
+        ConditionArgType TextTrigArgType(u8 argNum);
 };
 
-	  //CID = Condition ID
-#define CID_ACCUMULATE 4
-#define CID_ALWAYS 22
-#define CID_BRING 3
-#define CID_COMMAND 2
-#define CID_COMMAND_THE_LEAST 16
-#define CID_COMMAND_THE_LEAST_AT 17
-#define CID_COMMAND_THE_MOST 6
-#define CID_COMMAND_THE_MOST_AT 7
-#define CID_COUNTDOWN_TIMER 1
-#define CID_DEATHS 15
-#define CID_ELAPSED_TIME 12
-#define CID_HIGHEST_SCORE 9
-#define CID_KILL 5
-#define CID_LEAST_KILLS 18
-#define CID_LEAST_RESOURCES 20
-#define CID_LOWEST_SCORE 19
-#define CID_MOST_KILLS 8
-#define CID_MOST_RESOURCES 10
-#define CID_NEVER 23
-#define CID_NEVER_ALT 13
-#define CID_NO_CONDITION 0
-#define CID_OPPONENTS 14
-#define CID_SCORE 21
-#define CID_SWITCH 11
+enum class ConditionArgType
+{
+    CndNoType,
+    CndUnit,
+    CndLocation,
+    CndPlayer,
+    CndAmount,
+    CndNumericComparison,
+    CndResourceType,
+    CndScoreType,
+    CndSwitch,
+    CndSwitchState,
+    CndComparison, // NumericComparison, SwitchState
+    CndConditionType,
+    CndTypeIndex, // ResourceType, ScoreType, Switch
+    CndFlags,
+    CndInternalData
+};
 
-const int CID_CUSTOM = -1;
-const int CID_MEMORY = -2;
-#define CID_MEMORY_BASE CID_DEATHS
+enum class ConditionId : s32
+{
+    Accumulate = 4,
+    Always = 22,
+    Bring = 3,
+    Command = 2,
+    CommandTheLeast = 16,
+    CommandTheLeastAt = 17,
+    CommandTheMost = 6,
+    CommandTheMostAt = 7,
+    CountdownTimer = 1,
+    Deaths = 15,
+    ElapsedTime = 12,
+    HighestScore = 9,
+    Kill = 5,
+    LeastKills = 18,
+    LeastResources = 20,
+    LowestScore = 19,
+    MostKills = 8,
+    MostResources = 10,
+    Never = 23,
+    NeverAlt = 13,
+    NoCondition = 0,
+    Opponents = 14,
+    Score = 21,
+    Switch = 11,
+
+    Custom = -1,
+    Memory = -2,
+};
+
+enum class ExtendedConditionBase : s32
+{
+    Memory = (u8)ConditionId::Deaths,
+};
 
 #endif

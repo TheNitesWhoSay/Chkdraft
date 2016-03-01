@@ -6,15 +6,15 @@
 
 class LeftBar : public ClassWindow
 {
-	public:
-		MiniMap miniMap;
-		MainTree mainTree;
+    public:
+        MiniMap miniMap;
+        MainTree mainTree;
 
-		bool CreateThis(HWND hParent);
+        bool CreateThis(HWND hParent);
 
-	protected:
-		LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
-		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+        LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif
