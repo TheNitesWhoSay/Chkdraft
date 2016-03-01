@@ -9,8 +9,8 @@ PreservedUnitStats::PreservedUnitStats() : field(ChkUnitField::Serial), numUnits
 
 void PreservedUnitStats::flushStats()
 {
-	field = ChkUnitField::Serial;
-	numUnits = 0;
+    field = ChkUnitField::Serial;
+    numUnits = 0;
     if ( values != nullptr )
     {
         delete[] values;
@@ -20,17 +20,17 @@ void PreservedUnitStats::flushStats()
 
 void PreservedUnitStats::addStats(Selections &sel, ChkUnitField statField)
 {
-	flushStats();
-	field = statField;
+    flushStats();
+    field = statField;
 
-	numUnits = sel.numUnits();
-	try { values = new u32[numUnits]; }
-	catch ( std::bad_alloc ) { flushStats(); return; }
+    numUnits = sel.numUnits();
+    try { values = new u32[numUnits]; }
+    catch ( std::bad_alloc ) { flushStats(); return; }
 
-	u32 i = 0;
-	auto &units = sel.getUnits();
-	for ( u16 &unitIndex : units )
-	{
+    u32 i = 0;
+    auto &units = sel.getUnits();
+    for ( u16 &unitIndex : units )
+    {
         ChkUnit unit = CM->getUnit(unitIndex);
         switch ( field )
         {
@@ -51,26 +51,26 @@ void PreservedUnitStats::addStats(Selections &sel, ChkUnitField statField)
             case ChkUnitField::Unused: values[i] = unit.unused; break;
             case ChkUnitField::Link: values[i] = unit.link; break;
         }
-		i++;
-	}
+        i++;
+    }
 }
 
 void PreservedUnitStats::convertToUndo()
 {
-	if ( numUnits > 0 && values != nullptr )
-	{
-		// For each selected unit, add the corresponding undo from values
-		u32 i = 0;
+    if ( numUnits > 0 && values != nullptr )
+    {
+        // For each selected unit, add the corresponding undo from values
+        u32 i = 0;
 
         Selections &selections = CM->GetSelections();
-		std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-		auto &selUnits = selections.getUnits();
-		for ( u16 &unitIndex : selUnits )
-		{
+        std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+        auto &selUnits = selections.getUnits();
+        for ( u16 &unitIndex : selUnits )
+        {
             unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, values[i])));
-			i++;
-		}
+            i++;
+        }
         CM->AddUndo(unitChanges);
-	}
-	flushStats();
+    }
+    flushStats();
 }

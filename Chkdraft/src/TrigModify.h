@@ -9,32 +9,32 @@
 
 class TrigModifyWindow : public ClassDialog
 {
-	public:
-		TrigConditionsWindow conditionsWindow;
-		TrigActionsWindow actionsWindow;
+    public:
+        TrigConditionsWindow conditionsWindow;
+        TrigActionsWindow actionsWindow;
 
-		TrigModifyWindow();
-		bool CreateThis(HWND hParent, u32 trigIndex);
-		bool DestroyThis();
-		void ChangeTab(u32 tabId);
-		void RefreshWindow(u32 trigIndex);
-		void DoSize();
-		bool onTrigTextTab();
-		virtual void RedrawThis();
+        TrigModifyWindow();
+        bool CreateThis(HWND hParent, u32 trigIndex);
+        bool DestroyThis();
+        void ChangeTab(u32 tabId);
+        void RefreshWindow(u32 trigIndex);
+        void DoSize();
+        bool onTrigTextTab();
+        virtual void RedrawThis();
 
-	protected:
-		void CreateSubWindows(HWND hWnd);
-		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        void CreateSubWindows(HWND hWnd);
+        BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+        BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		u32 currTab;
-		u32 trigIndex;
-		TabControl tabs;
+    private:
+        u32 currTab;
+        u32 trigIndex;
+        TabControl tabs;
 
-		TrigGeneralWindow generalWindow;
-		TrigPlayersWindow playersWindow;
-		TrigModifyTextWindow trigModifyTextWindow;
+        TrigGeneralWindow generalWindow;
+        TrigPlayersWindow playersWindow;
+        TrigModifyTextWindow trigModifyTextWindow;
 };
 
 #endif

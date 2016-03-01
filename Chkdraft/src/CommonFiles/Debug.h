@@ -6,9 +6,9 @@
 #define SHOW_CLI
 
 /** CHKD_DEBUG is usually only defined if visual studios is set
-	to compile in debug mode, however it can ocassionally be
-	useful to define in release mode to asses/debug parts of the
-	program without the performance overhead of full debug mode */
+    to compile in debug mode, however it can ocassionally be
+    useful to define in release mode to asses/debug parts of the
+    program without the performance overhead of full debug mode */
 //#define CHKD_DEBUG
 
 #ifdef CHKD_DEBUG

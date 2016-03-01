@@ -5,18 +5,18 @@
 
 class TerrainPaletteWindow : public ClassDialog
 {
-	public:
-		TerrainPaletteWindow();
-		bool CreateThis(HWND hParent);
-		bool DestroyThis();
-		void SetTileDialog(HWND hWnd);
+    public:
+        TerrainPaletteWindow();
+        bool CreateThis(HWND hParent);
+        bool DestroyThis();
+        void SetTileDialog(HWND hWnd);
 
-	protected:
-		void DoScroll(HWND hWnd);
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        void DoScroll(HWND hWnd);
+        BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		u32 tilesetIndexedYC;
+    private:
+        u32 tilesetIndexedYC;
 };
 
 #endif

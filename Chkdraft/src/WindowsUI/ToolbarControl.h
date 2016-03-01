@@ -4,10 +4,10 @@
 
 class ToolbarControl : public WindowControl
 {
-	public:
+    public:
 
 
-	private:
+    private:
 
 };
 

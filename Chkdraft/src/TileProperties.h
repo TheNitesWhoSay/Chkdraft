@@ -5,16 +5,16 @@
 
 class TilePropWindow : public ClassDialog
 {
-	public:
-		bool CreateThis(HWND hParent);
-		bool DestroyThis();
-		void UpdateTile();
+    public:
+        bool CreateThis(HWND hParent);
+        bool DestroyThis();
+        void UpdateTile();
 
-	protected:
-		BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+        BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
+    private:
 
 };
 

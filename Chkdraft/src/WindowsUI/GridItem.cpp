@@ -2,60 +2,60 @@
 
 GridControlItem::GridControlItem() : selected(false), data(0)
 {
-	text = "";
+    text = "";
 }
 
 void GridControlItem::SetText(const char* newText)
 {
-	try { this->text = newText; }
-	catch ( std::exception ) { }
+    try { this->text = newText; }
+    catch ( std::exception ) { }
 }
 
 void GridControlItem::SetText(int newNumber)
 {
-	try { this->text = std::to_string(newNumber); }
-	catch ( std::exception ) { }
+    try { this->text = std::to_string(newNumber); }
+    catch ( std::exception ) { }
 }
 
 void GridControlItem::SetData(u32 newData)
 {
-	this->data = newData;
+    this->data = newData;
 }
 
 void GridControlItem::SetSelected(bool isItemSelected)
 {
-	this->selected = isItemSelected;
+    this->selected = isItemSelected;
 }
 
 void GridControlItem::Clear()
 {
-	selected = false;
-	data = 0;
-	text = "";
+    selected = false;
+    data = 0;
+    text = "";
 }
 
 bool GridControlItem::getText(std::string &outText)
 {
-	try { outText = this->text; return true; }
-	catch ( std::exception ) { return false; }
+    try { outText = this->text; return true; }
+    catch ( std::exception ) { return false; }
 }
 
 int GridControlItem::getTextLength()
 {
-	return text.length();
+    return text.length();
 }
 
 int GridControlItem::getTextNum()
 {
-	return std::stoi(text);
+    return std::stoi(text);
 }
 
 u32 GridControlItem::getData()
 {
-	return data;
+    return data;
 }
 
 bool GridControlItem::isSelected()
 {
-	return selected;
+    return selected;
 }

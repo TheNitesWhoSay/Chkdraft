@@ -8,12 +8,12 @@ TileChange::TileChange(u16 xc, u16 yc, u16 tileValue) : xc(xc), yc(yc), tileValu
 
 void TileChange::Reverse(void *guiMap)
 {
-	u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc);
-	((GuiMap*)guiMap)->setTile(xc, yc, tileValue);
-	tileValue = replacedValue;
+    u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc);
+    ((GuiMap*)guiMap)->setTile(xc, yc, tileValue);
+    tileValue = replacedValue;
 }
 
 int32_t TileChange::GetType()
 {
-	return (int32_t)UndoTypes::TileChange;
+    return (int32_t)UndoTypes::TileChange;
 }

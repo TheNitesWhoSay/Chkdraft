@@ -5,15 +5,15 @@
 
 class TileChange : public ReversibleAction
 {
-	public:
-		TileChange(u16 xc, u16 yc, u16 tileValue);
-		virtual void Reverse(void *guiMap);
-		virtual int32_t GetType();
+    public:
+        TileChange(u16 xc, u16 yc, u16 tileValue);
+        virtual void Reverse(void *guiMap);
+        virtual int32_t GetType();
 
-	private:
-		u16 xc;
-		u16 yc;
-		u16 tileValue;
+    private:
+        u16 xc;
+        u16 yc;
+        u16 tileValue;
 };
 
 #endif

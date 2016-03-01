@@ -5,9 +5,9 @@
 
 enum class UndoTypes : int32_t
 {
-	TileChange = 1,
-	UnitChange = 2,
-	LocationChange = 3
+    TileChange = 1,
+    UnitChange = 2,
+    LocationChange = 3
 };
 
 #endif
