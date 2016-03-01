@@ -3,8 +3,8 @@
 template <typename indexType>
 bool MoveToDialog<indexType>::GetIndex(indexType &index, HWND hParent)
 {
-	MoveToDialog<indexType> moveTo;
-	return moveTo.InternalGetMoveTo(index, hParent);
+    MoveToDialog<indexType> moveTo;
+    return moveTo.InternalGetMoveTo(index, hParent);
 }
 template bool MoveToDialog<u8>::GetIndex(u8 &index, HWND hParent);
 template bool MoveToDialog<s8>::GetIndex(s8 &index, HWND hParent);
@@ -23,41 +23,41 @@ MoveToDialog<indexType>::MoveToDialog() : indexMovedTo(0), gotIndex(false)
 template <typename indexType>
 bool MoveToDialog<indexType>::InternalGetMoveTo(indexType &index, HWND hParent)
 {
-	indexMovedTo = 0;
-	gotIndex = false;
-	CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_MOVETO), hParent);
-	if ( gotIndex )
-		index = indexMovedTo;
+    indexMovedTo = 0;
+    gotIndex = false;
+    CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_MOVETO), hParent);
+    if ( gotIndex )
+        index = indexMovedTo;
 
-	return gotIndex;
+    return gotIndex;
 }
 
 template <typename indexType>
 BOOL MoveToDialog<indexType>::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-	switch ( LOWORD(wParam) )
-	{
-		case IDCANCEL:
-			EndDialog(hWnd, IDCANCEL);
-			break;
+    switch ( LOWORD(wParam) )
+    {
+        case IDCANCEL:
+            EndDialog(hWnd, IDCANCEL);
+            break;
 
-		case IDOK:
-			gotIndex = editMoveTo.GetEditNum<indexType>(indexMovedTo);
-			EndDialog(hWnd, IDOK);
-			break;
-	}
+        case IDOK:
+            gotIndex = editMoveTo.GetEditNum<indexType>(indexMovedTo);
+            EndDialog(hWnd, IDOK);
+            break;
+    }
 
-	return ClassDialog::DlgCommand(hWnd, wParam, lParam);
+    return ClassDialog::DlgCommand(hWnd, wParam, lParam);
 }
 
 template <typename indexType>
 BOOL MoveToDialog<indexType>::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if ( msg == WM_INITDIALOG )
-	{
-		editMoveTo.FindThis(hWnd, IDC_EDIT1);
-		SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
-	}
+    if ( msg == WM_INITDIALOG )
+    {
+        editMoveTo.FindThis(hWnd, IDC_EDIT1);
+        SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
+    }
 
-	return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
+    return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
 }

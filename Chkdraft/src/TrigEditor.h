@@ -11,29 +11,29 @@
 
 class TrigEditorWindow : public ClassDialog
 {
-	public:
-		TriggersWindow triggersWindow;
+    public:
+        TriggersWindow triggersWindow;
 
-		TrigEditorWindow();
-		bool CreateThis(HWND hParent);
-		bool DestroyThis();
-		void ChangeTab(u32 tabId);
-		void RefreshWindow();
+        TrigEditorWindow();
+        bool CreateThis(HWND hParent);
+        bool DestroyThis();
+        void ChangeTab(u32 tabId);
+        void RefreshWindow();
 
-	protected:
-		void CreateSubWindows(HWND hWnd);
-		void DoSize();
-		BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
-		BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        void CreateSubWindows(HWND hWnd);
+        void DoSize();
+        BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+        BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	private:
-		u32 currTab;
-		TabControl tabs;
+    private:
+        u32 currTab;
+        TabControl tabs;
 
-		TemplatesWindow templatesWindow;
-		CountersWindow countersWindow;
-		CUWPsWindow cuwpsWindow;
-		SwitchesWindow switchesWindow;
+        TemplatesWindow templatesWindow;
+        CountersWindow countersWindow;
+        CUWPsWindow cuwpsWindow;
+        SwitchesWindow switchesWindow;
 };
 
 #endif

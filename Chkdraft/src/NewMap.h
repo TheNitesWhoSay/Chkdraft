@@ -4,12 +4,12 @@
 
 class NewMap : public ClassDialog
 {
-	public:
-		void CreateThis(HWND hParent);
+    public:
+        void CreateThis(HWND hParent);
 
-	protected:
-		virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
-		virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    protected:
+        virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+        virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif
