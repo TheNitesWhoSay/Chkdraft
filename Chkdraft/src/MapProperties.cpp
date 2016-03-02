@@ -320,7 +320,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
             if ( wParam == TRUE )
             {
                 RefreshWindow();
-                chkd.mapSettingsWindow.SetTitle("Map Settings");
+                chkd.mapSettingsWindow.SetWinText("Map Settings");
             }
             else if ( !refreshing )
             {
@@ -340,7 +340,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
     ChkdString newMapTitle;
-    if ( possibleTitleUpdate == true && editMapTitle.GetEditText(newMapTitle) )
+    if ( possibleTitleUpdate == true && editMapTitle.GetWinText(newMapTitle) )
     {
         if ( CM->SetMapTitle(newMapTitle) )
             CM->notifyChange(false);
@@ -352,7 +352,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
     ChkdString newMapDescription;
-    if ( possibleDescriptionUpdate == true && editMapDescription.GetEditText(newMapDescription) )
+    if ( possibleDescriptionUpdate == true && editMapDescription.GetWinText(newMapDescription) )
     {
         if ( CM->SetMapDescription(newMapDescription) )
             CM->notifyChange(false);

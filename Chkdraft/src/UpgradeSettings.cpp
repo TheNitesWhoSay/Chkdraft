@@ -68,7 +68,7 @@ void UpgradeSettingsWindow::RefreshWindow()
     if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && CM != nullptr )
     {
         u8 upgrade = (u8)selectedUpgrade;
-        chkd.mapSettingsWindow.SetTitle("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
+        chkd.mapSettingsWindow.SetWinText("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
 
         if ( isDisabled )
             EnableUpgradeEditing();
@@ -193,7 +193,7 @@ void UpgradeSettingsWindow::DisableUpgradeEditing()
 {
     isDisabled = true;
     checkUseDefaultCosts.DisableThis();
-    chkd.mapSettingsWindow.SetTitle("Map Settings");
+    chkd.mapSettingsWindow.SetWinText("Map Settings");
 
     DisableCostEditing();
 
@@ -577,9 +577,9 @@ LRESULT UpgradeSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
             {
                 RefreshWindow();
                 if ( selectedUpgrade != -1 )
-                    chkd.mapSettingsWindow.SetTitle("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
+                    chkd.mapSettingsWindow.SetWinText("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
                 else
-                    chkd.mapSettingsWindow.SetTitle("Map Settings");
+                    chkd.mapSettingsWindow.SetWinText("Map Settings");
             }
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;

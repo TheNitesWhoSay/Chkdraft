@@ -407,7 +407,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     case IDC_LOCATION_NAME:
                     {
                         ChkdString locationName;
-                        if ( editLocName.GetEditText(locationName) )
+                        if ( editLocName.GetWinText(locationName) )
                         {
                             bool isExtended = checkUseExtended.isChecked();
                             if ( CM->replaceString<u16>(locationName, locRef->stringNum, isExtended, true) )

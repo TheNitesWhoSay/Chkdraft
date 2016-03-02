@@ -217,7 +217,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if ( wParam == TRUE )
             {
                 RefreshWindow();
-                chkd.mapSettingsWindow.SetTitle("Map Settings");
+                chkd.mapSettingsWindow.SetWinText("Map Settings");
             }
             else
             {
@@ -317,7 +317,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ForcesWindow::CheckReplaceForceName(int force)
 {
     ChkdString newMapForce;
-    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetEditText(newMapForce) )
+    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetWinText(newMapForce) )
     {
         if ( CM->setForceName(force, newMapForce) )
         {

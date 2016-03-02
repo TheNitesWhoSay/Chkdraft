@@ -48,7 +48,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
             if ( wParam == TRUE )
             {
                 RefreshWindow();
-                chkd.mapSettingsWindow.SetTitle("Map Settings");
+                chkd.mapSettingsWindow.SetWinText("Map Settings");
             }
             break;
 

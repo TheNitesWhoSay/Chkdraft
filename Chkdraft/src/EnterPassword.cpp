@@ -15,7 +15,7 @@ void EnterPasswordDialog::DestroyThis()
 void EnterPasswordDialog::ButtonLogin()
 {
     std::string password;
-    if ( editPassword.GetEditText(password) )
+    if ( editPassword.GetWinText(password) )
     {
         editPassword.SetText("");
         bool success = CM->Login(password);

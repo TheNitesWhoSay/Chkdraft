@@ -19,7 +19,9 @@ class WindowsItem
         HWND getHandle();
         HWND getParent();
 
-        std::string GetTitle();
+        int GetWinTextLen();
+        std::string GetWinText();
+        bool GetWinText(std::string &outText);
         bool getWindowRect(RECT &rect);
         int Width();
         int Height();
@@ -53,7 +55,7 @@ class WindowsItem
         void Hide();
         void SetSmallIcon(HANDLE hIcon);
         void SetMedIcon(HANDLE hIcon);
-        bool SetTitle(const std::string& newTitle);
+        bool SetWinText(const std::string &newText);
         bool AddTooltip(const char* text);
 
         bool ReleaseDC(HDC hDC);

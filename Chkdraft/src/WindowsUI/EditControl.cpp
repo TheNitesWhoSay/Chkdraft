@@ -122,12 +122,12 @@ void EditControl::MaximizeTextLimit()
 void EditControl::ExpandToText()
 {
     HDC hDC = GetDC(getHandle());
-    char* text;
-    if ( hDC != NULL && GetEditText(text) )
+    std::string text;
+    if ( hDC != NULL && GetWinText(text) )
     {
         SIZE strSize = { };
         RECT textRect = { };
-        if ( GetTextExtentPoint32A(hDC, text, GetTextLength(), &strSize) == TRUE &&
+        if ( GetTextExtentPoint32A(hDC, text.c_str(), GetTextLength(), &strSize) == TRUE &&
              GetClientRect(getHandle(), &textRect) == TRUE &&
              strSize.cx > (textRect.right-textRect.left) )
         {
@@ -136,51 +136,32 @@ void EditControl::ExpandToText()
                 SetWidth(textRect.right-textRect.left);
         }
 
-        delete[] text;
         ReleaseDC(hDC);
     }
 }
 
 int EditControl::GetTextLength()
 {
-    return GetWindowTextLength(getHandle());
-}
-
-bool EditControl::GetEditText(std::string& dest)
-{
-    char* temp;
-    if ( GetEditText(temp) )
-    {
-        try { dest = temp; }
-        catch ( std::exception ) { delete[] temp; return false; }
-        delete[] temp;
-        return true;
-    }
-    else
-        return false;
+    return WindowsItem::GetWinTextLen();
 }
 
 bool EditControl::GetEditBinaryNum(u16 &dest)
 {
     u16 temp = 0;
-    char* editText;
-    if ( GetEditText(editText) )
+    std::string editText;
+    if ( GetWinText(editText) )
     {
         const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                      0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
-        int length = std::strlen(editText);
+        int length = editText.length();
         for ( int i=length-1; i>=0; i-- )
         {
             if ( editText[i] == '1' )
                 temp |= u16BitValues[(length-1)-i];
             else if ( editText[i] != '0' )
-            {
-                delete[] editText;
                 return false;
-            }
         }
-        delete[] editText;
         dest = temp;
         return true;
     }
@@ -191,26 +172,22 @@ bool EditControl::GetEditBinaryNum(u16 &dest)
 bool EditControl::GetEditBinaryNum(u32 &dest)
 {
     u32 temp = 0;
-    char* editText;
-    if ( GetEditText(editText) )
+    std::string editText;
+    if ( GetWinText(editText) )
     {
         const u32 u32BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                      0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
                                      0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
                                      0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 
-        int length = std::strlen(editText);
+        int length = editText.length();
         for ( int i=length-1; i>=0; i-- )
         {
             if ( editText[i] == '1' )
                 temp |= u32BitValues[(length-1)-i];
             else if ( editText[i] != '0' )
-            {
-                delete[] editText;
                 return false;
-            }
         }
-        delete[] editText;
         dest = temp;
         return true;
     }
@@ -220,13 +197,13 @@ bool EditControl::GetEditBinaryNum(u32 &dest)
 
 bool EditControl::GetHexByteString(u8* dest, u32 destLength)
 {
-    char* text;
-    if ( GetEditText(text) )
+    std::string text;
+    if ( GetWinText(text) )
     {
         char strChunk[9] = { };
         strChunk[8] = '\0';
 
-        size_t strLength = std::strlen(text);
+        size_t strLength = text.length();
         if ( strLength > destLength*2 ) // Don't read past the number of requested bytes
             strLength = destLength*2;
 
@@ -287,7 +264,6 @@ bool EditControl::GetHexByteString(u8* dest, u32 destLength)
                 dest[destRemainderStart] = u8(result);
         }
 
-        delete[] text;
         return true;
     }
     else if ( GetTextLength() == 0 )
@@ -360,7 +336,7 @@ template <typename numType>
 bool EditControl::GetEditNum(numType &dest)
 {
     std::string text;
-    if ( GetEditText(text) )
+    if ( GetWinText(text) )
     {
         errno = 0;
         char* endPtr = nullptr;
@@ -385,30 +361,6 @@ template bool EditControl::GetEditNum<s16>(s16 &dest);
 template bool EditControl::GetEditNum<u32>(u32 &dest);
 template bool EditControl::GetEditNum<s32>(s32 &dest);
 template bool EditControl::GetEditNum<int>(int &dest);
-
-bool EditControl::GetEditText(char* &dest)
-{
-    bool success = false;
-    int length = GetWindowTextLength(getHandle())+1;
-    if ( length > 1 )
-    {
-        char* text;
-        try {
-            text = new char[length];
-        } catch ( std::bad_alloc ) {
-            return false;
-        }
-        if ( GetWindowText(getHandle(), text, length) )
-        {
-            text[length-1] = '\0';
-            dest = new char[length];
-            std::strncpy(dest, text, length);
-            success = true;
-        }
-        delete[] text;
-    }
-    return success;
-}
 
 LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {

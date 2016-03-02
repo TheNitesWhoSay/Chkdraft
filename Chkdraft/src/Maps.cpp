@@ -236,9 +236,9 @@ void Maps::ChangeLayer(Layer newLayer)
 
         chkd.tilePropWindow.DestroyThis();
         currentlyActiveMap->Redraw(false);
-        char layerString[32];
-        if ( chkd.mainToolbar.layerBox.GetText((int)newLayer, layerString, 31) )
-            chkd.statusBar.SetText(1, layerString);
+        std::string layerString;
+        if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
+            chkd.statusBar.SetText(1, layerString.c_str());
     }
 }
 
