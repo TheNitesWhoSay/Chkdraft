@@ -53,7 +53,7 @@ void TechSettingsWindow::RefreshWindow()
     {
         u8 tech = (u8)selectedTech;
         if ( selectedTech != -1 )
-            chkd.mapSettingsWindow.SetTitle("Map Settings - [" + techNames.at(selectedTech) + "]");
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [" + techNames.at(selectedTech) + "]");
 
         if ( isDisabled )
             EnableTechEditing();
@@ -218,7 +218,7 @@ void TechSettingsWindow::EnableTechCosts()
 void TechSettingsWindow::DisableTechEditing()
 {
     isDisabled = true;
-    chkd.mapSettingsWindow.SetTitle("Map Settings");
+    chkd.mapSettingsWindow.SetWinText("Map Settings");
     checkUseDefaultCosts.DisableThis();
     DisableTechCosts();
 
@@ -499,9 +499,9 @@ LRESULT TechSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             {
                 RefreshWindow();
                 if ( selectedTech != -1 )
-                    chkd.mapSettingsWindow.SetTitle("Map Settings - [" + techNames.at(selectedTech) + "]");
+                    chkd.mapSettingsWindow.SetWinText("Map Settings - [" + techNames.at(selectedTech) + "]");
                 else
-                    chkd.mapSettingsWindow.SetTitle("Map Settings");
+                    chkd.mapSettingsWindow.SetWinText("Map Settings");
             }
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;

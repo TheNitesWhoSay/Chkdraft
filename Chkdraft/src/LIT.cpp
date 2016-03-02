@@ -106,7 +106,7 @@ bool LitWindow::GetLitPaths(std::string &litDirectory, std::string &litPath)
 bool LitWindow::GetInputPaths(std::string &luaDirectory, std::string &luaName)
 {
     std::string luaPath;
-    if ( editPath.GetEditText(luaPath) )
+    if ( editPath.GetWinText(luaPath) )
     {
         auto lastBackslashPos = luaPath.find_last_of('\\');
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < luaPath.size() )

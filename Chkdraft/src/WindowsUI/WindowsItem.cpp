@@ -1,5 +1,6 @@
 #include "WindowsItem.h"
 #include <CommCtrl.h>
+#include <memory>
 
 std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
@@ -215,13 +216,32 @@ void WindowsItem::FrameRect(HBRUSH hBrush, RECT &rect)
         ::FrameRect(paintDc, &rect, hBrush);
 }
 
-std::string WindowsItem::GetTitle()
+int WindowsItem::GetWinTextLen()
 {
-    char windowTitle[MAX_PATH] = {};
-    if ( ::GetWindowText(getHandle(), windowTitle, MAX_PATH) > 0 )
-        return std::string(windowTitle);
+    return ::GetWindowTextLength(getHandle());
+}
 
-    return std::string("");
+std::string WindowsItem::GetWinText()
+{
+    std::string text("");
+    WindowsItem::GetWinText(text);
+    return text;
+}
+
+bool WindowsItem::GetWinText(std::string &outText)
+{
+    int titleLength = ::GetWindowTextLength(getHandle()) + 1;
+    if ( titleLength > 1 )
+    {
+        std::unique_ptr<char> titleText(new char[titleLength]);
+        if ( ::GetWindowText(getHandle(), titleText.get(), titleLength) )
+        {
+            titleText.get()[titleLength - 1] = '\0';
+            outText = titleText.get();
+            return true;
+        }
+    }
+    return false;
 }
 
 bool WindowsItem::getWindowRect(RECT &rect)
@@ -440,9 +460,9 @@ void WindowsItem::SetMedIcon(HANDLE hIcon)
     ::SendMessage(getHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 }
 
-bool WindowsItem::SetTitle(const std::string& newTitle)
+bool WindowsItem::SetWinText(const std::string& newText)
 {
-    return ::SetWindowText(getHandle(), newTitle.c_str()) != 0;
+    return ::SetWindowText(getHandle(), newText.c_str()) != 0;
 }
 
 bool WindowsItem::AddTooltip(const char* text)

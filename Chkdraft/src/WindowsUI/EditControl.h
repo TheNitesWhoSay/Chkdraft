@@ -26,7 +26,6 @@ class EditControl : public WindowControl
         void ExpandToText(); // Expands the edit control to show all the current text
 
         int GetTextLength();
-        bool GetEditText(std::string& dest);
         bool GetEditBinaryNum(u16 &dest);
         bool GetEditBinaryNum(u32 &dest);
 
@@ -38,7 +37,6 @@ class EditControl : public WindowControl
 
 
     protected:
-        bool GetEditText(char* &dest); // This version isn't public, pass an std::string
         LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Used to map Select All to Ctrl+A
 
     private:

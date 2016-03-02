@@ -95,7 +95,7 @@ void TrigModifyTextWindow::CreateSubWindows(HWND hWnd)
 bool TrigModifyTextWindow::unsavedChanges()
 {
     std::string newText;
-    if ( editText.GetEditText(newText) )
+    if ( editText.GetWinText(newText) )
         return trigText.compare(newText) != 0;
     else
         return false;
@@ -106,7 +106,7 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
     if ( CM != nullptr )
     {
         std::string newText;
-        if ( editText.GetEditText(newText) )
+        if ( editText.GetWinText(newText) )
         {
             if ( trigText.compare(newText) != 0 )
             {

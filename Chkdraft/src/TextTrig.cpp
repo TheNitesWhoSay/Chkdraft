@@ -114,7 +114,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
     if ( map != nullptr )
     {
         std::string trigText;
-        if ( editControl.GetEditText(trigText) )
+        if ( editControl.GetWinText(trigText) )
         {
             TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
             if ( compiler.CompileTriggers(trigText, map, chkd.scData) )

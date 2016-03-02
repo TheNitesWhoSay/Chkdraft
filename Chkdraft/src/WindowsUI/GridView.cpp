@@ -239,7 +239,7 @@ void GridViewControl::EndEditing()
     {
         ending = true;
         std::string str;
-        bool gotText = editBox.GetEditText(str) || editBox.GetTextLength() == 0;
+        bool gotText = editBox.GetWinText(str) || editBox.GetTextLength() == 0;
         if ( editing == true && editBox.DestroyThis() )
         {
             editing = false;
@@ -416,7 +416,7 @@ bool GridViewControl::GetEditItemRect(RECT &rect)
 
 bool GridViewControl::GetEditText(std::string &str)
 {
-    return editBox.GetEditText(str);
+    return editBox.GetWinText(str);
 }
 
 bool GridViewControl::contentHitTest(int x, int y, bool &outsideLeft, bool &outsideTop, bool &outsideRight, bool &outsideBottom)

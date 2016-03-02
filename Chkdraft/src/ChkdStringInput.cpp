@@ -33,7 +33,7 @@ BOOL ChkdStringInputDialog::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         break;
 
     case IDOK:
-        gotChkdString = editString.GetEditText(newString);
+        gotChkdString = editString.GetWinText(newString);
         EndDialog(hWnd, IDOK);
         break;
     }

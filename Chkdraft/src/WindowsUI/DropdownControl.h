@@ -13,14 +13,10 @@ class DropdownControl : public WindowControl
         void SetSel(int index);
         void ClearEditSel();
         int GetSel();
-        bool GetText(int index, char* dest, int destLength);
-        bool GetEditText(std::string& dest);
+        bool GetItemText(int index, std::string &dest);
 
         template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
             bool GetEditNum(numType &dest);
-
-    protected:
-        bool GetEditText(char* &dest);
 };
 
 #endif

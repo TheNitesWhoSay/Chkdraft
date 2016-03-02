@@ -66,12 +66,12 @@ void StringEditorWindow::RefreshWindow()
         }
         listStrings.SetRedraw(true);
         if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
-            chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
+            chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
         else
         {
             currSelString = 0; // Clear currSelString if selection fails
             editString.SetText("");
-            chkd.mapSettingsWindow.SetTitle("Map Settings");
+            chkd.mapSettingsWindow.SetWinText("Map Settings");
         }
     }
 }
@@ -126,15 +126,15 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     addUseItem("WAVs", wavs);
                     addUseItem("Units", units);
                     addUseItem("Switches", switches);
-                    chkd.mapSettingsWindow.SetTitle((std::string("Map Settings - [String #") +
+                    chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [String #") +
                         std::to_string(currSelString) + ']').c_str());
                 }
                 else
-                    chkd.mapSettingsWindow.SetTitle("Map Settings");
+                    chkd.mapSettingsWindow.SetWinText("Map Settings");
                 return 0;
             }
             else
-                chkd.mapSettingsWindow.SetTitle("Map Settings");
+                chkd.mapSettingsWindow.SetWinText("Map Settings");
             editString.SetText("");
         }
         break;
@@ -278,7 +278,7 @@ void StringEditorWindow::addUseItem(std::string str, u32 amount)
 bool StringEditorWindow::updateString(u32 stringNum)
 {
     ChkdString editStr;
-    if ( CM != nullptr && editString.GetEditText(editStr) && CM->FindDifference(editStr, stringNum) )
+    if ( CM != nullptr && editString.GetWinText(editStr) && CM->FindDifference(editStr, stringNum) )
     {
         if ( CM->editString<u32>(editStr, stringNum, CM->isExtendedString(stringNum), false) )
         {

@@ -236,7 +236,7 @@ void UnitWindow::RepopulateList()
 
             ChkdString unitName;
             CM->getUnitName(unitName, unit.id);
-            SetTitle(unitName.c_str());
+            WindowsItem::SetWinText(unitName.c_str());
 
             int row = listUnits.GetItemRow(selections.getHighestIndex());
             listUnits.EnsureVisible(row, false);

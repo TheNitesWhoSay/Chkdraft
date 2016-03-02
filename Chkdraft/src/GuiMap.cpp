@@ -594,7 +594,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
             HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
             if ( newPlayer < 12 )
                 SendMessage(hOwner, CB_SETCURSEL, newPlayer, 0);
-            else if ( chkd.mainToolbar.playerBox.GetEditText(text) )
+            else if ( chkd.mainToolbar.playerBox.GetWinText(text) )
                 SetWindowText(hOwner, text.c_str());
 
             chkd.unitWindow.ChangeOwner(unitIndex, newPlayer);
@@ -1229,37 +1229,20 @@ bool GuiMap::changesLocked()
 
 void GuiMap::addAsterisk()
 {
-    int length = GetWindowTextLength(getHandle())+1;
-    if ( length > 0 )
-    {
-        char* text;
-        try { text = new char[length+1]; }
-        catch ( std::bad_alloc ) { return; }
-
-        if ( GetWindowText(getHandle(), (LPSTR)text, length) > 0 )
-        {
-            std::strcat(text, "*");
-            SetWindowText(getHandle(), text);
-        }
-    }
+    std::string windowTitle;
+    if ( WindowsItem::GetWinText(windowTitle) )
+        WindowsItem::SetWinText(windowTitle + "*");
 }
 
 void GuiMap::removeAsterisk()
 {
-    int length = GetWindowTextLength(getHandle())+1;
-    if ( length > 0 )
+    std::string windowTitle;
+    if ( WindowsItem::GetWinText(windowTitle) )
     {
-        char* text;
-        try { text = new char[length]; }
-        catch ( std::bad_alloc ) { return; }
-        
-        if ( GetWindowText(getHandle(), (LPSTR)text, length) > 0 )
+        if ( windowTitle.back() == '*' )
         {
-            if ( text[length-2] == '*' )
-            {
-                text[length-2] = '\0';
-                SetWindowText(getHandle(), text);
-            }
+            windowTitle.pop_back();
+            WindowsItem::SetWinText(windowTitle);
         }
     }
 }
