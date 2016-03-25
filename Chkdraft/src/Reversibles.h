@@ -11,7 +11,7 @@ class Reversible
         virtual int32_t Count() = 0;
 };
 
-typedef std::shared_ptr<Reversible> ReversiblePtr;
+using ReversiblePtr = std::shared_ptr<Reversible>;
 
 class ReversibleAction : public Reversible
 {
@@ -24,17 +24,18 @@ class ReversibleAction : public Reversible
 class ReversibleActions : public Reversible
 {
     public:
-        ReversibleActions();
+        static std::shared_ptr<ReversibleActions> Make();
         virtual void Reverse(void *obj);
         virtual int32_t GetType(); // Returns 0 unless overidden
         virtual int32_t Count();
         virtual void Insert(std::shared_ptr<Reversible> action);
 
+    protected:
+        ReversibleActions();
+
     private:
         std::vector<std::shared_ptr<Reversible>> actions;
         bool reversed;
 };
-
-typedef std::shared_ptr<ReversibleActions> ReversibleActionsPtr;
 
 #endif

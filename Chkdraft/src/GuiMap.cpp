@@ -74,7 +74,7 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
     if ( x > xSize || y > YSize() )
         return false;
 
-    undos.AddUndo(ReversiblePtr(new TileChange((u16)x, (u16)y, getTile((u16)x, (u16)y))));
+    undos.AddUndo(TileChange::Make((u16)x, (u16)y, getTile((u16)x, (u16)y)));
 
     setTile(x, y, tileNum);
 
@@ -460,10 +460,6 @@ void GuiMap::selectAll()
                 break;
             case Layer::Units:
                 {
-                    HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
-                    LVFINDINFO findInfo = { };
-                    findInfo.flags = LVFI_PARAM;
-
                     chkd.unitWindow.SetChangeHighlightOnly(true);
                     for ( u16 i=0; i<numUnits(); i++ )
                     {
@@ -471,11 +467,7 @@ void GuiMap::selectAll()
                         {
                             selections.addUnit(i);
                             if ( chkd.unitWindow.getHandle() != nullptr )
-                            {
-                                findInfo.lParam = i;
-                                s32 lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
-                                ListView_SetItemState(hUnitTree, lvIndex, LVIS_FOCUSED|LVIS_SELECTED, LVIS_FOCUSED|LVIS_SELECTED);
-                            }
+                                chkd.unitWindow.FocusAndSelectIndex(i);
                         }
                     }
                     chkd.unitWindow.SetChangeHighlightOnly(false);
@@ -499,7 +491,7 @@ void GuiMap::deleteSelection()
                     auto &selTiles = selections.getTiles();
                     for ( auto &tile : selTiles )
                     {
-                        undos.AddUndo(ReversiblePtr(new TileChange(tile.xc, tile.yc, getTile(tile.xc, tile.yc))));
+                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, getTile(tile.xc, tile.yc)));
                         setTile(tile.xc, tile.yc, 0);
                     }
 
@@ -513,7 +505,7 @@ void GuiMap::deleteSelection()
                         SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
                     else
                     {
-                        ReversibleActionsPtr deletes(new ReversibleActions);
+                        auto deletes = ReversibleActions::Make();
                         while ( selections.hasUnits() )
                         {
                             // Get the highest index in the selection
@@ -521,7 +513,7 @@ void GuiMap::deleteSelection()
                                 selections.removeUnit(index);
                             
                                 ChkUnit delUnit = getUnit(index);
-                                deletes->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, delUnit)));
+                                deletes->Insert(UnitCreateDel::Make(index, delUnit));
                                 deleteUnit(index);
                         }
                         undos.AddUndo(deletes);
@@ -538,7 +530,7 @@ void GuiMap::deleteSelection()
                     u16 index = selections.getSelectedLocation();
                     if ( index != NO_LOCATION && getLocation(loc, index) )
                     {
-                        undos.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(index)));
+                        undos.AddUndo(LocationCreateDel::Make(index));
 
                         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
@@ -580,26 +572,19 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 
 void GuiMap::PlayerChanged(u8 newPlayer)
 {
-    std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+    auto unitChanges = ReversibleActions::Make();
     auto &selUnits = selections.getUnits();
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 unitIndex : selUnits )
     {
         ChkUnit unit = getUnit(unitIndex);
-        unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, ChkUnitField::Owner, unit.owner)));
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::Owner, unit.owner));
         unit.owner = newPlayer;
+        ReplaceUnit(unitIndex, unit);
 
         if ( chkd.unitWindow.getHandle() != nullptr )
-        {
-            std::string text;
-            HWND hOwner = chkd.unitWindow.dropPlayer.getHandle();
-            if ( newPlayer < 12 )
-                SendMessage(hOwner, CB_SETCURSEL, newPlayer, 0);
-            else if ( chkd.mainToolbar.playerBox.GetWinText(text) )
-                SetWindowText(hOwner, text.c_str());
-
-            chkd.unitWindow.ChangeOwner(unitIndex, newPlayer);
-        }
+            chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
     }
+    chkd.unitWindow.ChangeDropdownPlayer(newPlayer);
     undos.AddUndo(unitChanges);
     Redraw(true);
 }
@@ -1749,7 +1734,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             u16 locationIndex;
             if ( createLocation(startX, startY, endX, endY, locationIndex) )
             {
-                undos.AddUndo(std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex)));
+                undos.AddUndo(LocationCreateDel::Make(locationIndex));
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
                 refreshScenario();
             }
@@ -1804,7 +1789,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     }
                                         
                     //undos().addUndoLocationMove(selectedLocation, dragX, dragY);
-                    undos.AddUndo(std::shared_ptr<LocationMove>(new LocationMove(selectedLocation, -dragX, -dragY)));
+                    undos.AddUndo(LocationMove::Make(selectedLocation, -dragX, -dragY));
                 }
                 else // Resize location
                 {
@@ -1812,15 +1797,13 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc->yc1 <= loc->yc2 ) // Standard yc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_YC1, loc->yc1));
                             loc->yc1 += dragY;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapY1);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_YC2, loc->yc2));
                             loc->yc2 += dragY;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapY2);
                         }
@@ -1830,15 +1813,13 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc->yc1 <= loc->yc2 ) // Standard yc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_YC2, loc->yc2)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_YC2, loc->yc2));
                             loc->yc2 += dragY;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapY2);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_YC1, loc->yc1)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_YC1, loc->yc1));
                             loc->yc1 += dragY;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapY1);
                         }
@@ -1848,15 +1829,13 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc->xc1 <= loc->xc2 ) // Standard xc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_XC1, loc->xc1));
                             loc->xc1 += dragX;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapX1);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_XC2, loc->xc2));
                             loc->xc2 += dragX;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapX2);
                         }
@@ -1865,15 +1844,13 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc->xc1 <= loc->xc2 ) // Standard xc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_XC2, loc->xc2)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_XC2, loc->xc2));
                             loc->xc2 += dragX;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapX2);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(selectedLocation, LOC_FIELD_XC1, loc->xc1)));
+                            undos.AddUndo(LocationChange::Make(selectedLocation, LOC_FIELD_XC1, loc->xc1));
                             loc->xc1 += dragX;
                             SnapLocationDimensions(loc->xc1, loc->yc1, loc->xc2, loc->yc2, LocSnapFlags::SnapX1);
                         }
@@ -1906,18 +1883,11 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     {
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
-            HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
             chkd.unitWindow.SetChangeHighlightOnly(true);
             auto &selUnits = selections.getUnits();
-            for ( u16 &unitIndex : selUnits )
-            {
-                LVFINDINFO findInfo = { };
-                findInfo.flags = LVFI_PARAM;
-                findInfo.lParam = unitIndex;
-                                                
-                int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
-                ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED|LVIS_SELECTED);
-            }
+            for ( u16 unitIndex : selUnits )
+                chkd.unitWindow.DeselectIndex(unitIndex);
+            
             chkd.unitWindow.SetChangeHighlightOnly(false);
         }
         selections.removeUnits();
@@ -1958,24 +1928,13 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
             if ( chkd.unitWindow.getHandle() != nullptr )
             {
-                HWND hUnitTree = chkd.unitWindow.listUnits.getHandle();
-                LVFINDINFO findInfo = {};
-                findInfo.flags = LVFI_PARAM;
-                findInfo.lParam = i;
-
-                int lvIndex = ListView_FindItem(hUnitTree, -1, &findInfo);
+                chkd.unitWindow.SetChangeHighlightOnly(true);
                 if ( wasSelected )
-                {
-                    chkd.unitWindow.SetChangeHighlightOnly(true);
-                    ListView_SetItemState(hUnitTree, lvIndex, 0, LVIS_FOCUSED | LVIS_SELECTED);
-                    chkd.unitWindow.SetChangeHighlightOnly(false);
-                }
+                    chkd.unitWindow.DeselectIndex(i);
                 else
-                {
-                    chkd.unitWindow.SetChangeHighlightOnly(true);
-                    ListView_SetItemState(hUnitTree, lvIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
-                    chkd.unitWindow.SetChangeHighlightOnly(false);
-                }
+                    chkd.unitWindow.FocusAndSelectIndex(i);
+                
+                chkd.unitWindow.SetChangeHighlightOnly(false);
             }
             chkd.unitWindow.UpdateEnabledState();
         }

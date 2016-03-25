@@ -221,6 +221,11 @@ ChkUnit Scenario::getUnit(u16 index)
     }
 }
 
+bool Scenario::ReplaceUnit(u16 index, ChkUnit newUnit)
+{
+    return UNIT().replace<ChkUnit>(UNIT_STRUCT_SIZE*(u32)index, newUnit);
+}
+
 bool Scenario::insertUnit(u16 index, ChkUnit &unit)
 {
     if ( index == numUnits() )

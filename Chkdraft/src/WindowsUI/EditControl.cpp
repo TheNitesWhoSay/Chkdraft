@@ -72,6 +72,36 @@ bool EditControl::SetText(const char* newText)
         return ::SetWindowText(getHandle(), newText) != 0;
 }
 
+bool EditControl::CreateNumberBuddy(int minimumValue, int maximumValue)
+{
+    hBuddy = CreateWindowEx(0, UPDOWN_CLASS, NULL, WS_CHILDWINDOW | WS_VISIBLE | WS_DISABLED |
+        UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_HOTTRACK,
+        0, 0, 0, 0, WindowsItem::getParent(), (HMENU)0, NULL, NULL);
+
+    if ( hBuddy != NULL )
+    {
+        SendMessage(hBuddy, UDM_SETBUDDY, (WPARAM)getHandle(), 0);
+        SendMessage(hBuddy, UDM_SETRANGE32, minimumValue, maximumValue);
+    }
+    return hBuddy != NULL;
+}
+
+void EditControl::EnableThis()
+{
+    WindowsItem::EnableThis();
+
+    if ( hBuddy != NULL )
+        EnableWindow(hBuddy, TRUE);
+}
+
+void EditControl::DisableThis()
+{
+    if ( hBuddy != NULL )
+        EnableWindow(hBuddy, FALSE);
+
+    WindowsItem::DisableThis();
+}
+
 template <typename numType>
 bool EditControl::SetEditNum(numType num)
 {

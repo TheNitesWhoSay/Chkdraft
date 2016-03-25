@@ -1,9 +1,9 @@
 #include "TileChange.h"
 #include "GuiMap.h"
 
-TileChange::TileChange(u16 xc, u16 yc, u16 tileValue) : xc(xc), yc(yc), tileValue(tileValue)
+std::shared_ptr<TileChange> TileChange::Make(u16 xc, u16 yc, u16 tileValue)
 {
-
+    return std::shared_ptr<TileChange>(new TileChange(xc, yc, tileValue));
 }
 
 void TileChange::Reverse(void *guiMap)
@@ -16,4 +16,9 @@ void TileChange::Reverse(void *guiMap)
 int32_t TileChange::GetType()
 {
     return (int32_t)UndoTypes::TileChange;
+}
+
+TileChange::TileChange(u16 xc, u16 yc, u16 tileValue) : xc(xc), yc(yc), tileValue(tileValue)
+{
+
 }

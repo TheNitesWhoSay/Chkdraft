@@ -6,10 +6,14 @@
 class LocationCreateDel : public ReversibleAction
 {
     public:
-        LocationCreateDel(u16 locationIndex, ChkLocation &location, std::string &locationName); // Undo Deletion
-        LocationCreateDel(u16 locationIndex); // Undo Creation
+        static std::shared_ptr<LocationCreateDel> Make(u16 locationIndex, ChkLocation &location, std::string &locationName); // Undo Deletion
+        static std::shared_ptr<LocationCreateDel> Make(u16 locationIndex); // Undo Creation
         virtual void Reverse(void *guiMap);
         virtual int32_t GetType();
+
+    protected:
+        LocationCreateDel(u16 locationIndex, ChkLocation &location, std::string &locationName); // Undo Deletion
+        LocationCreateDel(u16 locationIndex); // Undo Creation
 
     private:
         u16 locationIndex;

@@ -1,10 +1,5 @@
 #include "Reversibles.h"
 
-ReversibleActions::ReversibleActions() : reversed(false)
-{
-
-}
-
 void ReversibleAction::Reverse(void *obj)
 {
 
@@ -13,6 +8,11 @@ void ReversibleAction::Reverse(void *obj)
 int32_t ReversibleAction::Count()
 {
     return 1;
+}
+
+std::shared_ptr<ReversibleActions> ReversibleActions::Make()
+{
+    return std::shared_ptr<ReversibleActions>(new ReversibleActions);
 }
 
 void ReversibleActions::Reverse(void *obj)
@@ -49,4 +49,9 @@ int32_t ReversibleActions::Count()
 void ReversibleActions::Insert(std::shared_ptr<Reversible> action)
 {
     actions.push_back(action);
+}
+
+ReversibleActions::ReversibleActions() : reversed(false)
+{
+
 }
