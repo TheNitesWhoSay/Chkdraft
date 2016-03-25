@@ -4,6 +4,28 @@
 #include <exception>
 #include <string>
 
+enum class Id
+{
+    EditLocationName = IDC_LOCATION_NAME,
+    EditLocationLeft = IDC_LOCLEFT,
+    EditLocationTop = IDC_LOCTOP,
+    EditLocationRight = IDC_LOCRIGHT,
+    EditLocationBottom = IDC_LOCBOTTOM,
+    EditRawFlags = IDC_RAWFLAGS,
+
+    CheckUseExtended = IDC_EXTLOCNAMESTR,
+    CheckLowGround = IDC_LOWGROUND,
+    CheckMedGround = IDC_MEDGROUND,
+    CheckHighGround = IDC_HIGHGROUND,
+    CheckLowAir = IDC_LOWAIR,
+    CheckMedAir = IDC_MEDAIR,
+    CheckHighAir = IDC_HIGHAIR,
+
+    ButtonInvertX = IDC_INVERTX,
+    ButtonInvertY = IDC_INVERTY,
+    ButtonInvertXY = IDC_INVERTXY,
+};
+
 LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
 {
 

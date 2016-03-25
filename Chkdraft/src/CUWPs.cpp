@@ -182,7 +182,7 @@ LRESULT CUWPsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 
 void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 {
-    std::cout << "CUWP Notify Tree Sel Changed: " << newValue << std::endl;
+
 }
 
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
@@ -200,12 +200,11 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
     }
-    std::cout << "CUWP Notify Button Clicked" << std::endl;
 }
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-    std::cout << "NotifyEditUpdated" << std::endl;
+
 }
 
 LRESULT CUWPsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

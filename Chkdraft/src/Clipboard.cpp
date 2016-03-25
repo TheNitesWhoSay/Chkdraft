@@ -183,13 +183,6 @@ void Clipboard::endPasting()
         {
             ClearQuickItems();
             quickPaste = false;
-
-            if ( chkd.mainPlot.leftBar.getHandle() != NULL )
-            {
-                HWND hTree = chkd.mainPlot.leftBar.mainTree.getHandle();
-                if ( hTree != NULL )
-                    TreeView_SelectItem(hTree, NULL);
-            }
             
             if ( chkd.terrainPalWindow.getHandle() != nullptr )
                 RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);

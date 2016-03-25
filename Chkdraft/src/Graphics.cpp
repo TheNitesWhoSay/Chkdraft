@@ -858,9 +858,9 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
                     if ( x+xOffset < bitWidth && x+xOffset > 0 )
                     {
                         if ( lineDat[pos] < 8 )
-                            bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>(lineDat[pos] + 16 * 4);
+                            bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((lineDat[pos] + 16) * 4);
                         else if ( lineDat[pos] < 16 )
-                            bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
+                            bitmap[bitmapIndex] = chkd.scData.tunit.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
                         else
                             bitmap[bitmapIndex] = palette->get<u32>(lineDat[pos] * 4);
                     }
