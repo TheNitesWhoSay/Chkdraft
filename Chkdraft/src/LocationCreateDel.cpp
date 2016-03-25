@@ -1,17 +1,14 @@
 #include "LocationCreateDel.h"
 #include "GuiMap.h"
 
-LocationCreateDel::LocationCreateDel(u16 locationIndex, ChkLocation &location, std::string &locationName) // Undo deletion
-    : locationIndex(locationIndex), location(nullptr), locationName(locationName)
+std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationIndex, ChkLocation &location, std::string &locationName)
 {
-    this->location = std::unique_ptr<ChkLocation>(new ChkLocation);
-    (*(this->location)) = location;
+    return std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex, location, locationName));
 }
 
-LocationCreateDel::LocationCreateDel(u16 locationIndex) // Undo creation
-    : locationIndex(locationIndex), location(nullptr), locationName("")
+std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationIndex)
 {
-
+    return std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex));
 }
 
 void LocationCreateDel::Reverse(void *guiMap)
@@ -36,3 +33,15 @@ int32_t LocationCreateDel::GetType()
     return (int32_t)UndoTypes::LocationChange;
 }
 
+LocationCreateDel::LocationCreateDel(u16 locationIndex, ChkLocation &location, std::string &locationName) // Undo deletion
+    : locationIndex(locationIndex), location(nullptr), locationName(locationName)
+{
+    this->location = std::unique_ptr<ChkLocation>(new ChkLocation);
+    (*(this->location)) = location;
+}
+
+LocationCreateDel::LocationCreateDel(u16 locationIndex) // Undo creation
+    : locationIndex(locationIndex), location(nullptr), locationName("")
+{
+
+}

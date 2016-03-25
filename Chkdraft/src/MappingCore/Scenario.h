@@ -88,6 +88,7 @@ public:
 
 /*    Units     */  u16 numUnits(); // Returns number of units in UNIT section
                     ChkUnit getUnit(u16 index);
+                    bool ReplaceUnit(u16 index, ChkUnit newUnit);
                     bool insertUnit(u16 index, ChkUnit &unit);
                     //bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
                     bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit

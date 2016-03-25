@@ -33,9 +33,12 @@ class ClassDialog : public WindowsItem
         virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
         virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
-        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); /* Sent when focus changes or the window is hidden;
-                                                                        if this is the result of the window being hidden,
-                                                                        idFrom = 0 and hWndFrom = NULL */
+        virtual void NotifyEditFocused(int idFrom, HWND hWndFrom); // Sent when an edit box receives focus
+        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
+        virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom); // Sent when combo is changed by selection
+        virtual void NotifyComboEditUpdated(int idFrom, HWND hWndFrom); // Sent when combo is changed by text edits
+        virtual void NotifyComboEditFocused(int idFrom, HWND hWndFrom); // Sent when a combos edit box is focused
+        virtual void NotifyComboEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
         virtual void NotifyWindowHidden(); // Sent when the window is hidden
         virtual void NotifyWindowShown(); // Sent when the window is shown
 

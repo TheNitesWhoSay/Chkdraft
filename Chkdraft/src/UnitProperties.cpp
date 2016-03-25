@@ -6,92 +6,92 @@
 #include "UnitIndexMove.h"
 #include <string>
 
-enum ListColumns {
-    UNIT_NAME_COLUMN,
-    UNIT_OWNER_COLUMN,
-    UNIT_XC_COLUMN,
-    UNIT_YC_COLUMN,
-    UNIT_INDEX_COLUMN
+enum class UnitListColumn { Name, Owner, Xc, Yc, Index };
+
+enum class Id
+{
+    UnitList = ID_FIRST,
+    ComboPlayer,
+
+    ButtonMoveUp = IDC_BUTTON_MOVEUP,
+    ButtonMoveTop = IDC_BUTTON_MOVETOP,
+    ButtonMoveDown = IDC_BUTTON_MOVEDOWN,
+    ButtonMoveEnd = IDC_BUTTON_MOVEEND,
+    ButtonDelete = IDC_BUTTON_DELETE,
+    ButtonMoveTo = IDC_BUTTON_MOVE_TO,
+    ButtonClose = IDC_BUTTON_CLOSE,
+
+    EditHp = IDC_EDIT_HP,
+    EditMp = IDC_EDIT_MP,
+    EditShields = IDC_EDIT_SHIELD,
+    EditResources = IDC_EDIT_RESOURCES,
+    EditHanger = IDC_EDIT_HANGER,
+    EditUnitId = IDC_EDIT_ID,
+    EditXc = IDC_EDIT_XC,
+    EditYc = IDC_EDIT_YC,
+
+    CheckInvincible = IDC_CHECK_INVINCIBLE,
+    CheckHallucinated = IDC_CHECK_HALLUCINATED,
+    CheckBurrowed = IDC_CHECK_BURROWED,
+    CheckCloaked = IDC_CHECK_CLOAKED,
+    CheckLifted = IDC_CHECK_LIFTED,
 };
 
-enum ID {
-    IDC_UNITLIST = ID_FIRST,
-    IDC_HP_BUDDY,
-    IDC_MP_BUDDY,
-    IDC_SHIELD_BUDDY,
-    IDC_RESOURCES_BUDDY,
-    IDC_HANGER_BUDDY,
-    IDC_ID_BUDDY
-};
-
-UnitWindow::UnitWindow() : columnSortedBy(UNIT_INDEX_COLUMN), flipSort(false), initilizing(true), changeHighlightOnly(false)
+UnitPropertiesWindow::UnitPropertiesWindow() : columnSortedBy(UnitListColumn::Index), flipSort(false), initilizing(true), changeHighlightOnly(false)
 {
 
 }
 
-bool UnitWindow::CreateThis(HWND hParent)
+bool UnitPropertiesWindow::CreateThis(HWND hParent)
 {
-    return ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_UNITPROPERTIES), hParent);
+    if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_UNITPROPERTIES), hParent) )
+    {
+        CreateSubWindows(getHandle());
+        return true;
+    }
+    return false;
 }
 
-bool UnitWindow::CreateSubWindows(HWND hWnd)
+bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
-    editLife.FindThis(hWnd, IDC_EDIT_HP);
-    editMana.FindThis(hWnd, IDC_EDIT_MP);
-    editShield.FindThis(hWnd, IDC_EDIT_SHIELD);
-    editResources.FindThis(hWnd, IDC_EDIT_RESOURCES);
-    editHanger.FindThis(hWnd, IDC_EDIT_HANGER);
-    editUnitId.FindThis(hWnd, IDC_EDIT_ID);
-    editXc.FindThis(hWnd, IDC_EDIT_XC);
-    editYc.FindThis(hWnd, IDC_EDIT_YC);
-    dropPlayer.FindThis(hWnd, IDC_COMBO_PLAYER);
+    buttonMoveUp.FindThis(hWnd, (u32)Id::ButtonMoveUp);
+    buttonMoveTop.FindThis(hWnd, (u32)Id::ButtonMoveTop);
+    buttonMoveDown.FindThis(hWnd, (u32)Id::ButtonMoveDown);
+    buttonMoveEnd.FindThis(hWnd, (u32)Id::ButtonMoveEnd);
+    buttonDelete.FindThis(hWnd, (u32)Id::ButtonDelete);
+    buttonMoveTo.FindThis(hWnd, (u32)Id::ButtonMoveTo);
+
+    editLife.FindThis(hWnd, (u32)Id::EditHp);
+    editMana.FindThis(hWnd, (u32)Id::EditMp);
+    editShield.FindThis(hWnd, (u32)Id::EditShields);
+    editResources.FindThis(hWnd, (u32)Id::EditResources);
+    editHanger.FindThis(hWnd, (u32)Id::EditHanger);
+    editUnitId.FindThis(hWnd, (u32)Id::EditUnitId);
+    editXc.FindThis(hWnd, (u32)Id::EditXc);
+    editYc.FindThis(hWnd, (u32)Id::EditYc);
+
+    checkInvincible.FindThis(hWnd, (u32)Id::CheckInvincible);
+    checkHallucinated.FindThis(hWnd, (u32)Id::CheckHallucinated);
+    checkBurrowed.FindThis(hWnd, (u32)Id::CheckBurrowed);
+    checkCloaked.FindThis(hWnd, (u32)Id::CheckCloaked);
+    checkLifted.FindThis(hWnd, (u32)Id::CheckLifted);
+
+    dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, (u32)Id::ComboPlayer);
 
     initilizing = true;
-    HWND hPlayer = GetDlgItem(hWnd, IDC_COMBO_PLAYER),
-         hHP = GetDlgItem(hWnd, IDC_EDIT_HP),
-         hMP = GetDlgItem(hWnd, IDC_EDIT_MP),
-         hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD),
-         hResources = GetDlgItem(hWnd, IDC_EDIT_RESOURCES),
-         hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER),
-         hID = GetDlgItem(hWnd, IDC_EDIT_ID);
 
-    const char* playerStrings[] = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
-                              "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
-    for ( int i=0; i<12; i++ )
-        SendMessage(hPlayer, CB_ADDSTRING, 0, (LPARAM)playerStrings[i]);
-    SendMessage(hPlayer, CB_LIMITTEXT, 0, 0);
+    editLife.CreateNumberBuddy(0, 100);
+    editMana.CreateNumberBuddy(0, 100);
+    editShield.CreateNumberBuddy(0, 100);
+    editResources.CreateNumberBuddy(0, 50000);
+    editHanger.CreateNumberBuddy(0, 8);
+    editUnitId.CreateNumberBuddy(0, 65535);
 
-    HWND hBuddy[6];
-    const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-                              IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-    for ( int i=0; i<6; i++ )
-    {
-        hBuddy[i] = CreateWindowExA(0, UPDOWN_CLASS, NULL,
-                                    WS_CHILDWINDOW|WS_VISIBLE|WS_DISABLED|
-                                    UDS_SETBUDDYINT|UDS_ALIGNRIGHT|UDS_ARROWKEYS|UDS_HOTTRACK,
-                                    0, 0, 0, 0,
-                                    hWnd, (HMENU)buddyIds[i], NULL, NULL);
-    }
-    SendMessage(hBuddy[0], UDM_SETBUDDY, (WPARAM)hHP, 0);
-    SendMessage(hBuddy[0], UDM_SETRANGE32, 0, 100);
-    SendMessage(hBuddy[1], UDM_SETBUDDY, (WPARAM)hMP, 0);
-    SendMessage(hBuddy[1], UDM_SETRANGE32, 0, 100);
-    SendMessage(hBuddy[2], UDM_SETBUDDY, (WPARAM)hShield, 0);
-    SendMessage(hBuddy[2], UDM_SETRANGE32, 0, 100);
-    SendMessage(hBuddy[3], UDM_SETBUDDY, (WPARAM)hResources, 0);
-    SendMessage(hBuddy[3], UDM_SETRANGE32, 0, 50000);
-    SendMessage(hBuddy[4], UDM_SETBUDDY, (WPARAM)hHanger, 0);
-    SendMessage(hBuddy[4], UDM_SETRANGE32, 0, 8);
-    SendMessage(hBuddy[5], UDM_SETBUDDY, (WPARAM)hID, 0);
-    SendMessage(hBuddy[5], UDM_SETRANGE32, 0, 65535);
-
-    listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, IDC_UNITLIST);
+    listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, (u32)Id::UnitList);
     listUnits.EnableFullRowSelect();
+    listUnits.SetFont(CreateFont(13, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tahoma"), false);
 
-    HFONT hListFont = CreateFont(13, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tahoma");
-    listUnits.SetFont(hListFont, false);
-
-    listUnits.AddColumn(0, "Unit type", 200, LVCFMT_LEFT);
+    listUnits.AddColumn(0, "Unit Type", 200, LVCFMT_LEFT);
     listUnits.AddColumn(1, "Owner", 100, LVCFMT_LEFT);
     listUnits.AddColumn(2, "X", 75, LVCFMT_RIGHT);
     listUnits.AddColumn(3, "Y", 75, LVCFMT_RIGHT);
@@ -105,48 +105,62 @@ bool UnitWindow::CreateSubWindows(HWND hWnd)
     return true;
 }
 
-bool UnitWindow::DestroyThis()
+bool UnitPropertiesWindow::DestroyThis()
 {
+    columnSortedBy = UnitListColumn::Index; // Reset column sorted by
     return ClassDialog::DestroyDialog();
 }
 
-void UnitWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
+void UnitPropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 {
     this->changeHighlightOnly = changeHighlightOnly;
 }
 
-void UnitWindow::ChangeCurrOwner(u8 newPlayer)
+void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
-    std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
+    auto undoableChanges = ReversibleActions::Make();
     auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 unitIndex : selUnits )
     {
         ChkUnit unit = CM->getUnit(unitIndex);
-        if ( newPlayer != unit.owner )
+        if ( unit.owner != newOwner ) // If the current and new owners are different
         {
-            unitChanges->Insert(std::shared_ptr<UnitChange>(new UnitChange(unitIndex, ChkUnitField::Owner, unit.owner)));
-            ChangeOwner(unitIndex, newPlayer);
-            unit.owner = newPlayer;
+            u8 prevOwner = unit.owner;
+            unit.owner = newOwner;
+
+            if ( CM->ReplaceUnit(unitIndex, unit) )
+            {
+                ChangeUnitsDisplayedOwner(unitIndex, newOwner);
+                undoableChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::Owner, prevOwner));
+            }
         }
     }
-    CM->AddUndo(unitChanges);
+    CM->AddUndo(undoableChanges);
     CM->Redraw(true);
 }
 
-void UnitWindow::ChangeOwner(int index, u8 newPlayer)
+void UnitPropertiesWindow::ChangeDropdownPlayer(u8 newPlayer)
 {
-    char owner[32], padding[2] = { '\0', '\0' };
+    std::string text;
+    if ( newPlayer < 12 )
+        dropPlayer.SetSel(newPlayer);
+    else
+        dropPlayer.SetEditNum<u8>(newPlayer + 1);
+}
+
+void UnitPropertiesWindow::ChangeUnitsDisplayedOwner(int index, u8 newPlayer)
+{
+    char owner[32] = {}, padding[2] = { '\0', '\0' };
     if ( newPlayer < 9 )
         padding[0] = '0';
     else
         padding[0] = '\0';
-    std::snprintf(owner, sizeof(owner), "Player %s%i", padding, newPlayer+1);
 
-    int row = listUnits.GetItemRow(index);
-    listUnits.SetItemText(row, UNIT_OWNER_COLUMN, owner);
+    std::snprintf(owner, sizeof(owner), "Player %s%i", padding, newPlayer+1);
+    listUnits.SetItemText(listUnits.GetItemRow(index), (int)UnitListColumn::Owner, owner);
 }
 
-void UnitWindow::SetListRedraw(bool allowRedraw)
+void UnitPropertiesWindow::SetListRedraw(bool allowRedraw)
 {
     if ( allowRedraw )
     {
@@ -158,14 +172,14 @@ void UnitWindow::SetListRedraw(bool allowRedraw)
         listUnits.SetRedraw(false);
 }
 
-bool UnitWindow::AddUnitItem(u16 index, ChkUnit unit)
+bool UnitPropertiesWindow::AddUnitItem(u16 index, ChkUnit unit)
 {
-    char owner[32], padding[2] = { '\0', '\0' },
-        xc[32], yc[32], cIndex[32];;
+    char owner[32] = {}, padding[2] = { '\0', '\0' },
+        xc[32] = {}, yc[32] = {}, cIndex[32] = {};
 
-    u16 id = unit.id;
+    u16 unitId = unit.id;
 
-    if ( unit.owner+1 < 10 )
+    if ( unit.owner < 9 )
         padding[0] = '0';
     else
         padding[0] = '\0';
@@ -176,63 +190,78 @@ bool UnitWindow::AddUnitItem(u16 index, ChkUnit unit)
     std::strcpy(cIndex, std::to_string(index).c_str());
 
     ChkdString unitName;
-    CM->getUnitName(unitName, id);
+    CM->getUnitName(unitName, unitId);
 
     listUnits.AddRow(4, index);
-    listUnits.SetItemText(index, UNIT_NAME_COLUMN, unitName.c_str());
-    listUnits.SetItemText(index, UNIT_OWNER_COLUMN, owner);
-    listUnits.SetItemText(index, UNIT_XC_COLUMN, xc);
-    listUnits.SetItemText(index, UNIT_YC_COLUMN, yc);
-    listUnits.SetItemText(index, UNIT_INDEX_COLUMN, index);
+    listUnits.SetItemText(index, (int)UnitListColumn::Name, unitName.c_str());
+    listUnits.SetItemText(index, (int)UnitListColumn::Owner, owner);
+    listUnits.SetItemText(index, (int)UnitListColumn::Xc, xc);
+    listUnits.SetItemText(index, (int)UnitListColumn::Yc, yc);
+    listUnits.SetItemText(index, (int)UnitListColumn::Index, index);
     return true;
 }
 
-void UnitWindow::UpdateEnabledState()
+void UnitPropertiesWindow::FocusAndSelectIndex(u16 unitIndex)
+{
+    LVFINDINFO findInfo = {};
+    findInfo.flags = LVFI_PARAM;
+    findInfo.lParam = unitIndex;
+    s32 lvIndex = ListView_FindItem(listUnits.getHandle(), -1, &findInfo);
+    ListView_SetItemState(listUnits.getHandle(), lvIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+}
+
+void UnitPropertiesWindow::DeselectIndex(u16 unitIndex)
+{
+    LVFINDINFO findInfo = {};
+    findInfo.flags = LVFI_PARAM;
+    findInfo.lParam = unitIndex;
+
+    int lvIndex = ListView_FindItem(listUnits.getHandle(), -1, &findInfo);
+    ListView_SetItemState(listUnits.getHandle(), lvIndex, 0, LVIS_FOCUSED | LVIS_SELECTED);
+}
+
+void UnitPropertiesWindow::UpdateEnabledState()
 {
     Selections &selections = CM->GetSelections();
     if ( selections.hasUnits() )
     {
-        EnableUnitEditing(getHandle());
-        u16 selectedIndex = selections.getFirstUnit();
-        ChkUnit unit = CM->getUnit(selectedIndex);
-        SetUnitFieldText(getHandle(), unit);
+        EnableUnitEditing();
+        ChkUnit unit = CM->getUnit(selections.getFirstUnit());
+        SetUnitFieldText(unit);
     }
     else
-        DisableUnitEditing(getHandle());
+        DisableUnitEditing();
 }
 
-void UnitWindow::RepopulateList()
+void UnitPropertiesWindow::RepopulateList()
 {
     initilizing = true;
     SetListRedraw(false);
 
     listUnits.DeleteAllItems();
-
     if ( CM != nullptr )
     {
         Selections &selections = CM->GetSelections();
-        ChkUnit* unit = nullptr;
 
         int numUnits = CM->numUnits();
-
         for ( int i = 0; i < numUnits; i++ )
         {
             ChkUnit unit = CM->getUnit(i);
             AddUnitItem(i, unit);
         }
 
-        bool unitsSelected = selections.hasUnits();
-        if ( unitsSelected )
+        if ( selections.hasUnits() )
         {
             u16 selectedIndex = selections.getFirstUnit();
             listUnits.FocusItem(selectedIndex);
+
             auto &selUnits = selections.getUnits();
             for ( u16 &unitIndex : selUnits )
                 listUnits.SelectRow(unitIndex);
             
-            EnableUnitEditing(getHandle());
+            EnableUnitEditing();
             ChkUnit unit = CM->getUnit(selectedIndex);
-            SetUnitFieldText(getHandle(), unit);
+            SetUnitFieldText(unit);
 
             ChkdString unitName;
             CM->getUnitName(unitName, unit.id);
@@ -249,122 +278,91 @@ void UnitWindow::RepopulateList()
     initilizing = false;
 }
 
-void UnitWindow::EnableUnitEditing(HWND hWnd)
+void UnitPropertiesWindow::EnableUnitEditing()
 {
-    HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
-    EnableWindow(hItem, TRUE);
+    dropPlayer.EnableThis();
 
-    const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
-                            IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
-    for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
+    ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
+    EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHanger, &editUnitId, &editXc, &editYc };
+    CheckBoxControl* checkControls[] = { &checkInvincible, &checkHallucinated, &checkBurrowed, &checkCloaked, &checkLifted };
+    int numButtonControls = sizeof(buttonControls) / sizeof(ButtonControl*),
+        numEditControls = sizeof(editControls) / sizeof(EditControl*),
+        numCheckBoxControls = sizeof(checkControls) / sizeof(CheckBoxControl*);
+
+    for ( int i = 0; i < numButtonControls; i++ )
+        buttonControls[i]->EnableThis();
+
+    for ( int i = 0; i < numEditControls; i++ )
+        editControls[i]->EnableThis();
+    
+    for ( int i = 0; i < numCheckBoxControls; i++ )
     {
-        hItem = GetDlgItem(hWnd, buttons[i]);
-        EnableWindow(hItem, TRUE);
+        checkControls[i]->EnableThis();
+        checkControls[i]->SetCheck(false);
     }
 
-    const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
-                              IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
-    for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
+    ChkUnit unit = CM->getUnit(CM->GetSelections().getFirstUnit());
+    SetUnitFieldText(unit);
+}
+
+void UnitPropertiesWindow::DisableUnitEditing()
+{
+    WindowsItem::SetWinText("");
+
+    dropPlayer.SetSel(-1);
+    dropPlayer.DisableThis();
+
+    ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
+    EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHanger, &editUnitId, &editXc, &editYc };
+    CheckBoxControl* checkControls[] = { &checkInvincible, &checkHallucinated, &checkBurrowed, &checkCloaked, &checkLifted };
+    int numButtonControls = sizeof(buttonControls) / sizeof(ButtonControl*),
+        numEditControls = sizeof(editControls) / sizeof(EditControl*),
+        numCheckBoxControls = sizeof(checkControls) / sizeof(CheckBoxControl*);
+
+    for ( int i = 0; i < numButtonControls; i++ )
+        buttonControls[i]->DisableThis();
+
+    for ( int i = 0; i < numEditControls; i++ )
     {
-        hItem = GetDlgItem(hWnd, editBoxes[i]);
-        EnableWindow(hItem, TRUE);
+        editControls[i]->SetText("");
+        editControls[i]->DisableThis();
     }
 
-    const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-                              IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-    for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
+    for ( int i = 0; i < numCheckBoxControls; i++ )
     {
-        hItem = GetDlgItem(hWnd, buddyIds[i]);
-        EnableWindow(hItem, TRUE);
-    }
-
-    const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
-                               IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
-    for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
-    {
-        hItem = GetDlgItem(hWnd, checkBoxes[i]);
-        SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, 0);
-        EnableWindow(hItem, TRUE);
+        checkControls[i]->SetCheck(false);
+        checkControls[i]->DisableThis();
     }
 }
 
-void UnitWindow::DisableUnitEditing(HWND hWnd)
-{
-    SetWindowText(hWnd, "");
-
-    HWND hItem = GetDlgItem(hWnd, IDC_COMBO_PLAYER);
-    SendMessage(hItem, CB_SETCURSEL, -1, 0);
-    EnableWindow(hItem, FALSE);
-
-    const int buttons[] = { IDC_BUTTON_MOVEUP, IDC_BUTTON_MOVETOP, IDC_BUTTON_MOVEDOWN,
-                            IDC_BUTTON_MOVEEND, IDC_BUTTON_DELETE, IDC_BUTTON_MOVE_TO };
-    for ( int i=0; i<sizeof(buttons)/sizeof(const int); i++ )
-    {
-        hItem = GetDlgItem(hWnd, buttons[i]);
-        EnableWindow(hItem, FALSE);
-    }
-
-    const int editBoxes[] = { IDC_EDIT_HP, IDC_EDIT_MP, IDC_EDIT_SHIELD, IDC_EDIT_RESOURCES,
-                              IDC_EDIT_HANGER, IDC_EDIT_ID, IDC_EDIT_XC, IDC_EDIT_YC };
-    for ( int i=0; i<sizeof(editBoxes)/sizeof(const int); i++ )
-    {
-        hItem = GetDlgItem(hWnd, editBoxes[i]);
-        SetWindowText(hItem, "");
-        EnableWindow(hItem, FALSE);
-    }
-
-    const int buddyIds[6] = { IDC_HP_BUDDY, IDC_MP_BUDDY, IDC_SHIELD_BUDDY,
-                              IDC_RESOURCES_BUDDY, IDC_HANGER_BUDDY, IDC_ID_BUDDY };
-    for ( int i=0; i<sizeof(buddyIds)/sizeof(const int); i++ )
-    {
-        hItem = GetDlgItem(hWnd, buddyIds[i]);
-        EnableWindow(hItem, FALSE);
-    }
-
-    const int checkBoxes[] = { IDC_CHECK_INVINCIBLE, IDC_CHECK_HALLUCINATED, IDC_CHECK_BURROWED,
-                               IDC_CHECK_CLOAKED, IDC_CHECK_LIFTED };
-    for ( int i=0; i<sizeof(checkBoxes)/sizeof(const int); i++ )
-    {
-        hItem = GetDlgItem(hWnd, checkBoxes[i]);
-        SendMessage(hItem, BM_SETCHECK, BST_UNCHECKED, 0);
-        EnableWindow(hItem, FALSE);
-    }
-}
-
-void UnitWindow::SetUnitFieldText(HWND hWnd, ChkUnit unit)
+void UnitPropertiesWindow::SetUnitFieldText(ChkUnit unit)
 {
     initilizing = true;
-    HWND hPlayer   = GetDlgItem(hWnd, IDC_COMBO_PLAYER      ), hHp     = GetDlgItem(hWnd, IDC_EDIT_HP         ),
-         hMp       = GetDlgItem(hWnd, IDC_EDIT_MP           ), hShield = GetDlgItem(hWnd, IDC_EDIT_SHIELD     ),
-         hResource = GetDlgItem(hWnd, IDC_EDIT_RESOURCES    ), hHanger = GetDlgItem(hWnd, IDC_EDIT_HANGER     ),
-         hId       = GetDlgItem(hWnd, IDC_EDIT_ID           ), hInvinc = GetDlgItem(hWnd, IDC_CHECK_INVINCIBLE),
-         hHallu    = GetDlgItem(hWnd, IDC_CHECK_HALLUCINATED), hBurrow = GetDlgItem(hWnd, IDC_CHECK_BURROWED  ),
-         hCloak    = GetDlgItem(hWnd, IDC_CHECK_CLOAKED     ), hLifted = GetDlgItem(hWnd, IDC_CHECK_LIFTED    ),
-         hXc       = GetDlgItem(hWnd, IDC_EDIT_XC           ), hYc     = GetDlgItem(hWnd, IDC_EDIT_YC         );
 
     if ( unit.owner < 12 )
-        SendMessage(hPlayer, CB_SETCURSEL, unit.owner, 0);
+        dropPlayer.SetSel(unit.owner);
     else
-        SetWindowText(hPlayer, std::to_string(unit.owner + 1).c_str());
+        dropPlayer.SetWinText(std::to_string(unit.owner + 1).c_str());
 
-    SetWindowText(hHp, std::to_string(unit.hitpoints).c_str());
-    SetWindowText(hMp, std::to_string(unit.energy).c_str());
-    SetWindowText(hShield, std::to_string(unit.shields).c_str());
-    SetWindowText(hResource, std::to_string(unit.resources).c_str());
-    SetWindowText(hHanger, std::to_string(unit.hanger).c_str());
-    SetWindowText(hId, std::to_string(unit.id).c_str());
-    SetWindowText(hXc, std::to_string(unit.xc).c_str());
-    SetWindowText(hYc, std::to_string(unit.yc).c_str());
+    editLife.SetText(std::to_string(unit.hitpoints).c_str());
+    editMana.SetText(std::to_string(unit.energy).c_str());
+    editShield.SetText(std::to_string(unit.shields).c_str());
+    editResources.SetText(std::to_string(unit.resources).c_str());
+    editHanger.SetText(std::to_string(unit.hanger).c_str());
+    editUnitId.SetText(std::to_string(unit.id).c_str());
+    editXc.SetText(std::to_string(unit.xc).c_str());
+    editYc.SetText(std::to_string(unit.yc).c_str());
 
-    SendMessage(hInvinc, BM_SETCHECK, unit.stateFlags&UNIT_STATE_INVINCIBLE  , 0);
-    SendMessage(hHallu , BM_SETCHECK, unit.stateFlags&UNIT_STATE_HALLUCINATED, 0);
-    SendMessage(hBurrow, BM_SETCHECK, unit.stateFlags&UNIT_STATE_BURROWED    , 0);
-    SendMessage(hCloak , BM_SETCHECK, unit.stateFlags&UNIT_STATE_CLOAKED     , 0);
-    SendMessage(hLifted, BM_SETCHECK, unit.stateFlags&UNIT_STATE_LIFTED      , 0);
+    checkInvincible.SetCheck((unit.stateFlags&UNIT_STATE_INVINCIBLE) == UNIT_STATE_INVINCIBLE);
+    checkHallucinated.SetCheck((unit.stateFlags&UNIT_STATE_HALLUCINATED) == UNIT_STATE_HALLUCINATED);
+    checkBurrowed.SetCheck((unit.stateFlags&UNIT_STATE_BURROWED) == UNIT_STATE_BURROWED);
+    checkCloaked.SetCheck((unit.stateFlags&UNIT_STATE_CLOAKED) == UNIT_STATE_CLOAKED);
+    checkLifted.SetCheck((unit.stateFlags&UNIT_STATE_LIFTED) == UNIT_STATE_LIFTED);
+
     initilizing = false;
 }
 
-void UnitWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
+void UnitPropertiesWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 {
     int row1 = listUnits.GetItemRow(index1),
         row2 = listUnits.GetItemRow(index2);
@@ -375,16 +373,16 @@ void UnitWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
     item.lParam = index2;
 
     ListView_SetItem(hListView, &item);
-    listUnits.SetItemText(row1, UNIT_INDEX_COLUMN, index2);
+    listUnits.SetItemText(row1, (int)UnitListColumn::Index, index2);
 
     item.iItem = row2;
     item.lParam = index1;
 
     ListView_SetItem(hListView, &item);
-    listUnits.SetItemText(row2, UNIT_INDEX_COLUMN, index1);
+    listUnits.SetItemText(row2, (int)UnitListColumn::Index, index1);
 }
 
-void UnitWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
+void UnitPropertiesWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 {
     int row = listUnits.GetItemRow(oldLParam);
 
@@ -395,33 +393,33 @@ void UnitWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 
     ListView_SetItem(hListView, &item);
 
-    listUnits.SetItemText(row, UNIT_INDEX_COLUMN, newLParam);
+    listUnits.SetItemText(row, (int)UnitListColumn::Index, newLParam);
 }
 
-int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
+int UnitPropertiesWindow::CompareLvItems(LPARAM index1, LPARAM index2)
 {
     int sort = 0;
 
-    if ( columnSortedBy < 4 )
+    if ( columnSortedBy != UnitListColumn::Index )
     {
         ChkUnit firstUnit = CM->getUnit((u16)index1),
             secondUnit = CM->getUnit((u16)index2);
 
         switch ( columnSortedBy )
         {
-            case 0: // Sort by ID / type
+            case UnitListColumn::Name: // Sort by ID / type
                 if ( firstUnit.id < secondUnit.id )
                     sort = -1;
                 else if ( firstUnit.id > secondUnit.id )
                     sort = 1;
                 break;
-            case 1: // Sort by owner
+            case UnitListColumn::Owner: // Sort by owner
                 if ( firstUnit.owner < secondUnit.owner )
                     sort = -1;
                 else if ( firstUnit.owner > secondUnit.owner )
                     sort = 1;
                 break;
-            case 2: // Sort by xc
+            case UnitListColumn::Xc: // Sort by xc
                 if ( firstUnit.xc < secondUnit.xc )
                     sort = -1;
                 else if ( firstUnit.xc > secondUnit.xc )
@@ -431,7 +429,7 @@ int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
                 else if ( firstUnit.yc > secondUnit.yc )
                     sort = 1;
                 break;
-            case 3: // Sort by yc
+            case UnitListColumn::Yc: // Sort by yc
                 if ( firstUnit.yc < secondUnit.yc )
                     sort = -1;
                 else if ( firstUnit.yc > secondUnit.yc )
@@ -443,7 +441,7 @@ int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
                 break;
         }
     }
-    else if ( columnSortedBy == 4 )
+    else if ( columnSortedBy == UnitListColumn::Index )
     {
         if ( index1 < index2 )
             sort = -1;
@@ -457,673 +455,670 @@ int UnitWindow::CompareLvItems(LPARAM index1, LPARAM index2)
         return sort;
 }
 
-BOOL UnitWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+void UnitPropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 {
-    switch ( nmhdr->code )
+    UnitListColumn newColumn = (UnitListColumn)((NMLISTVIEW*)nmhdr)->iSubItem;
+    if ( newColumn == columnSortedBy )
+        flipSort = !flipSort;
+    else
+        flipSort = false;
+
+    columnSortedBy = newColumn;
+    ListView_SortItems(nmhdr->hwndFrom, ForwardCompareLvItems, this);
+}
+
+void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
+{
+    Selections &selections = CM->GetSelections();
+    preservedStats.convertToUndo();
+    if ( !changeHighlightOnly )
     {
-    case LVN_COLUMNCLICK:
-        {
-            int newColumn = ((NMLISTVIEW*)nmhdr)->iSubItem;
-            if ( newColumn == columnSortedBy )
-                flipSort = !flipSort;
-            else
-                flipSort = false;
+        NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
+        u16 index = (u16)itemInfo->lParam;
 
-            columnSortedBy = newColumn;
-            ListView_SortItems(nmhdr->hwndFrom, ForwardCompareLvItems, this);
+        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
+                                                                           // Add item to selection
+        {
+            bool firstSelected = !selections.hasUnits();
+            selections.addUnit(index);
+
+            if ( firstSelected )
+                EnableUnitEditing();
+
+            ChkUnit unit = CM->getUnit(index);
+            ChkdString unitName;
+            CM->getUnitName(unitName, unit.id);
+            WindowsItem::SetWinText(unitName.c_str());
+            SetUnitFieldText(unit);
+
+            CM->Redraw(false);
         }
-        break;
-    case LVN_ITEMCHANGED:
+        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
+                                                        // Remove item from selection
         {
-            Selections &selections = CM->GetSelections();
-            preservedStats.convertToUndo();
-            if ( changeHighlightOnly == false )
+            selections.removeUnit(index);
+
+            if ( !selections.hasUnits()
+                && !(GetKeyState(VK_DOWN) & 0x8000
+                    || GetKeyState(VK_UP) & 0x8000
+                    || GetKeyState(VK_LEFT) & 0x8000
+                    || GetKeyState(VK_RIGHT) & 0x8000
+                    || GetKeyState(VK_LBUTTON) & 0x8000
+                    || GetKeyState(VK_RBUTTON) & 0x8000) )
             {
-                NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
-                u16 index = (u16)itemInfo->lParam;
+                DisableUnitEditing();
+            }
 
-                if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
-                                                                                   // Add item to selection
+            CM->Redraw(false);
+        }
+    }
+}
+
+void UnitPropertiesWindow::NotifyClosePressed()
+{
+    EndDialog(getHandle(), IDCLOSE);
+}
+
+void UnitPropertiesWindow::NotifyMoveTopPressed()
+{
+    Selections &selections = CM->GetSelections();
+
+    u16 unitStackTopIndex = selections.getFirstUnit();
+    selections.sortUnits(true); // sort with lowest indexes first
+
+    listUnits.SetRedraw(false);
+
+    ChkUnit preserve;
+
+    auto unitChanges = ReversibleActions::Make();
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    u16 i = 0;
+    auto &selUnits = selections.getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
+        {
+            preserve = CM->getUnit(unitIndex); // Preserve the unit info
+            if ( CM->deleteUnit(unitIndex) )
+            {
+                if ( CM->insertUnit(i, preserve) )
                 {
-                    bool firstSelected = !selections.hasUnits();
-                    selections.addUnit(index);
+                    unitChanges->Insert(UnitIndexMove::Make(unitIndex, i));
+                    if ( unitIndex == unitStackTopIndex )
+                        unitStackTopIndex = i;
 
-                    if ( firstSelected )
-                        EnableUnitEditing(hWnd);
-
-                    ChkUnit unit = CM->getUnit(index);
-                    ChkdString unitName;
-                    CM->getUnitName(unitName, unit.id);
-                    SetWindowText(hWnd, unitName.c_str());
-                    SetUnitFieldText(hWnd, unit);
-
-                    CM->Redraw(false);
+                    unitIndex = i; // Modify the index that denotes unit selection
                 }
-                else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
-                                                                // Remove item from selection
+                else // Insertion failed
                 {
-                    selections.removeUnit(index);
-
-                    if ( !selections.hasUnits()
-                        && !(GetKeyState(VK_DOWN) & 0x8000
-                            || GetKeyState(VK_UP) & 0x8000
-                            || GetKeyState(VK_LEFT) & 0x8000
-                            || GetKeyState(VK_RIGHT) & 0x8000
-                            || GetKeyState(VK_LBUTTON) & 0x8000
-                            || GetKeyState(VK_RBUTTON) & 0x8000) )
-                        DisableUnitEditing(hWnd);
-
-                    CM->Redraw(false);
+                    selections.removeUnit(unitIndex);
+                    break; // Can't advance to next, exit loop
                 }
             }
         }
-        break;
+        i++;
+    }
+
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    if ( unitChanges->Count() > 2 )
+        CM->AddUndo(unitChanges);
+
+    selections.ensureFirst(unitStackTopIndex);
+    RepopulateList();
+}
+
+void UnitPropertiesWindow::NotifyMoveEndPressed()
+{
+    Selections &selections = CM->GetSelections();
+
+    u16 unitStackTopIndex = selections.getFirstUnit();
+    selections.sortUnits(false); // Highest First
+
+    listUnits.SetRedraw(false);
+    u16 numUnits = CM->numUnits();
+    u16 numUnitsSelected = selections.numUnits();
+
+    ChkUnit preserve;
+
+    u16 i = 1;
+    auto unitChanges = ReversibleActions::Make();
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    auto &selUnits = selections.getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        if ( unitIndex != numUnits - 1 )
+        {
+            preserve = CM->getUnit(unitIndex);
+            if ( CM->deleteUnit(unitIndex) )
+            {
+                if ( CM->insertUnit(numUnits - i, preserve) )
+                {
+                    unitChanges->Insert(UnitIndexMove::Make(unitIndex, numUnits - i));
+
+                    if ( unitIndex == unitStackTopIndex )
+                        unitStackTopIndex = numUnits - i;
+
+                    unitIndex = numUnits - i;
+                }
+                else
+                {
+                    selections.removeUnit(unitIndex);
+                    break;
+                }
+            }
+        }
+        i++;
+    }
+
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    if ( unitChanges->Count() > 2 )
+        CM->AddUndo(unitChanges);
+
+    selections.ensureFirst(unitStackTopIndex);
+    RepopulateList();
+}
+
+void UnitPropertiesWindow::NotifyMoveUpPressed()
+{
+    Selections &selections = CM->GetSelections();
+    HWND hUnitList = listUnits.getHandle();
+
+    selections.sortUnits(true);
+    listUnits.SetRedraw(false);
+
+    auto unitChanges = ReversibleActions::Make();
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    auto &selUnits = selections.getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
+        {
+            if ( CM->SwapUnits(unitIndex, unitIndex - 1) )
+            {
+                unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex - 1));
+                SwapIndexes(hUnitList, unitIndex, unitIndex - 1);
+                unitIndex--;
+            }
+        }
+    }
+
+    ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
+    int row = listUnits.GetItemRow(selections.getHighestIndex());
+    listUnits.EnsureVisible(row, false);
+    row = listUnits.GetItemRow(selections.getLowestIndex());
+    listUnits.EnsureVisible(row, false);
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+
+    if ( unitChanges->Count() > 2 )
+        CM->AddUndo(unitChanges);
+
+    listUnits.SetRedraw(true);
+}
+
+void UnitPropertiesWindow::NotifyMoveDownPressed()
+{
+    Selections &selections = CM->GetSelections();
+    HWND hUnitList = listUnits.getHandle();
+
+    selections.sortUnits(false);
+    listUnits.SetRedraw(false);
+
+    auto unitChanges = ReversibleActions::Make();
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    auto &selUnits = selections.getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        if ( unitIndex < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
+        {
+            if ( CM->SwapUnits(unitIndex, unitIndex + 1) )
+            {
+                unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));
+                SwapIndexes(hUnitList, unitIndex, unitIndex + 1);
+                unitIndex++;
+            }
+        }
+    }
+
+    unitChanges->Insert(UnitIndexMoveBoundary::Make());
+    if ( unitChanges->Count() > 2 )
+        CM->AddUndo(unitChanges);
+
+    ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
+    int row = listUnits.GetItemRow(selections.getLowestIndex());
+    listUnits.EnsureVisible(row, false);
+    row = listUnits.GetItemRow(selections.getHighestIndex());
+    listUnits.EnsureVisible(row, false);
+    listUnits.SetRedraw(true);
+}
+
+void UnitPropertiesWindow::NotifyMoveToPressed()
+{
+    u32 unitMoveTo = 0;
+    if ( MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->numUnits()) )
+    {
+        if ( unitMoveTo == 0 )
+        {
+            NotifyMoveTopPressed();
+        }
+        else if ( unitMoveTo + CM->GetSelections().numUnits() >= CM->numUnits() )
+        {
+            NotifyMoveEndPressed();
+        }
+        else if ( unitMoveTo > 0 )
+        {
+            Selections &selections = CM->GetSelections();
+            u16 numUnitsSelected = selections.numUnits();
+            u16 limit = CM->numUnits() - 1;
+
+            u16 unitStackTopIndex = selections.getFirstUnit();
+            u16 numUnits = selections.numUnits(),
+                shift = numUnits - 1;
+
+            selections.sortUnits(false); // Highest First
+            listUnits.SetRedraw(false);
+
+            ChkUnit* selectedUnits;
+            try {
+                selectedUnits = new ChkUnit[numUnits];
+            }
+            catch ( std::bad_alloc ) {
+                Error("'Move To' failed.\n\nCould not allocate temporary storage, you may have run out of memory");
+                return;
+            }
+
+            auto unitCreateDels = ReversibleActions::Make();
+            u16 i = 0;
+            auto &selUnits = selections.getUnits();
+            for ( u16 &unitIndex : selUnits )
+            { // Remove each selected unit from the map, store in selectedUnits
+                u32 loc = ((u32)unitIndex)*UNIT_STRUCT_SIZE;
+                selectedUnits[shift - i] = CM->getUnit(unitIndex);
+                if ( CM->deleteUnit(unitIndex) )
+                {
+                    unitCreateDels->Insert(UnitCreateDel::Make(unitIndex, selectedUnits[shift - i]));
+                    unitIndex = u16(unitMoveTo + shift - i);
+                }
+                i++;
+            }
+
+            for ( int i = 0; i < numUnits; i++ )
+            {
+                if ( CM->insertUnit(unitMoveTo + i, selectedUnits[i]) )
+                    unitCreateDels->Insert(UnitCreateDel::Make(unitMoveTo + i));
+            }
+
+            selections.finishMove();
+            selections.ensureFirst(unitStackTopIndex);
+            CM->AddUndo(unitCreateDels);
+            RepopulateList();
+        }
+    }
+}
+
+void UnitPropertiesWindow::NotifyDeletePressed()
+{
+    Selections& selections = CM->GetSelections();
+    HWND hUnitList = listUnits.getHandle();
+    listUnits.SetRedraw(false);
+    auto unitDeletes = ReversibleActions::Make();
+    while ( selections.hasUnits() )
+    {
+        u16 index = selections.getHighestIndex();
+        selections.removeUnit(index);
+        listUnits.RemoveRow(index);
+
+        int row = listUnits.GetItemRow(index);
+
+        unitDeletes->Insert(UnitCreateDel::Make(index, CM->getUnit(index)));
+
+        CM->deleteUnit(index);
+
+        for ( int i = index + 1; i <= CM->numUnits(); i++ )
+            ChangeIndex(hUnitList, i, i - 1);
+    }
+    CM->AddUndo(unitDeletes);
+    CM->Redraw(true);
+    listUnits.SetRedraw(true);
+}
+
+void UnitPropertiesWindow::NotifyInvincibleClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto &selUnits = CM->GetSelections().getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::StateFlags, unit.stateFlags));
+
+        if ( checkInvincible.isChecked() )
+            unit.stateFlags |= UNIT_STATE_INVINCIBLE;
+        else
+            unit.stateFlags &= (~UNIT_STATE_INVINCIBLE);
+
+        CM->ReplaceUnit(unitIndex, unit);
+    }
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyHallucinatedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto &selUnits = CM->GetSelections().getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::StateFlags, unit.stateFlags));
+
+        if ( checkHallucinated.isChecked() )
+            unit.stateFlags |= UNIT_STATE_HALLUCINATED;
+        else
+            unit.stateFlags &= (~UNIT_STATE_HALLUCINATED);
+
+        CM->ReplaceUnit(unitIndex, unit);
+    }
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyBurrowedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto &selUnits = CM->GetSelections().getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::StateFlags, unit.stateFlags));
+
+        if ( checkBurrowed.isChecked() )
+            unit.stateFlags |= UNIT_STATE_BURROWED;
+        else
+            unit.stateFlags &= (~UNIT_STATE_BURROWED);
+
+        CM->ReplaceUnit(unitIndex, unit);
+    }
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyCloakedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto &selUnits = CM->GetSelections().getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::StateFlags, unit.stateFlags));
+
+        if ( checkCloaked.isChecked() )
+            unit.stateFlags |= UNIT_STATE_CLOAKED;
+        else
+            unit.stateFlags &= (~UNIT_STATE_CLOAKED);
+
+        CM->ReplaceUnit(unitIndex, unit);
+    }
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyLiftedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto &selUnits = CM->GetSelections().getUnits();
+    for ( u16 &unitIndex : selUnits )
+    {
+        ChkUnit unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, ChkUnitField::StateFlags, unit.stateFlags));
+
+        if ( checkLifted.isChecked() )
+            unit.stateFlags |= UNIT_STATE_LIFTED; // Check lifted state
+        else
+            unit.stateFlags &= (~UNIT_STATE_LIFTED); // Uncheck lifted state
+
+        CM->ReplaceUnit(unitIndex, unit);
+    }
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyHpEditUpdated()
+{
+    u8 hpPercent = 0;
+    if ( editLife.GetEditNum<u8>(hpPercent) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+            CM->SetUnitHitpoints(unitIndex, hpPercent);
+
+        CM->Redraw(false);
+    }
+}
+
+void UnitPropertiesWindow::NotifyMpEditUpdated()
+{
+    u8 mpPercent = 0;
+    if ( editMana.GetEditNum<u8>(mpPercent) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+            CM->SetUnitEnergy(unitIndex, mpPercent);
+
+        CM->Redraw(false);
+    }
+}
+
+void UnitPropertiesWindow::NotifyShieldEditUpdated()
+{
+    u8 shieldPercent = 0;
+    if ( editShield.GetEditNum<u8>(shieldPercent) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+            CM->SetUnitShields(unitIndex, shieldPercent);
+
+        CM->Redraw(false);
+    }
+}
+
+void UnitPropertiesWindow::NotifyResourcesEditUpdated()
+{
+    u32 resources = 0;
+    if ( editResources.GetEditNum<u32>(resources) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+            CM->SetUnitResources(unitIndex, resources);
+
+        CM->Redraw(false);
+    }
+}
+
+void UnitPropertiesWindow::NotifyHangerEditUpdated()
+{
+    u16 hanger = 0;
+    if ( editHanger.GetEditNum<u16>(hanger) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+            CM->SetUnitHanger(unitIndex, hanger);
+
+        CM->Redraw(true);
+    }
+}
+
+void UnitPropertiesWindow::NotifyIdEditUpdated()
+{
+    u16 unitID = 0;
+    if ( editUnitId.GetEditNum<u16>(unitID) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+        {
+            if ( CM->SetUnitTypeId(unitIndex, unitID) )
+            {
+                int row = listUnits.GetItemRow(unitIndex);
+
+                ChkdString unitName;
+                CM->getUnitName(unitName, unitID);
+                listUnits.SetItemText(row, (int)UnitListColumn::Name, unitName.c_str());
+
+                if ( unitIndex == CM->GetSelections().getFirstUnit() )
+                    WindowsItem::SetWinText(unitName.c_str());
+            }
+        }
+        CM->Redraw(true);
+        ListView_SortItems(listUnits.getHandle(), ForwardCompareLvItems, this);
+    }
+}
+
+void UnitPropertiesWindow::NotifyXcEditUpdated()
+{
+    u16 unitXC = 0;
+    if ( editXc.GetEditNum<u16>(unitXC) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+        {
+            if ( CM->SetUnitXc(unitIndex, unitXC) )
+            {
+                int row = listUnits.GetItemRow(unitIndex);
+                listUnits.SetItemText(row, (int)UnitListColumn::Xc, unitXC);
+            }
+        }
+        CM->Redraw(true);
+        ListView_SortItems(listUnits.getHandle(), ForwardCompareLvItems, this);
+    }
+}
+
+void UnitPropertiesWindow::NotifyYcEditUpdated()
+{
+    u16 unitYC = 0;
+    if ( editYc.GetEditNum<u16>(unitYC) )
+    {
+        auto &selUnits = CM->GetSelections().getUnits();
+        for ( u16 &unitIndex : selUnits )
+        {
+            if ( CM->SetUnitYc(unitIndex, unitYC) )
+            {
+                int row = listUnits.GetItemRow(unitIndex);
+                listUnits.SetItemText(row, (int)UnitListColumn::Yc, unitYC);
+            }
+        }
+        CM->Redraw(true);
+        ListView_SortItems(listUnits.getHandle(), ForwardCompareLvItems, this);
+    }
+}
+
+void UnitPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    switch ( (Id)idFrom )
+    {
+        case Id::ButtonClose: NotifyClosePressed(); break;
+        case Id::ButtonMoveTop: NotifyMoveTopPressed(); break;
+        case Id::ButtonMoveEnd: NotifyMoveEndPressed(); break;
+        case Id::ButtonMoveUp: NotifyMoveUpPressed(); break;
+        case Id::ButtonMoveDown: NotifyMoveDownPressed(); break;
+        case Id::ButtonMoveTo: NotifyMoveToPressed(); break;
+        case Id::ButtonDelete: NotifyDeletePressed(); break;
+        case Id::CheckInvincible: NotifyInvincibleClicked(); break;
+        case Id::CheckHallucinated: NotifyHallucinatedClicked(); break;
+        case Id::CheckBurrowed: NotifyBurrowedClicked(); break;
+        case Id::CheckCloaked: NotifyCloakedClicked(); break;
+        case Id::CheckLifted: NotifyLiftedClicked(); break;
+    }
+}
+
+void UnitPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+    if ( initilizing )
+        return;
+
+    switch ( (Id)idFrom )
+    {
+        case Id::EditHp: NotifyHpEditUpdated(); break;
+        case Id::EditMp: NotifyMpEditUpdated(); break;
+        case Id::EditShields: NotifyShieldEditUpdated(); break;
+        case Id::EditResources: NotifyResourcesEditUpdated(); break;
+        case Id::EditHanger: NotifyHangerEditUpdated(); break;
+        case Id::EditUnitId: NotifyIdEditUpdated(); break;
+        case Id::EditXc: NotifyXcEditUpdated(); break;
+        case Id::EditYc: NotifyYcEditUpdated(); break;
+    }
+}
+
+void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
+{
+    switch ( (Id)idFrom )
+    {
+        case Id::EditHp: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Hitpoints); break;
+        case Id::EditMp: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Energy); break;
+        case Id::EditShields: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Shields); break;
+        case Id::EditResources: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Resources); break;
+        case Id::EditHanger: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Hanger); break;
+        case Id::EditUnitId: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Id); break;
+        case Id::EditXc: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Xc); break;
+        case Id::EditYc: preservedStats.AddStats(CM->GetSelections(), ChkUnitField::Yc); break;
+    }
+}
+
+void UnitPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
+{
+    Id editId = (Id)idFrom;
+
+    if ( editId == Id::EditHp || editId == Id::EditMp || editId == Id::EditShields ||
+        editId == Id::EditResources || editId == Id::EditHanger || editId == Id::EditUnitId ||
+        editId == Id::EditXc || editId == Id::EditYc )
+    {
+        preservedStats.convertToUndo();
+    }
+}
+
+void UnitPropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
+{
+    if ( (Id)idFrom == Id::ComboPlayer )
+        ChangeCurrOwner(dropPlayer.GetPlayerBySelNum());
+}
+
+void UnitPropertiesWindow::NotifyComboEditUpdated(int idFrom, HWND hWndFrom)
+{
+    if ( (Id)idFrom == Id::ComboPlayer )
+    {
+        u8 newPlayer = 0;
+        if ( dropPlayer.GetPlayerNum(newPlayer) )
+            ChangeCurrOwner(newPlayer);
+    }
+}
+
+BOOL UnitPropertiesWindow::Activate(WPARAM wParam, LPARAM lParam)
+{
+    if ( LOWORD(wParam) != WA_INACTIVE )
+        chkd.SetCurrDialog(getHandle());
+    
+    return FALSE;
+}
+
+BOOL UnitPropertiesWindow::ShowWindow(WPARAM wParam, LPARAM lParam)
+{
+    BOOL result = ClassDialog::DlgProc(getHandle(), WM_SHOWWINDOW, wParam, lParam);
+    if ( wParam == TRUE )
+        SetFocus(listUnits.getHandle());
+
+    return result;
+}
+
+BOOL UnitPropertiesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+    switch ( nmhdr->code )
+    {
+        case LVN_COLUMNCLICK: LvColumnClicked(nmhdr); break;
+        case LVN_ITEMCHANGED: LvItemChanged(nmhdr); break;
     }
     return ClassDialog::DlgNotify(hWnd, idFrom, nmhdr);
 }
 
-BOOL UnitWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
-{
-    switch ( LOWORD(wParam) )
-    {
-    case IDC_COMBO_PLAYER:
-        switch ( HIWORD(wParam) )
-        {
-        case CBN_EDITCHANGE:
-        {
-            u8 newPlayer;
-            if ( dropPlayer.GetPlayerNum(newPlayer) )
-                ChangeCurrOwner(newPlayer);
-        }
-        break;
-        case CBN_SELCHANGE:
-        {
-            u8 newPlayer = (u8)SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
-            if ( newPlayer != CB_ERR )
-                ChangeCurrOwner(newPlayer);
-        }
-        break;
-        }
-        break;
-    case IDCLOSE:
-        EndDialog(hWnd, IDCLOSE);
-        break;
-
-    case IDC_BUTTON_MOVETOP:
-    {
-        Selections &selections = CM->GetSelections();
-
-        u16 unitStackTopIndex = selections.getFirstUnit();
-        selections.sortUnits(true); // sort with lowest indexes first
-
-        listUnits.SetRedraw(false);
-
-        ChkUnit preserve;
-
-        std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        u16 i = 0;
-        auto &selUnits = selections.getUnits();
-        for ( u16 &unitIndex : selUnits )
-        {
-            if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
-            {
-                preserve = CM->getUnit(unitIndex); // Preserve the unit info
-                if ( CM->deleteUnit(unitIndex) )
-                {
-                    if ( CM->insertUnit(i, preserve) )
-                    {
-                        unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, i)));
-                        if ( unitIndex == unitStackTopIndex )
-                            unitStackTopIndex = i;
-                        unitIndex = i; // Modify the index that denotes unit selection
-                    }
-                    else // Insertion failed
-                    {
-                        selections.removeUnit(unitIndex);
-                        break; // Can't advance to next, exit loop
-                    }
-                }
-            }
-            i++;
-        }
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        if ( unitChanges->Count() > 2 )
-            CM->AddUndo(unitChanges);
-        selections.ensureFirst(unitStackTopIndex);
-        RepopulateList();
-    }
-    break;
-
-    case IDC_BUTTON_MOVEEND:
-    {
-        Selections &selections = CM->GetSelections();
-
-        u16 unitStackTopIndex = selections.getFirstUnit();
-        selections.sortUnits(false); // Highest First
-
-        listUnits.SetRedraw(false);
-        u16 numUnits = CM->numUnits();
-        u16 numUnitsSelected = selections.numUnits();
-
-        ChkUnit preserve;
-
-        u16 i = 1;
-        std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        auto &selUnits = selections.getUnits();
-        for ( u16 &unitIndex : selUnits )
-        {
-            if ( unitIndex != numUnits-1 )
-            {
-                preserve = CM->getUnit(unitIndex);
-                if ( CM->deleteUnit(unitIndex) )
-                {
-                    if ( CM->insertUnit(numUnits-i, preserve) )
-                    {
-                        unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, numUnits - i)));
-
-                        if ( unitIndex == unitStackTopIndex )
-                            unitStackTopIndex = numUnits - i;
-
-                        unitIndex = numUnits - i;
-                    }
-                    else
-                    {
-                        selections.removeUnit(unitIndex);
-                        break;
-                    }
-                }
-            }
-            i++;
-        }
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        if ( unitChanges->Count() > 2 )
-            CM->AddUndo(unitChanges);
-        selections.ensureFirst(unitStackTopIndex);
-        RepopulateList();
-    }
-    break;
-
-    case IDC_BUTTON_MOVEUP:
-    {
-        Selections& selections = CM->GetSelections();
-        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-
-        selections.sortUnits(true);
-        listUnits.SetRedraw(false);
-
-        std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        auto &selUnits = selections.getUnits();
-        for ( u16 &unitIndex : selUnits )
-        {
-            if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
-            {
-                if ( CM->SwapUnits(unitIndex, unitIndex-1) )
-                {
-                    unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, unitIndex - 1)));
-                    SwapIndexes(hUnitList, unitIndex, unitIndex - 1);
-                    unitIndex--;
-                }
-            }
-        }
-        ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-        int row = listUnits.GetItemRow(selections.getHighestIndex());
-        listUnits.EnsureVisible(row, false);
-        row = listUnits.GetItemRow(selections.getLowestIndex());
-        listUnits.EnsureVisible(row, false);
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        if ( unitChanges->Count() > 2 )
-            CM->AddUndo(unitChanges);
-        listUnits.SetRedraw(true);
-    }
-    break;
-    case IDC_BUTTON_MOVEDOWN:
-    {
-        Selections &selections = CM->GetSelections();
-        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-
-        selections.sortUnits(false);
-        listUnits.SetRedraw(false);
-
-        std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        auto &selUnits = selections.getUnits();
-        for ( u16 &unitIndex : selUnits )
-        {
-            if ( unitIndex < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
-            {
-                if ( CM->SwapUnits(unitIndex, unitIndex+1) )
-                {
-                    unitChanges->Insert(std::shared_ptr<UnitIndexMove>(new UnitIndexMove(unitIndex, unitIndex + 1)));
-                    SwapIndexes(hUnitList, unitIndex, unitIndex + 1);
-                    unitIndex++;
-                }
-            }
-        }
-        unitChanges->Insert(std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary));
-        if ( unitChanges->Count() > 2 )
-            CM->AddUndo(unitChanges);
-        ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-        int row = listUnits.GetItemRow(selections.getLowestIndex());
-        listUnits.EnsureVisible(row, false);
-        row = listUnits.GetItemRow(selections.getHighestIndex());
-        listUnits.EnsureVisible(row, false);
-        listUnits.SetRedraw(true);
-    }
-    break;
-    case IDC_BUTTON_MOVE_TO:
-    {
-        u32 unitMoveTo;
-        if ( MoveToDialog<u32>::GetIndex(unitMoveTo, hWnd) && unitMoveTo < u32(CM->numUnits()) )
-        {
-            if ( unitMoveTo == 0 )
-                return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVETOP, NULL), 0);
-            else if ( unitMoveTo > 0 )
-            {
-                Selections &selections = CM->GetSelections();
-                u16 numUnitsSelected = selections.numUnits();
-                u16 limit = CM->numUnits() - 1;
-
-                if ( unitMoveTo + numUnitsSelected > limit )
-                    return SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_BUTTON_MOVEEND, NULL), 0);
-                else
-                {
-                    HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-
-                    u16 unitStackTopIndex = selections.getFirstUnit();
-                    u16 numUnits = selections.numUnits(),
-                        shift = numUnits - 1;
-                    selections.sortUnits(false); // Highest First
-                    listUnits.SetRedraw(false);
-
-                    ChkUnit* selectedUnits;
-                    try {
-                        selectedUnits = new ChkUnit[numUnits];
-                    }
-                    catch ( std::bad_alloc ) {
-                        Error("'Move To' failed.\n\nCould not allocate temporary storage, you may have run out of memory");
-                        return 0;
-                    }
-
-                    std::shared_ptr<ReversibleActions> unitCreateDels(new ReversibleActions);
-                    u16 i = 0;
-                    auto &selUnits = selections.getUnits();
-                    for ( u16 &unitIndex : selUnits )
-                    { // Remove each selected unit from the map, store in selectedUnits
-                        u32 loc = ((u32)unitIndex)*UNIT_STRUCT_SIZE;
-                        selectedUnits[shift - i] = CM->getUnit(unitIndex);
-                        if ( CM->deleteUnit(unitIndex) )
-                        {
-                            unitCreateDels->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(unitIndex, selectedUnits[shift - i])));
-                            unitIndex = u16(unitMoveTo + shift - i);
-                        }
-                        i++;
-                    }
-
-                    for ( int i = 0; i<numUnits; i++ )
-                    {
-                        if ( CM->insertUnit(unitMoveTo + i, selectedUnits[i]) )
-                            unitCreateDels->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(unitMoveTo + i)));
-                    }
-
-                    selections.finishMove();
-                    selections.ensureFirst(unitStackTopIndex);
-                    CM->AddUndo(unitCreateDels);
-                    RepopulateList();
-                }
-            }
-        }
-    }
-    break;
-    case IDC_BUTTON_DELETE:
-    {
-        Selections& selections = CM->GetSelections();
-        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-        SendMessage(hUnitList, WM_SETREDRAW, FALSE, 0);
-        std::shared_ptr<ReversibleActions> unitDeletes(new ReversibleActions);
-        while ( selections.hasUnits() )
-        {
-            u16 index = selections.getHighestIndex();
-            selections.removeUnit(index);
-            listUnits.RemoveRow(index);
-
-            HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-            int row = listUnits.GetItemRow(index);
-
-            unitDeletes->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, CM->getUnit(index))));
-
-            CM->deleteUnit(index);
-
-            for ( int i = index + 1; i <= CM->numUnits(); i++ )
-                ChangeIndex(hUnitList, i, i - 1);
-        }
-        CM->AddUndo(unitDeletes);
-        CM->Redraw(true);
-        SendMessage(hUnitList, WM_SETREDRAW, TRUE, 0);
-    }
-    break;
-    default:
-        switch ( HIWORD(wParam) )
-        {
-        case BN_CLICKED:
-            switch ( LOWORD(wParam) )
-            {
-            case IDC_CHECK_INVINCIBLE:
-            {
-                std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-                auto &selUnits = CM->GetSelections().getUnits();
-                for ( u16 &unitIndex : selUnits )
-                {
-                    ChkUnit unit = CM->getUnit(unitIndex);
-                    unitChanges->Insert(std::shared_ptr<UnitChange>(new
-                        UnitChange(unitIndex, ChkUnitField::StateFlags, unit.stateFlags)));
-
-                    if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
-                        unit.stateFlags |= UNIT_STATE_INVINCIBLE;
-                    else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
-                        unit.stateFlags ^= UNIT_STATE_INVINCIBLE;
-                }
-                CM->AddUndo(unitChanges);
-            }
-            break;
-            case IDC_CHECK_HALLUCINATED:
-            {
-                std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-                auto &selUnits = CM->GetSelections().getUnits();
-                for ( u16 &unitIndex : selUnits )
-                {
-                    ChkUnit unit = CM->getUnit(unitIndex);
-                    unitChanges->Insert(std::shared_ptr<UnitChange>(new
-                        UnitChange(unitIndex, ChkUnitField::StateFlags, unit.stateFlags)));
-
-                    if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
-                        unit.stateFlags |= UNIT_STATE_HALLUCINATED;
-                    else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
-                        unit.stateFlags ^= UNIT_STATE_HALLUCINATED;
-                }
-                CM->AddUndo(unitChanges);
-            }
-            break;
-            case IDC_CHECK_BURROWED:
-            {
-                std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-                auto &selUnits = CM->GetSelections().getUnits();
-                for ( u16 &unitIndex : selUnits )
-                {
-                    ChkUnit unit = CM->getUnit(unitIndex);
-                    unitChanges->Insert(std::shared_ptr<UnitChange>(new
-                        UnitChange(unitIndex, ChkUnitField::StateFlags, unit.stateFlags)));
-
-                    if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
-                        unit.stateFlags |= UNIT_STATE_BURROWED;
-                    else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
-                        unit.stateFlags ^= UNIT_STATE_BURROWED;
-                }
-                CM->AddUndo(unitChanges);
-            }
-            break;
-            case IDC_CHECK_CLOAKED:
-            {
-                std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-                auto &selUnits = CM->GetSelections().getUnits();
-                for ( u16 &unitIndex : selUnits )
-                {
-                    ChkUnit unit = CM->getUnit(unitIndex);
-                    unitChanges->Insert(std::shared_ptr<UnitChange>(new
-                        UnitChange(unitIndex, ChkUnitField::StateFlags, unit.stateFlags)));
-
-                    if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
-                        unit.stateFlags |= UNIT_STATE_CLOAKED;
-                    else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
-                        unit.stateFlags ^= UNIT_STATE_CLOAKED;
-                }
-                CM->AddUndo(unitChanges);
-            }
-            break;
-            case IDC_CHECK_LIFTED:
-            {
-                std::shared_ptr<ReversibleActions> unitChanges(new ReversibleActions);
-                auto &selUnits = CM->GetSelections().getUnits();
-                for ( u16 &unitIndex : selUnits )
-                {
-                    ChkUnit unit = CM->getUnit(unitIndex);
-                    unitChanges->Insert(std::shared_ptr<UnitChange>(new
-                        UnitChange(unitIndex, ChkUnitField::StateFlags, unit.stateFlags)));
-
-                    if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
-                        unit.stateFlags |= UNIT_STATE_LIFTED; // Check lifted state
-                    else if ( SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_UNCHECKED )
-                        unit.stateFlags ^= UNIT_STATE_LIFTED; // Uncheck lifted state
-                }
-                CM->AddUndo(unitChanges);
-            }
-            break;
-            }
-            break;
-        case EN_SETFOCUS:
-            switch ( LOWORD(wParam) )
-            {
-            case IDC_EDIT_HP: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Hitpoints); break;
-            case IDC_EDIT_MP: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Energy); break;
-            case IDC_EDIT_SHIELD: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Shields); break;
-            case IDC_EDIT_RESOURCES: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Resources); break;
-            case IDC_EDIT_HANGER: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Hanger); break;
-            case IDC_EDIT_ID: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Id); break;
-            case IDC_EDIT_XC: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Xc); break;
-            case IDC_EDIT_YC: preservedStats.addStats(CM->GetSelections(), ChkUnitField::Yc); break;
-            }
-            break;
-        case EN_KILLFOCUS:
-            switch ( LOWORD(wParam) )
-            {
-            case IDC_EDIT_HP: case IDC_EDIT_MP: case IDC_EDIT_SHIELD: case IDC_EDIT_RESOURCES:
-            case IDC_EDIT_HANGER: case IDC_EDIT_ID: case IDC_EDIT_XC: case IDC_EDIT_YC:
-            {
-                preservedStats.convertToUndo();
-            }
-            break;
-            }
-            break;
-        case EN_UPDATE:
-            if ( !initilizing )
-            {
-                switch ( LOWORD(wParam) )
-                {
-                case IDC_EDIT_HP:
-                {
-                    u8 hpPercent;
-                    if ( editLife.GetEditNum<u8>(hpPercent) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                            CM->SetUnitHitpoints(unitIndex, hpPercent);
-                        
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_EDIT_MP:
-                {
-                    u8 mpPercent;
-                    if ( editMana.GetEditNum<u8>(mpPercent) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                            CM->SetUnitEnergy(unitIndex, mpPercent);
-
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_EDIT_SHIELD:
-                {
-                    u8 shieldPercent;
-                    if ( editShield.GetEditNum<u8>(shieldPercent) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                            CM->SetUnitShields(unitIndex, shieldPercent);
-                        
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_EDIT_RESOURCES:
-                {
-                    u32 resources;
-                    if ( editResources.GetEditNum<u32>(resources) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                            CM->SetUnitResources(unitIndex, resources);
-
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_EDIT_HANGER:
-                {
-                    u16 hanger;
-                    if ( editHanger.GetEditNum<u16>(hanger) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                            CM->SetUnitHanger(unitIndex, hanger);
-
-                        CM->Redraw(true);
-                    }
-                }
-                break;
-                case IDC_EDIT_ID:
-                {
-                    u16 unitID;
-                    if ( editUnitId.GetEditNum<u16>(unitID) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                        {
-                            if ( CM->SetUnitTypeId(unitIndex, unitID) )
-                            {
-                                int row = listUnits.GetItemRow(unitIndex);
-
-                                ChkdString unitName;
-                                CM->getUnitName(unitName, unitID);
-                                listUnits.SetItemText(row, UNIT_NAME_COLUMN, unitName.c_str());
-
-                                if ( unitIndex == CM->GetSelections().getFirstUnit() )
-                                    SetWindowText(hWnd, unitName.c_str());
-                            }
-                        }
-                        CM->Redraw(true);
-                        ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-                    }
-                }
-                break;
-                case IDC_EDIT_XC:
-                {
-                    u16 unitXC;
-                    if ( editXc.GetEditNum<u16>(unitXC) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                        {
-                            if ( CM->SetUnitXc(unitIndex, unitXC) )
-                            {
-                                int row = listUnits.GetItemRow(unitIndex);
-                                listUnits.SetItemText(row, UNIT_XC_COLUMN, unitXC);
-                            }
-                        }
-                        CM->Redraw(true);
-                        ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-                    }
-                }
-                break;
-                case IDC_EDIT_YC:
-                {
-                    u16 unitYC;
-                    if ( editYc.GetEditNum<u16>(unitYC) )
-                    {
-                        HWND hUnitList = GetDlgItem(hWnd, IDC_UNITLIST);
-                        auto &selUnits = CM->GetSelections().getUnits();
-                        for ( u16 &unitIndex : selUnits )
-                        {
-                            if ( CM->SetUnitYc(unitIndex, unitYC) )
-                            {
-                                int row = listUnits.GetItemRow(unitIndex);
-                                listUnits.SetItemText(row, UNIT_YC_COLUMN, unitYC);
-                            }
-                        }
-                        CM->Redraw(true);
-                        ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-                    }
-                }
-                break;
-                }
-            }
-            break;
-        }
-    }
-    return ClassDialog::DlgCommand(hWnd, wParam, lParam);
-}
-
-BOOL UnitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL UnitPropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch( msg )
     {
-        case WM_ACTIVATE:
-            if ( LOWORD(wParam) != WA_INACTIVE )
-                chkd.SetCurrDialog(hWnd);
-            return FALSE; // Necessary for proper minimize/restore
-            break;
-
-        case WM_INITDIALOG:
-            CreateSubWindows(hWnd);
-            break;
-
-        case WM_SHOWWINDOW:
-            {
-                LRESULT result = ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
-                if ( wParam == TRUE )
-                    SetFocus( GetDlgItem(hWnd, IDC_UNITLIST) );
-
-                return result;
-            }
-            break;
-
-        case WM_KEYDOWN:
-            switch ( wParam )
-            {
-                case VK_RETURN:
-                    {
-                        HWND hClose = GetDlgItem(hWnd, IDCLOSE);
-                        BOOL closeSelected = SendMessage(hClose, BM_GETSTATE, 0, 0) & BST_PUSHED;
-                    }
-                    break;
-            }
-            break;
-
-        case IDCLOSE:
-            columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
-            DestroyThis();
-            break;
-
-        case WM_CLOSE:
-            columnSortedBy = UNIT_INDEX_COLUMN; // Reset to sort by index
-            DestroyThis();
-            break;
-
-        default:
-            return FALSE;
-            break;
+        case WM_ACTIVATE: return Activate(wParam, lParam); break;
+        case WM_SHOWWINDOW: return ShowWindow(wParam, lParam); break;
+        case WM_CLOSE: DestroyThis(); break;
+        default: return ClassDialog::DlgProc(hWnd, msg, wParam, lParam); break;
     }
     return TRUE;
 }

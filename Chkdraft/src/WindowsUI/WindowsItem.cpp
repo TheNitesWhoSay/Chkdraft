@@ -508,14 +508,14 @@ void WindowsItem::UpdateWindow()
     ::UpdateWindow(getHandle());
 }
 
-void WindowsItem::DisableThis()
-{
-    ::EnableWindow(getHandle(), FALSE);
-}
-
 void WindowsItem::EnableThis()
 {
     ::EnableWindow(getHandle(), TRUE);
+}
+
+void WindowsItem::DisableThis()
+{
+    ::EnableWindow(getHandle(), FALSE);
 }
 
 void WindowsItem::SetWidth(int newWidth)

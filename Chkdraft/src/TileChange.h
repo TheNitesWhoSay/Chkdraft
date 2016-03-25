@@ -6,9 +6,12 @@
 class TileChange : public ReversibleAction
 {
     public:
-        TileChange(u16 xc, u16 yc, u16 tileValue);
+        static std::shared_ptr<TileChange> Make(u16 xc, u16 yc, u16 tileValue);
         virtual void Reverse(void *guiMap);
         virtual int32_t GetType();
+
+    protected:
+        TileChange(u16 xc, u16 yc, u16 tileValue);
 
     private:
         u16 xc;

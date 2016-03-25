@@ -1,10 +1,9 @@
 #include "UnitChange.h"
 #include "GuiMap.h"
 
-UnitChange::UnitChange(u16 unitIndex, ChkUnitField field, u32 data)
-    : unitIndex(unitIndex), field(field), data(data)
+std::shared_ptr<UnitChange> UnitChange::Make(u16 unitIndex, ChkUnitField field, u32 data)
 {
-
+    return std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, data));
 }
 
 void UnitChange::Reverse(void *guiMap)
@@ -17,4 +16,10 @@ void UnitChange::Reverse(void *guiMap)
 int32_t UnitChange::GetType()
 {
     return (int32_t)UndoTypes::UnitChange;
+}
+
+UnitChange::UnitChange(u16 unitIndex, ChkUnitField field, u32 data)
+    : unitIndex(unitIndex), field(field), data(data)
+{
+
 }

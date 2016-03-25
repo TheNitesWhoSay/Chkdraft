@@ -13,6 +13,10 @@ class EditControl : public WindowControl
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, bool clientEdge, u32 id); // Attempts to create an edit control
         void SetForwardArrowKeys(bool forwardArrowKeyToParent); // Sets whether this control forwards arrow-keypresses to the parent
         void SetStopForwardOnClick(bool stopFowardingOnClick); // Sets whether this stops forwarding arrow-keys when clicked
+        bool CreateNumberBuddy(int minimumValue, int maximumValue);
+        virtual void EnableThis();
+        virtual void DisableThis();
+
         bool SetText(const char* newText); // Sets new text content
 
         template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
@@ -44,6 +48,7 @@ class EditControl : public WindowControl
         bool forwardArrowKeys;
         bool stopFowardingOnClick;
         bool autoExpand;
+        HWND hBuddy; // If NULL, the control has no buddy
 };
 
 #endif

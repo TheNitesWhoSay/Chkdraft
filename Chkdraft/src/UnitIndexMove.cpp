@@ -1,10 +1,9 @@
 #include "UnitIndexMove.h"
 #include "GuiMap.h"
 
-UnitIndexMove::UnitIndexMove(u16 oldIndex, u16 newIndex)
-    : oldIndex(oldIndex), newIndex(newIndex)
+std::shared_ptr<UnitIndexMove> UnitIndexMove::Make(u16 oldIndex, u16 newIndex)
 {
-
+    return std::shared_ptr<UnitIndexMove>(new UnitIndexMove(oldIndex, newIndex));
 }
 
 void UnitIndexMove::Reverse(void *guiMap)
@@ -21,9 +20,15 @@ int32_t UnitIndexMove::GetType()
     return (int32_t)UndoTypes::UnitChange;
 }
 
-UnitIndexMoveBoundary::UnitIndexMoveBoundary()
+UnitIndexMove::UnitIndexMove(u16 oldIndex, u16 newIndex)
+    : oldIndex(oldIndex), newIndex(newIndex)
 {
 
+}
+
+std::shared_ptr<UnitIndexMoveBoundary> UnitIndexMoveBoundary::Make()
+{
+    return std::shared_ptr<UnitIndexMoveBoundary>(new UnitIndexMoveBoundary());
 }
 
 void UnitIndexMoveBoundary::Reverse(void *guiMap)
@@ -34,4 +39,9 @@ void UnitIndexMoveBoundary::Reverse(void *guiMap)
 int32_t UnitIndexMoveBoundary::GetType()
 {
     return (int32_t)UndoTypes::UnitChange;
+}
+
+UnitIndexMoveBoundary::UnitIndexMoveBoundary()
+{
+
 }

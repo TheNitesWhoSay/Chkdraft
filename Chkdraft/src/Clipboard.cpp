@@ -217,7 +217,7 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
                     u16 xSize = map.XSize();
                     u16 ySize = map.YSize();
     
-                    std::shared_ptr<ReversibleActions> tileChanges(new ReversibleActions);
+                    auto tileChanges = ReversibleActions::Make();
                     auto &tiles = getTiles();
                     for ( auto &tile : tiles )
                     {
@@ -232,7 +232,7 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
                                 u32 startLocation = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
                                 if ( map.getTile(xc, yc) != tile.value )
                                 {
-                                    tileChanges->Insert(std::shared_ptr<TileChange>(new TileChange(xc, yc, map.getTile(xc, yc))));
+                                    tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
                                     map.setTile(xc, yc, tile.value);
                                 }
                             }
@@ -244,7 +244,7 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
             break;
         case Layer::Units:
             {
-                std::shared_ptr<ReversibleActions> unitCreates(new ReversibleActions);
+                auto unitCreates = ReversibleActions::Make();
                 auto &pasteUnits = getUnits();
                 for ( auto &pasteUnit : pasteUnits )
                 {
@@ -284,7 +284,7 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
                             u16 numUnits = map.numUnits();
                             if ( map.addUnit(pasteUnit.unit) )
                             {
-                                unitCreates->Insert(std::shared_ptr<UnitCreateDel>(new UnitCreateDel(numUnits)));
+                                unitCreates->Insert(UnitCreateDel::Make(numUnits));
                                 if ( chkd.unitWindow.getHandle() != nullptr )
                                     chkd.unitWindow.AddUnitItem(numUnits, pasteUnit.unit);
                             }

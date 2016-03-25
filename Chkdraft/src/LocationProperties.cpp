@@ -137,9 +137,9 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ChkLocation* locRef;
             if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
             {
-                std::shared_ptr<ReversibleActions> locationChanges(new ReversibleActions);
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1)));
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2)));
+                auto locationChanges = ReversibleActions::Make();
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1));
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2));
                 CM->AddUndo(locationChanges);
                 std::swap(locRef->xc1, locRef->xc2);
                 RefreshLocationInfo();
@@ -153,9 +153,9 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ChkLocation* locRef;
             if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
             {
-                std::shared_ptr<ReversibleActions> locationChanges(new ReversibleActions);
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1)));
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2)));
+                auto locationChanges = ReversibleActions::Make();
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1));
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2));
                 CM->AddUndo(locationChanges);
                 std::swap(locRef->yc1, locRef->yc2);
                 RefreshLocationInfo();
@@ -169,11 +169,11 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ChkLocation* locRef;
             if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
             {
-                std::shared_ptr<ReversibleActions> locationChanges(new ReversibleActions);
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1)));
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2)));
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1)));
-                locationChanges->Insert(std::shared_ptr<LocationChange>(new LocationChange(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2)));
+                auto locationChanges = ReversibleActions::Make();
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1));
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2));
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1));
+                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2));
                 CM->AddUndo(locationChanges);
                 std::swap(locRef->xc1, locRef->xc2);
                 std::swap(locRef->yc1, locRef->yc2);
@@ -201,33 +201,27 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             switch ( LOWORD(wParam) )
                             {
                             case IDC_LOWGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_LOWGROUND);
                                 break;
                             case IDC_MEDGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_MEDGROUND);
                                 break;
                             case IDC_HIGHGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_HIGHGROUND);
                                 break;
                             case IDC_LOWAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_LOWAIR);
                                 break;
                             case IDC_MEDAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_MEDAIR);
                                 break;
                             case IDC_HIGHAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation &= (~LOC_ELEVATION_HIGHAIR);
                                 break;
                             case IDC_EXTLOCNAMESTR:
@@ -255,33 +249,27 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             switch ( LOWORD(wParam) )
                             {
                             case IDC_LOWGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_LOWGROUND;
                                 break;
                             case IDC_MEDGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_MEDGROUND;
                                 break;
                             case IDC_HIGHGROUND:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_HIGHGROUND;
                                 break;
                             case IDC_LOWAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_LOWAIR;
                                 break;
                             case IDC_MEDAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_MEDAIR;
                                 break;
                             case IDC_HIGHAIR:
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
                                 locRef->elevation |= LOC_ELEVATION_HIGHAIR;
                                 break;
                             case IDC_EXTLOCNAMESTR:
@@ -338,8 +326,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         if ( editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
                         {
                             locRef->elevation = newVal;
-                            CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                LocationChange(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat)));
+                            CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat));
                             RefreshLocationInfo();
                         }
                     }
@@ -352,8 +339,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             locRef->xc1 = newVal;
                             if ( newVal != preservedStat )
                             {
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_XC1, preservedStat)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, preservedStat));
                             }
                             CM->Redraw(false);
                         }
@@ -367,8 +353,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             locRef->yc1 = newVal;
                             if ( newVal != preservedStat )
                             {
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_YC1, preservedStat)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, preservedStat));
                             }
                             CM->Redraw(false);
                         }
@@ -382,8 +367,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             locRef->xc2 = newVal;
                             if ( newVal != preservedStat )
                             {
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_XC2, preservedStat)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, preservedStat));
                             }
                             CM->Redraw(false);
                         }
@@ -397,8 +381,7 @@ BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                             locRef->yc2 = newVal;
                             if ( newVal != preservedStat )
                             {
-                                CM->AddUndo(std::shared_ptr<LocationChange>(new
-                                    LocationChange(locProcLocIndex, LOC_FIELD_YC2, preservedStat)));
+                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, preservedStat));
                             }
                             CM->Redraw(false);
                         }

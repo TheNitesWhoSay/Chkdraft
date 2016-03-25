@@ -1,17 +1,14 @@
 #include "UnitCreateDel.h"
 #include "GuiMap.h"
 
-UnitCreateDel::UnitCreateDel(u16 index, ChkUnit &unit) // Undo deletion
-    : index(index), unit(nullptr)
+std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index)
 {
-    this->unit = std::unique_ptr<ChkUnit>(new ChkUnit);
-    (*(this->unit)) = unit;
+    return std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index));
 }
 
-UnitCreateDel::UnitCreateDel(u16 index) // Undo creation
-    : index(index), unit(nullptr)
+std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index, ChkUnit &unit)
 {
-    
+    return std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, unit));
 }
 
 void UnitCreateDel::Reverse(void *guiMap)
@@ -32,4 +29,17 @@ void UnitCreateDel::Reverse(void *guiMap)
 int32_t UnitCreateDel::GetType()
 {
     return (int32_t)UndoTypes::UnitChange;
+}
+
+UnitCreateDel::UnitCreateDel(u16 index, ChkUnit &unit) // Undo deletion
+    : index(index), unit(nullptr)
+{
+    this->unit = std::unique_ptr<ChkUnit>(new ChkUnit);
+    (*(this->unit)) = unit;
+}
+
+UnitCreateDel::UnitCreateDel(u16 index) // Undo creation
+    : index(index), unit(nullptr)
+{
+
 }

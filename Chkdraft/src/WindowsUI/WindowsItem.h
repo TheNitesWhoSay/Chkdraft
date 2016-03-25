@@ -61,8 +61,8 @@ class WindowsItem
         bool ReleaseDC(HDC hDC);
         void FocusThis();
         void UpdateWindow();
-        void DisableThis();
-        void EnableThis();
+        virtual void EnableThis();
+        virtual void DisableThis();
         void SetWidth(int newWidth);
         void SetHeight(int newHeight);
         void SetSize(int newWidth, int newHeight);

@@ -25,7 +25,7 @@ class Chkdraft : public ClassWindow
                     StatusControl statusBar; // Main window's status bar
                     MainToolbar mainToolbar; // Main window's toolbar
 
-/*   Modeless   */  UnitWindow unitWindow; // Modeless unit properties
+/*   Modeless   */  UnitPropertiesWindow unitWindow; // Modeless unit properties
                     LocationWindow locationWindow; // Modeless location properties
                     TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
                     TilePropWindow tilePropWindow; // Modeless tile properties
