@@ -624,7 +624,7 @@ void GuiMap::undo()
                 //undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
                 if ( chkd.locationWindow.getHandle() != NULL )
                 {
-                    if ( CM->numLocations() == 0 )
+                    if ( CM->numLocations() > 0 )
                         chkd.locationWindow.RefreshLocationInfo();
                     else
                         chkd.locationWindow.DestroyThis();

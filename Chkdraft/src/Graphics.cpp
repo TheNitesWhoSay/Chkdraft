@@ -241,7 +241,7 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 
     for ( u16 locNum = 0; locNum < map.locationCapacity(); locNum++ )
     {
-        if ( map.getLocation(loc, locNum) )
+        if ( (locNum != 63 || showAnywhere) && map.getLocation(loc, locNum) )
         {
             s32 leftMost = std::min(loc->xc1, loc->xc2);
             if ( leftMost < screenRight )

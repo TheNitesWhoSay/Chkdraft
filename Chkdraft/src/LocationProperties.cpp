@@ -21,12 +21,13 @@ enum class Id
     CheckMedAir = IDC_MEDAIR,
     CheckHighAir = IDC_HIGHAIR,
 
+    ButtonOk = IDOK,
     ButtonInvertX = IDC_INVERTX,
     ButtonInvertY = IDC_INVERTY,
     ButtonInvertXY = IDC_INVERTXY,
 };
 
-LocationWindow::LocationWindow() : initializing(false), preservedStat(0), locProcLocIndex(0)
+LocationWindow::LocationWindow() : refreshing(true), preservedStat(0), currentLocationIndex(0)
 {
 
 }
@@ -35,13 +36,27 @@ bool LocationWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent) )
     {
-        editLocName.FindThis(getHandle(), IDC_LOCATION_NAME);
-        editLocLeft.FindThis(getHandle(), IDC_LOCLEFT);
-        editLocTop.FindThis(getHandle(), IDC_LOCTOP);
-        editLocRight.FindThis(getHandle(), IDC_LOCRIGHT);
-        editLocBottom.FindThis(getHandle(), IDC_LOCBOTTOM);
-        editRawFlags.FindThis(getHandle(), IDC_RAWFLAGS);
-        checkUseExtended.FindThis(getHandle(), IDC_EXTLOCNAMESTR);
+        editLocName.FindThis(getHandle(), (u32)Id::EditLocationName);
+        editLocLeft.FindThis(getHandle(), (u32)Id::EditLocationLeft);
+        editLocTop.FindThis(getHandle(), (u32)Id::EditLocationTop);
+        editLocRight.FindThis(getHandle(), (u32)Id::EditLocationRight);
+        editLocBottom.FindThis(getHandle(), (u32)Id::EditLocationBottom);
+        editRawFlags.FindThis(getHandle(), (u32)Id::EditRawFlags);
+
+        checkUseExtended.FindThis(getHandle(), (u32)Id::CheckUseExtended);
+        checkLowGround.FindThis(getHandle(), (u32)Id::CheckLowGround);
+        checkMedGround.FindThis(getHandle(), (u32)Id::CheckMedGround);
+        checkHighGround.FindThis(getHandle(), (u32)Id::CheckHighGround);
+        checkLowAir.FindThis(getHandle(), (u32)Id::CheckLowAir);
+        checkMedAir.FindThis(getHandle(), (u32)Id::CheckMedAir);
+        checkHighAir.FindThis(getHandle(), (u32)Id::CheckHighAir);
+
+        buttonInvertX.FindThis(getHandle(), (u32)Id::ButtonInvertX);
+        buttonInvertY.FindThis(getHandle(), (u32)Id::ButtonInvertY);
+        buttonInvertXY.FindThis(getHandle(), (u32)Id::ButtonInvertXY);
+
+        RefreshLocationInfo();
+
         return true;
     }
     else
@@ -52,61 +67,48 @@ bool LocationWindow::DestroyThis()
 {
     if ( ClassDialog::DestroyDialog() )
     {
-        locProcLocIndex = NO_LOCATION;
+        currentLocationIndex = NO_LOCATION;
+        refreshing = true;
         return true;
     }
     else
         return false;
 }
 
-void LocationWindow::RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd)
+void LocationWindow::RefreshLocationElevationFlags()
 {
-    if ( (locRef->elevation&LOC_ELEVATION_LOWGROUND) == 0)
-        SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_LOWGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
-    if ( (locRef->elevation&LOC_ELEVATION_MEDGROUND) == 0 )
-        SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_MEDGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
-    if ( (locRef->elevation&LOC_ELEVATION_HIGHGROUND) == 0 )
-        SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_HIGHGROUND), BM_SETCHECK, BST_UNCHECKED, 0);
-    if ( (locRef->elevation&LOC_ELEVATION_LOWAIR) == 0 )
-        SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_LOWAIR), BM_SETCHECK, BST_UNCHECKED, 0);
-    if ( (locRef->elevation&LOC_ELEVATION_MEDAIR) == 0 )
-        SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_MEDAIR), BM_SETCHECK, BST_UNCHECKED, 0);
-    if ( (locRef->elevation&LOC_ELEVATION_HIGHAIR) == 0 )
-        SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_CHECKED, 0);
-    else
-        SendMessage(GetDlgItem(hWnd, IDC_HIGHAIR), BM_SETCHECK, BST_UNCHECKED, 0);
+    bool prevRefreshingValue = refreshing;
+    refreshing = true;
+
+    ChkLocation* locRef = nullptr;
+    if ( currentLocationIndex != NO_LOCATION && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        checkLowGround.SetCheck((locRef->elevation&LOC_ELEVATION_LOWGROUND) == 0);
+        checkMedGround.SetCheck((locRef->elevation&LOC_ELEVATION_MEDGROUND) == 0);
+        checkHighGround.SetCheck((locRef->elevation&LOC_ELEVATION_HIGHGROUND) == 0);
+        checkLowAir.SetCheck((locRef->elevation&LOC_ELEVATION_LOWAIR) == 0);
+        checkMedAir.SetCheck((locRef->elevation&LOC_ELEVATION_MEDAIR) == 0);
+        checkHighAir.SetCheck((locRef->elevation&LOC_ELEVATION_HIGHAIR) == 0);
+    }
+
+    refreshing = prevRefreshingValue;
 }
 
 void LocationWindow::RefreshLocationInfo()
 {
-    initializing = true;
+    refreshing = true;
 
-    HWND hWnd = getHandle();
-    if ( !CM )
-    {
-        locProcLocIndex = NO_LOCATION;
-        initializing = false;
-        EndDialog(hWnd, IDCLOSE);
-    }
+    if ( CM == nullptr )
+        DestroyThis();
 
-    locProcLocIndex = CM->GetSelectedLocation();
-    ChkLocation* locRef;
-    if ( locProcLocIndex != NO_LOCATION && CM->getLocation(locRef, locProcLocIndex) )
+    currentLocationIndex = CM->GetSelectedLocation();
+    ChkLocation* locRef = nullptr;
+    if ( currentLocationIndex != NO_LOCATION && CM->getLocation(locRef, currentLocationIndex) )
     {
-        SetWindowText(GetDlgItem(hWnd, IDC_LOCLEFT), std::to_string(locRef->xc1).c_str());
-        SetWindowText(GetDlgItem(hWnd, IDC_LOCTOP), std::to_string(locRef->yc1).c_str());
-        SetWindowText(GetDlgItem(hWnd, IDC_LOCRIGHT), std::to_string(locRef->xc2).c_str());
-        SetWindowText(GetDlgItem(hWnd, IDC_LOCBOTTOM), std::to_string(locRef->yc2).c_str());
+        editLocLeft.SetText(std::to_string(locRef->xc1).c_str());
+        editLocTop.SetText(std::to_string(locRef->yc1).c_str());
+        editLocRight.SetText(std::to_string(locRef->xc2).c_str());
+        editLocBottom.SetText(std::to_string(locRef->yc2).c_str());
 
         char text[20];
         _itoa_s(locRef->elevation, text, 20, 2);
@@ -117,384 +119,416 @@ void LocationWindow::RefreshLocationInfo()
             std::memset(text, '0', 16-len);
             text[16] = '\0';
         }
-        SetWindowText(GetDlgItem(hWnd, IDC_RAWFLAGS), text);
+        editRawFlags.SetText(text);
 
-        RefreshLocationElevationFlags(locRef, hWnd);
-
-        if ( CM->isExtendedString(locRef->stringNum) )
-            SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_CHECKED, 0);
-        else
-            SendMessage(GetDlgItem(hWnd, IDC_EXTLOCNAMESTR), BM_SETCHECK, BST_UNCHECKED, 0);
+        RefreshLocationElevationFlags();
+        checkUseExtended.SetCheck(CM->isExtendedString(locRef->stringNum));
 
         ChkdString locName;
         if ( CM->GetString(locName, locRef->stringNum) )
-            SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), locName.c_str());
+            editLocName.SetText(locName.c_str());
         else
-            SetWindowText(GetDlgItem(hWnd, IDC_LOCATION_NAME), "ERROR");
+            editLocName.SetText("ERROR");
     }
     else
-    {
-        locProcLocIndex = NO_LOCATION;
-        initializing = false;
-        EndDialog(hWnd, IDCLOSE);
-    }
-    initializing = false;
+        DestroyThis();
+    
+    refreshing = false;
 }
 
-BOOL LocationWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+void LocationWindow::InvertXc()
 {
-    switch ( LOWORD(wParam) )
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
     {
-    case IDOK:
-        locProcLocIndex = NO_LOCATION;
-        EndDialog(hWnd, IDOK);
-        break;
-    case IDCANCEL:
-        locProcLocIndex = NO_LOCATION;
-        EndDialog(hWnd, IDCANCEL);
-        break;
-    case IDC_INVERTX:
-        if ( HIWORD(wParam) == BN_CLICKED )
-        {
-            ChkLocation* locRef;
-            if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-            {
-                auto locationChanges = ReversibleActions::Make();
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1));
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2));
-                CM->AddUndo(locationChanges);
-                std::swap(locRef->xc1, locRef->xc2);
-                RefreshLocationInfo();
-                CM->Redraw(false);
-            }
-        }
-        break;
-    case IDC_INVERTY:
-        if ( HIWORD(wParam) == BN_CLICKED )
-        {
-            ChkLocation* locRef;
-            if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-            {
-                auto locationChanges = ReversibleActions::Make();
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1));
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2));
-                CM->AddUndo(locationChanges);
-                std::swap(locRef->yc1, locRef->yc2);
-                RefreshLocationInfo();
-                CM->Redraw(false);
-            }
-        }
-        break;
-    case IDC_INVERTXY:
-        if ( HIWORD(wParam) == BN_CLICKED )
-        {
-            ChkLocation* locRef;
-            if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-            {
-                auto locationChanges = ReversibleActions::Make();
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, locRef->xc1));
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, locRef->xc2));
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, locRef->yc1));
-                locationChanges->Insert(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, locRef->yc2));
-                CM->AddUndo(locationChanges);
-                std::swap(locRef->xc1, locRef->xc2);
-                std::swap(locRef->yc1, locRef->yc2);
-                RefreshLocationInfo();
-                CM->Redraw(false);
-            }
-        }
-        break;
-    default:
-        if ( !initializing )
-        {
-            switch ( HIWORD(wParam) )
-            {
-            case BN_CLICKED:
-            {
-                ChkLocation* locRef;
-                if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-                {
-                    LRESULT result = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
-                    if ( result == BST_CHECKED || result == BST_UNCHECKED )
-                    {
-                        bool isChecked = (result == BST_CHECKED);
-                        if ( isChecked )
-                        {
-                            switch ( LOWORD(wParam) )
-                            {
-                            case IDC_LOWGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_LOWGROUND);
-                                break;
-                            case IDC_MEDGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_MEDGROUND);
-                                break;
-                            case IDC_HIGHGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_HIGHGROUND);
-                                break;
-                            case IDC_LOWAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_LOWAIR);
-                                break;
-                            case IDC_MEDAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_MEDAIR);
-                                break;
-                            case IDC_HIGHAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation &= (~LOC_ELEVATION_HIGHAIR);
-                                break;
-                            case IDC_EXTLOCNAMESTR:
-                            {
-                                ChkdString str;
-                                if ( CM->GetString(str, locRef->stringNum) )
-                                {
-                                    u32 newStrNum;
-                                    if ( CM->addString(str, newStrNum, true) )
-                                    {
-                                        u32 oldStrNum = locRef->stringNum;
-                                        locRef->stringNum = u16(newStrNum);
-                                        CM->removeUnusedString(oldStrNum);
-                                        CM->refreshScenario();
-                                    }
-                                }
-                                CM->notifyChange(false);
-                            }
-                            break;
-                            }
-                            RefreshLocationInfo();
-                        }
-                        else // notChecked
-                        {
-                            switch ( LOWORD(wParam) )
-                            {
-                            case IDC_LOWGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_LOWGROUND;
-                                break;
-                            case IDC_MEDGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_MEDGROUND;
-                                break;
-                            case IDC_HIGHGROUND:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_HIGHGROUND;
-                                break;
-                            case IDC_LOWAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_LOWAIR;
-                                break;
-                            case IDC_MEDAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_MEDAIR;
-                                break;
-                            case IDC_HIGHAIR:
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, locRef->elevation));
-                                locRef->elevation |= LOC_ELEVATION_HIGHAIR;
-                                break;
-                            case IDC_EXTLOCNAMESTR:
-                            {
-                                ChkdString str;
-                                if ( CM->GetString(str, locRef->stringNum) )
-                                {
-                                    u32 newStrNum;
-                                    if ( CM->addString(str, newStrNum, false) )
-                                    {
-                                        u32 oldStrNum = locRef->stringNum;
-                                        locRef->stringNum = u16(newStrNum);
-                                        CM->removeUnusedString(oldStrNum);
-                                        CM->refreshScenario();
-                                    }
-                                }
-                                CM->notifyChange(false);
-                            }
-                            break;
-                            }
-                            RefreshLocationInfo();
-                        }
-                    }
-                }
-            }
-            break;
-            case EN_SETFOCUS:
-            {
-                ChkLocation* locRef;
-                if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-                {
-                    switch ( LOWORD(wParam) )
-                    {
-                    case IDC_LOCATION_NAME: preservedStat = locRef->stringNum; break;
-                    case IDC_RAWFLAGS: preservedStat = locRef->elevation; break;
-                    case IDC_LOCLEFT: preservedStat = locRef->xc1; break;
-                    case IDC_LOCTOP: preservedStat = locRef->yc1; break;
-                    case IDC_LOCRIGHT:  preservedStat = locRef->xc2; break;
-                    case IDC_LOCBOTTOM:  preservedStat = locRef->yc2; break;
-                    }
-                }
-            }
-            break;
-            case EN_KILLFOCUS:
-            {
-                ChkLocation* locRef;
-                if ( CM != nullptr && CM->getLocation(locRef, locProcLocIndex) )
-                {
-                    switch ( LOWORD(wParam) )
-                    {
-                    case IDC_RAWFLAGS:
-                    {
-                        u16 newVal;
-                        if ( editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
-                        {
-                            locRef->elevation = newVal;
-                            CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_ELEVATION, preservedStat));
-                            RefreshLocationInfo();
-                        }
-                    }
-                    break;
-                    case IDC_LOCLEFT:
-                    {
-                        int newVal;
-                        if ( editLocLeft.GetEditNum<int>(newVal) )
-                        {
-                            locRef->xc1 = newVal;
-                            if ( newVal != preservedStat )
-                            {
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC1, preservedStat));
-                            }
-                            CM->Redraw(false);
-                        }
-                    }
-                    break;
-                    case IDC_LOCTOP:
-                    {
-                        int newVal;
-                        if ( editLocTop.GetEditNum<int>(newVal) )
-                        {
-                            locRef->yc1 = newVal;
-                            if ( newVal != preservedStat )
-                            {
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC1, preservedStat));
-                            }
-                            CM->Redraw(false);
-                        }
-                    }
-                    break;
-                    case IDC_LOCRIGHT:
-                    {
-                        int newVal;
-                        if ( editLocRight.GetEditNum<int>(newVal) )
-                        {
-                            locRef->xc2 = newVal;
-                            if ( newVal != preservedStat )
-                            {
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_XC2, preservedStat));
-                            }
-                            CM->Redraw(false);
-                        }
-                    }
-                    break;
-                    case IDC_LOCBOTTOM:
-                    {
-                        int newVal;
-                        if ( editLocBottom.GetEditNum<int>(newVal) )
-                        {
-                            locRef->yc2 = newVal;
-                            if ( newVal != preservedStat )
-                            {
-                                CM->AddUndo(LocationChange::Make(locProcLocIndex, LOC_FIELD_YC2, preservedStat));
-                            }
-                            CM->Redraw(false);
-                        }
-                    }
-                    break;
-                    case IDC_LOCATION_NAME:
-                    {
-                        ChkdString locationName;
-                        if ( editLocName.GetWinText(locationName) )
-                        {
-                            bool isExtended = checkUseExtended.isChecked();
-                            if ( CM->replaceString<u16>(locationName, locRef->stringNum, isExtended, true) )
-                            {
-                                CM->notifyChange(false);
-                                CM->refreshScenario();
-                            }
-                        }
-                    }
-                    break;
-                    }
-                }
-            }
-            break;
-            case EN_UPDATE:
-                switch ( LOWORD(wParam) )
-                {
-                case IDC_RAWFLAGS:
-                {
-                    ChkLocation* locRef;
-                    u16 newVal;
-                    if ( CM && CM->getLocation(locRef, locProcLocIndex) &&
-                        editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
-                    {
-                        locRef->elevation = newVal;
-                        initializing = true;
-                        RefreshLocationElevationFlags(locRef, hWnd);
-                        initializing = false;
-                    }
-                }
-                break;
-                case IDC_LOCLEFT:
-                {
-                    ChkLocation* locRef;
-                    int newVal;
-                    if ( CM && CM->getLocation(locRef, locProcLocIndex) && editLocLeft.GetEditNum<int>(newVal) )
-                    {
-                        locRef->xc1 = newVal;
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_LOCTOP:
-                {
-                    ChkLocation* locRef;
-                    int newVal;
-                    if ( CM && CM->getLocation(locRef, locProcLocIndex) && editLocTop.GetEditNum<int>(newVal) )
-                    {
-                        locRef->yc1 = newVal;
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_LOCRIGHT:
-                {
-                    ChkLocation* locRef;
-                    int newVal;
-                    if ( CM && CM->getLocation(locRef, locProcLocIndex) && editLocRight.GetEditNum<int>(newVal) )
-                    {
-                        locRef->xc2 = newVal;
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                case IDC_LOCBOTTOM:
-                {
-                    ChkLocation* locRef;
-                    int newVal;
-                    if ( CM && CM->getLocation(locRef, locProcLocIndex) && editLocBottom.GetEditNum<int>(newVal) )
-                    {
-                        locRef->yc2 = newVal;
-                        CM->Redraw(false);
-                    }
-                }
-                break;
-                }
-                break;
-            }
-        }
-        break;
+        auto locationChanges = ReversibleActions::Make();
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC1, locRef->xc1));
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC2, locRef->xc2));
+        CM->AddUndo(locationChanges);
+        std::swap(locRef->xc1, locRef->xc2);
+        RefreshLocationInfo();
+        CM->Redraw(false);
     }
-    return TRUE;
+}
+
+void LocationWindow::InvertYc()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        auto locationChanges = ReversibleActions::Make();
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC1, locRef->yc1));
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC2, locRef->yc2));
+        CM->AddUndo(locationChanges);
+        std::swap(locRef->yc1, locRef->yc2);
+        RefreshLocationInfo();
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::InvertXY()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        auto locationChanges = ReversibleActions::Make();
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC1, locRef->xc1));
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC2, locRef->xc2));
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC1, locRef->yc1));
+        locationChanges->Insert(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC2, locRef->yc2));
+        CM->AddUndo(locationChanges);
+        std::swap(locRef->xc1, locRef->xc2);
+        std::swap(locRef->yc1, locRef->yc2);
+        RefreshLocationInfo();
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::NotifyLowGroundClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkLowGround.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_LOWGROUND);
+        else
+            locRef->elevation |= LOC_ELEVATION_LOWGROUND;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyMedGroundClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkMedGround.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_MEDGROUND);
+        else
+            locRef->elevation |= LOC_ELEVATION_MEDGROUND;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyHighGroundClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkHighGround.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_HIGHGROUND);
+        else
+            locRef->elevation |= LOC_ELEVATION_HIGHGROUND;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyLowAirClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkLowAir.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_LOWAIR);
+        else
+            locRef->elevation |= LOC_ELEVATION_LOWAIR;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyMedAirClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkMedAir.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_MEDAIR);
+        else
+            locRef->elevation |= LOC_ELEVATION_MEDAIR;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyHighAirClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, locRef->elevation));
+
+        if ( checkHighAir.isChecked() )
+            locRef->elevation &= (~LOC_ELEVATION_HIGHAIR);
+        else
+            locRef->elevation |= LOC_ELEVATION_HIGHAIR;
+
+        RefreshLocationInfo();
+    }
+}
+
+void LocationWindow::NotifyUseExtendedStringClicked()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        ChkdString str;
+        if ( CM->GetString(str, locRef->stringNum) )
+        {
+            u32 newStrNum = 0;
+            if ( CM->addString(str, newStrNum, checkUseExtended.isChecked()) )
+            {
+                u32 oldStrNum = locRef->stringNum;
+                locRef->stringNum = u16(newStrNum);
+                CM->removeUnusedString(oldStrNum);
+                CM->refreshScenario();
+                CM->notifyChange(false);
+                RefreshLocationInfo();
+            }
+        }
+    }
+}
+
+void LocationWindow::RawFlagsUpdated()
+{
+    ChkLocation* locRef = nullptr;
+    u16 newVal = 0;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) &&
+        editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
+    {
+        locRef->elevation = newVal;
+        RefreshLocationElevationFlags();
+    }
+}
+
+void LocationWindow::LocationLeftUpdated()
+{
+    ChkLocation* locRef = nullptr;
+    int newVal = 0;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) && editLocLeft.GetEditNum<int>(newVal) )
+    {
+        locRef->xc1 = newVal;
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::LocationTopUpdated()
+{
+    ChkLocation* locRef = nullptr;
+    int newVal = 0;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) && editLocTop.GetEditNum<int>(newVal) )
+    {
+        locRef->yc1 = newVal;
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::LocationRightUpdated()
+{
+    ChkLocation* locRef = nullptr;
+    int newVal = 0;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) && editLocRight.GetEditNum<int>(newVal) )
+    {
+        locRef->xc2 = newVal;
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::LocationBottomUpdated()
+{
+    ChkLocation* locRef = nullptr;
+    int newVal = 0;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) && editLocBottom.GetEditNum<int>(newVal) )
+    {
+        locRef->yc2 = newVal;
+        CM->Redraw(false);
+    }
+}
+
+void LocationWindow::LocationNameFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        ChkdString locationName;
+        if ( editLocName.GetWinText(locationName) )
+        {
+            bool isExtended = checkUseExtended.isChecked();
+            if ( CM->replaceString<u16>(locationName, locRef->stringNum, isExtended, true) )
+            {
+                CM->notifyChange(false);
+                CM->refreshScenario();
+            }
+        }
+    }
+}
+
+void LocationWindow::RawFlagsFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        u16 newVal = 0;
+        if ( editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
+        {
+            locRef->elevation = newVal;
+            CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_ELEVATION, preservedStat));
+            RefreshLocationInfo();
+        }
+    }
+}
+
+void LocationWindow::LocationLeftFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        int newVal = 0;
+        if ( editLocLeft.GetEditNum<int>(newVal) )
+        {
+            locRef->xc1 = newVal;
+            if ( newVal != preservedStat )
+                CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC1, preservedStat));
+            
+            CM->Redraw(false);
+        }
+    }
+}
+
+void LocationWindow::LocationTopFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        int newVal = 0;
+        if ( editLocTop.GetEditNum<int>(newVal) )
+        {
+            locRef->yc1 = newVal;
+            if ( newVal != preservedStat )
+                CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC1, preservedStat));
+            
+            CM->Redraw(false);
+        }
+    }
+}
+
+void LocationWindow::LocationRightFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        int newVal = 0;
+        if ( editLocRight.GetEditNum<int>(newVal) )
+        {
+            locRef->xc2 = newVal;
+            if ( newVal != preservedStat )
+                CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_XC2, preservedStat));
+            
+            CM->Redraw(false);
+        }
+    }
+}
+
+void LocationWindow::LocationBottomFocusLost()
+{
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        int newVal = 0;
+        if ( editLocBottom.GetEditNum<int>(newVal) )
+        {
+            locRef->yc2 = newVal;
+            if ( newVal != preservedStat )
+                CM->AddUndo(LocationChange::Make(currentLocationIndex, LOC_FIELD_YC2, preservedStat));
+            
+            CM->Redraw(false);
+        }
+    }
+}
+
+void LocationWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    if ( refreshing )
+        return;
+
+    switch ( (Id)idFrom )
+    {
+        case Id::ButtonOk: DestroyThis(); break;
+        case Id::ButtonInvertX: InvertXc(); break;
+        case Id::ButtonInvertY: InvertYc(); break;
+        case Id::ButtonInvertXY: InvertXY(); break;
+        case Id::CheckLowGround: NotifyLowGroundClicked(); break;
+        case Id::CheckMedGround: NotifyMedGroundClicked(); break;
+        case Id::CheckHighGround: NotifyHighGroundClicked(); break;
+        case Id::CheckLowAir: NotifyLowAirClicked(); break;
+        case Id::CheckMedAir: NotifyMedAirClicked(); break;
+        case Id::CheckHighAir: NotifyHighAirClicked(); break;
+        case Id::CheckUseExtended: NotifyUseExtendedStringClicked(); break;
+    }
+}
+
+void LocationWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+    if ( refreshing )
+        return;
+
+    switch ( (Id)idFrom )
+    {
+        case Id::EditRawFlags: RawFlagsUpdated(); break;
+        case Id::EditLocationLeft: LocationLeftUpdated(); break;
+        case Id::EditLocationTop: LocationTopUpdated(); break;
+        case Id::EditLocationRight: LocationRightUpdated(); break;
+        case Id::EditLocationBottom: LocationBottomUpdated(); break;
+    }
+}
+
+void LocationWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
+{
+    if ( refreshing )
+        return;
+
+    ChkLocation* locRef = nullptr;
+    if ( CM != nullptr && CM->getLocation(locRef, currentLocationIndex) )
+    {
+        switch ( (Id)idFrom )
+        {
+            case Id::EditLocationName: preservedStat = locRef->stringNum; break;
+            case Id::EditRawFlags: preservedStat = locRef->elevation; break;
+            case Id::EditLocationLeft: preservedStat = locRef->xc1; break;
+            case Id::EditLocationTop: preservedStat = locRef->yc1; break;
+            case Id::EditLocationRight:  preservedStat = locRef->xc2; break;
+            case Id::EditLocationBottom:  preservedStat = locRef->yc2; break;
+        }
+    }
+}
+
+void LocationWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
+{
+    if ( refreshing )
+        return;
+
+    switch ( (Id)idFrom )
+    {
+        case Id::EditRawFlags: RawFlagsFocusLost(); break;
+        case Id::EditLocationLeft: LocationLeftFocusLost(); break;
+        case Id::EditLocationTop: LocationTopFocusLost(); break;
+        case Id::EditLocationRight: LocationRightFocusLost(); break;
+        case Id::EditLocationBottom: LocationBottomFocusLost(); break;
+        case Id::EditLocationName: LocationNameFocusLost(); break;
+    }
 }
 
 BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -506,9 +540,8 @@ BOOL LocationWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 chkd.SetCurrDialog(hWnd);
             break;
 
-        case WM_INITDIALOG:
-            RefreshLocationInfo();
-            return TRUE;
+        case WM_CLOSE:
+            DestroyThis();
             break;
 
         default:
