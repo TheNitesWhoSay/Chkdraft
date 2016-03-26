@@ -13,22 +13,47 @@ class LocationWindow : public ClassDialog
         void RefreshLocationInfo();
 
     protected:
-        void RefreshLocationElevationFlags(ChkLocation* locRef, HWND hWnd);
-        BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+        void RefreshLocationElevationFlags();
+
+        void InvertXc();
+        void InvertYc();
+        void InvertXY();
+
+        void NotifyLowGroundClicked();
+        void NotifyMedGroundClicked();
+        void NotifyHighGroundClicked();
+        void NotifyLowAirClicked();
+        void NotifyMedAirClicked();
+        void NotifyHighAirClicked();
+        void NotifyUseExtendedStringClicked();
+
+        void RawFlagsUpdated();
+        void LocationLeftUpdated();
+        void LocationTopUpdated();
+        void LocationRightUpdated();
+        void LocationBottomUpdated();
+
+        void LocationNameFocusLost();
+        void RawFlagsFocusLost();
+        void LocationLeftFocusLost();
+        void LocationTopFocusLost();
+        void LocationRightFocusLost();
+        void LocationBottomFocusLost();
+
+        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+        virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+        virtual void NotifyEditFocused(int idFrom, HWND hWndFrom); // Sent when an edit box receives focus
+        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        bool initializing;
+        bool refreshing;
         u32 preservedStat;
-        u16 locProcLocIndex;
+        u16 currentLocationIndex;
 
-        CheckBoxControl checkUseExtended;
-        EditControl editLocName;
-        EditControl editLocLeft;
-        EditControl editLocTop;
-        EditControl editLocRight;
-        EditControl editLocBottom;
-        EditControl editRawFlags;
+        EditControl editLocName, editLocLeft, editLocTop, editLocRight, editLocBottom, editRawFlags;
+        CheckBoxControl checkUseExtended, checkLowGround, checkMedGround, checkHighGround, checkLowAir, checkMedAir, checkHighAir;
+        ButtonControl buttonInvertX, buttonInvertY, buttonInvertXY;
 };
 
 #endif
