@@ -605,7 +605,7 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
                 }
             }
         }
-        CorrectPaletteForWindows(pcxDat);
+        //CorrectPaletteForWindows(pcxDat);
         return true;
     }
     return false;
