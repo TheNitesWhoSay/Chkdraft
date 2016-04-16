@@ -20,7 +20,7 @@ class ClassWindow : public WindowsItem
 
 /* Constructor  */  ClassWindow();
 
-/*  Destructor  */  ClassWindow();
+/*  Destructor  */  ~ClassWindow();
 
     protected:
 

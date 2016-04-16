@@ -4939,13 +4939,14 @@ void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5065,6 +5066,7 @@ void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
 
@@ -5093,13 +5095,14 @@ void Graphics::imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5241,6 +5244,7 @@ void Graphics::imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
 
@@ -5282,13 +5286,14 @@ void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5430,6 +5435,7 @@ void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
 
@@ -5444,13 +5450,14 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5574,6 +5581,7 @@ void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
 
@@ -5589,13 +5597,14 @@ void Graphics::imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5719,6 +5728,7 @@ void Graphics::imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
 
@@ -5784,13 +5794,14 @@ void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, 
     u8 compSect;
 
     u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom;
+    s32 linesLeft = grpRect->bottom - 1;
     s32 drawLeft, drawRight;
-    lineDat = grp->data(frame, grpRect->top);
+    u32 line = grpRect->top;
 
     while (linesLeft > 0)
     {
-        linesLeft--;
+        lineDat = grp->data(frame, line);
+        line++;
         drawLeft = grpRect->left;
         drawRight = grpRect->right;
         while (drawLeft != 0) // Bytes to skip -- left of drawing rect
@@ -5934,5 +5945,6 @@ void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, 
             }
         }
         bitmapIndex += lineOffs;
+        linesLeft--;
     }
 }
