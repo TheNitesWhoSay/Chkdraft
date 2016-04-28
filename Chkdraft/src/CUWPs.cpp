@@ -204,7 +204,20 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-
+    ChkCuwp cuwp = {};
+    if ( CM->GetCuwp(selectedCuwp, cuwp) )
+    {
+        int editNum = 0;
+        switch ( idFrom )
+        {
+            case EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.percentHitpoints = editNum; break;
+            case EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.percentEnergyPoints = editNum; break;
+            case EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.percentShieldPoints = editNum; break;
+            case EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
+            case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.numInHanger = editNum; break;
+        }
+        CM->ReplaceCuwp(cuwp, selectedCuwp);
+    }
 }
 
 LRESULT CUWPsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

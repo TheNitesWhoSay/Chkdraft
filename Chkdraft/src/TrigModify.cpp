@@ -72,7 +72,7 @@ void TrigModifyWindow::ChangeTab(u32 tabId)
 void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    Show();
+    //Show();
     WindowsItem::SetWinText((std::string("Modify Trigger #") + std::to_string(trigIndex)).c_str());
     generalWindow.RefreshWindow(trigIndex);
     playersWindow.RefreshWindow(trigIndex);

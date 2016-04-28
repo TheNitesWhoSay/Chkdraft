@@ -63,24 +63,33 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
                 if ( numArgs > 8 )
                     numArgs = 8;
 
+                gridConditions.item(1, y).SetDisabled(false);
                 gridConditions.item(1, y).SetText(
                     ttg.GetConditionName(condition.condition).c_str()
                 );
                 for ( u8 x=0; x<numArgs; x++ )
                 {
+                    gridConditions.item(x + 2, y).SetDisabled(false);
                     gridConditions.item(x+2, y).SetText(
                         ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.condition]).c_str()
                     );
                 }
-                for ( u8 x=numArgs; x<8; x++ )
-                    gridConditions.item(x+2, y).SetText("");
+                for ( u8 x = numArgs; x < 8; x++ )
+                {
+                    gridConditions.item(x + 2, y).SetDisabled(true);
+                    gridConditions.item(x + 2, y).SetText("");
+                }
                 
                 gridConditions.SetEnabledCheck(y, !condition.isDisabled());
             }
             else if ( condition.condition == 0 )
             {
-                for ( u8 x=0; x<10; x++ )
+                for ( u8 x = 0; x < 10; x++ )
+                {
+                    if ( x > 1 )
+                        gridConditions.item(x, y).SetDisabled(true);
                     gridConditions.item(x, y).SetText("");
+                }
 
                 gridConditions.SetEnabledCheck(y, false);
             }
@@ -509,10 +518,12 @@ void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItem
     DrawItemBackground(hDC, gridItemX, gridItemY, rcItem, width, xStart);
 
     std::string text;
-    if ( gridConditions.item(gridItemX, gridItemY).getText(text) )
+    if ( gridConditions.item(gridItemX, gridItemY).getText(text) && text.length() > 0 )
         DrawString(hDC, xStart+1, rcItem.top, width-2, RGB(0, 0, 0), text);
 
-    DrawItemFrame(hDC, rcItem, width, xStart);
+    if ( !gridConditions.item(gridItemX, gridItemY).isDisabled() )
+        DrawItemFrame(hDC, rcItem, width, xStart);
+
     xStart += width;
 }
 

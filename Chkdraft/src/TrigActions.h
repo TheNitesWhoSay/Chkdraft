@@ -36,10 +36,12 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
         EditControl editListItem;
         ButtonControl buttonEditWav;
         ButtonControl buttonEditString;
+        ButtonControl buttonUnitProperties;
         HBRUSH hBlack;
         u32 trigIndex;
         bool stringEditEnabled;
         bool wavEditEnabled;
+        bool unitPropertiesEditEnabled;
 
         std::vector<u8> actionArgMaps[64];
 
@@ -103,6 +105,9 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
         void EnableWavEdit();
         void DisableWavEdit();
         void ButtonEditWav();
+        void EnableUnitPropertiesEdit();
+        void DisableUnitPropertiesEdit();
+        void ButtonEditUnitProperties();
 
         void GridEditStart(u16 gridItemX, u16 gridItemY);
         void NewSelection(u16 gridItemX, u16 gridItemY);

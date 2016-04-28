@@ -29,6 +29,14 @@ bool CndActGrid::CreateThis(HWND hParent, int x, int y, int width, int height, u
     for ( int y = 0; y<numUsedRows; y++ )
         GridViewControl::AddRow(9, (y + 1) * 100);
 
+    for ( int y = 0; y < numUsedRows; y++ )
+    {
+        for ( int x = 2; x < 10; x++ )
+        {
+            GridViewControl::item(x, y).SetDisabled(true);
+        }
+    }
+
     CreateSubWindows(getHandle());
     return false;
 }
@@ -72,7 +80,8 @@ bool CndActGrid::allowKeyNavDuringEdit(GVKey key)
 
 bool CndActGrid::allowSel(int x, int y)
 {
-    return x != 0;
+    return x != 0 &&
+        (x == 1 || !GridViewControl::item(x, y).isDisabled());
 }
 
 bool CndActGrid::allowSel(int xStart, int xEnd, int yStart, int yEnd)
