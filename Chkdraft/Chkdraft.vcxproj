@@ -21,6 +21,7 @@
     <ClCompile Include="src\CommonFiles\Debug.cpp" />
     <ClCompile Include="src\CommonFiles\Structs.cpp" />
     <ClCompile Include="src\Counters.cpp" />
+    <ClCompile Include="src\CuwpInput.cpp" />
     <ClCompile Include="src\CUWPs.cpp" />
     <ClCompile Include="src\EnterPassword.cpp" />
     <ClCompile Include="src\Forces.cpp" />
@@ -144,6 +145,7 @@
     <ClInclude Include="src\CommonFiles\Resource.h" />
     <ClInclude Include="src\CommonFiles\Structs.h" />
     <ClInclude Include="src\Counters.h" />
+    <ClInclude Include="src\CuwpInput.h" />
     <ClInclude Include="src\CUWPs.h" />
     <ClInclude Include="src\DialogWindows.h" />
     <ClInclude Include="src\EnterPassword.h" />

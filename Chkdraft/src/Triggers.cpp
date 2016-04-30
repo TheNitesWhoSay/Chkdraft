@@ -68,7 +68,12 @@ void TriggersWindow::RefreshWindow(bool focus)
         listTriggers.FocusThis();
 
     if ( trigModifyWindow.getHandle() != NULL )
-        trigModifyWindow.RefreshWindow(currTrigger);
+    {
+        if ( numVisibleTrigs > 0 )
+            trigModifyWindow.RefreshWindow(currTrigger);
+        else
+            trigModifyWindow.DestroyThis();
+    }
 }
 
 void TriggersWindow::DoSize()
@@ -860,7 +865,7 @@ bool TriggersWindow::SelectTrigListItem(int item)
     {
         listTriggers.ClearSel();
         currTrigger = NO_TRIGGER;
-        trigModifyWindow.RefreshWindow(currTrigger);
+        trigModifyWindow.DestroyThis();
         return false;
     }
 }

@@ -150,6 +150,7 @@ public:
                     bool ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex);
                     bool IsCuwpUsed(u8 cuwpIndex);
                     bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
+                    bool FindCuwp(const ChkCuwp &cuwpToFind, u8 &outCuwpIndex);
                     int CuwpCapacity();
                     int NumUsedCuwps();
 
@@ -159,9 +160,15 @@ public:
                     bool IsWavUsed(u16 wavIndex);
                     bool IsStringUsedWithWavs(u32 stringIndex);
 
-/*   Switches   */  bool getSwitchStrId(u8 switchId, u32 &stringNum);
+/*   Switches   */  u32 NumNameableSwitches();
+                    bool getSwitchStrId(u8 switchId, u32 &stringNum);
                     bool getSwitchName(ChkdString &dest, u8 switchID);
+                    bool setSwitchName(ChkdString &newName, u8 switchId, bool extended);
                     bool hasSwitchSection();
+                    bool switchHasName(u8 switchId);
+                    void removeSwitchName(u8 switchId);
+                    bool SwitchUsesExtendedName(u8 switchId);
+                    bool ToggleUseExtendedSwitchName(u8 switchId);
 
 /*   Briefing   */  bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
 

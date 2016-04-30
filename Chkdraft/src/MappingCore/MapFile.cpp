@@ -92,7 +92,7 @@ bool MapFile::SaveFile(bool SaveAs)
                     WriteFile(pFile);
                     std::fclose(pFile);
 
-                    MPQHANDLE hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_EXISTING | MOAU_MAINTAIN_LISTFILE, 1000);
+                    MPQHANDLE hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_ALWAYS | MOAU_MAINTAIN_LISTFILE, 1000);
                     if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
                     {
                         BOOL addedFile = MpqAddFileToArchive(hMpq, "chk.tmp", "staredit\\scenario.chk", MAFA_COMPRESS | MAFA_REPLACE_EXISTING);

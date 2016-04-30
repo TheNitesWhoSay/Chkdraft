@@ -91,6 +91,7 @@ void GridViewControl::RemoveRow(int rowNum)
 
 void GridViewControl::DeselectAll()
 {
+    EndEditing();
     for ( int y=0; y<numRows; y++ )
     {
         for ( int x=0; x<numColumns; x++ )

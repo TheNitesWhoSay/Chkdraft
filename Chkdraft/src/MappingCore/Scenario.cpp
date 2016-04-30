@@ -639,6 +639,11 @@ bool Scenario::GetExtendedString(ChkdString &dest, u32 extendedStringSectionInde
     return GetString(dest, 65535 - extendedStringSectionIndex);
 }
 
+u32 Scenario::NumNameableSwitches()
+{
+    return SWNM().size() / 4;
+}
+
 bool Scenario::getSwitchStrId(u8 switchId, u32 &stringId)
 {
     return SWNM().get<u32>(stringId, 4 * (u32)switchId);
@@ -654,9 +659,63 @@ bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
         return false;
 }
 
+bool Scenario::setSwitchName(ChkdString &newName, u8 switchId, bool extended)
+{
+    u32 stringNum = 0;
+    if ( getSwitchStrId(switchId, stringNum) )
+    {
+        u32* stringToReplace = nullptr;
+        if ( SWNM().getPtr(stringToReplace, 4*(u32)switchId, 4) )
+            return replaceString<u32>(newName, *stringToReplace, extended, true);
+    }
+    return false;
+}
+
 bool Scenario::hasSwitchSection()
 {
     return SWNM().exists();
+}
+
+bool Scenario::switchHasName(u8 switchId)
+{
+    u32 stringId = 0;
+    return getSwitchStrId(switchId, stringId) && stringId != 0;
+}
+
+void Scenario::removeSwitchName(u8 switchId)
+{
+    u32 stringNum = 0;
+    if ( getSwitchStrId(switchId, stringNum) && stringNum != 0 )
+    {
+        SWNM().replace<u32>(4 * (u32)switchId, 0);
+        removeUnusedString(stringNum);
+    }
+}
+
+bool Scenario::SwitchUsesExtendedName(u8 switchId)
+{
+    u32 stringId = 0;
+    if ( getSwitchStrId(switchId, stringId) && stringId != 0 )
+        return isExtendedString(stringId);
+    
+    return false;
+}
+
+bool Scenario::ToggleUseExtendedSwitchName(u8 switchId)
+{
+    ChkdString switchName;
+    u32 switchStringId = 0;
+    if ( getSwitchStrId(switchId, switchStringId) &&
+         stringExists(switchStringId) &&
+         GetString(switchName, switchStringId) )
+    {
+        bool wasExtended = isExtendedString(switchStringId);
+        removeSwitchName(switchId);
+        u32 newSwitchStringId = 0;
+        if ( addString(switchName, newSwitchStringId, !wasExtended) )
+            return SWNM().replace<u32>(4 * (u32)switchId, newSwitchStringId);
+    }
+    return false;
 }
 
 bool Scenario::getUnitName(RawString &dest, u16 unitID)
@@ -3292,6 +3351,22 @@ bool Scenario::SetCuwpUsed(u8 cuwpIndex, bool isUsed)
         return UPUS().replace<u8>(cuwpIndex, 1);
     else
         return UPUS().replace<u8>(cuwpIndex, 0);
+}
+
+bool Scenario::FindCuwp(const ChkCuwp &cuwpToFind, u8 &outCuwpIndex)
+{
+    u8 cuwpCapacity = (u8)CuwpCapacity();
+    ChkCuwp cuwp = {};
+    for ( u8 i = 0; i < cuwpCapacity; i++ )
+    {
+        if ( UPRP().get<ChkCuwp>(cuwp, sizeof(ChkCuwp)*(u32)i) &&
+             memcmp(&cuwpToFind, &cuwp, sizeof(ChkCuwp)) == 0 )
+        {
+            outCuwpIndex = i;
+            return true;
+        }
+    }
+    return false;
 }
 
 int Scenario::CuwpCapacity()
