@@ -209,15 +209,11 @@ void SwitchesWindow::NotifyTreeSelChanged(LPARAM newValue)
     if ( !refreshingSwitchList )
     {
         if ( ::GetFocus() == editSwitchName.getHandle() )
-        {
-            std::cout << "EditFocusLost by TreeSelChange" << std::endl;
             EditSwitchNameFocusLost();
-        }
 
         if ( newValue >= 0 && newValue < 256 && !refreshing )
         {
             selectedSwitch = (s32)newValue;
-            std::cout << "SelectedSwitch Changed" << std::endl;
             RefreshWindow();
         }
     }
@@ -228,7 +224,6 @@ void SwitchesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
     switch ( (Id)idFrom )
     {
         case Id::EditSwitchName:
-            std::cout << "EditFocusLost by Standard" << std::endl;
             EditSwitchNameFocusLost();
             break;
     }
