@@ -1,6 +1,7 @@
 #include "TrigActions.h"
 #include "Chkdraft.h"
 #include "ChkdStringInput.h"
+#include "CuwpInput.h"
 
 #define TOP_ACTION_PADDING 50
 #define BOTTOM_ACTION_PADDING 0
@@ -1061,7 +1062,30 @@ void TrigActionsWindow::DisableUnitPropertiesEdit()
 
 void TrigActionsWindow::ButtonEditUnitProperties()
 {
-    mb("Edit Unit Properties");
+    // To Do: Figure out if the current trigger already has a CUWP, if so, use it, otherwise use empty
+    ChkCuwp initialCuwp = {};
+    Trigger* trig = nullptr;
+    int focusedX = 0, focusedY = 0;
+    if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+    {
+        Action &action = trig->action((u8)focusedY);
+        u32 cuwpIndex = action.number;
+        if ( CM->GetCuwp((u8)cuwpIndex, initialCuwp) )
+        {
+            ChkCuwp newCuwp = {};
+            if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
+            {
+                u8 newCuwpIndex = 0;
+                if ( CM->FindCuwp(newCuwp, newCuwpIndex) || CM->AddCuwp(newCuwp, newCuwpIndex) )
+                {
+                    action.number = newCuwpIndex;
+                    CM->notifyChange(false);
+                }
+                else
+                    Error("Unable to add CUWP, all 64 slots may be in use.");
+            }
+        }
+    }
 }
 
 void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)

@@ -199,6 +199,7 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
             case CheckCloaked: cuwp.SetUnitIsCloaked(checkCloaked.isChecked()); break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
+        CM->notifyChange(false);
     }
 }
 
@@ -217,6 +218,7 @@ void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
             case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.numInHanger = editNum; break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
+        CM->notifyChange(false);
     }
 }
 

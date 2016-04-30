@@ -576,6 +576,9 @@
     <ClInclude Include="SFmpq\SFmpqapi.h">
       <Filter>Header Files\Mapping Core\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="src\CuwpInput.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CommonFiles\Constants.cpp">
@@ -916,6 +919,9 @@
     </ClCompile>
     <ClCompile Include="src\ChkdPlugins.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CuwpInput.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
