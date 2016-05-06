@@ -109,8 +109,12 @@ bool Chkdraft::CreateThis()
         }
     }
 
+    std::string sWindowName(std::string("Chkdraft ") + GetFullVersionString());
+    static char cWindowName[200] = {};
+    strncpy(cWindowName, sWindowName.c_str(), sWindowName.size());
+
     DWORD exStyle = 0;
-    LPCSTR windowName = "Chkdraft 1.0 (Beta 1.0.1)";
+    LPCSTR windowName = cWindowName;
     DWORD style = WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN;
     int windowX = CW_USEDEFAULT,
         windowY = CW_USEDEFAULT,

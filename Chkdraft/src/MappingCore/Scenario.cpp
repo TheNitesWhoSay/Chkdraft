@@ -3,6 +3,7 @@
 #include "StringUsage.h"
 #include "sha256.h"
 #include "Math.h"
+#include "SubStringMap.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>

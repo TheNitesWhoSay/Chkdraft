@@ -9,6 +9,7 @@
 #include "Constants.h"
 #include "Resource.h"
 #include "Structs.h"
+#include "Version.h"
 
 #include <Windows.h>
 #include <WindowsX.h>
