@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include "Clipboard.h" // Temp
+
 #define MAX_ERROR_MESSAGE_SIZE 256
 
 TextTrigCompiler::TextTrigCompiler()
@@ -49,7 +51,7 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
                     std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
             }
             else
-                std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+                std::snprintf(error, sizeof(error), "No text errors, but compilation must abort.\n\n%s", LastError);
         }
 
         MessageBox(NULL, error, "Error!", MB_OK | MB_ICONEXCLAMATION);
@@ -302,136 +304,137 @@ void TextTrigCompiler::CleanText(buffer &text)
 
     while ( pos < text.size() ) 
     {
-        switch ( text.get<u8>(pos) )
+        u8 character = text.get<u8>(pos);
+        pos++;
+        switch ( character )
         {
-            case ' ': // Space
-            case '\t': // Tab
-                pos ++;
-                break;
-            case '\15': // CR (line ending)
-                if ( text.get<u8>(pos+1) == '\12' ) // Has LF
-                    pos ++;
-            case '\12': // LF (line ending)
+            case ' ': case '\t':
+                break; // Ignore (delete) spaces and tabs
+
+            case '\r': // CR (line ending)
+                if ( text.get<u8>(pos) == '\n' ) // Followed by LF
+                    pos++; // Increment position and continue to LF case
+                // Else continue to the LF case
+            case '\n': // LF (line ending)
             case '\13': // VT (line ending)
             case '\14': // FF (line ending)
-                dest.add<u8>('\15');
-                dest.add<u8>('\12');
-                pos ++;
-                break;
-
-            case '\"': // Found a string
-                dest.add<u8>('\"');
-                pos ++;
-
-                u32 skipTo;
-                if ( text.getNextUnescaped('\"', pos, skipTo) )
-                {
-                    for ( pos; pos<skipTo; pos++ )
-                    {
-                        u8 curr = text.get<u8>(pos);
-                        if ( curr == '\\' ) // Escape Character
-                        {
-                            pos ++;
-                            if ( text.get<u8>(pos) == 'x' )
-                            {
-                                pos ++;
-                                pos ++; // First num should always be 0
-                        
-                                u8 targetVal = 0;
-
-                                if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                    targetVal += 16*(text.get<u8>(pos)-'0');
-                                else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                    targetVal += 16*(text.get<u8>(pos)-'A'+10);
-
-                                pos ++;
-
-                                if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                    targetVal += text.get<u8>(pos)-'0';
-                                else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                    targetVal += text.get<u8>(pos)-'A'+10;
-
-                                dest.add<u8>(targetVal);
-                            }
-                            else if ( text.get<u8>(pos) == 'r' )
-                            {
-                                dest.add<u8>('\r');
-                            }
-                            else if ( text.get<u8>(pos) == 'n' )
-                            {
-                                dest.add<u8>('\n');
-                            }
-                            else if ( text.get<u8>(pos) == 't' )
-                            {
-                                dest.add<u8>('\t');
-                            }
-                            else if ( text.get<u8>(curr, pos) )
-                                dest.add<u8>(curr);
-                        }
-                        else if ( curr == '<' && text.get<u8>(pos + 3) == '>' &&
-                            (text.get<u8>(pos + 1) >= '0' && text.get<u8>(pos + 1) <= '9' ||
-                             text.get<u8>(pos + 1) >= 'A' && text.get<u8>(pos + 1) <= 'F') &&
-                            (text.get<u8>(pos + 2) >= '0' && text.get<u8>(pos + 2) <= '9' ||
-                             text.get<u8>(pos + 2) >= 'A' && text.get<u8>(pos + 2) <= 'F') )
-                        {
-                            pos++;
-
-                            u8 targetVal = 0;
-
-                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                targetVal += 16 * (text.get<u8>(pos) - '0');
-                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
-
-                            pos++;
-
-                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                targetVal += text.get<u8>(pos) - '0';
-                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                targetVal += text.get<u8>(pos) - 'A' + 10;
-
-                            dest.add<u8>(targetVal);
-
-                            pos++; // Skip over '>'
-                        }
-                        else
-                            dest.add<u8>(curr);
-                    }
-
-                    dest.add<u8>('\"');
-                    pos ++;
-                }
-                else
-                    pos ++;
+                dest.add<u8>('\r');
+                dest.add<u8>('\n');
                 break;
 
             case '/': // Might be a comment
-                if ( text.get<u8>(pos+1) == '/' ) // Found a comment, skip over it
+                if ( text.get<u8>(pos) == '/' ) // Found a comment
                 {
-                    u32 lineEnd;
-
-                    if ( !text.getNext('\15', pos, lineEnd) ) // Check for CR
+                    u32 newPos = pos;
+                    if ( text.getNext('\n', pos, newPos) || // Check for nearby LF
+                        text.getNext('\r', pos, newPos) || // Check for nearby CR (should be checked after LF)
+                        text.getNext('\13', pos, newPos) || // Check for nearby VT
+                        text.getNext('\14', pos, newPos) ) // Check for nearby FF
                     {
-                        if ( !text.getNext('\12', pos, lineEnd) ) // Check for LF
-                        {
-                            if ( !text.getNext('\13', pos, lineEnd ) ) // Check for VT
-                            {
-                                if ( !text.getNext('\14', pos, lineEnd) ) // Check for FF
-                                    lineEnd = text.size(); // File probably ended this line
-                            }
-                        }
+                        pos = newPos; // Skip (delete) contents until line ending
                     }
-                    pos = lineEnd;
+                    else
+                        pos = text.size(); // File probably ended this line
+                }
+                break;
+
+            case '\"': // Found a string
+                {
+                    dest.add<u8>('\"');
+
+                    u32 closeQuotePos = pos;
+                    if ( text.getNextUnescaped('\"', pos, closeQuotePos) )
+                    {
+                        while ( pos < closeQuotePos )
+                        {
+                            u8 curr = text.get<u8>(pos);
+                            if ( curr == '\\' ) // Escape Character
+                            {
+                                pos++;
+                                if ( text.get<u8>(pos) == 'x' )
+                                {
+                                    pos++;
+                                    pos++; // First num should always be 0
+
+                                    u8 targetVal = 0;
+
+                                    if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                        targetVal += 16 * (text.get<u8>(pos) - '0');
+                                    else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                        targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
+
+                                    pos++;
+
+                                    if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                        targetVal += text.get<u8>(pos) - '0';
+                                    else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                        targetVal += text.get<u8>(pos) - 'A' + 10;
+
+                                    dest.add<u8>(targetVal);
+                                }
+                                else if ( text.get<u8>(pos) == 'r' )
+                                {
+                                    dest.add<u8>('\r');
+                                }
+                                else if ( text.get<u8>(pos) == 'n' )
+                                {
+                                    dest.add<u8>('\n');
+                                }
+                                else if ( text.get<u8>(pos) == 't' )
+                                {
+                                    dest.add<u8>('\t');
+                                }
+                                else if ( text.get<u8>(pos) == '\"' )
+                                {
+                                    dest.add<u8>('\\');
+                                    dest.add<u8>('\"');
+                                }
+                                else if ( text.get<u8>(curr, pos) )
+                                    dest.add<u8>(curr);
+                            }
+                            else if ( curr == '<' && text.get<u8>(pos + 3) == '>' &&
+                                (text.get<u8>(pos+1) >= '0' && text.get<u8>(pos+1) <= '9' ||
+                                    text.get<u8>(pos+1) >= 'A' && text.get<u8>(pos+1) <= 'F') &&
+                                (text.get<u8>(pos + 2) >= '0' && text.get<u8>(pos + 2) <= '9' ||
+                                    text.get<u8>(pos + 2) >= 'A' && text.get<u8>(pos + 2) <= 'F') )
+                            {
+                                pos++;
+
+                                u8 targetVal = 0;
+
+                                if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                    targetVal += 16 * (text.get<u8>(pos) - '0');
+                                else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                    targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
+
+                                pos++;
+
+                                if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
+                                    targetVal += text.get<u8>(pos) - '0';
+                                else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
+                                    targetVal += text.get<u8>(pos) - 'A' + 10;
+
+                                dest.add<u8>(targetVal);
+
+                                pos++;
+                            }
+                            else
+                                dest.add<u8>(curr);
+
+                            pos++;
+                        }
+
+                        dest.add<u8>('\"');
+                        pos = closeQuotePos+1;
+                    }
                 }
                 break;
 
             default:
-                u8 curr = text.get<u8>(pos);
-                if ( curr > 96 && curr < 123 ) // Capitalize letters
-                    dest.add<u8>(curr-32);
+                if ( character >= 'a' && character <= 'z' ) // If lowercase
+                    dest.add<u8>(character-32); // Captialize
                 else
-                    dest.add<u8>(curr);
-                pos ++;
+                    dest.add<u8>(character); // Add character as normal
                 break;
         }
     }
@@ -635,7 +638,7 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, char* e
         if ( text.getNextUnquoted(',', pos, playerEnd, '{') || text.getNextUnquoted(')', pos, playerEnd, '{') )
         {
             lineEnd = u32_max;
-            if ( !text.getNext('\15', pos, lineEnd) )
+            if ( !text.getNextUnquoted('\15', pos, lineEnd) )
                 text.getNext('\0', pos, lineEnd); // Text ends on this line
             
             playerEnd = SmallestOf(playerEnd, lineEnd);
@@ -749,7 +752,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
         pos ++;
         if ( text.getNext('(', pos, conditionEnd) )
         {
-            if ( !text.getNext('\r', pos, lineEnd) )
+            if ( !text.getNextUnquoted('\r', pos, lineEnd) )
                 text.getNext('\0', pos, lineEnd);
 
             conditionEnd = std::min(conditionEnd, lineEnd);
@@ -834,7 +837,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
     }
     else if ( text.getNext('(', pos, conditionEnd) ) // Has a condition or an error
     {
-        if ( !text.getNext('\15', pos, lineEnd) )
+        if ( !text.getNextUnquoted('\15', pos, lineEnd) )
             text.getNext('\0', pos, lineEnd);
 
         conditionEnd = std::min(conditionEnd, lineEnd);
@@ -1009,7 +1012,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
         pos ++;
         if ( text.getNext('(', pos, actionEnd) )
         {
-            if ( !text.getNext('\15', pos, lineEnd) )
+            if ( !text.getNextUnquoted('\15', pos, lineEnd) )
                 text.getNext('\0', pos, lineEnd);
 
             actionEnd = std::min(actionEnd, lineEnd);
@@ -1067,7 +1070,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
     }
     else if ( text.getNext('(', pos, actionEnd) )
     {
-        if ( !text.getNext('\15', pos, lineEnd) )
+        if ( !text.getNextUnquoted('\15', pos, lineEnd) )
             text.getNext('\0', pos, lineEnd);
 
         actionEnd = std::min(actionEnd, lineEnd);
@@ -2555,6 +2558,13 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
         std::string str(stringPtr);
         stringPtr[size] = temp;
 
+        auto quotePos = str.find("\\\"");
+        while ( quotePos != std::string::npos )
+        {
+            str.replace(quotePos, 2, "\"");
+            quotePos = str.find("\\\"");
+        }
+
         u32 hash = strHash(str);
         int numMatching = stringTable.count(hash);
         if ( numMatching == 1 )
@@ -3878,13 +3888,12 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     {
         for ( u32 i=0; i<4; i++ )
         {
-            u16 stringID = 0;
-            if ( map->getForceStringNum(i) &&
-                 stringID > 0 &&
+            u16 stringID = map->getForceStringNum(i);
+            if ( stringID > 0 &&
                  map->GetString(groupNode.groupName, stringID) )
             {
-                groupNode.groupID = i+18;
-                groupTable.insert( std::pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode) );
+                groupNode.groupID = i + 18;
+                groupTable.insert(std::pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode));
             }
         }
     }

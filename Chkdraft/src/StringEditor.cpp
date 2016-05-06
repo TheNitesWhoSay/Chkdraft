@@ -41,6 +41,7 @@ void StringEditorWindow::RefreshWindow()
 {
     if ( CM != nullptr )
     {
+
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
         numVisibleStrings = 0;
@@ -48,6 +49,7 @@ void StringEditorWindow::RefreshWindow()
         StringUsageTable strUse;
         if ( strUse.populateTable(CM->scenario(), false) )
         {
+            std::cout << strUse.numStrings() << std::endl;
             RawString str;
             u32 lastUsed = strUse.lastUsedString();
             for ( u32 i=0; i<=lastUsed; i++ )
@@ -156,7 +158,9 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             CM->refreshScenario();
         }
         else if ( LOWORD(wParam) == SAVE_TO && CM != nullptr )
+        {
             saveStrings();
+        }
         break;
     }
     return 0;

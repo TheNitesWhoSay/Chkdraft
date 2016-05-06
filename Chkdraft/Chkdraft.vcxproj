@@ -125,6 +125,7 @@
     <ClCompile Include="src\WindowsUI\WindowControl.cpp" />
     <ClCompile Include="src\WindowsUI\WindowMenu.cpp" />
     <ClCompile Include="src\WindowsUI\WindowsItem.cpp" />
+    <ClCompile Include="SubStringMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Icon.ico" />
@@ -255,6 +256,7 @@
     <ClInclude Include="src\WindowsUI\WindowsItem.h" />
     <ClInclude Include="src\WindowsUI\WindowsUI.h" />
     <ClInclude Include="src\WindowsUI\WinUIEnums.h" />
+    <ClInclude Include="SubStringMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
