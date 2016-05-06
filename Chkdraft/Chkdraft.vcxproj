@@ -20,6 +20,7 @@
     <ClCompile Include="src\CommonFiles\Constants.cpp" />
     <ClCompile Include="src\CommonFiles\Debug.cpp" />
     <ClCompile Include="src\CommonFiles\Structs.cpp" />
+    <ClCompile Include="src\CommonFiles\Version.cpp" />
     <ClCompile Include="src\Counters.cpp" />
     <ClCompile Include="src\CuwpInput.cpp" />
     <ClCompile Include="src\CUWPs.cpp" />
@@ -57,6 +58,7 @@
     <ClCompile Include="src\MappingCore\sha256.cpp" />
     <ClCompile Include="src\MappingCore\StringTableNode.cpp" />
     <ClCompile Include="src\MappingCore\StringUsage.cpp" />
+    <ClCompile Include="src\MappingCore\SubStringMap.cpp" />
     <ClCompile Include="src\MapProperties.cpp" />
     <ClCompile Include="src\Maps.cpp" />
     <ClCompile Include="src\MapSettings.cpp" />
@@ -125,7 +127,6 @@
     <ClCompile Include="src\WindowsUI\WindowControl.cpp" />
     <ClCompile Include="src\WindowsUI\WindowMenu.cpp" />
     <ClCompile Include="src\WindowsUI\WindowsItem.cpp" />
-    <ClCompile Include="SubStringMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Icon.ico" />
@@ -145,6 +146,7 @@
     <ClInclude Include="src\CommonFiles\Debug.h" />
     <ClInclude Include="src\CommonFiles\Resource.h" />
     <ClInclude Include="src\CommonFiles\Structs.h" />
+    <ClInclude Include="src\CommonFiles\Version.h" />
     <ClInclude Include="src\Counters.h" />
     <ClInclude Include="src\CuwpInput.h" />
     <ClInclude Include="src\CUWPs.h" />
@@ -184,6 +186,7 @@
     <ClInclude Include="src\MappingCore\sha256.h" />
     <ClInclude Include="src\MappingCore\StringTableNode.h" />
     <ClInclude Include="src\MappingCore\StringUsage.h" />
+    <ClInclude Include="src\MappingCore\SubStringMap.h" />
     <ClInclude Include="src\MapProperties.h" />
     <ClInclude Include="src\Maps.h" />
     <ClInclude Include="src\MapSettings.h" />
@@ -256,7 +259,6 @@
     <ClInclude Include="src\WindowsUI\WindowsItem.h" />
     <ClInclude Include="src\WindowsUI\WindowsUI.h" />
     <ClInclude Include="src\WindowsUI\WinUIEnums.h" />
-    <ClInclude Include="SubStringMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

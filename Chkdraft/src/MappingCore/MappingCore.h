@@ -9,6 +9,7 @@
 #include "MappingCore/Math.h"
 #include "MappingCore/Scenario.h"
 #include "MappingCore/StringUsage.h"
+#include "MappingCore/SubStringMap.h"
 
 #include "MappingCore/CoreStructs.h"
 

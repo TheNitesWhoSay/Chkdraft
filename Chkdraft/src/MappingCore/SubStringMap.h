@@ -1,6 +1,6 @@
 #ifndef SUBSTRINGMAP_H
 #define SUBSTRINGMAP_H
-#include "src/MappingCore/StringTableNode.h"
+#include "StringTableNode.h"
 #include <vector>
 #include <memory>
 
