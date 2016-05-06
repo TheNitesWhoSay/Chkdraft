@@ -15,6 +15,7 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
+    std::cout << ascii_chkd << std::endl;
     /*
 
     maps.NewMap(128, 128, 2, 0, 0);

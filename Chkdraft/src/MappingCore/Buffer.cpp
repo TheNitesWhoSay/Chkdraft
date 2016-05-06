@@ -261,8 +261,8 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
             }
             else if ( data[i] == '\"' )
             {
-                do { i ++; }
-                while ( i < sizeUsed && data[i] != '\"' );
+                do { i++; }
+                while ( i < sizeUsed && !(data[i] == '\"' && (i == 0 || data[i - 1] != '\\')) );
             }
         }
     }
@@ -283,7 +283,7 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest, char terminat
             else if ( data[i] == '\"' )
             {
                 do { i++; }
-                while ( i < sizeUsed && data[i] != '\"' );
+                while ( i < sizeUsed && !(data[i] == '\"' && (i == 0 || data[i - 1] != '\\')) );
             }
             else if ( data[i] == terminator )
                 return false;
@@ -299,7 +299,7 @@ bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
         for ( u32 i=start; i<sizeUsed; i++ )
         {
             if ( data[i] == character &&
-                 ( i == start || data[i-1] != '\\' ) )
+                 ( i == 0 || data[i-1] != '\\' ) )
             {
                 dest = i;
                 return true;
@@ -323,7 +323,7 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
             else if ( data[i] == '\"' )
             {
                 do { i++; }
-                while ( i < sizeUsed && data[i] != '\"' );
+                while ( i < sizeUsed && !(data[i] == '\"' && (i == 0 || data[i-1] != '\\')) );
             }
         }
     }

@@ -1326,10 +1326,22 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
                 if ( standardStringUsage.isUsed(i) )
                     map->GetString(str, i);
 
+                ChkdString newString(true);
+                for ( auto &character : str )
+                {
+                    if ( character == '\"' )
+                    {
+                        newString.push_back('\\');
+                        newString.push_back('\"');
+                    }
+                    else
+                        newString.push_back(character);
+                }
+
                 if ( quoteArgs )
-                    stringTable.push_back( "\"" + str + "\"" );
+                    stringTable.push_back( "\"" + newString + "\"" );
                 else
-                    stringTable.push_back(str);
+                    stringTable.push_back(newString);
             }
 
             numStrings = extendedStringUsage.numStrings();
@@ -1338,10 +1350,22 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
                 if ( extendedStringUsage.isUsed(i) )
                     map->GetString(str, (65536-i));
 
+                ChkdString newString(true);
+                for ( auto &character : str )
+                {
+                    if ( character == '\"' )
+                    {
+                        newString.push_back('\\');
+                        newString.push_back('\"');
+                    }
+                    else
+                        newString.push_back(character);
+                }
+
                 if ( quoteArgs )
-                    extendedStringTable.push_back( "\"" + str + "\"" );
+                    extendedStringTable.push_back( "\"" + newString + "\"" );
                 else
-                    extendedStringTable.push_back(str);
+                    extendedStringTable.push_back(newString);
             }
 
             return true;

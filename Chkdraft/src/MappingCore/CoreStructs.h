@@ -10,5 +10,6 @@
 #include "ChkTrigger.h"
 #include "ChkUnit.h"
 #include "StringTableNode.h"
+#include "../../SubStringMap.h"
 
 #endif

@@ -579,6 +579,9 @@
     <ClInclude Include="src\CuwpInput.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>
+    <ClInclude Include="SubStringMap.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CommonFiles\Constants.cpp">
@@ -922,6 +925,9 @@
     </ClCompile>
     <ClCompile Include="src\CuwpInput.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="SubStringMap.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

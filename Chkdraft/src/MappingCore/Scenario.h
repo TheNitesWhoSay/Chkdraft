@@ -345,7 +345,9 @@ public:
                     bool compressStringTable(bool extendedTable, bool recycleSubStrings); // Rebuilds string table with minimum indexs and smallest size possible
                     bool repairStringTable(bool extendedTable); // Removes what Scmdraft considers string corruption
                     bool addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended);
-                    bool rebuildStringTable(std::vector<StringTableNode> strList, bool extendedTable); // Rebuilds string table using the provided list
+                    bool rebuildStringTable(std::vector<StringTableNode> &strList, bool extendedTable); // Rebuilds string table using the provided list
+                    bool buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
+                        Section &offsets, buffer &strPortion, u32 strPortionOffset, u32 numStrs, bool recycleSubStrings);
 
 
 /*  Validation  */  bool GoodVCOD(); // Check if VCOD is valid
