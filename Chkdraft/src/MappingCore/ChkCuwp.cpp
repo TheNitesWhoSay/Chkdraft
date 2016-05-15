@@ -173,7 +173,7 @@ void ChkCuwp::SetUnitIsCloaked(bool unitIsCloaked)
     if ( unitIsCloaked )
         flags |= (u16)CUWPUnitPropertyFlags::UnitIsCloaked;
     else
-        flags |= (u16)CUWPUnitPropertyFlags::xUnitIsCloaked;
+        flags &= (u16)CUWPUnitPropertyFlags::xUnitIsCloaked;
 }
 
 void ChkCuwp::SetUnitIsBurrowed(bool unitIsBurrowed)
@@ -181,7 +181,7 @@ void ChkCuwp::SetUnitIsBurrowed(bool unitIsBurrowed)
     if ( unitIsBurrowed )
         flags |= (u16)CUWPUnitPropertyFlags::UnitIsBurrowed;
     else
-        flags |= (u16)CUWPUnitPropertyFlags::xUnitIsBurrowed;
+        flags &= (u16)CUWPUnitPropertyFlags::xUnitIsBurrowed;
 }
 
 void ChkCuwp::SetBuildingInTransit(bool buildingInTransit)
@@ -189,7 +189,7 @@ void ChkCuwp::SetBuildingInTransit(bool buildingInTransit)
     if ( buildingInTransit )
         flags |= (u16)CUWPUnitPropertyFlags::BuildingInTransit;
     else
-        flags |= (u16)CUWPUnitPropertyFlags::xBuildingInTransit;
+        flags &= (u16)CUWPUnitPropertyFlags::xBuildingInTransit;
 }
 
 void ChkCuwp::SetUnitIsHallucinated(bool unitIsHallucinated)
@@ -197,7 +197,7 @@ void ChkCuwp::SetUnitIsHallucinated(bool unitIsHallucinated)
     if ( unitIsHallucinated )
         flags |= (u16)CUWPUnitPropertyFlags::UnitIsHallucinated;
     else
-        flags |= (u16)CUWPUnitPropertyFlags::xUnitIsHallucinated;
+        flags &= (u16)CUWPUnitPropertyFlags::xUnitIsHallucinated;
 }
 
 void ChkCuwp::SetUnitIsInvincible(bool unitIsInvincible)
@@ -205,5 +205,5 @@ void ChkCuwp::SetUnitIsInvincible(bool unitIsInvincible)
     if ( unitIsInvincible )
         flags |= (u16)CUWPUnitPropertyFlags::UnitIsInvincible;
     else
-        flags |= (u16)CUWPUnitPropertyFlags::xUnitIsInvincible;
+        flags &= (u16)CUWPUnitPropertyFlags::xUnitIsInvincible;
 }

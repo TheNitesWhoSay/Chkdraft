@@ -1,6 +1,7 @@
 #include "TrigActions.h"
 #include "Chkdraft.h"
 #include "ChkdStringInput.h"
+#include "CuwpInput.h"
 
 #define TOP_ACTION_PADDING 50
 #define BOTTOM_ACTION_PADDING 0
@@ -9,12 +10,13 @@
 enum ID
 {
     GRID_ACTIONS = ID_FIRST,
+    BUTTON_UNITPROPERTIES,
     BUTTON_EDITSTRING,
     BUTTON_EDITWAV
 };
 
 TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
-    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false)
+    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false)
 {
     InitializeArgMaps();
 }
@@ -67,19 +69,27 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
                     );
                 for ( u8 x = 0; x<numArgs; x++ )
                 {
+                    gridActions.item(x + 2, y).SetDisabled(false);
                     gridActions.item(x + 2, y).SetText(
                         ttg.GetActionArgument(action, x, actionArgMaps[action.action]).c_str()
                         );
                 }
-                for ( u8 x = numArgs; x<8; x++ )
+                for ( u8 x = numArgs; x < 8; x++ )
+                {
                     gridActions.item(x + 2, y).SetText("");
+                    gridActions.item(x + 2, y).SetDisabled(true);
+                }
 
                 gridActions.SetEnabledCheck(y, !action.isDisabled());
             }
             else if ( action.action == 0 )
             {
-                for ( u8 x = 0; x<10; x++ )
+                for ( u8 x = 0; x < 10; x++ )
+                {
                     gridActions.item(x, y).SetText("");
+                    if ( x > 1 )
+                        gridActions.item(x, y).SetDisabled(true);
+                }
 
                 gridActions.SetEnabledCheck(y, false);
             }
@@ -92,7 +102,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 
 void TrigActionsWindow::DoSize()
 {
-    if ( stringEditEnabled || wavEditEnabled )
+    if ( stringEditEnabled || wavEditEnabled || unitPropertiesEditEnabled )
     {
         gridActions.SetPos(2, TOP_ACTION_PADDING, cliWidth() - 2,
             cliHeight() - TOP_ACTION_PADDING - BOTTOM_ACTION_PADDING - buttonEditString.Height() - 5);
@@ -119,13 +129,17 @@ void TrigActionsWindow::DoSize()
                 cliHeight() - buttonEditString.Height() - 3);
         }
     }
+
+    if ( unitPropertiesEditEnabled )
+    {
+        buttonUnitProperties.MoveTo(cliWidth() - 2 - buttonUnitProperties.Width(),
+            cliHeight() - buttonEditString.Height() - 3);
+    }
 }
 
 void TrigActionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == VK_TAB )
-        SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, lParam);
-    else if ( wParam == VK_RETURN )
+    if ( wParam == VK_TAB || wParam == VK_RETURN )
         SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, lParam);
 }
 
@@ -348,6 +362,8 @@ void TrigActionsWindow::CreateSubWindows(HWND hWnd)
     buttonEditString.Hide();
     buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", BUTTON_EDITWAV);
     buttonEditWav.Hide();
+    buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", BUTTON_UNITPROPERTIES);
+    buttonUnitProperties.Hide();
     RefreshWindow(trigIndex);
 }
 
@@ -615,7 +631,7 @@ void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY
 
 void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xStart)
 {
-    RECT rcFill;
+    RECT rcFill = {};
     rcFill.top = rcItem.top - 1;
     rcFill.bottom = rcItem.bottom;
     rcFill.left = xStart - 1;
@@ -636,7 +652,9 @@ void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, 
     if ( gridActions.item(gridItemX, gridItemY).getText(text) )
         DrawString(hDC, xStart + 1, rcItem.top, width - 2, RGB(0, 0, 0), text);
 
-    DrawItemFrame(hDC, rcItem, width, xStart);
+    if ( !gridActions.item(gridItemX, gridItemY).isDisabled() )
+        DrawItemFrame(hDC, rcItem, width, xStart);
+
     xStart += width;
 }
 
@@ -983,6 +1001,7 @@ void TrigActionsWindow::ButtonEditString()
                 }
             }
         }
+        SetFocus(gridActions.getHandle());
     }
 }
 
@@ -1024,6 +1043,46 @@ void TrigActionsWindow::ButtonEditWav()
                     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
                     break;
                 }
+            }
+        }
+    }
+}
+
+void TrigActionsWindow::EnableUnitPropertiesEdit()
+{
+    unitPropertiesEditEnabled = true;
+    buttonUnitProperties.Show();
+}
+
+void TrigActionsWindow::DisableUnitPropertiesEdit()
+{
+    buttonUnitProperties.Hide();
+    unitPropertiesEditEnabled = false;
+}
+
+void TrigActionsWindow::ButtonEditUnitProperties()
+{
+    // To Do: Figure out if the current trigger already has a CUWP, if so, use it, otherwise use empty
+    ChkCuwp initialCuwp = {};
+    Trigger* trig = nullptr;
+    int focusedX = 0, focusedY = 0;
+    if ( CM->getTrigger(trig, trigIndex) && gridActions.GetFocusedItem(focusedX, focusedY) )
+    {
+        Action &action = trig->action((u8)focusedY);
+        u32 cuwpIndex = action.number;
+        if ( CM->GetCuwp((u8)cuwpIndex, initialCuwp) )
+        {
+            ChkCuwp newCuwp = {};
+            if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
+            {
+                u8 newCuwpIndex = 0;
+                if ( CM->FindCuwp(newCuwp, newCuwpIndex) || CM->AddCuwp(newCuwp, newCuwpIndex) )
+                {
+                    action.number = newCuwpIndex;
+                    CM->notifyChange(false);
+                }
+                else
+                    Error("Unable to add CUWP, all 64 slots may be in use.");
             }
         }
     }
@@ -1101,6 +1160,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
         if ( actionNum >= 0 && actionNum < 64 )
         {
             bool includesString = false, includesWav = false;
+            bool isCUWP = ((ActionId)actionNum == ActionId::CreateUnitWithProperties);
             std::vector<u8> &argMap = actionArgMaps[actionNum];
             u8 numArgs = (u8)actionArgMaps[actionNum].size();
             for ( u8 i = 0; i < numArgs; i++ )
@@ -1126,6 +1186,11 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
                 EnableWavEdit();
             else
                 DisableWavEdit();
+
+            if ( isCUWP )
+                EnableUnitPropertiesEdit();
+            else
+                DisableUnitPropertiesEdit();
         }
 
         if ( gridItemX == 1 ) // Action Name
@@ -1222,6 +1287,7 @@ LRESULT TrigActionsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 case BUTTON_EDITSTRING: ButtonEditString(); break;
                 case BUTTON_EDITWAV: ButtonEditWav(); break;
+                case BUTTON_UNITPROPERTIES: ButtonEditUnitProperties(); break;
                 default: return ClassWindow::Command(hWnd, wParam, lParam); break;
             }
             break;

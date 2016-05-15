@@ -8,14 +8,13 @@ class PreservedUnitStats
 {
     public:
         PreservedUnitStats();
-        void flushStats();
-        void addStats(Selections &sel, ChkUnitField statField);
+        void Clear();
+        void AddStats(Selections &sel, ChkUnitField statField);
         void convertToUndo();
 
     private:
         ChkUnitField field;
-        int numUnits;
-        u32* values;
+        std::vector<u32> preservedValues;
 };
 
 #endif

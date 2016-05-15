@@ -561,9 +561,6 @@
     <ClInclude Include="src\WindowsUI\MdiClient.h">
       <Filter>Header Files\Windows UI\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="SFmpq\SFmpqapi.h">
-      <Filter>Header Files\Mapping Core\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="src\Undos.h">
       <Filter>Header Files\Mapping\Undos</Filter>
     </ClInclude>
@@ -574,6 +571,18 @@
       <Filter>Header Files\Windows UI\%2a</Filter>
     </ClInclude>
     <ClInclude Include="src\CommonFiles\Resource.h">
+      <Filter>Header Files\Common Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SFmpq\SFmpqapi.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CuwpInput.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\SubStringMap.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CommonFiles\Version.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -916,6 +925,15 @@
     </ClCompile>
     <ClCompile Include="src\ChkdPlugins.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CuwpInput.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\SubStringMap.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CommonFiles\Version.cpp">
+      <Filter>Source Files\Common Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

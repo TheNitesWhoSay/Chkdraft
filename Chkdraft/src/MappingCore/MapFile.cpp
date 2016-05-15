@@ -25,6 +25,8 @@ bool MapFile::LoadFile()
 
 bool MapFile::SaveFile(bool SaveAs)
 {
+    std::string prevFilePath(filePath);
+
     if ( isProtected() )
         MessageBox(NULL, "Cannot save protected maps!", "Error!", MB_OK|MB_ICONEXCLAMATION);
     else
@@ -68,7 +70,7 @@ bool MapFile::SaveFile(bool SaveAs)
 
         if ( filePath[0] != '\0' ) // Map for sure has a path
         {
-            FILE* pFile(nullptr);
+            std::FILE* pFile(nullptr);
 
             if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
                 ChangeToScOrig();
@@ -81,39 +83,34 @@ bool MapFile::SaveFile(bool SaveAs)
             }
 
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx)
-                 || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+                || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
-                pFile = std::fopen(filePath, "wb");
-                if ( pFile != nullptr )
+                if ( !SaveAs || (SaveAs && MakeFileCopy(prevFilePath, filePath)) )
                 {
-                    std::fclose(pFile);
-                    HANDLE hMpq = NULL;
                     DeleteFileA("chk.tmp"); // Remove any existing chk.tmp files
                     pFile = std::fopen("chk.tmp", "wb");
                     WriteFile(pFile);
                     std::fclose(pFile);
 
-                    hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_ALWAYS|MOAU_MAINTAIN_LISTFILE, 16);
+                    MPQHANDLE hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_ALWAYS | MOAU_MAINTAIN_LISTFILE, 1000);
                     if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
                     {
                         BOOL addedFile = MpqAddFileToArchive(hMpq, "chk.tmp", "staredit\\scenario.chk", MAFA_COMPRESS | MAFA_REPLACE_EXISTING);
                         MpqCloseUpdatedArchive(hMpq, 0);
-
                         if ( addedFile == TRUE )
                         {
                             DeleteFileA("chk.tmp");
                             return true;
                         }
                         else
-                            MessageBox(NULL, "Failed to add file!", "Error!", MB_OK|MB_ICONEXCLAMATION);
+                            MessageBox(NULL, "Failed to add file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
                     }
                     else
-                        MessageBox(NULL, "Failed to open for updates!", "Error!", MB_OK|MB_ICONEXCLAMATION);
-
-                    DeleteFileA("chk.tmp");
+                        MessageBox(NULL, std::string(std::string("Failed to open for updates!\n\nThe file may be in use elsewhere. ") + std::to_string(GetLastError())).c_str(), "Error!", MB_OK | MB_ICONEXCLAMATION);
                 }
-                else
-                    MessageBox(NULL, "Failed to open file!\n\nThe file may be in use elsewhere.", "Error!", MB_OK|MB_ICONEXCLAMATION);
+                MessageBox(NULL, "Failed to create the new MPQ file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+
+                DeleteFileA("chk.tmp");
             }
             else // Is a chk file or unrecognized format, write out chk file
             {
@@ -172,12 +169,14 @@ bool MapFile::OpenFile()
         {
             if ( strcmp(ext, ".scm") == 0 || strcmp(ext, ".scx") == 0 )
             {
-                HANDLE hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_EXISTING, 1000);
-
+                MPQHANDLE hMpq = MpqOpenArchiveForUpdate(filePath, MOAU_OPEN_EXISTING|MOAU_READ_ONLY, 1000);
                 if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
                 {
-                    FileToBuffer(hMpq, "staredit\\scenario.chk", chk);
+                    if ( !FileToBuffer(hMpq, "staredit\\scenario.chk", chk) )
+                        CHKD_ERR("Failed to get scenario file from MPQ.");
+
                     MpqCloseUpdatedArchive(hMpq, 0);
+                    
 
                     if ( chk.size() > 0 && ParseScenario(chk) )
                     {
@@ -197,6 +196,8 @@ bool MapFile::OpenFile()
 
                         return true;
                     }
+                    else
+                        CHKD_ERR("Invalid or missing Scenario file.");
                 }
                 else if ( GetLastError() == ERROR_FILE_NOT_FOUND )
                     CHKD_ERR("File Not Found");

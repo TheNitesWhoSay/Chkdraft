@@ -43,3 +43,8 @@ bool PlayerDropdown::GetPlayerNum(u8 &dest)
     }
     return success;
 }
+
+u8 PlayerDropdown::GetPlayerBySelNum()
+{
+    return (u8)DropdownControl::GetSel();
+}

@@ -61,6 +61,7 @@ ReversiblePtr Undos::popUndo(int32_t type)
             undos.erase(it);
             return toReturn;
         }
+        ++it;
     }
     return nullptr;
 }

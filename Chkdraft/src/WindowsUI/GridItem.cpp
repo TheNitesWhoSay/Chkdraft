@@ -1,6 +1,6 @@
 #include "GridItem.h"
 
-GridControlItem::GridControlItem() : selected(false), data(0)
+GridControlItem::GridControlItem() : selected(false), data(0), disabled(false)
 {
     text = "";
 }
@@ -25,6 +25,11 @@ void GridControlItem::SetData(u32 newData)
 void GridControlItem::SetSelected(bool isItemSelected)
 {
     this->selected = isItemSelected;
+}
+
+void GridControlItem::SetDisabled(bool disabled)
+{
+    this->disabled = disabled;
 }
 
 void GridControlItem::Clear()
@@ -58,4 +63,9 @@ u32 GridControlItem::getData()
 bool GridControlItem::isSelected()
 {
     return selected;
+}
+
+bool GridControlItem::isDisabled()
+{
+    return disabled;
 }

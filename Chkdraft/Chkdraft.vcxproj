@@ -20,7 +20,9 @@
     <ClCompile Include="src\CommonFiles\Constants.cpp" />
     <ClCompile Include="src\CommonFiles\Debug.cpp" />
     <ClCompile Include="src\CommonFiles\Structs.cpp" />
+    <ClCompile Include="src\CommonFiles\Version.cpp" />
     <ClCompile Include="src\Counters.cpp" />
+    <ClCompile Include="src\CuwpInput.cpp" />
     <ClCompile Include="src\CUWPs.cpp" />
     <ClCompile Include="src\EnterPassword.cpp" />
     <ClCompile Include="src\Forces.cpp" />
@@ -56,6 +58,7 @@
     <ClCompile Include="src\MappingCore\sha256.cpp" />
     <ClCompile Include="src\MappingCore\StringTableNode.cpp" />
     <ClCompile Include="src\MappingCore\StringUsage.cpp" />
+    <ClCompile Include="src\MappingCore\SubStringMap.cpp" />
     <ClCompile Include="src\MapProperties.cpp" />
     <ClCompile Include="src\Maps.cpp" />
     <ClCompile Include="src\MapSettings.cpp" />
@@ -143,7 +146,9 @@
     <ClInclude Include="src\CommonFiles\Debug.h" />
     <ClInclude Include="src\CommonFiles\Resource.h" />
     <ClInclude Include="src\CommonFiles\Structs.h" />
+    <ClInclude Include="src\CommonFiles\Version.h" />
     <ClInclude Include="src\Counters.h" />
+    <ClInclude Include="src\CuwpInput.h" />
     <ClInclude Include="src\CUWPs.h" />
     <ClInclude Include="src\DialogWindows.h" />
     <ClInclude Include="src\EnterPassword.h" />
@@ -181,6 +186,7 @@
     <ClInclude Include="src\MappingCore\sha256.h" />
     <ClInclude Include="src\MappingCore\StringTableNode.h" />
     <ClInclude Include="src\MappingCore\StringUsage.h" />
+    <ClInclude Include="src\MappingCore\SubStringMap.h" />
     <ClInclude Include="src\MapProperties.h" />
     <ClInclude Include="src\Maps.h" />
     <ClInclude Include="src\MapSettings.h" />
@@ -304,7 +310,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SFMPQ/SFmpq_MTd.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SFMPQ\SFmpq_MTd.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <HeapReserveSize>
       </HeapReserveSize>
       <StackReserveSize>
@@ -331,7 +337,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>SFMPQ/SFmpq_MT.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SFmpq\SFmpq_MT.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>

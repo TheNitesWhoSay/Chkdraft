@@ -88,6 +88,7 @@ public:
 
 /*    Units     */  u16 numUnits(); // Returns number of units in UNIT section
                     ChkUnit getUnit(u16 index);
+                    bool ReplaceUnit(u16 index, ChkUnit newUnit);
                     bool insertUnit(u16 index, ChkUnit &unit);
                     //bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
                     bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
@@ -149,6 +150,7 @@ public:
                     bool ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex);
                     bool IsCuwpUsed(u8 cuwpIndex);
                     bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
+                    bool FindCuwp(const ChkCuwp &cuwpToFind, u8 &outCuwpIndex);
                     int CuwpCapacity();
                     int NumUsedCuwps();
 
@@ -158,9 +160,15 @@ public:
                     bool IsWavUsed(u16 wavIndex);
                     bool IsStringUsedWithWavs(u32 stringIndex);
 
-/*   Switches   */  bool getSwitchStrId(u8 switchId, u32 &stringNum);
+/*   Switches   */  u32 NumNameableSwitches();
+                    bool getSwitchStrId(u8 switchId, u32 &stringNum);
                     bool getSwitchName(ChkdString &dest, u8 switchID);
+                    bool setSwitchName(ChkdString &newName, u8 switchId, bool extended);
                     bool hasSwitchSection();
+                    bool switchHasName(u8 switchId);
+                    void removeSwitchName(u8 switchId);
+                    bool SwitchUsesExtendedName(u8 switchId);
+                    bool ToggleUseExtendedSwitchName(u8 switchId);
 
 /*   Briefing   */  bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
 
@@ -337,7 +345,9 @@ public:
                     bool compressStringTable(bool extendedTable, bool recycleSubStrings); // Rebuilds string table with minimum indexs and smallest size possible
                     bool repairStringTable(bool extendedTable); // Removes what Scmdraft considers string corruption
                     bool addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended);
-                    bool rebuildStringTable(std::vector<StringTableNode> strList, bool extendedTable); // Rebuilds string table using the provided list
+                    bool rebuildStringTable(std::vector<StringTableNode> &strList, bool extendedTable); // Rebuilds string table using the provided list
+                    bool buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
+                        Section &offsets, buffer &strPortion, u32 strPortionOffset, u32 numStrs, bool recycleSubStrings);
 
 
 /*  Validation  */  bool GoodVCOD(); // Check if VCOD is valid

@@ -122,3 +122,16 @@ template bool DropdownControl::GetEditNum<s16>(s16 &dest);
 template bool DropdownControl::GetEditNum<u32>(u32 &dest);
 template bool DropdownControl::GetEditNum<s32>(s32 &dest);
 template bool DropdownControl::GetEditNum<int>(int &dest);
+
+template <typename numType>
+bool DropdownControl::SetEditNum(numType num)
+{
+    return WindowsItem::SetWinText(std::to_string(num).c_str());
+}
+template bool DropdownControl::SetEditNum<u8>(u8 num);
+template bool DropdownControl::SetEditNum<s8>(s8 num);
+template bool DropdownControl::SetEditNum<u16>(u16 num);
+template bool DropdownControl::SetEditNum<s16>(s16 num);
+template bool DropdownControl::SetEditNum<u32>(u32 num);
+template bool DropdownControl::SetEditNum<s32>(s32 num);
+template bool DropdownControl::SetEditNum<int>(int num);

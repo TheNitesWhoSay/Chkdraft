@@ -182,7 +182,7 @@ LRESULT CUWPsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 
 void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 {
-    std::cout << "CUWP Notify Tree Sel Changed: " << newValue << std::endl;
+
 }
 
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
@@ -199,13 +199,27 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
             case CheckCloaked: cuwp.SetUnitIsCloaked(checkCloaked.isChecked()); break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
+        CM->notifyChange(false);
     }
-    std::cout << "CUWP Notify Button Clicked" << std::endl;
 }
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-    std::cout << "NotifyEditUpdated" << std::endl;
+    ChkCuwp cuwp = {};
+    if ( CM->GetCuwp(selectedCuwp, cuwp) )
+    {
+        int editNum = 0;
+        switch ( idFrom )
+        {
+            case EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.percentHitpoints = editNum; break;
+            case EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.percentEnergyPoints = editNum; break;
+            case EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.percentShieldPoints = editNum; break;
+            case EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
+            case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.numInHanger = editNum; break;
+        }
+        CM->ReplaceCuwp(cuwp, selectedCuwp);
+        CM->notifyChange(false);
+    }
 }
 
 LRESULT CUWPsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

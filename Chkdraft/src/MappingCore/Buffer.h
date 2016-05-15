@@ -28,9 +28,9 @@ class buffer
 
                     // Use the data pointer with care, don't read past dest[sizeUsed-location-1]
                     const void* getPtr(u32 location);
-                    const void* getPtr(u32 location, u32 sizeRequested);
+                    const void* getPtr(u32 location, u32 sizeRequested); // sizeRequested in bytes
                     template <typename valueType>
-                        bool getPtr(valueType* &dest, u32 location, u32 sizeRequested);
+                        bool getPtr(valueType* &dest, u32 location, u32 sizeRequested); // sizeRequested in bytes
 
                     // Returns data if the location is < sizeUsed, otherwise returns 0
                     template <typename valueType>

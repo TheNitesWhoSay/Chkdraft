@@ -3,6 +3,7 @@
 #include "StringUsage.h"
 #include "sha256.h"
 #include "Math.h"
+#include "SubStringMap.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>
@@ -219,6 +220,11 @@ ChkUnit Scenario::getUnit(u16 index)
         ChkUnit blankUnit = {};
         return blankUnit;
     }
+}
+
+bool Scenario::ReplaceUnit(u16 index, ChkUnit newUnit)
+{
+    return UNIT().replace<ChkUnit>(UNIT_STRUCT_SIZE*(u32)index, newUnit);
 }
 
 bool Scenario::insertUnit(u16 index, ChkUnit &unit)
@@ -634,6 +640,11 @@ bool Scenario::GetExtendedString(ChkdString &dest, u32 extendedStringSectionInde
     return GetString(dest, 65535 - extendedStringSectionIndex);
 }
 
+u32 Scenario::NumNameableSwitches()
+{
+    return SWNM().size() / 4;
+}
+
 bool Scenario::getSwitchStrId(u8 switchId, u32 &stringId)
 {
     return SWNM().get<u32>(stringId, 4 * (u32)switchId);
@@ -649,9 +660,63 @@ bool Scenario::getSwitchName(ChkdString &dest, u8 switchID)
         return false;
 }
 
+bool Scenario::setSwitchName(ChkdString &newName, u8 switchId, bool extended)
+{
+    u32 stringNum = 0;
+    if ( getSwitchStrId(switchId, stringNum) )
+    {
+        u32* stringToReplace = nullptr;
+        if ( SWNM().getPtr(stringToReplace, 4*(u32)switchId, 4) )
+            return replaceString<u32>(newName, *stringToReplace, extended, true);
+    }
+    return false;
+}
+
 bool Scenario::hasSwitchSection()
 {
     return SWNM().exists();
+}
+
+bool Scenario::switchHasName(u8 switchId)
+{
+    u32 stringId = 0;
+    return getSwitchStrId(switchId, stringId) && stringId != 0;
+}
+
+void Scenario::removeSwitchName(u8 switchId)
+{
+    u32 stringNum = 0;
+    if ( getSwitchStrId(switchId, stringNum) && stringNum != 0 )
+    {
+        SWNM().replace<u32>(4 * (u32)switchId, 0);
+        removeUnusedString(stringNum);
+    }
+}
+
+bool Scenario::SwitchUsesExtendedName(u8 switchId)
+{
+    u32 stringId = 0;
+    if ( getSwitchStrId(switchId, stringId) && stringId != 0 )
+        return isExtendedString(stringId);
+    
+    return false;
+}
+
+bool Scenario::ToggleUseExtendedSwitchName(u8 switchId)
+{
+    ChkdString switchName;
+    u32 switchStringId = 0;
+    if ( getSwitchStrId(switchId, switchStringId) &&
+         stringExists(switchStringId) &&
+         GetString(switchName, switchStringId) )
+    {
+        bool wasExtended = isExtendedString(switchStringId);
+        removeSwitchName(switchId);
+        u32 newSwitchStringId = 0;
+        if ( addString(switchName, newSwitchStringId, !wasExtended) )
+            return SWNM().replace<u32>(4 * (u32)switchId, newSwitchStringId);
+    }
+    return false;
 }
 
 bool Scenario::getUnitName(RawString &dest, u16 unitID)
@@ -2543,7 +2608,7 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
     }
 }
 
-bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool extendedTable)
+bool Scenario::rebuildStringTable(std::vector<StringTableNode> &strList, bool extendedTable)
 {
     if ( extendedTable )
     {
@@ -2605,51 +2670,16 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
         return false; // Out of memory
 
     // Add the string offsets while you build the string portion of the table
-    u32 strIndex = 1;
-
-    for ( auto &str : strList )
+    if ( !buildStringTables(strList, extendedTable, newStrSection, strPortion, strPortionOffset, numStrs, false) )
     {
-        while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
-        {
-            if ( ( extendedTable && newStrSection->add<u32>(strPortionOffset) ) ||    // Add string offset (extended)
-                 ( !extendedTable && newStrSection->add<u16>(u16(strPortionOffset)) ) // Add string offset (regular)
-               )
-            {
-                strIndex ++;
-            }
-            else
-                return false; // Out of memory
-        }
-        
-        if ( !extendedTable && strPortionOffset+strPortion.size() > 65535 )
-        {
-            CHKD_ERR("Structural STR limits exceeded, header information for %u string took up %u bytes.", numStrs, 2+numStrs*2);
-            return false; // No room for the next string
-        }
-
-        if ( (
-               ( extendedTable && newStrSection->add<u32>(strPortion.size()+strPortionOffset) ) ||    // Add string offset (extedned)
-               ( !extendedTable && newStrSection->add<u16>(u16(strPortion.size()+strPortionOffset)) ) // Add string offset (regular)
-             ) && strPortion.addStr(str.string.c_str(), str.string.size()+1) // Add the string + its NUL char
-           )
-        {
-            strIndex ++;
-        }
+        u32 lengthToSave = extendedTable ? 8 : 2;
+        newStrSection->del(lengthToSave, newStrSection->size()-lengthToSave);
+        strPortion.del(1, strPortion.size() - 1);
+        if ( !buildStringTables(strList, extendedTable, newStrSection, strPortion, strPortionOffset, numStrs, true) )
+            return false;
         else
-            return false; // Out of memory
-    }
-
-    // Add any unused's that come after the last string, point them to the 'NUL' string
-    while ( strIndex <= numStrs )
-    {
-        if ( ( extendedTable && newStrSection->add<u32>(strPortionOffset) ) ||    // Add string offset (extended)
-             ( !extendedTable && newStrSection->add<u16>(u16(strPortionOffset)) ) // Add string offset (regular)
-           )
-        {
-            strIndex ++;
-        }
-        else
-            return false; // Out of memory
+            CHKD_SHOUT("Regular STR section cannot hold the result. Sub-strings have been recycled, \
+                these may not work with other editors, reduce the number/size of strings in your map to get back to normal.");
     }
 
     if ( extendedTable )
@@ -2691,6 +2721,131 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> strList, bool ext
                    AddSection(newStrSection);
         }
     }
+}
+
+bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
+    Section &offsets, buffer &strPortion, u32 strPortionOffset, u32 numStrs, bool recycleSubStrings)
+{
+    u32 strIndex = 1;
+    if ( recycleSubStrings )
+    {
+        std::vector<SubStringPtr> subStrings = SubString::GetSubStrings(strList);
+
+        for ( auto &subStr : subStrings )
+        {
+            const StringTableNode& str = *(subStr->GetString());
+            while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
+            {
+                if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||      // Add string offset (extended)
+                     (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+                {
+                    strIndex++;
+                }
+                else
+                    return false; // Out of memory
+            }
+
+            if ( !extendedTable && strPortionOffset + strPortion.size() > 65535 )
+            {
+                CHKD_ERR("Structural STR limits exceeded, header information for %u string took up %u bytes.", numStrs, 2 + numStrs * 2);
+                return false; // No room for the next string
+            }
+
+            SubStringPtr parent = subStr->GetParent();
+            if ( parent != nullptr ) // This string is a sub-string of another
+            {
+                // Add space for the offset, have it set later
+                if ( (extendedTable && offsets->add<u32>(0)) ||  // Add string offset (extended)
+                     (!extendedTable && offsets->add<u16>(0)) )  // Add string offset (regular)
+                {
+                    strIndex++;
+                }
+                else
+                    return false; // Out of memory
+            }
+            else // This string is not a sub-string of another
+            {
+                subStr->userData = (void*)(strPortion.size() + strPortionOffset);
+
+                if ( ((extendedTable && offsets->add<u32>(strPortion.size() + strPortionOffset)) ||        // Add string offset (extended)
+                      (!extendedTable && offsets->add<u16>(u16(strPortion.size() + strPortionOffset)))) && // Add string offset (regular)
+                     strPortion.addStr(str.string.c_str(), str.string.size() + 1) ) // Add the string + its NUL char
+                {
+                    strIndex++;
+                }
+                else
+                    return false; // Out of memory
+            }
+        }
+
+        for ( auto &subStr : subStrings )
+        {
+            const StringTableNode& str = *(subStr->GetString());
+
+            SubStringPtr parent = subStr->GetParent();
+            if ( parent != nullptr ) // This string is a sub-string of another
+            {
+                u32 parentStart = (u32)parent->userData;
+                u32 childStart = parentStart + (parent->GetString()->string.size() - str.string.size());
+
+                if ( (extendedTable && offsets->replace<u32>(4+4*str.stringNum, childStart)) ||   // Add string offset (extended)
+                    (!extendedTable && offsets->replace<u16>(2*str.stringNum, (u16)childStart)) ) // Add string offset (regular)
+                {
+
+                }
+                else
+                {
+                    CHKD_ERR("Failed to add string header #%u, out of memory.", subStr->GetString()->stringNum);
+                    return false; // Out of memory
+                }
+            }
+        }
+    }
+    else // Not recycling sub-strings
+    {
+        for ( auto &str : strList )
+        {
+            while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
+            {
+                if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||     // Add string offset (extended)
+                    (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+                {
+                    strIndex++;
+                }
+                else
+                    return false; // Out of memory
+            }
+
+            if ( !extendedTable && strPortionOffset + strPortion.size() > 65535 )
+            {
+                CHKD_ERR("Structural STR limits exceeded, header information for %u string took up %u bytes.", numStrs, 2 + numStrs * 2);
+                return false; // No room for the next string
+            }
+
+            if ( ((extendedTable && offsets->add<u32>(strPortion.size() + strPortionOffset)) ||        // Add string offset (extended)
+                  (!extendedTable && offsets->add<u16>(u16(strPortion.size() + strPortionOffset)))) && // Add string offset (regular)
+                 strPortion.addStr(str.string.c_str(), str.string.size() + 1) ) // Add the string + its NUL char
+            {
+                strIndex++;
+            }
+            else
+                return false; // Out of memory
+        }
+    }
+
+    // Add any unused's that come after the last string, point them to the 'NUL' string
+    while ( strIndex <= numStrs )
+    {
+        if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||      // Add string offset (extended)
+             (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+        {
+            strIndex++;
+        }
+        else
+            return false; // Out of memory
+    }
+
+    return true;
 }
 
 void Scenario::correctMTXM()
@@ -3287,6 +3442,22 @@ bool Scenario::SetCuwpUsed(u8 cuwpIndex, bool isUsed)
         return UPUS().replace<u8>(cuwpIndex, 1);
     else
         return UPUS().replace<u8>(cuwpIndex, 0);
+}
+
+bool Scenario::FindCuwp(const ChkCuwp &cuwpToFind, u8 &outCuwpIndex)
+{
+    u8 cuwpCapacity = (u8)CuwpCapacity();
+    ChkCuwp cuwp = {};
+    for ( u8 i = 0; i < cuwpCapacity; i++ )
+    {
+        if ( UPRP().get<ChkCuwp>(cuwp, sizeof(ChkCuwp)*(u32)i) &&
+             memcmp(&cuwpToFind, &cuwp, sizeof(ChkCuwp)) == 0 )
+        {
+            outCuwpIndex = i;
+            return true;
+        }
+    }
+    return false;
 }
 
 int Scenario::CuwpCapacity()

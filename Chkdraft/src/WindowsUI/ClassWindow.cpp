@@ -119,7 +119,32 @@ void ClassWindow::NotifyEditUpdated(int, HWND)
 
 }
 
+void ClassWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
+{
+
+}
+
 void ClassWindow::NotifyEditFocusLost(int, HWND)
+{
+
+}
+
+void ClassWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassWindow::NotifyComboEditUpdated(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassWindow::NotifyComboEditFocused(int idFrom, HWND hWndFrom)
+{
+
+}
+
+void ClassWindow::NotifyComboEditFocusLost(int idFrom, HWND hWndFrom)
 {
 
 }
@@ -203,8 +228,11 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
                 classWindow->NotifyWindowShown();
             else
             {
+                HWND hEditFocused = GetFocus();
+                int editCtrlId = GetDlgCtrlID(hEditFocused);
+                classWindow->NotifyEditFocusLost(editCtrlId, hEditFocused);
+                classWindow->NotifyComboEditFocusLost(editCtrlId, hEditFocused);
                 classWindow->NotifyWindowHidden();
-                classWindow->NotifyEditFocusLost(0, NULL);
             }
             return classWindow->WndProc(hWnd, msg, wParam, lParam);
         }
@@ -228,7 +256,12 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
             {
                 case BN_CLICKED: classWindow->NotifyButtonClicked(LOWORD(wParam), (HWND)lParam); break;
                 case EN_UPDATE: classWindow->SendNotifyEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+                case EN_SETFOCUS: classWindow->NotifyEditFocused(LOWORD(wParam), (HWND)lParam); break;
                 case EN_KILLFOCUS: classWindow->NotifyEditFocusLost(LOWORD(wParam), (HWND)lParam); break;
+                case CBN_SELCHANGE: classWindow->NotifyComboSelChanged(LOWORD(wParam), (HWND)lParam); break;
+                case CBN_EDITCHANGE: classWindow->NotifyComboEditUpdated(LOWORD(wParam), (HWND)lParam); break;
+                case CBN_SETFOCUS: classWindow->NotifyComboEditFocused(LOWORD(wParam), (HWND)lParam); break;
+                case CBN_KILLFOCUS: classWindow->NotifyComboEditFocusLost(LOWORD(wParam), (HWND)lParam); break;
             }
             return classWindow->Command(hWnd, wParam, lParam);
         }
