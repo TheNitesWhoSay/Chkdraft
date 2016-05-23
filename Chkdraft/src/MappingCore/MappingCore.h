@@ -1,16 +1,16 @@
 #ifndef MAPPINGCORE_H
 #define MAPPINGCORE_H
 
-#include "MappingCore/Basics.h"
-#include "MappingCore/Buffer.h"
-#include "MappingCore/DefaultCHK.h"
-#include "MappingCore/FileIO.h"
-#include "MappingCore/MapFile.h"
-#include "MappingCore/Math.h"
-#include "MappingCore/Scenario.h"
-#include "MappingCore/StringUsage.h"
-#include "MappingCore/SubStringMap.h"
+#include "Basics.h"
+#include "Buffer.h"
+#include "DefaultCHK.h"
+#include "FileIO.h"
+#include "MapFile.h"
+#include "Math.h"
+#include "Scenario.h"
+#include "StringUsage.h"
+#include "SubStringMap.h"
 
-#include "MappingCore/CoreStructs.h"
+#include "CoreStructs.h"
 
 #endif

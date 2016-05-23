@@ -185,7 +185,8 @@ void SwitchesWindow::EditSwitchNameFocusLost()
         std::string editText = editSwitchName.GetWinText();
         if ( editText.length() > 0 )
         {
-            if ( CM->setSwitchName(ChkdString(editText), (u8)selectedSwitch, checkUseExtendedString.isChecked()) )
+			ChkdString temp(editText);
+            if ( CM->setSwitchName(temp, (u8)selectedSwitch, checkUseExtendedString.isChecked()) )
             {
                 chkd.mapSettingsWindow.RefreshWindow();
                 chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
