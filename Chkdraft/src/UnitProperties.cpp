@@ -769,7 +769,8 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 
         int row = listUnits.GetItemRow(index);
 
-        unitDeletes->Insert(UnitCreateDel::Make(index, CM->getUnit(index)));
+		ChkUnit unit = CM->getUnit(index);
+        unitDeletes->Insert(UnitCreateDel::Make(index, unit));
 
         CM->deleteUnit(index);
 

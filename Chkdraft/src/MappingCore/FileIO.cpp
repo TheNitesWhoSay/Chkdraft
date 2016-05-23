@@ -6,7 +6,7 @@
 
 void MakeDirectory(std::string directory)
 {
-    mkdir(directory.c_str());
+    _mkdir(directory.c_str());
 }
 
 bool GetModuleDirectory(std::string &outModuleDirectory)
