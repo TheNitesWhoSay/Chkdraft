@@ -257,6 +257,21 @@ void MapFile::SetSaveType(SaveType newSaveType)
     saveType = newSaveType;
 }
 
+bool MapFile::AddWav(u32 stringIndex)
+{
+    RawString wavString;
+    return Scenario::GetString(wavString, stringIndex) &&
+        FindFileInMpq(GetFilePath().c_str(), wavString.c_str()) &&
+        Scenario::AddWav(stringIndex);
+}
+
+bool MapFile::AddWav(const char* wavFilePath)
+{
+    // TODO: Finish me
+    
+    return false;
+}
+
 std::string MapFile::GetFileName()
 {
     std::string sFilePath(filePath);

@@ -31,13 +31,6 @@ kstr(nullptr)
 Scenario::~Scenario()
 {
     sections.clear();
-    /*section* next;
-    while ( head != nullptr )
-    {
-        next = head->next;
-        delete head;
-        head = next;
-    }*/
 }
 
 Scenario* Scenario::scenario()
@@ -553,6 +546,11 @@ bool Scenario::hasStrSection(bool extended)
         return KSTR().exists();
     else
         return STR().exists();
+}
+
+u32 Scenario::strBytesUsed()
+{
+    return STR().size();
 }
 
 bool Scenario::GetString(RawString &dest, u32 stringNum)

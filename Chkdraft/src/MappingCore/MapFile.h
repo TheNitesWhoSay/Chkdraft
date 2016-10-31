@@ -23,6 +23,9 @@ class MapFile : public Scenario // MapFile is a scenario file + the stuff here
         const char* FilePath();
         void SetSaveType(SaveType newSaveType);
 
+        bool AddWav(u32 stringIndex); // Adds a WAV string to the WAV list
+        bool AddWav(const char* wavFilePath); // Attempts to add a WAV at the given file path to the map
+
         std::string GetFileName();
         std::string GetFilePath();
 

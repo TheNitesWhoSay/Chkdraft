@@ -797,6 +797,29 @@ void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileS
             }
         }
     }
+    else
+    {
+        for ( yMiniTile = 0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
+        {
+            for ( xMiniTile = 0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            {
+                u32 miniTileYC = yOffset + yMiniTile*(8 + miniTileSeparation),
+                    miniTileXC = xOffset + xMiniTile*(8 + miniTileSeparation);
+
+                for ( u32 yc = 0; yc<8; yc++ )
+                {
+                    if ( yc + miniTileYC < (u32)bitHeight )
+                    {
+                        for ( u32 xc = 0; xc<8; xc++ )
+                        {
+                            if ( xc + miniTileXC < (u32)bitWidth )
+                                bitmap[(yc + miniTileYC)*bitWidth + xc + miniTileXC] = RGB(0, 0, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart,
@@ -981,6 +1004,16 @@ void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 
                     }
                 }
             }
+        }
+    }
+    else
+    {
+        u32 yEnd = std::min(yStart + 32, height - yStart);
+        u32 xEnd = std::min(xStart + 32, width - xStart);
+        for ( u32 yc = yStart; yc < yEnd; yc++ )
+        {
+            for ( u32 xc = xStart; xc < xEnd; xc++ )
+                bitmap[yc*width + xc] = 0;
         }
     }
 }

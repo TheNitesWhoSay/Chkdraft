@@ -18,14 +18,19 @@ class StringEditorWindow : public ClassWindow
         void saveStrings();
         void addUseItem(std::string str, u32 amount); // Adds items to StringUse list box
         bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
+        void SwitchButtonPressed();
 
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+
     private:
+        bool extended;
         u32 currSelString;
         u32 numVisibleStrings;
         TextControl textAboutStrings;
+        ButtonControl buttonSwap;
         TextControl textStringUsage;
         EditControl editString;
         StringGuideWindow stringGuide;
