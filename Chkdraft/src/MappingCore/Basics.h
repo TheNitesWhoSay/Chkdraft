@@ -15,10 +15,10 @@
     bool RetryError(const char* text); // Error box with yes/no confirm
     extern void PrintError(const char* file, unsigned int line, const char* msg, ...); // Prints to LastError and LastErrorLoc
     void ShoutError(const char* file, unsigned int line, const char* msg, ...);
-    #if defined(_MSC_VER)
+    #if defined(_MSC_VER) && !defined(__clang__)
     #define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__) // Prints a detailed error
     #define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, __VA_ARGS__) // Shouts an error message
-    #elif defined(__GNUC__)
+    #elif defined(__GNUC__) || defined(__clang__)
     #define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Prints a detailed error
     #define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, ##__VA_ARGS__) // Shouts an error message
     #else
