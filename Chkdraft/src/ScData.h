@@ -360,7 +360,7 @@ class ScData
 {
     public:
 
-		ScData();
+        ScData();
 
         Tiles tilesets;
         Upgrades upgrades;
