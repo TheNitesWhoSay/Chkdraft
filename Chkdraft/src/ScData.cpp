@@ -681,6 +681,11 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
     return false;
 }
 
+ScData::ScData() : numGrps(0), grps(nullptr), aiScripts(tblFiles)
+{
+
+}
+
 void ScData::Load()
 {
     MPQHANDLE hStarDat = nullptr,
@@ -690,48 +695,54 @@ void ScData::Load()
     char scPath[MAX_PATH] = { 0 };
     GetRegScPath(scPath, MAX_PATH);
 
-    OpenArchive(scPath, "StarDat.mpq" , hStarDat);
-    OpenArchive(scPath, "BrooDat.mpq" , hBrooDat);
-    OpenArchive(scPath, "patch_rt.mpq", hPatchRt);
+    bool openedAnArchive = OpenArchive(scPath, "StarDat.mpq" , hStarDat) ||
+        OpenArchive(scPath, "BrooDat.mpq" , hBrooDat) || OpenArchive(scPath, "patch_rt.mpq", hPatchRt);
 
-    if ( !tilesets.LoadSets(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load tilesets");
+    if ( openedAnArchive )
+    {
+        if ( !tilesets.LoadSets(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load tilesets");
 
-    if ( !upgrades.LoadUpgrades(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load upgrades");
+        if ( !upgrades.LoadUpgrades(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load upgrades");
 
-    if ( !techs.LoadTechs(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load techs");
+        if ( !techs.LoadTechs(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load techs");
 
-    if ( !units.LoadUnits(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load Units.dat");
+        if ( !units.LoadUnits(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load Units.dat");
 
-    if ( !weapons.LoadWeapons(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load Weapons.dat");
+        if ( !weapons.LoadWeapons(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load Weapons.dat");
 
-    if ( sprites.LoadSprites(hStarDat, hBrooDat, hPatchRt) )
-        LoadGrps(hPatchRt, hBrooDat, hStarDat);
+        if ( sprites.LoadSprites(hStarDat, hBrooDat, hPatchRt) )
+            LoadGrps(hPatchRt, hBrooDat, hStarDat);
+        else
+            Error("Failed to load sprites");
+
+        if ( !tunit.load(hStarDat, hBrooDat, hPatchRt, "game\\tunit.pcx") )
+            Error("Failed to load tunit.pcx");
+
+        if ( !tminimap.load(hStarDat, hBrooDat, hPatchRt, "game\\tminimap.pcx") )
+            Error("Failed to load tminimap.pcx");
+
+        if ( !tselect.load(hStarDat, hBrooDat, hPatchRt, "game\\tselect.pcx") )
+            Error("Failed to load tselect.pcx");
+
+        if ( !aiScripts.Load(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load AIScripts");
+
+        if ( !tblFiles.Load(hStarDat, hBrooDat, hPatchRt) )
+            Error("Failed to load tbl files");
+
+        CloseArchive(hStarDat);
+        CloseArchive(hBrooDat);
+        CloseArchive(hPatchRt);
+    }
     else
-        Error("Failed to load sprites");
-
-    if ( !tunit.load(hStarDat, hBrooDat, hPatchRt, "game\\tunit.pcx") )
-        Error("Failed to load tunit.pcx");
-
-    if ( !tminimap.load(hStarDat, hBrooDat, hPatchRt, "game\\tminimap.pcx") )
-        Error("Failed to load tminimap.pcx");
-
-    if ( !tselect.load(hStarDat, hBrooDat, hPatchRt, "game\\tselect.pcx") )
-        Error("Failed to load tselect.pcx");
-
-    if ( !aiScripts.Load(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load AIScripts");
-
-    if ( !tblFiles.Load(hStarDat, hBrooDat, hPatchRt) )
-        Error("Failed to load tbl files");
-
-    CloseArchive(hStarDat);
-    CloseArchive(hBrooDat);
-    CloseArchive(hPatchRt);
+    {
+        Error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
+    }
 }
 
 bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStarDat)
@@ -760,13 +771,13 @@ bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStar
     return true;
 }
 
-bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue)
+bool GetCV5References(TileSet* tiles, u32 &cv5Index, u16 TileValue)
 {
-    cv5Reference = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
+    cv5Index = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
     /** simplified from:
-        cv5Reference = group*52 + tile*2 + 0x14
+        cv5Index = group*52 + tile*2 + 0x14
         where:  group = TileValue / 16  = high 12 bits
                 tile  = TileValue & 0xF = low 4 bits   */
 
-    return cv5Reference < tiles->cv5.size();
+    return cv5Index < tiles->cv5.size();
 }

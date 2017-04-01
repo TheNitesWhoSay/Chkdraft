@@ -15,9 +15,15 @@ bool GetModuleDirectory(std::string &outModuleDirectory);
 
 bool FindFile(const char* filePath);
 
+bool FindFileInMpq(MPQHANDLE mpq, const char* fileName);
+
+bool FindFileInMpq(const char* mpqPath, const char* fileName);
+
 bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes);
 
-bool OpenArchive(const char* szFilePath, const char* FileName, MPQHANDLE &hMpq);
+bool OpenArchive(const char* mpqPath, MPQHANDLE &mpq);
+
+bool OpenArchive(const char* directory, const char* mpqName, MPQHANDLE &hMpq);
 
 bool CloseArchive(MPQHANDLE mpq);
 

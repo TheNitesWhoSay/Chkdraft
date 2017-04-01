@@ -40,6 +40,10 @@ Icon
 *.user
 *.opensdf
 *.sdf
+*.VC.db
 Debug
 Release
 build
+
+*.opendb
+*.ipch

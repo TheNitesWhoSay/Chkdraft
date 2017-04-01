@@ -1062,7 +1062,6 @@ void TrigActionsWindow::DisableUnitPropertiesEdit()
 
 void TrigActionsWindow::ButtonEditUnitProperties()
 {
-    // To Do: Figure out if the current trigger already has a CUWP, if so, use it, otherwise use empty
     ChkCuwp initialCuwp = {};
     Trigger* trig = nullptr;
     int focusedX = 0, focusedY = 0;

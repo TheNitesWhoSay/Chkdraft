@@ -39,6 +39,39 @@ bool FindFile(const char* filePath)
     return false;
 }
 
+bool FindFileInMpq(MPQHANDLE mpq, const char* fileName)
+{
+    if ( mpq == nullptr )
+        CHKD_ERR("NULL MPQ file specified for opening %s", fileName);
+    else
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( SFileGetFileInfo(mpq, SFILE_INFO_NUM_FILES) != 0xFFFFFFFF )
+        {
+            if ( SFileOpenFileEx(mpq, fileName, SFILE_SEARCH_CURRENT_ONLY, &openFile) )
+                SFileCloseFile(openFile);
+            else
+                CHKD_ERR("Failed to get %s from MPQ file", fileName);
+        }
+        else
+            CHKD_ERR("File is already open", fileName);
+    }
+    return false;
+}
+
+bool FindFileInMpq(const char* mpqPath, const char* fileName)
+{
+    bool success = false;
+    MPQHANDLE mpq = NULL;
+    if ( OpenArchive(mpqPath, mpq) )
+    {
+        success = FindFileInMpq(mpq, fileName);
+        CloseArchive(mpq);
+    }
+    return success;
+}
+
 bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes)
 {
     if ( FindFile(filePath) )
@@ -52,6 +85,48 @@ bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes)
     }
 
     return false;
+}
+
+bool OpenArchive(const char* mpqPath, MPQHANDLE &mpq)
+{
+    BOOL success = FALSE;
+    char lpStrMpqPath[MAX_PATH + 100],
+         locateError[MAX_PATH + 60],
+         retryError[MAX_PATH + 76];
+
+    strncpy(lpStrMpqPath, mpqPath, strlen(mpqPath));
+
+    std::snprintf(locateError, MAX_PATH + 60, "Could not find %s!\n\nWould you like to locate it manually?", mpqPath);
+    std::snprintf(retryError, MAX_PATH + 76, "Failed to open %s! The file may be in use.\n\nWould you like to try again?", mpqPath);
+
+    if ( FindFile(mpqPath) ) // File found
+    {
+        do { success = SFileOpenArchive((LPCSTR)mpqPath, 0, 0, &mpq); }
+        while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO | MB_ICONEXCLAMATION) == IDYES );
+    }
+    else // File not found
+    {
+        if ( MessageBox(NULL, locateError, "Error!", MB_YESNO | MB_ICONEXCLAMATION) == IDYES )
+        {
+            OPENFILENAME ofn;
+            memset(&ofn, 0, sizeof(ofn));
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = NULL;
+            ofn.lpstrFilter = "MPQ Files\0*.mpq\0All Files\0*.*\0";
+            ofn.lpstrFile = lpStrMpqPath;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+
+            if ( GetOpenFileName(&ofn) )
+            {
+                do { success = SFileOpenArchive(mpqPath, 0, 0, &mpq); }
+                while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO | MB_ICONEXCLAMATION) == IDYES );
+            }
+            else
+                return OpenArchive(mpqPath, mpq);
+        }
+    }
+    return success == TRUE;
 }
 
 bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
@@ -291,5 +366,6 @@ bool GetRegString(char* dest, u32 destSize, const char* subKey, const char* valu
 
 bool GetRegScPath(char* dest, u32 destSize)
 {
+    return false; // TODO remove me
     return GetRegString(dest, destSize, "SOFTWARE\\Blizzard Entertainment\\Starcraft", "InstallPath");
 }

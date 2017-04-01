@@ -13,10 +13,11 @@ enum ID {
     STRING_GUIDE,
     EDIT_STRING,
     PREVIEW_STRING,
-    LB_STRINGUSE
+    LB_STRINGUSE,
+    BUTTON_SWITCH,
 };
 
-StringEditorWindow::StringEditorWindow() : currSelString(0), numVisibleStrings(0), stringListDC(NULL)
+StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDC(NULL)
 {
 
 }
@@ -41,26 +42,31 @@ void StringEditorWindow::RefreshWindow()
 {
     if ( CM != nullptr )
     {
-
+        buttonSwap.SetWinText(extended ? "Switch to Standard" : "Switch to Extended");
+        if ( extended )
+            textAboutStrings.SetText("");
+        else
+            textAboutStrings.SetText(std::string(std::to_string(CM->strBytesUsed()) + " / 65536 Bytes Used").c_str());
+        
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
         numVisibleStrings = 0;
         int toSelect = -1;
         StringUsageTable strUse;
-        if ( strUse.populateTable(CM->scenario(), false) )
+        if ( strUse.populateTable(CM->scenario(), extended) )
         {
-            std::cout << strUse.numStrings() << std::endl;
             RawString str;
-            u32 lastUsed = strUse.lastUsedString();
-            for ( u32 i=0; i<=lastUsed; i++ )
+            u32 lastIndex = extended ? CM->kstrSectionCapacity() : (u32)CM->strSectionCapacity();
+            for ( u32 i = 0; i <= lastIndex; i++ )
             {
-                if ( strUse.isUsed(i) && CM->GetString(str, i) && str.size() > 0 )
+                u32 strIndex = extended ? 65536 - i : i;
+                if ( strUse.isUsed(i) && CM->GetString(str, strIndex) && str.size() > 0 )
                 {
-                    int newListIndex = listStrings.AddItem(i);
+                    int newListIndex = listStrings.AddItem(strIndex);
                     if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
                     {
-                        numVisibleStrings ++;
-                        if ( currSelString == i ) // This string is the currSelString
+                        numVisibleStrings++;
+                        if ( currSelString == strIndex ) // This string is the currSelString
                             toSelect = newListIndex; // Mark position for selection
                     }
                 }
@@ -80,7 +86,8 @@ void StringEditorWindow::RefreshWindow()
 
 void StringEditorWindow::CreateSubWindows(HWND hWnd)
 {
-    textAboutStrings.CreateThis(hWnd, 5, 5, 100, 20, "String Editor...", 0);
+    textAboutStrings.CreateThis(hWnd, 5, 5, 150, 20, "String Editor...", 0);
+    buttonSwap.CreateThis(hWnd, 310, 5, 150, 20, "", ID::BUTTON_SWITCH);
 
     listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, LB_STRINGS);
 
@@ -95,6 +102,12 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
 
     stringGuide.CreateThis(hWnd);
     stringPreviewWindow.CreateThis(hWnd, PREVIEW_STRING);
+}
+
+void StringEditorWindow::SwitchButtonPressed()
+{
+    extended = !extended;
+    RefreshWindow();
 }
 
 LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -246,6 +259,14 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             break;
     }
     return 0;
+}
+
+void StringEditorWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+        case ID::BUTTON_SWITCH: SwitchButtonPressed(); break;
+    }
 }
 
 void StringEditorWindow::saveStrings()

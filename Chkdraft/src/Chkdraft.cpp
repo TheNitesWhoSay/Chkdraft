@@ -15,17 +15,19 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    std::cout << ascii_chkd << std::endl;
-    /*
-
     maps.NewMap(128, 128, 2, 0, 0);
 
     //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
     
-    trigEditorWindow.CreateThis(getHandle());
-    trigEditorWindow.ChangeTab(3);
+    //trigEditorWindow.CreateThis(getHandle());
+    //trigEditorWindow.ChangeTab(3);
 
-    //*/
+    //chkd.mapSettingsWindow.
+
+    //if ( CM->AddWav("C:\\Users\\Justin\\Desktop\\Chkdraft\\0.wav") )
+    //    std::cout << "WAV was added successfully!" << std::endl;
+    //else
+    //    std::cout << "Failed to add WAV" << std::endl;
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
@@ -74,19 +76,6 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     } while ( keepRunning );
 
-    /*MSG msg;
-    while ( GetMessage(&msg, NULL, 0, 0) > 0 )
-    {
-        bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-        if ( IsDialogMessage(currDialog, &msg) == FALSE &&
-             TranslateMDISysAccel(maps.getHandle(), &msg) == FALSE )
-        {
-            TranslateMessage(&msg);
-            if ( !isDlgKey )
-                KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-            DispatchMessage(&msg);
-        }
-    }*/
     return msg.wParam;
 }
 

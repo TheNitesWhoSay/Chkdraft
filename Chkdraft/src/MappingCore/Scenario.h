@@ -276,6 +276,7 @@ public:
                     u32 stringCapacity(); // The sum of the capcities of the STR and KSTR section
                     u32 stringCapacity(bool extended); // Returns the capcity of the STR or KSTR section
                     bool hasStrSection(bool extended); // Checks if the STR or KSTR section exists
+                    u32 strBytesUsed(); // Returns the amount of bytes used in the STR section
 
                     bool stringIsUsed(u32 stringNum); // Returns whether the string is used in the map
                     bool isExtendedString(u32 stringNum); // Returns whether the string is an extended string

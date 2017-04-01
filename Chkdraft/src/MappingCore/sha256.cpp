@@ -47,7 +47,7 @@ namespace
   inline uint32_t swap(uint32_t x)
   {
 #if defined(_MSC_VER)
-	  return _byteswap_ulong(x);
+      return _byteswap_ulong(x);
 #elif defined(__GNUC__) || defined(__clang__)
     return __builtin_bswap32(x);
 #endif
