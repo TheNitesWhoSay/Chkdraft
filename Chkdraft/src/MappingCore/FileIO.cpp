@@ -129,7 +129,7 @@ bool OpenArchive(const char* mpqPath, MPQHANDLE &mpq)
     return success == TRUE;
 }
 
-bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
+bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq, std::string &outPath)
 {
     BOOL success = FALSE;
     char filePath[MAX_PATH],
@@ -144,6 +144,8 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
     {
         do { success = SFileOpenArchive((LPCSTR)filePath, 0, 0, &hMpq); }
         while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES );
+        if ( success == TRUE )
+            outPath = filePath;
     }
     else // File not found
     {
@@ -162,9 +164,11 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq)
             {
                 do { success = SFileOpenArchive(filePath, 0, 0, &hMpq); }
                 while ( success == FALSE && MessageBox(NULL, retryError, "Error!", MB_YESNO|MB_ICONEXCLAMATION) == IDYES );
+                if ( success == TRUE )
+                    outPath = filePath;
             }
             else
-                return OpenArchive(directory, fileName, hMpq);
+                return OpenArchive(directory, fileName, hMpq, outPath);
         }
     }
     return success == TRUE;
