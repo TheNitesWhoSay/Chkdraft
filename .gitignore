@@ -44,3 +44,6 @@ Icon
 Debug
 Release
 build
+
+*.opendb
+*.ipch
