@@ -23,7 +23,7 @@ bool PatientFindFile(const char* filePath, int numWaitTimes, int* waitTimes);
 
 bool OpenArchive(const char* mpqPath, MPQHANDLE &mpq);
 
-bool OpenArchive(const char* directory, const char* mpqName, MPQHANDLE &hMpq);
+bool OpenArchive(const char* directory, const char* mpqName, MPQHANDLE &hMpq, std::string &outPath);
 
 bool CloseArchive(MPQHANDLE mpq);
 
