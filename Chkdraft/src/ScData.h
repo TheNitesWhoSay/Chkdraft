@@ -328,6 +328,7 @@ struct AIEntry
 class TblFiles
 {
     public:
+        TblFiles() {}
         bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
         bool GetStatTblString(u16 stringNum, std::string &outString);
 

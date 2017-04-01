@@ -797,7 +797,7 @@ void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileS
             }
         }
     }
-    else
+    else // No CV5 Reference
     {
         for ( yMiniTile = 0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
         {
@@ -825,6 +825,11 @@ void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileS
 void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart,
                 GRP* grp, u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped )
 {
+    if ( grp == nullptr )
+        return;
+    else
+        std::cout << grp << std::endl;
+
     if ( frame > grp->numFrames() )
         frame = grp->numFrames()-1;
 
@@ -922,7 +927,7 @@ void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16
     if ( unitID < 228 )
     {
         curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
-        if ( selected )
+        if ( selected && curr != nullptr )
         {
             GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
             u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
@@ -932,7 +937,7 @@ void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16
     else // Extended unit, use ID:0's graphics (for now)
     {
         curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->ImageFile)->GRPFile-1];
-        if ( selected )
+        if ( selected && curr != nullptr )
         {
             GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
             u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(0)->Graphics)->Sprite)->SelectionCircleOffset;
@@ -1006,10 +1011,10 @@ void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 
             }
         }
     }
-    else
+    else // No CV5 Reference
     {
-        u32 yEnd = std::min(yStart + 32, height - yStart);
-        u32 xEnd = std::min(xStart + 32, width - xStart);
+        u32 yEnd = std::min(yStart + 32, height - 1);
+        u32 xEnd = std::min(xStart + 32, width - 1);
         for ( u32 yc = yStart; yc < yEnd; yc++ )
         {
             for ( u32 xc = xStart; xc < xEnd; xc++ )

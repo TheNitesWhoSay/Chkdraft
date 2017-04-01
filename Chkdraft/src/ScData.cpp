@@ -681,6 +681,11 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
     return false;
 }
 
+ScData::ScData() : numGrps(0), grps(nullptr), aiScripts(
+{
+
+}
+
 void ScData::Load()
 {
     MPQHANDLE hStarDat = nullptr,
