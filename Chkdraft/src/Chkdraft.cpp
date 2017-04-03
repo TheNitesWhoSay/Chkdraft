@@ -15,19 +15,17 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    maps.NewMap(128, 128, 2, 0, 0);
-
-    //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
+    //if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
+    //maps.NewMap(128, 128, 2, 0, 0);
+    //{
+        //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
     
-    //trigEditorWindow.CreateThis(getHandle());
-    //trigEditorWindow.ChangeTab(3);
+        //trigEditorWindow.CreateThis(getHandle());
+        //trigEditorWindow.ChangeTab(3);
 
-    //chkd.mapSettingsWindow.
+        //OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
 
-    //if ( CM->AddWav("C:\\Users\\Justin\\Desktop\\Chkdraft\\0.wav") )
-    //    std::cout << "WAV was added successfully!" << std::endl;
-    //else
-    //    std::cout << "Failed to add WAV" << std::endl;
+    //}
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)

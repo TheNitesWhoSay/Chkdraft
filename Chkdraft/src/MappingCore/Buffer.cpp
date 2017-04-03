@@ -51,7 +51,7 @@ buffer::~buffer()
         delete[] data;
 }
 
-u32 buffer::size()
+u32 buffer::size() const
 {
     if ( this != nullptr )
         return sizeUsed;
@@ -140,7 +140,7 @@ bool buffer::getArray(valueType* dest, u32 location, u32 numElements)
 }
 /* End templates */ #else
 
-const void* buffer::getPtr(u32 location)
+const void* buffer::getPtr(u32 location) const
 {
     if ( this != nullptr && location < sizeUsed )
         return (void*)&data[location];
@@ -148,7 +148,7 @@ const void* buffer::getPtr(u32 location)
         return nullptr;
 }
 
-const void* buffer::getPtr(u32 location, u32 sizeRequested)
+const void* buffer::getPtr(u32 location, u32 sizeRequested) const
 {
     if ( this != nullptr && location+sizeRequested > location && location+sizeRequested <= sizeUsed )
         return (void*)&data[location];

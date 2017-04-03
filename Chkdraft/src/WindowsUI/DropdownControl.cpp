@@ -97,7 +97,7 @@ template <typename numType>
 bool DropdownControl::GetEditNum(numType &dest)
 {
     std::string text;
-    if ( GetWinText(text) )
+    if ( GetWinText(text) && text.length() > 0 )
     {
         errno = 0;
         char* endPtr = nullptr;

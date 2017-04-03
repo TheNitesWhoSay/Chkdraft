@@ -61,7 +61,7 @@ class ClassWindow : public WindowsItem
                     virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
                     virtual void NotifyEditFocused(int idFrom, HWND hWndFrom); // Sent when an edit box receives focus
                     virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
-                    virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom); // Sent when combo is changed by selection
+                    virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom); // Sent when combo or listbox is changed by selection
                     virtual void NotifyComboEditUpdated(int idFrom, HWND hWndFrom); // Sent when combo is changed by text edits
                     virtual void NotifyComboEditFocused(int idFrom, HWND hWndFrom); // Sent when a combos edit box is focused
                     virtual void NotifyComboEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden

@@ -317,7 +317,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ForcesWindow::CheckReplaceForceName(int force)
 {
     ChkdString newMapForce;
-    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetWinText(newMapForce) )
+    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetWinText(newMapForce) && newMapForce.length() > 0 )
     {
         if ( CM->setForceName(force, newMapForce) )
         {

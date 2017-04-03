@@ -18,17 +18,18 @@ void PrintError(const char* file, unsigned int line, const char* msg, ...)
     va_start(args, msg);
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg, args);
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
     va_end(args);
 }
 
 void ShoutError(const char* file, unsigned int line, const char* msg, ...)
 {
-    char AnError[MAX_ERROR_LENGTH];
-    char AnErrorLoc[MAX_ERROR_LENGTH];
     va_list args;
     va_start(args, msg);
-    std::vsnprintf(AnError, MAX_ERROR_LENGTH, msg, args);
-    std::snprintf(AnErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+    std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg, args);
+    std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
+    //MessageBox(NULL, LastError, LastErrorLoc, MB_OK | MB_ICONEXCLAMATION);
     va_end(args);
 }
 

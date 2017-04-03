@@ -8,8 +8,7 @@ ListBoxControl::ListBoxControl() : autoRedraw(true)
 
 ListBoxControl::~ListBoxControl()
 {
-    while ( !itemsToAdd.empty() )
-        itemsToAdd.pop();
+
 }
 
 bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, u32 id)

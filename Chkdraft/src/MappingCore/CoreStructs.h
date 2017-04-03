@@ -9,6 +9,7 @@
 #include "ChkSprite.h"
 #include "ChkTrigger.h"
 #include "ChkUnit.h"
+#include "ModifiedAsset.h"
 #include "StringTableNode.h"
 
 #endif

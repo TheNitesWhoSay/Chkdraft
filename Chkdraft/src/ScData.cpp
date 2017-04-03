@@ -746,8 +746,9 @@ bool UpdateLoadSettings(std::string &starDatPath, std::string &brooDatPath, std:
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl;
         loadFile.close();
-        return 0;
+        return true;
     }
+    return false;
 }
 
 void ScData::Load()

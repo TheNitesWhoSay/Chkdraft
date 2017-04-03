@@ -240,7 +240,7 @@ void GridViewControl::EndEditing()
     {
         ending = true;
         std::string str;
-        bool gotText = editBox.GetWinText(str) || editBox.GetTextLength() == 0;
+        bool gotText = editBox.GetWinText(str);
         if ( editing == true && editBox.DestroyThis() )
         {
             editing = false;

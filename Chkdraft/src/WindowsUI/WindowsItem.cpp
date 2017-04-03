@@ -1,6 +1,7 @@
 #include "WindowsItem.h"
 #include <CommCtrl.h>
 #include <memory>
+#include <iostream>
 
 std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
@@ -240,6 +241,11 @@ bool WindowsItem::GetWinText(std::string &outText)
             outText = titleText.get();
             return true;
         }
+    }
+    else if ( titleLength == 1 )
+    {
+        outText = "";
+        return true;
     }
     return false;
 }

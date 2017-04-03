@@ -117,7 +117,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
                     void removeAsterisk(); // Removes an asterix from the map name
                     void updateMenu(); // Updates which items are checked in the main menu
 
-                    bool CreateThis(HWND hClient, const char* title);
+                    bool CreateThis(HWND hClient, const std::string &title);
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
 

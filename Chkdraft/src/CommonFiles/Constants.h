@@ -22,9 +22,9 @@ using s16 = std::int16_t;
 using u8 = std::uint8_t;
 using s8 = std::int8_t;
 
-constexpr u8 u8_max = UINT8_MAX;
-constexpr u16 u16_max = UINT16_MAX;
-constexpr u32 u32_max = UINT32_MAX;
+//constexpr u8 u8_max = UINT8_MAX;
+//constexpr u16 u16_max = UINT16_MAX;
+//constexpr u32 u32_max = UINT32_MAX;
 
 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 constexpr int ascii_chkd = 1128811332;

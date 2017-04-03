@@ -851,7 +851,7 @@ void TrigActionsWindow::SuggestWav()
 {
     for ( u16 i = 0; i < 512; i++ )
     {
-        if ( CM->IsWavUsed(i) )
+        if ( CM->WavHasString(i) )
         {
             ChkdString wavStr;
             u32 stringIndex = 0;

@@ -153,7 +153,7 @@ void EditControl::ExpandToText()
 {
     HDC hDC = GetDC(getHandle());
     std::string text;
-    if ( hDC != NULL && GetWinText(text) )
+    if ( hDC != NULL && GetWinText(text) && text.length() > 0 )
     {
         SIZE strSize = { };
         RECT textRect = { };
@@ -179,7 +179,7 @@ bool EditControl::GetEditBinaryNum(u16 &dest)
 {
     u16 temp = 0;
     std::string editText;
-    if ( GetWinText(editText) )
+    if ( GetWinText(editText) && editText.length() > 0 )
     {
         const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                      0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
@@ -203,7 +203,7 @@ bool EditControl::GetEditBinaryNum(u32 &dest)
 {
     u32 temp = 0;
     std::string editText;
-    if ( GetWinText(editText) )
+    if ( GetWinText(editText) && editText.length() > 0 )
     {
         const u32 u32BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                      0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
@@ -228,7 +228,7 @@ bool EditControl::GetEditBinaryNum(u32 &dest)
 bool EditControl::GetHexByteString(u8* dest, u32 destLength)
 {
     std::string text;
-    if ( GetWinText(text) )
+    if ( GetWinText(text) && text.length() > 0 )
     {
         char strChunk[9] = { };
         strChunk[8] = '\0';
@@ -366,7 +366,7 @@ template <typename numType>
 bool EditControl::GetEditNum(numType &dest)
 {
     std::string text;
-    if ( GetWinText(text) )
+    if ( GetWinText(text) && text.length() > 0 )
     {
         errno = 0;
         char* endPtr = nullptr;

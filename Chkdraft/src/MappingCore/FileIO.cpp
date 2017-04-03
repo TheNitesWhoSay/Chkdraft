@@ -3,10 +3,78 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <experimental/filesystem>
 
-void MakeDirectory(std::string directory)
+std::string GetSystemFileSeparator()
 {
-    _mkdir(directory.c_str());
+    wchar_t wideCharSeparator = std::experimental::filesystem::path::preferred_separator;
+    char multiByteSeparator = (char)wideCharSeparator;
+    char multiByteSeparatorArray[2] = {multiByteSeparator, '\0'};
+    return std::string(multiByteSeparatorArray);
+}
+
+std::string GetSystemFileName(std::string &systemFilePath)
+{
+    std::string systemFileSeparator = GetSystemFileSeparator();
+    size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
+    if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length()-systemFileSeparator.length() )
+        return systemFilePath.substr(lastSeparator+systemFileSeparator.length(), systemFilePath.length());
+    else
+        return systemFilePath;
+}
+
+std::string GetSystemFileDirectory(std::string &systemFilePath, bool includeSeparator)
+{
+    std::string systemFileSeparator = GetSystemFileSeparator();
+    size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
+    if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length() )
+    {
+        if ( includeSeparator )
+            return systemFilePath.substr(0, lastSeparator+systemFileSeparator.length());
+        else
+            return systemFilePath.substr(0, lastSeparator);
+    }
+    return systemFilePath;
+}
+
+std::string MakeSystemFilePath(std::string &systemDirectory, std::string &fileName)
+{
+    std::string systemFileSeparator = GetSystemFileSeparator();
+    size_t lastSeparator = systemDirectory.find_last_of(systemFileSeparator);
+    if ( lastSeparator == systemDirectory.length() - systemFileSeparator.length() )
+        return systemDirectory + fileName;
+    else
+        return systemDirectory + systemFileSeparator + fileName;
+}
+
+std::string GetMpqFileSeparator()
+{
+    return "\\";
+}
+
+std::string GetMpqFileName(std::string &mpqFilePath)
+{
+    std::string mpqFileSeparator = GetMpqFileSeparator();
+    size_t lastSeparator = mpqFilePath.find_last_of(mpqFileSeparator);
+    if ( lastSeparator >= 0 && lastSeparator < mpqFilePath.length()-mpqFileSeparator.length() )
+        return mpqFilePath.substr(lastSeparator+mpqFileSeparator.length(), mpqFilePath.length());
+    else
+        return mpqFilePath;
+}
+
+std::string MakeMpqFilePath(std::string &mpqDirectory, std::string &fileName)
+{
+    std::string mpqFileSeparator = GetMpqFileSeparator();
+    size_t lastSeparator = mpqDirectory.find_last_of(mpqFileSeparator);
+    if ( lastSeparator == mpqDirectory.length() - mpqFileSeparator.length() )
+        return mpqDirectory + fileName;
+    else
+        return mpqDirectory + mpqFileSeparator + fileName;
+}
+
+bool MakeDirectory(std::string directory)
+{
+    return _mkdir(directory.c_str()) == 0;
 }
 
 bool GetModuleDirectory(std::string &outModuleDirectory)
@@ -39,6 +107,12 @@ bool FindFile(const char* filePath)
     return false;
 }
 
+bool RemoveFile(const char* filePath)
+{
+    // Return whether the file with the given filePath is not on the system
+    return filePath == nullptr || strlen(filePath) == 0 || remove(filePath) == 0 || !FindFile(filePath);
+}
+
 bool FindFileInMpq(MPQHANDLE mpq, const char* fileName)
 {
     if ( mpq == nullptr )
@@ -49,8 +123,11 @@ bool FindFileInMpq(MPQHANDLE mpq, const char* fileName)
         HANDLE openFile = NULL;
         if ( SFileGetFileInfo(mpq, SFILE_INFO_NUM_FILES) != 0xFFFFFFFF )
         {
-            if ( SFileOpenFileEx(mpq, fileName, SFILE_SEARCH_CURRENT_ONLY, &openFile) )
+            if ( SFileOpenFileEx(mpq, fileName, SFILE_SEARCH_CURRENT_ONLY, &openFile) == TRUE )
+            {
                 SFileCloseFile(openFile);
+                return true;
+            }
             else
                 CHKD_ERR("Failed to get %s from MPQ file", fileName);
         }
@@ -136,7 +213,8 @@ bool OpenArchive(const char* directory, const char* fileName, MPQHANDLE &hMpq, s
         locateError[MAX_PATH + 60],
         retryError[MAX_PATH + 76];
 
-    std::snprintf(filePath, MAX_PATH, "%s\\%s", directory, fileName);
+    std::string separator = GetSystemFileSeparator();
+    std::snprintf(filePath, MAX_PATH, "%s%s%s", directory, separator.c_str(), fileName);
     std::snprintf(locateError, MAX_PATH+60, "Could not find %s!\n\nWould you like to locate it manually?", fileName);
     std::snprintf(retryError, MAX_PATH+76, "Failed to open %s! The file may be in use.\n\nWould you like to try again?", fileName);
 
@@ -179,17 +257,50 @@ bool CloseArchive(MPQHANDLE mpq)
     return SFileCloseArchive(mpq) == TRUE;
 }
 
-bool FileToBuffer(HANDLE &hMpq, const char* fileName, buffer &buf)
+bool BufferToArchive(MPQHANDLE &hMpq, const buffer &buf, const std::string &mpqFilePath)
 {
     if ( hMpq == nullptr )
-        CHKD_ERR("NULL MPQ file specified for opening %s", fileName);
+        CHKD_ERR("NULL MPQ file specified for writing buffer");
+    else
+    {
+        DWORD dataSize = (DWORD)buf.size();
+        LPVOID dataPointer = (LPVOID)buf.getPtr(0);
+        if ( MpqAddFileFromBuffer(hMpq, dataPointer, dataSize, mpqFilePath.c_str(), MAFA_COMPRESS | MAFA_REPLACE_EXISTING) == TRUE )
+            return true;
+        else
+            CHKD_ERR("Failed to add buffered file to archive");
+    }
+    return false;
+}
+
+bool WavBufferToArchive(MPQHANDLE &hMpq, const buffer &buf, const std::string &mpqFilePath, WavQuality wavQuality)
+{
+    if ( hMpq == nullptr )
+        CHKD_ERR("NULL MPQ file specified for writing WAV buffer");
+    else
+    {
+        DWORD dwWavQuality = (DWORD)wavQuality;
+        DWORD dataSize = (DWORD)buf.size();
+        LPVOID dataPointer = (LPVOID)buf.getPtr(0);
+        if ( MpqAddWaveFromBuffer(hMpq, dataPointer, dataSize, mpqFilePath.c_str(), MAFA_COMPRESS | MAFA_REPLACE_EXISTING, dwWavQuality) == TRUE )
+            return true;
+        else
+            CHKD_ERR("Failed to add buffered file to archive");
+    }
+    return false;
+}
+
+bool FileToBuffer(HANDLE &hMpq, const std::string &fileName, buffer &buf)
+{
+    if ( hMpq == nullptr )
+        CHKD_ERR("NULL MPQ file specified for opening %s", fileName.c_str());
     else
     {
         u32 bytesRead = 0;
         HANDLE openFile = NULL;
         if ( SFileGetFileInfo(hMpq, SFILE_INFO_NUM_FILES) != 0xFFFFFFFF )
         {
-            if ( SFileOpenFileEx(hMpq, fileName, SFILE_SEARCH_CURRENT_ONLY, &openFile) )
+            if ( SFileOpenFileEx(hMpq, fileName.c_str(), SFILE_SEARCH_CURRENT_ONLY, &openFile) )
             {
                 u32 fileSize = (u32)SFileGetFileSize(openFile, NULL);
                 if ( buf.setSize(fileSize) )
@@ -205,15 +316,15 @@ bool FileToBuffer(HANDLE &hMpq, const char* fileName, buffer &buf)
                     SFileCloseFile(openFile);
             }
             else
-                CHKD_ERR("Failed to get %s from MPQ file", fileName);
+                CHKD_ERR("Failed to get %s from MPQ file", fileName.c_str());
         }
         else
-            CHKD_ERR("File is already open", fileName);
+            CHKD_ERR("File is already open", fileName.c_str());
     }
     return false;
 }
 
-bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, MPQHANDLE &hPriority, const char* fileName, buffer &buf)
+bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, MPQHANDLE &hPriority, const std::string &fileName, buffer &buf)
 {
     return ( hPriority != nullptr && FileToBuffer(hPriority, fileName, buf) )
            || FileToBuffer(hPatchRt, fileName, buf)
@@ -221,14 +332,38 @@ bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt,
            || FileToBuffer(hStarDat, fileName, buf);
 }
 
-bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* fileName, buffer &buf)
+bool FileToBuffer(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const std::string &fileName, buffer &buf)
 {
     return    FileToBuffer(hPatchRt, fileName, buf)
            || FileToBuffer(hBrooDat, fileName, buf)
            || FileToBuffer(hStarDat, fileName, buf);
 }
 
-bool FileToString(std::string fileName, std::string &str)
+bool FileToBuffer(const std::string &fileName, buffer &buf)
+{
+    bool success = false;
+    if ( fileName.length() > 0 )
+    {
+        FILE* pFile = std::fopen(fileName.c_str(), "rb");
+        if ( pFile != nullptr )
+        {
+            buf.flush();
+            std::fseek(pFile, 0, SEEK_END);
+            u32 fileSize = (u32)std::ftell(pFile);
+            if ( buf.setSize(fileSize) )
+            {
+                buf.sizeUsed = fileSize;
+                std::rewind(pFile);
+                size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
+                success = (lengthRead == buf.sizeUsed);
+            }
+            std::fclose(pFile);
+        }
+    }
+    return success;
+}
+
+bool FileToString(const std::string &fileName, std::string &str)
 {
     try {
         str.clear();
@@ -318,30 +453,6 @@ OPENFILENAME GetScSaveOfn(char* szFileName)
         szFileName,
         "Starcraft Map(*.scm)\0*.scm\0Starcraft Hybrid Map(*.scm)\0*.scm\0Broodwar Map(*.scx)\0*.scx\0Raw Starcraft Map(*.chk)\0*.chk\0Raw Starcraft Hybrid Map(*.chk)\0*.chk\0Raw Broodwar Map(*.chk)\0*.chk\0All Maps\0*.scm;*.scx;*.chk\0",
         7 );
-}
-
-bool FileToBuffer(const char* FileName, buffer &buf)
-{
-    bool success = false;
-    if ( FileName != nullptr )
-    {
-        FILE* pFile = std::fopen(FileName, "rb");
-        if ( pFile != nullptr )
-        {
-            buf.flush();
-            std::fseek(pFile, 0, SEEK_END);
-            u32 fileSize = (u32)std::ftell(pFile);
-            if ( buf.setSize(fileSize) )
-            {
-                buf.sizeUsed = fileSize;
-                std::rewind(pFile);
-                size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
-                success = (lengthRead == buf.sizeUsed);
-            }
-            std::fclose(pFile);
-        }
-    }
-    return success;
 }
 
 DWORD GetSubKeyString(HKEY hParentKey, const char* subKey, const char* valueName, char* data, DWORD* dataSize)
