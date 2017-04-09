@@ -651,7 +651,7 @@ bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)
     return false;
 }
 
-bool AiScripts::GetAiIdentifier(std::string &inAiName, u32 &outAiId)
+bool AiScripts::GetAiIdentifier(const std::string &inAiName, u32 &outAiId)
 {
     std::string scAiName;
     int numAiScripts = GetNumAiScripts();
@@ -667,6 +667,21 @@ bool AiScripts::GetAiName(int aiNum, std::string &outAiName)
 {
     AIEntry aiEntry = {};
     return GetAiEntry(aiNum, aiEntry) && tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName);
+}
+
+bool AiScripts::GetAiName(u32 aiId, std::string &outAiName)
+{
+    int numAiScripts = GetNumAiScripts();
+    for ( int i = 0; i < numAiScripts; i++  )
+    {
+        AIEntry aiEntry = {};
+        if ( GetAiEntry(i, aiEntry) )
+        {
+            if ( aiId == aiEntry.identifier )
+                return GetAiName(i, outAiName);
+        }
+    }
+    return false;
 }
 
 bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
@@ -746,34 +761,15 @@ bool UpdateLoadSettings(std::string &starDatPath, std::string &brooDatPath, std:
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl;
         loadFile.close();
-        return 0;
+        return true;
     }
+    return false;
 }
 
 void ScData::Load()
 {
-    MPQHANDLE hStarDat = nullptr,
-              hBrooDat = nullptr,
-              hPatchRt = nullptr;
-
-    char scPath[MAX_PATH] = { 0 };
-    GetRegScPath(scPath, MAX_PATH);
-
-    std::string starDatPath = "", brooDatPath = "", patchRtPath = "";
-    GetLoadSettings(starDatPath, brooDatPath, patchRtPath);
-
-    bool updateSettings = false;
-    if ( starDatPath.length() == 0 || !OpenArchive(starDatPath.c_str(), hStarDat) )
-        updateSettings = updateSettings | OpenArchive(scPath, "StarDat.mpq" , hStarDat, starDatPath);
-    if ( brooDatPath.length() == 0 || !OpenArchive(brooDatPath.c_str(), hBrooDat) )
-        updateSettings = updateSettings | OpenArchive(scPath, "BrooDat.mpq" , hBrooDat, brooDatPath);
-    if ( patchRtPath.length() == 0 || !OpenArchive(patchRtPath.c_str(), hPatchRt) )
-        updateSettings = updateSettings | OpenArchive(scPath, "patch_rt.mpq", hPatchRt, patchRtPath);
-
-    if ( updateSettings ) {
-        UpdateLoadSettings(starDatPath, brooDatPath, patchRtPath);
-    }
-
+    MPQHANDLE hStarDat = nullptr, hBrooDat = nullptr, hPatchRt = nullptr;
+    OpenScArchives(hStarDat, hBrooDat, hPatchRt);
     if ( hStarDat != nullptr || hBrooDat != nullptr || hPatchRt != nullptr )
     {
         if ( !tilesets.LoadSets(hStarDat, hBrooDat, hPatchRt) )
@@ -811,14 +807,39 @@ void ScData::Load()
         if ( !tblFiles.Load(hStarDat, hBrooDat, hPatchRt) )
             Error("Failed to load tbl files");
 
-        CloseArchive(hStarDat);
-        CloseArchive(hBrooDat);
-        CloseArchive(hPatchRt);
+        CloseScArchives(hStarDat, hBrooDat, hPatchRt);
     }
     else
     {
         Error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
     }
+}
+
+bool ScData::GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents)
+{
+    bool success = false;
+
+    MPQHANDLE hStarDat = nullptr, hBrooDat = nullptr, hPatchRt = nullptr;
+    OpenScArchives(hStarDat, hBrooDat, hPatchRt);
+
+    char scPath[MAX_PATH] = { 0 };
+    GetRegScPath(scPath, MAX_PATH);
+
+    std::string starDatPath = "", brooDatPath = "", patchRtPath = "";
+    GetLoadSettings(starDatPath, brooDatPath, patchRtPath);
+
+    if ( hStarDat != nullptr || hBrooDat != nullptr || hPatchRt != nullptr )
+    {
+        success = FileToBuffer(hStarDat, hBrooDat, hPatchRt, assetMpqPath, outAssetContents);
+        if ( !success )
+            Error("Failed to get file from mpqs");
+
+        CloseScArchives(hStarDat, hBrooDat, hPatchRt);
+    }
+    else
+        Error("Failed to open MPQ archives!");
+
+    return success;
 }
 
 bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStarDat)
@@ -845,6 +866,34 @@ bool ScData::LoadGrps(MPQHANDLE &hPatchRt, MPQHANDLE &hBrooDat, MPQHANDLE &hStar
     }
 
     return true;
+}
+
+void ScData::OpenScArchives(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
+{
+    char scPath[MAX_PATH] = { 0 };
+    GetRegScPath(scPath, MAX_PATH);
+
+    std::string starDatPath = "", brooDatPath = "", patchRtPath = "";
+    GetLoadSettings(starDatPath, brooDatPath, patchRtPath);
+
+    bool updateSettings = false;
+    if ( starDatPath.length() == 0 || !OpenArchive(starDatPath.c_str(), hStarDat) )
+        updateSettings = updateSettings | OpenArchive(scPath, "StarDat.mpq" , hStarDat, starDatPath);
+    if ( brooDatPath.length() == 0 || !OpenArchive(brooDatPath.c_str(), hBrooDat) )
+        updateSettings = updateSettings | OpenArchive(scPath, "BrooDat.mpq" , hBrooDat, brooDatPath);
+    if ( patchRtPath.length() == 0 || !OpenArchive(patchRtPath.c_str(), hPatchRt) )
+        updateSettings = updateSettings | OpenArchive(scPath, "patch_rt.mpq", hPatchRt, patchRtPath);
+
+    if ( updateSettings ) {
+        UpdateLoadSettings(starDatPath, brooDatPath, patchRtPath);
+    }
+}
+
+void ScData::CloseScArchives(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
+{
+    CloseArchive(hStarDat);
+    CloseArchive(hBrooDat);
+    CloseArchive(hPatchRt);
 }
 
 bool GetCV5References(TileSet* tiles, u32 &cv5Index, u16 TileValue)

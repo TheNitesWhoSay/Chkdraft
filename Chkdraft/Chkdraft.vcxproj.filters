@@ -585,6 +585,15 @@
     <ClInclude Include="src\CommonFiles\Version.h">
       <Filter>Header Files\Common Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\MappingCore\ModifiedAsset.h">
+      <Filter>Header Files\Mapping Core\Structs\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Settings.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MappingCore\TemporaryFile.h">
+      <Filter>Header Files\Mapping Core\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CommonFiles\Constants.cpp">
@@ -934,6 +943,15 @@
     </ClCompile>
     <ClCompile Include="src\CommonFiles\Version.cpp">
       <Filter>Source Files\Common Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\ModifiedAsset.cpp">
+      <Filter>Source Files\Mapping Core\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Settings.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MappingCore\TemporaryFile.cpp">
+      <Filter>Source Files\Mapping Core\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

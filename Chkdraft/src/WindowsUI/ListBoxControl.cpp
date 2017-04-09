@@ -8,11 +8,11 @@ ListBoxControl::ListBoxControl() : autoRedraw(true)
 
 ListBoxControl::~ListBoxControl()
 {
-    while ( !itemsToAdd.empty() )
-        itemsToAdd.pop();
+
 }
 
-bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, u32 id)
+bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
+    bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u32 id)
 {
     u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
     if ( ownerDrawn && multiColumn )
@@ -21,6 +21,9 @@ bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 heigh
         style |= LBS_OWNERDRAWVARIABLE|WS_VSCROLL;
     else if ( multiColumn )
         style |= LBS_MULTICOLUMN|LBS_EXTENDEDSEL;
+
+    if ( alphaSort )
+        style |= LBS_SORT;
 
     if ( scrollBar )
         style |= WS_VSCROLL;
@@ -68,9 +71,9 @@ bool ListBoxControl::ClearSel()
 {
     LONG result = GetWindowLong(getHandle(), GWL_STYLE);
     if ( (result&LBS_EXTENDEDSEL) == LBS_EXTENDEDSEL )
-        return SendMessage(getHandle(), LB_SETCURSEL, (WPARAM)-1, (LPARAM)NULL) != LB_ERR;
-    else
         return SendMessage(getHandle(), LB_SETSEL, (WPARAM)FALSE, (LPARAM)-1) != LB_ERR;
+    else
+        return SendMessage(getHandle(), LB_SETCURSEL, (WPARAM)-1, (LPARAM)NULL) != LB_ERR;
 }
 
 bool ListBoxControl::SetCurSel(int index)

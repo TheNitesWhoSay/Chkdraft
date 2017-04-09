@@ -71,6 +71,7 @@ class TextTrigGenerator
         std::vector<ChkdString> switchTable; // Array of map switches
         std::vector<ChkdString> groupTable; // Array of map groups
         std::map<u32, std::string> scriptTable; // Array of map scripts
+        std::map<u32, std::string> scriptDescTable; // Array of script descriptions
         std::vector<std::string> conditionTable; // Array of condition names
         std::vector<std::string> actionTable; // Array of action names
         bool goodConditionTable;

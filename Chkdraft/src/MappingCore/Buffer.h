@@ -14,7 +14,7 @@ class buffer
 
 /*  Destructor  */  ~buffer();
 
-/*  Accessors   */  u32 size(); // Returns sizeUsed
+/*  Accessors   */  u32 size() const; // Returns sizeUsed
                     const char* title(); // Returns title of buffer
                     u32 titleVal(); // Returns first for bytes of the title as an unsigned int
 
@@ -27,8 +27,8 @@ class buffer
                         bool getArray(valueType* dest, u32 location, u32 numElements);
 
                     // Use the data pointer with care, don't read past dest[sizeUsed-location-1]
-                    const void* getPtr(u32 location);
-                    const void* getPtr(u32 location, u32 sizeRequested); // sizeRequested in bytes
+                    const void* getPtr(u32 location) const;
+                    const void* getPtr(u32 location, u32 sizeRequested) const; // sizeRequested in bytes
                     template <typename valueType>
                         bool getPtr(valueType* &dest, u32 location, u32 sizeRequested); // sizeRequested in bytes
 
@@ -96,7 +96,7 @@ class buffer
                     bool del(u32 startLocation, u32 size);
 
 /*  IO Methods  */  // Writes the data to 'pFile'
-                    void write(FILE* pFile);
+                    void write(FILE* pFile, bool includeHeader);
 
                     // Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
                     bool extract(buffer &buf, u32 position);
@@ -110,8 +110,8 @@ class buffer
                     // Converts raw data to buffer data, be sure to free any allocated data afterwards
                     bool deserialize(const void* incomingData); // First four bytes: bufTitle, second four: sizeUsed, after is sizeUsed bytes of data
 
-                    friend bool FileToBuffer(void* &hMpq, const char* fileName, buffer &buf);
-                    friend bool FileToBuffer(const char* FileName, buffer &buf);
+                    friend bool FileToBuffer(void* &hMpq, const std::string &fileName, buffer &buf);
+                    friend bool FileToBuffer(const std::string &fileName, buffer &buf);
 
 /*     Misc     */  // Checks whether a referance or pointer to a buffer is valid
                     bool exists();

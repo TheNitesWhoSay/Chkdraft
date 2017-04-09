@@ -3,6 +3,7 @@
 #include "Basics.h"
 #include <string>
 #include <vector>
+#include <memory>
 
 /** A Scenario string without any modification
     May not contain NUL characters besides the terminator. */
@@ -147,5 +148,9 @@ bool getOneCharOctVal(const char character, u8 &value);
 bool getTwoCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
 
 bool getThreeCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 3 characters long
+
+typedef std::shared_ptr<RawString> RawStringPtr;
+typedef std::shared_ptr<EscString> EscStringPtr;
+typedef std::shared_ptr<ChkdString> ChkdStringPtr;
 
 #endif

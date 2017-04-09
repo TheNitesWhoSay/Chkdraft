@@ -827,8 +827,6 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
 {
     if ( grp == nullptr )
         return;
-    else
-        std::cout << grp << std::endl;
 
     if ( frame > grp->numFrames() )
         frame = grp->numFrames()-1;

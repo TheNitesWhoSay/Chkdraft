@@ -46,6 +46,10 @@ using s16 = std::int16_t;
 using u8 = std::uint8_t;
 using s8 = std::int8_t;
 
+constexpr u8 u8_max = UINT8_MAX;
+constexpr u16 u16_max = UINT16_MAX;
+constexpr u32 u32_max = UINT32_MAX;
+
 #define BIT_0  0x1
 #define BIT_1  0x2
 #define BIT_2  0x4
@@ -221,7 +225,10 @@ extern const char* DefaultUnitDisplayName[233];
 
 extern const char* LegacyTextTrigDisplayName[233];
 
+extern const char* VirtualSoundFiles[];
+
 constexpr s32 NumUnitNames = 233;
 constexpr s32 NumRealUnits = 227;
+constexpr s32 NumVirtualSounds = 1143;
 
 #endif

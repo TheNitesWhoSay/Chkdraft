@@ -22,7 +22,7 @@ class Maps : public MdiClient
         u16 GetMapID(GuiMapPtr guiMap);
 
         bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
-        bool OpenMap(const char* fileName);
+        bool OpenMap(std::string fileName);
         bool OpenMap(); // Accelerator for OpenMap
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);

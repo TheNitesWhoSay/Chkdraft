@@ -3484,6 +3484,12 @@ bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)
     return WAV().get<u32>(outStringIndex, (u32)wavIndex * 4) && outStringIndex > 0;
 }
 
+bool Scenario::GetWavString(u16 wavIndex, RawString &outString)
+{
+    u32 stringIndex = 0;
+    return WAV().get<u32>(stringIndex, (u32)wavIndex * 4) && stringIndex > 0 && GetString(outString, stringIndex);
+}
+
 bool Scenario::AddWav(u32 stringIndex)
 {
     if ( IsStringUsedWithWavs(stringIndex) )
@@ -3491,13 +3497,66 @@ bool Scenario::AddWav(u32 stringIndex)
 
     for ( u32 i = 0; i < 512; i++ )
     {
-        if ( !IsWavUsed(i) && WAV().replace<u32>(i * 4, stringIndex) )
+        if ( !WavHasString(i) && WAV().replace<u32>(i * 4, stringIndex) )
             return true;
     }
     return false;
 }
 
-bool Scenario::IsWavUsed(u16 wavIndex)
+bool Scenario::AddWav(RawString &wavMpqPath)
+{
+    u32 stringIndex = 0;
+    if ( addString(wavMpqPath, stringIndex, false) )
+    {
+        if ( AddWav(stringIndex) )
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Scenario::RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed)
+{
+    u32 wavStringIndex = 0;
+    if ( WAV().get<u32>(wavStringIndex, (u32)wavIndex * 4) && wavStringIndex > 0 )
+    {
+        if ( !removeIfUsed && MapUsesWavString(wavStringIndex) )
+            return false;
+
+        bool success = WAV().replace<u32>((u32)wavIndex * 4, 0);
+        ZeroWavUsers(wavStringIndex);
+        removeUnusedString(wavStringIndex);
+        return success;
+    }
+    return false;
+}
+
+bool Scenario::RemoveWavByStringIndex(u32 wavStringIndex, bool removeIfUsed)
+{
+    if ( !removeIfUsed && MapUsesWavString(wavStringIndex) )
+        return false;
+
+    if ( wavStringIndex > 0 )
+    {
+        bool success = true;
+        for ( u32 i = 0; i < 512; i++ )
+        {
+            u32 stringIndex = 0;
+            if ( WAV().get<u32>(stringIndex, i * 4) && stringIndex == wavStringIndex )
+            {
+                if ( !WAV().replace<u32>((u32)i * 4, 0) )
+                    success = false;
+            }
+        }
+        ZeroWavUsers(wavStringIndex);
+        removeUnusedString(wavStringIndex);
+        return success;
+    }
+    return false;
+}
+
+bool Scenario::WavHasString(u16 wavIndex)
 {
     u32 stringIndex = 0;
     return WAV().get<u32>(stringIndex, (u32)wavIndex * 4) && stringIndex > 0;
@@ -3511,6 +3570,121 @@ bool Scenario::IsStringUsedWithWavs(u32 stringIndex)
             return true;
     }
     return false;
+}
+
+bool Scenario::GetWavs(std::map<u32/*stringIndex*/, u16/*wavIndex*/> &wavMap, bool includePureStringWavs)
+{
+    try
+    {
+        for ( u16 i = 0; i < 512; i++ )
+        {
+            u32 stringIndex = WAV().get<u32>((u32)i * 4);
+            if ( stringIndex > 0 )
+                wavMap.insert(std::pair<u32, u16>(stringIndex, i));
+        }
+
+        if ( includePureStringWavs )
+        {
+            Trigger* trig = nullptr;
+            int trigNum = 0;
+
+            while ( getTrigger(trig, trigNum) )
+            {
+                for ( u8 i=0; i<NUM_TRIG_ACTIONS; i++ )
+                {
+                    Action &action = trig->action(i);
+                    if ( action.wavID != 0 )
+                    {
+                        if ( wavMap.find(action.wavID) == wavMap.end() )
+                            wavMap.insert(std::pair<u32, u16>(action.wavID, u16_max));
+                    }
+                }
+                trigNum ++;
+            }
+
+            trigNum = 0;
+            while ( getBriefingTrigger(trig, trigNum) )
+            {
+                for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+                {
+                    Action &action = trig->action(i);
+                    if ( action.wavID != 0 )
+                    {
+                        if ( wavMap.find(action.wavID) == wavMap.end() )
+                            wavMap.insert(std::pair<u32, u16>(action.wavID, u16_max));
+                    }
+                }
+                trigNum ++;
+            }
+        }
+
+        return true;
+    }
+    catch ( std::exception )
+    {
+        wavMap.clear();
+    }
+    return false;
+}
+
+bool Scenario::MapUsesWavString(u32 wavStringIndex)
+{
+    Trigger* trig = nullptr;
+    int trigNum = 0;
+
+    while ( getTrigger(trig, trigNum) )
+    {
+        for ( u8 i=0; i<NUM_TRIG_ACTIONS; i++ )
+        {
+            Action &action = trig->action(i);
+            if ( action.wavID == wavStringIndex )
+                return true;
+        }
+        trigNum ++;
+    }
+
+    trigNum = 0;
+    while ( getBriefingTrigger(trig, trigNum) )
+    {
+        for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+        {
+            Action &action = trig->action(i);
+            if ( action.wavID == wavStringIndex )
+                return true;
+        }
+        trigNum ++;
+    }
+
+    return false;
+}
+
+void Scenario::ZeroWavUsers(u32 wavStringIndex)
+{
+    Trigger* trig = nullptr;
+    int trigNum = 0;
+
+    while ( getTrigger(trig, trigNum) )
+    {
+        for ( u8 i=0; i<NUM_TRIG_ACTIONS; i++ )
+        {
+            Action &action = trig->action(i);
+            if ( action.wavID == wavStringIndex )
+                action.wavID = 0;
+        }
+        trigNum ++;
+    }
+
+    trigNum = 0;
+    while ( getBriefingTrigger(trig, trigNum) )
+    {
+        for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+        {
+            Action &action = trig->action(i);
+            if ( action.wavID == wavStringIndex )
+                action.wavID = 0;
+        }
+        trigNum ++;
+    }
 }
 
 bool Scenario::ParseScenario(buffer &chk)
@@ -3666,18 +3840,28 @@ bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
 {
     if ( isPassword(oldPass) )
     {
-        SHA256 sha256;
-        std::string hashStr = sha256(newPass);
-        if ( hashStr.length() >= 7 )
+        if ( newPass == "" )
         {
-            u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
-            u8* hashBytes = (u8*)&eightHashBytes;
-
-            tailLength = 7;
             for ( u8 i = 0; i < tailLength; i++ )
-                tailData[i] = hashBytes[i];
-
+                tailData[i] = 0;
+            tailLength = 0;
             return true;
+        }
+        else
+        {
+            SHA256 sha256;
+            std::string hashStr = sha256(newPass);
+            if ( hashStr.length() >= 7 )
+            {
+                u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+                u8* hashBytes = (u8*)&eightHashBytes;
+
+                tailLength = 7;
+                for ( u8 i = 0; i < tailLength; i++ )
+                    tailData[i] = hashBytes[i];
+
+                return true;
+            }
         }
     }
     return false;
@@ -3723,7 +3907,7 @@ void Scenario::WriteFile(FILE* pFile)
     if ( !isProtected() )
     {
         for ( auto &section : sections )
-            section->write(pFile);
+            section->write(pFile, true);
 
         if ( tailLength > 0 && tailLength < 8 )
             fwrite(tailData, tailLength, 1, pFile);

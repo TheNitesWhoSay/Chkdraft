@@ -347,8 +347,9 @@ class AiScripts
         bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
         int GetNumAiScripts();
         bool GetAiIdentifier(int aiNum, u32 &outAiId);
-        bool GetAiIdentifier(std::string &inAiName, u32 &outAiId);
+        bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
         bool GetAiName(int aiNum, std::string &outAiName);
+        bool GetAiName(u32 aiId, std::string &outAiName);
         bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
 
     private:
@@ -383,11 +384,14 @@ class ScData
         IMAGEDAT*  ImageDat (u32 id) { return sprites.ImageDat (id); }
 
         void Load();
+        bool GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents);
 
 
     private:
 
         bool LoadGrps(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
+        void OpenScArchives(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
+        void CloseScArchives(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
 };
 
 bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);

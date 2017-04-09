@@ -8,7 +8,7 @@
 #include <list>
 #include <memory>
 #include <string>
-#include <vector>
+#include <map>
 
 using Section = std::shared_ptr<buffer>;
 using TrigSegment = Section;
@@ -144,6 +144,7 @@ public:
                     bool moveTriggerDown(u32 triggerId); // Moves the given trigger down one absolute index
                     bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
                     TrigSegment GetTrigSection();
+                    
 
 /*     CUWPs    */  bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
                     bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
@@ -155,10 +156,17 @@ public:
                     int NumUsedCuwps();
 
 /*     WAVs     */  u32 WavSectionCapacity();
-                    bool GetWav(u16 wavIndex, u32 &outStringIndex);
+                    virtual bool GetWav(u16 wavIndex, u32 &outStringIndex);
+                    bool GetWavString(u16 wavIndex, RawString &outString);
                     bool AddWav(u32 stringIndex);
-                    bool IsWavUsed(u16 wavIndex);
+                    bool AddWav(RawString &wavMpqPath);
+                    virtual bool RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed);
+                    virtual bool RemoveWavByStringIndex(u32 stringIndex, bool removeIfUsed);
+                    bool WavHasString(u16 wavIndex);
                     bool IsStringUsedWithWavs(u32 stringIndex);
+                    bool GetWavs(std::map<u32/*stringIndex*/, u16/*wavIndex*/> &wavMap, bool includePureStringWavs);
+                    bool MapUsesWavString(u32 wavStringIndex);
+                    void ZeroWavUsers(u32 wavStringIndex);
 
 /*   Switches   */  u32 NumNameableSwitches();
                     bool getSwitchStrId(u8 switchId, u32 &stringNum);
@@ -357,7 +365,7 @@ public:
 /*   Security   */  bool isProtected(); // Checks if map is protected
                     bool hasPassword(); // Checks if the map has a password
                     bool isPassword(std::string &password); // Checks if this is the password the map has
-                    bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
+                    bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the 
                     bool Login(std::string &password); // Attempts to login to the map
 
 

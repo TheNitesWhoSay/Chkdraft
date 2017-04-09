@@ -129,15 +129,15 @@ bool Maps::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
     return false;
 }
 
-bool Maps::OpenMap(const char* fileName)
+bool Maps::OpenMap(std::string fileName)
 {
     auto newMap = AddEmptyMap();
 
-    if ( newMap->LoadFile(fileName) )
+    if ( newMap->LoadMapFile(fileName) )
     {
         if ( newMap->CreateThis(getHandle(), fileName) )
         {
-            SetWindowText(newMap->getHandle(), fileName);
+            SetWindowText(newMap->getHandle(), fileName.c_str());
             EnableMapping();
             Focus(newMap);
 
@@ -162,14 +162,15 @@ bool Maps::OpenMap(const char* fileName)
 
 bool Maps::OpenMap()
 {
-    return OpenMap(nullptr);
+    return OpenMap("");
 }
 
 bool Maps::SaveCurr(bool saveAs)
 {
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
-        SetWindowText(currentlyActiveMap->getHandle(), currentlyActiveMap->FilePath());
+        SetWindowText(currentlyActiveMap->getHandle(), currentlyActiveMap->GetFilePath().c_str());
+        currentlyActiveMap->refreshScenario();
         return true;
     }
     else

@@ -89,7 +89,7 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
     textAboutStrings.CreateThis(hWnd, 5, 5, 150, 20, "String Editor...", 0);
     buttonSwap.CreateThis(hWnd, 310, 5, 150, 20, "", ID::BUTTON_SWITCH);
 
-    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, LB_STRINGS);
+    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, LB_STRINGS);
 
     buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", DELETE_STRING);
     checkExtendedString.CreateThis(hWnd, 20, 294, 100, 10, false, "Extended", CHECK_EXTENDEDSTRING);
@@ -98,7 +98,7 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
     editString.CreateThis(hWnd, 5, 310, 453, 140, true, EDIT_STRING);
 
     textStringUsage.CreateThis(hWnd, 480, 379, 125, 20, "String Usage:", 0);
-    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, LB_STRINGUSE);
+    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, LB_STRINGUSE);
 
     stringGuide.CreateThis(hWnd);
     stringPreviewWindow.CreateThis(hWnd, PREVIEW_STRING);

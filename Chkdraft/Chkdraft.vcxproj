@@ -39,6 +39,7 @@
     <ClCompile Include="src\MainPlot.cpp" />
     <ClCompile Include="src\MainToolbar.cpp" />
     <ClCompile Include="src\MainTree.cpp" />
+    <ClCompile Include="src\MappingCore\ModifiedAsset.cpp" />
     <ClCompile Include="src\MappingCore\Basics.cpp" />
     <ClCompile Include="src\MappingCore\Buffer.cpp" />
     <ClCompile Include="src\MappingCore\ChkAction.cpp" />
@@ -59,6 +60,7 @@
     <ClCompile Include="src\MappingCore\StringTableNode.cpp" />
     <ClCompile Include="src\MappingCore\StringUsage.cpp" />
     <ClCompile Include="src\MappingCore\SubStringMap.cpp" />
+    <ClCompile Include="src\MappingCore\TemporaryFile.cpp" />
     <ClCompile Include="src\MapProperties.cpp" />
     <ClCompile Include="src\Maps.cpp" />
     <ClCompile Include="src\MapSettings.cpp" />
@@ -71,6 +73,7 @@
     <ClCompile Include="src\Reversibles.cpp" />
     <ClCompile Include="src\ScData.cpp" />
     <ClCompile Include="src\Selections.cpp" />
+    <ClCompile Include="src\Settings.cpp" />
     <ClCompile Include="src\StaticTrigComponentParser.cpp" />
     <ClCompile Include="src\StringEditor.cpp" />
     <ClCompile Include="src\StringGuide.cpp" />
@@ -165,6 +168,7 @@
     <ClInclude Include="src\MainPlot.h" />
     <ClInclude Include="src\MainToolbar.h" />
     <ClInclude Include="src\MainTree.h" />
+    <ClInclude Include="src\MappingCore\ModifiedAsset.h" />
     <ClInclude Include="src\MappingCore\Basics.h" />
     <ClInclude Include="src\MappingCore\Buffer.h" />
     <ClInclude Include="src\MappingCore\ChkAction.h" />
@@ -187,6 +191,7 @@
     <ClInclude Include="src\MappingCore\StringTableNode.h" />
     <ClInclude Include="src\MappingCore\StringUsage.h" />
     <ClInclude Include="src\MappingCore\SubStringMap.h" />
+    <ClInclude Include="src\MappingCore\TemporaryFile.h" />
     <ClInclude Include="src\MapProperties.h" />
     <ClInclude Include="src\Maps.h" />
     <ClInclude Include="src\MapSettings.h" />
@@ -199,6 +204,7 @@
     <ClInclude Include="src\Reversibles.h" />
     <ClInclude Include="src\ScData.h" />
     <ClInclude Include="src\Selections.h" />
+    <ClInclude Include="src\Settings.h" />
     <ClInclude Include="src\StaticTrigComponentParser.h" />
     <ClInclude Include="src\StringEditor.h" />
     <ClInclude Include="src\StringGuide.h" />
@@ -310,7 +316,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SFMPQ\SFmpq_MTd.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SFMPQ\SFmpq_MTd.lib;Winmm.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <HeapReserveSize>
       </HeapReserveSize>
       <StackReserveSize>
@@ -337,7 +343,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>SFmpq\SFmpq_MT.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SFmpq\SFmpq_MT.lib;Winmm.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>

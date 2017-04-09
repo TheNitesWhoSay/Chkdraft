@@ -33,10 +33,10 @@ bool GuiMap::CanExit()
     if ( unsavedChanges )
     {
         int result = IDCANCEL;
-        if ( MapFile::FilePath() == nullptr || strcmp(MapFile::FilePath(), "") == 0 )
+        if ( MapFile::GetFilePath().length() <= 0 )
             result = MessageBox(NULL, "Save Changes?", "Untitled", MB_YESNOCANCEL);
         else
-            result = MessageBox(NULL, "Save Changes?", MapFile::FilePath(), MB_YESNOCANCEL);
+            result = MessageBox(NULL, "Save Changes?", MapFile::GetFilePath().c_str(), MB_YESNOCANCEL);
 
         if ( result == IDYES )
             SaveFile(false);
@@ -1244,7 +1244,7 @@ void GuiMap::updateMenu()
     UpdateUnitMenuItems();
 }
 
-bool GuiMap::CreateThis(HWND hClient, const char* title)
+bool GuiMap::CreateThis(HWND hClient, const std::string &title)
 {
     if ( !WindowClassIsRegistered("MdiChild") )
     {
@@ -1256,7 +1256,7 @@ bool GuiMap::CreateThis(HWND hClient, const char* title)
             DestroyCursor(hCursor);
     }
 
-    return CreateMdiChild(title, WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
+    return CreateMdiChild(title.c_str(), WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
 }
 
 void GuiMap::ReturnKeyPress()

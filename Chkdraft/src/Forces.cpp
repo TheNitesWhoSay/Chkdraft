@@ -123,7 +123,20 @@ void ForcesWindow::RefreshWindow()
                 CM->getPlayerColor(player, color);
                 CM->getPlayerRace(player, race);
                 std::stringstream ssplayer;
-                ssplayer << "Player " << player+1 << " - " << playerColors.at(color) << " - "
+
+                std::string playerColorStr = "";
+                if ( color < playerColors.size() )
+                    playerColorStr = playerColors.at(color);
+
+                std::string playerOwnerStr = "";
+                if ( displayOwner < playerOwners.size() )
+                    playerOwnerStr = playerOwners.at(displayOwner);
+
+                std::string playerRaceStr = "";
+                if ( race < playerRaces.size() )
+                    playerRaceStr = playerRaces.at(race);
+
+                ssplayer << "Player " << (player+1) << " - " << playerColorStr << " - "
                          << playerRaces.at(race) << " (" << playerOwners.at(displayOwner) << ")";
                 HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
                 if ( hListBox != NULL )
@@ -317,7 +330,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ForcesWindow::CheckReplaceForceName(int force)
 {
     ChkdString newMapForce;
-    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetWinText(newMapForce) )
+    if ( force < 4 && possibleForceNameUpdate[force] == true && editForceName[force].GetWinText(newMapForce) && newMapForce.length() > 0 )
     {
         if ( CM->setForceName(force, newMapForce) )
         {
