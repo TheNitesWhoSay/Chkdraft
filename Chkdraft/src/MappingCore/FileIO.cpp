@@ -13,7 +13,7 @@ std::string GetSystemFileSeparator()
     return std::string(multiByteSeparatorArray);
 }
 
-std::string GetSystemFileName(std::string &systemFilePath)
+std::string GetSystemFileName(const std::string &systemFilePath)
 {
     std::string systemFileSeparator = GetSystemFileSeparator();
     size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
@@ -23,7 +23,7 @@ std::string GetSystemFileName(std::string &systemFilePath)
         return systemFilePath;
 }
 
-std::string GetSystemFileDirectory(std::string &systemFilePath, bool includeSeparator)
+std::string GetSystemFileDirectory(const std::string &systemFilePath, bool includeSeparator)
 {
     std::string systemFileSeparator = GetSystemFileSeparator();
     size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
@@ -37,7 +37,7 @@ std::string GetSystemFileDirectory(std::string &systemFilePath, bool includeSepa
     return systemFilePath;
 }
 
-std::string MakeSystemFilePath(std::string &systemDirectory, std::string &fileName)
+std::string MakeSystemFilePath(const std::string &systemDirectory, const std::string &fileName)
 {
     std::string systemFileSeparator = GetSystemFileSeparator();
     size_t lastSeparator = systemDirectory.find_last_of(systemFileSeparator);
@@ -52,7 +52,7 @@ std::string GetMpqFileSeparator()
     return "\\";
 }
 
-std::string GetMpqFileName(std::string &mpqFilePath)
+std::string GetMpqFileName(const std::string &mpqFilePath)
 {
     std::string mpqFileSeparator = GetMpqFileSeparator();
     size_t lastSeparator = mpqFilePath.find_last_of(mpqFileSeparator);
@@ -62,7 +62,7 @@ std::string GetMpqFileName(std::string &mpqFilePath)
         return mpqFilePath;
 }
 
-std::string MakeMpqFilePath(std::string &mpqDirectory, std::string &fileName)
+std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &fileName)
 {
     std::string mpqFileSeparator = GetMpqFileSeparator();
     size_t lastSeparator = mpqDirectory.find_last_of(mpqFileSeparator);
@@ -290,7 +290,7 @@ bool WavBufferToArchive(MPQHANDLE &hMpq, const buffer &buf, const std::string &m
     return false;
 }
 
-bool FileToBuffer(HANDLE &hMpq, const std::string &fileName, buffer &buf)
+bool FileToBuffer(MPQHANDLE &hMpq, const std::string &fileName, buffer &buf)
 {
     if ( hMpq == nullptr )
         CHKD_ERR("NULL MPQ file specified for opening %s", fileName.c_str());
@@ -453,6 +453,14 @@ OPENFILENAME GetScSaveOfn(char* szFileName)
         szFileName,
         "Starcraft Map(*.scm)\0*.scm\0Starcraft Hybrid Map(*.scm)\0*.scm\0Broodwar Map(*.scx)\0*.scx\0Raw Starcraft Map(*.chk)\0*.chk\0Raw Starcraft Hybrid Map(*.chk)\0*.chk\0Raw Broodwar Map(*.chk)\0*.chk\0All Maps\0*.scm;*.scx;*.chk\0",
         7 );
+}
+
+OPENFILENAME GetWavSaveOfn(char* szFileName)
+{
+    return GetOfn(
+        szFileName,
+        "WAV File\0*.wav\0All Files\0*.*\0",
+        1 );
 }
 
 DWORD GetSubKeyString(HKEY hParentKey, const char* subKey, const char* valueName, char* data, DWORD* dataSize)

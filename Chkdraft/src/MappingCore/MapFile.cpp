@@ -3,11 +3,21 @@
 #include <cstdio>
 #include <cstdarg>
 
+std::hash<std::string> MapFile::strHash;
+std::map<u32, std::string> MapFile::virtualWavTable;
 u64 MapFile::nextAssetFileId(0);
 
 MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpq(nullptr)
 {
-
+    if ( MapFile::virtualWavTable.size() == 0 )
+    {
+        for ( s32 i=0; i<NumVirtualSounds; i++ )
+        {
+            std::string wavPath(VirtualSoundFiles[i]);
+            u32 hash = strHash(wavPath);
+            virtualWavTable.insert(std::pair<u32, std::string>(hash, wavPath));
+        }
+    }
 }
 
 bool MapFile::LoadMapFile(std::string &path)
@@ -90,7 +100,7 @@ bool MapFile::SaveFile(bool SaveAs)
                 {
                     DeleteFileA("chk.tmp"); // Remove any existing chk.tmp files
                     pFile = std::fopen("chk.tmp", "wb");
-                    WriteFile(pFile);
+                    Scenario::WriteFile(pFile);
                     std::fclose(pFile);
 
                     MPQHANDLE hMpq = MpqOpenArchiveForUpdate(mapFilePath.c_str(), MOAU_OPEN_ALWAYS | MOAU_MAINTAIN_LISTFILE, 1000);
@@ -368,6 +378,11 @@ void MapFile::SetSaveType(SaveType newSaveType)
     saveType = newSaveType;
 }
 
+std::string MapFile::GetStandardWavDir()
+{
+    return "staredit\\wav\\";
+}
+
 bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::string &assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
@@ -399,6 +414,37 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
     }
     else
         MessageBox(NULL, "Failed to find asset file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+
+    return success;
+}
+
+bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &asset, WavQuality wavQuality)
+{
+    bool success = false;
+    std::string temporaryMpqPath = "";
+    if ( GetTemporaryMpqPath(temporaryMpqPath) )
+    {
+        MPQHANDLE hMpq = MpqOpenArchiveForUpdate(temporaryMpqPath.c_str(), MOAU_OPEN_ALWAYS | MOAU_MAINTAIN_LISTFILE, 1000);
+        if ( hMpq != NULL && hMpq != INVALID_HANDLE_VALUE )
+        {
+            ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, wavQuality, AssetAction::Add));
+            const char* tempMpqPath = modifiedAssetPtr->assetTempMpqPath.c_str();
+
+            if ( BufferToArchive(hMpq, asset, tempMpqPath) )
+            {
+                modifiedAssets.push_back(modifiedAssetPtr);
+                success = true;
+            }
+            else
+                MessageBox(NULL, "Failed to add file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+
+            MpqCloseUpdatedArchive(hMpq, 0);
+        }
+        else
+            MessageBox(NULL, std::string(std::string("Failed to open temp file!\n\nThe file may be in use elsewhere. ") + std::to_string(GetLastError())).c_str(), "Error!", MB_OK | MB_ICONEXCLAMATION);
+    }
+    else
+        MessageBox(NULL, "Failed to setup asset temporary storage!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 
     return success;
 }
@@ -441,6 +487,62 @@ void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
     }
 }
 
+bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetBuffer)
+{
+    bool success = false;
+    for ( auto asset : modifiedAssets ) // Check if it's a recently added asset
+    {
+        if ( asset->actionTaken == AssetAction::Add && asset->assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
+        {
+            std::string temporaryMpqPath = "";
+            if ( GetTemporaryMpqPath(temporaryMpqPath) )
+            {
+                MPQHANDLE hTempMpq = MpqOpenArchiveForUpdate(temporaryMpqPath.c_str(), MOAU_OPEN_ALWAYS | MOAU_MAINTAIN_LISTFILE, 1000);
+                if ( hTempMpq != NULL && hTempMpq != INVALID_HANDLE_VALUE )
+                {
+                    success = FileToBuffer(hTempMpq, asset->assetTempMpqPath, outAssetBuffer);
+                    MpqCloseUpdatedArchive(hTempMpq, 0);
+                }
+            }
+            return success;
+        }
+    }
+
+    MPQHANDLE hMapMpq = MpqOpenArchiveForUpdate(mapFilePath.c_str(), MOAU_OPEN_EXISTING | MOAU_READ_ONLY, 1000);
+    if ( hMapMpq != NULL && hMapMpq != INVALID_HANDLE_VALUE )
+    {
+        success = FileToBuffer(hMapMpq, assetMpqFilePath, outAssetBuffer);
+        MpqCloseUpdatedArchive(hMapMpq, 0);
+    }
+
+    return success;
+}
+
+bool MapFile::ExtractMpqAsset(const std::string &assetMpqFilePath, const std::string &systemFilePath)
+{
+    buffer assetBuffer("AsBu");
+    if ( GetMpqAsset(assetMpqFilePath, assetBuffer) )
+    {
+        FILE* systemFile = std::fopen(systemFilePath.c_str(), "wb");
+        assetBuffer.write(systemFile, false);
+        std::fclose(systemFile);
+        return true;
+    }
+    return false;
+}
+
+bool MapFile::GetWav(u16 wavIndex, u32 &outStringIndex)
+{
+    return Scenario::GetWav(wavIndex, outStringIndex);
+}
+
+bool MapFile::GetWav(u32 stringIndex, buffer &outWavData)
+{
+    RawString wavString;
+    return Scenario::GetString(wavString, stringIndex) &&
+        GetMpqAsset(wavString, outWavData);
+}
+
 bool MapFile::AddWav(u32 stringIndex)
 {
     RawString wavString;
@@ -449,18 +551,46 @@ bool MapFile::AddWav(u32 stringIndex)
         Scenario::AddWav(stringIndex);
 }
 
-bool MapFile::AddWav(std::string &wavFilePath, WavQuality wavQuality)
+bool MapFile::AddWav(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile)
+{
+    std::string mpqWavDirectory = GetStandardWavDir();
+    std::string mpqFilePath = MakeMpqFilePath(mpqWavDirectory, GetSystemFileName(srcFilePath));
+    return AddWav(srcFilePath, mpqFilePath, wavQuality, virtualFile);
+}
+
+bool MapFile::AddWav(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
     bool success = false;
-    std::string mpqWavDirectory = "staredit\\wav\\";
-    std::string mpqFilePath = MakeMpqFilePath(mpqWavDirectory, GetSystemFileName(wavFilePath));
-    if ( AddMpqAsset(wavFilePath, mpqFilePath, wavQuality) )
+    if ( virtualFile )
     {
-        if ( Scenario::AddWav(RawString(mpqFilePath)) )
+        if ( Scenario::AddWav(RawString(srcFilePath)) )
+            success = true;
+        else
+            MessageBox(NULL, "Failed to register WAV in scenario file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+    }
+    else if ( AddMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
+    {
+        if ( Scenario::AddWav(RawString(destMpqPath)) )
             success = true;
         else
         {
-            RemoveMpqAsset(mpqFilePath); // Try to remove the wav, ignore errors if any
+            RemoveMpqAsset(destMpqPath); // Try to remove the wav, ignore errors if any
+            MessageBox(NULL, "Failed to register WAV in scenario file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+        }
+    }
+    return success;
+}
+
+bool MapFile::AddWav(const std::string &destMpqPath, buffer &wavContents, WavQuality wavQuality)
+{
+    bool success = false;
+    if ( AddMpqAsset(destMpqPath, wavContents, wavQuality) )
+    {
+        if ( Scenario::AddWav(RawString(destMpqPath)) )
+            success = true;
+        else
+        {
+            RemoveMpqAsset(destMpqPath); // Try to remove the wav, ignore errors if any
             MessageBox(NULL, "Failed to register WAV in scenario file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
         }
     }
@@ -516,6 +646,8 @@ WavStatus MapFile::GetWavStatus(u32 wavStringIndex)
                 WavStatus wavStatus = WavStatus::NoMatch;
                 if ( FindFileInMpq(hMpq, wavString.c_str()) )
                     wavStatus = WavStatus::CurrentMatch;
+                else if ( IsInVirtualWavList(wavString) )
+                    wavStatus = WavStatus::VirtualFile;
                 MpqCloseUpdatedArchive(hMpq, 0);
                 return wavStatus;
             }
@@ -571,6 +703,28 @@ bool MapFile::GetWavStatusMap(std::map<u32/*stringIndex*/, WavStatus> &outWavSta
             MpqCloseUpdatedArchive(hMpq, 0);
 
         return true;
+    }
+    return false;
+}
+
+bool MapFile::IsInVirtualWavList(const std::string &wavMpqPath)
+{
+    u32 hash = MapFile::strHash(wavMpqPath);
+    int numMatching = MapFile::virtualWavTable.count(hash);
+    if ( numMatching == 1 )
+    {
+        std::string &tableWavPath = MapFile::virtualWavTable.find(hash)->second;
+        if ( wavMpqPath.compare(tableWavPath) == 0 )
+            return true;
+    }
+    else if ( numMatching > 1 )
+    {
+        auto range = MapFile::virtualWavTable.equal_range(hash);
+        for ( auto pair = range.first; pair != range.second; ++ pair)
+        {
+            if ( wavMpqPath.compare(pair->second) == 0 )
+                return true;
+        }
     }
     return false;
 }

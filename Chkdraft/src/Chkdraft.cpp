@@ -19,7 +19,7 @@ void Chkdraft::OnLoadTest()
     //maps.NewMap(128, 128, 2, 0, 0);
     //{
         //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
-    
+
         //trigEditorWindow.CreateThis(getHandle());
         //trigEditorWindow.ChangeTab(3);
 

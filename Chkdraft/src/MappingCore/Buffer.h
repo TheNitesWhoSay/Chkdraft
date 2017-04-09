@@ -96,7 +96,7 @@ class buffer
                     bool del(u32 startLocation, u32 size);
 
 /*  IO Methods  */  // Writes the data to 'pFile'
-                    void write(FILE* pFile);
+                    void write(FILE* pFile, bool includeHeader);
 
                     // Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
                     bool extract(buffer &buf, u32 position);

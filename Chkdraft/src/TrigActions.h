@@ -25,6 +25,7 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
 
     protected:
         void InitializeArgMaps(); // Gives default values to all the argMaps
+        void InitializeScriptTable();
         void CreateSubWindows(HWND hWnd);
         void OnLeave();
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
@@ -43,7 +44,9 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
         bool wavEditEnabled;
         bool unitPropertiesEditEnabled;
 
+        std::hash<std::string> strHash; // A hasher to help generate tables
         std::vector<u8> actionArgMaps[64];
+        std::unordered_multimap<u32/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
         Suggestions &suggestions;
 

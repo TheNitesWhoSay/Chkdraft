@@ -17,7 +17,10 @@ enum ID {
     TEXT_COMPRESSIONLEVEL,
     DROP_COMPRESSIONQUALITY,
     CHECK_VIRTUALFILE,
-    BUTTON_ADDFILE
+    BUTTON_ADDFILE,
+    CHECK_CUSTOMMPQPATH,
+    TEXT_CUSTOMMPQSTRING,
+    DROP_CUSTOMMPQPATH
 };
 
 WavEditorWindow::WavEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1)
@@ -66,12 +69,13 @@ void WavEditorWindow::RefreshWindow()
         else
         {
             buttonDeleteSound.EnableThis();
-            //buttonExtractSound.EnableThis();
-            //buttonPlaySound.EnableThis();
+            buttonExtractSound.EnableThis();
+            buttonPlaySound.EnableThis();
         }
     }
 
     UpdateWindowText();
+    UpdateCustomStringList();
 }
 
 void WavEditorWindow::UpdateWindowText()
@@ -97,6 +101,8 @@ void WavEditorWindow::UpdateWindowText()
             wavStatusString = ", Status: ???";
         else if ( wavStatus == WavStatus::CurrentMatch )
             wavStatusString = ", Status: Matches File In Map";
+        else if ( wavStatus == WavStatus::VirtualFile )
+            wavStatusString = ", Status: Virtual File";
         else if ( wavStatus == WavStatus::PendingMatch )
             wavStatusString = ", Status: Matches Pending Asset";
 
@@ -115,11 +121,92 @@ void WavEditorWindow::UpdateWindowText()
         chkd.mapSettingsWindow.SetWinText("Map Settings");
 }
 
+void WavEditorWindow::UpdateCustomStringList()
+{
+    if ( checkCustomMpqString.isChecked() )
+    {
+        std::vector<StringTableNode> strList;
+        if ( CM->addAllUsedStrings(strList, true, false) )
+        {
+            dropCustomMpqString.ClearItems();
+            for ( auto str : strList )
+                dropCustomMpqString.AddItem(str.string);
+        }
+        dropCustomMpqString.EnableThis();
+    }
+    else
+    {
+        dropCustomMpqString.ClearItems();
+        dropCustomMpqString.DisableThis();
+    }
+}
+
+void WavEditorWindow::PlaySoundButtonPressed()
+{
+    u32 wavStringIndex = 0;
+    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+    {
+        buffer wavBuffer("WaBu");
+        RawString wavString;
+        if ( CM->GetWav(wavStringIndex, wavBuffer) )
+        {
+            PlaySound((LPCSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+        }
+        else if ( CM->GetString(wavString, wavStringIndex) && CM->IsInVirtualWavList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
+        {
+            PlaySound((LPCSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+        }
+        else
+            Error("Failed to get WAV buffer!");
+    }
+    else
+        Error("Failed to get string ID of WAV!");
+}
+
+void WavEditorWindow::PlayVirtualSoundButtonPressed()
+{
+    buffer wavBuffer("WaBu");
+    int sel = 0;
+    std::string wavString = "";
+    if ( listVirtualSounds.GetCurSelString(wavString) )
+    {
+        if ( CM->IsInVirtualWavList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
+            PlaySound((LPCSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC | SND_MEMORY);
+    }
+    else
+        Error("Failed to get selected virtual WAV string!");
+}
+
+void WavEditorWindow::ExtractSoundButtonPressed()
+{
+    if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
+        selectedSoundListIndex = -1;
+
+    RawString wavMpqPath;
+    u32 wavStringIndex = 0;
+    if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) && CM->GetString(wavMpqPath, wavStringIndex) )
+    {
+        std::string wavFileName = GetMpqFileName(wavMpqPath);
+        char szFileName[FILENAME_MAX] = {};
+        strncpy(szFileName, wavFileName.c_str(), std::min(size_t(FILENAME_MAX-1), wavFileName.length()));
+        OPENFILENAME ofn = GetWavSaveOfn(szFileName);
+    
+        if ( GetSaveFileName(&ofn) == TRUE )
+        {
+            std::string destPath(szFileName);
+            if ( !CM->ExtractMpqAsset(wavMpqPath, destPath) )
+                Error("Error Extracting Asset!");
+        }
+        else if ( CommDlgExtendedError() != 0 )
+            Error("Error Retrieving File Name.");
+    }
+}
+
 void WavEditorWindow::BrowseButtonPressed()
 {
     OPENFILENAME ofn = { };
-    char szFileName[MAX_PATH] = { };
-    char initPath[MAX_PATH] = { };
+    char szFileName[FILENAME_MAX] = { };
+    char initPath[FILENAME_MAX] = { };
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.lpstrFilter = "WAV File\0*.wav\0All Files\0*.*\0";
@@ -134,19 +221,71 @@ void WavEditorWindow::BrowseButtonPressed()
         ofn.lpstrInitialDir = NULL;
 
     ofn.hwndOwner = NULL;
-    ofn.nMaxFile = MAX_PATH;
+    ofn.nMaxFile = FILENAME_MAX;
     ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 
     if ( GetOpenFileName(&ofn) == TRUE )
+    {
+        buttonPreviewPlaySound.DisableThis();
+        listVirtualSounds.ClearSel();
+        checkVirtualFile.SetCheck(false);
+        checkVirtualFile.DisableThis();
         editFileName.SetWinText(szFileName);
+    }
     else if ( CommDlgExtendedError() != 0 )
         CHKD_ERR("Error Retrieving File Name.");
 }
 
 void WavEditorWindow::AddFileButtonPressed()
 {
+    bool useVirtualFile = checkVirtualFile.isChecked();
+    bool useCustomMpqString = checkCustomMpqString.isChecked();
+    int sel = dropCustomMpqString.GetSel();
+    std::string customMpqPath = "";
+    if ( useCustomMpqString && !dropCustomMpqString.GetItemText(sel, customMpqPath) )
+    {
+        Error("Failed to get custom path string!");
+        return;
+    }
+
+    bool addedWav = false;
     std::string filePath = editFileName.GetWinText();
-    if ( CM->AddWav(filePath, wavQuality) )
+    if ( useVirtualFile && CM->IsInVirtualWavList(filePath) )
+    {
+        if ( useCustomMpqString )
+            addedWav = CM->AddWav(filePath, customMpqPath, wavQuality, true);
+        else
+            addedWav = CM->AddWav(filePath, wavQuality, true);
+    }
+    else if ( !useVirtualFile && FindFile(filePath.c_str()) )
+    {
+        if ( useCustomMpqString )
+            addedWav = CM->AddWav(filePath, customMpqPath, wavQuality, false);
+        else
+            addedWav = CM->AddWav(filePath, wavQuality, false);
+    }
+    else if ( !useVirtualFile && CM->IsInVirtualWavList(filePath) )
+    {
+        buffer wavContents("WaCo");
+        if ( chkd.scData.GetScAsset(filePath, wavContents) )
+        {
+            if ( useCustomMpqString )
+                addedWav = CM->AddWav(customMpqPath, wavContents, wavQuality);
+            else
+            {
+                std::string mpqFileName = GetMpqFileName(filePath);
+                std::string standardWavDir = MapFile::GetStandardWavDir();
+                std::string mpqFilePath = MakeMpqFilePath(standardWavDir, mpqFileName);
+                addedWav = CM->AddWav(mpqFilePath, wavContents, wavQuality);
+            }
+        }
+        else
+            Error("Failed to extract virtual sound file!");
+    }
+    else
+        Error("WAV Path Not Found!");
+
+    if ( addedWav )
     {
         editFileName.SetText("");
         CM->notifyChange(false);
@@ -161,6 +300,7 @@ void WavEditorWindow::CheckVirtualFilePressed()
         dropCompressionLevel.DisableThis();
         dropCompressionLevel.SetSel(0);
         buttonBrowse.DisableThis();
+        checkCustomMpqString.SetCheck(false);
     }
     else
     {
@@ -183,15 +323,25 @@ void WavEditorWindow::CompressionDropdownChanged()
     int selection = dropCompressionLevel.GetSel();
     switch ( selection )
     {
-    case 0: wavQuality = WavQuality::Uncompressed; break;
-    case 1: wavQuality = WavQuality::Low; break;
-    case 2: wavQuality = WavQuality::Med; break;
-    case 3: wavQuality = WavQuality::High; break;
+        case 0: wavQuality = WavQuality::Uncompressed; break;
+        case 1: wavQuality = WavQuality::Low; break;
+        case 2: wavQuality = WavQuality::Med; break;
+        case 3: wavQuality = WavQuality::High; break;
     }
+
+    if ( wavQuality != WavQuality::Uncompressed )
+    {
+        checkVirtualFile.SetCheck(false);
+        checkVirtualFile.DisableThis();
+    }
+    else
+        checkVirtualFile.EnableThis();
 }
 
 void WavEditorWindow::MapSoundSelectionChanged()
 {
+    listVirtualSounds.ClearSel();
+    buttonPreviewPlaySound.DisableThis();
     if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
         selectedSoundListIndex = -1;
 
@@ -204,11 +354,42 @@ void WavEditorWindow::MapSoundSelectionChanged()
     else
     {
         buttonDeleteSound.EnableThis();
-        //buttonExtractSound.EnableThis();
-        //buttonPlaySound.EnableThis();
+        u32 wavStringIndex = 0;
+        if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+        {
+            WavStatus wavStatus = CM->GetWavStatus(wavStringIndex);
+            if ( wavStatus == WavStatus::PendingMatch || wavStatus == WavStatus::CurrentMatch || wavStatus == WavStatus::VirtualFile )
+                buttonExtractSound.EnableThis();
+        }
+        buttonPlaySound.EnableThis();
     }
 
     UpdateWindowText();
+}
+
+void WavEditorWindow::VirtualSoundSelectionChanged()
+{
+    selectedSoundListIndex = -1;
+    listMapSounds.ClearSel();
+    buttonPlaySound.DisableThis();
+    UpdateWindowText();
+
+    std::string virtualSoundPath = "";
+    if ( listVirtualSounds.GetCurSelString(virtualSoundPath) )
+    {
+        dropCompressionLevel.SetSel(0);
+        buttonPreviewPlaySound.EnableThis();
+        editFileName.SetText(virtualSoundPath.c_str());
+        checkVirtualFile.EnableThis();
+        checkVirtualFile.SetCheck(true);
+        checkCustomMpqString.SetCheck(false);
+        dropCustomMpqString.DisableThis();
+    }
+}
+
+void WavEditorWindow::StopSoundsButtonPressed()
+{
+    PlaySound(NULL, NULL, 0);
 }
 
 void WavEditorWindow::DeleteSoundButtonPressed()
@@ -235,6 +416,8 @@ void WavEditorWindow::DeleteSoundButtonPressed()
                     warningMessage += " and is valid";
                 else if ( wavStatus == WavStatus::FileInUse )
                     warningMessage += " and whether it is in the map MPQ is unknown";
+                else if ( wavStatus == WavStatus::VirtualFile )
+                    warningMessage += " and is a valid virtual file";
                 warningMessage += ", are you sure you want to remove it?";
 
                 if ( MessageBox(NULL, warningMessage.c_str(), "Warning!", MB_YESNO | MB_ICONEXCLAMATION) == IDYES )
@@ -254,6 +437,13 @@ void WavEditorWindow::DeleteSoundButtonPressed()
             CM->refreshScenario();
         }
     }
+}
+
+void WavEditorWindow::CheckCustomMpqPathPressed()
+{
+    UpdateCustomStringList();
+    checkVirtualFile.SetCheck(false);
+    dropCompressionLevel.EnableThis();
 }
 
 LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -340,10 +530,15 @@ void WavEditorWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
+    case ID::BUTTON_PLAYSOUND: PlaySoundButtonPressed(); break;
+    case ID::BUTTON_PLAYVIRTUALSOUND: PlayVirtualSoundButtonPressed(); break;
+    case ID::BUTTON_EXTRACTSOUND: ExtractSoundButtonPressed(); break;
     case ID::BUTTON_BROWSEFORSOUND: BrowseButtonPressed(); break;
     case ID::BUTTON_ADDFILE: AddFileButtonPressed(); break;
     case ID::CHECK_VIRTUALFILE: CheckVirtualFilePressed(); break;
+    case ID::BUTTON_STOPSOUNDS: StopSoundsButtonPressed(); break;
     case ID::BUTTON_DELETESOUND: DeleteSoundButtonPressed(); break;
+    case ID::CHECK_CUSTOMMPQPATH: CheckCustomMpqPathPressed(); break;
     }
 }
 
@@ -353,6 +548,7 @@ void WavEditorWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
     {
     case ID::DROP_COMPRESSIONQUALITY: CompressionDropdownChanged(); break;
     case ID::LB_MAPSOUNDS: MapSoundSelectionChanged(); break;
+    case ID::LB_VIRTUALSOUNDS: VirtualSoundSelectionChanged(); break;
     }
 }
 
@@ -363,11 +559,11 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
     buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", BUTTON_DELETESOUND);
     buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", BUTTON_EXTRACTSOUND);
     buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", BUTTON_PLAYSOUND);
-    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, LB_MAPSOUNDS);
+    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, LB_MAPSOUNDS);
 
     textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", TEXT_VIRTUALSOUNDS);
     buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", BUTTON_PLAYVIRTUALSOUND);
-    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, false, LB_VIRTUALSOUNDS);
+    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, LB_VIRTUALSOUNDS);
     textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", TEXT_SOUNDFILENAME);
     editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, EDIT_SOUNDFILENAME);
     buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", BUTTON_BROWSEFORSOUND);
@@ -377,15 +573,18 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
     dropCompressionLevel.SetSel(0);
     checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", CHECK_VIRTUALFILE);
     buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", BUTTON_ADDFILE);
+    textCustomMpqString.CreateThis(hWnd, 5, 484, 100, 20, "Custom MPQ Path", TEXT_CUSTOMMPQSTRING);
+    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, DROP_CUSTOMMPQPATH, {}, defaultFont);
+    checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", CHECK_CUSTOMMPQPATH);
+
+    for ( s32 i=0; i<NumVirtualSounds; i++ )
+        listVirtualSounds.AddString(VirtualSoundFiles[i]);
 
     buttonPlaySound.DisableThis();
-    buttonStopSounds.DisableThis();
     
     buttonExtractSound.DisableThis();
 
-    textAvailableSounds.DisableThis();
     buttonPreviewPlaySound.DisableThis();
-    listVirtualSounds.DisableThis();
     checkVirtualFile.DisableThis();
 }
 

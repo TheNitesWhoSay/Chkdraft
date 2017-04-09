@@ -156,7 +156,7 @@ public:
                     int NumUsedCuwps();
 
 /*     WAVs     */  u32 WavSectionCapacity();
-                    bool GetWav(u16 wavIndex, u32 &outStringIndex);
+                    virtual bool GetWav(u16 wavIndex, u32 &outStringIndex);
                     bool GetWavString(u16 wavIndex, RawString &outString);
                     bool AddWav(u32 stringIndex);
                     bool AddWav(RawString &wavMpqPath);

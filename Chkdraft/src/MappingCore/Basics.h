@@ -225,7 +225,10 @@ extern const char* DefaultUnitDisplayName[233];
 
 extern const char* LegacyTextTrigDisplayName[233];
 
+extern const char* VirtualSoundFiles[];
+
 constexpr s32 NumUnitNames = 233;
 constexpr s32 NumRealUnits = 227;
+constexpr s32 NumVirtualSounds = 1143;
 
 #endif

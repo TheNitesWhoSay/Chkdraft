@@ -13,12 +13,20 @@ class WavEditorWindow : public ClassWindow
 
     protected:
         void UpdateWindowText();
+        void UpdateCustomStringList();
+
+        void PlaySoundButtonPressed();
+        void PlayVirtualSoundButtonPressed();
+        void ExtractSoundButtonPressed();
         void BrowseButtonPressed();
         void AddFileButtonPressed();
         void CheckVirtualFilePressed();
         void CompressionDropdownChanged();
         void MapSoundSelectionChanged();
+        void VirtualSoundSelectionChanged();
+        void StopSoundsButtonPressed();
         void DeleteSoundButtonPressed();
+        void CheckCustomMpqPathPressed();
 
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -49,6 +57,9 @@ class WavEditorWindow : public ClassWindow
         DropdownControl dropCompressionLevel;
         CheckBoxControl checkVirtualFile;
         ButtonControl buttonAddFile;
+        TextControl textCustomMpqString;
+        CheckBoxControl checkCustomMpqString;
+        DropdownControl dropCustomMpqString;
 
         int selectedSoundListIndex;
         WavQuality wavQuality;

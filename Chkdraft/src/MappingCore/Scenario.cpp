@@ -3907,7 +3907,7 @@ void Scenario::WriteFile(FILE* pFile)
     if ( !isProtected() )
     {
         for ( auto &section : sections )
-            section->write(pFile);
+            section->write(pFile, true);
 
         if ( tailLength > 0 && tailLength < 8 )
             fwrite(tailData, tailLength, 1, pFile);

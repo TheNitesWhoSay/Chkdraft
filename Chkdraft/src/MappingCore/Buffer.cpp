@@ -775,12 +775,16 @@ bool buffer::del(u32 startLocation, u32 size)
     return false;
 }
 
-void buffer::write(FILE* pFile)
+void buffer::write(FILE* pFile, bool includeHeader)
 {
     if ( this != nullptr )
     {
-        fwrite(bufTitle, 4, 1, pFile);
-        fwrite(&sizeUsed, 4, 1, pFile);
+        if ( includeHeader )
+        {
+            fwrite(bufTitle, 4, 1, pFile);
+            fwrite(&sizeUsed, 4, 1, pFile);
+        }
+
         if ( sizeUsed > 0 )
             fwrite(data, sizeUsed, 1, pFile);
     }

@@ -93,6 +93,17 @@ bool DropdownControl::GetItemText(int index, std::string &dest)
     return false;
 }
 
+void DropdownControl::ClearItems()
+{
+    SendMessage(getHandle(), CB_RESETCONTENT, 0, 0);
+}
+
+bool DropdownControl::AddItem(const std::string &item)
+{
+    LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)item.c_str());
+    return result != CB_ERR && result != CB_ERRSPACE;
+}
+
 template <typename numType>
 bool DropdownControl::GetEditNum(numType &dest)
 {

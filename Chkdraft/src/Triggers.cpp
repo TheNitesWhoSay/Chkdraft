@@ -584,11 +584,28 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
                 << "\x0C\'.";
             break;
         case ActionId::RunAiScript: // Number
-            ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\'.";
+            {
+                std::string aiName = "";
+                if ( chkd.scData.aiScripts.GetAiName(action.number, aiName) )
+                    ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.GetTrigScript(action.number) << ")\x0C\'.";
+                else
+                    ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\'.";
+            }
             break;
         case ActionId::RunAiScriptAtLocation: // Number, Location
-            ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\' at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\'.";
+            {
+                std::string aiName = "";
+                if ( chkd.scData.aiScripts.GetAiName(action.number, aiName) )
+                {
+                    ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.GetTrigScript(action.number) << ")\x0C\' at \'\x08"
+                        << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                }
+                else
+                {
+                    ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\' at \'\x08"
+                        << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                }
+            }
             break;
         case ActionId::SetAllianceStatus: // Players, Type
             ssAction << "Set \x08" << tt.GetTrigPlayer(action.group) << "\x0C to \x08" << tt.GetTrigAllyState(action.type) << "\x0C.";
@@ -743,8 +760,8 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
     buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", BUTTON_MOVEDOWN);
     buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, LIST_GROUPS);
-    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, LIST_GROUPS);
+    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, LIST_TRIGGERS) )
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();

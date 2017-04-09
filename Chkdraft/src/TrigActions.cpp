@@ -48,6 +48,9 @@ bool TrigActionsWindow::DestroyThis()
 
 void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 {
+    if ( scriptTable.size() == 0 )
+        InitializeScriptTable();
+
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
     Trigger* trig;
@@ -354,10 +357,28 @@ void TrigActionsWindow::InitializeArgMaps()
     ADD_ARRAY(wait, actionArgMaps[4]);
 }
 
+void TrigActionsWindow::InitializeScriptTable()
+{
+    int numScripts = chkd.scData.aiScripts.GetNumAiScripts();
+    for ( int i = 0; i < numScripts; i++ )
+    {
+        u32 scriptId = 0;
+        std::string scriptName = "";
+        if ( chkd.scData.aiScripts.GetAiIdAndName(i, scriptId, scriptName) )
+        {
+            char* scriptStringPtr = (char*)&scriptId;
+            char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
+            std::string displayString = scriptName + " (" + std::string(scriptIdString) + ")";
+            u32 hash = strHash(displayString);
+            scriptTable.insert(std::pair<u32, std::pair<u32, std::string>>(hash, std::pair<u32, std::string>(scriptId, displayString)));
+        }
+    }
+}
+
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridActions.CreateThis(hWnd, 2, 40, 100, 100, GRID_ACTIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 200, 100);
+    suggestions.CreateThis(hWnd, 0, 0, 262, 100);
     buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", BUTTON_EDITSTRING);
     buttonEditString.Hide();
     buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", BUTTON_EDITWAV);
@@ -486,6 +507,45 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     else if ( argType == ActionArgType::ActWav )
                         action.wavID = newStringNum;
 
+                    madeChange = true;
+                }
+            }
+            else if ( argType == ActionArgType::ActScript )
+            {
+                u32 newScriptNum = 0;
+                u32 hash = strHash(suggestionString);
+                int numMatching = scriptTable.count(hash);
+                if ( numMatching == 1 )
+                {
+                    std::string &scriptDisplayString = scriptTable.find(hash)->second.second;
+                    if ( scriptDisplayString.compare(suggestionString) == 0 )
+                        newScriptNum = scriptTable.find(hash)->second.first;
+                }
+                else if ( numMatching > 1 )
+                {
+                    auto range = scriptTable.equal_range(hash);
+                    foreachin(pair, range)
+                    {
+                        std::string &scriptDisplayString = pair->second.second;
+                        if ( scriptDisplayString.compare(suggestionString) == 0 )
+                        {
+                            newScriptNum = scriptTable.find(hash)->second.first;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).action];
+                    madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
+                        ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
+                        (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
+                            ttc.ParseActionArg(rawSuggestText, argNum, argMap, action, CM, chkd.scData));
+                }
+
+                if ( newScriptNum != 0 )
+                {
+                    action.number = newScriptNum;
                     madeChange = true;
                 }
             }
@@ -874,9 +934,14 @@ void TrigActionsWindow::SuggestScript()
     int numScripts = chkd.scData.aiScripts.GetNumAiScripts();
     for ( int i = 0; i < numScripts; i++ )
     {
-        std::string scriptName;
-        if ( chkd.scData.aiScripts.GetAiName(i, scriptName) )
-            suggestions.AddString(scriptName);
+        u32 scriptId = 0;
+        std::string scriptName = "";
+        if ( chkd.scData.aiScripts.GetAiIdAndName(i, scriptId, scriptName) )
+        {
+            char* scriptStringPtr = (char*)&scriptId;
+            char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
+            suggestions.AddString(scriptName + " (" + std::string(scriptIdString) + ")");
+        }
     }
     suggestions.Show();
 }
@@ -1263,7 +1328,10 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
 LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if ( (BOOL)wParam == FALSE )
+    {
         suggestions.Hide();
+        gridActions.EndEditing();
+    }
 
     return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 }

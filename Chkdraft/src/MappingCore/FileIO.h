@@ -22,6 +22,7 @@ enum class WavStatus
 {
     PendingMatch,
     CurrentMatch,
+    VirtualFile,
     NoMatch,
     NoMatchExtended,
     FileInUse,
@@ -29,13 +30,13 @@ enum class WavStatus
 };
 
 std::string GetSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /
-std::string GetSystemFileName(std::string &systemFilePath); // Extracts the file name from a system file path
-std::string GetSystemFileDirectory(std::string &systemFilePath, bool includeSeparator); // Extracts the directory from a system file path
-std::string MakeSystemFilePath(std::string &systemDirectory, std::string &fileName); // Creates a file path ensuring the appropriate separator is used
+std::string GetSystemFileName(const std::string &systemFilePath); // Extracts the file name from a system file path
+std::string GetSystemFileDirectory(const std::string &systemFilePath, bool includeSeparator); // Extracts the directory from a system file path
+std::string MakeSystemFilePath(const std::string &systemDirectory, const std::string &fileName); // Creates a file path ensuring the appropriate separator is used
 
 std::string GetMpqFileSeparator(); // Gets the file separator used inside MPQ files (always \)
-std::string GetMpqFileName(std::string &mpqFilePath); // Extracts the file name from a MPQ file path
-std::string MakeMpqFilePath(std::string &mpqDirectory, std::string &fileName); // Creates a mpq file path ensuring the appropriate separator is used
+std::string GetMpqFileName(const std::string &mpqFilePath); // Extracts the file name from a MPQ file path
+std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &fileName); // Creates a mpq file path ensuring the appropriate separator is used
 
 bool MakeDirectory(std::string directory);
 
@@ -82,6 +83,8 @@ void RemoveFiles(std::string firstFileName, std::string secondFileName, std::str
 OPENFILENAME GetOfn(char* szFileName, const char* filter, int initFilter);
 
 OPENFILENAME GetScSaveOfn(char* szFileName);
+
+OPENFILENAME GetWavSaveOfn(char* szFileName);
 
 DWORD GetSubKeyString(HKEY hParentKey, const char* subKey, const char* valueName, char* data, DWORD* dataSize);
 
