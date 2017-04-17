@@ -9,6 +9,7 @@
 #include "NewMap.h"
 #include "Maps.h"
 #include "ScData.h"
+#include "Commander.h"
 
 class Chkdraft : public ClassWindow
 {
@@ -17,6 +18,7 @@ class Chkdraft : public ClassWindow
 
 /*  Main Items  */  ScData scData; // Data from StarCraft files
                     Maps maps; // Main map container
+                    Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
 
 /* Dialog Boxes */  NewMap newMap; // New map DialogBox
 

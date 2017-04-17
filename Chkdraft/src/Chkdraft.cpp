@@ -1,6 +1,9 @@
 #include "Chkdraft.h"
+#include "TestCommands.h"
 #include <thread>
 #include <chrono>
+
+std::string ExampleCommand::text = "";
 
 enum MainWindow {
     IDR_MAIN_TOOLBAR = ID_FIRST,
@@ -26,9 +29,38 @@ void Chkdraft::OnLoadTest()
         //OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
 
     //}
+    ExampleCommandPtr a = ExampleCommand::C("a");
+    ExampleCommandPtr b = ExampleCommand::C("bb");
+    ExampleCommandPtr c = ExampleCommand::C("ccc");
+    ExampleCommandPtr d = ExampleCommand::C("dddd");
+    commander.Do(a);
+    commander.Do({b, c});
+    commander.Undo(a->Id());
+    commander.Redo(1);
+    commander.Undo(1);
+    commander.Do(d);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Redo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Undo(1);
+    commander.Undo(1);
 }
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), commander()
 {
 
 }
