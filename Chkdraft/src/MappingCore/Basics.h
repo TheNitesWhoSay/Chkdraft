@@ -188,6 +188,34 @@ enum class UnitEnabledState : uint8_t
     Disabled = 2
 };
 
+enum class NumericComparison : uint8_t
+{
+    AtLeast = 0,
+    AtMost = 1,
+    Exactly = 10
+};
+
+enum class NumericModifier : uint8_t
+{
+    Add = 8,
+    Subtract = 9,
+    SetTo = 7
+};
+
+enum class SwitchState : uint8_t
+{
+    Cleared = 3,
+    Set = 2
+};
+
+enum class SwitchModifier : uint8_t
+{
+    Set = 4,
+    Clear = 5,
+    Toggle = 6,
+    Randomize = 11
+};
+
 enum class UnitSettingsDataLoc {
     HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,
     MineralCost = 2280, GasCost = 2736, StringIds = 3192, BaseWeapon = 3648,

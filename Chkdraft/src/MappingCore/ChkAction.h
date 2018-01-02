@@ -26,6 +26,9 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
             xAlwaysDisplay = x8BIT_2, xDisabled = x8BIT_1
         };
 
+        Action();
+        Action(u8 action);
+        Action(ActionId action);
         void ToggleDisabled();
         bool isDisabled();
         static ActionArgType TextTrigArgType(u8 argNum, ActionId actionId);

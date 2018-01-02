@@ -33,6 +33,8 @@ public:
         AllocConsole();
         freopen_s(&console, "CONOUT$", "w", stdout);
         freopen_s(&console, "CONIN$", "r", stdin);
+        std::cout.clear();
+        std::cin.clear();
     }
 
     ~CLI()

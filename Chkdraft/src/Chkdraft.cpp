@@ -1,6 +1,12 @@
 #include "Chkdraft.h"
+#include "Logger.h"
+#include "TestCommands.h"
+#include "Settings.h"
+#include <iostream>
 #include <thread>
 #include <chrono>
+
+std::string ExampleCommand::text = "";
 
 enum MainWindow {
     IDR_MAIN_TOOLBAR = ID_FIRST,
@@ -15,26 +21,31 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    //if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
+    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
     //maps.NewMap(128, 128, 2, 0, 0);
-    //{
+    {
         //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 
-        //trigEditorWindow.CreateThis(getHandle());
-        //trigEditorWindow.ChangeTab(3);
+        trigEditorWindow.CreateThis(getHandle());
+        trigEditorWindow.ChangeTab(3);
 
-        //OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
+        OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
+    }*/
 
-    //}
+    //logger.info("Info test");
+    //logger.trace("Trace test");
+    //logger.fatal("Fatal test");
 }
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false)
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logger(LogLevel::All), mainCommander(logger), logFile(LogLevel::Info)
 {
 
 }
 
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
+    SetupLogging();
+
     if ( !CreateThis() )
         return 1;
 
@@ -75,6 +86,22 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     } while ( keepRunning );
 
     return msg.wParam;
+}
+
+void Chkdraft::SetupLogging()
+{
+    logger.setOutputStream(std::shared_ptr<std::ostream>(&std::cout));
+
+    std::string loggerPath;
+    if ( GetLoggerPath(loggerPath) )
+    {
+        std::string logFilePath = loggerPath + Logger::getTimestamp();
+        logger.info("Setting log file to: " + logFilePath);
+        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath)));
+        logger.setAggregator(&logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
+    }
+    else
+        Message("Failed to get logger path, log file disabled!");
 }
 
 bool Chkdraft::CreateThis()

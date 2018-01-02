@@ -26,6 +26,9 @@ class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Tr
             xDisabled = x8BIT_1,
         };
 
+        Condition();
+        Condition(u8 condition);
+        Condition(ConditionId condition);
         void ToggleDisabled();
         bool isDisabled();
         static ConditionArgType TextTrigArgType(u8 argNum, ConditionId condition);

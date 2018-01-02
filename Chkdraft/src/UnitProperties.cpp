@@ -76,7 +76,7 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
     checkCloaked.FindThis(hWnd, (u32)Id::CheckCloaked);
     checkLifted.FindThis(hWnd, (u32)Id::CheckLifted);
 
-    dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, (u32)Id::ComboPlayer);
+    dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, (u32)Id::ComboPlayer, false);
 
     initilizing = true;
 

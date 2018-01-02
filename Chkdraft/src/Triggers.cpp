@@ -62,6 +62,7 @@ bool TriggersWindow::DestroyThis()
 
 void TriggersWindow::RefreshWindow(bool focus)
 {
+    this->SetRedraw(false);
     RefreshGroupList();
     RefreshTrigList();
     if ( focus )
@@ -74,6 +75,8 @@ void TriggersWindow::RefreshWindow(bool focus)
         else
             trigModifyWindow.DestroyThis();
     }
+    this->SetRedraw(true);
+    this->RedrawThis();
 }
 
 void TriggersWindow::DoSize()
@@ -164,7 +167,7 @@ void TriggersWindow::CopySelection()
         CM->notifyChange(false);
         int sel;
         if ( listTriggers.GetCurSel(sel) && CopyTrigListItem(sel) && SelectTrigListItem(sel+1) )
-            listTriggers.RedrawThis();
+            RefreshTrigList();
         else
             RefreshTrigList();
     }

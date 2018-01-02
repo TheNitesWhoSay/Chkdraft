@@ -556,7 +556,7 @@ bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32& dest, u32 pos, 
                 char potentialLong[36] = { };
                 std::memcpy(potentialLong, &text[pos], size);
                 potentialLong[size] = '\0';
-                dest = strtol(potentialLong, nullptr, 2);
+                dest = (u32)strtoll(potentialLong, nullptr, 2);
                 return dest > 0;
             }
         }
@@ -590,7 +590,7 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, u32 pos, u32 en
             char potentialLong[12] = { };
             std::memcpy(potentialLong, &text[pos], size);
             potentialLong[size] = '\0';
-            return ( (dest = std::atoi(potentialLong)) > 0 );
+            return ( (dest = (u32)std::atoll(potentialLong)) > 0 );
         }
     }
     return false;

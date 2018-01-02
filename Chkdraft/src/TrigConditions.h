@@ -33,6 +33,7 @@ class TrigConditionsWindow : public ClassWindow, public ICndActGridUser
         CndActGrid gridConditions;
         HBRUSH hBlack;
         u32 trigIndex;
+        bool isPasting;
 
         std::vector<u8> conditionArgMaps[24];
 
@@ -41,10 +42,11 @@ class TrigConditionsWindow : public ClassWindow, public ICndActGridUser
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         void ChangeConditionType(Condition &condition, ConditionId newId);
-        bool TransformCondition(Condition &condition, ConditionId newId);
+        bool TransformCondition(Condition &condition, ConditionId newId, bool refreshImmediately);
+        void RefreshConditionAreas();
         void ClearArgument(Condition &condition, u8 argNum);
-        void UpdateConditionName(u8 conditionNum, const std::string &newText);
-        void UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText);
+        void UpdateConditionName(u8 conditionNum, const std::string &newText, bool refreshImmediately);
+        void UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText, bool refreshImmediately);
         BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str);
         BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
         void DrawSelectedCondition();

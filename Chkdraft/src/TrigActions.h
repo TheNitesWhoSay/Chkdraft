@@ -43,6 +43,7 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
         bool stringEditEnabled;
         bool wavEditEnabled;
         bool unitPropertiesEditEnabled;
+        bool isPasting;
 
         std::hash<std::string> strHash; // A hasher to help generate tables
         std::vector<u8> actionArgMaps[64];
@@ -53,10 +54,11 @@ class TrigActionsWindow : public ClassWindow, public ICndActGridUser
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         void ChangeActionType(Action &action, ActionId newId);
-        bool TransformAction(Action &action, ActionId newId);
-        void ClearArgument(Action &action, u8 argNum);
-        void UpdateActionName(u8 actionNum, const std::string &newText);
-        void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText);
+        bool TransformAction(Action &action, ActionId newId, bool refreshImmediately);
+        void RefreshActionAreas();
+        void ClearArgument(Action &action, u8 argNum, bool refreshImmediately);
+        void UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately);
+        void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText, bool refreshImmediately);
         BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str);
         BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
         void DrawSelectedAction();

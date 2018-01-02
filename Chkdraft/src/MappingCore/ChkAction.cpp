@@ -1,5 +1,32 @@
 #include "ChkAction.h"
 
+u32 location; // 1 based
+u32 stringNum;
+u32 wavID;
+u32 time;
+u32 group;
+u32 number; // Amount/Group2/LocDest/UnitPropNum/ScriptNum
+u16 type; // Unit/score/resource type/alliance status
+u8 action;
+u8 type2; // Num units (0 for all)/switch action/unit order/modify type
+u8 flags;
+u8 internalData[3]; // Number of actions to process next?
+
+Action::Action() : location(0), stringNum(0), wavID(0), time(0), group(0), number(0), type(0), action(0), type2(0), flags(0)
+{
+    memset(internalData, 0, 3);
+}
+
+Action::Action(u8 action) : location(0), stringNum(0), wavID(0), time(0), group(0), number(0), type(0), action(action), type2(0), flags(0)
+{
+    memset(internalData, 0, 3);
+}
+
+Action::Action(ActionId action) : location(0), stringNum(0), wavID(0), time(0), group(0), number(0), type(0), action((u8)action), type2(0), flags(0)
+{
+    memset(internalData, 0, 3);
+}
+
 void Action::ToggleDisabled()
 {
     if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )

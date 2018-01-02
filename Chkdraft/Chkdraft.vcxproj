@@ -17,6 +17,9 @@
     <ClCompile Include="src\ChkdStringInput.cpp" />
     <ClCompile Include="src\Clipboard.cpp" />
     <ClCompile Include="src\CndActGrid.cpp" />
+    <ClCompile Include="src\ErrorHandler.cpp" />
+    <ClCompile Include="src\GenericCommand.cpp" />
+    <ClCompile Include="src\Commander.cpp" />
     <ClCompile Include="src\CommonFiles\Constants.cpp" />
     <ClCompile Include="src\CommonFiles\Debug.cpp" />
     <ClCompile Include="src\CommonFiles\Structs.cpp" />
@@ -35,6 +38,7 @@
     <ClCompile Include="src\LocationMove.cpp" />
     <ClCompile Include="src\LocationProperties.cpp" />
     <ClCompile Include="src\LocationTree.cpp" />
+    <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\MainPlot.cpp" />
     <ClCompile Include="src\MainToolbar.cpp" />
@@ -84,6 +88,7 @@
     <ClCompile Include="src\TechTree.cpp" />
     <ClCompile Include="src\Templates.cpp" />
     <ClCompile Include="src\TerrainPalette.cpp" />
+    <ClCompile Include="src\TestCommands.cpp" />
     <ClCompile Include="src\TextTrig.cpp" />
     <ClCompile Include="src\TextTrigCompiler.cpp" />
     <ClCompile Include="src\TextTrigGenerator.cpp" />
@@ -144,6 +149,9 @@
     <ClInclude Include="src\ChkdStringInput.h" />
     <ClInclude Include="src\Clipboard.h" />
     <ClInclude Include="src\CndActGrid.h" />
+    <ClInclude Include="src\ErrorHandler.h" />
+    <ClInclude Include="src\GenericCommand.h" />
+    <ClInclude Include="src\Commander.h" />
     <ClInclude Include="src\CommonFiles\CommonFiles.h" />
     <ClInclude Include="src\CommonFiles\Constants.h" />
     <ClInclude Include="src\CommonFiles\Debug.h" />
@@ -165,6 +173,7 @@
     <ClInclude Include="src\LocationMove.h" />
     <ClInclude Include="src\LocationProperties.h" />
     <ClInclude Include="src\LocationTree.h" />
+    <ClInclude Include="src\Logger.h" />
     <ClInclude Include="src\MainPlot.h" />
     <ClInclude Include="src\MainToolbar.h" />
     <ClInclude Include="src\MainTree.h" />
@@ -201,6 +210,7 @@
     <ClInclude Include="src\PeerListBox.h" />
     <ClInclude Include="src\PlayerDropdown.h" />
     <ClInclude Include="src\PreservedUnitStats.h" />
+    <ClInclude Include="src\TestCommands.h" />
     <ClInclude Include="src\Reversibles.h" />
     <ClInclude Include="src\ScData.h" />
     <ClInclude Include="src\Selections.h" />
