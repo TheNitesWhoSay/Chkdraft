@@ -1,6 +1,7 @@
 #ifndef GENERICCOMMAND_H
 #define GENERICCOMMAND_H
 #include "CommonFiles\CommonFiles.h"
+#include "Logger.h"
 #include <vector>
 #include <queue>
 
@@ -15,8 +16,8 @@ class CommandListener{};
 class GenericCommand
 {
     public:
-        GenericCommand(bool isSynchronous);
-        GenericCommand(const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid);
+        GenericCommand(Logger &logger, bool isSynchronous);
+        GenericCommand(Logger &logger, const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid);
 
         bool isSynchronous();
         bool hasAcidSubCommands();
@@ -29,16 +30,18 @@ class GenericCommand
 
         virtual u32 Id(); // Calculate the id of the undo-redo group this command should belong to
 
+        virtual std::string toString();
+
     protected:
 
         bool DoCommand(bool hasAcidParent);
         bool UndoCommand(bool hasAcidParent);
 
+        bool DoDo(bool retrying);
+        bool DoUndo(bool retrying);
+
         virtual void Do(); // Override this method to perform some action when there are no subCommands
         virtual void Undo(); // Override this method to perform some action when there are no subCommands
-
-        virtual bool DoAcid(); // Override this method to perform some action, calls Do()/returns true by default when there are no subCommands
-        virtual bool UndoAcid(); // Override this method to perform some action, calls Undo()/returns true by default when there are no subCommands
 
         virtual void DoSubItems();
         virtual void UndoSubItems();
@@ -53,6 +56,7 @@ class GenericCommand
         bool subCommandsAreAcid;
         std::vector<GenericCommandPtr> subCommands;
         std::vector<CommandListenerPtr> listeners;
+        Logger &logger;
 };
 
 class AcidRollbackFailure : public std::exception

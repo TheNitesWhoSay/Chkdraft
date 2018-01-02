@@ -17,6 +17,7 @@
     <ClCompile Include="src\ChkdStringInput.cpp" />
     <ClCompile Include="src\Clipboard.cpp" />
     <ClCompile Include="src\CndActGrid.cpp" />
+    <ClCompile Include="src\ErrorHandler.cpp" />
     <ClCompile Include="src\GenericCommand.cpp" />
     <ClCompile Include="src\Commander.cpp" />
     <ClCompile Include="src\CommonFiles\Constants.cpp" />
@@ -37,6 +38,7 @@
     <ClCompile Include="src\LocationMove.cpp" />
     <ClCompile Include="src\LocationProperties.cpp" />
     <ClCompile Include="src\LocationTree.cpp" />
+    <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\MainPlot.cpp" />
     <ClCompile Include="src\MainToolbar.cpp" />
@@ -147,6 +149,7 @@
     <ClInclude Include="src\ChkdStringInput.h" />
     <ClInclude Include="src\Clipboard.h" />
     <ClInclude Include="src\CndActGrid.h" />
+    <ClInclude Include="src\ErrorHandler.h" />
     <ClInclude Include="src\GenericCommand.h" />
     <ClInclude Include="src\Commander.h" />
     <ClInclude Include="src\CommonFiles\CommonFiles.h" />
@@ -170,6 +173,7 @@
     <ClInclude Include="src\LocationMove.h" />
     <ClInclude Include="src\LocationProperties.h" />
     <ClInclude Include="src\LocationTree.h" />
+    <ClInclude Include="src\Logger.h" />
     <ClInclude Include="src\MainPlot.h" />
     <ClInclude Include="src\MainToolbar.h" />
     <ClInclude Include="src\MainTree.h" />

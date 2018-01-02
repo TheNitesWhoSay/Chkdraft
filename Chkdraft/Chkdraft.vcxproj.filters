@@ -214,14 +214,20 @@
     <Filter Include="Source Files\Command\%2a">
       <UniqueIdentifier>{d6a54e92-4af1-4124-9334-1f8e8eaca7ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Command\Specific">
-      <UniqueIdentifier>{2866cce1-4e0c-4814-9646-67cbe6af01f8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Command\%2a">
       <UniqueIdentifier>{fa2bdda2-9afc-4bf1-8812-08615f42b9d7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Command\Specific">
+    <Filter Include="Header Files\Command\Commands">
       <UniqueIdentifier>{aea5f88b-dce4-4060-9cb2-88e7d75055e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Command\Errors">
+      <UniqueIdentifier>{22ae6946-ff78-458d-85c4-8569c1446981}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Command\Errors">
+      <UniqueIdentifier>{e618396e-53d2-4c0b-8495-124a3d103d1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Command\Commands">
+      <UniqueIdentifier>{2866cce1-4e0c-4814-9646-67cbe6af01f8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -619,7 +625,13 @@
       <Filter>Header Files\Command\%2a</Filter>
     </ClInclude>
     <ClInclude Include="src\TestCommands.h">
-      <Filter>Header Files\Command\Specific</Filter>
+      <Filter>Header Files\Command\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ErrorHandler.h">
+      <Filter>Header Files\Command\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Logger.h">
+      <Filter>Header Files\Command\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -987,7 +999,13 @@
       <Filter>Source Files\Command\%2a</Filter>
     </ClCompile>
     <ClCompile Include="src\TestCommands.cpp">
-      <Filter>Source Files\Command\Specific</Filter>
+      <Filter>Source Files\Command\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Logger.cpp">
+      <Filter>Source Files\Command\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ErrorHandler.cpp">
+      <Filter>Source Files\Command\%2a</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

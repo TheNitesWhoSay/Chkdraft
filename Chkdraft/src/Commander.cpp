@@ -4,20 +4,19 @@
 class UndoCommand : public GenericCommand
 {
 public:
-    UndoCommand() : GenericCommand(true) {}
+    UndoCommand(Logger &logger) : GenericCommand(logger, true) {}
 };
 
 class RedoCommand : public GenericCommand
 {
 public:
-    RedoCommand() : GenericCommand(true) {}
+    RedoCommand(Logger &logger) : GenericCommand(logger, true) {}
 };
 
-GenericCommandPtr Commander::undoCommand(std::shared_ptr<UndoCommand>(new UndoCommand()));
-GenericCommandPtr Commander::redoCommand(std::shared_ptr<RedoCommand>(new RedoCommand()));
-
-Commander::Commander() : hasCommandsToExecute(false), synchronousCommandFinished(true),
-    hasCommandsLock(hasCommandsLocker), synchronousLock(synchronousLocker)
+Commander::Commander(Logger &logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
+    hasCommandsLock(hasCommandsLocker), synchronousLock(synchronousLocker),
+    undoCommand(std::shared_ptr<UndoCommand>(new UndoCommand(logger))),
+    redoCommand(std::shared_ptr<RedoCommand>(new RedoCommand(logger)))
 {
     commandThread = std::unique_ptr<std::thread>(new std::thread(begin, this));
 }
@@ -31,16 +30,20 @@ Commander::~Commander()
 void Commander::Do(GenericCommandPtr command)
 {
     commandLocker.lock();
+
+    bool isSynchronous = command.get()->isSynchronous();
+    if ( isSynchronous )
+        ++numSynchronousCommands;
+
     todoBuffer.push(command);
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
 
-    if ( command.get()->isSynchronous() )
+    if ( isSynchronous )
     {
-        synchronousCommandFinished = false;
         synchronousExecution.wait(synchronousLock, [this] {
-            return synchronousCommandFinished;
+            return numSynchronousCommands == 0;
         });
     }
 }
@@ -50,40 +53,87 @@ void Commander::Do(const std::vector<GenericCommandPtr> &commands)
     commandLocker.lock();
 
     for ( GenericCommandPtr command : commands )
+    {
+        if ( command.get()->isSynchronous() )
+            ++numSynchronousCommands;
+
         this->todoBuffer.push(command);
+    }
 
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
+
+    if ( numSynchronousCommands > 0 )
+    {
+        synchronousExecution.wait(synchronousLock, [this] {
+            return numSynchronousCommands == 0;
+        });
+    }
 }
 
 void Commander::DoAcid(const std::vector<GenericCommandPtr> &subCommands, u32 undoRedoTypeid, bool async)
 {
     commandLocker.lock();
-    this->todoBuffer.push(GenericCommandPtr(new GenericCommand(subCommands, async, true)));
+
+    if ( !async )
+        ++numSynchronousCommands;
+
+    this->todoBuffer.push(GenericCommandPtr(new GenericCommand(logger, subCommands, async, true)));
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
+
+    if ( !async )
+    {
+        synchronousExecution.wait(synchronousLock, [this] {
+            return numSynchronousCommands == 0;
+        });
+    }
 }
 
 void Commander::Undo(u32 undoRedoTypeId)
 {
     commandLocker.lock();
     undoCommand->SetUndoRedoTypeId(undoRedoTypeId);
+
+    bool isSynchronous = undoCommand.get()->isSynchronous();
+    if ( isSynchronous )
+        ++numSynchronousCommands;
+
     this->todoBuffer.push(undoCommand);
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
+
+    if ( numSynchronousCommands > 0 )
+    {
+        synchronousExecution.wait(synchronousLock, [this] {
+            return numSynchronousCommands == 0;
+        });
+    }
 }
 
 void Commander::Redo(u32 undoRedoTypeId)
 {
     commandLocker.lock();
     redoCommand->SetUndoRedoTypeId(undoRedoTypeId);
+
+    bool isSynchronous = undoCommand.get()->isSynchronous();
+    if ( isSynchronous )
+        ++numSynchronousCommands;
+
     this->todoBuffer.push(redoCommand);
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
+
+    if ( numSynchronousCommands > 0 )
+    {
+        synchronousExecution.wait(synchronousLock, [this] {
+            return numSynchronousCommands == 0;
+        });
+    }
 }
 
 void begin(Commander* commander)
@@ -131,7 +181,7 @@ void Commander::Run()
             // Notify completion of command if synchronous
             if ( command->isSynchronous() )
             {
-                synchronousCommandFinished = true;
+                --numSynchronousCommands;
                 synchronousExecution.notify_one();
             }
         }

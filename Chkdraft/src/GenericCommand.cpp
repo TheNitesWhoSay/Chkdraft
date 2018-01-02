@@ -1,16 +1,17 @@
 #include "GenericCommand.h"
+#include "ErrorHandler.h"
 #include <iostream>
 #include <algorithm>
 #include <vector>
 
-GenericCommand::GenericCommand(bool isSynchronous) : isCommandSynchronous(isSynchronous), subCommandsAreAcid(false),
-    undoRedoTypeId(~((u32)0))
+GenericCommand::GenericCommand(Logger &logger, bool isSynchronous) : logger(logger), isCommandSynchronous(isSynchronous), subCommandsAreAcid(false),
+undoRedoTypeId(~((u32)0))
 {
 
 }
 
-GenericCommand::GenericCommand(const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid)
-    : subCommands(subCommands), isCommandSynchronous(isSynchronous), subCommandsAreAcid(subCommandsAreAcid), undoRedoTypeId(~((u32)0))
+GenericCommand::GenericCommand(Logger &logger, const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid)
+    : logger(logger), subCommands(subCommands), isCommandSynchronous(isSynchronous), subCommandsAreAcid(subCommandsAreAcid), undoRedoTypeId(~((u32)0))
 {
 
 }
@@ -28,6 +29,11 @@ bool GenericCommand::hasAcidSubCommands()
 u32 GenericCommand::Id()
 {
     return ~((u32)0);
+}
+
+std::string GenericCommand::toString()
+{
+    return std::string("[Override this method to print command details]");
 }
 
 bool GenericCommand::DoCommand()
@@ -60,14 +66,14 @@ bool GenericCommand::DoCommand(bool hasAcidParent)
         if ( subCommands.size() > 0 )
             return DoAcidSubItems();
         else
-            return DoAcid();
+            return DoDo(false);
     }
     else
     {
         if ( subCommands.size() > 0 )
             DoSubItems();
         else
-            Do();
+            DoDo(false);
 
         return true;
     }
@@ -80,8 +86,6 @@ bool GenericCommand::UndoCommand(bool hasAcidParent)
     {
         if ( subCommands.size() > 0 )
             return UndoAcidSubItems();
-        else
-            return UndoAcid();
     }
     else
     {
@@ -95,9 +99,45 @@ bool GenericCommand::UndoCommand(bool hasAcidParent)
     return false;
 }
 
+bool GenericCommand::DoDo(bool retrying)
+{
+    try {
+        Do();
+    } catch ( KnownError &e ) {
+        ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+        logger.log(result.logString, result.logLevel);
+        if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
+            return DoDo(true);
+        else
+            return false;
+    } catch ( std::exception &e ) {
+        logger.error(std::string(e.what()));
+        logger.error("An unknown exception occured during command: " + this->toString());
+    }
+    return true;
+}
+
+bool GenericCommand::DoUndo(bool retrying)
+{
+    try {
+        Undo();
+    } catch ( KnownError &e ) {
+        ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+        logger.log(result.logString, result.logLevel);
+        if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
+            return DoUndo(true);
+        else
+            return false;
+    } catch ( std::exception &e ) {
+        logger.error(std::string(e.what()));
+        logger.error("An unknown exception occured during undo command: " + this->toString());
+    }
+    return true;
+}
+
 void GenericCommand::Do()
 {
-    // Override this method to perform some action
+    // Override this method to perform some 
     std::cout << "Default Do() hit, override me!" << std::endl;
 }
 
@@ -105,20 +145,6 @@ void GenericCommand::Undo()
 {
     // Override this method to perform some action
     std::cout << "Default Undo(), override me!" << std::endl;
-}
-
-bool GenericCommand::DoAcid()
-{
-    // Override this method to perform some action, calls Do() by default
-    Do();
-    return true;
-}
-
-bool GenericCommand::UndoAcid()
-{
-    // Override this method to perform some action, calls Undo() by default
-    Undo();
-    return true;
 }
 
 void GenericCommand::DoSubItems()
@@ -137,7 +163,29 @@ bool GenericCommand::DoAcidSubItems()
 {
     for ( auto subCommand = subCommands.begin(); subCommand != subCommands.end(); ++subCommand )
     {
-        if ( !(*subCommand)->DoCommand(true) )
+        bool success = false;
+        try {
+            success = (*subCommand)->DoCommand(true);
+        } catch ( KnownError &e ) {
+            ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+            logger.log(result.logString, result.logLevel);
+            if ( result.primaryAction == ErrorAction::RetryCommand )
+            {
+                try {
+                    success = (*subCommand)->DoCommand(true);
+                } catch ( KnownError &e ) {
+                    result = ErrorHandler::HandleError(this, e);
+                    logger.log(result.logString, result.logLevel);
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during command: " + this->toString());
+                }
+            }
+        } catch ( std::exception &e ) {
+            logger.error(std::string(e.what()));
+            logger.error("An unknown exception occured during undo command: " + this->toString());
+        }
+        if ( !success )
         {
             while ( true )
             {
@@ -146,7 +194,29 @@ bool GenericCommand::DoAcidSubItems()
 
                 --subCommand;
 
-                if ( !(*subCommand)->UndoCommand(true) )
+                bool undoSucceeded = false;
+                try {
+                    undoSucceeded = (*subCommand)->UndoCommand(true);
+                } catch ( KnownError &e ) {
+                    ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+                    logger.log(result.logString, result.logLevel);
+                    if ( result.primaryAction == ErrorAction::RetryCommand )
+                    {
+                        try {
+                            success = (*subCommand)->DoCommand(true);
+                        } catch ( KnownError &e ) {
+                            result = ErrorHandler::HandleError(this, e);
+                            logger.log(result.logString, result.logLevel);
+                        } catch ( std::exception &e ) {
+                            logger.error(std::string(e.what()));
+                            logger.error("An unknown exception occured during command: " + this->toString());
+                        }
+                    }
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + this->toString());
+                }
+                if ( !undoSucceeded )
                     throw new AcidRollbackFailure("ACID Do rollback Failed!");
             }
         }
@@ -158,7 +228,29 @@ bool GenericCommand::UndoAcidSubItems()
 {
     for ( auto subCommand = subCommands.rbegin(); subCommand != subCommands.rend(); ++subCommand )
     {
-        if ( !(*subCommand)->UndoCommand(true) )
+        bool success = false;
+        try {
+            success = (*subCommand)->UndoCommand(true);
+        } catch ( KnownError &e ) {
+            ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+            logger.log(result.logString, result.logLevel);
+            if ( result.primaryAction == ErrorAction::RetryCommand )
+            {
+                try {
+                    success = (*subCommand)->UndoCommand(true);
+                } catch ( KnownError &e ) {
+                    result = ErrorHandler::HandleError(this, e);
+                    logger.log(result.logString, result.logLevel);
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + this->toString());
+                }
+            }
+        } catch ( std::exception &e ) {
+            logger.error(std::string(e.what()));
+            logger.error("An unknown exception occured during undo command: " + this->toString());
+        }
+        if ( !success )
         {
             while ( true )
             {
@@ -167,7 +259,29 @@ bool GenericCommand::UndoAcidSubItems()
 
                 --subCommand;
 
-                if ( !(*subCommand)->DoCommand(true) )
+                bool doSucceeded = false;
+                try {
+                    doSucceeded = (*subCommand)->DoCommand(true);
+                } catch ( KnownError &e ) {
+                    ErrorHandlerResult result = ErrorHandler::HandleError(this, e);
+                    logger.log(result.logString, result.logLevel);
+                    if ( result.primaryAction == ErrorAction::RetryCommand )
+                    {
+                        try {
+                            success = (*subCommand)->UndoCommand(true);
+                        } catch ( KnownError &e ) {
+                            result = ErrorHandler::HandleError(this, e);
+                            logger.log(result.logString, result.logLevel);
+                        } catch ( std::exception &e ) {
+                            logger.error(std::string(e.what()));
+                            logger.error("An unknown exception occured during command: " + this->toString());
+                        }
+                    }
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + this->toString());
+                }
+                if ( !doSucceeded )
                     throw new AcidRollbackFailure("ACID Undo Rollback Failed!");
             }
         }

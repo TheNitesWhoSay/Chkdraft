@@ -1,5 +1,8 @@
 #include "Chkdraft.h"
+#include "Logger.h"
 #include "TestCommands.h"
+#include "Settings.h"
+#include <iostream>
 #include <thread>
 #include <chrono>
 
@@ -18,55 +21,31 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    //if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
+    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
     //maps.NewMap(128, 128, 2, 0, 0);
-    //{
+    {
         //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 
-        //trigEditorWindow.CreateThis(getHandle());
-        //trigEditorWindow.ChangeTab(3);
+        trigEditorWindow.CreateThis(getHandle());
+        trigEditorWindow.ChangeTab(3);
 
-        //OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
+        OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
+    }*/
 
-    //}
-    ExampleCommandPtr a = ExampleCommand::C("a");
-    ExampleCommandPtr b = ExampleCommand::C("bb");
-    ExampleCommandPtr c = ExampleCommand::C("ccc");
-    ExampleCommandPtr d = ExampleCommand::C("dddd");
-    commander.Do(a);
-    commander.Do({b, c});
-    commander.Undo(a->Id());
-    commander.Redo(1);
-    commander.Undo(1);
-    commander.Do(d);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Redo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Undo(1);
-    commander.Undo(1);
+    //logger.info("Info test");
+    //logger.trace("Trace test");
+    //logger.fatal("Fatal test");
 }
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), commander()
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logger(LogLevel::All), mainCommander(logger), logFile(LogLevel::Info)
 {
 
 }
 
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
+    SetupLogging();
+
     if ( !CreateThis() )
         return 1;
 
@@ -107,6 +86,22 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     } while ( keepRunning );
 
     return msg.wParam;
+}
+
+void Chkdraft::SetupLogging()
+{
+    logger.setOutputStream(std::shared_ptr<std::ostream>(&std::cout));
+
+    std::string loggerPath;
+    if ( GetLoggerPath(loggerPath) )
+    {
+        std::string logFilePath = loggerPath + Logger::getTimestamp();
+        logger.info("Setting log file to: " + logFilePath);
+        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath)));
+        logger.setAggregator(&logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
+    }
+    else
+        Message("Failed to get logger path, log file disabled!");
 }
 
 bool Chkdraft::CreateThis()

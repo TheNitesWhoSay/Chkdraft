@@ -16,7 +16,7 @@ enum ID
 };
 
 TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
-    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false)
+    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
 {
     InitializeArgMaps();
 }
@@ -202,6 +202,7 @@ void TrigActionsWindow::CopySelection()
 
 void TrigActionsWindow::Paste()
 {
+    isPasting = true;
     if ( gridActions.isSelectionRectangular() )
     {
         std::string pasteString;
@@ -243,6 +244,8 @@ void TrigActionsWindow::Paste()
         else
             Error("Failed to get clipboard data.");
     }
+    RefreshActionAreas();
+    isPasting = false;
 }
 
 void TrigActionsWindow::RedrawThis()
@@ -440,20 +443,27 @@ void TrigActionsWindow::ChangeActionType(Action &action, ActionId newId)
     }
 }
 
-bool TrigActionsWindow::TransformAction(Action &action, ActionId newId)
+bool TrigActionsWindow::TransformAction(Action &action, ActionId newId, bool refreshImmediately)
 {
     if ( (ActionId)action.action != newId )
     {
         ChangeActionType(action, newId);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+        if ( refreshImmediately )
+            RefreshActionAreas();
+
         return true;
     }
     return false;
 }
 
-void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText)
+void TrigActionsWindow::RefreshActionAreas()
+{
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
+    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+}
+
+void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately)
 {
     Trigger* trig;
     TextTrigCompiler ttc;
@@ -463,7 +473,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
         if ( CM->getTrigger(trig, trigIndex) )
         {
             Action &action = trig->action(actionNum);
-            TransformAction(action, newId);
+            TransformAction(action, newId, refreshImmediately);
         }
     }
     else if ( newText.length() == 0 )
@@ -472,14 +482,13 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
             (ActionId)trig->actions[actionNum].action != newId )
         {
             trig->deleteAction((u8)actionNum);
-            CM->notifyChange(false);
-            RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            if ( refreshImmediately )
+                RefreshActionAreas();
         }
     }
 }
 
-void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText)
+void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
@@ -560,9 +569,8 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 
             if ( madeChange )
             {
-                CM->notifyChange(false);
-                RefreshWindow(trigIndex);
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                if ( refreshImmediately )
+                    RefreshActionAreas();
             }
         }
     }
@@ -575,12 +583,12 @@ BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std
         u8 actionNum = (u8)gridItemY;
         if ( gridItemX == 1 ) // Action Name
         {
-            UpdateActionName(actionNum, str);
+            UpdateActionName(actionNum, str, !isPasting);
         }
         else if ( gridItemX > 1 ) // Action Arg
         {
             u8 argNum = (u8)gridItemX - 2;
-            UpdateActionArg(actionNum, argNum, str);
+            UpdateActionArg(actionNum, argNum, str, !isPasting);
         }
     }
     return FALSE;

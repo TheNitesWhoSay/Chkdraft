@@ -15,7 +15,7 @@ enum ID
 };
 
 TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), gridConditions(*this, 16),
-    suggestions(gridConditions.GetSuggestions())
+    suggestions(gridConditions.GetSuggestions()), isPasting(false)
 {
     InitializeArgMaps();
 }
@@ -169,6 +169,7 @@ void TrigConditionsWindow::CopySelection()
 
 void TrigConditionsWindow::Paste()
 {
+    isPasting = true;
     if ( gridConditions.isSelectionRectangular() )
     {
         std::string pasteString;
@@ -210,6 +211,8 @@ void TrigConditionsWindow::Paste()
         else
             Error("Failed to get clipboard data.");
     }
+    RefreshConditionAreas();
+    isPasting = false;
 }
 
 void TrigConditionsWindow::InitializeArgMaps()
@@ -315,20 +318,27 @@ void TrigConditionsWindow::ChangeConditionType(Condition &condition, ConditionId
     }
 }
 
-bool TrigConditionsWindow::TransformCondition(Condition &condition, ConditionId newId)
+bool TrigConditionsWindow::TransformCondition(Condition &condition, ConditionId newId, bool refreshImmediately)
 {
     if ( condition.condition != (u8)newId )
     {
         ChangeConditionType(condition, newId);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+        if ( refreshImmediately )
+            RefreshConditionAreas();
+
         return true;
     }
     return false;
 }
 
-void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string &newText)
+void TrigConditionsWindow::RefreshConditionAreas()
+{
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
+    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+}
+
+void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string &newText, bool refreshImmediately)
 {
     Trigger* trig;
     TextTrigCompiler ttc;
@@ -338,7 +348,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
         if ( CM->getTrigger(trig, trigIndex) )
         {
             Condition &condition = trig->condition(conditionNum);
-            TransformCondition(condition, newId);
+            TransformCondition(condition, newId, refreshImmediately);
         }
     }
     else if ( newText.length() == 0 )
@@ -347,14 +357,13 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
              trig->conditions[conditionNum].condition != (u8)newId )
         {
             trig->deleteCondition((u8)conditionNum);
-            CM->notifyChange(false);
-            RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            if ( refreshImmediately )
+                RefreshConditionAreas();
         }
     }
 }
 
-void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText)
+void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
@@ -369,9 +378,8 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
                ttc.ParseConditionArg(rawSuggestText, argNum, conditionArgMaps[trig->condition(conditionNum).condition],
                 trig->condition(conditionNum), CM, chkd.scData) ) )
         {
-            CM->notifyChange(false);
-            RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            if ( refreshImmediately )
+                RefreshConditionAreas();
         }
     }
 }
@@ -383,12 +391,12 @@ BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const 
         u8 conditionNum = (u8)gridItemY;
         if ( gridItemX == 1 ) // Condition Name
         {
-            UpdateConditionName(conditionNum, str);
+            UpdateConditionName(conditionNum, str, !isPasting);
         }
         else if ( gridItemX > 1 ) // Condition Arg
         {
             u8 argNum = (u8)gridItemX - 2;
-            UpdateConditionArg(conditionNum, argNum, str);
+            UpdateConditionArg(conditionNum, argNum, str, !isPasting);
         }
     }
     return FALSE;

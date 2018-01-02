@@ -9,8 +9,8 @@ typedef std::shared_ptr<ExampleCommand> ExampleCommandPtr;
 class ExampleCommand : public GenericCommand
 {
     public:
-        ExampleCommand(const std::string &addition);
-        static ExampleCommandPtr C(const std::string &addition);
+        ExampleCommand(Logger &logger, const std::string &addition);
+        static ExampleCommandPtr C(Logger &logger, const std::string &addition);
         virtual u32 Id();
 
     protected:

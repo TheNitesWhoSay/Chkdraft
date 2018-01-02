@@ -19,6 +19,7 @@ class Chkdraft : public ClassWindow
 /*  Main Items  */  ScData scData; // Data from StarCraft files
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
+                    Logger logger; // Primary logger
 
 /* Dialog Boxes */  NewMap newMap; // New map DialogBox
 
@@ -41,6 +42,7 @@ class Chkdraft : public ClassWindow
 /* Constructors */  Chkdraft();
 
 /*   Startup    */  int Run(LPSTR lpCmdLine, int nCmdShow);
+                    void SetupLogging();
 
 /* Quick Access */  bool ChangesLocked(u16 mapId);
                     bool EditFocused();
@@ -64,6 +66,7 @@ class Chkdraft : public ClassWindow
 
 /*     Data     */  HWND currDialog;
                     bool editFocused;
+                    Logger logFile;
 
 /* Priv Methods */  bool CreateSubWindows();
                     void MinimizeDialogs();

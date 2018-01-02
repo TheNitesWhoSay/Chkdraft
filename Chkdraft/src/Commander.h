@@ -2,6 +2,7 @@
 #define COMMANDER_H
 #include "CommonFiles\CommonFiles.h"
 #include "GenericCommand.h"
+#include "ErrorHandler.h"
 #include <condition_variable>
 #include <initializer_list>
 #include <atomic>
@@ -17,7 +18,7 @@
         - Support syncronous and asyncronous commands
         - Support using commands in mapping core while maintaining mapping cores reusability
         - Support solid error handling both in mapping core and in Chkdraft (todo)
-        - Support registering listeners specific commands and types of commands (todo)
+        - Support registering listeners to specific commands and types of commands (todo)
 */
 
 
@@ -28,7 +29,7 @@ typedef std::shared_ptr<std::stack<GenericCommandPtr>> StackPtr;
 class Commander
 {
     public:
-        Commander();
+        Commander(Logger &logger);
         ~Commander();
 
         void Do(GenericCommandPtr command);
@@ -46,12 +47,14 @@ class Commander
         void TryUndo();
         void TryRedo();
 
+        Logger &logger;
+
         std::queue<GenericCommandPtr> todoBuffer; // Only use this if you've locked the commandLocker
         std::map<u32, StackPtr> undoBuffers;
         std::map<u32, StackPtr> redoBuffers;
 
         bool hasCommandsToExecute; // Only use this if you've locked the commandLocker
-        bool synchronousCommandFinished;
+        std::atomic<u32> numSynchronousCommands;
 
         std::unique_ptr<std::thread> commandThread;
         std::mutex commandLocker;
@@ -62,8 +65,8 @@ class Commander
         std::condition_variable hasCommands;
         std::condition_variable synchronousExecution;
 
-        static GenericCommandPtr undoCommand;
-        static GenericCommandPtr redoCommand;
+        GenericCommandPtr undoCommand;
+        GenericCommandPtr redoCommand;
 };
 
 #endif

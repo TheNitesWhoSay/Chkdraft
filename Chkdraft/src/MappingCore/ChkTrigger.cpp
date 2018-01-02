@@ -3,6 +3,11 @@
 Condition Trigger::junkCondition;
 Action Trigger::junkAction;
 
+Trigger::Trigger() : internalData(0)
+{
+    memset(players, 0, NUM_TRIG_PLAYERS);
+}
+
 Condition& Trigger::condition(u8 index)
 {
     if ( index < NUM_TRIG_CONDITIONS )
@@ -130,6 +135,32 @@ void Trigger::setFlagPaused(bool flagPaused)
         internalData |= BIT_5;
     else
         internalData &= x32BIT_5;
+}
+
+bool Trigger::addCondition(const Condition &condition)
+{
+    for (u8 i = 0; i < NUM_TRIG_CONDITIONS; i++)
+    {
+        if (conditions[i].condition == (u8)ConditionId::NoCondition)
+        {
+            conditions[i] = condition;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Trigger::addAction(const Action &action)
+{
+    for (u8 i = 0; i < NUM_TRIG_ACTIONS; i++)
+    {
+        if (actions[i].action == (u8)ActionId::NoAction)
+        {
+            actions[i] = action;
+            return true;
+        }
+    }
+    return false;
 }
 
 void Trigger::deleteCondition(u8 index)

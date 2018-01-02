@@ -1,13 +1,13 @@
 #include "TestCommands.h"
 
-ExampleCommand::ExampleCommand(const std::string &addition) : GenericCommand(true), addition(addition)
+ExampleCommand::ExampleCommand(Logger &logger, const std::string &addition) : GenericCommand(logger, true), addition(addition)
 {
 
 }
 
-ExampleCommandPtr ExampleCommand::C(const std::string &addition)
+ExampleCommandPtr ExampleCommand::C(Logger &logger, const std::string &addition)
 {
-    return std::shared_ptr<ExampleCommand>(new ExampleCommand(addition));
+    return std::shared_ptr<ExampleCommand>(new ExampleCommand(logger, addition));
 }
 
 u32 ExampleCommand::Id()

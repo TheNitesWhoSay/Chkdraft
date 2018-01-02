@@ -64,7 +64,7 @@ bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
         ShowWindow(zoomBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add player ComboBox to toolbar
-        playerBox.CreateThis(hTool, 483, 2, 75, 200, COMBOBOX_PLAYER);
+        playerBox.CreateThis(hTool, 483, 2, 75, 200, COMBOBOX_PLAYER, false);
         ShowWindow(playerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add terrain ComboBox to toolbar

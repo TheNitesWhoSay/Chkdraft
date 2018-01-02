@@ -1,5 +1,20 @@
 #include "ChkCondition.h"
 
+Condition::Condition() : locationNum(0), players(0), amount(0), unitID(0), comparison(0), condition(0), typeIndex(0), flags(0), internalData(0)
+{
+
+}
+
+Condition::Condition(u8 condition) : locationNum(0), players(0), amount(0), unitID(0), comparison(0), condition(condition), typeIndex(0), flags(0), internalData(0)
+{
+
+}
+
+Condition::Condition(ConditionId condition) : locationNum(0), players(0), amount(0), unitID(0), comparison(0), condition((u8)condition), typeIndex(0), flags(0), internalData(0)
+{
+
+}
+
 void Condition::ToggleDisabled()
 {
     if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )
