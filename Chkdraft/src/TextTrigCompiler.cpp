@@ -3781,7 +3781,7 @@ s32 TextTrigCompiler::ExtendedNumConditionArgs(ConditionId conditionId)
     switch ( conditionId )
     {
         case ConditionId::Custom:
-            return 8;
+            return 9;
         case ConditionId::Memory:
             return 3;
     }
