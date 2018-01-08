@@ -13,19 +13,27 @@ public:
     RedoCommand(Logger &logger) : GenericCommand(logger, true) {}
 };
 
+class KillCommand : public GenericCommand
+{
+public:
+    KillCommand(Logger &logger) : GenericCommand(logger, true) {}
+};
+
 Commander::Commander(Logger &logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
     hasCommandsLock(hasCommandsLocker), synchronousLock(synchronousLocker),
     undoCommand(std::shared_ptr<UndoCommand>(new UndoCommand(logger))),
-    redoCommand(std::shared_ptr<RedoCommand>(new RedoCommand(logger)))
+    redoCommand(std::shared_ptr<RedoCommand>(new RedoCommand(logger))),
+    killCommand(std::shared_ptr<KillCommand>(new KillCommand(logger)))
 {
     commandThread = std::unique_ptr<std::thread>(new std::thread(begin, this));
 }
 
 Commander::~Commander()
 {
-    if ( commandThread )
-        commandThread->join();
+    End();
 }
+
+
 
 void Commander::Do(GenericCommandPtr command)
 {
@@ -143,7 +151,8 @@ void begin(Commander* commander)
 
 void Commander::Run()
 {
-    while ( true )
+    bool keepRunning = true;
+    do
     {
         GenericCommandPtr command(nullptr);
 
@@ -171,6 +180,8 @@ void Commander::Run()
                 TryUndo();
             else if ( command == redoCommand )
                 TryRedo();
+            else if ( command == killCommand )
+                keepRunning = false;
             else if ( command->DoCommand() )
             {
                 u32 undoRedoTypeId = command->Id();
@@ -185,6 +196,28 @@ void Commander::Run()
                 synchronousExecution.notify_one();
             }
         }
+    } while ( keepRunning );
+}
+
+void Commander::End()
+{
+    commandLocker.lock();
+
+    bool isSynchronous = killCommand.get()->isSynchronous();
+    if ( isSynchronous )
+        ++numSynchronousCommands;
+
+    this->todoBuffer.push(killCommand);
+    hasCommandsToExecute = true;
+    hasCommands.notify_one();
+    commandLocker.unlock();
+
+    if ( numSynchronousCommands > 0 )
+    {
+        synchronousExecution.wait(synchronousLock, [this] {
+            return numSynchronousCommands == 0;
+        });
+        commandThread->join();
     }
 }
 
