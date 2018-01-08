@@ -3,6 +3,7 @@
 #include <exception>
 #include <cstdint>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <vector>
 

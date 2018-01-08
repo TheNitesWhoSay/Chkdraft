@@ -52,7 +52,11 @@ bool MapFile::SaveFile(bool SaveAs)
                 mapFilePath = szFilePath;
                 saveType = (SaveType)ofn.nFilterIndex;
 
-                const char* ext = std::strrchr(mapFilePath.c_str(), '.'); // Find the last occurrence of '.'
+                const char* fileName = std::strrchr(mapFilePath.c_str(), '\\');
+                const char* ext = nullptr;
+                if ( fileName != nullptr )
+                    ext = std::strrchr(fileName, '.'); // Find the last occurrence of '.'
+
                 if ( ext == nullptr ) // No extension specified, need to add
                 {
                     if ( saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm )
@@ -67,7 +71,10 @@ bool MapFile::SaveFile(bool SaveAs)
                     if ( std::strcmp(ext, ".chk") == 0 && (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
                         saveType == SaveType::ExpansionScx) )
                     {
-                        saveType = SaveType::HybridChk;
+                        if ( saveType == SaveType::ExpansionScx )
+                            saveType = SaveType::ExpansionChk;
+                        else
+                            saveType = SaveType::HybridChk;
                     }
                     else if ( std::strcmp(ext, ".scm") == 0 && saveType != SaveType::StarCraftScm )
                         saveType = SaveType::HybridScm;
@@ -96,8 +103,6 @@ bool MapFile::SaveFile(bool SaveAs)
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx)
                 || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
-                if ( !SaveAs || (SaveAs && MakeFileCopy(prevFilePath, mapFilePath)) )
-                {
                     DeleteFileA("chk.tmp"); // Remove any existing chk.tmp files
                     pFile = std::fopen("chk.tmp", "wb");
                     Scenario::WriteFile(pFile);
@@ -125,7 +130,7 @@ bool MapFile::SaveFile(bool SaveAs)
                     }
                     else
                         MessageBox(NULL, std::string(std::string("Failed to open for updates!\n\nThe file may be in use elsewhere. ") + std::to_string(GetLastError())).c_str(), "Error!", MB_OK | MB_ICONEXCLAMATION);
-                }
+                    
                 MessageBox(NULL, "Failed to create the new MPQ file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 
                 DeleteFileA("chk.tmp");

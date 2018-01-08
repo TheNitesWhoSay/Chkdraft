@@ -105,29 +105,32 @@ bool Scenario::IsScExp()
 
 bool Scenario::ChangeToScOrig()
 {
-    return TYPE().overwrite("RAWS", 4) &&
-        VER().overwrite(";\0", 2) &&
-        IVER().overwrite("\12\0", 2) &&
-        IVE2().overwrite("\13\0", 2) &&
-        (MRGN().size() <= 1280 || MRGN().delRange(1280, MRGN().size()));
+    bool success = TYPE().overwrite("RAWS", 4);
+    success |= VER().overwrite(";\0", 2);
+    success |= IVER().overwrite("\12\0", 2);
+    success |= IVE2().overwrite("\13\0", 2);
+    success |= (MRGN().size() <= 1280 || MRGN().delRange(1280, MRGN().size()));
+    return success;
 }
 
 bool Scenario::ChangeToHybrid()
 {
-    return TYPE().overwrite("RAWS", 4) &&
-        VER().overwrite("?\0", 2) &&
-        IVER().overwrite("\12\0", 2) &&
-        IVE2().overwrite("\13\0", 2) &&
-        (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+    bool success = TYPE().overwrite("RAWS", 4);
+    success |= VER().overwrite("?\0", 2);
+    success |= IVER().overwrite("\12\0", 2);
+    success |= IVE2().overwrite("\13\0", 2);
+    success |= (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+    return success;
 }
 
 bool Scenario::ChangeToScExp()
 {
-    return TYPE().overwrite("RAWB", 4) &&
-        VER().overwrite("Í\0", 2) &&
-        RemoveSection(SectionId::IVER) &&
-        IVE2().overwrite("\13\0", 2) &&
-        (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+    bool success = TYPE().overwrite("RAWB", 4);
+    success |= VER().overwrite("Í\0", 2);
+    RemoveSection(SectionId::IVER);
+    success |= IVE2().overwrite("\13\0", 2);
+    success |= (MRGN().size() >= 5100 || MRGN().add<u8>(0, 5100 - MRGN().size()));
+    return success;
 }
 
 u16 Scenario::GetMapTitleStrIndex()

@@ -7,7 +7,7 @@ Logger::Logger() : outputStream(nullptr), maximumLogLevel(LogLevel::Info)
 
 }
 
-Logger::Logger(LogLevel logLevel) : maximumLogLevel(logLevel)
+Logger::Logger(LogLevel logLevel) : outputStream(nullptr), maximumLogLevel(logLevel)
 {
 
 }

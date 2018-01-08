@@ -21,9 +21,9 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )
-    //maps.NewMap(128, 128, 2, 0, 0);
-    {
+    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
+    //maps.NewMap(128, 128, Tileset::TERRAIN_INSTALLATION, 0, 0);
+    /*{
         //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 
         trigEditorWindow.CreateThis(getHandle());
@@ -90,14 +90,19 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
 void Chkdraft::SetupLogging()
 {
-    logger.setOutputStream(std::shared_ptr<std::ostream>(&std::cout));
+    logger.setOutputStream(std::shared_ptr<std::ostream>(&std::cout, [](std::ostream* os) { /* Do nothing when this goes out of scope */ }));
 
     std::string loggerPath;
     if ( GetLoggerPath(loggerPath) )
     {
         std::string logFilePath = loggerPath + Logger::getTimestamp();
         logger.info("Setting log file to: " + logFilePath);
-        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath)));
+        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath), [](std::ostream* os) {
+            if ( os != nullptr ) { // Close and delete when output stream goes out of scope
+                ((std::ofstream*)os)->close();
+                delete os;
+            }
+        }));
         logger.setAggregator(&logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
     }
     else

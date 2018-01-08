@@ -45,7 +45,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->Scroll(true, true, false);
 
                     // Tiling Code
-                    u16 tilenum = 0;
+                    /*u16 tilenum = 0;
                     u16 xSize = CM->XSize();
                     for ( u32 xStart = 0; xStart<CM->XSize(); xStart += 16 )
                     {
@@ -57,7 +57,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                                 tilenum++;
                             }
                         }
-                    }
+                    }*/
 
                     CM->Redraw(true);
                 }
