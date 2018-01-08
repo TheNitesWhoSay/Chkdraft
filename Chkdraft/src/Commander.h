@@ -41,6 +41,7 @@ class Commander
     private:
         friend void begin(Commander* commander);
         void Run();
+        void End();
         void ClipRedos(u32 undoRedoTypeId);
         void AddUndo(u32 undoRedoTypeId, GenericCommandPtr command);
         void AddRedo(u32 undoRedoTypeId, GenericCommandPtr command);
@@ -67,6 +68,7 @@ class Commander
 
         GenericCommandPtr undoCommand;
         GenericCommandPtr redoCommand;
+        GenericCommandPtr killCommand;
 };
 
 #endif
