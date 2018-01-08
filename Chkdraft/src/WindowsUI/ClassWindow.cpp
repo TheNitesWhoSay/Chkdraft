@@ -228,6 +228,7 @@ LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam,
                 classWindow->NotifyWindowShown();
             else
             {
+                // When window is being hidden unfocus any focused edit boxes
                 HWND hEditFocused = GetFocus();
                 int editCtrlId = GetDlgCtrlID(hEditFocused);
                 classWindow->NotifyEditFocusLost(editCtrlId, hEditFocused);

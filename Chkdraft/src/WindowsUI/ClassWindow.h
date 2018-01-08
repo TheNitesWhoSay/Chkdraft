@@ -25,7 +25,7 @@ class ClassWindow : public WindowsItem
     protected:
 
 /*     Setup    */  /** Attempts to register a class for creating the window
-                        If the class has been registered before this returns false
+                        If the class has been registered before, this returns false
                         Do not register different classes with the same name */
                     bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
                         LPCTSTR lpszMenuName, LPCTSTR lpszClassName, HICON hIconSm, bool isMDIChild);
