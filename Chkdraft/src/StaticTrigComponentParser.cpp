@@ -511,7 +511,7 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 &dest, u32 pos, u32 en
     return success;
 }
 
-bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, u32 pos, u32 end)
+bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, u32 pos, u32 end, u32 deathTableoffset)
 {
     int size = end - pos;
     if ( size < 12 )
@@ -527,7 +527,7 @@ bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, u32 po
             std::memcpy(potentialLong, &text[pos + 2], size - 2);
             potentialLong[size - 2] = '\0';
             try {
-                dest = (u32)(std::stoll(potentialLong, nullptr, 16)/4l*4l);
+                dest = (u32)((std::stoll(potentialLong, nullptr, 16)/4l*4l-deathTableoffset)/4);
                 return true;
             }
             catch (std::exception e) {}

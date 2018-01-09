@@ -31,7 +31,7 @@ enum ID {
 };
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory)
+    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
 {
     for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
         groupSelected[i] = false;

@@ -164,7 +164,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
                 RemoveFiles(textPath, trigPath, litBatPath);
                 if ( foundLitTrigs )
                 {
-                    TextTrigCompiler compiler(Settings::useAddressesForMemory);
+                    TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
                     if ( compiler.CompileTriggers(litTrigs, map, chkd.scData) )
                     {
                         foundLitText ? Message(litText, "LIT") : Message("Success!", "Text Trigger Compiler");

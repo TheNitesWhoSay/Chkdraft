@@ -20,7 +20,7 @@ void TextTrigWindow::RefreshWindow()
 {
     updateMenus();
     std::string trigString;
-    TextTrigGenerator textTrigs(Settings::useAddressesForMemory);
+    TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( textTrigs.GenerateTextTrigs(CM, trigString) )
         SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
     else
@@ -134,7 +134,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
         std::string trigText;
         if ( editControl.GetWinText(trigText) )
         {
-            TextTrigCompiler compiler(Settings::useAddressesForMemory); // All data for compilation is gathered on-the-fly, no need to check for updates
+            TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
             if ( compiler.CompileTriggers(trigText, map, chkd.scData) )
                 return true;
             else

@@ -51,7 +51,7 @@ bool TrigModifyTextWindow::DestroyThis()
 void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    TextTrigGenerator textTrigs(Settings::useAddressesForMemory);
+    TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
         editText.SetText(trigText.c_str());
     else
@@ -146,7 +146,7 @@ bool TrigModifyTextWindow::CompileEditText(std::string &newText)
         Trigger* trigger;
         if ( CM->getTrigger(trigger, trigIndex) )
         {
-            TextTrigCompiler compiler(Settings::useAddressesForMemory); // All data for compilation is gathered on-the-fly, no need to check for updates
+            TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
             if ( compiler.CompileTrigger(newText, trigger, CM, chkd.scData) )
                 return true;
             else
