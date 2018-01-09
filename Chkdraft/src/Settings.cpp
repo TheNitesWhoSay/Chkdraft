@@ -115,7 +115,7 @@ bool Settings::readSettingsFile()
                 else if ( key == "deathTableStart" )
                 {
                     u32 temp = 0;
-                    if ( ParseLong(value.c_str(), temp, 0, value.length()-1) )
+                    if ( ParseLong(value.c_str(), temp, 0, value.length()) )
                         deathTableStart = temp;
                 }
                 else if ( key == "useAddressesForMemory" )
@@ -148,7 +148,7 @@ bool Settings::updateSettingsFile()
         loadFile << "starDatPath=" << starDatPath << std::endl
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl
-            << "deathTableStart=" << deathTableStart << std::endl
+            << "deathTableStart=0x" << std::hex << std::uppercase << deathTableStart << std::dec << std::nouppercase << std::endl
             << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl;
         loadFile.close();
         return true;
