@@ -1,11 +1,14 @@
 #include "TextTrig.h"
 #include "Chkdraft.h"
+#include "Settings.h"
 #include <string>
 
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )
     {
+        textTrigMenu.FindThis(getHandle());
+        updateMenus();
         ShowWindow(getHandle(), SW_SHOW);
         return true;
     }
@@ -15,18 +18,33 @@ bool TextTrigWindow::CreateThis(HWND hParent)
 
 void TextTrigWindow::RefreshWindow()
 {
+    updateMenus();
     std::string trigString;
-    TextTrigGenerator textTrigs;
+    TextTrigGenerator textTrigs(Settings::useAddressesForMemory);
     if ( textTrigs.GenerateTextTrigs(CM, trigString) )
         SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
     else
         Error("Failed to generate text triggers.");
+
+}
+
+void TextTrigWindow::updateMenus()
+{
+    if ( Settings::useAddressesForMemory )
+        textTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, true);
+    else
+        textTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, false);
 }
 
 BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     switch ( LOWORD(wParam) )
     {
+    case ID_OPTIONS_USEADDRESSESFORMEMORY:
+        Settings::useAddressesForMemory = !Settings::useAddressesForMemory;
+        Settings::updateSettingsFile();
+        RefreshWindow();
+        break;
     case IDC_COMPSAVE:
         if ( CM != nullptr )
         {
@@ -116,7 +134,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
         std::string trigText;
         if ( editControl.GetWinText(trigText) )
         {
-            TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
+            TextTrigCompiler compiler(Settings::useAddressesForMemory); // All data for compilation is gathered on-the-fly, no need to check for updates
             if ( compiler.CompileTriggers(trigText, map, chkd.scData) )
                 return true;
             else

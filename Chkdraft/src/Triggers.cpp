@@ -1,6 +1,7 @@
 #include "Triggers.h"
 #include "Chkdraft.h"
 #include "MoveTo.h"
+#include "Settings.h"
 #include <string>
 
 #define TRIGGER_TOP_PADDING 1
@@ -30,7 +31,7 @@ enum ID {
 };
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false)
+    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory)
 {
     for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
         groupSelected[i] = false;

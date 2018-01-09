@@ -129,12 +129,12 @@ enum class ActionId : s32
     Wait = 4,
 
     Custom = -1,
-    Memory = -2
+    SetMemory = -2
 };
 
 enum class ExtendedActionBase : s32
 {
-    Memory = (u8)ActionId::SetDeaths,
+    SetMemory = (u8)ActionId::SetDeaths,
 };
 
 #endif

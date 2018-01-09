@@ -17,11 +17,12 @@ class StaticTrigComponentParser
         bool ParseSwitchMod(char* text, u8 &dest, u32 pos, u32 end); // Set, clear, toggle, randomize
         bool ParseStateMod(char* text, u8 &dest, u32 pos, u32 end); // Disable, Enable, Toggle
         bool ParseOrder(char* text, u8 &dest, u32 pos, u32 end); // Attack, move, patrol
+        bool ParseMemoryAddress(char* text, u32& dest, u32 pos, u32 end);
 
         bool ParseResourceType(char* text, u16 &dest, u32 pos, u32 end); // Accelerator for 2-byte resource types
         bool ParseScoreType(char* text, u16 &dest, u32 pos, u32 end); // Accelerator for 2-byte score types
 
-        bool ParseBinaryLong(char* text, u32& dest, u32 pos, u32 end); // Grabs a 4-byte binary int from the given position in the text
+        bool ParseBinaryLong(char* text, u32& dest, u32 pos, u32 end); // Grabs a 4-byte binary int from the given position in the 
         bool ParseLong(char* text, u32& dest, u32 pos, u32 end); // Grabs a 4-byte int from the given position in the text
         bool ParseTriplet(char* text, u8* dest, u32 pos, u32 end); // Grabs a 3-byte int from the given position in the text
         bool ParseShort(char* text, u16& dest, u32 pos, u32 end); // Grabs a 2-byte int from the given position in the text

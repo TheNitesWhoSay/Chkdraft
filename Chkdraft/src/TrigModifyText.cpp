@@ -1,5 +1,6 @@
 #include "TrigModifyText.h"
 #include "Chkdraft.h"
+#include "Settings.h"
 
 enum ID {
     TAB_META = 0,
@@ -50,7 +51,7 @@ bool TrigModifyTextWindow::DestroyThis()
 void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    TextTrigGenerator textTrigs;
+    TextTrigGenerator textTrigs(Settings::useAddressesForMemory);
     if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
         editText.SetText(trigText.c_str());
     else
@@ -145,7 +146,7 @@ bool TrigModifyTextWindow::CompileEditText(std::string &newText)
         Trigger* trigger;
         if ( CM->getTrigger(trigger, trigIndex) )
         {
-            TextTrigCompiler compiler; // All data for compilation is gathered on-the-fly, no need to check for updates
+            TextTrigCompiler compiler(Settings::useAddressesForMemory); // All data for compilation is gathered on-the-fly, no need to check for updates
             if ( compiler.CompileTrigger(newText, trigger, CM, chkd.scData) )
                 return true;
             else

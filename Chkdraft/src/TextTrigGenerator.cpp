@@ -124,6 +124,13 @@ void CollapsableDefines()
     #define ADD_TEXTTRIG_NUMBER(src) {                                              \
         std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); }
 
+    #define ADD_TEXTTRIG_DEATHPLAYERS(src) {                                        \
+        if ( useAddressesForMemory )                                                \
+            snprintf(number, sizeof(number)/sizeof(char), "0x%X", src);             \
+        else                                                                        \
+            std::strcpy(number, std::to_string(src).c_str());                       \
+        output.addStr(number, std::strlen(number)); }
+
     #define ADD_TEXTTRIG_TEXT_FLAGS(src) {                                                      \
         if      ( (src&(u8)Action::Flags::AlwaysDisplay) == 0 )                                 \
             output.addStr(textFlags[0], std::strlen(textFlags[0]));                             \
@@ -131,7 +138,7 @@ void CollapsableDefines()
             output.addStr(textFlags[1], std::strlen(textFlags[1])); }
 }
 
-TextTrigGenerator::TextTrigGenerator() : goodConditionTable(false), goodActionTable(false)
+TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory) : goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory)
 {
     stringTable.clear();
     extendedStringTable.clear();
@@ -490,7 +497,7 @@ inline void TextTrigGenerator::AddConditionArgument(buffer &output, Condition& c
             break;
         case ConditionId::Memory: // MemOffset, NumericComparison, Amount
             switch ( stdTextTrigArgNum ) {
-                case 0: ADD_TEXTTRIG_NUMBER(condition.players) break;
+                case 0: ADD_TEXTTRIG_DEATHPLAYERS(condition.players) break;
                 case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
                 case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
             }
@@ -773,6 +780,13 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
         case ActionId::Wait: // Duration
             if ( stdTextTrigArgNum == 0 ) ADD_TEXTTRIG_NUMBER(action.time);
             break;
+        case ActionId::SetMemory: // MemOffset, NumericModifier, Amount
+            switch ( stdTextTrigArgNum ) {
+                case 0: ADD_TEXTTRIG_DEATHPLAYERS(action.group) break;
+                case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
+                case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
+            }
+            break;
         default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
             switch ( stdTextTrigArgNum ) {
                 case 0: ADD_TEXTTRIG_LOCATION(action.location) break;
@@ -917,14 +931,21 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSegment trigData, st
                         output.addStr("\n\t", 2);
 
                     // Add action name
-                    if ( (s32)AID < (s32)actionTable.size() )
+                    if ( AID == ActionId::SetDeaths && action.group > 28 ) // Memory action
+                        output.addStr("Set Memory", 10);
+                    else if ( (s32)AID < (s32)actionTable.size() )
                         output.addStr(actionTable[(s32)AID].c_str(), actionTable[(s32)AID].size());
                     else
                         output.addStr("Custom", 6);
 
                     output.add<char>('(');
                     // Add action args
-                    if ( (s32)AID < sizeof(actionNumArgs) )
+                    if ( AID == ActionId::SetDeaths && action.group > 28 ) // Memory action
+                    {
+                        AID = ActionId::SetMemory;
+                        numArgs = 3;
+                    }
+                    else if ( (s32)AID < sizeof(actionNumArgs) )
                         numArgs = actionNumArgs[(s32)AID];
                     else
                         numArgs = 11; // custom

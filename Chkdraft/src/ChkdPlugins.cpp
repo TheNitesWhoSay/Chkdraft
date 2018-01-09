@@ -1,6 +1,7 @@
 #include "ChkdPlugins.h"
 #include "Chkdraft.h"
 #include "TextTrigCompiler.h"
+#include "Settings.h"
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -63,7 +64,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     textBuf.addStr(inputText, length);
                                     delete[] inputText;
 
-                                    TextTrigCompiler compiler;
+                                    TextTrigCompiler compiler(Settings::useAddressesForMemory);
                                     if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )
                                     {
                                         map->notifyChange(false);

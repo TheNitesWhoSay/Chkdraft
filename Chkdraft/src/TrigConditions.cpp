@@ -1,6 +1,7 @@
 #include "TrigConditions.h"
 #include "Clipboard.h"
 #include "Chkdraft.h"
+#include "Settings.h"
 #include <string>
 #include <map>
 #include <numeric>
@@ -50,7 +51,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     gridConditions.ClearItems();
     this->trigIndex = trigIndex;
     Trigger* trig;
-    TextTrigGenerator ttg;
+    TextTrigGenerator ttg(Settings::useAddressesForMemory);
     if ( CM->getTrigger(trig, trigIndex) &&
          ttg.LoadScenario(CM) )
     {
@@ -341,7 +342,7 @@ void TrigConditionsWindow::RefreshConditionAreas()
 void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string &newText, bool refreshImmediately)
 {
     Trigger* trig;
-    TextTrigCompiler ttc;
+    TextTrigCompiler ttc(Settings::useAddressesForMemory);
     ConditionId newId = ConditionId::NoCondition;
     if ( ttc.ParseConditionName(newText, newId) || ttc.ParseConditionName(suggestions.Take(), newId) )
     {
@@ -368,7 +369,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
     Trigger* trig;
-    TextTrigCompiler ttc;
+    TextTrigCompiler ttc(Settings::useAddressesForMemory);
     if ( CM->getTrigger(trig, trigIndex) )
     {
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
@@ -437,7 +438,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             if ( gridConditions.GetFocusedItem(focusedX, focusedY) )
             {
                 u8 conditionNum = (u8)focusedY;
-                TextTrigGenerator ttg;
+                TextTrigGenerator ttg(Settings::useAddressesForMemory);
                 std::string str;
                 ttg.LoadScenario(CM);
                 str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);

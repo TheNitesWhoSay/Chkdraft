@@ -2,6 +2,7 @@
 #include "Chkdraft.h"
 #include "ChkdStringInput.h"
 #include "CuwpInput.h"
+#include "Settings.h"
 
 #define TOP_ACTION_PADDING 50
 #define BOTTOM_ACTION_PADDING 0
@@ -54,7 +55,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
     Trigger* trig;
-    TextTrigGenerator ttg;
+    TextTrigGenerator ttg(Settings::useAddressesForMemory);
     if ( CM->getTrigger(trig, trigIndex) &&
         ttg.LoadScenario(CM) )
     {
@@ -466,7 +467,7 @@ void TrigActionsWindow::RefreshActionAreas()
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately)
 {
     Trigger* trig;
-    TextTrigCompiler ttc;
+    TextTrigCompiler ttc(Settings::useAddressesForMemory);
     ActionId newId = ActionId::NoAction;
     if ( ttc.ParseActionName(newText, newId) || ttc.ParseActionName(suggestions.Take(), newId) )
     {
@@ -492,7 +493,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
-    TextTrigCompiler ttc;
+    TextTrigCompiler ttc(Settings::useAddressesForMemory);
     Trigger* trig;
     if ( CM->getTrigger(trig, trigIndex) )
     {
@@ -629,7 +630,7 @@ void TrigActionsWindow::DrawSelectedAction()
             if ( gridActions.GetFocusedItem(focusedX, focusedY) )
             {
                 u8 actionNum = (u8)focusedY;
-                TextTrigGenerator ttg;
+                TextTrigGenerator ttg(Settings::useAddressesForMemory);
                 ttg.LoadScenario(CM);
                 ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
                 ttg.ClearScenario();
