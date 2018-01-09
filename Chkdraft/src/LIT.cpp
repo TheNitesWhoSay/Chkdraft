@@ -1,5 +1,6 @@
 #include "LIT.h"
 #include "Chkdraft.h"
+#include "Settings.h"
 #include <fstream>
 #include <string>
 
@@ -163,7 +164,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
                 RemoveFiles(textPath, trigPath, litBatPath);
                 if ( foundLitTrigs )
                 {
-                    TextTrigCompiler compiler;
+                    TextTrigCompiler compiler(Settings::useAddressesForMemory);
                     if ( compiler.CompileTriggers(litTrigs, map, chkd.scData) )
                     {
                         foundLitText ? Message(litText, "LIT") : Message("Success!", "Text Trigger Compiler");

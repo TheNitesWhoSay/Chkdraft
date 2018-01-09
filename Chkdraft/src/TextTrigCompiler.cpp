@@ -11,7 +11,7 @@
 
 #define MAX_ERROR_MESSAGE_SIZE 256
 
-TextTrigCompiler::TextTrigCompiler()
+TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory) : useAddressesForMemory(useAddressesForMemory)
 {
 
 }
@@ -1514,7 +1514,7 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
 
         case 'M':
             if ( arg.has("EMORY", 1, 5) )
-                id = ActionId::Memory;
+                id = ActionId::SetMemory;
             else if ( arg.has("OVE", 1, 3) )
             {
                 if ( arg.has("UNIT", 4, 4) )
@@ -1600,6 +1600,8 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
                     id = ActionId::SetMissionObjectives;
                 else if ( arg.has("NEXTSCENARIO", 3, 12) )
                     id = ActionId::SetNextScenario;
+                else if ( arg.has("MEMORY", 3, 6) )
+                    id = ActionId::SetMemory;
             }
             break;
 
@@ -1747,7 +1749,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
 
         case 'M':
             if ( arg.has("EMORY", 1, 5) )
-                id = ActionId::Memory;
+                id = ActionId::SetMemory;
             else if ( arg.has("OVE", 1, 3) )
             {
                 if ( arg.has("UNIT", 4, 4) )
@@ -1833,6 +1835,8 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
                     id = ActionId::SetMissionObjectives;
                 else if ( arg.has("NEXTSCENARIO", 3, 12) )
                     id = ActionId::SetNextScenario;
+                else if ( arg.has("MEMORY", 3, 6) )
+                    id = ActionId::SetMemory;
             }
             break;
 
@@ -2060,7 +2064,8 @@ ParseConditionInternalDataField: // 2 bytes
                "Expected: 2-byte internal data" );
 
 ParseConditionDeathOffsetField: // 4 bytes
-    returnMsg( ParseLong(textPtr, currCondition.players, pos, end),
+    returnMsg( useAddressesForMemory && ParseLong(textPtr, currCondition.players, pos, end) ||
+               !useAddressesForMemory && StaticTrigComponentParser::ParseMemoryAddress(textPtr, currCondition.players, pos, end),
                "Expected: 4-byte death table offset" );
 }
 
@@ -2085,7 +2090,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos,
                 case  1: goto ParseActionInternalDataField; break;
             }
             break;
-        case ActionId::Memory: // deathTable+, mod, num
+        case ActionId::SetMemory: // deathTable+, mod, num
             switch ( argsLeft ) {
                 case 3: goto ParseActionDeathOffsetField    ; break;
                 case 2: goto ParseActionNumericModifierField; break;
@@ -3769,8 +3774,8 @@ u8 TextTrigCompiler::ExtendedToRegularAID(ActionId actionId)
     switch ( actionId )
     {
         // Don't include AID_CUSTOM, that is set while parsing args
-        case ActionId::Memory:
-            return (u8)ExtendedActionBase::Memory;
+        case ActionId::SetMemory:
+            return (u8)ExtendedActionBase::SetMemory;
             break;
     }
     return 0;
@@ -3794,7 +3799,7 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(ActionId actionId)
     {
         case ActionId::Custom:
             return 11;
-        case ActionId::Memory:
+        case ActionId::SetMemory:
             return 3;
     }
     return 0;

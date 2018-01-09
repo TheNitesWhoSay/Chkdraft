@@ -1,4 +1,5 @@
 #include "ScData.h"
+#include "Settings.h"
 #include <string>
 
 bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
@@ -701,71 +702,6 @@ ScData::ScData() : numGrps(0), grps(nullptr), aiScripts(tblFiles)
 
 }
 
-bool GetSettingsPath(std::string &outFilePath)
-{
-    std::string moduleDirectory;
-    if ( GetModuleDirectory(moduleDirectory) )
-    {
-        MakeDirectory(moduleDirectory + "\\chkd");
-        MakeDirectory(moduleDirectory + "\\chkd\\Settings");
-        outFilePath = moduleDirectory + std::string("\\chkd\\Settings\\");
-        return true;
-    }
-    return false;
-}
-
-bool GetLoadSettings(std::string &outStarDatPath, std::string &outBrooDatPath, std::string &outPatchRtPath)
-{
-    bool success = false;
-    std::string settingsPath = "";
-    if ( GetSettingsPath(settingsPath) )
-    {
-        std::ifstream loadFile;
-        loadFile.open(settingsPath + "settings.ini");
-
-        std::string line = "";
-        while (std::getline(loadFile, line))
-        {
-            size_t equalsPos = line.find_first_of('=');
-            if ( equalsPos > 0 && equalsPos+1 < line.length() )
-            {
-                std::string key = line.substr(0, equalsPos);
-                std::string value = line.substr(equalsPos+1, line.length()-1);
-
-                bool foundValue = true;
-                if ( key == "starDatPath" )
-                    outStarDatPath = value;
-                else if ( key == "brooDatPath" )
-                    outBrooDatPath = value;
-                else if ( key == "patchRtPath" )
-                    outPatchRtPath = value;
-                else
-                    foundValue = false;
-
-                if ( foundValue )
-                    success = true;
-            }
-        }
-    }
-    return success;
-}
-
-bool UpdateLoadSettings(std::string &starDatPath, std::string &brooDatPath, std::string &patchRtPath)
-{
-    std::string settingsPath = "";
-    if ( GetSettingsPath(settingsPath) )
-    {
-        std::ofstream loadFile;
-        loadFile.open(settingsPath + "settings.ini");
-        loadFile << "starDatPath=" << starDatPath << std::endl
-            << "brooDatPath=" << brooDatPath << std::endl
-            << "patchRtPath=" << patchRtPath << std::endl;
-        loadFile.close();
-        return true;
-    }
-    return false;
-}
-
 void ScData::Load()
 {
     MPQHANDLE hStarDat = nullptr, hBrooDat = nullptr, hPatchRt = nullptr;
@@ -822,12 +758,6 @@ bool ScData::GetScAsset(const std::string& assetMpqPath, buffer &outAssetContent
     MPQHANDLE hStarDat = nullptr, hBrooDat = nullptr, hPatchRt = nullptr;
     OpenScArchives(hStarDat, hBrooDat, hPatchRt);
 
-    char scPath[MAX_PATH] = { 0 };
-    GetRegScPath(scPath, MAX_PATH);
-
-    std::string starDatPath = "", brooDatPath = "", patchRtPath = "";
-    GetLoadSettings(starDatPath, brooDatPath, patchRtPath);
-
     if ( hStarDat != nullptr || hBrooDat != nullptr || hPatchRt != nullptr )
     {
         success = FileToBuffer(hStarDat, hBrooDat, hPatchRt, assetMpqPath, outAssetContents);
@@ -873,19 +803,18 @@ void ScData::OpenScArchives(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE 
     char scPath[MAX_PATH] = { 0 };
     GetRegScPath(scPath, MAX_PATH);
 
-    std::string starDatPath = "", brooDatPath = "", patchRtPath = "";
-    GetLoadSettings(starDatPath, brooDatPath, patchRtPath);
+    Settings::readSettingsFile();
 
     bool updateSettings = false;
-    if ( starDatPath.length() == 0 || !OpenArchive(starDatPath.c_str(), hStarDat) )
-        updateSettings = updateSettings | OpenArchive(scPath, "StarDat.mpq" , hStarDat, starDatPath);
-    if ( brooDatPath.length() == 0 || !OpenArchive(brooDatPath.c_str(), hBrooDat) )
-        updateSettings = updateSettings | OpenArchive(scPath, "BrooDat.mpq" , hBrooDat, brooDatPath);
-    if ( patchRtPath.length() == 0 || !OpenArchive(patchRtPath.c_str(), hPatchRt) )
-        updateSettings = updateSettings | OpenArchive(scPath, "patch_rt.mpq", hPatchRt, patchRtPath);
+    if ( Settings::starDatPath.length() == 0 || !OpenArchive(Settings::starDatPath.c_str(), hStarDat) )
+        updateSettings = updateSettings | OpenArchive(scPath, "StarDat.mpq" , hStarDat, Settings::starDatPath);
+    if ( Settings::brooDatPath.length() == 0 || !OpenArchive(Settings::brooDatPath.c_str(), hBrooDat) )
+        updateSettings = updateSettings | OpenArchive(scPath, "BrooDat.mpq" , hBrooDat, Settings::brooDatPath);
+    if ( Settings::patchRtPath.length() == 0 || !OpenArchive(Settings::patchRtPath.c_str(), hPatchRt) )
+        updateSettings = updateSettings | OpenArchive(scPath, "patch_rt.mpq", hPatchRt, Settings::patchRtPath);
 
     if ( updateSettings ) {
-        UpdateLoadSettings(starDatPath, brooDatPath, patchRtPath);
+        Settings::updateSettingsFile();
     }
 }
 

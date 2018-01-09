@@ -36,7 +36,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 {
     public:
 
-        TextTrigCompiler();
+        TextTrigCompiler(bool useAddressesForMemory);
         bool CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
@@ -108,6 +108,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
     private:
 
+        bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
         std::hash<std::string> strHash; // A hasher to help generate tables
         std::unordered_multimap<u32, StringTableNode> stringTable; // Binary tree of the maps strings
         std::unordered_multimap<u32, LocationTableNode> locationTable; // Binary tree of the maps locations

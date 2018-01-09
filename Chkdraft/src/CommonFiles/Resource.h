@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\Users\Justin\Documents\Visual Studio 2015\Projects\Chkdraft\Chkdraft\Resource.rc
+// Used by C:\Users\Justin\Documents\Visual Studio 2017\Projects\Chkdraft\Chkdraft\Resource.rc
 //
 #define IDR_MAIN_MENU                   101
 #define IDR_TRIG_MENU                   102
@@ -294,13 +294,14 @@
 #define ID_SCENARIO_PASSWORD            40632
 #define ID_TOOLS_PASSWORD               40633
 #define ID_TOOLS_LITTRIGGERS            40634
+#define ID_OPTIONS_USEADDRESSESFORMEMORY 40635
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        154
-#define _APS_NEXT_COMMAND_VALUE         40635
+#define _APS_NEXT_COMMAND_VALUE         40636
 #define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -9,10 +9,12 @@
 class TextTrigWindow : public ClassDialog
 {
     public:
+        WindowMenu textTrigMenu;
         bool CreateThis(HWND hParent);
         void RefreshWindow();
 
     protected:
+        void updateMenus();
         bool CompileEditText(ScenarioPtr map);
         virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

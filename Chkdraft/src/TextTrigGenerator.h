@@ -15,7 +15,7 @@ class TextTrigGenerator
 {
     public:
         
-        TextTrigGenerator();
+        TextTrigGenerator(bool useAddressesForMemory);
 
         // Places text trigs representative of the given TRIG section in trigString if successful
         bool GenerateTextTrigs(ScenarioPtr map, std::string &trigString);
@@ -64,6 +64,7 @@ class TextTrigGenerator
 
     private:
 
+        bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
         std::vector<ChkdString> stringTable; // Array list of map strings
         std::vector<ChkdString> extendedStringTable; // Array list of extended map strings
         std::vector<ChkdString> locationTable; // Array of map locations
