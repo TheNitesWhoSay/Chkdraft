@@ -64,7 +64,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     textBuf.addStr(inputText, length);
                                     delete[] inputText;
 
-                                    TextTrigCompiler compiler(Settings::useAddressesForMemory);
+                                    TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
                                     if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )
                                     {
                                         map->notifyChange(false);

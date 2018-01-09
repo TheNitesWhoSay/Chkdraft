@@ -55,7 +55,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
     Trigger* trig;
-    TextTrigGenerator ttg(Settings::useAddressesForMemory);
+    TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( CM->getTrigger(trig, trigIndex) &&
         ttg.LoadScenario(CM) )
     {
@@ -467,7 +467,7 @@ void TrigActionsWindow::RefreshActionAreas()
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately)
 {
     Trigger* trig;
-    TextTrigCompiler ttc(Settings::useAddressesForMemory);
+    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     ActionId newId = ActionId::NoAction;
     if ( ttc.ParseActionName(newText, newId) || ttc.ParseActionName(suggestions.Take(), newId) )
     {
@@ -493,7 +493,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
-    TextTrigCompiler ttc(Settings::useAddressesForMemory);
+    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Trigger* trig;
     if ( CM->getTrigger(trig, trigIndex) )
     {
@@ -630,7 +630,7 @@ void TrigActionsWindow::DrawSelectedAction()
             if ( gridActions.GetFocusedItem(focusedX, focusedY) )
             {
                 u8 actionNum = (u8)focusedY;
-                TextTrigGenerator ttg(Settings::useAddressesForMemory);
+                TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
                 ttg.LoadScenario(CM);
                 ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
                 ttg.ClearScenario();

@@ -11,7 +11,7 @@
 
 #define MAX_ERROR_MESSAGE_SIZE 256
 
-TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory) : useAddressesForMemory(useAddressesForMemory)
+TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
 
 }
@@ -2064,9 +2064,9 @@ ParseConditionInternalDataField: // 2 bytes
                "Expected: 2-byte internal data" );
 
 ParseConditionDeathOffsetField: // 4 bytes
-    returnMsg( useAddressesForMemory && ParseLong(textPtr, currCondition.players, pos, end) ||
-               !useAddressesForMemory && StaticTrigComponentParser::ParseMemoryAddress(textPtr, currCondition.players, pos, end),
-               "Expected: 4-byte death table offset" );
+    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.players, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && ParseLong(textPtr, currCondition.players, pos, end)),
+        (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
 bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, char *error)
@@ -2488,8 +2488,9 @@ ParseActionInternalDataField: // 3 bytes
                "Expected: 3-byte internal data" );
 
 ParseActionDeathOffsetField: // 4 bytes
-    returnMsg( ParseLong(textPtr, currAction.group, pos, end),
-               "Expected: 4-byte death table offset" );
+    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currAction.group, pos, end, deathTableOffset) ||
+        !useAddressesForMemory && ParseLong(textPtr, currAction.group, pos, end)),
+        (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
 bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags)

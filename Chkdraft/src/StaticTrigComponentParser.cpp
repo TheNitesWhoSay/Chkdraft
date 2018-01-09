@@ -511,34 +511,13 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 &dest, u32 pos, u32 en
     return success;
 }
 
-bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, u32 pos, u32 end)
+bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, u32 pos, u32 end, u32 deathTableOffset)
 {
-    int size = end - pos;
-    if ( size < 12 )
+    u32 temp = 0;
+    if ( ParseLong(text, temp, pos, end) )
     {
-        if ( size == 1 && text[pos] == '0' )
-        {
-            dest = 0;
-            return true;
-        }
-        else if ( size > 2 && text[pos] == '0' && (text[pos + 1] == 'x' || text[pos + 1] == 'X') )
-        {
-            char potentialLong[12] = {};
-            std::memcpy(potentialLong, &text[pos + 2], size - 2);
-            potentialLong[size - 2] = '\0';
-            try {
-                dest = (u32)(std::stoll(potentialLong, nullptr, 16)/4l*4l);
-                return true;
-            }
-            catch (std::exception e) {}
-        }
-        else
-        {
-            char potentialLong[12] = { };
-            std::memcpy(potentialLong, &text[pos], size);
-            potentialLong[size] = '\0';
-            return ( (dest = (u32)(std::atoll(potentialLong)/4l*4l)) > 0 );
-        }
+        dest = (temp/4*4-deathTableOffset)/4;
+        return true;
     }
     return false;
 }

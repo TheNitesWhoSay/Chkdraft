@@ -124,11 +124,11 @@ void CollapsableDefines()
     #define ADD_TEXTTRIG_NUMBER(src) {                                              \
         std::strcpy(number, std::to_string(src).c_str()); output.addStr(number, std::strlen(number)); }
 
-    #define ADD_TEXTTRIG_DEATHPLAYERS(src) {                                        \
-        if ( useAddressesForMemory )                                                \
-            snprintf(number, sizeof(number)/sizeof(char), "0x%X", src);             \
-        else                                                                        \
-            std::strcpy(number, std::to_string(src).c_str());                       \
+    #define ADD_TEXTTRIG_MEMORY(src) {                                                          \
+        if ( useAddressesForMemory )                                                            \
+            snprintf(number, sizeof(number)/sizeof(char), "0x%X", src*4+deathTableOffset);      \
+        else                                                                                    \
+            std::strcpy(number, std::to_string(src).c_str());                                   \
         output.addStr(number, std::strlen(number)); }
 
     #define ADD_TEXTTRIG_TEXT_FLAGS(src) {                                                      \
@@ -138,7 +138,7 @@ void CollapsableDefines()
             output.addStr(textFlags[1], std::strlen(textFlags[1])); }
 }
 
-TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory) : goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory)
+TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset) : goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
     stringTable.clear();
     extendedStringTable.clear();
@@ -497,7 +497,7 @@ inline void TextTrigGenerator::AddConditionArgument(buffer &output, Condition& c
             break;
         case ConditionId::Memory: // MemOffset, NumericComparison, Amount
             switch ( stdTextTrigArgNum ) {
-                case 0: ADD_TEXTTRIG_DEATHPLAYERS(condition.players) break;
+                case 0: ADD_TEXTTRIG_MEMORY(condition.players) break;
                 case 1: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
                 case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
             }
@@ -782,7 +782,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Action &action,
             break;
         case ActionId::SetMemory: // MemOffset, NumericModifier, Amount
             switch ( stdTextTrigArgNum ) {
-                case 0: ADD_TEXTTRIG_DEATHPLAYERS(action.group) break;
+                case 0: ADD_TEXTTRIG_MEMORY(action.group) break;
                 case 1: ADD_TEXTTRIG_NUMERIC_MODIFIER(action.type2) break;
                 case 2: ADD_TEXTTRIG_NUMBER(action.number) break;
             }
