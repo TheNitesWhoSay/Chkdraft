@@ -228,7 +228,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam
                         }
                         break;
                     case 'Z': case 'Y': case 'X': case 'C': case 'V':
-                        if ( GetKeyState(VK_CONTROL) & 0x8000 )
+                        if ( GetKeyState(VK_CONTROL) & 0x8000 && (
+                            GetParent(hWnd) == unitWindow.getHandle() ||
+                            GetParent(hWnd) == locationWindow.getHandle() ||
+                            GetParent(hWnd) == terrainPalWindow.getHandle() ||
+                            GetParent(hWnd) == tilePropWindow.getHandle() ) )
                         {
                             KeyListener(hWnd, msg, wParam, lParam);
                             return true;
