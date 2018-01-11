@@ -715,9 +715,10 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
     }
     else
     {
-        if ( text.has("CONDITIONS", pos, 10) || text.has("ACTIONS", pos, 7) )
+        bool hasConditions = text.has("CONDITIONS", pos, 10);
+        if ( hasConditions || text.has("ACTIONS", pos, 7) )
         {
-            pos += 7;
+            pos += hasConditions ? 10 : 6;
             while ( text.has('\15', pos) )
             {
                 pos += 2;
