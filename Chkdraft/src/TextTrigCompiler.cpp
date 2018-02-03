@@ -579,6 +579,10 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
                         }
                     }
                     break;
+                default:
+                    std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "A coding error caused the expected parse step to exceed max, please report this.\n\n%s", LastError);
+                    return false;
+                    break;
             }
         }
     }
