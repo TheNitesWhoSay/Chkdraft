@@ -549,6 +549,17 @@ void Maps::DisableMapping()
     {
         mappingEnabled = false;
 
+        chkd.unitWindow.DestroyThis();
+        chkd.locationWindow.DestroyThis();
+        chkd.terrainPalWindow.DestroyThis();
+        chkd.tilePropWindow.DestroyThis();
+        chkd.textTrigWindow.DestroyThis();
+        chkd.litWindow.DestroyThis();
+        chkd.mapSettingsWindow.DestroyThis();
+        chkd.trigEditorWindow.DestroyThis();
+        chkd.changePasswordWindow.DestroyThis();
+        chkd.enterPasswordWindow.DestroyThis();
+
         int toolbarItems[] =
         {
             ID_FILE_SAVE1, ID_FILE_SAVEAS1, ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_PROPERTIES,
