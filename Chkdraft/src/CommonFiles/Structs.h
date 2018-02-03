@@ -2,10 +2,19 @@
 #define STRUCTS_H
 #include "Constants.h"
 
-struct points // Mirrors win32 POINTS
+class points // Mirrors win32 POINTS
 {
-    s16 x;
-    s16 y;
+    public:
+        s16 x;
+        s16 y;
+        points() : x(0), y(0) {}
+        points(s16 x, s16 y) : x(x), y(y) {}
+        inline bool operator==(const points &rhs) const { return x == rhs.x && y == rhs.y; }
+        inline bool operator<(const points &rhs) const {
+            if ( y < rhs.y) return true;
+            else if ( y > rhs.y ) return false;
+            else return x < rhs.x;
+        }
 };
 
 struct point // Mirrors win32 POINT

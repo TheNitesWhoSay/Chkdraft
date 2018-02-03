@@ -58,17 +58,28 @@ class Clipboard
 
         void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
 
+        void toggleFillSimilarTiles();
+
         std::vector<PasteTileNode> &getTiles();
         std::vector<PasteUnitNode> &getUnits();
         bool isPasting() { return pasting; }
         bool isQuickPasting() { return pasting && quickPaste; }
         bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
 
+
+    protected:
+
+        void pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos);
+        void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos);
+        void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
+
+
     private:
 
         bool pasting;
         bool quickPaste; /* Controls whether you are using quick placement,
                             as opposed to something saved on clipboard.     */
+        bool fillSimilarTiles;
         RECT edges;
         std::vector<PasteTileNode> copyTiles;
         std::vector<PasteTileNode> quickTiles;
