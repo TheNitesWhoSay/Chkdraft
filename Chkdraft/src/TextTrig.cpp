@@ -25,7 +25,6 @@ void TextTrigWindow::RefreshWindow()
         SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
     else
         Error("Failed to generate text triggers.");
-
 }
 
 void TextTrigWindow::updateMenus()
@@ -43,6 +42,9 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_OPTIONS_USEADDRESSESFORMEMORY:
         Settings::useAddressesForMemory = !Settings::useAddressesForMemory;
         Settings::updateSettingsFile();
+        RefreshWindow();
+        break;
+    case ID_REFRESH_TEXTTRIGS:
         RefreshWindow();
         break;
     case IDC_COMPSAVE:

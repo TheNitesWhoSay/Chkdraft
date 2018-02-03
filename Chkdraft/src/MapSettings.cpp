@@ -173,6 +173,10 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 return FALSE;
             break;
 
+        case WM_CLOSE:
+            DestroyThis();
+            break;
+
         default:
             return FALSE;
             break;

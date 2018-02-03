@@ -124,6 +124,7 @@
 #define IDC_BUTTON1                     1104
 #define IDC_INVERTX                     1104
 #define IDC_BUTTON_LITSAVE              1104
+#define ID_REFRESH_TEXTTRIGS            1104
 #define IDC_BUTTON2                     1105
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
@@ -300,7 +301,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        154
+#define _APS_NEXT_RESOURCE_VALUE        155
 #define _APS_NEXT_COMMAND_VALUE         40636
 #define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101

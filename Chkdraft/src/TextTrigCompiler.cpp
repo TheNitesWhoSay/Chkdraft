@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "Clipboard.h" // Temp
-
 #define MAX_ERROR_MESSAGE_SIZE 256
 
 TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
@@ -19,7 +17,7 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData)
 {
     buffer text("TxTr");
-    return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTriggers(text, chk, scData);
+    return text.addStr(trigText.c_str(), trigText.length()) && CompileTriggers(text, chk, scData);
 }
 
 bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData)
@@ -300,7 +298,7 @@ void TextTrigCompiler::CleanText(buffer &text)
     u32 pos = 0;
     bool inString = false;
     buffer dest("TeCp");
-    dest.setSize(text.size());
+    dest.setSize(text.size()+1);
 
     while ( pos < text.size() ) 
     {
@@ -333,8 +331,8 @@ void TextTrigCompiler::CleanText(buffer &text)
                     {
                         pos = newPos; // Skip (delete) contents until line ending
                     }
-                    else
-                        pos = text.size(); // File probably ended this line
+                    else // File ended on this line
+                        pos = text.size();
                 }
                 break;
 
@@ -438,6 +436,7 @@ void TextTrigCompiler::CleanText(buffer &text)
                 break;
         }
     }
+    dest.add<u8>(0); // Add a terminating null character
     text.overwrite((const char*)dest.getPtr(0), dest.size());
 }
 
@@ -613,7 +612,11 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
             return false;
         }
     }
-    else 
+    else if ( text.has('\0', pos) ) // End of text
+    {
+        pos ++;
+    }
+    else
     {
         std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Trigger\" or End of Text", line);
         return false;
@@ -715,20 +718,32 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
     }
     else
     {
-        if ( text.has("CONDITIONS", pos, 10) || text.has("ACTIONS", pos, 7) )
+        bool hasConditions = text.has("CONDITIONS", pos, 10);
+        if ( hasConditions || text.has("ACTIONS", pos, 7) )
         {
-            pos += 7;
+            pos += hasConditions ? 10 : 7;
             while ( text.has('\15', pos) )
             {
                 pos += 2;
                 line ++;
             }
-            std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+
+            if ( text.has(':', pos) ) 
+            {
+                pos ++;
+                expecting += hasConditions ? 1 : 4;
+            }
+            else
+            {
+                std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+                return false;
+            }
         }
         else
+        {
             std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
-
-        return false;
+            return false;
+        }
     }
     return true;
 }
@@ -810,6 +825,11 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
     else if ( text.has("ACTIONS", pos, 7 ) ) // End conditions
     {
         pos += 7;
+        while ( text.has('\r', pos) )
+        {
+            pos += 2;
+            line ++;
+        }
         if ( text.has(':', pos) )
         {
             pos ++;
@@ -1024,14 +1044,12 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
                     std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
                     return false;
                 }
-
                 currAction = &currTrig.actions[numActions];
-                currAction->flags = flags | Action::Flags::Disabled;
+                currAction->flags = flags | (u8)Action::Flags::Disabled;
                 if ( (s32)actionId < 0 )
-                    currAction->action = ExtendedToRegularAID(actionId);
+                    currAction->action = (u8)ExtendedToRegularAID(actionId);
                 else
-                    currAction->action = u8(actionId);
-                currAction->action = u8(actionId);
+                    currAction->action = (u8)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
@@ -1042,11 +1060,6 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
                 std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
                 return false;
             }
-        }
-        else
-        {
-            std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '('", line);
-            return false;
         }
     }
     else if ( text.has('}', pos) )
