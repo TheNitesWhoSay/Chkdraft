@@ -1025,14 +1025,12 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
                     std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nAction Max Exceeded!", line);
                     return false;
                 }
-
                 currAction = &currTrig.actions[numActions];
-                currAction->flags = flags | Action::Flags::Disabled;
+                currAction->flags = flags | (u8)Action::Flags::Disabled;
                 if ( (s32)actionId < 0 )
-                    currAction->action = ExtendedToRegularAID(actionId);
+                    currAction->action = (u8)ExtendedToRegularAID(actionId);
                 else
-                    currAction->action = u8(actionId);
-                currAction->action = u8(actionId);
+                    currAction->action = (u8)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
@@ -1043,11 +1041,6 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
                 std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: Action Name or \'}\'", line);
                 return false;
             }
-        }
-        else
-        {
-            std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: '('", line);
-            return false;
         }
     }
     else if ( text.has('}', pos) )
