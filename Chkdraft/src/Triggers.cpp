@@ -154,7 +154,6 @@ void TriggersWindow::DeleteSelection()
         if ( listTriggers.GetCurSel(sel) && DeleteTrigListItem(sel) && (SelectTrigListItem(sel) || SelectTrigListItem(sel-1)) )
         {
             listTriggers.RedrawThis();
-            chkd.textTrigWindow.RefreshWindow();
         }
         else
             RefreshTrigList();

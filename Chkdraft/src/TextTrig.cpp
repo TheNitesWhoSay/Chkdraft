@@ -25,7 +25,6 @@ void TextTrigWindow::RefreshWindow()
         SetDlgItemText(getHandle(), IDC_EDIT_TRIGTEXT, (const char*)trigString.c_str());
     else
         Error("Failed to generate text triggers.");
-
 }
 
 void TextTrigWindow::updateMenus()
@@ -86,7 +85,10 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_ACTIVATE:
             if ( LOWORD(wParam) != WA_INACTIVE )
+            {
+                RefreshWindow();
                 chkd.SetCurrDialog(hWnd);
+            }
             break;
 
         case WM_INITDIALOG:
