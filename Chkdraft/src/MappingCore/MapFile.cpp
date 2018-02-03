@@ -103,6 +103,8 @@ bool MapFile::SaveFile(bool SaveAs)
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx)
                 || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
+                if ( !SaveAs || (SaveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
+                {
                     DeleteFileA("chk.tmp"); // Remove any existing chk.tmp files
                     pFile = std::fopen("chk.tmp", "wb");
                     Scenario::WriteFile(pFile);
@@ -130,7 +132,8 @@ bool MapFile::SaveFile(bool SaveAs)
                     }
                     else
                         MessageBox(NULL, std::string(std::string("Failed to open for updates!\n\nThe file may be in use elsewhere. ") + std::to_string(GetLastError())).c_str(), "Error!", MB_OK | MB_ICONEXCLAMATION);
-                    
+                }
+
                 MessageBox(NULL, "Failed to create the new MPQ file!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 
                 DeleteFileA("chk.tmp");
