@@ -44,6 +44,9 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         Settings::updateSettingsFile();
         RefreshWindow();
         break;
+    case ID_REFRESH_TEXTTRIGS:
+        RefreshWindow();
+        break;
     case IDC_COMPSAVE:
         if ( CM != nullptr )
         {
@@ -85,10 +88,7 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_ACTIVATE:
             if ( LOWORD(wParam) != WA_INACTIVE )
-            {
-                RefreshWindow();
                 chkd.SetCurrDialog(hWnd);
-            }
             break;
 
         case WM_INITDIALOG:
