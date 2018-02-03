@@ -6,9 +6,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <iostream>
-
-#include "Clipboard.h" // Temp
 
 #define MAX_ERROR_MESSAGE_SIZE 256
 
@@ -615,7 +612,11 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
             return false;
         }
     }
-    else 
+    else if ( text.has('\0', pos) ) // End of text
+    {
+        pos ++;
+    }
+    else
     {
         std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Trigger\" or End of Text", line);
         return false;
@@ -720,18 +721,29 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
         bool hasConditions = text.has("CONDITIONS", pos, 10);
         if ( hasConditions || text.has("ACTIONS", pos, 7) )
         {
-            pos += hasConditions ? 10 : 6;
+            pos += hasConditions ? 10 : 7;
             while ( text.has('\15', pos) )
             {
                 pos += 2;
                 line ++;
             }
-            std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+
+            if ( text.has(':', pos) ) 
+            {
+                pos ++;
+                expecting += hasConditions ? 1 : 4;
+            }
+            else
+            {
+                std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \':\'", line);
+                return false;
+            }
         }
         else
+        {
             std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
-
-        return false;
+            return false;
+        }
     }
     return true;
 }
@@ -813,6 +825,11 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
     else if ( text.has("ACTIONS", pos, 7 ) ) // End conditions
     {
         pos += 7;
+        while ( text.has('\r', pos) )
+        {
+            pos += 2;
+            line ++;
+        }
         if ( text.has(':', pos) )
         {
             pos ++;
