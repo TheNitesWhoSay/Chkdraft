@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "Clipboard.h" // Temp
 
@@ -19,7 +20,7 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData)
 {
     buffer text("TxTr");
-    return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTriggers(text, chk, scData);
+    return text.addStr(trigText.c_str(), trigText.length()) && CompileTriggers(text, chk, scData);
 }
 
 bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData)
@@ -300,7 +301,7 @@ void TextTrigCompiler::CleanText(buffer &text)
     u32 pos = 0;
     bool inString = false;
     buffer dest("TeCp");
-    dest.setSize(text.size());
+    dest.setSize(text.size()+1);
 
     while ( pos < text.size() ) 
     {
@@ -333,8 +334,8 @@ void TextTrigCompiler::CleanText(buffer &text)
                     {
                         pos = newPos; // Skip (delete) contents until line ending
                     }
-                    else
-                        pos = text.size(); // File probably ended this line
+                    else // File ended on this line
+                        pos = text.size();
                 }
                 break;
 
@@ -438,6 +439,7 @@ void TextTrigCompiler::CleanText(buffer &text)
                 break;
         }
     }
+    dest.add<u8>(0); // Add a terminating null character
     text.overwrite((const char*)dest.getPtr(0), dest.size());
 }
 
@@ -578,10 +580,6 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
                             return true;
                         }
                     }
-                    break;
-                default:
-                    std::snprintf(error, MAX_ERROR_MESSAGE_SIZE, "A coding error caused the expected parse step to exceed max, please report this.\n\n%s", LastError);
-                    return false;
                     break;
             }
         }
