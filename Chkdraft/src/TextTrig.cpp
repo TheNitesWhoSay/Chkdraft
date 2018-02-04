@@ -53,6 +53,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( CompileEditText(CM) )
             {
                 CM->refreshScenario();
+                RefreshWindow();
                 if ( chkd.maps.SaveCurr(false) )
                     MessageBox(NULL, "Success", "Compiler", MB_OK);
                 else
@@ -72,6 +73,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 CM->notifyChange(false);
                 CM->refreshScenario();
+                RefreshWindow();
                 MessageBox(NULL, "Success", "Compiler", MB_OK);
             }
         }
@@ -103,24 +105,27 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_SIZE:
             {
-                RECT rcClient, rcCompile, rcCompSave;
+                RECT rcClient, rcCompile, rcCompSave, rcRefresh;
 
                 HWND hEdit     = GetDlgItem(hWnd, IDC_EDIT_TRIGTEXT ),
                      hCompile  = GetDlgItem(hWnd, ID_COMPILE_TRIGS),
-                     hCompSave = GetDlgItem(hWnd, IDC_COMPSAVE);
+                     hCompSave = GetDlgItem(hWnd, IDC_COMPSAVE),
+                     hRefresh  = GetDlgItem(hWnd, ID_REFRESH_TEXTTRIGS);
 
                 GetClientRect(hWnd, &rcClient);
                 GetWindowRect(hCompile, &rcCompile);
                 GetWindowRect(hCompSave, &rcCompSave);
+                GetWindowRect(hRefresh, &rcRefresh);
 
                 SetWindowPos(hCompSave, hWnd, rcClient.right-rcClient.left-(rcCompSave.right-rcCompSave.left)-10, rcClient.bottom - (rcCompSave.bottom-rcCompSave.top) - 10, (rcCompSave.right-rcCompSave.left), (rcCompSave.bottom-rcCompSave.top), SWP_NOZORDER|SWP_NOACTIVATE);
                 SetWindowPos(hCompile, hWnd, (rcClient.right-rcClient.left-(rcCompSave.right-rcCompSave.left)-10)-(rcCompile.right-rcCompile.left+5), rcClient.bottom - (rcCompile.bottom-rcCompile.top) - 10, (rcCompile.right-rcCompile.left), (rcCompile.bottom-rcCompile.top), SWP_NOZORDER|SWP_NOACTIVATE);
+                SetWindowPos(hRefresh, hWnd, (rcClient.right-rcClient.left-(rcCompSave.right-rcCompSave.left)-10)-(rcCompile.right-rcCompile.left+5)-(rcRefresh.right-rcRefresh.left)-5, rcClient.bottom - (rcCompile.bottom-rcCompile.top) - 10, rcRefresh.right - rcRefresh.left, rcRefresh.bottom - rcRefresh.top, SWP_NOZORDER|SWP_NOACTIVATE);
                 SetWindowPos(hEdit, hWnd, 0, 0, rcClient.right, (rcClient.bottom - (rcCompile.bottom-rcCompile.top) - 20), SWP_NOZORDER|SWP_NOACTIVATE);
             }
             break;
 
         case WM_CLOSE:
-            EndDialog(hWnd, wParam);
+            DestroyDialog();
             break;
 
         default:
