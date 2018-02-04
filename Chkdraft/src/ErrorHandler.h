@@ -45,13 +45,12 @@ class KnownError : public std::exception
     Determines the appropriate action after an error has occured,
     error handlers may seek input from the user as necessary
 */
+class ErrorHandler;
+typedef std::shared_ptr<ErrorHandler> ErrorHandlerPtr;
 class ErrorHandler
 {
     public:
-        virtual ErrorHandlerResult HandleException(GenericCommand* command, KnownError& e) = 0;
-
-        static std::map<u32, std::shared_ptr<ErrorHandler>> knownErrorHandlers;
-        static ErrorHandlerResult HandleError(GenericCommand* command, KnownError& e);
+        virtual ErrorHandlerResult HandleException(GenericCommandPtr command, KnownError& e) = 0;
 };
 
 #endif

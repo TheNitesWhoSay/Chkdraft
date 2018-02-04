@@ -149,6 +149,7 @@
     <ClInclude Include="src\ChkdStringInput.h" />
     <ClInclude Include="src\Clipboard.h" />
     <ClInclude Include="src\CndActGrid.h" />
+    <ClInclude Include="src\CommandTypes.h" />
     <ClInclude Include="src\ErrorHandler.h" />
     <ClInclude Include="src\GenericCommand.h" />
     <ClInclude Include="src\Commander.h" />

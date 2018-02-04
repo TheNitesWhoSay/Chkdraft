@@ -1,29 +1,29 @@
 #include "Commander.h"
 #include <memory>
 
-class UndoCommand : public GenericCommand
+class GenericUndoCommand : public GenericCommand
 {
 public:
-    UndoCommand(Logger &logger) : GenericCommand(logger, true) {}
+    GenericUndoCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::GenericUndoCommand) {}
 };
 
-class RedoCommand : public GenericCommand
+class GenericRedoCommand : public GenericCommand
 {
 public:
-    RedoCommand(Logger &logger) : GenericCommand(logger, true) {}
+    GenericRedoCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::GenericRedoCommand) {}
 };
 
 class KillCommand : public GenericCommand
 {
 public:
-    KillCommand(Logger &logger) : GenericCommand(logger, true) {}
+    KillCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::KillCommanderCommand) {}
 };
 
 Commander::Commander(Logger &logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
     hasCommandsLock(hasCommandsLocker), synchronousLock(synchronousLocker),
-    undoCommand(std::shared_ptr<UndoCommand>(new UndoCommand(logger))),
-    redoCommand(std::shared_ptr<RedoCommand>(new RedoCommand(logger))),
-    killCommand(std::shared_ptr<KillCommand>(new KillCommand(logger)))
+    undoCommand(std::shared_ptr<GenericUndoCommand>(new GenericUndoCommand())),
+    redoCommand(std::shared_ptr<GenericRedoCommand>(new GenericRedoCommand())),
+    killCommand(std::shared_ptr<KillCommand>(new KillCommand()))
 {
     commandThread = std::unique_ptr<std::thread>(new std::thread(begin, this));
 }
@@ -33,13 +33,11 @@ Commander::~Commander()
     End();
 }
 
-
-
 void Commander::Do(GenericCommandPtr command)
 {
     commandLocker.lock();
 
-    bool isSynchronous = command.get()->isSynchronous();
+    bool isSynchronous = command->isSynchronous;
     if ( isSynchronous )
         ++numSynchronousCommands;
 
@@ -62,7 +60,7 @@ void Commander::Do(const std::vector<GenericCommandPtr> &commands)
 
     for ( GenericCommandPtr command : commands )
     {
-        if ( command.get()->isSynchronous() )
+        if ( command->isSynchronous )
             ++numSynchronousCommands;
 
         this->todoBuffer.push(command);
@@ -87,7 +85,7 @@ void Commander::DoAcid(const std::vector<GenericCommandPtr> &subCommands, u32 un
     if ( !async )
         ++numSynchronousCommands;
 
-    this->todoBuffer.push(GenericCommandPtr(new GenericCommand(logger, subCommands, async, true)));
+    this->todoBuffer.push(GenericCommandPtr(new GenericCommand(subCommands, async, true, (u32)ReservedCommandClassIds::AcidCommandParent)));
     hasCommandsToExecute = true;
     hasCommands.notify_one();
     commandLocker.unlock();
@@ -103,9 +101,9 @@ void Commander::DoAcid(const std::vector<GenericCommandPtr> &subCommands, u32 un
 void Commander::Undo(u32 undoRedoTypeId)
 {
     commandLocker.lock();
-    undoCommand->SetUndoRedoTypeId(undoRedoTypeId);
+    undoCommand->undoRedoTypeId = undoRedoTypeId;
 
-    bool isSynchronous = undoCommand.get()->isSynchronous();
+    bool isSynchronous = undoCommand->isSynchronous;
     if ( isSynchronous )
         ++numSynchronousCommands;
 
@@ -125,9 +123,9 @@ void Commander::Undo(u32 undoRedoTypeId)
 void Commander::Redo(u32 undoRedoTypeId)
 {
     commandLocker.lock();
-    redoCommand->SetUndoRedoTypeId(undoRedoTypeId);
+    redoCommand->undoRedoTypeId = undoRedoTypeId;
 
-    bool isSynchronous = undoCommand.get()->isSynchronous();
+    bool isSynchronous = undoCommand->isSynchronous;
     if ( isSynchronous )
         ++numSynchronousCommands;
 
@@ -142,6 +140,284 @@ void Commander::Redo(u32 undoRedoTypeId)
             return numSynchronousCommands == 0;
         });
     }
+}
+
+void Commander::RegisterCommandListener(u32 commandClassId, CommandListenerPtr listener)
+{
+    auto found = commandListeners.find(commandClassId);
+    if ( found != commandListeners.end() )
+    {
+        found->second->push_back(listener);
+    }
+    else
+    {
+        ListenerVectorPtr newListenerList = ListenerVectorPtr(new std::vector<CommandListenerPtr>());
+        newListenerList->push_back(listener);
+        commandListeners.insert(std::pair<u32, ListenerVectorPtr>(commandClassId, newListenerList));
+    }
+}
+
+void Commander::RegisterErrorHandler(u32 errorId, ErrorHandlerPtr errorHandler)
+{
+    errorHandlers.insert(std::pair<u32, ErrorHandlerPtr>(errorId, errorHandler));
+}
+
+bool Commander::DoCommand(GenericCommandPtr command)
+{
+    if ( DoCommand(command, false) )
+    {
+        NotifyCommandFinished(command);
+        return true;
+    }
+    return false;
+}
+
+bool Commander::UndoCommand(GenericCommandPtr command)
+{
+    if ( UndoCommand(command, false) )
+    {
+        NotifyCommandFinished(command);
+        return true;
+    }
+    return false;
+}
+
+bool Commander::DoCommand(GenericCommandPtr command, bool hasAcidParent)
+{
+    if ( hasAcidParent || command->subCommandsAreAcid )
+    {
+        if ( command->subCommands.size() > 0 )
+            return DoAcidSubItems(command);
+        else
+            return DoDo(command, false);
+    }
+    else
+    {
+        if ( command->subCommands.size() > 0 )
+            DoSubItems(command);
+        else
+            DoDo(command, false);
+
+        return true;
+    }
+    return false;
+}
+
+bool Commander::UndoCommand(GenericCommandPtr command, bool hasAcidParent)
+{
+    if ( hasAcidParent || command->subCommandsAreAcid )
+    {
+        if ( command->subCommands.size() > 0 )
+            return UndoAcidSubItems(command);
+    }
+    else
+    {
+        if ( command->subCommands.size() > 0 )
+            UndoSubItems(command);
+        else
+            command->Undo(logger);
+
+        return true;
+    }
+    return false;
+}
+
+bool Commander::DoDo(GenericCommandPtr command, bool retrying)
+{
+    try {
+        command->Do(logger);
+    } catch ( KnownError &e ) {
+        ErrorHandlerResult result = HandleError(command, e);
+        logger.log(result.logString, result.logLevel);
+        if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
+            return DoDo(command, true);
+        else
+            return false;
+    } catch ( std::exception &e ) {
+        logger.error(std::string(e.what()));
+        logger.error("An unknown exception occured during command: " + command->toString());
+    }
+    return true;
+}
+
+bool Commander::DoUndo(GenericCommandPtr command, bool retrying)
+{
+    try {
+        command->Undo(logger);
+    } catch ( KnownError &e ) {
+        ErrorHandlerResult result = HandleError(command, e);
+        logger.log(result.logString, result.logLevel);
+        if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
+            return DoUndo(command, true);
+        else
+            return false;
+    } catch ( std::exception &e ) {
+        logger.error(std::string(e.what()));
+        logger.error("An unknown exception occured during undo command: " + command->toString());
+    }
+    return true;
+}
+
+void Commander::DoSubItems(GenericCommandPtr command)
+{
+    for ( auto subCommand : command->subCommands )
+        DoCommand(subCommand, false);
+}
+
+void Commander::UndoSubItems(GenericCommandPtr command)
+{
+    for ( auto subCommand : command->subCommands )
+        UndoCommand(subCommand, false);
+}
+
+bool Commander::DoAcidSubItems(GenericCommandPtr command)
+{
+    for ( auto subCommand = command->subCommands.begin(); subCommand != command->subCommands.end(); ++subCommand )
+    {
+        bool success = false;
+        try {
+            success = DoCommand(*subCommand, true);
+        } catch ( KnownError &e ) {
+            ErrorHandlerResult result = HandleError(*subCommand, e);
+            logger.log(result.logString, result.logLevel);
+            if ( result.primaryAction == ErrorAction::RetryCommand )
+            {
+                try {
+                    success = DoCommand(*subCommand, true);
+                } catch ( KnownError &e ) {
+                    result = HandleError(*subCommand, e);
+                    logger.log(result.logString, result.logLevel);
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during command: " + (*subCommand)->toString());
+                }
+            }
+        } catch ( std::exception &e ) {
+            logger.error(std::string(e.what()));
+            logger.error("An unknown exception occured during undo command: " + (*subCommand)->toString());
+        }
+        if ( !success )
+        {
+            while ( true )
+            {
+                if ( subCommand == command->subCommands.begin() )
+                    return false;
+
+                --subCommand;
+
+                bool undoSucceeded = false;
+                try {
+                    undoSucceeded = UndoCommand(*subCommand, true);
+                } catch ( KnownError &e ) {
+                    ErrorHandlerResult result = HandleError(*subCommand, e);
+                    logger.log(result.logString, result.logLevel);
+                    if ( result.primaryAction == ErrorAction::RetryCommand )
+                    {
+                        try {
+                            success = DoCommand(*subCommand, true);
+                        } catch ( KnownError &e ) {
+                            result = HandleError(*subCommand, e);
+                            logger.log(result.logString, result.logLevel);
+                        } catch ( std::exception &e ) {
+                            logger.error(std::string(e.what()));
+                            logger.error("An unknown exception occured during command: " + (*subCommand)->toString());
+                        }
+                    }
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + (*subCommand)->toString());
+                }
+                if ( !undoSucceeded )
+                    throw new AcidRollbackFailure("ACID Do rollback Failed!");
+            }
+        }
+    }
+    return true;
+}
+
+bool Commander::UndoAcidSubItems(GenericCommandPtr command)
+{
+    for ( auto subCommand = command->subCommands.rbegin(); subCommand != command->subCommands.rend(); ++subCommand )
+    {
+        bool success = false;
+        try {
+            success = UndoCommand(*subCommand, true);
+        } catch ( KnownError &e ) {
+            ErrorHandlerResult result = HandleError(*subCommand, e);
+            logger.log(result.logString, result.logLevel);
+            if ( result.primaryAction == ErrorAction::RetryCommand )
+            {
+                try {
+                    success = UndoCommand(*subCommand, true);
+                } catch ( KnownError &e ) {
+                    result = HandleError(command, e);
+                    logger.log(result.logString, result.logLevel);
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + (*subCommand)->toString());
+                }
+            }
+        } catch ( std::exception &e ) {
+            logger.error(std::string(e.what()));
+            logger.error("An unknown exception occured during undo command: " + (*subCommand)->toString());
+        }
+        if ( !success )
+        {
+            while ( true )
+            {
+                if ( subCommand == command->subCommands.rbegin() )
+                    return false;
+
+                --subCommand;
+
+                bool doSucceeded = false;
+                try {
+                    doSucceeded = DoCommand(*subCommand, true);
+                } catch ( KnownError &e ) {
+                    ErrorHandlerResult result = HandleError(*subCommand, e);
+                    logger.log(result.logString, result.logLevel);
+                    if ( result.primaryAction == ErrorAction::RetryCommand )
+                    {
+                        try {
+                            success = UndoCommand(*subCommand, true);
+                        } catch ( KnownError &e ) {
+                            result = HandleError(*subCommand, e);
+                            logger.log(result.logString, result.logLevel);
+                        } catch ( std::exception &e ) {
+                            logger.error(std::string(e.what()));
+                            logger.error("An unknown exception occured during command: " + (*subCommand)->toString());
+                        }
+                    }
+                } catch ( std::exception &e ) {
+                    logger.error(std::string(e.what()));
+                    logger.error("An unknown exception occured during undo command: " + (*subCommand)->toString());
+                }
+                if ( !doSucceeded )
+                    throw new AcidRollbackFailure("ACID Undo Rollback Failed!");
+            }
+        }
+    }
+    return true;
+}
+
+void Commander::NotifyCommandFinished(GenericCommandPtr command)
+{
+    u32 commandClassId = command->commandClassId;
+    auto found = commandListeners.find(commandClassId);
+    if ( found != commandListeners.end() )
+    {
+        for ( auto listener = found->second->begin(); listener != found->second->end(); ++listener )
+            (*listener)->Listen(commandClassId, command);
+    }
+}
+
+ErrorHandlerResult Commander::HandleError(GenericCommandPtr command, KnownError& e)
+{
+    auto handler = errorHandlers.find(e.getErrorId());
+    if ( handler != errorHandlers.end() )
+        return handler->second->HandleException(command, e);
+    else
+        return ErrorHandlerResult(ErrorAction::DiscardCommand, LogLevel::Error, std::string("Unknown error occured in command: ") + command->toString());
 }
 
 void begin(Commander* commander)
@@ -182,15 +458,15 @@ void Commander::Run()
                 TryRedo();
             else if ( command == killCommand )
                 keepRunning = false;
-            else if ( command->DoCommand() )
+            else if ( DoCommand(command) )
             {
-                u32 undoRedoTypeId = command->Id();
+                u32 undoRedoTypeId = command->undoRedoTypeId;
                 ClipRedos(undoRedoTypeId);
                 AddUndo(undoRedoTypeId, command);
             }
 
             // Notify completion of command if synchronous
-            if ( command->isSynchronous() )
+            if ( command->isSynchronous )
             {
                 --numSynchronousCommands;
                 synchronousExecution.notify_one();
@@ -203,7 +479,7 @@ void Commander::End()
 {
     commandLocker.lock();
 
-    bool isSynchronous = killCommand.get()->isSynchronous();
+    bool isSynchronous = killCommand->isSynchronous;
     if ( isSynchronous )
         ++numSynchronousCommands;
 
@@ -242,9 +518,9 @@ void Commander::AddUndo(u32 undoRedoTypeId, GenericCommandPtr command)
     }
     else
     {
-        StackPtr undoBuffer(new std::stack<GenericCommandPtr>());
+        CommandStackPtr undoBuffer(new std::stack<GenericCommandPtr>());
         undoBuffer->push(command);
-        undoBuffers.insert(std::pair<u32, StackPtr>(undoRedoTypeId, undoBuffer));
+        undoBuffers.insert(std::pair<u32, CommandStackPtr>(undoRedoTypeId, undoBuffer));
     }
 }
 
@@ -255,15 +531,15 @@ void Commander::AddRedo(u32 undoRedoTypeId, GenericCommandPtr command)
         foundRedoBuffer->second->push(command);
     else
     {
-        StackPtr redoBuffer(new std::stack<GenericCommandPtr>());
+        CommandStackPtr redoBuffer(new std::stack<GenericCommandPtr>());
         redoBuffer->push(command);
-        redoBuffers.insert(std::pair<u32, StackPtr>(undoRedoTypeId, redoBuffer));
+        redoBuffers.insert(std::pair<u32, CommandStackPtr>(undoRedoTypeId, redoBuffer));
     }
 }
 
 void Commander::TryUndo()
 {
-    u32 undoRedoTypeId = undoCommand->GetUndoRedoTypeId();
+    u32 undoRedoTypeId = undoCommand->undoRedoTypeId;
     auto foundUndoBuffer = undoBuffers.find(undoRedoTypeId);
 
     if ( foundUndoBuffer != undoBuffers.end() )
@@ -273,7 +549,7 @@ void Commander::TryUndo()
         {
             GenericCommandPtr command = undoBuffer->top();
             undoBuffer->pop();
-            if ( command->UndoCommand() )
+            if ( UndoCommand(command) )
                 AddRedo(undoRedoTypeId, command);
         }
     }
@@ -281,7 +557,7 @@ void Commander::TryUndo()
 
 void Commander::TryRedo()
 {
-    u32 undoRedoTypeId = redoCommand->GetUndoRedoTypeId();
+    u32 undoRedoTypeId = redoCommand->undoRedoTypeId;
     auto foundRedoBuffer = redoBuffers.find(undoRedoTypeId);
 
     if ( foundRedoBuffer != redoBuffers.end() )
@@ -291,7 +567,7 @@ void Commander::TryRedo()
         {
             GenericCommandPtr command = redoBuffer->top();
             redoBuffer->pop();
-            if ( command->DoCommand() )
+            if ( DoCommand(command) )
                 AddUndo(undoRedoTypeId, command);
         }
     }

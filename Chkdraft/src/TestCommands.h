@@ -2,6 +2,7 @@
 #define TESTCOMMANDS_H
 #include "CommonFiles\CommonFiles.h"
 #include "GenericCommand.h"
+#include "CommandTypes.h"
 
 class ExampleCommand;
 typedef std::shared_ptr<ExampleCommand> ExampleCommandPtr;
@@ -9,9 +10,8 @@ typedef std::shared_ptr<ExampleCommand> ExampleCommandPtr;
 class ExampleCommand : public GenericCommand
 {
     public:
-        ExampleCommand(Logger &logger, const std::string &addition);
-        static ExampleCommandPtr C(Logger &logger, const std::string &addition);
-        virtual u32 Id();
+        ExampleCommand(const std::string &addition);
+        static ExampleCommandPtr C(const std::string &addition);
 
     protected:
         virtual void Do();
