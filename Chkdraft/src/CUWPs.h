@@ -8,6 +8,7 @@ class CUWPsWindow : public ClassWindow
 {
     public:
         CUWPsWindow();
+        virtual ~CUWPsWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow(bool includeTree);

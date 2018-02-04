@@ -33,6 +33,11 @@ TrigGeneralWindow::TrigGeneralWindow() : trigIndex(0), refreshing(true), advance
 
 }
 
+TrigGeneralWindow::~TrigGeneralWindow()
+{
+
+}
+
 bool TrigGeneralWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

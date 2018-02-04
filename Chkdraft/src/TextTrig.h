@@ -10,6 +10,7 @@ class TextTrigWindow : public ClassDialog
 {
     public:
         WindowMenu textTrigMenu;
+        virtual ~TextTrigWindow();
         bool CreateThis(HWND hParent);
         void RefreshWindow();
 

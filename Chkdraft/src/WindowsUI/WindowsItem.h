@@ -12,6 +12,7 @@ class WindowsItem
 {
     public:
         WindowsItem();
+        virtual ~WindowsItem();
 
         void DestroyThis();
 

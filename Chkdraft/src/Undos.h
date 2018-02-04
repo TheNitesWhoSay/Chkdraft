@@ -16,6 +16,8 @@ class IObserveUndos
         /** Sent if all changes to unique types have been reversed
             since load or since the last call to ResetChangeCount */
         virtual void ChangesReversed() = 0;
+
+        virtual ~IObserveUndos();
 };
 
 class Undos
@@ -23,7 +25,7 @@ class Undos
     public:
 
         Undos(IObserveUndos &observer);
-        ~Undos();
+        virtual ~Undos();
 
         void AddUndo(ReversiblePtr action);
         void doUndo(int32_t type, void *obj);

@@ -16,3 +16,8 @@ ModifiedAsset::ModifiedAsset(const std::string &assetMpqPath, WavQuality wavQual
     assetTempMpqPath = std::to_string(nextAssetId);
     nextAssetId ++;
 }
+
+ModifiedAsset::~ModifiedAsset()
+{
+
+}

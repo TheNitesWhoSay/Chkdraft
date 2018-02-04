@@ -6,6 +6,7 @@ class GridControlItem
 {
     public:
         GridControlItem();
+        virtual ~GridControlItem();
         void SetText(const char* text);
         void SetText(int text);
         void SetData(u32 data);

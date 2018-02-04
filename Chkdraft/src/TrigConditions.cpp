@@ -21,6 +21,11 @@ TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), gridC
     InitializeArgMaps();
 }
 
+TrigConditionsWindow::~TrigConditionsWindow()
+{
+
+}
+
 bool TrigConditionsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

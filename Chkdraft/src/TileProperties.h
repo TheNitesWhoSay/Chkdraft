@@ -6,6 +6,7 @@
 class TilePropWindow : public ClassDialog
 {
     public:
+        virtual ~TilePropWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void UpdateTile();

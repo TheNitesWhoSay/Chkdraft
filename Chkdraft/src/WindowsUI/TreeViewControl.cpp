@@ -1,5 +1,10 @@
 #include "TreeViewControl.h"
 
+TreeViewControl::~TreeViewControl()
+{
+
+}
+
 bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u32 id)
 {
     DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES;

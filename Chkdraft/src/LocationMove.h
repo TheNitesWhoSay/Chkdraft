@@ -6,6 +6,7 @@
 class LocationMove : public ReversibleAction
 {
     public:
+        virtual ~LocationMove();
         static std::shared_ptr<LocationMove> Make(u16 locationIndex, s32 xChange, s32 yChange);
         virtual void Reverse(void *guiMap);
         virtual int32_t GetType();

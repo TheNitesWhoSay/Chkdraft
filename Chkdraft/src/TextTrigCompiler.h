@@ -37,6 +37,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
     public:
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
+        virtual ~TextTrigCompiler();
         bool CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success

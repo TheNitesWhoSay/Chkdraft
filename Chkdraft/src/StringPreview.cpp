@@ -1,5 +1,10 @@
 #include "StringPreview.h"
 
+StringPreviewWindow::~StringPreviewWindow()
+{
+
+}
+
 bool StringPreviewWindow::CreateThis(HWND hParent, u32 windowId)
 {
     return

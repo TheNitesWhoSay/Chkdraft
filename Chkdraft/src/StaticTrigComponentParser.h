@@ -6,6 +6,7 @@ class StaticTrigComponentParser
 {
     public:
 
+        virtual ~StaticTrigComponentParser();
         bool ParseNumericComparison(char* text, u8 &dest, u32 pos, u32 end); // At least, at most, exactly
         bool ParseSwitchState(char* text, u8 &dest, u32 pos, u32 end); // Set, cleared
         bool ParseSpecialUnitAmount(char* text, u8 &dest, u32 pos, u32 end); // All

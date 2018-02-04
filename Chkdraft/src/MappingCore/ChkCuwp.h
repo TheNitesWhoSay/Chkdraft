@@ -16,6 +16,8 @@ class ChkCuwp
         u16 flags;
         u32 unknown;
 
+        virtual ~ChkCuwp();
+
         bool IsCloakValid();
         bool IsBurrowValid();
         bool IsTransitValid();

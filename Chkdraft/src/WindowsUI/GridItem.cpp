@@ -5,6 +5,11 @@ GridControlItem::GridControlItem() : selected(false), data(0), disabled(false)
     text = "";
 }
 
+GridControlItem::~GridControlItem()
+{
+
+}
+
 void GridControlItem::SetText(const char* newText)
 {
     try { this->text = newText; }

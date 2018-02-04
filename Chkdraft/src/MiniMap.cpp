@@ -1,6 +1,11 @@
 #include "MiniMap.h"
 #include "Chkdraft.h"
 
+MiniMap::~MiniMap()
+{
+
+}
+
 bool MiniMap::CreateThis(HWND hParent, u32 id)
 {
     return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),

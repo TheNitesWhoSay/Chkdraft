@@ -1,6 +1,11 @@
 #include "ChkdStringInput.h"
 #include "CommonFiles/CommonFiles.h"
 
+ChkdStringInputDialog::~ChkdStringInputDialog()
+{
+
+}
+
 bool ChkdStringInputDialog::GetChkdString(ChkdString &str, const ChkdString &initialString, HWND hParent)
 {
     ChkdStringInputDialog inputDialog;

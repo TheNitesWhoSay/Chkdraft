@@ -1,6 +1,11 @@
 #include "MainPlot.h"
 #include "Chkdraft.h"
 
+MainPlot::~MainPlot()
+{
+
+}
+
 bool MainPlot::CreateThis(HWND hParent, u32 id)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)(COLOR_APPWORKSPACE + 1), NULL, "Plot", NULL, false) &&

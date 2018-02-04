@@ -31,6 +31,11 @@ TechSettingsWindow::TechSettingsWindow() : selectedTech(-1), refreshing(false), 
 
 }
 
+TechSettingsWindow::~TechSettingsWindow()
+{
+
+}
+
 bool TechSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

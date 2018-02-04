@@ -1,6 +1,11 @@
 #include "LocationCreateDel.h"
 #include "GuiMap.h"
 
+LocationCreateDel::~LocationCreateDel()
+{
+
+}
+
 std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationIndex, ChkLocation &location, std::string &locationName)
 {
     return std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex, location, locationName));

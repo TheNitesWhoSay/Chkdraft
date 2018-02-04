@@ -27,6 +27,8 @@ public:
 
     u32 unused;
     u32 link;
+
+    virtual ~ChkUnit();
 };
 #define UNIT_STRUCT_SIZE 36
 #define NUM_UNIT_FIELDS 16

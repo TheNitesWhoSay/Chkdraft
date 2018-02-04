@@ -1,6 +1,11 @@
 #include "ListViewControl.h"
 #include <iostream>
 
+ListViewControl::~ListViewControl()
+{
+
+}
+
 bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id)
 {
     u32 style = WS_CHILD|LVS_REPORT|LVS_SHOWSELALWAYS;

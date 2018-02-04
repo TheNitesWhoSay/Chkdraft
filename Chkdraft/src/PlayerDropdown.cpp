@@ -1,5 +1,10 @@
 #include "PlayerDropdown.h"
 
+PlayerDropdown::~PlayerDropdown()
+{
+
+}
+
 bool PlayerDropdown::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id, bool eightPlayer)
 {
     const char** playerStrings = nullptr;

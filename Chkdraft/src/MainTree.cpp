@@ -1,6 +1,11 @@
 #include "MainTree.h"
 #include "Chkdraft.h"
 
+MainTree::~MainTree()
+{
+
+}
+
 void MainTree::BuildMainTree()
 {
     HWND hWnd = getHandle();

@@ -5,6 +5,7 @@
 class MiniMap : public ClassWindow
 {
     public:
+        virtual ~MiniMap();
         bool CreateThis(HWND hParent, u32 id);
 
     protected:

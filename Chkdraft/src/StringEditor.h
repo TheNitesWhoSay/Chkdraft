@@ -10,6 +10,7 @@ class StringEditorWindow : public ClassWindow
 {
     public:
         StringEditorWindow();
+        virtual ~StringEditorWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         void RefreshWindow();
 

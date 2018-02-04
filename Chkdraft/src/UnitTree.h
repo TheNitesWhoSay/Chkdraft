@@ -5,6 +5,7 @@
 class UnitTree : public TreeViewControl
 {
     public:
+        virtual ~UnitTree();
         bool AddThis(HWND hTree, HTREEITEM hRoot);
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id);
 

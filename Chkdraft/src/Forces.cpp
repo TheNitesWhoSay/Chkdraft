@@ -33,6 +33,11 @@ ForcesWindow::ForcesWindow() : playerBeingDragged(255)
         possibleForceNameUpdate[i] = false;
 }
 
+ForcesWindow::~ForcesWindow()
+{
+
+}
+
 bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

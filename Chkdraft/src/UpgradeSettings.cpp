@@ -47,6 +47,11 @@ UpgradeSettingsWindow::UpgradeSettingsWindow() : selectedUpgrade(-1), isDisabled
 
 }
 
+UpgradeSettingsWindow::~UpgradeSettingsWindow()
+{
+
+}
+
 bool UpgradeSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

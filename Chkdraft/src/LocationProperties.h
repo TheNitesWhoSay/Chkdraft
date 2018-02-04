@@ -8,6 +8,7 @@ class LocationWindow : public ClassDialog
 {
     public:
         LocationWindow();
+        virtual ~LocationWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void RefreshLocationInfo();

@@ -28,6 +28,11 @@ WavEditorWindow::WavEditorWindow() : wavQuality(WavQuality::Uncompressed), selec
 
 }
 
+WavEditorWindow::~WavEditorWindow()
+{
+
+}
+
 bool WavEditorWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

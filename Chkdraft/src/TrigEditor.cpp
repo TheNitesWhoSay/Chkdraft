@@ -22,6 +22,11 @@ TrigEditorWindow::TrigEditorWindow() : currTab(0)
 
 }
 
+TrigEditorWindow::~TrigEditorWindow()
+{
+
+}
+
 bool TrigEditorWindow::CreateThis(HWND hParent)
 {
     if ( getHandle() == NULL &&

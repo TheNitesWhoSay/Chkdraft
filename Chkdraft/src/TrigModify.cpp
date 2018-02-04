@@ -23,6 +23,11 @@ TrigModifyWindow::TrigModifyWindow() : currTab(0), trigIndex(NO_TRIGGER)
 
 }
 
+TrigModifyWindow::~TrigModifyWindow()
+{
+
+}
+
 bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 {
     if ( getHandle() == NULL &&

@@ -150,6 +150,11 @@ TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableO
     actionTable.clear();
 }
 
+TextTrigGenerator::~TextTrigGenerator()
+{
+
+}
+
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string &trigString)
 {
     return this != nullptr && map != nullptr && BuildTextTrigs(map, map->GetTrigSection(), trigString);

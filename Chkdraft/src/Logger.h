@@ -30,6 +30,7 @@ class Logger
         Logger(std::shared_ptr<std::ostream> outputStream, Logger* aggregator);
         Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel);
         Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel, Logger* aggregator);
+        virtual ~Logger();
 
         void setOutputStream(std::shared_ptr<std::ostream> outputStream);
         void setAggregator(Logger* aggregator);

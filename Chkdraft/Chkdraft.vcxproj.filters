@@ -633,6 +633,9 @@
     <ClInclude Include="src\Logger.h">
       <Filter>Header Files\Command\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="src\CommandTypes.h">
+      <Filter>Header Files\Command\Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CommonFiles\Constants.cpp">

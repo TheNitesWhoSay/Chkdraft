@@ -21,6 +21,11 @@ TrigModifyTextWindow::TrigModifyTextWindow() : trigIndex(0), autoCompile(false)
 
 }
 
+TrigModifyTextWindow::~TrigModifyTextWindow()
+{
+
+}
+
 bool TrigModifyTextWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

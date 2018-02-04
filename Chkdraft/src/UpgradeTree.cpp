@@ -1,6 +1,11 @@
 #include "UpgradeTree.h"
 #include "Chkdraft.h"
 
+UpgradeTree::~UpgradeTree()
+{
+
+}
+
 bool UpgradeTree::CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id)
 {
     if ( TreeViewControl::CreateThis(hParent, x, y, width, height, hasButtons, id) )

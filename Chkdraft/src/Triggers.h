@@ -14,6 +14,7 @@ class TriggersWindow : public ClassWindow
         TrigModifyWindow trigModifyWindow;
 
         TriggersWindow();
+        virtual ~TriggersWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow(bool focus);

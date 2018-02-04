@@ -6,6 +6,7 @@
 class ChkdStringInputDialog : public ClassDialog
 {
     public:
+        virtual ~ChkdStringInputDialog();
         static bool GetChkdString(ChkdString &str, const ChkdString &initialString, HWND hParent);
 
     protected:

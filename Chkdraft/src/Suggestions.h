@@ -9,6 +9,7 @@ class Suggestions : public ClassWindow
 {
     public:
         Suggestions();
+        virtual ~Suggestions();
         bool CreateThis(HWND hParent, int x, int y, int width, int height);
         void ClearStrings();
 

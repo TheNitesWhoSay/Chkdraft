@@ -17,20 +17,20 @@
         - Support ACID Commands
         - Support syncronous and asyncronous commands
         - Support using commands in mapping core while maintaining mapping cores reusability
-        - Support solid error handling both in mapping core and in Chkdraft (todo)
-        - Support registering listeners to specific commands and types of commands (todo)
+        - Support solid error handling both in mapping core and in Chkdraft
+        - Support registering listeners to specific commands and types of commands
 */
-
 
 class Commander;
 typedef std::shared_ptr<Commander> CommanderPtr;
-typedef std::shared_ptr<std::stack<GenericCommandPtr>> StackPtr;
+typedef std::shared_ptr<std::stack<GenericCommandPtr>> CommandStackPtr;
+typedef std::shared_ptr<std::vector<CommandListenerPtr>> ListenerVectorPtr;
 
 class Commander
 {
     public:
         Commander(Logger &logger);
-        ~Commander();
+        virtual ~Commander();
 
         void Do(GenericCommandPtr command);
         void Do(const std::vector<GenericCommandPtr> &commands);
@@ -38,10 +38,33 @@ class Commander
         void Undo(u32 undoRedoTypeId);
         void Redo(u32 undoRedoTypeId);
 
+        void RegisterCommandListener(u32 commandClassId, CommandListenerPtr listener);
+        void RegisterErrorHandler(u32 errorId, ErrorHandlerPtr errorHandler);
+
+    protected:
+        bool DoCommand(GenericCommandPtr command); // Attempts to do the command, returns true if this action should be undoable
+        bool UndoCommand(GenericCommandPtr command); // Attempts to undo this command, returns true if this action should be redoable
+
+        bool DoCommand(GenericCommandPtr command, bool hasAcidParent);
+        bool UndoCommand(GenericCommandPtr command, bool hasAcidParent);
+
+        bool DoDo(GenericCommandPtr command, bool retrying);
+        bool DoUndo(GenericCommandPtr command, bool retrying);
+
+        void DoSubItems(GenericCommandPtr command);
+        void UndoSubItems(GenericCommandPtr command);
+
+        bool DoAcidSubItems(GenericCommandPtr command);
+        bool UndoAcidSubItems(GenericCommandPtr command);
+
+        void NotifyCommandFinished(GenericCommandPtr command);
+
+        ErrorHandlerResult HandleError(GenericCommandPtr command, KnownError& e);
+
     private:
         friend void begin(Commander* commander);
         void Run();
-        void End();
+        void End(); // Finishes all pending commands and kills the command thread
         void ClipRedos(u32 undoRedoTypeId);
         void AddUndo(u32 undoRedoTypeId, GenericCommandPtr command);
         void AddRedo(u32 undoRedoTypeId, GenericCommandPtr command);
@@ -51,8 +74,10 @@ class Commander
         Logger &logger;
 
         std::queue<GenericCommandPtr> todoBuffer; // Only use this if you've locked the commandLocker
-        std::map<u32, StackPtr> undoBuffers;
-        std::map<u32, StackPtr> redoBuffers;
+        std::map<u32, CommandStackPtr> undoBuffers;
+        std::map<u32, CommandStackPtr> redoBuffers;
+        std::map<u32, ListenerVectorPtr> commandListeners;
+        std::map<u32, ErrorHandlerPtr> errorHandlers;
 
         bool hasCommandsToExecute; // Only use this if you've locked the commandLocker
         std::atomic<u32> numSynchronousCommands;
@@ -69,6 +94,17 @@ class Commander
         GenericCommandPtr undoCommand;
         GenericCommandPtr redoCommand;
         GenericCommandPtr killCommand;
+};
+
+class AcidRollbackFailure : public std::exception
+{
+    public:
+        explicit AcidRollbackFailure(const std::string &exceptionText) : exceptionText(exceptionText) { }
+        virtual ~AcidRollbackFailure() throw();
+        virtual const char* what() const throw() { return exceptionText.c_str(); }
+
+    private:
+        std::string exceptionText;
 };
 
 #endif

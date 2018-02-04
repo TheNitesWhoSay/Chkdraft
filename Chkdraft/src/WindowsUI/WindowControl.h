@@ -15,7 +15,7 @@ class WindowControl : public WindowsItem
 
 /* Constructor  */  WindowControl();
 
-/*  Destructor  */  ~WindowControl(); // This will NOT remove the control, use "DestroyThis" or destroy the parent window to do so
+/*  Destructor  */  virtual ~WindowControl(); // This will NOT remove the control, use "DestroyThis" or destroy the parent window to do so
 
 /*  Universal   */  /** Finds and encapsulates a control within an existing window
                         This may be useful for controls in resource-based dialogs */

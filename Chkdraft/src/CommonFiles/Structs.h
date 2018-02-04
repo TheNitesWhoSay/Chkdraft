@@ -9,6 +9,7 @@ class points // Mirrors win32 POINTS
         s16 y;
         points() : x(0), y(0) {}
         points(s16 x, s16 y) : x(x), y(y) {}
+        virtual ~points();
         inline bool operator==(const points &rhs) const { return x == rhs.x && y == rhs.y; }
         inline bool operator<(const points &rhs) const {
             if ( y < rhs.y) return true;
@@ -34,6 +35,7 @@ class MapGrid // A simple grid that can be displayed over a map
         u8 reserved;
 
         MapGrid(); // ctor
+        virtual ~MapGrid();
 };
 
 #endif

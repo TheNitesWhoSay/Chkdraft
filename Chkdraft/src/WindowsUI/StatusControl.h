@@ -5,6 +5,7 @@
 class StatusControl : public WindowControl
 {
     public:
+        virtual ~StatusControl();
         bool CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu);
         void AutoSize();
         void SetText(int index, const char* newText);

@@ -3,6 +3,11 @@
 #include <exception>
 #include <string>
 
+StaticTrigComponentParser::~StaticTrigComponentParser()
+{
+
+}
+
 bool StaticTrigComponentParser::ParseNumericComparison(char* text, u8 &dest, u32 pos, u32 end)
 {
     int size = end-pos;

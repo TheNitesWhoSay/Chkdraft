@@ -4,6 +4,7 @@
 #include "Basics.h"
 #include "Buffer.h"
 #include "DefaultCHK.h"
+#include "EscapeStrings.h"
 #include "FileIO.h"
 #include "MapFile.h"
 #include "Math.h"

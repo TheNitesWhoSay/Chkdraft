@@ -9,7 +9,7 @@ class ClassDialog : public WindowsItem
 
         ClassDialog();
 
-        ~ClassDialog();
+        virtual ~ClassDialog();
 
     protected:
 

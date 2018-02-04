@@ -18,7 +18,7 @@ class RawString : public std::string
         RawString(size_t n, char c) : std::string(n, c) { }
         template <class InputIterator>
         RawString(InputIterator first, InputIterator last) : std::string(first, last) { }
-        ~RawString() { }
+        virtual ~RawString();
 };
 
 /** A Scenario string in the slash escaped format.
@@ -40,7 +40,7 @@ class EscString : public std::string
         EscString(size_t n, char c) : std::string(n, c) { }
         template <class InputIterator>
         EscString(InputIterator first, InputIterator last) : std::string(first, last) { }
-        ~EscString() { }
+        virtual ~EscString();
 };
 
 /** A Scenario string in CHKDrafts <00> format; it may also
@@ -60,7 +60,7 @@ class ChkdString : public std::string
         template <class InputIterator>
         ChkdString(InputIterator first, InputIterator last, bool isOneLine = false)
             : std::string(first, last), isOneLine(isOneLine) { }
-        ~ChkdString() { }
+        virtual ~ChkdString();
         void operator= (const char* s) { this->clear(); this->append(s); }
         bool IsOneLine() { return this->isOneLine; }
         void SetOneLine(bool isOneLine) { this->isOneLine = isOneLine; }

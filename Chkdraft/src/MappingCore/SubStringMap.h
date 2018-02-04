@@ -10,6 +10,7 @@ using SubStringPtr = std::shared_ptr<SubString>;
 class SubString
 {
     public:
+        virtual ~SubString();
         static std::vector<SubStringPtr> GetSubStrings(const std::vector<StringTableNode> &strList);
         const StringTableNode* GetString();
         const SubStringPtr GetParent();

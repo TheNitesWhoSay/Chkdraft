@@ -16,6 +16,7 @@ class TextTrigGenerator
     public:
         
         TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset);
+        virtual ~TextTrigGenerator();
 
         // Places text trigs representative of the given TRIG section in trigString if successful
         bool GenerateTextTrigs(ScenarioPtr map, std::string &trigString);

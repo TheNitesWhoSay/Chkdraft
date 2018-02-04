@@ -6,6 +6,7 @@
 class Reversible
 {
     public:
+        virtual ~Reversible();
         virtual void Reverse(void *obj) = 0;
         virtual int32_t GetType() = 0;
         virtual int32_t Count() = 0;
@@ -16,6 +17,7 @@ using ReversiblePtr = std::shared_ptr<Reversible>;
 class ReversibleAction : public Reversible
 {
     public:
+        virtual ~ReversibleAction();
         virtual void Reverse(void *obj) = 0;
         virtual int32_t GetType() = 0;
         virtual int32_t Count();
@@ -24,6 +26,7 @@ class ReversibleAction : public Reversible
 class ReversibleActions : public Reversible
 {
     public:
+        virtual ~ReversibleActions();
         static std::shared_ptr<ReversibleActions> Make();
         virtual void Reverse(void *obj);
         virtual int32_t GetType(); // Returns 0 unless overidden

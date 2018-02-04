@@ -9,7 +9,7 @@ class ListBoxControl : public WindowControl
 {
     public:
         ListBoxControl();
-        ~ListBoxControl();
+        virtual ~ListBoxControl();
 
         // Attempts to create a list box
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u32 id);

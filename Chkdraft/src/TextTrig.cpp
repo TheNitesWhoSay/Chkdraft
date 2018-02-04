@@ -3,6 +3,11 @@
 #include "Settings.h"
 #include <string>
 
+TextTrigWindow::~TextTrigWindow()
+{
+
+}
+
 bool TextTrigWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_TEXTTRIG), hParent) )

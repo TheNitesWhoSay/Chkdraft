@@ -16,6 +16,11 @@ MapSettingsWindow::MapSettingsWindow() : currTab(0), hTabs(NULL)
 
 }
 
+MapSettingsWindow::~MapSettingsWindow()
+{
+
+}
+
 bool MapSettingsWindow::CreateThis(HWND hParent)
 {
     return ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_MAPSETTINGS), hParent);

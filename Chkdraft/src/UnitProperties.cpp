@@ -42,6 +42,11 @@ UnitPropertiesWindow::UnitPropertiesWindow() : columnSortedBy(UnitListColumn::In
 
 }
 
+UnitPropertiesWindow::~UnitPropertiesWindow()
+{
+
+}
+
 bool UnitPropertiesWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_UNITPROPERTIES), hParent) )

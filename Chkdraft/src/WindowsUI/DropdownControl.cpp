@@ -1,6 +1,11 @@
 #include "DropdownControl.h"
 #include <memory>
 
+DropdownControl::~DropdownControl()
+{
+
+}
+
 bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
     u32 id, int numItems, const char** items, HFONT font)
 {

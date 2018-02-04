@@ -19,6 +19,7 @@ class TrigGeneralWindow : public ClassWindow
 {
     public:
         TrigGeneralWindow();
+        virtual ~TrigGeneralWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow(u32 trigIndex);

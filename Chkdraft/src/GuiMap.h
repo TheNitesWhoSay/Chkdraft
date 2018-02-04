@@ -15,7 +15,7 @@ class GuiMap : public MapFile, public ClassWindow, public IObserveUndos
 
 /* Constructor  */  GuiMap(Clipboard &clipboard);
 
-/*  Destructor  */  ~GuiMap();
+/*  Destructor  */  virtual ~GuiMap();
 
 /*    File IO   */  bool CanExit(); // Returns true if there are no unsaved changes or user allows the exit
                     virtual bool SaveFile(bool saveAs);

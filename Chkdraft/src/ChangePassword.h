@@ -7,6 +7,7 @@
 class ChangePasswordDialog : public ClassDialog
 {
     public:
+        virtual ~ChangePasswordDialog();
         bool CreateThis(HWND hParent);
         void DestroyThis();
         void Hide();

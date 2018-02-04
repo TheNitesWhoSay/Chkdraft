@@ -32,6 +32,11 @@ LocationWindow::LocationWindow() : refreshing(true), preservedStat(0), currentLo
 
 }
 
+LocationWindow::~LocationWindow()
+{
+
+}
+
 bool LocationWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent) )

@@ -14,6 +14,7 @@ class TrigModifyWindow : public ClassDialog
         TrigActionsWindow actionsWindow;
 
         TrigModifyWindow();
+        virtual ~TrigModifyWindow();
         bool CreateThis(HWND hParent, u32 trigIndex);
         bool DestroyThis();
         void ChangeTab(u32 tabId);

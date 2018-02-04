@@ -2,6 +2,11 @@
 #include "Chkdraft.h"
 #include <string>
 
+ChangePasswordDialog::~ChangePasswordDialog()
+{
+
+}
+
 bool ChangePasswordDialog::CreateThis(HWND hParent)
 {
     if ( CM != nullptr )

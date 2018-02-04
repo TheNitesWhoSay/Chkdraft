@@ -8,6 +8,7 @@ class MapPropertiesWindow : public ClassWindow
 {
     public:
         MapPropertiesWindow();
+        virtual ~MapPropertiesWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         void RefreshWindow();
 

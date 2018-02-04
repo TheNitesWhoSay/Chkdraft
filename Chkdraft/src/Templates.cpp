@@ -1,5 +1,10 @@
 #include "Templates.h"
 
+TemplatesWindow::~TemplatesWindow()
+{
+
+}
+
 bool TemplatesWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

@@ -7,6 +7,7 @@ class MainPlot : public ClassWindow
 {
     public:
         LeftBar leftBar;
+        virtual ~MainPlot();
         bool CreateThis(HWND hParent, u32 id);
 
     protected:

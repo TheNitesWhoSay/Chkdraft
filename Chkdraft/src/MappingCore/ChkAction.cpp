@@ -27,6 +27,11 @@ Action::Action(ActionId action) : location(0), stringNum(0), wavID(0), time(0), 
     memset(internalData, 0, 3);
 }
 
+Action::~Action()
+{
+
+}
+
 void Action::ToggleDisabled()
 {
     if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )

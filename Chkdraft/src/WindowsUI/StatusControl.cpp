@@ -1,5 +1,10 @@
 #include "StatusControl.h"
 
+StatusControl::~StatusControl()
+{
+
+}
+
 bool StatusControl::CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu)
 {
     if ( WindowControl::CreateControl(dwExStyle, STATUSCLASSNAME, NULL, dwStyle, 0, 0, 0, 0, hWndParent, hMenu, false) )

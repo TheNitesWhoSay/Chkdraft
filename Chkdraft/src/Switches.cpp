@@ -14,6 +14,11 @@ SwitchesWindow::SwitchesWindow() : selectedSwitch(-1), refreshing(false), refres
 
 }
 
+SwitchesWindow::~SwitchesWindow()
+{
+
+}
+
 bool SwitchesWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

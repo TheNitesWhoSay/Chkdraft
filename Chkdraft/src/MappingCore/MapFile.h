@@ -19,6 +19,7 @@ class MapFile : public Scenario // MapFile is a scenario file + the stuff here
 {
     public:
         MapFile();
+        virtual ~MapFile();
 
         virtual bool SaveFile(bool SaveAs);
 

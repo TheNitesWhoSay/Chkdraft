@@ -7,6 +7,7 @@
 class StringPreviewWindow : public ClassWindow
 {
     public:
+        virtual ~StringPreviewWindow();
         bool CreateThis(HWND hParent, u32 windowId);
 
     protected:

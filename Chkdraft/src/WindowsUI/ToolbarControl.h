@@ -5,7 +5,7 @@
 class ToolbarControl : public WindowControl
 {
     public:
-
+        virtual ~ToolbarControl();
 
     private:
 

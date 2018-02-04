@@ -29,6 +29,7 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
         Action();
         Action(u8 action);
         Action(ActionId action);
+        virtual ~Action();
         void ToggleDisabled();
         bool isDisabled();
         static ActionArgType TextTrigArgType(u8 argNum, ActionId actionId);

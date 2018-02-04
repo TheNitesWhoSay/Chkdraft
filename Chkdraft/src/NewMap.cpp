@@ -5,6 +5,11 @@ enum ID {
     COMBO_TRIGS = ID_FIRST
 };
 
+NewMap::~NewMap()
+{
+
+}
+
 void NewMap::CreateThis(HWND hParent)
 {
     ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_NEW), hParent);

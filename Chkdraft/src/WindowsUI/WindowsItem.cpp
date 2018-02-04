@@ -14,6 +14,11 @@ WindowsItem::WindowsItem() : windowsItemHandle(NULL), tooltipHandle(NULL), paint
     paintRect.bottom = 0;
 }
 
+WindowsItem::~WindowsItem()
+{
+
+}
+
 void WindowsItem::DestroyThis()
 {
     if ( getHandle() != NULL )

@@ -8,6 +8,7 @@ class WavEditorWindow : public ClassWindow
 {
     public:
         WavEditorWindow();
+        virtual ~WavEditorWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         void RefreshWindow();
 

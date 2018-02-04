@@ -8,6 +8,7 @@ class SwitchesWindow : public ClassWindow
 {
     public:
         SwitchesWindow();
+        virtual ~SwitchesWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow();

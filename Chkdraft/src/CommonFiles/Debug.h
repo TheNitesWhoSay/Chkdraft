@@ -37,7 +37,7 @@ public:
         std::cin.clear();
     }
 
-    ~CLI()
+    virtual ~CLI()
     {
         fclose(console);
         FreeConsole();

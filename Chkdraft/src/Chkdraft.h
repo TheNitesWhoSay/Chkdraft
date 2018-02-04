@@ -40,6 +40,8 @@ class Chkdraft : public ClassWindow
                     EnterPasswordDialog enterPasswordWindow; // Modeless login window
 
 /* Constructors */  Chkdraft();
+                    
+/*  Destructor  */  virtual ~Chkdraft();
 
 /*   Startup    */  int Run(LPSTR lpCmdLine, int nCmdShow);
                     void SetupLogging();

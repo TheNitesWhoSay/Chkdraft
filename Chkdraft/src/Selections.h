@@ -21,6 +21,7 @@ class TileNode
         u16 yc;
         TileNeighbor neighbors;
         TileNode() : value(0), xc(0), yc(0), neighbors(TileNeighbor::All) { }
+        virtual ~TileNode();
 };
 
 class Selections
@@ -28,7 +29,7 @@ class Selections
     public:
 
         Selections(GuiMap &map);
-        ~Selections();
+        virtual ~Selections();
 
         void setStartDrag(s32 x, s32 y);
         void setEndDrag(s32 x, s32 y);

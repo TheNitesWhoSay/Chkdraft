@@ -21,7 +21,8 @@ class ErrorHandlerResult
         std::string logString;
 
         ErrorHandlerResult(ErrorAction primaryAction, LogLevel logLevel, std::string logString)
-            : primaryAction(primaryAction), logLevel(logLevel), logString(logString) {};
+            : primaryAction(primaryAction), logLevel(logLevel), logString(logString) {}
+        virtual ~ErrorHandlerResult();
 };
 
 /**
@@ -32,6 +33,7 @@ class KnownError : public std::exception
     public:
         KnownError(u32 errorId);
         KnownError(const KnownError& other);
+        virtual KnownError::~KnownError();
         u32 getErrorId();
         static std::atomic<u32> GetNextErrorId();
 
@@ -45,13 +47,13 @@ class KnownError : public std::exception
     Determines the appropriate action after an error has occured,
     error handlers may seek input from the user as necessary
 */
+class ErrorHandler;
+typedef std::shared_ptr<ErrorHandler> ErrorHandlerPtr;
 class ErrorHandler
 {
     public:
-        virtual ErrorHandlerResult HandleException(GenericCommand* command, KnownError& e) = 0;
-
-        static std::map<u32, std::shared_ptr<ErrorHandler>> knownErrorHandlers;
-        static ErrorHandlerResult HandleError(GenericCommand* command, KnownError& e);
+        virtual ErrorHandlerResult HandleException(GenericCommandPtr command, KnownError& e) = 0;
+        virtual ~ErrorHandler();
 };
 
 #endif

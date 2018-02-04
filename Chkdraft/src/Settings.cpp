@@ -155,3 +155,8 @@ bool Settings::updateSettingsFile()
     }
     return false;
 }
+
+Settings::~Settings()
+{
+
+}

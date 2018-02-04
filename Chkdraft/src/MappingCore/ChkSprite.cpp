@@ -1,5 +1,10 @@
 #include "ChkSprite.h"
 
+ChkSprite::~ChkSprite()
+{
+
+}
+
 bool ChkSprite::IsDrawnAsSprite()
 {
     return (flags & (u16)SpriteFlags::DrawAsSprite) == (u16)SpriteFlags::DrawAsSprite;

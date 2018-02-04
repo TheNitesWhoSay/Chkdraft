@@ -7,7 +7,7 @@ class TemporaryFile
 {
 public:
     TemporaryFile(const std::string &temporaryFilePath);
-    ~TemporaryFile(); // Ensures the temporary file gets cleaned up
+    virtual ~TemporaryFile(); // Ensures the temporary file gets cleaned up
     const std::string &GetFilePath();
 
 private:

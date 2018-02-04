@@ -15,6 +15,7 @@ class MapSettingsWindow : public ClassDialog
 {
     public:
         MapSettingsWindow();
+        virtual ~MapSettingsWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void ChangeTab(u32 tabID);

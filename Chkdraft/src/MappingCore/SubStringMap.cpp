@@ -1,5 +1,10 @@
 #include "SubStringMap.h"
 
+SubString::~SubString()
+{
+
+}
+
 std::vector<SubStringPtr> SubString::GetSubStrings(const std::vector<StringTableNode> &strList)
 {
     std::vector<SubStringPtr> subStrings;

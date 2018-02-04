@@ -8,6 +8,7 @@ class ForcesWindow : public ClassWindow
 {
     public:
         ForcesWindow();
+        virtual ~ForcesWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow();

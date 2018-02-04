@@ -1,6 +1,11 @@
 #include "UnitTree.h"
 #include "Chkdraft.h"
 
+UnitTree::~UnitTree()
+{
+
+}
+
 bool UnitTree::AddThis(HWND hTree, HTREEITEM hRoot)
 {
     if ( TreeViewControl::SetHandle(hTree) )
