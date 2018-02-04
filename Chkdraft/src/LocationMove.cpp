@@ -1,6 +1,11 @@
 #include "LocationMove.h"
 #include "GuiMap.h"
 
+LocationMove::~LocationMove()
+{
+
+}
+
 std::shared_ptr<LocationMove> LocationMove::Make(u16 locationIndex, s32 xChange, s32 yChange)
 {
     return std::shared_ptr<LocationMove>(new LocationMove(locationIndex, xChange, yChange));

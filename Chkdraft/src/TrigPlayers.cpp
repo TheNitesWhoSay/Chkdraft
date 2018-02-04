@@ -35,6 +35,11 @@ TrigPlayersWindow::TrigPlayersWindow() : trigIndex(0), refreshing(true), advance
 
 }
 
+TrigPlayersWindow::~TrigPlayersWindow()
+{
+
+}
+
 bool TrigPlayersWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

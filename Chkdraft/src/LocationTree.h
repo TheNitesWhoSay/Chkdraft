@@ -5,6 +5,7 @@
 class LocationTree : public TreeViewControl
 {
     public:
+        virtual ~LocationTree();
         bool AddThis(HWND hTree, HTREEITEM hParent);
         void InsertLocationItem(const char* text, u32 index);
         void RebuildLocationTree();

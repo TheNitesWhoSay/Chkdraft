@@ -19,6 +19,7 @@ public:
 
     ModifiedAsset(const std::string &assetMpqPath, AssetAction actionTaken);
     ModifiedAsset(const std::string &assetMpqPath, WavQuality wavQualitySelected, AssetAction actionTaken);
+    virtual ~ModifiedAsset();
 
 private:
     static u64 nextAssetId; // Changes are needed if this is accessed in a multi-threaded environment

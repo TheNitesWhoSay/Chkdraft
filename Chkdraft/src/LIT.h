@@ -8,6 +8,7 @@
 class LitWindow : public ClassDialog
 {
     public:
+        virtual ~LitWindow();
         bool CreateThis(HWND hParent);
         void RefreshWindow();
 

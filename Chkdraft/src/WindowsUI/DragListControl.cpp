@@ -1,5 +1,10 @@
 #include "DragListControl.h"
 
+DragListControl::~DragListControl()
+{
+
+}
+
 bool DragListControl::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)
 {
     if ( WindowControl::CreateControl( WS_EX_CLIENTEDGE, "LISTBOX", NULL, WS_CHILD|WS_TABSTOP|LBS_NOTIFY|LBS_SORT,

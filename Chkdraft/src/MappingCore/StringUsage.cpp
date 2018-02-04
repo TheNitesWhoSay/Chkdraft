@@ -5,6 +5,11 @@ StringUsageTable::StringUsageTable()
 
 }
 
+StringUsageTable::~StringUsageTable()
+{
+
+}
+
 bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 {
     /*buffer* strings = &chk->STR();

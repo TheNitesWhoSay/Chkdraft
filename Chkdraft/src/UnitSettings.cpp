@@ -48,6 +48,11 @@ UnitSettingsWindow::UnitSettingsWindow() : selectedUnit(-1), possibleUnitNameUpd
 
 }
 
+UnitSettingsWindow::~UnitSettingsWindow()
+{
+
+}
+
 bool UnitSettingsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

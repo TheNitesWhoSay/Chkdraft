@@ -42,6 +42,11 @@ Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logger(LogLevel::Al
 
 }
 
+Chkdraft::~Chkdraft()
+{
+
+}
+
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
     SetupLogging();

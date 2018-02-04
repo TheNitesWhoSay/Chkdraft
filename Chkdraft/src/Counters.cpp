@@ -1,5 +1,10 @@
 #include "Counters.h"
 
+CountersWindow::~CountersWindow()
+{
+
+}
+
 bool CountersWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

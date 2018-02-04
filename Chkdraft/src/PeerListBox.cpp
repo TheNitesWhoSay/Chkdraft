@@ -5,6 +5,11 @@ PeerListBox::PeerListBox() : hPeer(NULL)
     
 }
 
+PeerListBox::~PeerListBox()
+{
+
+}
+
 void PeerListBox::SetPeer(HWND hPeer)
 {
     this->hPeer = hPeer;

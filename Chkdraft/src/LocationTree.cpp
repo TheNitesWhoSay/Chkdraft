@@ -1,6 +1,11 @@
 #include "LocationTree.h"
 #include "Chkdraft.h"
 
+LocationTree::~LocationTree()
+{
+
+}
+
 bool LocationTree::AddThis(HWND hTree, HTREEITEM hParent)
 {
     hLocationRoot = hParent;

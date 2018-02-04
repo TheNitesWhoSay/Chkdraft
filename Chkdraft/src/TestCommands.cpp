@@ -5,6 +5,11 @@ ExampleCommand::ExampleCommand(const std::string &addition) : GenericCommand(tru
 
 }
 
+ExampleCommand::~ExampleCommand()
+{
+
+}
+
 ExampleCommandPtr ExampleCommand::C(const std::string &addition)
 {
     return std::shared_ptr<ExampleCommand>(new ExampleCommand(addition));

@@ -5,6 +5,7 @@
 class RadioButtonControl : public WindowControl
 {
     public:
+        virtual ~RadioButtonControl();
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const char* initText, u32 id);
         void SetCheck(bool isChecked);
 };

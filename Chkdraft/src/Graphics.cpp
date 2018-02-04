@@ -20,6 +20,11 @@ colorcycle ColorCycler::cctable[4][8] = { // Different color cycling definition 
 
 const u8 ColorCycler::cctilesets[8] = { 0,1,1,2,0,3,3,3 };
 
+ColorCycler::~ColorCycler()
+{
+
+}
+
 bool ColorCycler::CycleColors(const u16 tileset)
 {
     bool redraw = false;
@@ -104,6 +109,11 @@ inline void BoundedAdjustPx(u32 &pixel, s16 redOffset, s16 greenOffset, s16 blue
         else
             ((u8*)&pixel)[2] = 0;
     }
+}
+
+Graphics::~Graphics()
+{
+
 }
 
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, HDC hDC, bool showAnywhere)

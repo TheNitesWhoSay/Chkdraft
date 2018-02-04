@@ -74,6 +74,21 @@ bool getThreeCharOctVal(const char* firstCharPtr, u8 &value)
     return false;
 }
 
+RawString::~RawString()
+{
+
+}
+
+EscString::~EscString()
+{
+
+}
+
+ChkdString::~ChkdString()
+{
+
+}
+
 bool MakeEscStr(const char* inRawString, size_t inRawStringLength, EscString &outEscString)
 {
     outEscString.clear();

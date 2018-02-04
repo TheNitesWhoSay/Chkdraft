@@ -11,6 +11,7 @@ class ExampleCommand : public GenericCommand
 {
     public:
         ExampleCommand(const std::string &addition);
+        virtual ~ExampleCommand();
         static ExampleCommandPtr C(const std::string &addition);
 
     protected:

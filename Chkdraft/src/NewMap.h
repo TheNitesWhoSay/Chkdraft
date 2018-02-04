@@ -5,6 +5,7 @@
 class NewMap : public ClassDialog
 {
     public:
+        virtual ~NewMap();
         void CreateThis(HWND hParent);
 
     protected:

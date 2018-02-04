@@ -8,6 +8,11 @@ enum ID
     COMBOBOX_TERRAIN
 };
 
+MainToolbar::~MainToolbar()
+{
+
+}
+
 bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
 {
     // Initilize primary toolbar

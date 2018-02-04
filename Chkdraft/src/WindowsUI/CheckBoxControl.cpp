@@ -1,5 +1,10 @@
 #include "CheckBoxControl.h"
 
+CheckBoxControl::~CheckBoxControl()
+{
+
+}
+
 bool CheckBoxControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool checked, const char* text, u32 id)
 {
     if ( WindowControl::CreateControl( 0, "BUTTON", text, WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX|BS_VCENTER,

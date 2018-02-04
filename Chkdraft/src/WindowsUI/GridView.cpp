@@ -10,6 +10,11 @@ GridViewControl::GridViewControl() : gridItems(nullptr), numRows(0), numColumns(
 
 }
 
+GridViewControl::~GridViewControl()
+{
+
+}
+
 GridControlItem& GridViewControl::item(int x, int y)
 {
     if ( y>=0 && y<numRows && x>=0 && x<numColumns )

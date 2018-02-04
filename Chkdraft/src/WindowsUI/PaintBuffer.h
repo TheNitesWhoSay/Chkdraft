@@ -6,7 +6,7 @@ class PaintBuffer
 {
     public:
         PaintBuffer();
-        ~PaintBuffer();
+        virtual ~PaintBuffer();
         void Clear(); // Can call to save memory, but this will automatically be done upon resize/destructor
         HDC GetPaintDc();
         HBITMAP GetPaintBitmap();

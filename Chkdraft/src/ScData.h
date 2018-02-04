@@ -19,6 +19,8 @@ class CV5Entry
         u16 Unknown3;
         u16 Unknown4;
         u16 megaTileRef[16]; // To VF4/VX4
+
+        virtual ~CV5Entry();
 };
 
 struct TileSet
@@ -34,6 +36,7 @@ class Tiles
 {
     public:
         TileSet set[8];
+        virtual ~Tiles();
         bool LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
 
     private:
@@ -214,6 +217,7 @@ class GRP
         buffer imageDat;
 
     public:
+        virtual ~GRP();
         bool LoadGrp(const char* fileName, MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
         u16 numFrames() { return imageDat.get<u16>(0); }
         u16 GrpWidth() { return imageDat.get<u16>(2); }
@@ -229,6 +233,7 @@ class Upgrades
 {
     public:
         Upgrades();
+        virtual ~Upgrades();
         bool LoadUpgrades(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
         UPGRADEDAT* UpgradeDat(u8 id);
 
@@ -240,6 +245,7 @@ class Techs
 {
     public:
         Techs();
+        virtual ~Techs();
         bool LoadTechs(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
         TECHDAT* TechDat(u8 id);
 
@@ -251,6 +257,7 @@ class Units
 {
     public:
         Units();
+        virtual ~Units();
         bool LoadUnits(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
         UNITDAT* UnitDat(u16 id);
 
@@ -262,6 +269,7 @@ class Weapons
 {
     public:
         Weapons();
+        virtual ~Weapons();
         bool LoadWeapons(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
         WEAPONDAT* WeaponDat(u32 weaponId);
 
@@ -273,6 +281,7 @@ class Sprites
 {
     public:
         Sprites();
+        virtual ~Sprites();
         bool LoadSprites(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt);
         FLINGYDAT* FlingyDat(u32 id);
         SPRITEDAT* SpriteDat(u32 id);
@@ -289,6 +298,7 @@ class PCX
 {
     public:
         buffer pcxDat;
+        virtual ~PCX();
         bool load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename);
         enum class DataLocs
         {
@@ -329,6 +339,7 @@ class TblFiles
 {
     public:
         TblFiles() {}
+        virtual ~TblFiles();
         bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
         bool GetStatTblString(u16 stringNum, std::string &outString);
 
@@ -343,6 +354,7 @@ class AiScripts
 {
     public:
         AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
+        virtual ~AiScripts();
         bool Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt);
         bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
         int GetNumAiScripts();
@@ -362,6 +374,7 @@ class ScData
     public:
 
         ScData();
+        virtual ~ScData();
 
         Tiles tilesets;
         Upgrades upgrades;

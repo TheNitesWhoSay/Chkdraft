@@ -21,6 +21,7 @@ class PasteTileNode
 
         PasteTileNode(u16 value, s32 xc, s32 yc, TileNeighbor neighbors) :
             value(value), xc(xc), yc(yc), neighbors(neighbors) { }
+        virtual ~PasteTileNode();
 };
 
 class PasteUnitNode
@@ -31,6 +32,7 @@ class PasteUnitNode
         s32 yc;
 
         PasteUnitNode(ChkUnit &unitRef) { std::memcpy(&unit, &unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
+        virtual ~PasteUnitNode();
 
     private:
         PasteUnitNode(); // Disallow ctor
@@ -41,7 +43,7 @@ class Clipboard
     public:
 
         Clipboard();
-        ~Clipboard();
+        virtual ~Clipboard();
 
         bool hasTiles();
         bool hasUnits() { return copyUnits.size() > 0; }

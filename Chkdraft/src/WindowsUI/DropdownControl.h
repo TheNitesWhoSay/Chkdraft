@@ -5,7 +5,8 @@
 
 class DropdownControl : public WindowControl
 {
-public:
+    public:
+        virtual ~DropdownControl();
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
             u32 id, int numItems, const char** items, HFONT font);
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,

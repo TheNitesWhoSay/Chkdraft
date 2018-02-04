@@ -5,6 +5,7 @@
 class ListViewControl : public WindowControl
 {
     public:
+        virtual ~ListViewControl();
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id);
         bool AddColumn(int insertAt, const char* title, int width, int alignmentFlags);
         bool SetColumnWidth(int column, int width);

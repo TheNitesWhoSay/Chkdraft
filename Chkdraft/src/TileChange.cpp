@@ -1,6 +1,11 @@
 #include "TileChange.h"
 #include "GuiMap.h"
 
+TileChange::~TileChange()
+{
+
+}
+
 std::shared_ptr<TileChange> TileChange::Make(u16 xc, u16 yc, u16 tileValue)
 {
     return std::shared_ptr<TileChange>(new TileChange(xc, yc, tileValue));

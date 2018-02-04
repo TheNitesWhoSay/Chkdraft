@@ -2,6 +2,16 @@
 #include "Settings.h"
 #include <string>
 
+CV5Entry::~CV5Entry()
+{
+
+}
+
+Tiles::~Tiles()
+{
+
+}
+
 bool Tiles::LoadSets(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
 {
     return    LoadSet(hStarDat, hBrooDat, hPatchRt, "badlands", 0)
@@ -37,6 +47,11 @@ bool Tiles::LoadSet(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchR
         return true;
     }
     return false;
+}
+
+GRP::~GRP()
+{
+
 }
 
 bool GRP::LoadGrp(const char* fileName, MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
@@ -78,6 +93,11 @@ Upgrades::Upgrades()
         upgrade[i].MaxRepeats = 0;
         upgrade[i].BroodWarSpecific = 0;
     }
+}
+
+Upgrades::~Upgrades()
+{
+
 }
 
 bool Upgrades::LoadUpgrades(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
@@ -149,6 +169,11 @@ Techs::Techs()
         tech[i].Unused = 0;
         tech[i].BroodWar = 0;
     }
+}
+
+Techs::~Techs()
+{
+
 }
 
 bool Techs::LoadTechs(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
@@ -265,6 +290,11 @@ Units::Units()
         unit[i].BroodwarUnitFlag = 0;
         unit[i].StarEditAvailabilityFlags = 0;
     }
+}
+
+Units::~Units()
+{
+
 }
 
 bool Units::LoadUnits(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
@@ -391,6 +421,11 @@ Weapons::Weapons()
     }
 }
 
+Weapons::~Weapons()
+{
+
+}
+
 bool Weapons::LoadWeapons(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
 {
     buffer weaponDat("wDat");
@@ -459,6 +494,11 @@ Sprites::Sprites()
         sprite[i].SelectionCircleImage = 0;
         sprite[i].SelectionCircleOffset = 0;
     }
+}
+
+Sprites::~Sprites()
+{
+
 }
 
 bool Sprites::LoadSprites(MPQHANDLE hStarDat, MPQHANDLE hBrooDat, MPQHANDLE hPatchRt)
@@ -534,6 +574,11 @@ IMAGEDAT* Sprites::ImageDat(u32 id)
         return &image[0];
 }
 
+PCX::~PCX()
+{
+
+}
+
 bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, const char* filename)
 {
     buffer rawDat;
@@ -593,6 +638,11 @@ bool PCX::load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt, co
     return false;
 }
 
+TblFiles::~TblFiles()
+{
+
+}
+
 bool TblFiles::Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
 {
     return FileToBuffer(hStarDat, hBrooDat, hPatchRt, "Rez\\stat_txt.tbl", stat_txtTbl);
@@ -624,6 +674,11 @@ bool TblFiles::GetTblString(buffer &tbl, u16 stringNum, std::string &outString)
         catch ( std::bad_alloc ) {}
     }
     return false;
+}
+
+AiScripts::~AiScripts()
+{
+
 }
 
 bool AiScripts::Load(MPQHANDLE &hStarDat, MPQHANDLE &hBrooDat, MPQHANDLE &hPatchRt)
@@ -698,6 +753,11 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
 }
 
 ScData::ScData() : numGrps(0), grps(nullptr), aiScripts(tblFiles)
+{
+
+}
+
+ScData::~ScData()
 {
 
 }

@@ -5,6 +5,7 @@
 class TreeViewControl : public WindowControl
 {
     public:
+        virtual ~TreeViewControl();
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u32 id);
         HTREEITEM InsertTreeItem(HTREEITEM hParentItem, const char* text, LPARAM lParam);
         bool SetHandle(HWND hWnd);

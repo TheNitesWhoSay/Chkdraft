@@ -4,6 +4,11 @@
 #include <fstream>
 #include <string>
 
+LitWindow::~LitWindow()
+{
+
+}
+
 bool LitWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_DIALOG_LIT), hParent) )

@@ -9,6 +9,7 @@ class PeerListBox : public ListBoxControl
 {
     public:
         PeerListBox();
+        virtual ~PeerListBox();
         void SetPeer(HWND hPeer);
 
     protected:

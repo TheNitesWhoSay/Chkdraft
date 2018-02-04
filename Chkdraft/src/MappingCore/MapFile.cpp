@@ -20,6 +20,11 @@ MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpq(
     }
 }
 
+MapFile::~MapFile()
+{
+
+}
+
 bool MapFile::LoadMapFile(std::string &path)
 {
     if ( path.length() > 0 )

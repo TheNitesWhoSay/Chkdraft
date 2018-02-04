@@ -1,6 +1,11 @@
 #include "TileProperties.h"
 #include "Chkdraft.h"
 
+TilePropWindow::~TilePropWindow()
+{
+
+}
+
 bool TilePropWindow::CreateThis(HWND hParent)
 {
     return ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_DIALOG_SETTILE), hParent);

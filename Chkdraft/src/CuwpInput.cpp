@@ -1,6 +1,11 @@
 #include "CuwpInput.h"
 #include "CommonFiles/CommonFiles.h"
 
+CuwpInputDialog::~CuwpInputDialog()
+{
+
+}
+
 bool CuwpInputDialog::GetCuwp(ChkCuwp &cuwp, const ChkCuwp &initialCuwp, HWND hParent)
 {
     CuwpInputDialog inputDialog;

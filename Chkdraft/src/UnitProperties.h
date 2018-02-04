@@ -12,6 +12,7 @@ class UnitPropertiesWindow : public ClassDialog
 {
     public:
         UnitPropertiesWindow();
+        virtual ~UnitPropertiesWindow();
         bool CreateThis(HWND hParent);
         bool CreateSubWindows(HWND hWnd);
         bool DestroyThis();

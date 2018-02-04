@@ -12,7 +12,7 @@ class Maps : public MdiClient
         Clipboard clipboard;
 
         Maps();
-        ~Maps();
+        virtual ~Maps();
 
         bool isInOpenMaps(GuiMapPtr guiMap);
         bool Focus(HWND hGuiMap);

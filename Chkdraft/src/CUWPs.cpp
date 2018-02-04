@@ -22,6 +22,11 @@ CUWPsWindow::CUWPsWindow() : selectedCuwp(-1)
 
 }
 
+CUWPsWindow::~CUWPsWindow()
+{
+
+}
+
 bool CUWPsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

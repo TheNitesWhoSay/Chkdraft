@@ -1,6 +1,11 @@
 #include "UnitIndexMove.h"
 #include "GuiMap.h"
 
+UnitIndexMove::~UnitIndexMove()
+{
+
+}
+
 std::shared_ptr<UnitIndexMove> UnitIndexMove::Make(u16 oldIndex, u16 newIndex)
 {
     return std::shared_ptr<UnitIndexMove>(new UnitIndexMove(oldIndex, newIndex));
@@ -22,6 +27,11 @@ int32_t UnitIndexMove::GetType()
 
 UnitIndexMove::UnitIndexMove(u16 oldIndex, u16 newIndex)
     : oldIndex(oldIndex), newIndex(newIndex)
+{
+
+}
+
+UnitIndexMoveBoundary::~UnitIndexMoveBoundary()
 {
 
 }

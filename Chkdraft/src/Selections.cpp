@@ -1,6 +1,11 @@
 #include "Selections.h"
 #include "GuiMap.h"
 
+TileNode::~TileNode()
+{
+
+}
+
 Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0)
 {
     startDrag.x = -1;

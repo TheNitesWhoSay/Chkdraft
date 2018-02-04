@@ -23,6 +23,7 @@ class GridViewControl : public ListViewControl
 {
     public:
         GridViewControl();
+        virtual ~GridViewControl();
         GridControlItem& item(int x, int y);
         EditControl &EditBox();
 

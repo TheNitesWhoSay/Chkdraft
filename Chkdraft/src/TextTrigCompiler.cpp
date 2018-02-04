@@ -14,6 +14,11 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 
 }
 
+TextTrigCompiler::~TextTrigCompiler()
+{
+
+}
+
 bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData)
 {
     buffer text("TxTr");

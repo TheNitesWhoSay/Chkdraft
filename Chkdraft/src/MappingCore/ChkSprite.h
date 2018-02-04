@@ -13,6 +13,7 @@ class ChkSprite // A sprite as found in a scenario.chk's THG2 section
         u16 flags;
 
         enum class SpriteFlags : u16 { DrawAsSprite = BIT_12, SpriteDisabled = BIT_15 };
+        virtual ~ChkSprite();
         bool IsDrawnAsSprite();
         bool IsDisabled();
 };

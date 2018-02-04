@@ -1,6 +1,12 @@
 #include "MoveTo.h"
 
 template <typename indexType>
+MoveToDialog<indexType>::~MoveToDialog()
+{
+
+}
+
+template <typename indexType>
 bool MoveToDialog<indexType>::GetIndex(indexType &index, HWND hParent)
 {
     MoveToDialog<indexType> moveTo;

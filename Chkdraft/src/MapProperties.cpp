@@ -50,6 +50,11 @@ MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibl
 
 }
 
+MapPropertiesWindow::~MapPropertiesWindow()
+{
+
+}
+
 bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

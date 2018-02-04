@@ -20,6 +20,7 @@ class Settings
 
         static bool readSettingsFile();
         static bool updateSettingsFile();
+        virtual ~Settings();
 };
 
 #endif

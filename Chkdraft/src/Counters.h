@@ -7,6 +7,7 @@
 class CountersWindow : public ClassWindow
 {
     public:
+        virtual ~CountersWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow();

@@ -7,6 +7,7 @@ class TerrainPaletteWindow : public ClassDialog
 {
     public:
         TerrainPaletteWindow();
+        virtual ~TerrainPaletteWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void SetTileDialog(HWND hWnd);

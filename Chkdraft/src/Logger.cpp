@@ -37,6 +37,11 @@ Logger::Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel, Lo
 
 }
 
+Logger::~Logger()
+{
+
+}
+
 void Logger::setOutputStream(std::shared_ptr<std::ostream> outputStream)
 {
     this->outputStream = outputStream;

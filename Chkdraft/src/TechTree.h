@@ -5,6 +5,7 @@
 class TechTree : public TreeViewControl
 {
     public:
+        virtual ~TechTree();
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id);
 
     private:

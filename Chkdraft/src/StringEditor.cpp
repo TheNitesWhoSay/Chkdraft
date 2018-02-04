@@ -22,6 +22,11 @@ StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), nu
 
 }
 
+StringEditorWindow::~StringEditorWindow()
+{
+
+}
+
 bool StringEditorWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

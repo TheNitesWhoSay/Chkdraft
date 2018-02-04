@@ -12,6 +12,7 @@ class ICndActGridUser // ~Interface
         virtual void CutSelection() = 0;
         virtual void CopySelection() = 0;
         virtual void Paste() = 0;
+        virtual ~ICndActGridUser();
 };
 
 enum class ArgumentEnd { TwoCharLineBreak, OneCharLineBreak, Tab, StringEnd };
@@ -22,6 +23,7 @@ class CndActGrid : public GridViewControl
         CheckBoxControl checkEnabled[64];
 
         CndActGrid(ICndActGridUser &user, int numUsedRows);
+        virtual ~CndActGrid();
         bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
         void SetEnabledCheck(u8 cndActId, bool enabled);
 

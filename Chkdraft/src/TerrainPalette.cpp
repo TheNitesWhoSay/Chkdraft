@@ -12,6 +12,11 @@ TerrainPaletteWindow::TerrainPaletteWindow() : tilesetIndexedYC(0)
 
 }
 
+TerrainPaletteWindow::~TerrainPaletteWindow()
+{
+
+}
+
 bool TerrainPaletteWindow::CreateThis(HWND hParent)
 {
     return getHandle() == NULL &&

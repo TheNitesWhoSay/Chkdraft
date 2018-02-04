@@ -7,6 +7,11 @@ PreservedUnitStats::PreservedUnitStats() : field(ChkUnitField::Serial)
 
 }
 
+PreservedUnitStats::~PreservedUnitStats()
+{
+
+}
+
 void PreservedUnitStats::Clear()
 {
     field = ChkUnitField::Serial;

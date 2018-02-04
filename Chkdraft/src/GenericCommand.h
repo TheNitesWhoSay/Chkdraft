@@ -26,6 +26,7 @@ class GenericCommand
     public:
         GenericCommand(bool isSynchronous, u32 commandClassId, u32 undoRedoTypeId = ~((u32)0));
         GenericCommand(const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid, u32 commandClassId, u32 undoRedoTypeId = ~((u32)0));
+        virtual ~GenericCommand();
 
         virtual std::string toString();
 
@@ -47,6 +48,7 @@ class CommandListener
 {
     public:
         virtual void Listen(u32 commandClassId, GenericCommandPtr command) = 0;
+        virtual ~CommandListener();
 };
 
 #endif

@@ -1,6 +1,11 @@
 #include "EnterPassword.h"
 #include "Chkdraft.h"
 
+EnterPasswordDialog::~EnterPasswordDialog()
+{
+
+}
+
 bool EnterPasswordDialog::CreateThis(HWND hParent)
 {
     ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_ENTERPASS), hParent);

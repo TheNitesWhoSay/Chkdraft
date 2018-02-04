@@ -7,6 +7,7 @@
 class StringGuideWindow : public ClassWindow
 {
     public:
+        virtual ~StringGuideWindow();
         bool CreateThis(HWND hParent);
 
     protected:

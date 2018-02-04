@@ -5,6 +5,11 @@ MdiClient::MdiClient()
 
 }
 
+MdiClient::~MdiClient()
+{
+
+}
+
 bool MdiClient::CreateMdiClient( HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
                                  int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu )
 {

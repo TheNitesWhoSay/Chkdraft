@@ -22,6 +22,11 @@ TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions
     InitializeArgMaps();
 }
 
+TrigActionsWindow::~TrigActionsWindow()
+{
+
+}
+
 bool TrigActionsWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

@@ -12,7 +12,7 @@ class buffer
                     buffer(u32 bufferTitleVal);
                     buffer(const buffer &rhs);
 
-/*  Destructor  */  ~buffer();
+/*  Destructor  */  virtual ~buffer();
 
 /*  Accessors   */  u32 size() const; // Returns sizeUsed
                     const char* title(); // Returns title of buffer

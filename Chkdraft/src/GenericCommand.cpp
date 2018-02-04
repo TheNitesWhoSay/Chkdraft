@@ -16,6 +16,11 @@ GenericCommand::GenericCommand(const std::vector<GenericCommandPtr> &subCommands
 
 }
 
+GenericCommand::~GenericCommand()
+{
+
+}
+
 std::string GenericCommand::toString()
 {
     return std::string("[Override this method to print command details]");
@@ -31,4 +36,9 @@ void GenericCommand::Undo(Logger &logger)
 {
     // Override this method to perform some action
     logger.error("Default Undo() hit, this should be overriden!");
+}
+
+CommandListener::~CommandListener()
+{
+
 }

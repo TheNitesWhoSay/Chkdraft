@@ -1,6 +1,11 @@
 #include "UnitChange.h"
 #include "GuiMap.h"
 
+UnitChange::~UnitChange()
+{
+
+}
+
 std::shared_ptr<UnitChange> UnitChange::Make(u16 unitIndex, ChkUnitField field, u32 data)
 {
     return std::shared_ptr<UnitChange>(new UnitChange(unitIndex, field, data));

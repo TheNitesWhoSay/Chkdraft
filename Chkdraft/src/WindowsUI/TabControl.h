@@ -5,6 +5,7 @@
 class TabControl : public WindowControl
 {
     public:
+        virtual ~TabControl();
 
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id);
 

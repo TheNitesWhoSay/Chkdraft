@@ -2,6 +2,11 @@
 
 std::atomic<u32> KnownError::nextErrorId(1);
 
+ErrorHandlerResult::~ErrorHandlerResult()
+{
+
+}
+
 KnownError::KnownError(u32 id)
 {
     
@@ -12,6 +17,11 @@ KnownError::KnownError(const KnownError& other) : std::exception(other.what())
     this->errorId = other.errorId;
 }
 
+KnownError::~KnownError()
+{
+
+}
+
 u32 KnownError::getErrorId()
 {
     return this->errorId;
@@ -20,4 +30,9 @@ u32 KnownError::getErrorId()
 std::atomic<u32> KnownError::GetNextErrorId()
 {
     return nextErrorId ++;
+}
+
+ErrorHandler::~ErrorHandler()
+{
+
 }

@@ -1,6 +1,11 @@
 #include "Undos.h"
 #include "GuiMap.h"
 
+IObserveUndos::~IObserveUndos()
+{
+
+}
+
 Undos::Undos(IObserveUndos &observer) : observer(observer)
 {
     

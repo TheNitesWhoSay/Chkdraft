@@ -1,5 +1,15 @@
 #include "Reversibles.h"
 
+Reversible::~Reversible()
+{
+
+}
+
+ReversibleAction::~ReversibleAction()
+{
+
+}
+
 void ReversibleAction::Reverse(void *obj)
 {
 
@@ -8,6 +18,11 @@ void ReversibleAction::Reverse(void *obj)
 int32_t ReversibleAction::Count()
 {
     return 1;
+}
+
+ReversibleActions::~ReversibleActions()
+{
+
 }
 
 std::shared_ptr<ReversibleActions> ReversibleActions::Make()

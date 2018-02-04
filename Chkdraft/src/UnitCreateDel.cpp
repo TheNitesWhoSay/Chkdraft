@@ -1,6 +1,11 @@
 #include "UnitCreateDel.h"
 #include "GuiMap.h"
 
+UnitCreateDel::~UnitCreateDel()
+{
+
+}
+
 std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index)
 {
     return std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index));

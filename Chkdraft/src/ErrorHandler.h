@@ -21,7 +21,8 @@ class ErrorHandlerResult
         std::string logString;
 
         ErrorHandlerResult(ErrorAction primaryAction, LogLevel logLevel, std::string logString)
-            : primaryAction(primaryAction), logLevel(logLevel), logString(logString) {};
+            : primaryAction(primaryAction), logLevel(logLevel), logString(logString) {}
+        virtual ~ErrorHandlerResult();
 };
 
 /**
@@ -32,6 +33,7 @@ class KnownError : public std::exception
     public:
         KnownError(u32 errorId);
         KnownError(const KnownError& other);
+        virtual KnownError::~KnownError();
         u32 getErrorId();
         static std::atomic<u32> GetNextErrorId();
 
@@ -51,6 +53,7 @@ class ErrorHandler
 {
     public:
         virtual ErrorHandlerResult HandleException(GenericCommandPtr command, KnownError& e) = 0;
+        virtual ~ErrorHandler();
 };
 
 #endif

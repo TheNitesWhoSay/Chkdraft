@@ -37,6 +37,11 @@ TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), nu
         groupSelected[i] = false;
 }
 
+TriggersWindow::~TriggersWindow()
+{
+
+}
+
 bool TriggersWindow::CreateThis(HWND hParent, u32 windowId)
 {
     if ( getHandle() != NULL )

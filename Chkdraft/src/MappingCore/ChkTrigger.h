@@ -18,6 +18,7 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
             #define NOT_EXECUTED_BY_PLAYER 0
 
         Trigger();
+        virtual ~Trigger();
         Condition& condition(u8 index);
         Action& action(u8 index);
 

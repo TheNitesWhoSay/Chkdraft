@@ -5,6 +5,11 @@ StringTableNode::StringTableNode() : string(""), stringNum(0), isExtended(false)
 
 }
 
+StringTableNode::~StringTableNode()
+{
+
+}
+
 bool StringTableNode::operator== (StringTableNode other)
 {
     return (stringNum == other.stringNum) &&

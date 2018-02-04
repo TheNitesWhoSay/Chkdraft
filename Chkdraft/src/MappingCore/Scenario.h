@@ -19,7 +19,7 @@ class Scenario
 
 /* Constructors */  Scenario();
 
-/* Destructors  */  ~Scenario();
+/* Destructors  */  virtual ~Scenario();
 
 /*  Quick Pass  */  Scenario* scenario(); // Returns pointer to this scenario, useful for classes that inherit 'Scenario'
 

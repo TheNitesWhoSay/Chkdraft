@@ -43,6 +43,11 @@ Suggestions::Suggestions() : isShown(false)
     suggestParent = NULL;
 }
 
+Suggestions::~Suggestions()
+{
+
+}
+
 bool Suggestions::CreateThis(HWND hParent, int x, int y, int width, int height)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Suggestions", NULL, false) )

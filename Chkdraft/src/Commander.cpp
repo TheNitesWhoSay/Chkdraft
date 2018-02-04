@@ -5,18 +5,21 @@ class GenericUndoCommand : public GenericCommand
 {
 public:
     GenericUndoCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::GenericUndoCommand) {}
+    virtual ~GenericUndoCommand() {}
 };
 
 class GenericRedoCommand : public GenericCommand
 {
 public:
     GenericRedoCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::GenericRedoCommand) {}
+    virtual ~GenericRedoCommand() {}
 };
 
 class KillCommand : public GenericCommand
 {
 public:
     KillCommand() : GenericCommand(true, (u32)ReservedCommandClassIds::KillCommanderCommand) {}
+    virtual ~KillCommand() {}
 };
 
 Commander::Commander(Logger &logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
@@ -571,4 +574,9 @@ void Commander::TryRedo()
                 AddUndo(undoRedoTypeId, command);
         }
     }
+}
+
+AcidRollbackFailure::~AcidRollbackFailure()
+{
+
 }

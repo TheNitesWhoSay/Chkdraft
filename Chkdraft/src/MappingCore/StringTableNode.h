@@ -14,6 +14,7 @@ class StringTableNode // An object comprehensively representing a StarCraft stri
         u32 propStruct; // propStruct (extended strings only)
 
         StringTableNode(); // ctor
+        virtual ~StringTableNode();
         bool operator== (StringTableNode other); // Check for complete equivalency
         bool operator< (StringTableNode other); // Check if one string num is less than another
 };

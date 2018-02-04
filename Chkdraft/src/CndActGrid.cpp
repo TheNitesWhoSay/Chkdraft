@@ -11,10 +11,20 @@ enum ID
     CHECK_ENABLED_64 = (CHECK_ENABLED_16 + 48)
 };
 
+ICndActGridUser::~ICndActGridUser()
+{
+
+}
+
 CndActGrid::CndActGrid(ICndActGridUser& user, int numUsedRows) : user(user), hasUpDownedThisEdit(false),
     startedByClick(false), ignoreChange(false), numUsedRows(numUsedRows)
 {
     
+}
+
+CndActGrid::~CndActGrid()
+{
+
 }
 
 bool CndActGrid::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)

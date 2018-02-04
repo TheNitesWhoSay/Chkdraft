@@ -30,7 +30,7 @@ class Commander
 {
     public:
         Commander(Logger &logger);
-        ~Commander();
+        virtual ~Commander();
 
         void Do(GenericCommandPtr command);
         void Do(const std::vector<GenericCommandPtr> &commands);
@@ -100,8 +100,8 @@ class AcidRollbackFailure : public std::exception
 {
     public:
         explicit AcidRollbackFailure(const std::string &exceptionText) : exceptionText(exceptionText) { }
+        virtual ~AcidRollbackFailure() throw();
         virtual const char* what() const throw() { return exceptionText.c_str(); }
-        virtual ~AcidRollbackFailure() throw() { }
 
     private:
         std::string exceptionText;

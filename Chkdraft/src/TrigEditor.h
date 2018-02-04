@@ -15,6 +15,7 @@ class TrigEditorWindow : public ClassDialog
         TriggersWindow triggersWindow;
 
         TrigEditorWindow();
+        virtual ~TrigEditorWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void ChangeTab(u32 tabId);

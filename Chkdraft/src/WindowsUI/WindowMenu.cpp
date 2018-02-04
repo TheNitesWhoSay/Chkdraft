@@ -5,6 +5,11 @@ WindowMenu::WindowMenu() : hMenu(NULL)
 
 }
 
+WindowMenu::~WindowMenu()
+{
+
+}
+
 bool WindowMenu::FindThis(HWND hParent)
 {
     hMenu = GetMenu(hParent);

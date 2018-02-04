@@ -1,5 +1,10 @@
 #include "TabControl.h"
 
+TabControl::~TabControl()
+{
+
+}
+
 bool TabControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id)
 {
     return WindowControl::CreateControl(NULL, "SysTabControl32", NULL, WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);

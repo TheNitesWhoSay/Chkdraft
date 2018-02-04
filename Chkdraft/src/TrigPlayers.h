@@ -8,6 +8,7 @@ class TrigPlayersWindow : public ClassWindow
 {
     public:
         TrigPlayersWindow();
+        virtual ~TrigPlayersWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow(u32 trigIndex);

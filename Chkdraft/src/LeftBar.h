@@ -10,6 +10,7 @@ class LeftBar : public ClassWindow
         MiniMap miniMap;
         MainTree mainTree;
 
+        virtual ~LeftBar();
         bool CreateThis(HWND hParent);
 
     protected:

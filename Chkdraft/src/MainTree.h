@@ -8,7 +8,7 @@
 class MainTree : public TreeViewControl
 {
     public:
-
+        virtual ~MainTree();
         UnitTree unitTree;
         LocationTree locTree;
 

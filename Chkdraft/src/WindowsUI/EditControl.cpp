@@ -6,6 +6,11 @@ EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFo
 
 }
 
+EditControl::~EditControl()
+{
+
+}
+
 bool EditControl::FindThis(HWND hParent, u32 id)
 {
     return WindowControl::FindThis(hParent, id) &&

@@ -61,6 +61,16 @@ bool WindowsClipboardToString(std::string &str)
     return success;
 }
 
+PasteTileNode::~PasteTileNode()
+{
+
+}
+
+PasteUnitNode::~PasteUnitNode()
+{
+
+}
+
 Clipboard::Clipboard() : pasting(false), quickPaste(false), fillSimilarTiles(false)
 {
     edges.left = -1;

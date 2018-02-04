@@ -8,6 +8,7 @@ class PreservedUnitStats
 {
     public:
         PreservedUnitStats();
+        virtual ~PreservedUnitStats();
         void Clear();
         void AddStats(Selections &sel, ChkUnitField statField);
         void convertToUndo();

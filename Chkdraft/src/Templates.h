@@ -7,6 +7,7 @@
 class TemplatesWindow : public ClassWindow
 {
     public:
+        virtual ~TemplatesWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow();

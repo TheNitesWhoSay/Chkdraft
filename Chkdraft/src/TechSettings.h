@@ -14,6 +14,7 @@ class TechSettingsWindow : public ClassWindow
 {
     public:
         TechSettingsWindow();
+        virtual ~TechSettingsWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         void RefreshWindow();
 

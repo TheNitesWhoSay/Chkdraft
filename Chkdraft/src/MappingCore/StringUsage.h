@@ -9,6 +9,7 @@ class StringUsageTable
     public:
 
         StringUsageTable();
+        virtual ~StringUsageTable();
 
         // Populates stringUsed table using the map, success if table could be populated
         bool populateTable(Scenario* chk, bool extendedTable);

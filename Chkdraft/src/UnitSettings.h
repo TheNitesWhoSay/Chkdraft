@@ -9,6 +9,7 @@ class UnitSettingsWindow : public ClassWindow
 {
     public:
         UnitSettingsWindow();
+        virtual ~UnitSettingsWindow();
         bool CreateThis(HWND hParent, u32 windowId);
         bool DestroyThis();
         void RefreshWindow();

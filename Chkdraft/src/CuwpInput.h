@@ -6,6 +6,7 @@
 class CuwpInputDialog : public ClassDialog
 {
     public:
+        virtual ~CuwpInputDialog();
         static bool GetCuwp(ChkCuwp &cuwp, const ChkCuwp &initialCuwp, HWND hParent);
 
     protected:

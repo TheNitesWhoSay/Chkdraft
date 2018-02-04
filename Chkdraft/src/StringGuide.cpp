@@ -5,6 +5,11 @@ enum ID {
     TEXT_COLOR_LAST = (TEXT_COLOR_FIRST+27)
 };
 
+StringGuideWindow::~StringGuideWindow()
+{
+
+}
+
 bool StringGuideWindow::CreateThis(HWND hParent)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, CreateSolidBrush(RGB(0, 0, 0)), NULL, "StringGuide", NULL, false) &&

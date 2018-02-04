@@ -26,6 +26,7 @@ struct colorcycle
 class ColorCycler
 {
     public:
+        virtual ~ColorCycler();
         static bool CycleColors(const u16 tileset); // Returns true if the map should be redrawn
 
     private:
@@ -40,6 +41,7 @@ class Graphics
 
         Graphics(GuiMap &map, Selections &selections) : map(map), selections(selections),
             displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true) { }
+        virtual ~Graphics();
 
         void DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, HDC hDC, bool showAnywhere);
 
