@@ -436,12 +436,13 @@ void TextTrigCompiler::CleanText(buffer &text)
                 break;
         }
     }
-    dest.add<u8>(0); // Add a terminating null character
     text.overwrite((const char*)dest.getPtr(0), dest.size());
 }
 
 bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 {
+    text.add<u8>(0); // Add a terminating null character
+
     u8 flags;
 
     u32 pos = 0,
@@ -2629,6 +2630,9 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
             if ( (isExtended && extendedStrUsage.useNext(node.stringNum)) ||
                 (!isExtended && strUsage.useNext(node.stringNum)) )
             {
+                if ( isExtended )
+                    node.stringNum = 65536 - node.stringNum; // Convert to the index the string will hold in the normal table
+
                 addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
                 stringTable.insert(std::pair<u32, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
                 dest = node.stringNum;
@@ -4031,9 +4035,13 @@ bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
     if ( map->addAllUsedStrings(standardStrList, true, false) &&
          map->rebuildStringTable(standardStrList, false) )
     {
-        if ( map->hasStrSection(true) && extendedStrList.size() > 0 ) // Has extended strings
+        if ( extendedStrList.size() > 0 ) // Has extended strings
         {
-            return map->addAllUsedStrings(extendedStrList, false, true) && 
+            // Convert to the index the string will have in the KSTR section
+            for ( auto &extendedStr : extendedStrList )
+                extendedStr.stringNum = 65536 - extendedStr.stringNum;
+
+            return map->addAllUsedStrings(extendedStrList, false, true) &&
                    map->rebuildStringTable(extendedStrList, true);
         }
         else
