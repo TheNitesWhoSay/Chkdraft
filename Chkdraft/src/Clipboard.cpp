@@ -2,6 +2,7 @@
 #include "Chkdraft.h"
 #include "TileChange.h"
 #include "UnitCreateDel.h"
+#include <set>
 
 void StringToWindowsClipboard(std::string &str)
 {
@@ -60,7 +61,7 @@ bool WindowsClipboardToString(std::string &str)
     return success;
 }
 
-Clipboard::Clipboard() : pasting(false), quickPaste(false)
+Clipboard::Clipboard() : pasting(false), quickPaste(false), fillSimilarTiles(false)
 {
     edges.left = -1;
     edges.top = -1;
@@ -199,93 +200,10 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
     switch ( layer )
     {
         case Layer::Terrain:
-            {
-                mapClickX += 16;
-                mapClickY += 16;
-
-                if ( !( mapClickX/16 == prevPaste.x && mapClickY/16 == prevPaste.y ) )
-                {
-                    prevPaste.x = mapClickX/16;
-                    prevPaste.y = mapClickY/16;
-                    u16 xSize = map.XSize();
-                    u16 ySize = map.YSize();
-    
-                    auto tileChanges = ReversibleActions::Make();
-                    auto &tiles = getTiles();
-                    for ( auto &tile : tiles )
-                    {
-                        s32 xc = (tile.xc + mapClickX) / 32;
-                        s32 yc = (tile.yc + mapClickY) / 32;
-
-                        // If within map boundaries
-                        if ( xc >= 0 && xc < xSize )
-                        {
-                            if ( yc >= 0 && yc < ySize )
-                            {
-                                u32 startLocation = 2 * xSize*yc + 2 * xc; // Down y rows, over x columns
-                                if ( map.getTile(xc, yc) != tile.value )
-                                {
-                                    tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
-                                    map.setTile(xc, yc, tile.value);
-                                }
-                            }
-                        }
-                    }
-                    undos.AddUndo(tileChanges);
-                }
-            }
+            pasteTerrain(mapClickX, mapClickY, map, undos);
             break;
         case Layer::Units:
-            {
-                auto unitCreates = ReversibleActions::Make();
-                auto &pasteUnits = getUnits();
-                for ( auto &pasteUnit : pasteUnits )
-                {
-                    pasteUnit.unit.xc = u16(mapClickX + pasteUnit.xc);
-                    pasteUnit.unit.yc = u16(mapClickY + pasteUnit.yc);
-                    if ( mapClickX + (s32(pasteUnit.xc)) >= 0 && mapClickY + (s32(pasteUnit.yc)) >= 0 )
-                    {
-                        bool canPaste = true;
-                        if ( allowStack == false )
-                        {
-                            s32 unitLeft   = pasteUnit.unit.xc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeLeft,
-                                unitRight  = pasteUnit.unit.xc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeRight,
-                                unitTop    = pasteUnit.unit.yc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeUp,
-                                unitBottom = pasteUnit.unit.yc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeDown;
-
-                            u16 numUnits = map.numUnits();
-                            for ( u16 i=0; i<numUnits; i++ )
-                            {
-                                ChkUnit unit = map.getUnit(i);
-                                s32 left   = unit.xc - chkd.scData.units.UnitDat(unit.id)->UnitSizeLeft,
-                                    right  = unit.xc + chkd.scData.units.UnitDat(unit.id)->UnitSizeRight,
-                                    top    = unit.yc - chkd.scData.units.UnitDat(unit.id)->UnitSizeUp,
-                                    bottom = unit.yc + chkd.scData.units.UnitDat(unit.id)->UnitSizeDown;
-
-                                if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
-                                {
-                                    canPaste = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if ( canPaste )
-                        {
-                            prevPaste.x = pasteUnit.unit.xc;
-                            prevPaste.y = pasteUnit.unit.yc;
-                            u16 numUnits = map.numUnits();
-                            if ( map.addUnit(pasteUnit.unit) )
-                            {
-                                unitCreates->Insert(UnitCreateDel::Make(numUnits));
-                                if ( chkd.unitWindow.getHandle() != nullptr )
-                                    chkd.unitWindow.AddUnitItem(numUnits, pasteUnit.unit);
-                            }
-                        }
-                    }
-                }
-                CM->AddUndo(unitCreates);
-            }
+            pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
             break;
     }
 }
@@ -328,4 +246,167 @@ void Clipboard::ClearQuickItems()
 {
     quickTiles.clear();
     quickUnits.clear();
+}
+
+void Clipboard::toggleFillSimilarTiles()
+{
+    fillSimilarTiles = !fillSimilarTiles;
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, fillSimilarTiles);
+}
+
+void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos)
+{
+    if ( fillSimilarTiles && getTiles().size() == 1 )
+    {
+        fillPasteTerrain(mapClickX, mapClickY, map, undos);
+    }
+    else
+    {
+        mapClickX += 16;
+        mapClickY += 16;
+
+        if ( !( mapClickX/16 == prevPaste.x && mapClickY/16 == prevPaste.y ) )
+        {
+            prevPaste.x = mapClickX/16;
+            prevPaste.y = mapClickY/16;
+            u16 xSize = map.XSize();
+            u16 ySize = map.YSize();
+
+            auto tileChanges = ReversibleActions::Make();
+            auto &tiles = getTiles();
+            for ( auto &tile : tiles )
+            {
+                s32 xc = (tile.xc + mapClickX) / 32;
+                s32 yc = (tile.yc + mapClickY) / 32;
+
+                // If within map boundaries
+                if ( xc >= 0 && xc < xSize )
+                {
+                    if ( yc >= 0 && yc < ySize )
+                    {
+                        if ( map.getTile(xc, yc) != tile.value )
+                        {
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            map.setTile(xc, yc, tile.value);
+                        }
+                    }
+                }
+            }
+            undos.AddUndo(tileChanges);
+        }
+    }
+}
+
+void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos)
+{
+    mapClickX += 16;
+    mapClickY += 16;
+
+    if ( !( mapClickX/16 == prevPaste.x && mapClickY/16 == prevPaste.y ) )
+    {
+        prevPaste.x = mapClickX/16;
+        prevPaste.y = mapClickY/16;
+        u16 xSize = map.XSize();
+        u16 ySize = map.YSize();
+
+        auto tileChanges = ReversibleActions::Make();
+        if ( getTiles().size() == 1 )
+        {
+            PasteTileNode pasteTile = getTiles().at(0);
+            s32 xc = (pasteTile.xc + mapClickX) / 32;
+            s32 yc = (pasteTile.yc + mapClickY) / 32;
+            u16 pasteTileValue = pasteTile.value;
+
+            // If within map boundaries
+            if ( xc >= 0 && xc < xSize && yc >= 0 && yc < ySize )
+            {
+                u16 filledTileValue = map.getTile(xc, yc);
+                if ( filledTileValue != pasteTileValue )
+                {
+                    std::set<points> tilesProcessed;
+                    std::stack<points> tilesToProcess;
+                    const points originTile = points(xc, yc);
+                    tilesToProcess.push(originTile);
+                    while ( !tilesToProcess.empty() )
+                    {
+                        const points tile = tilesToProcess.top();
+                        tilesToProcess.pop();
+                        tilesProcessed.insert(tile);
+                        xc = tile.x;
+                        yc = tile.y;
+                        if ( map.getTile(xc, yc) == filledTileValue )
+                        {
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            map.setTile(xc, yc, pasteTileValue);
+                            const points left = points(xc-1, yc);
+                            const points right = points(xc+1, yc);
+                            const points up = points(xc, yc-1);
+                            const points down = points(xc, yc+1);
+                            if ( xc >= 1 && tilesProcessed.find(left) == tilesProcessed.end() )
+                                tilesToProcess.push(left);
+                            if ( xc < xSize-1 && tilesProcessed.find(right) == tilesProcessed.end() )
+                                tilesToProcess.push(right);
+                            if ( yc >= 1 && tilesProcessed.find(up) == tilesProcessed.end() )
+                                tilesToProcess.push(up);
+                            if ( yc < ySize-1 && tilesProcessed.find(down) == tilesProcessed.end() )
+                                tilesToProcess.push(down);
+                        }
+                    }
+                }
+            }
+        }
+        undos.AddUndo(tileChanges);
+    }
+}
+
+void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack)
+{
+    auto unitCreates = ReversibleActions::Make();
+    auto &pasteUnits = getUnits();
+    for ( auto &pasteUnit : pasteUnits )
+    {
+        pasteUnit.unit.xc = u16(mapClickX + pasteUnit.xc);
+        pasteUnit.unit.yc = u16(mapClickY + pasteUnit.yc);
+        if ( mapClickX + (s32(pasteUnit.xc)) >= 0 && mapClickY + (s32(pasteUnit.yc)) >= 0 )
+        {
+            bool canPaste = true;
+            if ( allowStack == false )
+            {
+                s32 unitLeft   = pasteUnit.unit.xc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeLeft,
+                    unitRight  = pasteUnit.unit.xc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeRight,
+                    unitTop    = pasteUnit.unit.yc - chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeUp,
+                    unitBottom = pasteUnit.unit.yc + chkd.scData.units.UnitDat(pasteUnit.unit.id)->UnitSizeDown;
+
+                u16 numUnits = map.numUnits();
+                for ( u16 i=0; i<numUnits; i++ )
+                {
+                    ChkUnit unit = map.getUnit(i);
+                    s32 left   = unit.xc - chkd.scData.units.UnitDat(unit.id)->UnitSizeLeft,
+                        right  = unit.xc + chkd.scData.units.UnitDat(unit.id)->UnitSizeRight,
+                        top    = unit.yc - chkd.scData.units.UnitDat(unit.id)->UnitSizeUp,
+                        bottom = unit.yc + chkd.scData.units.UnitDat(unit.id)->UnitSizeDown;
+
+                    if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
+                    {
+                        canPaste = false;
+                        break;
+                    }
+                }
+            }
+
+            if ( canPaste )
+            {
+                prevPaste.x = pasteUnit.unit.xc;
+                prevPaste.y = pasteUnit.unit.yc;
+                u16 numUnits = map.numUnits();
+                if ( map.addUnit(pasteUnit.unit) )
+                {
+                    unitCreates->Insert(UnitCreateDel::Make(numUnits));
+                    if ( chkd.unitWindow.getHandle() != nullptr )
+                        chkd.unitWindow.AddUnitItem(numUnits, pasteUnit.unit);
+                }
+            }
+        }
+    }
+    CM->AddUndo(unitCreates);
 }

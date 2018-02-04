@@ -1337,7 +1337,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
     {
         StringUsageTable standardStringUsage;
         StringUsageTable extendedStringUsage;
-        if ( standardStringUsage.populateTable(map.get(), false) || extendedStringUsage.populateTable(map.get(), true) )
+        if ( standardStringUsage.populateTable(map.get(), false) | extendedStringUsage.populateTable(map.get(), true) )
         {
             ChkdString str(true);
 

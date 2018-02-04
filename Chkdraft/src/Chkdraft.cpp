@@ -448,6 +448,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_LOCATIONS_LOCKANYWHERE: CM->ToggleLockAnywhere(); break;
     case ID_LOCATIONS_CLIPNAMES: CM->ToggleLocationNameClip(); break;
 
+        // Cut Copy Paste
+    case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;
+
         // Scenario
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
     case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:

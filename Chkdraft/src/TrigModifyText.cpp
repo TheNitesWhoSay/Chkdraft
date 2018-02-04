@@ -129,6 +129,13 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
                     RefreshWindow(trigIndex);
                 }
             }
+            else if ( !silent && saveAfter )
+            {
+                if ( chkd.maps.SaveCurr(false) )
+                    MessageBox(NULL, "Success", "Compiler", MB_OK);
+                else
+                    MessageBox(NULL, "Compile Succeeded, Save Failed", "Compiler", MB_OK);
+            }
             else if ( !silent )
                 MessageBox(NULL, "No change", NULL, MB_OK);
         }

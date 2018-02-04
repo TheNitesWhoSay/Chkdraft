@@ -296,13 +296,14 @@
 #define ID_TOOLS_PASSWORD               40633
 #define ID_TOOLS_LITTRIGGERS            40634
 #define ID_OPTIONS_USEADDRESSESFORMEMORY 40635
+#define ID_CUTCOPYPASTE_FILLSIMILARTILES 40636
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        155
-#define _APS_NEXT_COMMAND_VALUE         40636
+#define _APS_NEXT_COMMAND_VALUE         40637
 #define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
