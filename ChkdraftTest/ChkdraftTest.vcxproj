@@ -1,0 +1,389 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{c178137c-9d28-49fd-a1f6-4953a042a242}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Chkdraft\SFmpq\SFmpqapi.h" />
+    <ClInclude Include="..\Chkdraft\src\ChangePassword.h" />
+    <ClInclude Include="..\Chkdraft\src\ChkdCtrlEnums.h" />
+    <ClInclude Include="..\Chkdraft\src\ChkdPlugins.h" />
+    <ClInclude Include="..\Chkdraft\src\Chkdraft.h" />
+    <ClInclude Include="..\Chkdraft\src\ChkdStringInput.h" />
+    <ClInclude Include="..\Chkdraft\src\Clipboard.h" />
+    <ClInclude Include="..\Chkdraft\src\CndActGrid.h" />
+    <ClInclude Include="..\Chkdraft\src\Commander.h" />
+    <ClInclude Include="..\Chkdraft\src\CommandTypes.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\CommonFiles.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\Constants.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\Debug.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\Resource.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\Structs.h" />
+    <ClInclude Include="..\Chkdraft\src\CommonFiles\Version.h" />
+    <ClInclude Include="..\Chkdraft\src\Counters.h" />
+    <ClInclude Include="..\Chkdraft\src\CuwpInput.h" />
+    <ClInclude Include="..\Chkdraft\src\CUWPs.h" />
+    <ClInclude Include="..\Chkdraft\src\DialogWindows.h" />
+    <ClInclude Include="..\Chkdraft\src\EnterPassword.h" />
+    <ClInclude Include="..\Chkdraft\src\ErrorHandler.h" />
+    <ClInclude Include="..\Chkdraft\src\Forces.h" />
+    <ClInclude Include="..\Chkdraft\src\GenericCommand.h" />
+    <ClInclude Include="..\Chkdraft\src\Graphics.h" />
+    <ClInclude Include="..\Chkdraft\src\GuiMap.h" />
+    <ClInclude Include="..\Chkdraft\src\LeftBar.h" />
+    <ClInclude Include="..\Chkdraft\src\LIT.h" />
+    <ClInclude Include="..\Chkdraft\src\LocationChange.h" />
+    <ClInclude Include="..\Chkdraft\src\LocationCreateDel.h" />
+    <ClInclude Include="..\Chkdraft\src\LocationMove.h" />
+    <ClInclude Include="..\Chkdraft\src\LocationProperties.h" />
+    <ClInclude Include="..\Chkdraft\src\LocationTree.h" />
+    <ClInclude Include="..\Chkdraft\src\Logger.h" />
+    <ClInclude Include="..\Chkdraft\src\MainPlot.h" />
+    <ClInclude Include="..\Chkdraft\src\MainToolbar.h" />
+    <ClInclude Include="..\Chkdraft\src\MainTree.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\Basics.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\Buffer.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkAction.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkCondition.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkCuwp.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkDoodad.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkLocation.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkSprite.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkTrigger.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ChkUnit.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\CoreStructs.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\DefaultCHK.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\EscapeStrings.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\FileIO.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\MapFile.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\MappingCore.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\Math.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\ModifiedAsset.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\Scenario.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\sha256.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\StringTableNode.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\StringUsage.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\SubStringMap.h" />
+    <ClInclude Include="..\Chkdraft\src\MappingCore\TemporaryFile.h" />
+    <ClInclude Include="..\Chkdraft\src\MapProperties.h" />
+    <ClInclude Include="..\Chkdraft\src\Maps.h" />
+    <ClInclude Include="..\Chkdraft\src\MapSettings.h" />
+    <ClInclude Include="..\Chkdraft\src\MiniMap.h" />
+    <ClInclude Include="..\Chkdraft\src\MoveTo.h" />
+    <ClInclude Include="..\Chkdraft\src\NewMap.h" />
+    <ClInclude Include="..\Chkdraft\src\PeerListBox.h" />
+    <ClInclude Include="..\Chkdraft\src\PlayerDropdown.h" />
+    <ClInclude Include="..\Chkdraft\src\PreservedUnitStats.h" />
+    <ClInclude Include="..\Chkdraft\src\Reversibles.h" />
+    <ClInclude Include="..\Chkdraft\src\ScData.h" />
+    <ClInclude Include="..\Chkdraft\src\Selections.h" />
+    <ClInclude Include="..\Chkdraft\src\Settings.h" />
+    <ClInclude Include="..\Chkdraft\src\StaticTrigComponentParser.h" />
+    <ClInclude Include="..\Chkdraft\src\StringEditor.h" />
+    <ClInclude Include="..\Chkdraft\src\StringGuide.h" />
+    <ClInclude Include="..\Chkdraft\src\StringPreview.h" />
+    <ClInclude Include="..\Chkdraft\src\Suggestions.h" />
+    <ClInclude Include="..\Chkdraft\src\Switches.h" />
+    <ClInclude Include="..\Chkdraft\src\TechSettings.h" />
+    <ClInclude Include="..\Chkdraft\src\TechTree.h" />
+    <ClInclude Include="..\Chkdraft\src\Templates.h" />
+    <ClInclude Include="..\Chkdraft\src\TerrainPalette.h" />
+    <ClInclude Include="..\Chkdraft\src\TestCommands.h" />
+    <ClInclude Include="..\Chkdraft\src\TextTrig.h" />
+    <ClInclude Include="..\Chkdraft\src\TextTrigCompiler.h" />
+    <ClInclude Include="..\Chkdraft\src\TextTrigGenerator.h" />
+    <ClInclude Include="..\Chkdraft\src\TileChange.h" />
+    <ClInclude Include="..\Chkdraft\src\TileProperties.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigActions.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigConditions.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigEditor.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigGeneral.h" />
+    <ClInclude Include="..\Chkdraft\src\Triggers.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigModify.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigModifyText.h" />
+    <ClInclude Include="..\Chkdraft\src\TrigPlayers.h" />
+    <ClInclude Include="..\Chkdraft\src\Undos.h" />
+    <ClInclude Include="..\Chkdraft\src\UndoTypes.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitChange.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitCreateDel.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitIndexMove.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitProperties.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitSettings.h" />
+    <ClInclude Include="..\Chkdraft\src\UnitTree.h" />
+    <ClInclude Include="..\Chkdraft\src\UpgradeSettings.h" />
+    <ClInclude Include="..\Chkdraft\src\UpgradeTree.h" />
+    <ClInclude Include="..\Chkdraft\src\WavEditor.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ButtonControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\CheckBoxControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ClassDialog.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ClassWindow.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\DataTypes.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\DragListControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\DropdownControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\EditControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\GridItem.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\GridView.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\GroupBoxControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ListBoxControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ListViewControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\MdiClient.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\PaintBuffer.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\RadioButtonControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\StatusControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\TabControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\TextControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\ToolbarControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\TreeViewControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\WindowControl.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\WindowMenu.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\WindowsItem.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\WindowsUI.h" />
+    <ClInclude Include="..\Chkdraft\src\WindowsUI\WinUIEnums.h" />
+    <ClInclude Include="src\pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Chkdraft\src\ChangePassword.cpp" />
+    <ClCompile Include="..\Chkdraft\src\ChkdPlugins.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Chkdraft.cpp" />
+    <ClCompile Include="..\Chkdraft\src\ChkdStringInput.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Clipboard.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CndActGrid.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Commander.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CommonFiles\Constants.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CommonFiles\Debug.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CommonFiles\Structs.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CommonFiles\Version.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Counters.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CuwpInput.cpp" />
+    <ClCompile Include="..\Chkdraft\src\CUWPs.cpp" />
+    <ClCompile Include="..\Chkdraft\src\EnterPassword.cpp" />
+    <ClCompile Include="..\Chkdraft\src\ErrorHandler.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Forces.cpp" />
+    <ClCompile Include="..\Chkdraft\src\GenericCommand.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Graphics.cpp" />
+    <ClCompile Include="..\Chkdraft\src\GuiMap.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LeftBar.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LIT.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LocationChange.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LocationCreateDel.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LocationMove.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LocationProperties.cpp" />
+    <ClCompile Include="..\Chkdraft\src\LocationTree.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Logger.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Main.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MainPlot.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MainToolbar.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MainTree.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\Basics.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\Buffer.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkAction.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkCondition.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkCuwp.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkDoodad.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkLocation.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkSprite.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkTrigger.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ChkUnit.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\DefaultCHK.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\EscapeStrings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\FileIO.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\MapFile.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\Math.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\ModifiedAsset.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\Scenario.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\sha256.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\StringTableNode.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\StringUsage.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\SubStringMap.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MappingCore\TemporaryFile.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MapProperties.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Maps.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MapSettings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MiniMap.cpp" />
+    <ClCompile Include="..\Chkdraft\src\MoveTo.cpp" />
+    <ClCompile Include="..\Chkdraft\src\NewMap.cpp" />
+    <ClCompile Include="..\Chkdraft\src\PeerListBox.cpp" />
+    <ClCompile Include="..\Chkdraft\src\PlayerDropdown.cpp" />
+    <ClCompile Include="..\Chkdraft\src\PreservedUnitStats.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Reversibles.cpp" />
+    <ClCompile Include="..\Chkdraft\src\ScData.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Selections.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Settings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\StaticTrigComponentParser.cpp" />
+    <ClCompile Include="..\Chkdraft\src\StringEditor.cpp" />
+    <ClCompile Include="..\Chkdraft\src\StringGuide.cpp" />
+    <ClCompile Include="..\Chkdraft\src\StringPreview.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Suggestions.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Switches.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TechSettings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TechTree.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Templates.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TerrainPalette.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TestCommands.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TextTrig.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TextTrigCompiler.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TextTrigGenerator.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TileChange.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TileProperties.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigActions.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigConditions.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigEditor.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigGeneral.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Triggers.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigModify.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigModifyText.cpp" />
+    <ClCompile Include="..\Chkdraft\src\TrigPlayers.cpp" />
+    <ClCompile Include="..\Chkdraft\src\Undos.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitChange.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitCreateDel.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitIndexMove.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitProperties.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitSettings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UnitTree.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UpgradeSettings.cpp" />
+    <ClCompile Include="..\Chkdraft\src\UpgradeTree.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WavEditor.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ButtonControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\CheckBoxControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ClassDialog.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ClassWindow.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\DragListControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\DropdownControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\EditControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\GridItem.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\GridView.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\GroupBoxControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ListBoxControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ListViewControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\MdiClient.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\PaintBuffer.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\RadioButtonControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\StatusControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\TabControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\TextControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\ToolbarControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\TreeViewControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\WindowControl.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\WindowMenu.cpp" />
+    <ClCompile Include="..\Chkdraft\src\WindowsUI\WindowsItem.cpp" />
+    <ClCompile Include="src\pch.cpp" />
+    <ClCompile Include="src\ChkdraftTest.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\Chkdraft\Icon.ico" />
+    <Image Include="..\Chkdraft\New Tab.bmp" />
+    <Image Include="..\Chkdraft\Save-as.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\Chkdraft\Resource.rc" />
+  </ItemGroup>
+  <ItemDefinitionGroup />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\build\native\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.targets" Condition="Exists('..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\build\native\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.targets')" />
+  </ImportGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>src/pch.h</PrecompiledHeaderFile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>USESTATICSFMPQ;CHKDRAFT;CHKDRAFT_TEST;CHKD_DEBUG;_USING_V110_SDK71_;NOMINMAX;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>..\Chkdraft\SFMPQ\SFmpq_MTd.lib;Winmm.lib;comctl32.lib;$(MSBuildThisFileDirectory)..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>src/pch.h</PrecompiledHeaderFile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>X64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>src/pch.h</PrecompiledHeaderFile>
+      <PreprocessorDefinitions>USESTATICSFMPQ;CHKDRAFT;CHKDRAFT_TEST;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_USING_V110_SDK71_;NOMINMAX;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>..\Chkdraft\SFmpq\SFmpq_MT.lib;Winmm.lib;comctl32.lib;$(MSBuildThisFileDirectory)..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Release\gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>src/pch.h</PrecompiledHeaderFile>
+      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\build\native\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.0\build\native\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.targets'))" />
+  </Target>
+</Project>

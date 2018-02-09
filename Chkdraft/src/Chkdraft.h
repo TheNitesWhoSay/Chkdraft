@@ -48,6 +48,7 @@ class Chkdraft : public ClassWindow
 
 /* Quick Access */  bool ChangesLocked(u16 mapId);
                     bool EditFocused();
+                    HWND CurrDialog();
 
 /*   UI Accel   */  void SetCurrDialog(HWND hDialog);
                     void SetEditFocused(bool editFocused);

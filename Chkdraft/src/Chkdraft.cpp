@@ -161,6 +161,11 @@ bool Chkdraft::EditFocused()
     return editFocused;
 }
 
+HWND Chkdraft::CurrDialog()
+{
+    return currDialog;
+}
+
 void Chkdraft::SetCurrDialog(HWND hDialog)
 {
     if ( currDialog != hDialog )
