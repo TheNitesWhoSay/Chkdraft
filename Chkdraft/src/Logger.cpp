@@ -2,37 +2,42 @@
 #include <string>
 #include <ctime>
 
-Logger::Logger() : outputStream(nullptr), maximumLogLevel(LogLevel::Info)
+Logger::Logger() : logLevel(LogLevel::Info), outputStream(std::shared_ptr<std::ostream>(&std::cout, [](std::ostream* os) {})), aggregator(nullptr)
 {
 
 }
 
-Logger::Logger(LogLevel logLevel) : outputStream(nullptr), maximumLogLevel(logLevel)
+Logger::Logger(LogLevel logLevel) : logLevel(logLevel), outputStream(nullptr), aggregator(nullptr)
 {
 
 }
 
-Logger::Logger(Logger* aggregator) : outputStream(nullptr), maximumLogLevel(LogLevel::Info), aggregator(aggregator)
+Logger::Logger(LogLevel logLevel, std::shared_ptr<std::ostream> outputStream) : logLevel(logLevel), outputStream(outputStream), aggregator(nullptr)
 {
 
 }
 
-Logger::Logger(std::shared_ptr<std::ostream> outputStream) : outputStream(outputStream), maximumLogLevel(LogLevel::Info)
+Logger::Logger(LogLevel logLevel, std::shared_ptr<std::ostream> outputStream, std::shared_ptr<Logger> aggregator) : logLevel(logLevel), outputStream(outputStream), aggregator(aggregator)
 {
 
 }
 
-Logger::Logger(std::shared_ptr<std::ostream> outputStream, Logger* aggregator) : outputStream(outputStream), maximumLogLevel(LogLevel::Info), aggregator(aggregator)
+Logger::Logger(LogLevel logLevel, std::shared_ptr<Logger> aggregator) : logLevel(logLevel), outputStream(nullptr), aggregator(aggregator)
 {
 
 }
 
-Logger::Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel) : outputStream(outputStream), maximumLogLevel(logLevel)
+Logger::Logger(std::shared_ptr<std::ostream> outputStream) : logLevel(LogLevel::Info), outputStream(outputStream), aggregator(nullptr)
 {
 
 }
 
-Logger::Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel, Logger* aggregator) : outputStream(outputStream), maximumLogLevel(logLevel), aggregator(aggregator)
+Logger::Logger(std::shared_ptr<std::ostream> outputStream, std::shared_ptr<Logger> aggregator) : logLevel(LogLevel::Info), outputStream(outputStream), aggregator(aggregator)
+{
+
+}
+
+Logger::Logger(std::shared_ptr<Logger> aggregator) : logLevel(LogLevel::Info), outputStream(nullptr), aggregator(aggregator)
 {
 
 }
@@ -42,19 +47,48 @@ Logger::~Logger()
 
 }
 
+LogLevel Logger::getLogLevel()
+{
+    return logLevel;
+}
+
+std::shared_ptr<std::ostream> Logger::getOutputStream()
+{
+    return outputStream;
+}
+
+std::shared_ptr<Logger> Logger::getAggregator()
+{
+    return aggregator;
+}
+
+void Logger::setLogLevel(LogLevel logLevel)
+{
+    this->logLevel = logLevel;
+}
+
 void Logger::setOutputStream(std::shared_ptr<std::ostream> outputStream)
 {
     this->outputStream = outputStream;
 }
 
-void Logger::setAggregator(Logger* aggregator)
+void Logger::setAggregator(std::shared_ptr<Logger> aggregator)
 {
     this->aggregator = aggregator;
 }
 
-void Logger::setLogLevel(LogLevel logLevel)
+std::string Logger::getTimestamp()
 {
-    this->maximumLogLevel = logLevel;
+    time_t rawTime = -1;
+    if ( time(&rawTime) != -1 )
+    {
+        struct tm* timeInfo = localtime(&rawTime);
+
+        char timeString[32] = {};
+        if ( strftime(timeString, 32, "%Y-%m-%dT%H-%M-%SZ", timeInfo) > 0 )
+            return std::string(timeString);
+    }
+    return std::string();
 }
 
 std::string Logger::getPrefix(LogLevel logLevel)
@@ -71,20 +105,57 @@ std::string Logger::getPrefix(LogLevel logLevel)
     }
 }
 
-std::string Logger::getTimestamp()
+std::ostream & Logger::os()
 {
-    time_t rawTime = {};
-    struct tm* timeInfo;
-    
-    time(&rawTime);
-    timeInfo = localtime(&rawTime);
-
-    int year = timeInfo->tm_year+1900;
-    int month = timeInfo->tm_mon+1;
-    int day = timeInfo->tm_mday;
-
-    char timeString[32] = {};
-    strftime(timeString, 32, "%Y-%m-%dT%H-%M-%SZ", timeInfo);
-
-    return std::string(timeString);
+    return this->outputStream != nullptr ? *this->outputStream : std::cout;
 }
+
+std::ostream & Logger::log(LogLevel logLevel)
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(logLevel);
+    return outputStream;
+}
+
+std::ostream & Logger::fatal()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Fatal);
+    return outputStream;
+}
+
+std::ostream & Logger::error()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Error);
+    return outputStream;
+}
+
+std::ostream & Logger::warn()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Warn);
+    return outputStream;
+}
+
+std::ostream & Logger::info()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Info);
+    return outputStream;
+}
+
+std::ostream & Logger::debug()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Debug);
+    return outputStream;
+}
+
+std::ostream & Logger::trace()
+{
+    std::ostream & outputStream = this->outputStream != nullptr ? *this->outputStream : std::cout;
+    outputStream << getPrefix(LogLevel::Trace);
+    return outputStream;
+}
+

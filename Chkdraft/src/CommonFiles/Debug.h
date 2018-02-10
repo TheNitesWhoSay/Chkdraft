@@ -3,7 +3,7 @@
 #include "Constants.h"
 
 // If defined, a standard output window will be shown
-//#define SHOW_CLI
+#define SHOW_CLI
 
 /** CHKD_DEBUG is usually only defined if visual studios is set
     to compile in debug mode, however it can ocassionally be

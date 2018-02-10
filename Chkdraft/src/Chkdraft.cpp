@@ -21,6 +21,8 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
+    logger.info() << "asdf" << std::endl;
+
     /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
     //maps.NewMap(128, 128, Tileset::TERRAIN_INSTALLATION, 0, 0);
     /*{
@@ -108,7 +110,7 @@ void Chkdraft::SetupLogging()
                 delete os;
             }
         }));
-        logger.setAggregator(&logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
+        logger.setAggregator(std::shared_ptr<Logger>(&logFile, [](Logger*) {})); // Forwards all logger messages to the log file, which will then save messages based on their importance
     }
     else
         Message("Failed to get logger path, log file disabled!");
