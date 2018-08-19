@@ -1,0 +1,184 @@
+Chkdraft
+	Project Dependencies: ChkdraftLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Application (.exe)
+	C/C++
+		Preprocessor
+			DEBUG: CHKDRAFT;CHKD_DEBUG;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: CHKDRAFT;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+	Linker
+		DEBUG: ..\SFMPQ\SFmpq_MTd.lib;Winmm.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)
+		RELEASE: ..\SFmpq\SFmpq_MT.lib;Winmm.lib;comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)
+
+ChkdraftLib
+	Project Dependencies: CommanderLib, IcuLib, MappingCoreLib, WindowsLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: CHKDRAFT;CHKD_DEBUG;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: CHKDRAFT;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+ChkdraftTest
+	Project Dependencies: ChkdraftLib, GoogleTestLibrary
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Application (.exe)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: CHKDRAFT;CHKD_DEBUG;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: CHKDRAFT;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+CommanderLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+CommanderTest
+	Project Dependencies: CommanderLib, GoogleTestLibrary
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Application (.exe)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+GoogleTestLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+IcuLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	C/C++
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+MappingCoreLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: CHKDRAFT;CHKD_DEBUG;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: CHKDRAFT;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+MappingCoreTest
+	Project Dependencies: MappingCoreLib, GoogleTestLibrary
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Application (.exe)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: CHKDRAFT;CHKD_DEBUG;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: CHKDRAFT;USESTATICSFMPQ;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+			
+StormLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Output Directory: ./bin/$(ProjectName)/$(Platform)/$(Configuration)\
+		Intermediate Directory: ./bin/$(ProjectName)/$(Platform)/$(Configuration)\
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	C/C++
+		Preprocessor
+			DEBUG: WIN32;_DEBUG;_LIB;
+			RELEASE: WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+			
+WindowsLib
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Static library (.lib)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT
+
+WindowsTest
+	Project Dependencies: WindowsLib, GoogleTestLibrary
+	General
+		Windows SDK Version: 10.0.14393.0
+		Platform Toolset: Visual Studio 2017 (v141)
+		Configuration Type: Application (.exe)
+	VC++ Directories
+		Include Directories
+			..\GoogleTestLib\googletest\googletest
+			..\GoogleTestLib\googletest\googletest\include
+	C/C++
+		Preprocessor
+			DEBUG: NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)
+			RELEASE: NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)
+		Code Generation
+			Runtime Library: /MTd or /MT

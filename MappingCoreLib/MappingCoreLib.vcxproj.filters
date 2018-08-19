@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\%2a">
+      <UniqueIdentifier>{3778b5a6-7f5a-498d-8352-c9816d545066}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Structs">
+      <UniqueIdentifier>{c7901113-a917-4395-90ea-e9d1a0dcabf7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\%2a">
+      <UniqueIdentifier>{b8707e34-c1a6-4a82-a688-747eddecb2ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Structs">
+      <UniqueIdentifier>{b0d29c43-655d-428f-9edc-6adddd19c798}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Trigger Text">
+      <UniqueIdentifier>{c747c7dc-95ed-4f48-a0d5-230f9df2aadb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Trigger Text">
+      <UniqueIdentifier>{7c2c3f6f-ed93-4946-8de5-a1a00576f078}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MappingCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Basics.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="DefaultCHK.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="EscapeStrings.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="MapFile.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Scenario.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="sha256.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="StringUsage.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkAction.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkCondition.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkCuwp.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkDoodad.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkLocation.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkSprite.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkTrigger.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ChkUnit.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="ModifiedAsset.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="StringTableNode.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="MpqFile.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="FileBrowser.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ScData.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticTrigComponentParser.h">
+      <Filter>Header Files\Trigger Text</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigCompiler.h">
+      <Filter>Header Files\Trigger Text</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigGenerator.h">
+      <Filter>Header Files\Trigger Text</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreStructs.h">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemIO.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Basics.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Buffer.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="DefaultCHK.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="EscapeStrings.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="MapFile.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Math.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Scenario.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="sha256.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="StringUsage.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="SubStringMap.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkAction.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkCondition.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkCuwp.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkDoodad.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkLocation.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkSprite.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkTrigger.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ChkUnit.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="ModifiedAsset.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTableNode.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="MpqFile.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="FileBrowser.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="ScData.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticTrigComponentParser.cpp">
+      <Filter>Source Files\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigCompiler.cpp">
+      <Filter>Source Files\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigGenerator.cpp">
+      <Filter>Source Files\Trigger Text</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemIO.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
