@@ -510,7 +510,7 @@ void Commander::End()
         });
         commandThread->join();
     }
-}
+} // TODO: Here we get an unlock of unowned mutex, needs debugging
 
 void Commander::ClipRedos(u32 undoRedoTypeId)
 {
