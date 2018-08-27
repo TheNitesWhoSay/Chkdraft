@@ -16,7 +16,7 @@ MainToolbar::~MainToolbar()
 bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
 {
     // Initilize primary toolbar
-    if ( WindowControl::CreateControl( 0, TOOLBARCLASSNAME, NULL, WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS,
+    if ( WindowControl::CreateControl( 0, TOOLBARCLASSNAME, "", WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS,
                                        0, 0, 0, 0, hParent, (HMENU)windowId, false ) )
     {
         HWND hTool = getHandle();

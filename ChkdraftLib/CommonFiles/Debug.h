@@ -17,7 +17,7 @@
 #endif
 #define DEBUG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
-void ShoutError(const std::string &file, unsigned int line, const std::string &msg, ...);
+void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...);
 void CheckInvariant(bool condition, const std::string &file, int line);
 #define Invariant(condition) ( CheckInvariant(condition, __FILE__, __LINE__) ) // States something that must be true at this point in execution
 #endif

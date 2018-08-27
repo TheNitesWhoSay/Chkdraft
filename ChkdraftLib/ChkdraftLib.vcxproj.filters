@@ -564,20 +564,4 @@
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <Image Include="Icon.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="New Tab.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Save-as.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Resource.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
 </Project>

@@ -7,6 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <regex>
+#include <winres.h>
 
 enum MainWindow {
     IDR_MAIN_TOOLBAR = ID_FIRST,
@@ -21,9 +22,6 @@ enum MainWindow {
 
 void Chkdraft::OnLoadTest()
 {
-    logger << "asdf" << std::endl;
-    //logger.info() << "asdf" << std::endl;
-
     /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
     //maps.NewMap(128, 128, Tileset::TERRAIN_INSTALLATION, 0, 0);
     /*{
@@ -34,26 +32,11 @@ void Chkdraft::OnLoadTest()
 
         OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
     }*/
-
-    //logger.info("Info test");
-    //logger.trace("Trace test");
-    //logger.fatal("Fatal test");
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logger(), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr)
 {
-    std::stringstream aggregateStringStream;
-    std::stringstream stringStream;
-    Logger aggregateLogger(aggregateStringStream, LogLevel::All);
-    Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger << "1234";
-    logger.log(33) << "1234";
-    std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234"));
-    if ( stringStream.str() == aggregateStringStream.str() )
-        std::cout << "Streams are equal...";
-
-    std::regex_search(aggregateStringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234"));
 }
 
 Chkdraft::~Chkdraft()
@@ -67,7 +50,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     if ( !CreateThis() )
         return 1;
 
-    scData.Load(DatFileBrowserPtr(new ChkdDatFileBrowser()));
+    scData.Load(DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
     ShowWindow(getHandle(), nCmdShow);
     UpdateWindow();
@@ -574,11 +557,9 @@ void Chkdraft::HandleDroppedFile(const std::string &dropFilePath)
 
 bool Chkdraft::CreateSubWindows()
 {
-    logger.info("Created subs 1");
     HWND hWnd = getHandle();
     if ( hWnd != NULL )
     {
-        logger.info("Created subs 2");
         DragAcceptFiles(hWnd, TRUE);
         int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 

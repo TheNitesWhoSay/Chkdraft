@@ -149,7 +149,7 @@ bool Settings::updateSettingsFile()
         std::ofstream loadFile;
         loadFile.open(settingsPath + "settings.ini");
         loadFile
-            << "starCraftPath" << starCraftPath << std::endl
+            << "starCraftPath=" << starCraftPath << std::endl
             << "starDatPath=" << starDatPath << std::endl
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl

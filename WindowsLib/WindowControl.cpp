@@ -37,7 +37,7 @@ namespace WinLib {
             return false;
     }
 
-    bool WindowControl::CreateControl( DWORD dwExStyle, const std::wstring &lpClassName, const std::string &lpWindowName, DWORD dwStyle,
+    bool WindowControl::CreateControl( DWORD dwExStyle, const icux::uistring &lpClassName, const std::string &lpWindowName, DWORD dwStyle,
                                        int x, int y, int nWidth, int nHeight,
                                        HWND hWndParent, HMENU hMenu, bool redirectProc )
     {
@@ -57,11 +57,11 @@ namespace WinLib {
     {
         if ( getHandle() != NULL )
         {
-            SetWindowLongPtr(getHandle(), GWLP_USERDATA, (LONG)this);
+            SetWindowLongPtr(getHandle(), GWLP_USERDATA, (LONG_PTR)this);
             defaultProc = (WNDPROC)GetWindowLongPtr(getHandle(), GWLP_WNDPROC);
             return defaultProc != 0 &&
-                GetWindowLongPtr(getHandle(), GWLP_USERDATA) == (LONG)this &&
-                SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG)&ForwardControlProc) != 0;
+                GetWindowLongPtr(getHandle(), GWLP_USERDATA) == (LONG_PTR)this &&
+                SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)&ForwardControlProc) != 0;
         }
         else
             return false;

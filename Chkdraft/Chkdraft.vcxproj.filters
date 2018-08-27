@@ -20,6 +20,19 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\StormLib\StormLib_vs15.sln" />
+    <Image Include="..\ChkdraftLib\Icon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\ChkdraftLib\New Tab.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\ChkdraftLib\Save-as.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\ChkdraftLib\Resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

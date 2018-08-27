@@ -18,11 +18,20 @@ class DatFileDescriptor
 public:
     DatFileDescriptor(DatFilePriority datFilePriority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr browser = nullptr, bool expectedInScDirectory = true);
 
-    const DatFilePriority datFilePriority;
-    const std::string fileName;
-    const std::string expectedFilePath;
-    const FileBrowserPtr browser;
-    const bool expectedInScDirectory;
+    DatFilePriority getDatFilePriority() const;
+    const std::string &getFileName() const;
+    const std::string &getExpectedFilePath() const;
+    FileBrowserPtr getBrowser() const;
+    bool getExpectedInScDirectory() const;
+
+    void setExpectedFilePath(const std::string &expectedFilePath);
+
+private:
+    DatFilePriority datFilePriority;
+    std::string fileName;
+    std::string expectedFilePath;
+    FileBrowserPtr browser;
+    bool expectedInScDirectory;
 };
 
 class DatFileBrowser
@@ -31,13 +40,13 @@ public:
     virtual std::vector<MpqFilePtr> openScDatFiles(
         const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles,
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = defaultStarCraftBrowser);
+        FileBrowserPtr starCraftBrowser = getDefaultStarCraftBrowser());
 
-    virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr starCraftBrowser = nullptr);
+    virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr starCraftBrowser = nullptr);
 
     virtual MpqFilePtr openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor);
 
-    static FileBrowserPtr defaultStarCraftBrowser;
+    static FileBrowserPtr getDefaultStarCraftBrowser();
 };
 
 bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
@@ -435,19 +444,20 @@ public:
     IMAGEDAT*  ImageDat (u32 id) { return sprites.ImageDat (id); }
 
     bool Load(DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::defaultDatFiles,
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = DatFileBrowser::defaultStarCraftBrowser);
+        FileBrowserPtr starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     bool GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents,
         DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::defaultDatFiles,
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = DatFileBrowser::defaultStarCraftBrowser);
+        FileBrowserPtr starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
+
+    static std::unordered_map<DatFilePriority, DatFileDescriptor> getDefaultDatFiles();
 
 private:
 
-    static const std::unordered_map<DatFilePriority, DatFileDescriptor> defaultDatFiles;
     bool LoadGrps(const std::vector<MpqFilePtr> &orderedSourceFiles);
 
 };

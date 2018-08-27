@@ -10,7 +10,7 @@ bool MiniMap::CreateThis(HWND hParent, u32 id)
 {
     return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),
                                              CreateSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&
-           ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, NULL, WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)id);
+           ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)id);
 }
 
 void MiniMap::MiniMapClick(LPARAM ClickPoints)

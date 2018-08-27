@@ -6,6 +6,7 @@
 #include <cstring>
 #include <string>
 #include <crtdbg.h>
+#include <SimpleIcu.h>
 
 bool debugging = false;
 
@@ -13,26 +14,45 @@ const u32 MAX_ERROR_LENGTH = 512;
 char LastError[MAX_ERROR_LENGTH]; // Purposed for user-based errors
 char LastErrorLoc[MAX_ERROR_LENGTH]; // Purposed for debugging internal errors
 
-void PrintError(const std::string &file, unsigned int line, const std::string &msg, ...)
+void PrintError(const std::string &file, unsigned int line, const std::string msg, ...)
 {
-//    const icux::codepoint* cMsg = icux::toUistring(msg).c_str();
+    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
     va_list args;
+#ifdef WINDOWS_UTF16
+    const icux::uistring sysMsg = icux::toUistring(msg);
+    const icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
+    const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
+    va_start(args, msg);
+    _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
+    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s\nLine: %u", icux::toUistring(file).c_str(), line);
+    strcpy(LastError, icux::toUtf8(sysLastError).c_str());
+    strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
+#else
     va_start(args, msg.c_str());
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg.c_str(), args);
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
-    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
+#endif
     va_end(args);
 }
 
-void ShoutError(const std::string &file, unsigned int line, const std::string &msg, ...)
+void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...)
 {
-//    const icux::codepoint* cMsg = icux::toUistring(msg).c_str();
+    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
     va_list args;
+#ifdef WINDOWS_UTF16
+    const icux::uistring sysMsg = icux::toUistring(msg);
+    const icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
+    const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
+    va_start(args, msg);
+    _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
+    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s\nLine: %u", icux::toUistring(file).c_str(), line);
+    strcpy(LastError, icux::toUtf8(sysLastError).c_str());
+    strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
+#else
     va_start(args, msg.c_str());
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg.c_str(), args);
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file.c_str(), line);
-    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
-    //MessageBox(NULL, LastError, LastErrorLoc, MB_OK | MB_ICONEXCLAMATION);
+#endif
     va_end(args);
 }
 

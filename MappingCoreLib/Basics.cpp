@@ -1664,4 +1664,3 @@ const std::map<std::string, std::string> starDatFilter = {{ "StarDat.mpq", "Star
 const std::map<std::string, std::string> brooDatFilter = {{ "BrooDat.mpq", "BrooDat.mpq Archive" }};
 const std::map<std::string, std::string> patchRtFilter = {{ "patch_rt.mpq", "patch_rt.mpq Archive" }};
 const std::map<std::string, std::string> starCraftExeFilter = {{ "StarCraft.exe", "StarCraft Executable" }};
-

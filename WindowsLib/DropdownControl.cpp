@@ -28,7 +28,7 @@ namespace WinLib {
                 style |= CBS_SIMPLE | CBS_DROPDOWN;
         }
 
-        if ( WindowControl::CreateControl(0, WC_COMBOBOX, NULL, style, x, y, width, height, hParent, (HMENU)id, false) )
+        if ( WindowControl::CreateControl(0, WC_COMBOBOX, "", style, x, y, width, height, hParent, (HMENU)id, false) )
         {
             HWND hWnd = getHandle();
             SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));

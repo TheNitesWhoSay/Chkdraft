@@ -9,7 +9,7 @@ namespace WinLib {
 
     bool StatusControl::CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu)
     {
-        if ( WindowControl::CreateControl(dwExStyle, STATUSCLASSNAME, NULL, dwStyle, 0, 0, 0, 0, hWndParent, hMenu, false) )
+        if ( WindowControl::CreateControl(dwExStyle, STATUSCLASSNAME, "", dwStyle, 0, 0, 0, 0, hWndParent, hMenu, false) )
         {
             if ( SendMessage(getHandle(), SB_SETPARTS, numStatusWidths, (LPARAM)statusWidths) )
                 return true;

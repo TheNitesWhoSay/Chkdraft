@@ -1,6 +1,7 @@
 #include "ClassWindow.h"
 #include <SimpleIcu.h>
 #include <sstream>
+#include <iostream>
 
 namespace WinLib {
 
@@ -196,9 +197,9 @@ namespace WinLib {
     {
         if ( msg == WM_NCCREATE )
         {
-            LONG classPtr = (LONG)((CREATESTRUCT*)lParam)->lpCreateParams;
+            LONG_PTR classPtr = (LONG_PTR)((LPCREATESTRUCT)lParam)->lpCreateParams;
             SetWindowLongPtr(hWnd, GWLP_USERDATA, classPtr);
-            if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG)ForwardWndProc) != 0 )
+            if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)ForwardWndProc) != 0 )
                 return ((ClassWindow*)classPtr)->WndProc(hWnd, msg, wParam, lParam);
             else
                 return FALSE;
@@ -220,9 +221,9 @@ namespace WinLib {
     {
         if ( msg == WM_NCCREATE )
         {
-            LONG classPtr = (LONG)((MDICREATESTRUCT*)((CREATESTRUCT*)lParam)->lpCreateParams)->lParam;
+            LONG_PTR classPtr = (LONG_PTR)((LPMDICREATESTRUCT)((LPCREATESTRUCT)lParam)->lpCreateParams)->lParam;
             SetWindowLongPtr(hWnd, GWLP_USERDATA, classPtr);
-            if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr  && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG)ForwardWndProc) != 0 )
+            if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr  && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)ForwardWndProc) != 0 )
                 return ((ClassWindow*)classPtr)->WndProc(hWnd, msg, wParam, lParam);
             else
                 return FALSE;

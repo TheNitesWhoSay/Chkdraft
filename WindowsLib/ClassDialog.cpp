@@ -134,7 +134,7 @@ namespace WinLib {
         {
             LONG_PTR classPtr = lParam;
             SetWindowLongPtr(hWnd, DWLP_USER, classPtr);
-            if ( GetWindowLongPtr(hWnd, DWLP_USER) == classPtr && classPtr != 0 && SetWindowLong(hWnd, DWLP_DLGPROC, (LONG)ForwardDlgProc) != 0 )
+            if ( GetWindowLongPtr(hWnd, DWLP_USER) == classPtr && classPtr != 0 && SetWindowLong(hWnd, DWLP_DLGPROC, (LONG_PTR)ForwardDlgProc) != 0 )
             {
                 ((ClassDialog*)classPtr)->setHandle(hWnd); // Preload the window handle
                 return ((ClassDialog*)classPtr)->DlgProc(hWnd, msg, wParam, lParam);

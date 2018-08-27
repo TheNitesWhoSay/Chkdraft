@@ -10,7 +10,7 @@ namespace WinLib {
 
     bool TabControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id)
     {
-        return WindowControl::CreateControl(NULL, WC_TABCONTROL, NULL, WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);
+        return WindowControl::CreateControl(NULL, WC_TABCONTROL, "", WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);
     }
 
     u32 TabControl::GetCurSel()
