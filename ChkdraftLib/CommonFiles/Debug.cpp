@@ -30,7 +30,7 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
 #else
     va_start(args, msg);
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg.c_str(), args);
-    std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
+    std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file.c_str(), line);
 #endif
     va_end(args);
 }
