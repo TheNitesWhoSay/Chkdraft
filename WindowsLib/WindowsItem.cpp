@@ -80,6 +80,7 @@ namespace WinLib {
             }
             else
             {
+                icux::uistring sysClassName = icux::toUistring(className);
                 WNDCLASSEX wc = {};
                 wc.cbSize = sizeof(WNDCLASSEX);
                 wc.style = style;
@@ -89,7 +90,7 @@ namespace WinLib {
                 wc.hCursor = hCursor;
                 wc.hbrBackground = hbrBackground;
                 wc.lpszMenuName = MAKEINTRESOURCE(menuResourceId);
-                wc.lpszClassName = icux::toUistring(className).c_str();
+                wc.lpszClassName = sysClassName.c_str();
                 wc.hIconSm = hIconSm;
                 if ( RegisterClassEx(&wc) != 0 )
                 {

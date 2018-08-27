@@ -1,4 +1,5 @@
 #include "MdiClient.h"
+#include <iostream>
 
 namespace WinLib {
 

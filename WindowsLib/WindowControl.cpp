@@ -43,7 +43,7 @@ namespace WinLib {
     {
         icux::uistring sysWindowName = icux::toUistring(lpWindowName);
 
-        setHandle(CreateWindowEx(dwExStyle, lpClassName.c_str(), sysWindowName.c_str(),
+        setHandle(CreateWindowExW(dwExStyle, lpClassName.c_str(), sysWindowName.c_str(),
             dwStyle, x, y, nWidth, nHeight,
             hWndParent, hMenu, GetModuleHandle(NULL), (LPVOID)this));
 
