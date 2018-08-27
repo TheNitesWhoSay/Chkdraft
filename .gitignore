@@ -46,6 +46,7 @@ Icon
 *.pdb
 *.lib
 *.testdurations
+Win32
 x64
 Debug
 Release
