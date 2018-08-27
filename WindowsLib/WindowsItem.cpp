@@ -277,11 +277,11 @@ namespace WinLib {
         int titleLength = ::GetWindowTextLength(getHandle()) + 1;
         if ( titleLength > 1 )
         {
-            std::unique_ptr<wchar_t> titleText(new wchar_t[titleLength]);
+            std::unique_ptr<icux::codepoint> titleText(new icux::codepoint[titleLength]);
             if ( ::GetWindowText(getHandle(), titleText.get(), titleLength) )
             {
                 titleText.get()[titleLength - 1] = '\0';
-                text = icux::toUtf8(titleText.get(), titleLength-1);
+                text = icux::toUtf8(icux::uistring(titleText.get(), titleLength-1));
                 return true;
             }
         }
@@ -533,14 +533,14 @@ namespace WinLib {
 
         if ( tooltipHandle != NULL )
         {
-            std::wstring wText = icux::toUtf16(text);
+            std::string sysText = icux::toUistring(text);
 
             TOOLINFO toolInfo = {};
             toolInfo.cbSize = sizeof(TOOLINFO);
             toolInfo.hwnd = getParent();
             toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
             toolInfo.uId = (UINT_PTR)getHandle();
-            toolInfo.lpszText = (LPWSTR)wText.c_str();
+            toolInfo.lpszText = (LPTSTR)sysText.c_str();
             if ( ::SendMessage(tooltipHandle, TTM_ADDTOOL, 0, (LPARAM)&toolInfo) == TRUE )
             {
                 ::SendMessage(tooltipHandle, TTM_ACTIVATE, TRUE, 0);

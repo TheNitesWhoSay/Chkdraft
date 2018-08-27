@@ -982,8 +982,7 @@ bool DatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftD
         else
             declinedStarCraftBrowse = true;
     }
-    else
-        return false;
+    return false;
 }
 
 MpqFilePtr DatFileBrowser::openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor)

@@ -26,8 +26,7 @@ namespace WinLib {
 
     bool ButtonControl::SetText(const std::string &newText)
     {
-        std::wstring wNewText = icux::toUtf16(newText);
-        return SetWindowText(getHandle(), wNewText.c_str()) != 0;
+        return SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
     }
 
 }

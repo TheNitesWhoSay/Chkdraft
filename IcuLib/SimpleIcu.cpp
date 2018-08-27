@@ -80,6 +80,7 @@ namespace icux {
         #endif
     }
 
+#ifdef UTF16_UI
     uistring toUistring(const filestring &filestring)
     {
         #ifdef UTF16_FILESYSTEM
@@ -96,5 +97,6 @@ namespace icux {
             #endif
         #endif
     }
+#endif
 
 }

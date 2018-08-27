@@ -392,7 +392,7 @@ bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterInd
             #ifdef UTF16_FILESYSTEM
             wcscpy(fileNameBuffer, initFileNameBuf.c_str());
             #else
-            strcpy(fileNameBuffer, initFilenameBuf.c_str());
+            strcpy(fileNameBuffer, initFileNameBuf.c_str());
             #endif
         }
     }
@@ -457,7 +457,7 @@ bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterInd
             #ifdef UTF16_FILESYSTEM
             wcscpy(fileNameBuffer, initFileNameBuf.c_str());
             #else
-            strcpy(fileNameBuffer, initFilenameBuf.c_str());
+            strcpy(fileNameBuffer, initFileNameBuf.c_str());
             #endif
         }
     }

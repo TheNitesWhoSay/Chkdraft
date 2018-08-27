@@ -84,6 +84,8 @@ bool MpqFile::open(const std::string &filePath, const FileBrowserPtr fileBrowser
         return open(filePath);
     else if ( fileBrowser != nullptr && fileBrowser->browseForFilePath(browseFilePath, filterIndex) )
         return open(browseFilePath);
+    else
+        return false;
 }
 
 bool MpqFile::open(const FileBrowserPtr fileBrowser)
@@ -259,7 +261,9 @@ bool MpqFile::remove()
 #ifdef WINDOWS_UTF16
         _wremove(sysFilePath.c_str());
 #else
-        remove(sysFilePath.c_str());
+        ::remove(sysFilePath.c_str());
 #endif
+        return true;
     }
+    return false;
 }

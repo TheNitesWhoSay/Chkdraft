@@ -1,5 +1,6 @@
 #include "MdiClient.h"
 #include <iostream>
+#include <SimpleIcu.h>
 
 namespace WinLib {
 
@@ -20,7 +21,7 @@ namespace WinLib {
         ccs.hWindowMenu  = hWindowMenu;
         ccs.idFirstChild = idFirstChild;
 
-        setHandle(CreateWindow(L"MDICLIENT", NULL, dwStyle,
+        setHandle(CreateWindow(icux::toUistring("MDICLIENT").c_str(), NULL, dwStyle,
             X, Y, nWidth, nHeight, hWndParent, hMenu, GetModuleHandle(NULL), (LPVOID)&ccs));
 
         return getHandle() != NULL;

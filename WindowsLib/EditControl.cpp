@@ -66,19 +66,18 @@ namespace WinLib {
 
     bool EditControl::SetText(const std::string &newText)
     {
-        std::wstring wNewText = icux::toUtf16(newText);
         if ( getHandle() == ::GetFocus() )
         {
             DWORD selStart = 0, selEnd = 0;
             ::SendMessage(getHandle(), EM_GETSEL, (WPARAM)&selStart, (WPARAM)&selEnd);
-            bool success = ::SetWindowText(getHandle(), wNewText.c_str()) != 0;
+            bool success = ::SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
             if ( success )
                 ::SendMessage(getHandle(), EM_SETSEL, selStart, selEnd);
 
             return success;
         }
         else
-            return ::SetWindowText(getHandle(), wNewText.c_str()) != 0;
+            return ::SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
     }
 
     bool EditControl::CreateNumberBuddy(int minimumValue, int maximumValue)

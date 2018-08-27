@@ -58,7 +58,7 @@ namespace icux {
     #ifdef UTF16_UI
         typedef std::wstring uistring; // The type of a string that can be rendered in the UI using system functions, uistrings should not persist beyond the scope of the system function call [UTF-16]
     #else
-        typedef std::wtring uistring; // The type of a string that can be rendered in the UI using system functions, uistrings should not persist beyond the scope of the system function call [UTF-8]
+        typedef std::string uistring; // The type of a string that can be rendered in the UI using system functions, uistrings should not persist beyond the scope of the system function call [UTF-8]
     #endif
 
     constexpr codepoint nullChar = '\0'; // It is fairly safe to assume that a null character will be a single codepoint

@@ -28,7 +28,7 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else
-    va_start(args, msg.c_str());
+    va_start(args, msg);
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg.c_str(), args);
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file, line);
 #endif
@@ -49,7 +49,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else
-    va_start(args, msg.c_str());
+    va_start(args, msg);
     std::vsnprintf(LastError, MAX_ERROR_LENGTH, msg.c_str(), args);
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file.c_str(), line);
 #endif
