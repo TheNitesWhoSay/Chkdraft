@@ -533,7 +533,7 @@ namespace WinLib {
 
         if ( tooltipHandle != NULL )
         {
-            std::string sysText = icux::toUistring(text);
+            icux::uistring sysText = icux::toUistring(text);
 
             TOOLINFO toolInfo = {};
             toolInfo.cbSize = sizeof(TOOLINFO);

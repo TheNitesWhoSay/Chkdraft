@@ -63,7 +63,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
         std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", file, line);
 
         if ( condition == false )
-            MessageBox(NULL, invarError, "Error!", MB_OK|MB_ICONEXCLAMATION);
+            WinLib::Message(invarError, "Error!");
     }
 #endif
 
@@ -129,8 +129,8 @@ void FindLeaks()
 {
     #ifdef CHKD_DEBUG
     if ( _CrtDumpMemoryLeaks() )
-        MessageBox(NULL, "CrtDumpMemoryLeaks Activated", "Message", MB_OK);
+        WinLib::Message("CrtDumpMemoryLeaks Activated");
     else
-        MessageBox(NULL, "No Leaks!", "Message", MB_OK);
+        WinLib::Message("No Leaks!");
     #endif
 }
