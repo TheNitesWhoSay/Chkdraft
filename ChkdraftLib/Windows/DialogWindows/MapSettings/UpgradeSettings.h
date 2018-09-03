@@ -15,7 +15,7 @@ class UpgradeSettingsWindow : public WinLib::ClassWindow
     public:
         UpgradeSettingsWindow();
         virtual ~UpgradeSettingsWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         void RefreshWindow();
 
     protected:

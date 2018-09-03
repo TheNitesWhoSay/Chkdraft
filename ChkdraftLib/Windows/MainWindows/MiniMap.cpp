@@ -6,7 +6,7 @@ MiniMap::~MiniMap()
 
 }
 
-bool MiniMap::CreateThis(HWND hParent, u32 id)
+bool MiniMap::CreateThis(HWND hParent, u64 id)
 {
     return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),
                                              CreateSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&

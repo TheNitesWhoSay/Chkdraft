@@ -8,7 +8,7 @@ namespace WinLib {
     {
         public:
             virtual ~TreeViewControl();
-            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u32 id);
+            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id);
             HTREEITEM InsertTreeItem(HTREEITEM hParentItem, const std::string &text, LPARAM lParam);
             bool SetHandle(HWND hWnd);
             bool SetItemText(HTREEITEM hItem, const std::string &newText);

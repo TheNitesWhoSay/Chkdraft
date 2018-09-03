@@ -20,7 +20,7 @@ class TrigGeneralWindow : public WinLib::ClassWindow
     public:
         TrigGeneralWindow();
         virtual ~TrigGeneralWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(u32 trigIndex);
         void DoSize();

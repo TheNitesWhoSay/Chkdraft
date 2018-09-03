@@ -53,7 +53,7 @@ UnitSettingsWindow::~UnitSettingsWindow()
 
 }
 
-bool UnitSettingsWindow::CreateThis(HWND hParent, u32 windowId)
+bool UnitSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -287,7 +287,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
     }
 
     const std::vector<std::string> items = { "Default", "Yes", "No" };
-    int numItems = items.size();
+    size_t numItems = items.size();
 
     for ( int y=0; y<6; y++ )
     {

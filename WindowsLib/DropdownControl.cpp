@@ -10,7 +10,7 @@ namespace WinLib {
     }
 
     bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-        u32 id, const std::vector<std::string> &items, HFONT font)
+        u64 id, const std::vector<std::string> &items, HFONT font)
     {
         DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
 

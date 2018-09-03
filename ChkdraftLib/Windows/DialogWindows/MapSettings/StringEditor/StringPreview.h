@@ -8,7 +8,7 @@ class StringPreviewWindow : public WinLib::ClassWindow
 {
     public:
         virtual ~StringPreviewWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
 
     protected:
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

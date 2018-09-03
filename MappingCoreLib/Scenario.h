@@ -356,7 +356,7 @@ public:
                     bool addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended);
                     bool rebuildStringTable(std::vector<StringTableNode> &strList, bool extendedTable); // Rebuilds string table using the provided list
                     bool buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
-                        Section &offsets, buffer &strPortion, u32 strPortionOffset, u32 numStrs, bool recycleSubStrings);
+                        Section &offsets, buffer &strPortion, s64 strPortionOffset, u32 numStrs, bool recycleSubStrings);
 
 
 /*  Validation  */  bool GoodVCOD(); // Check if VCOD is valid
@@ -414,7 +414,7 @@ public:
         Section getSection(u32 id);
 
         bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
-        bool ParseSection(buffer &chk, u32 position, u32 &nextPosition);
+        bool ParseSection(buffer &chk, s64 position, s64 &nextPosition);
         void CacheSections(); // Caches all section references for fast access
 
         bool GetStrInfo(char* &ptr, size_t &length, u32 stringNum); // Gets a pointer to the string and its length if successful

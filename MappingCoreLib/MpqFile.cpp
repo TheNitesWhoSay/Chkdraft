@@ -95,6 +95,30 @@ bool MpqFile::open(const FileBrowserPtr fileBrowser)
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && open(browseFilePath);
 }
 
+void MpqFile::save(bool updateListFile)
+{
+    if ( isOpen() )
+    {
+        if ( madeChanges )
+        {
+            size_t numAddedMpqAssets = addedMpqAssetPaths.size();
+            if ( updateListFile && numAddedMpqAssets > 0 )
+            {
+                std::unique_ptr<const char*[]> filestringMpqPaths = std::unique_ptr<const char*[]>(new const char*[numAddedMpqAssets]);
+                for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
+                    filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
+
+                if ( SFileCompactWithList(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) )
+                    addedMpqAssetPaths.clear();
+            }
+            else
+                SFileCompactArchive(hMpq, NULL, false);
+        }
+        SFileFlushArchive(hMpq);
+        madeChanges = false;
+    }
+}
+
 void MpqFile::close(bool updateListFile)
 {
     if ( isOpen() )
@@ -108,7 +132,7 @@ void MpqFile::close(bool updateListFile)
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-                if ( SFileCompactWithList(hMpq, filestringMpqPaths.get(), numAddedMpqAssets) )
+                if ( SFileCompactWithList(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) )
                     addedMpqAssetPaths.clear();
             }
             else
@@ -181,7 +205,7 @@ bool getFile(void* source, const std::string &mpqPath, buffer &fileData)
                 if ( fileData.setSize(fileSize) )
                 {
                     fileData.sizeUsed = fileSize;
-                    SFileReadFile(openFile, (LPVOID)fileData.data, fileData.sizeUsed, (LPDWORD)(&bytesRead), NULL);
+                    SFileReadFile(openFile, (LPVOID)fileData.data, (DWORD)fileData.sizeUsed, (LPDWORD)(&bytesRead), NULL);
                     SFileCloseFile(openFile);
 
                     if ( fileData.sizeUsed == bytesRead )
@@ -209,9 +233,9 @@ bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData, WavQua
     if ( isOpen() )
     {
         if ( wavQuality == WavQuality::Uncompressed )
-            addedFile = SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
+            addedFile = SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
         else
-            addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
+            addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
 
         if ( addedFile )
             addedMpqAssetPaths.push_back(mpqPath);

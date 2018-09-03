@@ -10,7 +10,7 @@ class UnitSettingsWindow : public WinLib::ClassWindow
     public:
         UnitSettingsWindow();
         virtual ~UnitSettingsWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow();
 

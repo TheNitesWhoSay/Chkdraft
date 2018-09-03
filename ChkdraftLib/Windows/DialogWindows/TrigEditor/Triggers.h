@@ -14,7 +14,7 @@ class TriggersWindow : public WinLib::ClassWindow
 
         TriggersWindow();
         virtual ~TriggersWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(bool focus);
         void DoSize();

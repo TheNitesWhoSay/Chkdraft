@@ -10,7 +10,7 @@ namespace WinLib {
 
     }
 
-    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u32 id)
+    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id)
     {
         u32 style = WS_CHILD|LVS_REPORT|LVS_SHOWSELALWAYS;
         if ( editable )
@@ -50,7 +50,7 @@ namespace WinLib {
     void ListViewControl::AddRow(int numColumns, LPARAM lParam)
     {
         LVITEM item = { };
-        item.iItem = lParam;
+        item.iItem = (int)lParam;
         item.mask = LVIF_COLUMNS|LVIF_PARAM;
         item.cColumns = numColumns;
         item.lParam = lParam;
@@ -80,7 +80,7 @@ namespace WinLib {
         subItem.mask = LVIF_TEXT;
         subItem.iItem = row;
         subItem.pszText = (LPTSTR)sysText.c_str();
-        subItem.cchTextMax = sysText.length();
+        subItem.cchTextMax = (int)sysText.length();
         subItem.iSubItem = column;
 
         ListView_SetItem(getHandle(), &subItem);
@@ -159,7 +159,7 @@ namespace WinLib {
 
     int ListViewControl::GetColumnWidth(int column)
     {
-        return SendMessage(getHandle(), LVM_GETCOLUMNWIDTH, column, 0);
+        return (int)SendMessage(getHandle(), LVM_GETCOLUMNWIDTH, column, 0);
     }
 
     int ListViewControl::GetNumColumns()

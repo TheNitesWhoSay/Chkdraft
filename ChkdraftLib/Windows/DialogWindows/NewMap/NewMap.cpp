@@ -77,13 +77,13 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     default:
         if ( HIWORD(wParam) == LBN_SELCHANGE )
         {
-            int ItemIndex = SendMessage((HWND)lParam, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+            int itemIndex = (int)SendMessage((HWND)lParam, (UINT)LB_GETCURSEL, (WPARAM)0, (LPARAM)0);
             if ( LOWORD(wParam) == IDC_LIST_TILESET )
             {
                 HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
                 HWND hDefaultTrigs = GetDlgItem(hWnd, COMBO_TRIGS);
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
-                switch ( ItemIndex )
+                switch ( itemIndex )
                 {
                 case TERRAIN_BADLANDS: // Badlands
                     for (auto initTerrain : badlandsInitTerrain)

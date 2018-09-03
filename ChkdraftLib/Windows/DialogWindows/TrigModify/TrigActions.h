@@ -12,7 +12,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
     public:
         TrigActionsWindow();
         virtual ~TrigActionsWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(u32 trigIndex);
         void DoSize();
@@ -48,7 +48,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 
         std::hash<std::string> strHash; // A hasher to help generate tables
         std::vector<u8> actionArgMaps[64];
-        std::unordered_multimap<u32/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
+        std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
         Suggestions &suggestions;
 

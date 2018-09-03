@@ -37,7 +37,7 @@ public:
     MpqFile(bool deleteOnClose = false);
 
     // Calls close()
-    ~MpqFile();
+    virtual ~MpqFile();
 
     // Checks whether this MPQ will be deleted when close() is called
     bool deletingOnClose() const;
@@ -77,7 +77,12 @@ public:
     // Calling this method automatically closes the current MPQ if open
     bool open(const FileBrowserPtr fileBrowser);
 
-    // Closes an MPQ, if changes have been made then the MPQ is compacted, if updateListFile is specified the listFile is updated with all changes made
+    // Saves an MPQ, if changes have been made then the MPQ is saved, if updateListFile is specified the listFile is updated with all changes made
+    // If no MPQ is open calling this method has no affect
+    // If the temporary flag was specified the MPQ is removed from disk after being closed
+    void save(bool updateListFile = true);
+
+    // Closes an MPQ, if changes have been made then the MPQ is saved, if updateListFile is specified the listFile is updated with all changes made
     // If no MPQ is open calling this method has no affect
     // If the temporary flag was specified the MPQ is removed from disk after being closed
     void close(bool updateListFile = true);

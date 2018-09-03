@@ -9,7 +9,7 @@ class SwitchesWindow : public WinLib::ClassWindow
     public:
         SwitchesWindow();
         virtual ~SwitchesWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow();
         void RefreshSwitchList();

@@ -12,7 +12,7 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
     public:
         TrigConditionsWindow();
         virtual ~TrigConditionsWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(u32 trigIndex);
         void DoSize();

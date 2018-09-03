@@ -9,7 +9,7 @@ class CUWPsWindow : public WinLib::ClassWindow
     public:
         CUWPsWindow();
         virtual ~CUWPsWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(bool includeTree);
         void DoSize();

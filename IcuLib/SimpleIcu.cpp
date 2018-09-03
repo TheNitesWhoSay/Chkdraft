@@ -4,15 +4,15 @@
 
 namespace icux {
     
-    std::string toUtf8(const wchar_t* utf16Str, int32_t length)
+    std::string toUtf8(const wchar_t* utf16Str, size_t length)
     {
-        int32_t bufferSize = length*4+1;
+        int32_t bufferSize = int32_t(length)*4+1;
         int32_t resultSize = 0;
         UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
         const UChar* src = (const UChar*)utf16Str;
         std::unique_ptr<char> buffer(new char[bufferSize]);
-        u_strToUTF8(buffer.get(), bufferSize, &resultSize, src, length, &errorCode);
-        return std::string(buffer.get(), resultSize);
+        u_strToUTF8(buffer.get(), bufferSize, &resultSize, src, (int32_t)length, &errorCode);
+        return std::string(buffer.get(), (size_t)resultSize);
     }
 
     std::string toUtf8(const std::string &utf8Str) // Simply returns the same string
@@ -25,15 +25,15 @@ namespace icux {
         return toUtf8(utf16Str.c_str(), utf16Str.size());
     }
 
-    std::wstring toUtf16(const char* utf8Str, int32_t length)
+    std::wstring toUtf16(const char* utf8Str, size_t length)
     {
-        int32_t bufferSize = length*2+1;
+        int32_t bufferSize = int32_t(length)*2+1;
         int32_t resultSize = 0;
         UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
         std::unique_ptr<UChar> buffer(new UChar[bufferSize]);
-        u_strFromUTF8(buffer.get(), bufferSize, &resultSize, utf8Str, length, &errorCode);
+        u_strFromUTF8(buffer.get(), bufferSize, &resultSize, utf8Str, (int32_t)length, &errorCode);
         const wchar_t* result = (wchar_t*)buffer.get();
-        return std::wstring(result, resultSize);
+        return std::wstring(result, (size_t)resultSize);
     }
 
     std::wstring toUtf16(const std::string &utf8Str)
@@ -46,7 +46,7 @@ namespace icux {
         return utf16Str;
     }
 
-    filestring toFilestring(const char* utf8Str, int32_t length)
+    filestring toFilestring(const char* utf8Str, size_t length)
     {
         #ifdef UTF16_FILESYSTEM
             return (filestring)toUtf16(utf8Str, length);
@@ -64,7 +64,7 @@ namespace icux {
         #endif
     }
 
-    uistring toUistring(const char* utf8Str, int32_t length)
+    uistring toUistring(const char* utf8Str, size_t length)
     {
         #ifdef UTF16_UI
             return toUtf16(utf8Str, length);

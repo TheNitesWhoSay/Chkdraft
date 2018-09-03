@@ -21,6 +21,6 @@ class StringTableNode // An object comprehensively representing a StarCraft stri
 
 bool CompareStrTblNode(StringTableNode first, StringTableNode second); // Returns whether the first should be sorted below the second
 
-bool strIsInHashTable(RawString &str, std::hash<std::string> &strHash, std::unordered_multimap<u32, StringTableNode> &stringTable);
+bool strIsInHashTable(RawString &str, std::hash<std::string> &strHash, std::unordered_multimap<size_t, StringTableNode> &stringTable);
 
 #endif

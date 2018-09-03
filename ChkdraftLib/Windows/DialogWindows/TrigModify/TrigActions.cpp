@@ -27,7 +27,7 @@ TrigActionsWindow::~TrigActionsWindow()
 
 }
 
-bool TrigActionsWindow::CreateThis(HWND hParent, u32 windowId)
+bool TrigActionsWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -374,8 +374,8 @@ void TrigActionsWindow::InitializeScriptTable()
             char* scriptStringPtr = (char*)&scriptId;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
             std::string displayString = scriptName + " (" + std::string(scriptIdString) + ")";
-            u32 hash = strHash(displayString);
-            scriptTable.insert(std::pair<u32, std::pair<u32, std::string>>(hash, std::pair<u32, std::string>(scriptId, displayString)));
+            size_t hash = strHash(displayString);
+            scriptTable.insert(std::pair<size_t, std::pair<u32, std::string>>(hash, std::pair<u32, std::string>(scriptId, displayString)));
         }
     }
 }
@@ -524,8 +524,8 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             else if ( argType == ActionArgType::ActScript )
             {
                 u32 newScriptNum = 0;
-                u32 hash = strHash(suggestionString);
-                int numMatching = scriptTable.count(hash);
+                size_t hash = strHash(suggestionString);
+                size_t numMatching = scriptTable.count(hash);
                 if ( numMatching == 1 )
                 {
                     std::string &scriptDisplayString = scriptTable.find(hash)->second.second;

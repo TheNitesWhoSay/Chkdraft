@@ -19,10 +19,10 @@ buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
 
 buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
-    u32 numChars = std::min((u32)bufferTitle.length(), (u32)4);
-    for ( u32 i=0; i<numChars; i++ )
+    int numChars = std::min((int)bufferTitle.length(), 4);
+    for ( int i=0; i<numChars; i++ )
         bufTitle[i] = bufferTitle[i];
-    for ( u32 i=numChars+1; i<5; i++ )
+    for ( int i=numChars+1; i<5; i++ )
         bufTitle[i] = '\0';
 }
 
@@ -58,7 +58,7 @@ buffer::~buffer()
         delete[] data;
 }
 
-u32 buffer::size() const
+s64 buffer::size() const
 {
     if ( this != nullptr )
         return sizeUsed;
@@ -85,11 +85,11 @@ u32 buffer::titleVal()
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::get(valueType &dest, u32 location)
+bool buffer::get(valueType &dest, s64 location)
 {
     if ( this != nullptr )
     {
-        if ( location+sizeof(valueType) > location && location+sizeof(valueType) <= sizeUsed )
+        if ( location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
         {
             dest = (valueType &)data[location];
             return true;
@@ -99,14 +99,14 @@ bool buffer::get(valueType &dest, u32 location)
 }
 /* End templates */ #else
 
-bool buffer::getBit(bool &dest, u32 location, u32 bitNum)
+bool buffer::getBit(bool &dest, s64 location, u32 bitNum)
 {
     if ( this != nullptr )
     {
-        if ( bitNum/8+location < location ) // Prevent wraparound
+        if ( location < 0 )
             return false;
 
-        location += bitNum / 8;
+        location += s64(bitNum / 8);
 
         if ( location < sizeUsed )
         {
@@ -117,11 +117,11 @@ bool buffer::getBit(bool &dest, u32 location, u32 bitNum)
     return false;
 }
 
-bool buffer::getString(char* dest, u32 location, u32 size)
+bool buffer::getString(char* dest, s64 location, s64 size)
 {
     if ( this != nullptr )
     {
-        if ( location+size > location && location+size <= sizeUsed )
+        if ( location >= 0 && size > 0 && location+size <= sizeUsed )
         {
             std::memcpy(dest, &data[location], size);
             return true;
@@ -133,11 +133,11 @@ bool buffer::getString(char* dest, u32 location, u32 size)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::getArray(valueType* dest, u32 location, u32 numElements)
+bool buffer::getArray(valueType* dest, s64 location, s64 numElements)
 {
     if ( this != nullptr && dest != nullptr )
     {
-        if ( location + numElements*sizeof(valueType) > location && location + numElements*sizeof(valueType) <= sizeUsed )
+        if ( location >= 0 && numElements > 0 && location + numElements*s64(sizeof(valueType)) <= sizeUsed )
         {
             std::memcpy(dest, &data[location], numElements*sizeof(valueType));
             return true;
@@ -147,17 +147,17 @@ bool buffer::getArray(valueType* dest, u32 location, u32 numElements)
 }
 /* End templates */ #else
 
-const void* buffer::getPtr(u32 location) const
+const void* buffer::getPtr(s64 location) const
 {
-    if ( this != nullptr && location < sizeUsed )
+    if ( this != nullptr && location >= 0 && location < sizeUsed )
         return (void*)&data[location];
     else
         return nullptr;
 }
 
-const void* buffer::getPtr(u32 location, u32 sizeRequested) const
+const void* buffer::getPtr(s64 location, s64 sizeRequested) const
 {
-    if ( this != nullptr && location+sizeRequested > location && location+sizeRequested <= sizeUsed )
+    if ( this != nullptr && location >= 0 && sizeRequested > 0 && location+sizeRequested <= sizeUsed )
         return (void*)&data[location];
     else
         return nullptr;
@@ -166,9 +166,9 @@ const void* buffer::getPtr(u32 location, u32 sizeRequested) const
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::getPtr(valueType* &dest, u32 location, u32 sizeRequested)
+bool buffer::getPtr(valueType* &dest, s64 location, s64 sizeRequested)
 {
-    if ( this != nullptr && location+sizeRequested > location && location+sizeRequested <= sizeUsed )
+    if ( this != nullptr && location >= 0 && sizeRequested > 0 && location+sizeRequested <= sizeUsed )
     {
         dest = (valueType*)&data[location];
         return true;
@@ -177,23 +177,23 @@ bool buffer::getPtr(valueType* &dest, u32 location, u32 sizeRequested)
 }
 
 template <typename valueType>
-valueType buffer::get(u32 location)
+valueType buffer::get(s64 location)
 {
-    if ( this != nullptr && location+sizeof(valueType) > location && location+sizeof(valueType) <= sizeUsed )
+    if ( this != nullptr && location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
         return (valueType &)data[location];
 
     return 0;
 }
 /* End templates */ #else
 
-bool buffer::getBit(u32 location, u32 bitNum)
+bool buffer::getBit(s64 location, u32 bitNum)
 {
     if ( this != nullptr )
     {
-        if ( location + bitNum/8 < location ) // Prevent wraparound
+        if ( location < 0 ) // Prevent wraparound
             return false;
 
-        location += bitNum / 8;
+        location += s64(bitNum / 8);
 
         if ( location < sizeUsed )
             return ( (char(1) << (bitNum%8)) & data[location] ) != 0; // AND the bit given by bitNum
@@ -201,35 +201,35 @@ bool buffer::getBit(u32 location, u32 bitNum)
     return false;
 }
 
-bool buffer::has(char character, u32 location)
+bool buffer::has(char character, s64 location)
 {
-    if ( this != nullptr && location < sizeUsed && data[location] == character )
+    if ( this != nullptr && location >= 0 && location < sizeUsed && data[location] == character )
         return true;
     else
         return false;
 }
 
-bool buffer::hasCaseless(char character, u32 location)
+bool buffer::hasCaseless(char character, s64 location)
 {
-    if ( this != nullptr && location < sizeUsed && toupper(data[location]) == toupper(character) )
+    if ( this != nullptr && location >= 0 && location < sizeUsed && toupper(data[location]) == toupper(character) )
         return true;
     else
         return false;
 }
 
-bool buffer::has(const char* str, u32 location, u32 size)
+bool buffer::has(const char* str, s64 location, s64 size)
 {
-    if ( this != nullptr && location+size > location && location+size <= sizeUsed )
+    if ( this != nullptr && location >= 0 && size > 0 && location+size <= sizeUsed )
         return memcmp(str, &data[location], size) == 0;
     else
         return false;
 }
 
-bool buffer::hasCaseless(const char* str, u32 location, u32 size)
+bool buffer::hasCaseless(const char* str, s64 location, s64 size)
 {
-    if ( this != nullptr && location + size > location && location + size <= sizeUsed )
+    if ( this != nullptr && location >= 0 && size > 0 && location + size <= sizeUsed )
     {
-        for ( u32 i = 0; i < size; i++ )
+        for ( s64 i = 0; i < size; i++ )
         {
             if ( toupper(str[i]) != toupper(data[location + i]) )
                 return false;
@@ -239,11 +239,11 @@ bool buffer::hasCaseless(const char* str, u32 location, u32 size)
     return false;
 }
 
-bool buffer::getNext(char character, u32 start, u32 &dest)
+bool buffer::getNext(char character, s64 start, s64 &dest)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && start >= 0 )
     {
-        for ( u32 i=start; i<sizeUsed; i++ )
+        for ( s64 i=start; i<sizeUsed; i++ )
         {
             if ( data[i] == character )
             {
@@ -255,11 +255,11 @@ bool buffer::getNext(char character, u32 start, u32 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
+bool buffer::getNextUnquoted(char character, s64 start, s64 &dest)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && start >= 0 )
     {
-        for ( u32 i=start; i<sizeUsed; i++ )
+        for ( s64 i=start; i<sizeUsed; i++ )
         {
             if ( data[i] == character )
             {
@@ -276,11 +276,11 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, u32 start, u32 &dest, char terminator)
+bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminator)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && start >= 0 )
     {
-        for ( u32 i=start; i<sizeUsed; i++ )
+        for ( s64 i=start; i<sizeUsed; i++ )
         {
             if ( data[i] == character )
             {
@@ -299,11 +299,11 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 &dest, char terminat
     return false;
 }
 
-bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
+bool buffer::getNextUnescaped(char character, s64 start, s64 &dest)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && start >= 0 )
     {
-        for ( u32 i=start; i<sizeUsed; i++ )
+        for ( s64 i=start; i<sizeUsed; i++ )
         {
             if ( data[i] == character &&
                  ( i == 0 || data[i-1] != '\\' ) )
@@ -316,11 +316,11 @@ bool buffer::getNextUnescaped(char character, u32 start, u32 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
+bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 &dest)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && start >= 0 && end > start )
     {
-        for ( u32 i=start; (i<end && i<sizeUsed); i++ )
+        for ( s64 i=start; (i<end && i<sizeUsed); i++ )
         {
             if ( data[i] == character )
             {
@@ -342,9 +342,9 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
 template <typename valueType>
 bool buffer::add(const valueType &value)
 {
-    if ( this != nullptr && sizeUsed + sizeof(valueType) > sizeUsed )
+    if ( this != nullptr )
     {
-        if ( sizeUsed + sizeof(valueType) > sizeAllotted )
+        if ( sizeUsed + s64(sizeof(valueType)) > sizeAllotted )
         {
             try {
                 resize(sizeof(valueType), true);
@@ -364,21 +364,21 @@ bool buffer::add(const valueType &value)
 }
 
 template <typename valueType>
-bool buffer::add(const valueType &value, u32 amount)
+bool buffer::add(const valueType &value, s64 amount)
 {
-    if ( this != nullptr && sizeof(valueType)*amount+sizeUsed > sizeUsed )
+    if ( this != nullptr && amount > 0 )
     {
-        if ( sizeUsed+amount*sizeof(valueType) >= sizeAllotted )
+        if ( sizeUsed+amount*s64(sizeof(valueType)) >= sizeAllotted )
         {
             try {
-                resize(amount*sizeof(valueType), true);
+                resize(amount*s64(sizeof(valueType)), true);
             } catch ( const BadResize &e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
         }
 
-        for ( u32 i=sizeUsed; i<amount*sizeof(valueType)+sizeUsed; i+=sizeof(valueType) )
+        for ( s64 i=sizeUsed; i<amount*s64(sizeof(valueType))+sizeUsed; i+=sizeof(valueType) )
             (valueType &)data[i] = value;
 
         sizeUsed += amount*sizeof(valueType);
@@ -393,12 +393,12 @@ bool buffer::addStr(const std::string &chunk)
     return addStr(chunk.c_str(), chunk.size());
 }
 
-bool buffer::addStr(const char* chunk, u32 chunkSize)
+bool buffer::addStr(const char* chunk, s64 chunkSize)
 {
-    if ( chunkSize == 0 )
+    if ( chunkSize <= 0 )
         return true; // Successful at adding nothing
 
-    if ( this != nullptr && sizeUsed+chunkSize > sizeUsed )
+    if ( this != nullptr )
     {
         if ( sizeUsed+chunkSize >= sizeAllotted )
         {
@@ -419,11 +419,11 @@ bool buffer::addStr(const char* chunk, u32 chunkSize)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::insert(u32 location, valueType value)
+bool buffer::insert(s64 location, valueType value)
 {
-    if ( this != nullptr && sizeUsed+sizeof(valueType) > sizeUsed && location <= sizeUsed )
+    if ( this != nullptr && location >=0 && location <= sizeUsed )
     {
-        if ( sizeUsed+sizeof(valueType) >= sizeAllotted )
+        if ( sizeUsed+s64(sizeof(valueType)) >= sizeAllotted )
         {
             try {
                 resize(sizeof(valueType), true);
@@ -445,11 +445,11 @@ bool buffer::insert(u32 location, valueType value)
 }
 
 template <typename valueType>
-bool buffer::insert(u32 location, valueType value, u32 amount)
+bool buffer::insert(s64 location, valueType value, s64 amount)
 {
-    if ( this != nullptr && amount*sizeof(valueType)+location > location && location <= sizeUsed )
+    if ( this != nullptr && location >= 0 && location <= sizeUsed && amount > 0 )
     {
-        if ( sizeUsed+(sizeof(valueType)*amount) >= sizeAllotted )
+        if ( sizeUsed+s64(sizeof(valueType))*amount >= sizeAllotted )
         {
             try {
                 resize(sizeof(valueType)*amount, true);
@@ -463,7 +463,7 @@ bool buffer::insert(u32 location, valueType value, u32 amount)
                       &data[location],
                       sizeUsed - location );
         
-        for ( u32 i=0; i<amount; i++)
+        for ( s64 i=0; i<amount; i++)
             (valueType &)data[location+(i*sizeof(valueType))] = value;
 
         sizeUsed += sizeof(valueType)*amount;
@@ -473,9 +473,9 @@ bool buffer::insert(u32 location, valueType value, u32 amount)
 }
 /* End templates */ #else
 
-bool buffer::insertStr(u32 startLocation, const char* chunk, u32 chunkSize)
+bool buffer::insertStr(s64 startLocation, const char* chunk, s64 chunkSize)
 {
-    if ( this != nullptr && sizeUsed+chunkSize > sizeUsed && startLocation <= sizeUsed )
+    if ( this != nullptr && startLocation >= 0 && startLocation <= sizeUsed && chunkSize > 0 )
     {
         if ( sizeUsed+chunkSize >= sizeAllotted )
         {
@@ -504,9 +504,9 @@ bool buffer::insertStr(u32 startLocation, const char* chunk, u32 chunkSize)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::replace(u32 location, valueType value)
+bool buffer::replace(s64 location, valueType value)
 {
-    if ( this != nullptr && location+sizeof(valueType) <= sizeUsed )
+    if ( this != nullptr && location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
     {
         (valueType &)data[location] = value;
         return true;
@@ -515,11 +515,11 @@ bool buffer::replace(u32 location, valueType value)
 }
 
 template <typename valueType>
-bool buffer::replace(u32 location, valueType value, u32 amount)
+bool buffer::replace(s64 location, valueType value, s64 amount)
 {
-    if ( this != nullptr && location+amount*sizeof(value) <= sizeUsed )
+    if ( this != nullptr && location >= 0 && amount > 0 && location+amount*sizeof(value) <= sizeUsed )
     {
-        for ( u32 i=0; i<amount; i++ )
+        for ( s64 i=0; i<amount; i++ )
             (valueType &)data[location+i*sizeof(value)] = value;
 
         return true;
@@ -528,9 +528,9 @@ bool buffer::replace(u32 location, valueType value, u32 amount)
 }
 /* End templates */ #else
 
-bool buffer::replaceStr(u32 startLocation, const char* chunk, u32 chunkSize)
+bool buffer::replaceStr(s64 startLocation, const char* chunk, s64 chunkSize)
 {
-    if ( this != nullptr && startLocation+chunkSize <= sizeUsed )
+    if ( this != nullptr && startLocation >= 0 && chunkSize > 0 && startLocation+chunkSize <= sizeUsed )
     {
         std::memcpy( &data[startLocation],
                      chunk,
@@ -541,13 +541,13 @@ bool buffer::replaceStr(u32 startLocation, const char* chunk, u32 chunkSize)
     return false;
 }
 
-bool buffer::replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u32 chunkSize)
+bool buffer::replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s64 chunkSize)
 {
-    if ( this != nullptr && startLocation+initialSize <= sizeUsed )
+    if ( this != nullptr && startLocation >= 0 && initialSize > 0 && chunkSize > 0 && startLocation+initialSize <= sizeUsed )
     {
         s64 difference = chunkSize-initialSize;
 
-        if ( difference > 0 && sizeUsed+(u32)difference > sizeUsed ) // Expand area, insert data
+        if ( difference > 0 && sizeUsed+difference > sizeUsed ) // Expand area, insert data
         {
             try {
                 resize(difference, true);
@@ -588,20 +588,20 @@ bool buffer::replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u
                          chunkSize );
         }
 
-        sizeUsed += (s32)difference;
+        sizeUsed += difference;
         return true;
     }
     return false;
 }
 
-bool buffer::setBit(u32 location, u32 bitNum, bool bitValue)
+bool buffer::setBit(s64 location, u32 bitNum, bool bitValue)
 {
     if ( this != nullptr )
     {
-        if ( bitNum/8+location < location ) // Prevent wraparound
+        if ( location >= 0 ) // Prevent wraparound
             return false;
 
-        location += bitNum / 8;
+        location += s64(bitNum / 8);
         if ( location < sizeUsed )
         {
             if ( bitValue == true )
@@ -618,9 +618,9 @@ bool buffer::setBit(u32 location, u32 bitNum, bool bitValue)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::swap(u32 location1, u32 location2)
+bool buffer::swap(s64 location1, s64 location2)
 {
-    if ( this != nullptr && location1+sizeof(valueType) <= sizeUsed && location2+sizeof(valueType) <= sizeUsed )
+    if ( this != nullptr && location1 >= 0 && location2 >= 0 && location1+s64(sizeof(valueType)) <= sizeUsed && location2+s64(sizeof(valueType)) <= sizeUsed )
     {
         // Explictly specifying the template type in std::swap causes errors
         std::swap((valueType &)data[location1], (valueType &)data[location2]);
@@ -630,9 +630,9 @@ bool buffer::swap(u32 location1, u32 location2)
 }
 /* End templates */ #else
 
-bool buffer::swapStr(u32 location1, u32 location2, u32 swapSize)
+bool buffer::swapStr(s64 location1, s64 location2, s64 swapSize)
 {
-    if ( this != nullptr && location1+swapSize <= sizeUsed && location2+swapSize <= sizeUsed )
+    if ( this != nullptr && location1 >= 0 && location2 >= 0 && swapSize > 0 && location1+swapSize <= sizeUsed && location2+swapSize <= sizeUsed )
     {
         std::unique_ptr<char> temp = std::unique_ptr<char>(new char[swapSize]);
         std::memcpy(temp.get(), &data[location1], swapSize);
@@ -642,13 +642,13 @@ bool buffer::swapStr(u32 location1, u32 location2, u32 swapSize)
     return false;
 }
 
-bool buffer::overwrite(const char* chunk, u32 chunkSize)
+bool buffer::overwrite(const char* chunk, s64 chunkSize)
 {
     if ( this != nullptr )
     {
         flush();
 
-        if ( setSize(chunkSize) )
+        if ( chunkSize > 0 && setSize(chunkSize) )
         {
             std::memcpy(data, chunk, chunkSize);
             sizeUsed = chunkSize;
@@ -681,10 +681,10 @@ bool buffer::setTitle(const std::string &newTitle)
 {
     if ( this != nullptr )
     {
-        u32 numChars = std::min((u32)newTitle.length(), (u32)4);
-        for ( u32 i=0; i<numChars; i++ )
+        int numChars = std::min((int)newTitle.length(), 4);
+        for ( int i=0; i<numChars; i++ )
             bufTitle[i] = newTitle[i];
-        for ( u32 i=numChars+1; i<5; i++ )
+        for ( int i=numChars+1; i<5; i++ )
             bufTitle[i] = '\0';
         return true;
     }
@@ -707,11 +707,11 @@ bool buffer::setTitle(u32 newTitle)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::del(u32 location)
+bool buffer::del(s64 location)
 {
-    if ( this != nullptr && location+sizeof(valueType) <= sizeUsed )
+    if ( this != nullptr && location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
     {
-        if ( s64(sizeUsed)-s64(location)+s64(sizeof(valueType)) > 0 )
+        if ( sizeUsed-location+s64(sizeof(valueType)) > 0 )
         {
             std::memmove(
                 &data[location],
@@ -734,19 +734,19 @@ bool buffer::del(u32 location)
 }
 /* End templates */ #else
 
-bool buffer::delRange(u32 startLocation, u32 endLocation)
+bool buffer::delRange(s64 startLocation, s64 endLocation)
 {
-    if ( this != nullptr && endLocation <= sizeUsed && startLocation < endLocation )
+    if ( this != nullptr && startLocation >= 0 && endLocation <= sizeUsed && startLocation < endLocation )
     {
-        u32 differance = endLocation-startLocation;
+        s64 difference = endLocation-startLocation;
 
         if ( endLocation < sizeUsed )
             std::memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
 
-        sizeUsed -= differance;
+        sizeUsed -= difference;
 
         try {
-            resize(-(s64)differance, false);
+            resize(-difference, false);
         } catch ( const BadResize &e ) {
             CHKD_ERR("Failed to decrease size of %s buffer: %s", bufTitle, e.what());
             return false;
@@ -756,11 +756,11 @@ bool buffer::delRange(u32 startLocation, u32 endLocation)
     return false;
 }
 
-bool buffer::del(u32 startLocation, u32 size)
+bool buffer::del(s64 startLocation, s64 size)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && startLocation >= 0 && size > 0 )
     {
-        u32 endLocation = startLocation+size;
+        s64 endLocation = startLocation+size;
         if ( endLocation <= sizeUsed )
         {
             if ( endLocation < sizeUsed )
@@ -795,9 +795,9 @@ void buffer::write(FILE* pFile, bool includeHeader)
     }
 }
 
-bool buffer::extract(buffer &buf, u32 position)
+bool buffer::extract(buffer &buf, s64 position)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && position >= 0 )
     {
         if ( sizeUsed > 0 ) // Specified buffer already contains data!
             flush(); // Clear the buffer: StarCraft only reads the last instance of the given section
@@ -810,7 +810,7 @@ bool buffer::extract(buffer &buf, u32 position)
 
         position += 4;
 
-        if ( position+bufSize > buf.sizeUsed )
+        if ( position+(s64)bufSize > buf.sizeUsed )
             return false;
 
         try {
@@ -829,9 +829,9 @@ bool buffer::extract(buffer &buf, u32 position)
     return false;
 }
 
-bool buffer::extract(buffer &src, u32 position, u32 length)
+bool buffer::extract(buffer &src, s64 position, s64 length)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && position >= 0 && length > 0 )
     {
         flush();
         if ( length == 0 )
@@ -864,7 +864,7 @@ std::shared_ptr<void> buffer::serialize()
         std::shared_ptr<void> rawDataBuf = std::shared_ptr<void>(new u8[sizeUsed+8]);
         u8* rawData = (u8*)rawDataBuf.get();
         (u32&)rawData[0] = (u32&)bufTitle;
-        (u32&)rawData[4] = sizeUsed;
+        (u32&)rawData[4] = (u32)sizeUsed;
         if ( sizeUsed > 0 )
             std::memcpy(&rawData[8], data, sizeUsed);
 
@@ -879,7 +879,7 @@ bool buffer::deserialize(const void* incomingData)
     {
         const char* rawData = (const char*)incomingData;
         u32 incomingSize = (u32&)rawData[4];
-        return overwrite(&rawData[8], incomingSize) && setTitle((u32&)rawData[0]);
+        return overwrite(&rawData[8], (s64)incomingSize) && setTitle((u32&)rawData[0]);
     }
     return false;
 }
@@ -889,9 +889,9 @@ bool buffer::exists()
     return this != nullptr;
 }
 
-bool buffer::setSize(u32 size)
+bool buffer::setSize(s64 size)
 {
-    if ( this != nullptr && size >= sizeUsed )
+    if ( this != nullptr && size > 0 && size >= sizeUsed )
     {
         try {
             resize(size-sizeAllotted, false);
@@ -921,12 +921,12 @@ void buffer::flush()
 
 bool buffer::resize(s64 sizeChange, bool multiplySize)
 {
-    if ( this != nullptr )
+    if ( this != nullptr && sizeChange != 0 )
     {
         if ( sizeChange > 0 && multiplySize )
-            sizeAllotted = (u32)(sizeAllotted*1.2+sizeChange); // Increase allotted size by 20% + required space
+            sizeAllotted = (s64)(sizeAllotted*1.2+sizeChange); // Increase allotted size by 20% + required space
         else
-            sizeAllotted = (u32)(sizeAllotted+sizeChange); // Decrease allotted size by amount specified
+            sizeAllotted = (s64)(sizeAllotted+sizeChange); // Decrease allotted size by amount specified
 
         if ( sizeUsed > 0 )
         {
@@ -934,7 +934,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
             try {
                 newBuffer = new s8[sizeAllotted];
             } catch ( std::bad_alloc ) {
-                throw(  BadResize(0) );
+                throw( BadResize(0) );
             }
 
             if ( sizeUsed <= sizeAllotted )

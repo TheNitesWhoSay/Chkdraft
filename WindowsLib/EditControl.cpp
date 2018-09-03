@@ -21,7 +21,7 @@ namespace WinLib {
                WindowControl::RedirectProc();
     }
 
-    bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, u32 id)
+    bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, u64 id)
     {
         DWORD dwStyle = WS_VISIBLE|WS_CHILD;
         if ( multiLine )
@@ -36,7 +36,7 @@ namespace WinLib {
                                              hParent, (HMENU)id, true );
     }
 
-    bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, bool clientEdge, u32 id)
+    bool EditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool multiLine, bool clientEdge, u64 id)
     {
         DWORD dwStyle = WS_VISIBLE|WS_CHILD;
         if ( multiLine )
@@ -193,8 +193,8 @@ namespace WinLib {
             const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                          0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
-            int length = editText.length();
-            for ( int i=length-1; i>=0; i-- )
+            size_t length = editText.length();
+            for ( size_t i=length-1; i>=0; i-- )
             {
                 if ( editText[i] == '1' )
                     temp |= u16BitValues[(length-1)-i];
@@ -219,8 +219,8 @@ namespace WinLib {
                                          0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
                                          0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 
-            int length = editText.length();
-            for ( int i=length-1; i>=0; i-- )
+            size_t length = editText.length();
+            for ( size_t i=length-1; i>=0; i-- )
             {
                 if ( editText[i] == '1' )
                     temp |= u32BitValues[(length-1)-i];

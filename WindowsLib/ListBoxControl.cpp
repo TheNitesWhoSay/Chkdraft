@@ -15,7 +15,7 @@ namespace WinLib {
     }
 
     bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
-        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u32 id)
+        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u64 id)
     {
         u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
         if ( ownerDrawn && multiColumn )
@@ -279,7 +279,7 @@ namespace WinLib {
 
     int ListBoxControl::GetTopIndex()
     {
-        return SendMessage(getHandle(), LB_GETTOPINDEX, 0, 0);
+        return (int)SendMessage(getHandle(), LB_GETTOPINDEX, 0, 0);
     }
 
     LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

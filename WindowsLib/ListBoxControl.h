@@ -14,7 +14,7 @@ namespace WinLib {
             virtual ~ListBoxControl();
 
             // Attempts to create a list box
-            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u32 id);
+            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u64 id);
             void ClearItems();
             int AddItem(u32 item);
             int AddString(const std::string &str);

@@ -13,7 +13,7 @@ MainToolbar::~MainToolbar()
 
 }
 
-bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
+bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
 {
     // Initilize primary toolbar
     if ( WindowControl::CreateControl( 0, TOOLBARCLASSNAME, "", WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS,
@@ -34,7 +34,7 @@ bool MainToolbar::CreateThis(HWND hParent, u32 windowId)
         HBITMAP hBmp = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_SAVEAS), IMAGE_BITMAP, 16, 16, LR_DEFAULTCOLOR);
         ImageList_Add(hImages, hBmp, NULL);
         TBADDBITMAP tb; tb.hInst = NULL; tb.nID = (UINT_PTR)hBmp;
-        int STD_FILESAVEAS = SendMessage(hTool, TB_ADDBITMAP, 0, (LPARAM)&tb);
+        int STD_FILESAVEAS = (int)SendMessage(hTool, TB_ADDBITMAP, 0, (LPARAM)&tb);
 
         icux::uistring newMap = icux::toUistring("New");
         icux::uistring open = icux::toUistring("Open");

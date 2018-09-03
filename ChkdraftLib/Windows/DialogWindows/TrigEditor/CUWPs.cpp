@@ -27,7 +27,7 @@ CUWPsWindow::~CUWPsWindow()
 
 }
 
-bool CUWPsWindow::CreateThis(HWND hParent, u32 windowId)
+bool CUWPsWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -165,7 +165,7 @@ LRESULT CUWPsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
     if ( nmhdr->code == TVN_SELCHANGED && ((NMTREEVIEW*)nmhdr)->action != TVC_UNKNOWN )
     {
-        s32 cuwpId = ((NMTREEVIEW*)nmhdr)->itemNew.lParam;
+        s32 cuwpId = (s32)((NMTREEVIEW*)nmhdr)->itemNew.lParam;
         if ( cuwpId >= 0 && cuwpId < 64 )
         {
             if ( selectedCuwp == -1 )

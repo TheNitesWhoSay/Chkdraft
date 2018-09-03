@@ -5,7 +5,7 @@ TemplatesWindow::~TemplatesWindow()
 
 }
 
-bool TemplatesWindow::CreateThis(HWND hParent, u32 windowId)
+bool TemplatesWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);

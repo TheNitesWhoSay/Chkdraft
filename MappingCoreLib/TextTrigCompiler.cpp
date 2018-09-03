@@ -309,7 +309,7 @@ void TextTrigCompiler::ClearCompiler()
 
 void TextTrigCompiler::CleanText(buffer &text)
 {
-    u32 pos = 0;
+    s64 pos = 0;
     bool inString = false;
     buffer dest("TeCp");
     dest.setSize(text.size()+1);
@@ -337,7 +337,7 @@ void TextTrigCompiler::CleanText(buffer &text)
         case '/': // Might be a comment
             if ( text.get<u8>(pos) == '/' ) // Found a comment
             {
-                u32 newPos = pos;
+                s64 newPos = pos;
                 if ( text.getNext('\n', pos, newPos) || // Check for nearby LF
                     text.getNext('\r', pos, newPos) || // Check for nearby CR (should be checked after LF)
                     text.getNext('\13', pos, newPos) || // Check for nearby VT
@@ -354,7 +354,7 @@ void TextTrigCompiler::CleanText(buffer &text)
         {
             dest.add<u8>('\"');
 
-            u32 closeQuotePos = pos;
+            s64 closeQuotePos = pos;
             if ( text.getNextUnescaped('\"', pos, closeQuotePos) )
             {
                 while ( pos < closeQuotePos )
@@ -459,16 +459,19 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
 
     u8 flags;
 
-    u32 pos = 0,
-        expecting = 0,
+    s64 pos = 0,
+        lineEnd = 0,
+        playerEnd = 0,
+        conditionEnd = 0,
+        actionEnd = 0,
+        flagsEnd = 0,
+        argEnd = 0;
+
+    u32 expecting = 0,
         line = 1,
-        playerEnd,
-        conditionEnd,
-        actionEnd,
-        flagsEnd,
-        argEnd, argsLeft = 0,
-        lineEnd,
-        numConditions = 0, numActions = 0;
+        argsLeft = 0,
+        numConditions = 0,
+        numActions = 0;
 
     ConditionId conditionId;
     ActionId actionId;
@@ -599,7 +602,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      trigger
     // or   %NULL
@@ -639,7 +642,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig)
+inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Trigger &currTrig)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -659,7 +662,7 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::st
             if ( !text.getNextUnquoted('\15', pos, lineEnd) )
                 text.getNext('\0', pos, lineEnd); // Text ends on this line
 
-            playerEnd = SmallestOf(playerEnd, lineEnd);
+            playerEnd = std::min(playerEnd, lineEnd);
 
             if ( ParseExecutingPlayer(text, currTrig, pos, playerEnd) )
             {
@@ -689,7 +692,7 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      {
     if ( text.has('{', pos) )
@@ -705,7 +708,7 @@ inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      conditions:
     // or   actions:
@@ -763,8 +766,8 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
-    u32 &conditionEnd, u32 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
+inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+    s64 &conditionEnd, s64 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
     Condition*& currCondition, Trigger &currTrig)
 {
     //      %ConditionName(
@@ -924,7 +927,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
+inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
     Condition*& currCondition, ConditionId &conditionId)
 {
     //      );
@@ -1005,7 +1008,7 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      actions:
     // or   flags:
@@ -1036,8 +1039,8 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
-    u8 &flags, u32 &actionEnd, u32 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
+inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+    u8 &flags, s64 &actionEnd, s64 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
     Action*& currAction, Trigger &currTrig)
 {
     //      %ActionName(
@@ -1137,8 +1140,8 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
-    u32 &argsLeft, u32 &argEnd, Action*& currAction, ActionId &actionId)
+inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+    u32 &argsLeft, s64 &argEnd, Action*& currAction, ActionId &actionId)
 {
     //      );
     // or   %ActionArg,
@@ -1219,7 +1222,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      }
     // or   flags:,
@@ -1244,8 +1247,8 @@ inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
-    u32 &flagsEnd, Trigger& currTrig)
+inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+    s64 &flagsEnd, Trigger& currTrig)
 {
     //      ;
     // or  %32BitFlags;
@@ -1275,7 +1278,7 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      }
     if ( text.has('}', pos) )
@@ -1291,10 +1294,10 @@ inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std:
     return true;
 }
 
-bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32 pos, u32 end)
+bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, s64 pos, s64 end)
 {
     u32 group;
-    u32 separator;
+    s64 separator;
     if ( text.getNextUnquoted(':', pos, end, separator) &&
         ParsePlayer(text, group, pos, separator) &&
         group < 28 )
@@ -1426,12 +1429,12 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, ConditionId &conditionId)
     return conditionId != ConditionId::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseCondition(buffer &text, s64 pos, s64 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft)
 {
     conditionId = ConditionId::NoCondition;
     u16 number = 0;
 
-    u32 size = end - pos;
+    s64 size = end - pos;
     buffer arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
@@ -1670,12 +1673,12 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
     return id != ActionId::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled, ActionId &id, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled, ActionId &id, u8& flags, u32 &argsLeft)
 {
     id = ActionId::NoAction;
     u16 number = 0;
 
-    u32 size = end - pos;
+    s64 size = end - pos;
     buffer arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
@@ -1908,7 +1911,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
     return id != ActionId::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error)
+bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, s64 pos, s64 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
@@ -2101,7 +2104,7 @@ ParseConditionDeathOffsetField: // 4 bytes
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, std::stringstream &error)
+bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos, s64 end, ActionId actionId, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
@@ -2525,11 +2528,11 @@ ParseActionDeathOffsetField: // 4 bytes
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags)
+bool TextTrigCompiler::ParseExecutionFlags(buffer& text, s64 pos, s64 end, u32& flags)
 {
     flags = 0;
 
-    u32 size = end - pos;
+    s64 size = end - pos;
     buffer arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
@@ -2551,7 +2554,7 @@ bool TextTrigCompiler::ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& 
     return ParseBinaryLong(argData, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
 {
     if ( text.hasCaseless("No String", pos, 9) || text.hasCaseless("\"No String\"", pos, 11) )
     {
@@ -2581,7 +2584,7 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
     else
         return ParseLong((char*)text.getPtr(0), dest, pos, end);
 
-    int size = end-pos;
+    s64 size = end-pos;
 
     if ( size < 0 )
         return false;
@@ -2603,8 +2606,8 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
             quotePos = str.find("\\\"");
         }
 
-        u32 hash = strHash(str);
-        int numMatching = stringTable.count(hash);
+        size_t hash = strHash(str);
+        size_t numMatching = stringTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             StringTableNode &node = stringTable.find(hash)->second;
@@ -2652,7 +2655,7 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
                     node.stringNum = 65536 - node.stringNum; // Convert to the index the string will hold in the normal table
 
                 addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
-                stringTable.insert(std::pair<u32, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
+                stringTable.insert(std::pair<size_t, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
                 dest = node.stringNum;
                 success = true;
             }
@@ -2661,9 +2664,9 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, u32 pos, u32 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 end)
 {
-    int size = end-pos;
+    s64 size = end-pos;
     if ( text.get<u8>(pos) == '\"' )
     {
         pos ++;
@@ -2698,8 +2701,8 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
         }
 
         // Grab the string hash
-        u32 hash = strHash(str);
-        int numMatching = locationTable.count(hash);
+        size_t hash = strHash(str);
+        size_t numMatching = locationTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             LocationTableNode &node = locationTable.find(hash)->second;
@@ -2735,7 +2738,7 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, u32 pos, u32 e
     return success;
 }
 
-bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
 {
     if ( text.get<u8>(pos) == '\"' ) // If quoted, ignore quotes
     {
@@ -2745,7 +2748,7 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
     else if ( ParseShort((char*)text.getPtr(0), dest, pos, end) )
         return true;
 
-    int size = end-pos;
+    s64 size = end-pos;
     char* unitNamePtr;
     char unit[40] = { };
     bool success = false;
@@ -3183,8 +3186,8 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
         if ( !success ) // Now search the unit name table
         {
             std::string str(unitNamePtr);
-            u32 hash = strHash(str);
-            int numMatching = unitTable.count(hash);
+            size_t hash = strHash(str);
+            size_t numMatching = unitTable.count(hash);
             if ( numMatching == 1 )
             { // Should guarentee that you can find at least one entry
                 UnitTableNode &node = unitTable.find(hash)->second;
@@ -3319,7 +3322,7 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, u32 pos, u32 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, s64 pos, s64 end)
 {
     if ( text.hasCaseless("No WAV", 0, 6) || text.hasCaseless("\"No WAV\"", 0, 8) )
     {
@@ -3330,10 +3333,10 @@ bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, u32 pos, u32 end)
         return ParseString(text, dest, pos, end);
 }
 
-bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, s64 pos, s64 end)
 {
-    u32 size = end - pos,
-        number;
+    s64 size = end - pos;
+    u32 number;
 
     if ( text.get<u8>(pos) == '\"' )
     {
@@ -3576,8 +3579,8 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
 
         // Grab the string hash
         std::string str(groupStrPtr);
-        u32 hash = strHash(str);
-        int numMatching = groupTable.count(hash);
+        size_t hash = strHash(str);
+        size_t numMatching = groupTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             GroupTableNode &node = groupTable.find(hash)->second;
@@ -3613,7 +3616,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, u32 pos, u32 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, s64 pos, s64 end)
 {
     if ( text.get<u8>(pos) == '\"' ) // If quoted, ignore quotes
     {
@@ -3623,7 +3626,7 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
     else if ( ParseByte((char*)text.getPtr(0), dest, pos, end) )
         return true;
 
-    int size = end-pos;
+    s64 size = end-pos;
     char* switchNamePtr;
     bool success = false;
 
@@ -3664,8 +3667,8 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
         if ( !success ) // Otherwise search switch name table
         {
             std::string str(switchNamePtr);
-            u32 hash = strHash(str);
-            int numMatching = switchTable.count(hash);
+            size_t hash = strHash(str);
+            size_t numMatching = switchTable.count(hash);
             if ( numMatching == 1 )
             { // Should guarentee that you can find at least one entry
                 SwitchTableNode &node = switchTable.find(hash)->second;
@@ -3704,7 +3707,7 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, u32 pos, u32 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(buffer &text, u32 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseSwitch(buffer &text, u32 &dest, s64 pos, s64 end)
 {
     u8 temp = 0;
     bool success = ParseSwitch(text, temp, pos, end);
@@ -3712,7 +3715,7 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u32 &dest, u32 pos, u32 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, u32 pos, u32 end)
+bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, s64 pos, s64 end)
 {
     if ( text.hasCaseless("NOSCRIPT", pos, 8) || text.hasCaseless("No Script", pos, 9) || text.hasCaseless("\"No Script\"", pos, 11) )
     {
@@ -3720,7 +3723,7 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, u32 pos, u32 end)
         return true;
     }
 
-    int size = end - pos;
+    s64 size = end - pos;
     bool isQuoted = text.get<u8>(pos) == '\"';
     if ( isQuoted )
     {
@@ -3743,8 +3746,8 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, u32 pos, u32 end)
         std::string str(scriptStringPtr);
 
         // Grab the string hash
-        u32 hash = strHash(str);
-        int numMatching = scriptTable.count(hash);
+        size_t hash = strHash(str);
+        size_t numMatching = scriptTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             ScriptTableNode &node = scriptTable.find(hash)->second;
@@ -3851,7 +3854,7 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
         locationTable.reserve(map->locationCapacity()+1);
         locNode.locationNum = 0;
         locNode.locationName = "No Location";
-        locationTable.insert(std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode));
+        locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
         for ( u32 i=0; i<map->locationCapacity(); i++ )
         {
             ChkLocation loc = map->getLocation(i);
@@ -3861,12 +3864,12 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
             {
                 locNode.locationNum = 64;
                 locNode.locationName = "Anywhere";
-                locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
+                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
             else if ( loc.stringNum > 0 && map->GetString(locNode.locationName, loc.stringNum) )
             {
                 locNode.locationNum = u8(i+1);
-                locationTable.insert( std::pair<u32, LocationTableNode>(strHash(locNode.locationName), locNode) );
+                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
         }
         locationTable.reserve(locationTable.size());
@@ -3887,7 +3890,7 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
             {
                 unitNode.unitID = unitID;
                 map->GetString(unitNode.unitName, stringID);
-                unitTable.insert( std::pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
             }
 
             RawString regUnitName;
@@ -3895,7 +3898,7 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
             if ( regUnitName.compare(unitNode.unitName) != 0 )
             {
                 unitNode.unitName = regUnitName;
-                unitTable.insert( std::pair<u32, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
             }
         }
     }
@@ -3915,7 +3918,7 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
                 map->GetString(switchNode.switchName, stringID) )
             {
                 switchNode.switchNum = u8(switchID);
-                switchTable.insert( std::pair<u32, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
+                switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
             }
         }
     }
@@ -3934,7 +3937,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
                 map->GetString(groupNode.groupName, stringID) )
             {
                 groupNode.groupID = i + 18;
-                groupTable.insert(std::pair<u32, GroupTableNode>(strHash(groupNode.groupName), groupNode));
+                groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
             }
         }
     }
@@ -3951,7 +3954,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
                 node.stringNum = index;                                                                 \
                 node.isExtended = chk->isExtendedString(node.stringNum);                                \
                 if ( !strIsInHashTable(node.string, strHash, stringTable) ) {                           \
-                    stringTable.insert( std::pair<u32, StringTableNode>(strHash(node.string), node) );  \
+                    stringTable.insert( std::pair<size_t, StringTableNode>(strHash(node.string), node) );  \
                 }                                                                                       \
             }
 
@@ -4027,7 +4030,7 @@ bool TextTrigCompiler::PrepScriptTable(ScData &scData)
     {
         ScriptTableNode scriptNode;
         if ( scData.aiScripts.GetAiIdAndName(i, scriptNode.scriptID, scriptNode.scriptName) )
-            scriptTable.insert(std::pair<u32, ScriptTableNode>(strHash(scriptNode.scriptName), scriptNode));
+            scriptTable.insert(std::pair<size_t, ScriptTableNode>(strHash(scriptNode.scriptName), scriptNode));
     }
     return true;
 }

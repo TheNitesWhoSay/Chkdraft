@@ -13,7 +13,7 @@ class MainToolbar : public WinLib::ToolbarControl
         WinLib::DropdownControl terrainBox;
 
         virtual ~MainToolbar();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         void AutoSize();
 
     private:

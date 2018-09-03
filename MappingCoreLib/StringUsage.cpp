@@ -173,7 +173,7 @@ bool StringUsageTable::useNext(u32 &index)
     // No open slots, add another
     if ( stringUsed.add<u8>(1) )
     {
-        index = stringUsed.size()-1;
+        index = u32(stringUsed.size())-1;
         return true;
     }
     else // Prolly out of memory
@@ -213,7 +213,7 @@ bool StringUsageTable::isUsed(u32 index)
 
 u32 StringUsageTable::numStrings()
 {
-    return stringUsed.size();
+    return (u32)stringUsed.size();
 }
 
 u32 StringUsageTable::lastUsedString()

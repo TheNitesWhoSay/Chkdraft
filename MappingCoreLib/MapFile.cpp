@@ -7,7 +7,7 @@
 #include <SimpleIcu.h>
 
 std::hash<std::string> MapFile::strHash;
-std::map<u32, std::string> MapFile::virtualWavTable;
+std::map<size_t, std::string> MapFile::virtualWavTable;
 u64 MapFile::nextAssetFileId(0);
 
 FileBrowserPtr MapFile::getDefaultOpenMapBrowser()
@@ -20,15 +20,15 @@ FileBrowserPtr MapFile::getDefaultSaveMapBrowser()
     return FileBrowserPtr(new FileBrowser(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath("")
+MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true)
 {
     if ( MapFile::virtualWavTable.size() == 0 )
     {
         for ( s32 i=0; i<NumVirtualSounds; i++ )
         {
             std::string wavPath(VirtualSoundFiles[i]);
-            u32 hash = strHash(wavPath);
-            virtualWavTable.insert(std::pair<u32, std::string>(hash, wavPath));
+            size_t hash = strHash(wavPath);
+            virtualWavTable.insert(std::pair<size_t, std::string>(hash, wavPath));
         }
     }
 }
@@ -314,7 +314,7 @@ bool MapFile::ProcessModifiedAssets(bool updateListfile)
                     CHKD_ERR("Failed to remove %s from map archive", assetMpqPath.c_str());
             }
         }
-        temporaryMpq.close(updateListfile);
+        temporaryMpq.save(updateListfile);
     }
 
     if ( processedAssets.size() == modifiedAssets.size() )
@@ -358,7 +358,7 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
             else
                 CHKD_ERR("Failed to add file!");
             
-            temporaryMpq.close(true);
+            temporaryMpq.save(true);
         }
         else
             CHKD_ERR("Failed to setup asset temporary storage!");
@@ -386,7 +386,7 @@ bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &ass
             else
                 CHKD_ERR("Failed to add file!");
 
-            temporaryMpq.close(true);
+            temporaryMpq.save(true);
         }
         else
             CHKD_ERR("Failed to open temp file!\n\nThe file may be in use elsewhere.");
@@ -421,7 +421,7 @@ void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
         if ( OpenTemporaryMpq() )
         {
             temporaryMpq.removeFile(tempMpqFilePath);
-            temporaryMpq.close();
+            temporaryMpq.save();
         }
     }
     else // The given file was not added recently, mark it for deletion at the next save
@@ -434,14 +434,7 @@ bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetB
     for ( auto asset : modifiedAssets ) // Check if it's a recently added asset
     {
         if ( asset->actionTaken == AssetAction::Add && asset->assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
-        {
-            if ( OpenTemporaryMpq() )
-            {
-                success = temporaryMpq.getFile(asset->assetTempMpqPath, outAssetBuffer);
-                temporaryMpq.close();
-            }
-            return success;
-        }
+            return OpenTemporaryMpq() && temporaryMpq.getFile(asset->assetTempMpqPath, outAssetBuffer);
     }
 
     if ( MpqFile::open(mapFilePath) )
@@ -640,8 +633,8 @@ bool MapFile::GetWavStatusMap(std::map<u32/*stringIndex*/, WavStatus> &outWavSta
 
 bool MapFile::IsInVirtualWavList(const std::string &wavMpqPath)
 {
-    u32 hash = MapFile::strHash(wavMpqPath);
-    int numMatching = MapFile::virtualWavTable.count(hash);
+    size_t hash = MapFile::strHash(wavMpqPath);
+    size_t numMatching = MapFile::virtualWavTable.count(hash);
     if ( numMatching == 1 )
     {
         std::string &tableWavPath = MapFile::virtualWavTable.find(hash)->second;

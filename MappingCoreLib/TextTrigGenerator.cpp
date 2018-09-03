@@ -263,13 +263,13 @@ ChkdString TextTrigGenerator::GetTrigLocation(u32 locationNum)
 ChkdString TextTrigGenerator::GetTrigString(u32 stringNum)
 {
     if ( stringNum == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )
-        return ChkdString("No String", true);
+        return SingleLineChkdString("No String");
     else if ( stringNum >= 0 && (stringNum < stringTable.size() || (65536 - stringNum) < extendedStringTable.size()) )
     {
         if ( stringNum < stringTable.size() )
             return stringTable[stringNum];
         else
-            return ChkdString("k" + extendedStringTable[65536 - stringNum], true);
+            return SingleLineChkdString("k" + extendedStringTable[65536 - stringNum]);
     }
     else
         return ChkdString(std::to_string(stringNum));
@@ -819,7 +819,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSegment trigData, st
 
     buffer output("TeOu");
 
-    u32 numTrigs = trigData->size()/TRIG_STRUCT_SIZE;
+    u32 numTrigs = u32(trigData->size()/TRIG_STRUCT_SIZE);
     Trigger* currTrig;
     Condition* conditions;
     Action* actions;

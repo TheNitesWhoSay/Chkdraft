@@ -30,7 +30,7 @@ namespace WinLib {
                             If the class has been registered before, this returns false
                             Do not register different classes with the same name */
                         bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-                            u32 menuResourceId, const std::string &lpszClassName, HICON hIconSm, bool isMDIChild);
+                            u64 menuResourceId, const std::string &lpszClassName, HICON hIconSm, bool isMDIChild);
 
                         /** Attemps to create a window
                             The variables are used the same as in CreateWindowEx */

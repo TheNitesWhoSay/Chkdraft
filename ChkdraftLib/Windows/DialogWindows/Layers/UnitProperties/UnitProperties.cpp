@@ -369,8 +369,8 @@ void UnitPropertiesWindow::SetUnitFieldText(ChkUnit unit)
 
 void UnitPropertiesWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
 {
-    int row1 = listUnits.GetItemRow(index1),
-        row2 = listUnits.GetItemRow(index2);
+    int row1 = listUnits.GetItemRow((int)index1),
+        row2 = listUnits.GetItemRow((int)index2);
 
     LVITEM item = { };
     item.mask = LVIF_PARAM;
@@ -378,18 +378,18 @@ void UnitPropertiesWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM ind
     item.lParam = index2;
 
     ListView_SetItem(hListView, &item);
-    listUnits.SetItemText(row1, (int)UnitListColumn::Index, index2);
+    listUnits.SetItemText(row1, (int)UnitListColumn::Index, (int)index2);
 
     item.iItem = row2;
     item.lParam = index1;
 
     ListView_SetItem(hListView, &item);
-    listUnits.SetItemText(row2, (int)UnitListColumn::Index, index1);
+    listUnits.SetItemText(row2, (int)UnitListColumn::Index, (int)index1);
 }
 
 void UnitPropertiesWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam)
 {
-    int row = listUnits.GetItemRow(oldLParam);
+    int row = listUnits.GetItemRow((int)oldLParam);
 
     LVITEM item = { };
     item.mask = LVIF_PARAM;
@@ -398,7 +398,7 @@ void UnitPropertiesWindow::ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM 
 
     ListView_SetItem(hListView, &item);
 
-    listUnits.SetItemText(row, (int)UnitListColumn::Index, newLParam);
+    listUnits.SetItemText(row, (int)UnitListColumn::Index, (int)newLParam);
 }
 
 int UnitPropertiesWindow::CompareLvItems(LPARAM index1, LPARAM index2)

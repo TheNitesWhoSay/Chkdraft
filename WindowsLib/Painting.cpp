@@ -96,7 +96,7 @@ namespace WinLib {
     {
         SIZE size;
         icux::uistring sysText = icux::toUistring(text);
-        if ( GetTextExtentPoint32(hdc, sysText.c_str(), sysText.length(), &size) != 0 )
+        if ( GetTextExtentPoint32(hdc, sysText.c_str(), (int)sysText.length(), &size) != 0 )
         {
             width = size.cx;
             height = size.cy;
@@ -109,7 +109,7 @@ namespace WinLib {
     bool getTabTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height)
     {
         icux::uistring sysText = icux::toUistring(text);
-        DWORD result = GetTabbedTextExtent(hdc, sysText.c_str(), sysText.size(), 0, NULL);
+        DWORD result = GetTabbedTextExtent(hdc, sysText.c_str(), (int)sysText.size(), 0, NULL);
         if ( result != 0 )
         {
             width = LOWORD(result);
@@ -130,13 +130,13 @@ namespace WinLib {
         if ( opaque )
             options |= ETO_OPAQUE;
 
-        return ExtTextOut(hdc, x, y, (clipped ? ETO_CLIPPED : 0), &rect, sysText.c_str(), sysText.length(), 0) != 0;
+        return ExtTextOut(hdc, x, y, (clipped ? ETO_CLIPPED : 0), &rect, sysText.c_str(), (UINT)sysText.length(), 0) != 0;
     }
 
     bool drawTabbedText(HDC hdc, const std::string &text, int x, int y)
     {
         icux::uistring sysText = icux::toUistring(text);
-        return TabbedTextOut(hdc, x, y, sysText.c_str(), sysText.size(), 0, NULL, 0) != 0;
+        return TabbedTextOut(hdc, x, y, sysText.c_str(), (int)sysText.size(), 0, NULL, 0) != 0;
     }
 
 }

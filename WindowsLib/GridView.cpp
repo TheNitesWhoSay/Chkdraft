@@ -61,7 +61,7 @@ namespace WinLib {
         return; // Do nothing, let descendants respond if they wish
     }
 
-    bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)
+    bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
         u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;\
 
@@ -505,7 +505,7 @@ namespace WinLib {
             if ( item(x, y).getText(str) &&
                  ListViewControl::GetItemRect(focusedX, focusedY, rect) )
             {
-                int itemWidth = SendMessage(GetParent(getHandle()), WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
+                int itemWidth = (int)SendMessage(GetParent(getHandle()), WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
                 if ( itemWidth > newWidth )
                     newWidth = itemWidth;
             }
@@ -669,7 +669,7 @@ namespace WinLib {
             SetCaretPos(item(x, y).getTextLength());
     }
 
-    void GridViewControl::SetCaretPos(int newCaretPos)
+    void GridViewControl::SetCaretPos(size_t newCaretPos)
     {
         caretPos = newCaretPos;
         SendMessage(editBox.getHandle(), EM_SETSEL, (WPARAM)caretPos, (LPARAM)caretPos);
@@ -968,7 +968,7 @@ namespace WinLib {
     void GridViewControl::DrawItems(HWND hWnd)
     {
         HWND hWndParent = GetParent(hWnd);
-        WPARAM ctrlId = (WPARAM)GetDlgCtrlID(hWnd);
+        UINT ctrlId = (UINT)GetDlgCtrlID(hWnd);
         PAINTSTRUCT ps = { };
         DRAWITEMSTRUCT dis = { };
         dis.CtlType = ODT_LISTVIEW;

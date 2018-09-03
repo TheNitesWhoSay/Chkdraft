@@ -6,7 +6,7 @@ MainPlot::~MainPlot()
 
 }
 
-bool MainPlot::CreateThis(HWND hParent, u32 id)
+bool MainPlot::CreateThis(HWND hParent, u64 id)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)(COLOR_APPWORKSPACE + 1), NULL, "Plot", NULL, false) &&
         ClassWindow::CreateClassWindow(WS_EX_TRANSPARENT, "", WS_CHILD | WS_VISIBLE, 0, 0, 162, 500, hParent, (HMENU)id) )

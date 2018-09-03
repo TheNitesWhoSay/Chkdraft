@@ -5,7 +5,7 @@ StringPreviewWindow::~StringPreviewWindow()
 
 }
 
-bool StringPreviewWindow::CreateThis(HWND hParent, u32 windowId)
+bool StringPreviewWindow::CreateThis(HWND hParent, u64 windowId)
 {
     return
         ClassWindow::RegisterWindowClass(0, NULL, NULL, CreateSolidBrush(RGB(0, 0, 0)), NULL, "StringPreview", NULL, false) &&

@@ -9,7 +9,7 @@ class ForcesWindow : public WinLib::ClassWindow
     public:
         ForcesWindow();
         virtual ~ForcesWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow();
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);

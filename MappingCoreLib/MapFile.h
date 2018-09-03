@@ -63,7 +63,7 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         std::vector<ModifiedAssetPtr> modifiedAssets; // A record of all MPQ assets changes since the last save
 
         static std::hash<std::string> strHash; // A hasher to help generate tables
-        static std::map<u32, std::string> virtualWavTable;
+        static std::map<size_t, std::string> virtualWavTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
         bool OpenMapFile(std::string &filePath);

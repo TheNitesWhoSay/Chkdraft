@@ -11,7 +11,7 @@ class StringEditorWindow : public WinLib::ClassWindow
     public:
         StringEditorWindow();
         virtual ~StringEditorWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         void RefreshWindow();
 
     protected:

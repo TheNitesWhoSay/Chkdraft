@@ -22,9 +22,9 @@ bool StringGuideWindow::CreateThis(HWND hParent)
         for (size_t i = 0; i < strColors.size(); i++)
         {
             auto Color = strColors.at(i);
-            GetTextExtentPoint32(hDC, icux::toUistring(std::get<2>(Color)).c_str(), icux::toUistring(std::get<2>(Color)).length(), &strSize);
-            colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, std::get<2>(Color), 0);
-            color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, std::get<1>(Color), TEXT_COLOR_FIRST+i);
+            GetTextExtentPoint32(hDC, icux::toUistring(std::get<2>(Color)).c_str(), (int)icux::toUistring(std::get<2>(Color)).length(), &strSize);
+            colorPrefix[i].CreateThis(hStringGuide, 2, (s32)i*13, strSize.cx, 13, std::get<2>(Color), 0);
+            color[i].CreateThis(hStringGuide, strSize.cx+3, (s32)i*13, 100, 13, std::get<1>(Color), TEXT_COLOR_FIRST+i);
         }
         ReleaseDC(hDC);
         return true;
@@ -46,7 +46,7 @@ LRESULT StringGuideWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
                 else
                     SetTextColor((HDC)wParam, RGB(16, 252, 24));
 
-                return (BOOL)CreateSolidBrush(RGB(0, 0, 0));
+                return (LRESULT)CreateSolidBrush(RGB(0, 0, 0));
             }
             break;
 

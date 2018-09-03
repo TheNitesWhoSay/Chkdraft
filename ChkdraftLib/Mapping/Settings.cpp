@@ -7,9 +7,9 @@ std::string Settings::patchRtPath("");
 u32 Settings::deathTableStart(0x0058A364);
 bool Settings::useAddressesForMemory(true);
 
-bool ParseLong(const std::string &text, u32& dest, u32 pos, u32 end)
+bool ParseLong(const std::string &text, u32& dest, size_t pos, size_t end)
 {
-    int size = end - pos;
+    size_t size = end - pos;
     if ( size < 12 )
     {
         if ( size == 1 && text[pos] == '0' )

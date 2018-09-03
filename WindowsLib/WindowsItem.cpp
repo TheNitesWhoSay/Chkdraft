@@ -68,7 +68,7 @@ namespace WinLib {
     }
 
     bool WindowsItem::RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-        u32 menuResourceId, const std::string &className, HICON hIconSm, WNDPROC wndProc)
+        u64 menuResourceId, const std::string &className, HICON hIconSm, WNDPROC wndProc)
     {
         if ( getHandle() == NULL && windowClassName.length() <= 0 )
         {
@@ -187,7 +187,7 @@ namespace WinLib {
                 options |= ETO_OPAQUE;
 
             icux::uistring uiStr = icux::toUistring(str);
-            ExtTextOut(paintDc, x, y, options, (RECT*)&rc, uiStr.c_str(), uiStr.length(), 0);
+            ExtTextOut(paintDc, x, y, options, (RECT*)&rc, uiStr.c_str(), (UINT)uiStr.length(), 0);
         }
     }
 

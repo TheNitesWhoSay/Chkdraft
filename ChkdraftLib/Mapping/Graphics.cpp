@@ -528,14 +528,14 @@ void Graphics::DrawLocationNames(HDC hDC)
                                         WinLib::drawText(hDC, str, leftMost, topMost, rect, true, false);
                                     else if ( rectHeight > lineHeight ) // Can word wrap
                                     {
-                                        u32 lastCharPos = str.size() - 1;
+                                        size_t lastCharPos = str.size() - 1;
                                         s32 prevBottom = rect.top;
 
                                         while ( rect.bottom - prevBottom > lineHeight && str.size() > 0 )
                                         {
                                             // Binary search for the character length of this line
-                                            u32 floor = 0;
-                                            u32 ceil = str.size();
+                                            size_t floor = 0;
+                                            size_t ceil = str.size();
                                             while ( ceil - 1 > floor )
                                             {
                                                 lastCharPos = (ceil - floor) / 2 + floor;
@@ -1660,8 +1660,8 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
 {
     COLORREF lastColor = defaultColor;
     const char* cStr = str.c_str();
-    int size = str.size();
-    int chunkStartChar = 0;
+    size_t size = str.size();
+    size_t chunkStartChar = 0;
     bool center = false,
          right = false;
     for ( int i=0; i<size; i++ )

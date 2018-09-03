@@ -37,8 +37,8 @@ bool Tiles::LoadSets(const std::vector<MpqFilePtr> &orderedSourceFiles)
 
 void CorrectPaletteForWindows(buffer &palette)
 {
-    u32 numColors = palette.size() / 4;
-    for ( u32 i = 0; i < numColors; i++ )
+    s64 numColors = palette.size() / 4;
+    for ( s64 i = 0; i < numColors; i++ )
         palette.swap<u8>(i * 4, i * 4 + 2);
 }
 
@@ -599,7 +599,7 @@ bool PCX::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::str
         u8* pal;
         u8 ncp = rawDat.get<u8>((u32)PCX::DataLocs::Ncp);
         u16 nbs = rawDat.get<u16>((u32)PCX::DataLocs::Nbs);
-        u32 palStart = rawDat.size()-768;
+        s64 palStart = rawDat.size()-768;
 
         if ( !rawDat.getPtr(pal, palStart, 768) )
         {
@@ -666,8 +666,8 @@ bool TblFiles::GetTblString(buffer &tbl, u16 stringNum, std::string &outString)
 
     if ( tbl.exists() && stringNum != 0 )
     {
-        u32 start = tbl.get<u16>(2 * stringNum);
-        u32 end = 0;
+        s64 start = tbl.get<u16>(2 * stringNum);
+        s64 end = 0;
         if ( !tbl.getNext('\0', start, end) ) // Next NUL char marks the end of the string
             end = tbl.size(); // Just end it where buffer ends
 
@@ -695,7 +695,7 @@ bool AiScripts::GetAiEntry(int aiNum, AIEntry &outAiEntry)
 
 int AiScripts::GetNumAiScripts()
 {
-    return (aiScriptBin.size() - aiScriptBin.get<u32>(0)) / sizeof(AIEntry);
+    return (u32(aiScriptBin.size()) - aiScriptBin.get<u32>(0)) / sizeof(AIEntry);
 }
 
 bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)

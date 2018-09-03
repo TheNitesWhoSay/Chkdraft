@@ -8,7 +8,7 @@ class MainPlot : public WinLib::ClassWindow
     public:
         LeftBar leftBar;
         virtual ~MainPlot();
-        bool CreateThis(HWND hParent, u32 id);
+        bool CreateThis(HWND hParent, u64 id);
 
     protected:
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

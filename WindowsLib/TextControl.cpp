@@ -8,7 +8,7 @@ namespace WinLib {
 
     }
 
-    bool TextControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string &initText, u32 id)
+    bool TextControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string &initText, u64 id)
     {
         return WindowControl::CreateControl(0, WC_STATIC, initText, WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);
     }

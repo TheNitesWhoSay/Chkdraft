@@ -8,7 +8,7 @@ namespace WinLib {
 
     }
 
-    bool TabControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u32 id)
+    bool TabControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u64 id)
     {
         return WindowControl::CreateControl(NULL, WC_TABCONTROL, "", WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);
     }
@@ -31,7 +31,7 @@ namespace WinLib {
         item.mask = TCIF_TEXT;
         item.iImage = -1;
         item.pszText = (LPTSTR)sysLabel.c_str();
-        item.cchTextMax = sysLabel.length();
+        item.cchTextMax = (int)sysLabel.length();
         return SendMessage(getHandle(), TCM_INSERTITEM, tabId, LPARAM(&item)) != -1;
     }
 

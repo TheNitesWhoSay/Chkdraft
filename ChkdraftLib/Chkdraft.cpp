@@ -89,7 +89,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     } while ( keepRunning );
 
-    return msg.wParam;
+    return (int)msg.wParam;
 }
 
 void Chkdraft::SetupLogging()
@@ -371,7 +371,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
 {
-    int length = std::strlen(lpCmdLine);
+    size_t length = std::strlen(lpCmdLine);
     if ( length > 1 ) // Minimum length 2
     {
         if ( lpCmdLine[0] == '\"' )
@@ -668,7 +668,7 @@ void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 
 void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
 {
-    int itemIndex = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
+    int itemIndex = (int)SendMessage(hCombo, CB_GETCURSEL, 0, 0);
     if ( hCombo == mainToolbar.layerBox.getHandle() )
         maps.ChangeLayer((Layer)itemIndex);
     else if ( hCombo == mainToolbar.playerBox.getHandle() )

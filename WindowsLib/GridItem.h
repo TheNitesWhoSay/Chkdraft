@@ -17,7 +17,7 @@ namespace WinLib {
             void Clear();
 
             bool getText(output_param std::string &text);
-            int getTextLength();
+            size_t getTextLength();
             int getTextNum();
             u32 getData();
             bool isSelected();

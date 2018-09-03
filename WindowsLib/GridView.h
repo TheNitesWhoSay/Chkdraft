@@ -37,7 +37,7 @@ namespace WinLib {
             virtual void adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd);
             virtual void CellClicked(int x, int y);
 
-            bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
+            bool CreateThis(HWND hParent, int x, int y, int width, int height, u64 id);
             bool AddColumn(int insertAt, const std::string &title, int width, int alignmentFlags);
             void AddRow(int numColumns, LPARAM lParam);
             void RemoveRow(int rowNum);
@@ -76,7 +76,7 @@ namespace WinLib {
             void DragSelectTo(int x, int y);
             virtual void StartEditing(int xClick, int yClick, const std::string &initChar); // Pass -1, -1 if starting via typing, "" if by click
             void UpdateCaretPos(int xClick, int yClick);
-            void SetCaretPos(int newCaretPos);
+            void SetCaretPos(size_t newCaretPos);
             virtual void Char(const std::string &character);
             virtual void KeyDown(WPARAM wParam);
 
@@ -99,7 +99,7 @@ namespace WinLib {
             int focusedY;
             bool lButtonDown;
             bool editing;
-            int caretPos;
+            size_t caretPos;
             EditControl editBox;
             bool ending;
 

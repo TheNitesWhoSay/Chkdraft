@@ -7,7 +7,7 @@ class MiniMap : public WinLib::ClassWindow
 {
     public:
         virtual ~MiniMap();
-        bool CreateThis(HWND hParent, u32 id);
+        bool CreateThis(HWND hParent, u64 id);
 
     protected:
         void MiniMapClick(LPARAM ClickPoints);

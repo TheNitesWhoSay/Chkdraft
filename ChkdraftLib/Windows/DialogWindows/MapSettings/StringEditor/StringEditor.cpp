@@ -27,7 +27,7 @@ StringEditorWindow::~StringEditorWindow()
 
 }
 
-bool StringEditorWindow::CreateThis(HWND hParent, u32 windowId)
+bool StringEditorWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -60,7 +60,7 @@ void StringEditorWindow::RefreshWindow()
         StringUsageTable strUse;
         if ( strUse.populateTable(CM->scenario(), extended) )
         {
-            RawString str;
+            ChkdString str;
             u32 lastIndex = extended ? CM->kstrSectionCapacity() : (u32)CM->strSectionCapacity();
             for ( u32 i = 0; i <= lastIndex; i++ )
             {
@@ -205,9 +205,9 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_MEASUREITEM:
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                RawString str;
+                ChkdString str;
 
-                if ( CM->GetString(str, mis->itemData) && str.size() > 0 &&
+                if ( CM->GetString(str, (u32)mis->itemData) && str.size() > 0 &&
                      GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, str) )
                 {
                     mis->itemWidth += 5;
@@ -234,8 +234,8 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    RawString str;
-                    if ( CM != nullptr && CM->GetString(str, pdis->itemData) && str.size() > 0 )
+                    ChkdString str;
+                    if ( CM != nullptr && CM->GetString(str, (u32)pdis->itemData) && str.size() > 0 )
                     {
                         HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                         if ( hBackground != NULL )

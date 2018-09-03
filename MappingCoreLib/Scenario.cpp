@@ -379,7 +379,7 @@ u8 Scenario::numLocations()
 
 u16 Scenario::locationCapacity()
 {
-    return MRGN().size() / CHK_LOCATION_SIZE;
+    return u16(MRGN().size() / CHK_LOCATION_SIZE);
 }
 
 bool Scenario::locationIsUsed(u16 locationIndex)
@@ -556,7 +556,7 @@ bool Scenario::hasStrSection(bool extended)
 
 u32 Scenario::strBytesUsed()
 {
-    return STR().size();
+    return (u32)STR().size();
 }
 
 bool Scenario::GetString(RawString &dest, u32 stringNum)
@@ -646,7 +646,7 @@ bool Scenario::GetExtendedString(ChkdString &dest, u32 extendedStringSectionInde
 
 u32 Scenario::NumNameableSwitches()
 {
-    return SWNM().size() / 4;
+    return u32(SWNM().size() / 4);
 }
 
 bool Scenario::getSwitchStrId(u8 switchId, u32 &stringId)
@@ -892,7 +892,7 @@ bool Scenario::SetUnitYc(u16 unitIndex, u16 newYc)
 
 u16 Scenario::SpriteSectionCapacity()
 {
-    return THG2().size() / SPRITE_STRUCT_SIZE;
+    return u16(THG2().size() / SPRITE_STRUCT_SIZE);
 }
 
 bool Scenario::GetSpriteRef(ChkSprite* &spriteRef, u16 index)
@@ -904,7 +904,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 {
     // MRGN - location strings
     ChkLocation* loc;
-    u32 numLocs = MRGN().size()/CHK_LOCATION_SIZE;
+    u32 numLocs = u32(MRGN().size()/CHK_LOCATION_SIZE);
     for ( u32 i=0; i<numLocs; i++ )
     {
         if ( getLocation(loc, u8(i)) && loc->stringNum == stringNum )
@@ -961,7 +961,7 @@ bool Scenario::stringIsUsed(u32 stringNum)
 
     // WAV  - sound strings
     buffer& WAV = this->WAV();
-    u32 numWavs = WAV.size()/4;
+    u32 numWavs = u32(WAV.size()/4);
     for ( u32 i=0; i<numWavs; i++ )
     {
         if ( WAV.get<u32>(i*4) == stringNum )
@@ -1206,7 +1206,7 @@ bool Scenario::GoodVCOD()
     char* defaultData = (char*)defaultVCOD.getPtr(8),
         * inData = (char*)VCOD().getPtr(0);
 
-    u32 defaultSize = defaultVCOD.size()-8;
+    u32 defaultSize = u32(defaultVCOD.size()-8);
     if ( VCOD().size() != defaultSize ) // Size mismatch
         return false;
     
@@ -1690,7 +1690,7 @@ void Scenario::forceDeleteString(u32 stringNum)
 
     // MRGN - location strings
     ChkLocation* loc;
-    u32 numLocs = MRGN().size()/CHK_LOCATION_SIZE;
+    u32 numLocs = u32(MRGN().size()/CHK_LOCATION_SIZE);
     for ( u32 i=0; i<numLocs; i++ )
     {
         if ( getLocation(loc, u8(i)) && loc->stringNum == stringNum )
@@ -1747,7 +1747,7 @@ void Scenario::forceDeleteString(u32 stringNum)
 
     // WAV  - sound strings
     buffer& WAV = this->WAV();
-    u32 numWavs = WAV.size()/4;
+    u32 numWavs = u32(WAV.size()/4);
     for ( u32 i=0; i<numWavs; i++ )
     {
         if ( WAV.get<u32>(i*4) == stringNum )
@@ -1837,7 +1837,7 @@ bool Scenario::addString(const RawString &str, numType &stringNum, bool extended
 
                 if ( extended )
                 {
-                    u32 strOffset = KSTR().size();
+                    u32 strOffset = (u32)KSTR().size();
                     
                     if ( KSTR().addStr(str.c_str(), str.size()) )
                     {
@@ -1937,7 +1937,7 @@ bool Scenario::addNonExistentString(RawString &str, u32& stringNum, bool extende
 
                 if ( extended )
                 {
-                    u32 strOffset = KSTR().size();
+                    u32 strOffset = u32(KSTR().size());
                     
                     if ( KSTR().addStr(str.c_str(), str.size()) )
                     {
@@ -2523,11 +2523,11 @@ bool Scenario::repairStringTable(bool extendedTable)
 bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended)
 {
     std::hash<std::string> strHash;
-    std::unordered_multimap<u32, StringTableNode> stringSearchTable;
+    std::unordered_multimap<size_t, StringTableNode> stringSearchTable;
     strList.reserve(strList.size()+stringCapacity());
     StringTableNode node;
     int numMatching = 0;
-    u32 hash = 0;
+    size_t hash = 0;
     u32 standardNumStrings = strSectionCapacity();
     u32 extendedNumStrings = kstrSectionCapacity();
 
@@ -2544,7 +2544,7 @@ bool Scenario::addAllUsedStrings(std::vector<StringTableNode>& strList, bool inc
                 if ( !strIsInHashTable(node.string, strHash, stringSearchTable) )       \
                 {                                                                       \
                     strList.push_back(node); /* add if the string isn't in the list */  \
-                    stringSearchTable.insert( std::pair<u32, StringTableNode>(          \
+                    stringSearchTable.insert( std::pair<size_t, StringTableNode>(          \
                         strHash(node.string), node) );                                  \
                 }                                                                       \
             }                                                                           \
@@ -2646,7 +2646,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> &strList, bool ex
 
     // Create a new string section
     Section newStrSection(new buffer("nStr"));
-    u32 strPortionOffset = 0;
+    s64 strPortionOffset = 0;
     if ( extendedTable )
     {
         newStrSection->setTitle((u32)SectionId::KSTR);
@@ -2676,7 +2676,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> &strList, bool ex
     // Add the string offsets while you build the string portion of the table
     if ( !buildStringTables(strList, extendedTable, newStrSection, strPortion, strPortionOffset, numStrs, false) )
     {
-        u32 lengthToSave = extendedTable ? 8 : 2;
+        s64 lengthToSave = extendedTable ? 8 : 2;
         newStrSection->del(lengthToSave, newStrSection->size()-lengthToSave);
         strPortion.del(1, strPortion.size() - 1);
         if ( !buildStringTables(strList, extendedTable, newStrSection, strPortion, strPortionOffset, numStrs, true) )
@@ -2728,7 +2728,7 @@ bool Scenario::rebuildStringTable(std::vector<StringTableNode> &strList, bool ex
 }
 
 bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
-    Section &offsets, buffer &strPortion, u32 strPortionOffset, u32 numStrs, bool recycleSubStrings)
+    Section &offsets, buffer &strPortion, s64 strPortionOffset, u32 numStrs, bool recycleSubStrings)
 {
     u32 strIndex = 1;
     if ( recycleSubStrings )
@@ -2740,8 +2740,8 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
             const StringTableNode& str = *(subStr->GetString());
             while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
             {
-                if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||      // Add string offset (extended)
-                     (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+                if ( (extendedTable && offsets->add<u32>((u32)strPortionOffset)) || // Add string offset (extended)
+                     (!extendedTable && offsets->add<u16>((u16)strPortionOffset)) ) // Add string offset (regular)
                 {
                     strIndex++;
                 }
@@ -2771,7 +2771,7 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
             {
                 subStr->userData = (void*)(strPortion.size() + strPortionOffset);
 
-                if ( ((extendedTable && offsets->add<u32>(strPortion.size() + strPortionOffset)) ||        // Add string offset (extended)
+                if ( ((extendedTable && offsets->add<u32>(u32(strPortion.size() + strPortionOffset))) || // Add string offset (extended)
                       (!extendedTable && offsets->add<u16>(u16(strPortion.size() + strPortionOffset)))) && // Add string offset (regular)
                      strPortion.addStr(str.string.c_str(), str.string.size() + 1) ) // Add the string + its NUL char
                 {
@@ -2789,11 +2789,11 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
             SubStringPtr parent = subStr->GetParent();
             if ( parent != nullptr ) // This string is a sub-string of another
             {
-                u32 parentStart = (u32)parent->userData;
-                u32 childStart = parentStart + (parent->GetString()->string.size() - str.string.size());
+                s64 parentStart = (s64)parent->userData;
+                s64 childStart = parentStart + (parent->GetString()->string.size() - str.string.size());
 
-                if ( (extendedTable && offsets->replace<u32>(4+4*str.stringNum, childStart)) ||   // Add string offset (extended)
-                    (!extendedTable && offsets->replace<u16>(2*str.stringNum, (u16)childStart)) ) // Add string offset (regular)
+                if ( (extendedTable && offsets->replace<u32>(4+4*(s64)str.stringNum, (u32)childStart)) || // Add string offset (extended)
+                    (!extendedTable && offsets->replace<u16>(2*(s64)str.stringNum, (u16)childStart)) ) // Add string offset (regular)
                 {
 
                 }
@@ -2811,8 +2811,8 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
         {
             while ( strIndex < str.stringNum ) // Add any unused's till the next string, point them to the 'NUL' string
             {
-                if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||     // Add string offset (extended)
-                    (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+                if ( (extendedTable && offsets->add<u32>((u32)strPortionOffset)) || // Add string offset (extended)
+                     (!extendedTable && offsets->add<u16>((u16)strPortionOffset)) ) // Add string offset (regular)
                 {
                     strIndex++;
                 }
@@ -2826,7 +2826,7 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
                 return false; // No room for the next string
             }
 
-            if ( ((extendedTable && offsets->add<u32>(strPortion.size() + strPortionOffset)) ||        // Add string offset (extended)
+            if ( ((extendedTable && offsets->add<u32>(u32(strPortion.size() + strPortionOffset))) || // Add string offset (extended)
                   (!extendedTable && offsets->add<u16>(u16(strPortion.size() + strPortionOffset)))) && // Add string offset (regular)
                  strPortion.addStr(str.string.c_str(), str.string.size() + 1) ) // Add the string + its NUL char
             {
@@ -2840,8 +2840,8 @@ bool Scenario::buildStringTables(std::vector<StringTableNode> &strList, bool ext
     // Add any unused's that come after the last string, point them to the 'NUL' string
     while ( strIndex <= numStrs )
     {
-        if ( (extendedTable && offsets->add<u32>(strPortionOffset)) ||      // Add string offset (extended)
-             (!extendedTable && offsets->add<u16>(u16(strPortionOffset))) ) // Add string offset (regular)
+        if ( (extendedTable && offsets->add<u32>((u32)strPortionOffset)) || // Add string offset (extended)
+             (!extendedTable && offsets->add<u16>((u16)strPortionOffset)) ) // Add string offset (regular)
         {
             strIndex++;
         }
@@ -3482,7 +3482,7 @@ int Scenario::NumUsedCuwps()
 
 u32 Scenario::WavSectionCapacity()
 {
-    return WAV().size() / 4;
+    return u32(WAV().size() / 4);
 }
 
 bool Scenario::GetWav(u16 wavIndex, u32 &outStringIndex)
@@ -3696,9 +3696,9 @@ void Scenario::ZeroWavUsers(u32 wavStringIndex)
 bool Scenario::ParseScenario(buffer &chk)
 {
     caching = false;
-    u32 chkSize = chk.size();
+    s64 chkSize = chk.size();
 
-    u32 position = 0,
+    s64 position = 0,
         nextPosition = 0;
 
     bool parsing = true;
@@ -3741,7 +3741,7 @@ bool Scenario::ParseScenario(buffer &chk)
     return true;
 }
 
-bool Scenario::ParseSection(buffer &chk, u32 position, u32 &nextPosition)
+bool Scenario::ParseSection(buffer &chk, s64 position, s64 &nextPosition)
 {
     u32 sectionId = 0;
     s32 sectionSize = 0;
@@ -3778,7 +3778,7 @@ bool Scenario::ToSingleBuffer(buffer& chk)
         for ( auto &section : sections )
         {
             if ( !( chk.add<u32>(section->titleVal()) &&
-                    chk.add<u32>(section->size()) &&
+                    chk.add<u32>((u32)section->size()) &&
                     ( section->size() == 0 || chk.addStr((const char*)section->getPtr(0), section->size()) ) ) )
             {
                 return false;
@@ -4065,7 +4065,7 @@ bool Scenario::GetStrInfo(char* &ptr, size_t &length, u32 stringNum)
 
     if ( strings->exists() && stringNum != 0 )
     {
-        u32 start = 0, end = 0;
+        s64 start = 0, end = 0;
 
         if ( extended )
             start = strings->get<u32>(4+4*stringNum);

@@ -52,7 +52,7 @@ namespace WinLib {
         catch ( std::exception ) { return false; }
     }
 
-    int GridControlItem::getTextLength()
+    size_t GridControlItem::getTextLength()
     {
         return text.length();
     }

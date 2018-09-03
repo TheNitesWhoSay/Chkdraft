@@ -29,10 +29,10 @@ bool CompareStrTblNode(StringTableNode first, StringTableNode second)
 }
 
 bool strIsInHashTable(RawString &str, std::hash<std::string> &strHash,
-    std::unordered_multimap<u32, StringTableNode> &stringTable)
+    std::unordered_multimap<size_t, StringTableNode> &stringTable)
 {
-    u32 hash = strHash(str);
-    int numMatching = stringTable.count(hash);
+    size_t hash = strHash(str);
+    size_t numMatching = stringTable.count(hash);
     if ( numMatching == 1 )
     { // Should guarentee that you can find at least one entry
         StringTableNode &node = stringTable.find(hash)->second;

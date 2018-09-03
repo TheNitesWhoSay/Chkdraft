@@ -68,23 +68,23 @@ namespace icux {
         Functions to simplify converting between UTF-8, UTF-16 and various types of strings
     */
 
-    std::string toUtf8(const wchar_t* utf16Str, int32_t length);
+    std::string toUtf8(const wchar_t* utf16Str, size_t length);
 
     std::string toUtf8(const std::string &utf8Str); // Simply returns the same string
 
     std::string toUtf8(const std::wstring &utf16Str);
 
-    std::wstring toUtf16(const char* utf8Str, int32_t length);
+    std::wstring toUtf16(const char* utf8Str, size_t length);
 
     std::wstring toUtf16(const std::string &utf8Str);
 
     std::wstring toUtf16(const std::wstring &utf16Str); // Simply returns the same string
 
-    filestring toFilestring(const char* utf8Str, int32_t length);
+    filestring toFilestring(const char* utf8Str, size_t length);
 
     filestring toFilestring(const std::string &utf8Str);
 
-    uistring toUistring(const char* utf8Str, int32_t length);
+    uistring toUistring(const char* utf8Str, size_t length);
 
     uistring toUistring(const std::string &utf8Str);
 

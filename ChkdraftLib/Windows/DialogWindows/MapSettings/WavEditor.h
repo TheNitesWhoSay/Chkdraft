@@ -9,7 +9,7 @@ class WavEditorWindow : public WinLib::ClassWindow
     public:
         WavEditorWindow();
         virtual ~WavEditorWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         void RefreshWindow();
 
     protected:

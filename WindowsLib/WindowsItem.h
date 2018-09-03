@@ -79,7 +79,7 @@ namespace WinLib {
             If the class has been registered before this returns false
             Do not register different classes with the same name */
             bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-                u32 menuResourceId, const std::string &lpszClassName, HICON hIconSm, WNDPROC wndProc);
+                u64 menuResourceId, const std::string &lpszClassName, HICON hIconSm, WNDPROC wndProc);
 
             /** Returns whether the window class given by lpszClassName is registered,
             if it is, then this class name will be set to create the window with */

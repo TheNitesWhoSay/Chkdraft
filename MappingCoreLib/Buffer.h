@@ -15,73 +15,73 @@ class buffer
 
 /*  Destructor  */  virtual ~buffer();
 
-/*  Accessors   */  u32 size() const; // Returns sizeUsed
+/*  Accessors   */  s64 size() const; // Returns sizeUsed
                     const char* title(); // Returns title of buffer
                     u32 titleVal(); // Returns first for bytes of the title as an unsigned int
 
                     // Puts data in 'dest' if 'location' is within the buffer
                     template <typename valueType>
-                        bool get(valueType &dest, u32 location);
-                    bool getBit(bool &dest, u32 location, u32 bitNum);
-                    bool getString(char* dest, u32 location, u32 size);
+                        bool get(valueType &dest, s64 location);
+                    bool getBit(bool &dest, s64 location, u32 bitNum);
+                    bool getString(char* dest, s64 location, s64 size);
                     template <typename valueType>
-                        bool getArray(valueType* dest, u32 location, u32 numElements);
+                        bool getArray(valueType* dest, s64 location, s64 numElements);
 
                     // Use the data pointer with care, don't read past dest[sizeUsed-location-1]
-                    const void* getPtr(u32 location) const;
-                    const void* getPtr(u32 location, u32 sizeRequested) const; // sizeRequested in bytes
+                    const void* getPtr(s64 location) const;
+                    const void* getPtr(s64 location, s64 sizeRequested) const; // sizeRequested in bytes
                     template <typename valueType>
-                        bool getPtr(valueType* &dest, u32 location, u32 sizeRequested); // sizeRequested in bytes
+                        bool getPtr(valueType* &dest, s64 location, s64 sizeRequested); // sizeRequested in bytes
 
                     // Returns data if the location is < sizeUsed, otherwise returns 0
                     template <typename valueType>
-                        valueType get(u32 location);
-                    bool getBit(u32 location, u32 bitNum);
+                        valueType get(s64 location);
+                    bool getBit(s64 location, u32 bitNum);
 
 /*   Searching  */  // Returns true if the sequence was found at the location
-                    bool has(char character, u32 location);
-                    bool hasCaseless(char character, u32 location);
-                    bool has(const char* str, u32 location, u32 size);
-                    bool hasCaseless(const char* str, u32 location, u32 size);
+                    bool has(char character, s64 location);
+                    bool hasCaseless(char character, s64 location);
+                    bool has(const char* str, s64 location, s64 size);
+                    bool hasCaseless(const char* str, s64 location, s64 size);
 
                     // Puts next instance of 'character' in 'dest' if found
-                    bool getNext(char character, u32 start, u32 &dest);
-                    bool getNextUnquoted(char character, u32 start, u32 &dest);
-                    bool getNextUnquoted(char character, u32 start, u32 &dest, char terminator);
-                    bool getNextUnquoted(char character, u32 start, u32 end, u32 &dest);
-                    bool getNextUnescaped(char character, u32 start, u32 &dest);
+                    bool getNext(char character, s64 start, s64 &dest);
+                    bool getNextUnquoted(char character, s64 start, s64 &dest);
+                    bool getNextUnquoted(char character, s64 start, s64 &dest, char terminator);
+                    bool getNextUnquoted(char character, s64 start, s64 end, s64 &dest);
+                    bool getNextUnescaped(char character, s64 start, s64 &dest);
 
 /*   Mutators   */  // Adds data onto the end of the buffer
                     template <typename valueType>
                         bool add(const valueType &value);
                     template <typename valueType>
-                        bool add(const valueType &value, u32 amount);
+                        bool add(const valueType &value, s64 amount);
                     bool addStr(const std::string &chunk);
-                    bool addStr(const char* chunk, u32 chunkSize);
+                    bool addStr(const char* chunk, s64 chunkSize);
 
                     // Inserts data at a position in the buffer
                     template <typename valueType>
-                        bool insert(u32 location, valueType value);
+                        bool insert(s64 location, valueType value);
                     template <typename valueType>
-                        bool insert(u32 location, valueType value, u32 amount);
-                    bool insertStr(u32 startLocation, const char* chunk, u32 chunkSize);
+                        bool insert(s64 location, valueType value, s64 amount);
+                    bool insertStr(s64 startLocation, const char* chunk, s64 chunkSize);
 
                     // Replaces the specified portion of the buffer
                     template <typename valueType>
-                        bool replace(u32 location, valueType value);
+                        bool replace(s64 location, valueType value);
                     template <typename valueType>
-                        bool replace(u32 location, valueType value, u32 amount);
-                    bool replaceStr(u32 startLocation, const char* chunk, u32 chunkSize);
-                    bool replaceStr(u32 startLocation, u32 initialSize, const char* chunk, u32 chunkSize);
-                    bool setBit(u32 location, u32 bitNum, bool bitValue);
+                        bool replace(s64 location, valueType value, s64 amount);
+                    bool replaceStr(s64 startLocation, const char* chunk, s64 chunkSize);
+                    bool replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s64 chunkSize);
+                    bool setBit(s64 location, u32 bitNum, bool bitValue);
 
                     // Swap two parts of a buffer
                     template <typename valueType>
-                        bool swap(u32 location1, u32 location2);
-                    bool swapStr(u32 location1, u32 location2, u32 swapSize);
+                        bool swap(s64 location1, s64 location2);
+                    bool swapStr(s64 location1, s64 location2, s64 swapSize);
 
                     // Replace the whole buffer with the new string
-                    bool overwrite(const char* chunk, u32 chunkSize);
+                    bool overwrite(const char* chunk, s64 chunkSize);
 
                     // Transfer all contents of source to this buffer, this buffer is flushed before transfer, source is flushed after
                     bool takeAllData(buffer& source);
@@ -92,18 +92,18 @@ class buffer
 
                     // Deletes a part of the buffer
                     template <typename valueType>
-                        bool del(u32 location);
-                    bool delRange(u32 startLocation, u32 endLocation);
-                    bool del(u32 startLocation, u32 size);
+                        bool del(s64 location);
+                    bool delRange(s64 startLocation, s64 endLocation);
+                    bool del(s64 startLocation, s64 size);
 
 /*  IO Methods  */  // Writes the data to 'pFile'
                     void write(FILE* pFile, bool includeHeader);
 
                     // Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
-                    bool extract(buffer &buf, u32 position);
+                    bool extract(buffer &buf, s64 position);
 
                     // Grabs all bytes from position to position+(length-1) from src and places them in this buffer
-                    bool extract(buffer &src, u32 position, u32 length);
+                    bool extract(buffer &src, s64 position, s64 length);
 
                     // Converts the buffer to raw data
                     std::shared_ptr<void> serialize(); // First four bytes: bufTitle, second four: sizeUsed, after that is sizeUsed bytes of data
@@ -119,7 +119,7 @@ class buffer
                     bool exists();
                     
                     // Sets the amount of data allocated for the buffer, does not change 'sizeUsed'
-                    bool setSize(u32 size);
+                    bool setSize(s64 size);
 
                     // Deletes data and sets sizeUsed and sizeAllotted to zero, bufTitle is unaffected
                     void flush();
@@ -128,8 +128,8 @@ class buffer
     private:
 
 /*     Data     */  s8* data; // The actual data contained by the buffer
-                    u32 sizeUsed; // Size of data being used
-                    u32 sizeAllotted; // Size allocated for data
+                    s64 sizeUsed; // Size of data being used
+                    s64 sizeAllotted; // Size allocated for data
                     char bufTitle[5]; // Title of the buffer
 
 /* Priv Methods */  /** Called to increase or decrease buffer size

@@ -8,7 +8,7 @@ class TemplatesWindow : public WinLib::ClassWindow
 {
     public:
         virtual ~TemplatesWindow();
-        bool CreateThis(HWND hParent, u32 windowId);
+        bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow();
         void DoSize();

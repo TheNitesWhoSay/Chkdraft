@@ -34,7 +34,7 @@ WavEditorWindow::~WavEditorWindow()
 
 }
 
-bool WavEditorWindow::CreateThis(HWND hParent, u32 windowId)
+bool WavEditorWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -456,7 +456,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
             RawString str;
 
-            if ( CM->GetString(str, mis->itemData) && str.size() > 0 &&
+            if ( CM->GetString(str, (u32)mis->itemData) && str.size() > 0 &&
                 GetStringDrawSize(wavListDC, mis->itemWidth, mis->itemHeight, str) )
             {
                 mis->itemWidth += 5;
@@ -484,7 +484,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
                 RawString str;
-                if ( CM != nullptr && CM->GetString(str, pdis->itemData) && str.size() > 0 )
+                if ( CM != nullptr && CM->GetString(str, (u32)pdis->itemData) && str.size() > 0 )
                 {
                     HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                     if ( hBackground != NULL )
