@@ -1,4 +1,7 @@
 #include "ScData.h"
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents)
 {
@@ -304,8 +307,8 @@ bool Units::LoadUnits(const std::vector<MpqFilePtr> &orderedSourceFiles)
 {
     buffer unitDat("uDat");
 
-    if (    !GetScAsset(orderedSourceFiles, "arr\\units.dat", unitDat)
-        || unitDat.size() != 19876 )
+    if ( !GetScAsset(orderedSourceFiles, "arr\\units.dat", unitDat)
+         || unitDat.size() != 19876 )
         return false;
 
     u32 pos, i;
@@ -669,12 +672,8 @@ bool TblFiles::GetTblString(buffer &tbl, u16 stringNum, std::string &outString)
             end = tbl.size(); // Just end it where buffer ends
 
         size_t length = (size_t)(end - start);
-        const char* cString = (const char*)tbl.getPtr(start);
-        try {
-            outString = std::string(cString, length);
-            return true;
-        }
-        catch ( std::bad_alloc ) {}
+        outString = (const char*)tbl.getPtr(start);
+        return true;
     }
     return false;
 }
@@ -828,9 +827,9 @@ bool ScData::GetScAsset(const std::string& assetMpqPath, buffer &outAssetContent
 std::unordered_map<DatFilePriority, DatFileDescriptor> ScData::getDefaultDatFiles()
 {
     return std::unordered_map<DatFilePriority, DatFileDescriptor> {
-        { DatFilePriority::StarDat, DatFileDescriptor(DatFilePriority::StarDat, "StarDat.mpq", "", FileBrowserPtr(new FileBrowser(starDatFilter, ""))) },
-        { DatFilePriority::BrooDat, DatFileDescriptor(DatFilePriority::BrooDat, "BrooDat.mpq", "", FileBrowserPtr(new FileBrowser(brooDatFilter, ""))) },
-        { DatFilePriority::PatchRt, DatFileDescriptor(DatFilePriority::PatchRt, "patch_rt.mpq", "", FileBrowserPtr(new FileBrowser(patchRtFilter, ""))) },
+        { DatFilePriority::StarDat, DatFileDescriptor(DatFilePriority::StarDat, "StarDat.mpq", "", FileBrowserPtr(new FileBrowser(getStarDatFilter(), ""))) },
+        { DatFilePriority::BrooDat, DatFileDescriptor(DatFilePriority::BrooDat, "BrooDat.mpq", "", FileBrowserPtr(new FileBrowser(getBrooDatFilter(), ""))) },
+        { DatFilePriority::PatchRt, DatFileDescriptor(DatFilePriority::PatchRt, "patch_rt.mpq", "", FileBrowserPtr(new FileBrowser(getPatchRtFilter(), ""))) },
     };
 }
 
@@ -852,7 +851,7 @@ bool ScData::LoadGrps(const std::vector<MpqFilePtr> &orderedSourceFiles)
 
     for ( u32 i = 0; i<numGrps; i++ )
     {
-        const char* fileName = (const char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
+        const std::string fileName = (const char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
         grps[i].LoadGrp(orderedSourceFiles, fileName);
     }
 
@@ -943,7 +942,7 @@ std::vector<MpqFilePtr> DatFileBrowser::openScDatFiles(
             foundStarCraftDirectory = true;
             mpqFile = openDatFile(MakeSystemFilePath(starCraftDirectory, fileName), datFileDescriptor);
         }
-        else if ( browser != nullptr && browser->promptTryBrowse("Failed to find " + fileName + " would you like to locate it manually?") && browser->browseForFilePath(browsedFilePath, filterIndex) )
+        else if ( browser != nullptr && browser->promptTryBrowse("Failed to find " + fileName + " would you like to locate it manually?") && browser->browseForOpenPath(browsedFilePath, filterIndex) )
             mpqFile = openDatFile(browsedFilePath, datFileDescriptor);
 
         if ( mpqFile != nullptr )
@@ -974,7 +973,7 @@ bool DatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftD
     {
         std::string starCraftFilePath = "";
         if ( starCraftBrowser->promptTryBrowse("Failed to find " + starCraftFileName + " would you like to locate it manually?") &&
-            starCraftBrowser->browseForFilePath(starCraftFilePath, filterIndex) )
+            starCraftBrowser->browseForOpenPath(starCraftFilePath, filterIndex) )
         {
             starCraftDirectory = GetSystemFileDirectory(starCraftFilePath, false);
             return true;
@@ -1000,5 +999,5 @@ MpqFilePtr DatFileBrowser::openDatFile(const std::string &datFilePath, const Dat
 
 FileBrowserPtr DatFileBrowser::getDefaultStarCraftBrowser()
 {
-    return FileBrowserPtr(new FileBrowser(starCraftExeFilter, GetDefaultScPath()));
+    return FileBrowserPtr(new FileBrowser(getStarCraftExeFilter(), GetDefaultScPath()));
 }

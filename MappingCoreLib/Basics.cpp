@@ -5,7 +5,7 @@ void IgnoreErr(const char* file, unsigned int line, const char* msg, ...)
 
 }
 
-const char* DefaultUnitDisplayName[233] = 
+const std::vector<std::string> DefaultUnitDisplayNames = 
 {
     /*  0*/ "Terran Marine",
     /*  1*/ "Terran Ghost", 
@@ -242,7 +242,7 @@ const char* DefaultUnitDisplayName[233] =
     /*232*/ "[factories]",
 };
 
-const char* LegacyTextTrigDisplayName[233] = 
+const std::vector<std::string> LegacyTextTrigDisplayNames = 
 {
     /*  0*/ "Terran Marine",
     /*  1*/ "Terran Ghost", 
@@ -479,7 +479,7 @@ const char* LegacyTextTrigDisplayName[233] =
     /*232*/ "Factories",
 };
 
-const char* VirtualSoundFiles[1143] =
+const std::vector<std::string> VirtualSoundFiles =
 {
     "sound\\Zerg\\Drone\\ZDrErr00.WAV",
     "sound\\Misc\\Buzz.wav (1)",
@@ -1630,37 +1630,68 @@ extern const std::string starCraftFileName = "StarCraft.exe";
 extern const std::string starDatFileName = "StarDat.mpq";
 extern const std::string brooDatFileName = "BrooDat.mpq";
 extern const std::string patchRtFileName = "patch_rt.mpq";
-const std::unordered_map<DatFilePriority, std::string> defaultStarCraftDatFiles = {
-    {DatFilePriority::PatchRt, patchRtFileName},
-    {DatFilePriority::BrooDat, brooDatFileName},
-    {DatFilePriority::StarDat, starDatFileName}
-};
 
-const std::map<std::string, std::string> mpqFilter = {{ "*.mpq", "MoPaQ Archive(*.mpq)" }};
-const std::map<std::string, std::string> openMapFilters = {
-    { "*.scm;*.scx;*.chk", "All Maps" },
-    { "*.scm", "Starcraft Maps" },
-    { "*.scx", "Broodwar Maps" },
-    { "*.chk", "Raw Scenario Files" }
-};
-const std::map<std::string, std::string> saveMapFilters = {
-    { "*.scm", "Starcraft Map(*.scm)" },
-    { "*.scm", "Starcraft Hybrid Map(*.scm)" },
-    { "*.scx", "Broodwar Map(*.scx)" },
-    { "*.chk", "Raw Starcraft Map(*.chk)" },
-    { "*.chk", "Raw Starcraft Hybrid Map(*.chk)" },
-    { "*.chk", "Raw Broodwar Map(*.chk)" },
-    { "*.scm;*.scx;*.chk", "All Maps" }
-};
-const std::map<std::string, std::string> saveTextFilters = {
-    { "*.txt", "Text Documents(*.txt)" },
-    { "*", "All Files" }
-};
-const std::map<std::string, std::string> soundFilters = {
-    { "*.wav", "Waveform Audio(*.wav)" },
-    { "*.ogg", "Ogg Audio(*.ogg)" }
-};
-const std::map<std::string, std::string> starDatFilter = {{ "StarDat.mpq", "StarDat.mpq Archive" }};
-const std::map<std::string, std::string> brooDatFilter = {{ "BrooDat.mpq", "BrooDat.mpq Archive" }};
-const std::map<std::string, std::string> patchRtFilter = {{ "patch_rt.mpq", "patch_rt.mpq Archive" }};
-const std::map<std::string, std::string> starCraftExeFilter = {{ "StarCraft.exe", "StarCraft Executable" }};
+std::unordered_map<DatFilePriority, std::string> getDefaultStarCraftDatFiles()
+{
+    return std::unordered_map<DatFilePriority, std::string> {
+        { DatFilePriority::PatchRt, patchRtFileName },
+        { DatFilePriority::BrooDat, brooDatFileName },
+        { DatFilePriority::StarDat, starDatFileName }
+    };
+}
+
+std::vector<std::pair<std::string, std::string>> getMpqFilter()
+{
+    return std::vector<std::pair<std::string, std::string>> { std::make_pair("*.mpq", "MoPaQ Archive(*.mpq)") };
+}
+std::vector<std::pair<std::string, std::string>> getOpenMapFilters()
+{
+    return std::vector<std::pair<std::string, std::string>> {
+        std::make_pair("*.scm;*.scx;*.chk", "All Maps"),
+        std::make_pair("*.scm", "Starcraft Maps"),
+        std::make_pair("*.scx", "Broodwar Maps"),
+        std::make_pair("*.chk", "Raw Scenario Files")
+    };
+}
+std::vector<std::pair<std::string, std::string>> getSaveMapFilters()
+{
+    return std::vector<std::pair<std::string, std::string>> {
+        std::make_pair("*.scm", "Starcraft Map(*.scm)"),
+        std::make_pair("*.scm", "Starcraft Hybrid Map(*.scm)"),
+        std::make_pair("*.scx", "Broodwar Map(*.scx)"),
+        std::make_pair("*.chk", "Raw Starcraft Map(*.chk)"),
+        std::make_pair("*.chk", "Raw Starcraft Hybrid Map(*.chk)"),
+        std::make_pair("*.chk", "Raw Broodwar Map(*.chk)"),
+        std::make_pair("*.scm;*.scx;*.chk", "All Maps")
+    };
+}
+std::vector<std::pair<std::string, std::string>> getSaveTextFilters()
+{
+    return std::vector<std::pair<std::string, std::string>> {
+        std::make_pair("*.txt", "Text Documents(*.txt)"),
+        std::make_pair("*", "All Files")
+    };
+}
+std::vector<std::pair<std::string, std::string>> getSoundFilters()
+{
+    return std::vector<std::pair<std::string, std::string>> {
+        std::make_pair("*.wav", "Waveform Audio(*.wav)"),
+        std::make_pair("*.ogg", "Ogg Audio(*.ogg)")
+    };
+}
+std::vector<std::pair<std::string, std::string>> getStarDatFilter()
+{
+    return std::vector<std::pair<std::string, std::string>> { std::make_pair("StarDat.mpq", "StarDat.mpq Archive") };
+}
+std::vector<std::pair<std::string, std::string>> getBrooDatFilter()
+{
+    return std::vector<std::pair<std::string, std::string>> { std::make_pair("BrooDat.mpq", "BrooDat.mpq Archive") };
+}
+std::vector<std::pair<std::string, std::string>> getPatchRtFilter()
+{
+    return std::vector<std::pair<std::string, std::string>> { std::make_pair("patch_rt.mpq", "patch_rt.mpq Archive") };
+}
+std::vector<std::pair<std::string, std::string>> getStarCraftExeFilter()
+{
+    return std::vector<std::pair<std::string, std::string>> { std::make_pair("StarCraft.exe", "StarCraft Executable") };
+}

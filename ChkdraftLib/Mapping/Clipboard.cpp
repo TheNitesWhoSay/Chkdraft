@@ -4,7 +4,7 @@
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include <set>
 
-void StringToWindowsClipboard(std::string &str)
+void StringToWindowsClipboard(const std::string &str)
 {
     if ( OpenClipboard(NULL) != 0 )
     {
@@ -32,7 +32,7 @@ bool WindowsClipboardToString(std::string &str)
     bool success = false;
     if ( OpenClipboard(NULL) != 0 )
     {
-        HANDLE clipboardData = GetClipboardData(CF_TEXT);
+        HANDLE clipboardData = GetClipboardData(CF_UNICODETEXT);
         if ( clipboardData != NULL )
         {
             LPVOID lockedData = GlobalLock(clipboardData);
@@ -41,14 +41,11 @@ bool WindowsClipboardToString(std::string &str)
                 SIZE_T maxStringSize = GlobalSize(lockedData);
                 if ( maxStringSize != 0 )
                 {
-                    const char* cString = (const char*)lockedData;
-                    SIZE_T nulPos = 0;
-                    while ( nulPos < maxStringSize && cString[nulPos] != '\0' )
-                        nulPos++;
+                    const wchar_t* cString = (const wchar_t*)lockedData;
 
                     str.clear();
                     try {
-                        str.assign(cString, (size_t)nulPos);
+                        str = icux::toUtf8(str);
                         success = true;
                     }
                     catch ( std::exception ) {}
@@ -64,6 +61,13 @@ bool WindowsClipboardToString(std::string &str)
 PasteTileNode::~PasteTileNode()
 {
 
+}
+
+PasteUnitNode::PasteUnitNode(ChkUnit &unitRef)
+{
+    std::memcpy(&unit, &unitRef, UNIT_STRUCT_SIZE);
+    xc = unit.xc;
+    yc = unit.yc;
 }
 
 PasteUnitNode::~PasteUnitNode()
@@ -177,7 +181,7 @@ void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 
 void Clipboard::addQuickUnit(ChkUnit &unitRef)
 {
-    quickUnits.insert(quickUnits.end(), PasteUnitNode(unitRef));
+    quickUnits.push_back(unitRef);
 }
 
 void Clipboard::beginPasting(bool isQuickPaste)

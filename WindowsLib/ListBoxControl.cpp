@@ -31,7 +31,7 @@ namespace WinLib {
         if ( scrollBar )
             style |= WS_VSCROLL;
 
-        return WindowControl::CreateControl( WS_EX_CLIENTEDGE|LVS_EX_DOUBLEBUFFER, WC_LISTBOX, NULL, style,
+        return WindowControl::CreateControl( WS_EX_CLIENTEDGE|LVS_EX_DOUBLEBUFFER, WC_LISTBOX, "", style,
                                              x, y, width, height, hParent, (HMENU)id, true );
     }
 
@@ -51,9 +51,9 @@ namespace WinLib {
 
     int ListBoxControl::AddString(const std::string &str)
     {
-#ifdef WINDOWS_UNICODE
+#ifdef WINDOWS_UTF16
         std::wstring wStr = icux::toUtf16(str);
-        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)str.c_str());
+        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)wStr.c_str());
 #else
         LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)str.c_str());
 #endif
@@ -74,7 +74,7 @@ namespace WinLib {
 
     bool ListBoxControl::InsertString(int index, const std::string &string)
     {
-#ifdef WINDOWS_UNICODE
+#ifdef WINDOWS_UTF16
         std::wstring wString = icux::toUtf16(string);
         LRESULT result = SendMessage(getHandle(), LB_INSERTSTRING, (WPARAM)index, (LPARAM)wString.c_str());
 #else
@@ -196,34 +196,24 @@ namespace WinLib {
             if ( index < numSel ) // Index must be within the amount of items selected
             {
                 int arraySize = index+1;
-                int* selections = nullptr;
-                try { selections = new int[arraySize]; } // Need space for this index and all items before
-                catch ( std::bad_alloc ) { return false; }
-                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
+                std::unique_ptr<int> selections = std::unique_ptr<int>(new int[arraySize]);
+                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
-                    int selectedItem = selections[index];
-                    delete[] selections;
+                    int selectedItem = selections.get()[index];
                     result = SendMessage(getHandle(), LB_GETTEXTLEN, (WPARAM)selectedItem, 0);
                     if ( result != LB_ERR )
                     {
                         int textLength = 1+(int)result;
-                        char* text = nullptr;
-                        try { text = new char[textLength]; }
-                        catch ( std::bad_alloc ) { return false; }
-                        result = SendMessage(getHandle(), LB_GETTEXT, (WPARAM)selectedItem, (LPARAM)text);
+                        std::unique_ptr<TCHAR> text = std::unique_ptr<TCHAR>(new TCHAR[textLength]);
+                        result = SendMessage(getHandle(), LB_GETTEXT, (WPARAM)selectedItem, (LPARAM)text.get());
                         if ( result != LB_ERR )
                         {
-                            str = text;
-                            delete[] text;
+                            str = icux::toUtf8(text.get());
                             return true;
                         }
-                        else
-                            delete[] text;
                     }
                 }
-                else
-                    delete[] selections;
             }
         }
         return false;
@@ -238,18 +228,13 @@ namespace WinLib {
             if ( result != LB_ERR )
             {
                 int textLength = 1 + (int)result;
-                char* text = nullptr;
-                try { text = new char[textLength]; }
-                catch ( std::bad_alloc ) { return false; }
-                result = SendMessage(getHandle(), LB_GETTEXT, (WPARAM)selectedItem, (LPARAM)text);
+                std::unique_ptr<TCHAR> text = std::unique_ptr<TCHAR>(new TCHAR[textLength]);
+                result = SendMessage(getHandle(), LB_GETTEXT, (WPARAM)selectedItem, (LPARAM)text.get());
                 if ( result != LB_ERR )
                 {
-                    str = text;
-                    delete[] text;
+                    str = icux::toUtf8(text.get());
                     return true;
                 }
-                else
-                    delete[] text;
             }
         }
         return false;

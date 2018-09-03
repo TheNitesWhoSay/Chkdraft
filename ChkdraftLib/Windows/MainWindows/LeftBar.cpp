@@ -171,7 +171,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, IDR_MAIN_TREE) )
                 {
                     SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-                    mainTree.unitTree.UpdateUnitNames(DefaultUnitDisplayName);
+                    mainTree.unitTree.UpdateUnitNames(DefaultUnitDisplayNames);
                     mainTree.BuildMainTree();
                 }
             }

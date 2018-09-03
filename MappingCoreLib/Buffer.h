@@ -2,13 +2,14 @@
 #define BUFFER_H
 #include "Basics.h"
 #include <stdexcept>
+#include <memory>
 
 class buffer
 {
     public:
 
 /* Constructors */  buffer();
-                    buffer(const char* bufferTitle);
+                    buffer(const std::string &bufferTitle);
                     buffer(u32 bufferTitleVal);
                     buffer(const buffer &rhs);
 
@@ -52,10 +53,10 @@ class buffer
 
 /*   Mutators   */  // Adds data onto the end of the buffer
                     template <typename valueType>
-                        bool add(valueType value);
+                        bool add(const valueType &value);
                     template <typename valueType>
-                        bool add(valueType value, u32 amount);
-                    bool addStr(std::string chunk);
+                        bool add(const valueType &value, u32 amount);
+                    bool addStr(const std::string &chunk);
                     bool addStr(const char* chunk, u32 chunkSize);
 
                     // Inserts data at a position in the buffer
@@ -86,7 +87,7 @@ class buffer
                     bool takeAllData(buffer& source);
 
                     // Gives the section a new name
-                    bool setTitle(const char* newTitle);
+                    bool setTitle(const std::string &newTitle);
                     bool setTitle(u32 newTitle);
 
                     // Deletes a part of the buffer
@@ -104,8 +105,8 @@ class buffer
                     // Grabs all bytes from position to position+(length-1) from src and places them in this buffer
                     bool extract(buffer &src, u32 position, u32 length);
 
-                    // Converts the buffer to raw data, be sure to free memory if successful
-                    bool serialize(void* &destData); // First four bytes: bufTitle, second four: sizeUsed, after that is sizeUsed bytes of data
+                    // Converts the buffer to raw data
+                    std::shared_ptr<void> serialize(); // First four bytes: bufTitle, second four: sizeUsed, after that is sizeUsed bytes of data
 
                     // Converts raw data to buffer data, be sure to free any allocated data afterwards
                     bool deserialize(const void* incomingData); // First four bytes: bufTitle, second four: sizeUsed, after is sizeUsed bytes of data

@@ -3,7 +3,11 @@
 #include <iostream>
 #include <utility>
 #include <cstring>
+#include <algorithm>
+#include "../CommanderLib/Logger.h"
 #define DEFAULT_SIZE_MULTIPLIER 1.2
+
+extern Logger logger;
 
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
@@ -13,10 +17,13 @@ buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
         bufTitle[0] = '\0';
 }
 
-buffer::buffer(const char* bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
 {
-    std::strncpy(bufTitle, bufferTitle, 4);
-    bufTitle[4] = '\0';
+    u32 numChars = std::min((u32)bufferTitle.length(), (u32)4);
+    for ( u32 i=0; i<numChars; i++ )
+        bufTitle[i] = bufferTitle[i];
+    for ( u32 i=numChars+1; i<5; i++ )
+        bufTitle[i] = '\0';
 }
 
 buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0)
@@ -333,7 +340,7 @@ bool buffer::getNextUnquoted(char character, u32 start, u32 end, u32 &dest)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::add(valueType value)
+bool buffer::add(const valueType &value)
 {
     if ( this != nullptr && sizeUsed + sizeof(valueType) > sizeUsed )
     {
@@ -347,7 +354,7 @@ bool buffer::add(valueType value)
                 return false;
             }
         }
-
+        
         (valueType &)data[sizeUsed] = value;
         sizeUsed += sizeof(valueType);
 
@@ -357,7 +364,7 @@ bool buffer::add(valueType value)
 }
 
 template <typename valueType>
-bool buffer::add(valueType value, u32 amount)
+bool buffer::add(const valueType &value, u32 amount)
 {
     if ( this != nullptr && sizeof(valueType)*amount+sizeUsed > sizeUsed )
     {
@@ -381,9 +388,9 @@ bool buffer::add(valueType value, u32 amount)
 }
 /* End templates */ #else
 
-bool buffer::addStr(std::string chunk)
+bool buffer::addStr(const std::string &chunk)
 {
-    return this->addStr(chunk.c_str(), chunk.length());
+    return addStr(chunk.c_str(), chunk.size());
 }
 
 bool buffer::addStr(const char* chunk, u32 chunkSize)
@@ -627,14 +634,9 @@ bool buffer::swapStr(u32 location1, u32 location2, u32 swapSize)
 {
     if ( this != nullptr && location1+swapSize <= sizeUsed && location2+swapSize <= sizeUsed )
     {
-        char* temp;
-        try {
-            temp = new char[swapSize];
-        } catch ( std::bad_alloc ) {
-            return false;
-        }
-        std::memcpy(temp, &data[location1], swapSize);
-        std::memcpy(&data[location2], temp, swapSize);
+        std::unique_ptr<char> temp = std::unique_ptr<char>(new char[swapSize]);
+        std::memcpy(temp.get(), &data[location1], swapSize);
+        std::memcpy(&data[location2], temp.get(), swapSize);
         return true;
     }
     return false;
@@ -675,12 +677,15 @@ bool buffer::takeAllData(buffer& source)
     return false;
 }
 
-bool buffer::setTitle(const char* newTitle)
+bool buffer::setTitle(const std::string &newTitle)
 {
     if ( this != nullptr )
     {
-        std::strncpy(bufTitle, newTitle, 4);
-        bufTitle[4] = '\0';
+        u32 numChars = std::min((u32)newTitle.length(), (u32)4);
+        for ( u32 i=0; i<numChars; i++ )
+            bufTitle[i] = newTitle[i];
+        for ( u32 i=numChars+1; i<5; i++ )
+            bufTitle[i] = '\0';
         return true;
     }
     else
@@ -852,27 +857,20 @@ bool buffer::extract(buffer &src, u32 position, u32 length)
     return false;
 }
 
-bool buffer::serialize(void* &destData)
+std::shared_ptr<void> buffer::serialize()
 {
     if ( this != nullptr )
     {
-        char* rawData = nullptr;
-        try {
-            rawData = new char[sizeUsed+8];
-        } catch ( std::bad_alloc ) {
-            destData = nullptr;
-            return false;
-        }
-
+        std::shared_ptr<void> rawDataBuf = std::shared_ptr<void>(new u8[sizeUsed+8]);
+        u8* rawData = (u8*)rawDataBuf.get();
         (u32&)rawData[0] = (u32&)bufTitle;
         (u32&)rawData[4] = sizeUsed;
         if ( sizeUsed > 0 )
             std::memcpy(&rawData[8], data, sizeUsed);
 
-        destData = (void*)rawData;
-        return true;
+        return rawDataBuf;
     }
-    return false;
+    return nullptr;
 }
 
 bool buffer::deserialize(const void* incomingData)

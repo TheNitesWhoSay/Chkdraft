@@ -24,10 +24,10 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         MapFile();
         virtual ~MapFile();
 
-        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr fileBrowser = defaultSaveMapBrowser);
+        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr fileBrowser = getDefaultSaveMapBrowser());
 
-        bool LoadMapFile(const std::string &filePath, FileBrowserPtr fileBrowser = defaultSaveMapBrowser); // If you're not providing a path, pass in an empty string
-        bool LoadMapFile(FileBrowserPtr fileBrowser = defaultSaveMapBrowser);
+        bool LoadMapFile(std::string &filePath); // If you're not providing a path, pass in an empty string
+        bool LoadMapFile(FileBrowserPtr fileBrowser = getDefaultOpenMapBrowser());
 
         void SetSaveType(SaveType newSaveType);
 
@@ -50,10 +50,14 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         bool IsInVirtualWavList(const std::string &wavMpqPath);
 
         std::string GetFileName();
-        std::string GetFilePath();
+        virtual const std::string &getFilePath() const;
+
+        static FileBrowserPtr getDefaultOpenMapBrowser();
+        static FileBrowserPtr getDefaultSaveMapBrowser();
 
     private:
         std::string mapFilePath;
+        std::string temporaryMpqPath;
         MpqFile temporaryMpq;
         SaveType saveType;
         std::vector<ModifiedAssetPtr> modifiedAssets; // A record of all MPQ assets changes since the last save
@@ -62,12 +66,9 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         static std::map<u32, std::string> virtualWavTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
-        bool OpenMapFile(const std::string &filePath, FileBrowserPtr fileBrowser = defaultOpenMapBrowser);
-        bool GetTemporaryMpqPath(std::string &temporaryMpqFilePath);
+        bool OpenMapFile(std::string &filePath);
+        bool OpenTemporaryMpq();
         bool ProcessModifiedAssets(bool updateListfile);
-
-        static FileBrowserPtr defaultOpenMapBrowser;
-        static FileBrowserPtr defaultSaveMapBrowser;
 };
 
 /** The types of files a map can be saved as, one

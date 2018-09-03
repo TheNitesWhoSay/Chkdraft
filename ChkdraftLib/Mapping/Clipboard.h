@@ -6,7 +6,7 @@
 #include "Undos/Undos.h"
 class GuiMap;
 
-void StringToWindowsClipboard(std::string &str);
+void StringToWindowsClipboard(const std::string &str);
 
 bool WindowsClipboardToString(std::string &str);
 
@@ -30,7 +30,7 @@ class PasteUnitNode
         s32 xc;
         s32 yc;
 
-        PasteUnitNode(ChkUnit &unitRef) { std::memcpy(&unit, &unitRef, UNIT_STRUCT_SIZE); xc = unit.xc; yc = unit.yc; }
+        PasteUnitNode(ChkUnit &unitRef);
         virtual ~PasteUnitNode();
 
     private:

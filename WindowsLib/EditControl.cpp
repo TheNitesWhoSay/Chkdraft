@@ -1,6 +1,7 @@
 #include "EditControl.h"
 #include <SimpleIcu.h>
 #include <type_traits>
+#include <memory>
 
 namespace WinLib {
 
@@ -70,14 +71,14 @@ namespace WinLib {
         {
             DWORD selStart = 0, selEnd = 0;
             ::SendMessage(getHandle(), EM_GETSEL, (WPARAM)&selStart, (WPARAM)&selEnd);
-            bool success = ::SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
+            bool success = WindowsItem::SetWinText(newText);
             if ( success )
                 ::SendMessage(getHandle(), EM_SETSEL, selStart, selEnd);
 
             return success;
         }
         else
-            return ::SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
+            return WindowsItem::SetWinText(newText) != 0;
     }
 
     bool EditControl::CreateNumberBuddy(int minimumValue, int maximumValue)
@@ -113,7 +114,7 @@ namespace WinLib {
     template <typename numType>
     bool EditControl::SetEditNum(numType num)
     {
-        return SetText(std::to_string(num).c_str());
+        return SetText(std::to_string(num));
     }
     template bool EditControl::SetEditNum<u8>(u8 num);
     template bool EditControl::SetEditNum<s8>(s8 num);
@@ -165,7 +166,7 @@ namespace WinLib {
         {
             SIZE strSize = { };
             RECT textRect = { };
-            if ( GetTextExtentPoint32A(hDC, text.c_str(), GetTextLength(), &strSize) == TRUE &&
+            if ( GetTextExtentPoint32(hDC, icux::toUistring(text).c_str(), GetTextLength(), &strSize) == TRUE &&
                  GetClientRect(getHandle(), &textRect) == TRUE &&
                  strSize.cx > (textRect.right-textRect.left) )
             {
@@ -315,9 +316,8 @@ namespace WinLib {
 
     bool EditControl::SetHexByteString(u8* bytes, u32 numBytes)
     {
-        char* byteString;
-        try { byteString = new char[numBytes*2+1]; }
-        catch ( std::bad_alloc ) { return false; }
+        std::unique_ptr<char> byteStringAlloc = std::unique_ptr<char>(new char[numBytes*2+1]);
+        char* byteString = byteStringAlloc.get();
 
         for ( u32 i=0; i<numBytes; i++ )
         {

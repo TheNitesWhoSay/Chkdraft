@@ -2,6 +2,8 @@
 #define CHKLOCATION_H
 #include "Basics.h"
 
+#pragma pack(push, 1)
+__declspec(align(1))
 struct ChkLocation // A location as found in a scenario.chk's MRGN section
 {
     s32 xc1;
@@ -17,6 +19,7 @@ struct ChkLocation // A location as found in a scenario.chk's MRGN section
         #define LOC_ELEVATION_MEDAIR        BIT_4
         #define LOC_ELEVATION_HIGHAIR       BIT_5
 };
+#pragma pack(pop)
 #define CHK_LOCATION_SIZE 20
 #define NUM_LOCATION_FIELDS 6
 #define LOC_FIELD_XC1         0

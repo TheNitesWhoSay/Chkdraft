@@ -1,7 +1,5 @@
 #ifndef SIMPLEICU_H
 #define SIMPLEICU_H
-#include "unicode/unistr.h"
-#include "unicode/ustring.h"
 #include <memory>
 #include <string>
 
@@ -61,7 +59,9 @@ namespace icux {
         typedef std::string uistring; // The type of a string that can be rendered in the UI using system functions, uistrings should not persist beyond the scope of the system function call [UTF-8]
     #endif
 
-    constexpr codepoint nullChar = '\0'; // It is fairly safe to assume that a null character will be a single codepoint
+    constexpr char u8NullChar = '\0';
+    constexpr wchar_t u16NullChar = '\0';
+    constexpr codepoint nullChar = '\0'; // It is fairly safe to assume that a null character will always be a single codepoint
 
 
     /**

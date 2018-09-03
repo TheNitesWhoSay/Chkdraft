@@ -82,11 +82,11 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
 
         textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
         editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, EDIT_MAPTITLE);
-        editMapTitle.SetText(mapTitle.c_str());
+        editMapTitle.SetText(mapTitle);
 
         textMapDescription.CreateThis(hMapProperties, 5, 60, 100, 20, "Map Description", 0);
         editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, EDIT_MAPDESCRIPTION);
-        editMapDescription.SetText(mapDescription.c_str());
+        editMapDescription.SetText(mapDescription);
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
@@ -97,10 +97,10 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u32 windowId)
         dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, CB_NEWMAPTERRAIN, initTerrains[currTileset], defaultFont);
         textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
         editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, EDIT_NEWMAPWIDTH);
-        editMapWidth.SetText(sCurrWidth.c_str());
+        editMapWidth.SetText(sCurrWidth);
         textNewMapHeight.CreateThis(hMapProperties, 440, 185, 50, 20, "Height", 0);
         editMapHeight.CreateThis(hMapProperties, 440, 205, 50, 20, false, EDIT_NEWMAPHEIGHT);
-        editMapHeight.SetText(sCurrHeight.c_str());
+        editMapHeight.SetText(sCurrHeight);
         buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", BUTTON_APPLY);
 
         const char* sPlayers[] = { "Player 1", "Player 2" , "Player 3" , "Player 4",
@@ -154,16 +154,16 @@ void MapPropertiesWindow::RefreshWindow()
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
         
-        editMapTitle.SetText(mapTitle.c_str());
-        editMapDescription.SetText(mapDescription.c_str());
+        editMapTitle.SetText(mapTitle);
+        editMapDescription.SetText(mapDescription);
         possibleTitleUpdate = false;
         possibleDescriptionUpdate = false;
         dropMapTileset.SetSel(tileset);
         dropMapTileset.ClearEditSel();
         dropNewMapTerrain.SetSel(0);
         dropNewMapTerrain.ClearEditSel();
-        editMapWidth.SetText(sCurrWidth.c_str());
-        editMapHeight.SetText(sCurrHeight.c_str());
+        editMapWidth.SetText(sCurrWidth);
+        editMapHeight.SetText(sCurrHeight);
                     
         for ( int player=0; player<12; player++ )
         {
@@ -231,7 +231,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, 0) != CB_ERR );
 
                 for ( auto tileset : initTerrains.at(currTileset) )
-                    SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)tileset.c_str());
+                    SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(tileset).c_str());
 
                 SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
                 SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, 0);

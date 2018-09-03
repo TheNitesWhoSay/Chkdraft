@@ -183,7 +183,7 @@ void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
         else
             ssPlayer << "Player " << player+1;
 
-        textPlayer[player].CreateThis(hWnd, 215, 260+21*player, 50, 20, ssPlayer.str().c_str(), ID_TEXT_UPGRADEP1+player);
+        textPlayer[player].CreateThis(hWnd, 215, 260+21*player, 50, 20, ssPlayer.str(), ID_TEXT_UPGRADEP1+player);
         checkPlayerDefault[player].CreateThis(hWnd, 276, 260+21*player, 52, 20, false, "Default", ID_CHECK_DEFAULTUPGRADEP1+player);
         textPlayerStartLevel[player].CreateThis(hWnd, 337, 260+21*player, 60, 20, "Start Level", ID_TEXT_P1STARTLEVEL+player);
         editPlayerStartLevel[player].CreateThis(hWnd, 398, 260+21*player, 56, 21, false, ID_EDIT_P1STARTLEVEL+player);

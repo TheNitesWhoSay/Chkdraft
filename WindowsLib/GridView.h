@@ -3,6 +3,7 @@
 #include "ListViewControl.h"
 #include "GridItem.h"
 #include "EditControl.h"
+#include <string>
 
 namespace WinLib {
 
@@ -73,10 +74,10 @@ namespace WinLib {
             bool resize(int numRows, int numColumns);
             void AutoSizeColumn(int x, int minWidth, int maxWidth);
             void DragSelectTo(int x, int y);
-            virtual void StartEditing(int xClick, int yClick, char initChar); // Pass -1, -1 if starting via typing, '\0' if by click
+            virtual void StartEditing(int xClick, int yClick, const std::string &initChar); // Pass -1, -1 if starting via typing, "" if by click
             void UpdateCaretPos(int xClick, int yClick);
             void SetCaretPos(int newCaretPos);
-            virtual void Char(WPARAM wParam);
+            virtual void Char(const std::string &character);
             virtual void KeyDown(WPARAM wParam);
 
             /** Called when the GridView alters text in the edit box manually,

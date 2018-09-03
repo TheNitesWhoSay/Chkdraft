@@ -163,8 +163,8 @@ bool LitWindow::RunLit(ScenarioPtr map)
             {
                 int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
                 buffer litTrigs("litT");
-                bool foundLitText = PatientFindFile(textPath.c_str(), 4, waitTimes) && FileToString(textPath, litText);
-                bool foundLitTrigs = FileToBuffer(trigPath.c_str(), litTrigs);
+                bool foundLitText = PatientFindFile(textPath, 4, waitTimes) && FileToString(textPath, litText);
+                bool foundLitTrigs = FileToBuffer(trigPath, litTrigs);
                 RemoveFiles(textPath, trigPath, litBatPath);
                 if ( foundLitTrigs )
                 {
@@ -181,7 +181,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
                     foundLitText ? WinLib::Message(litText, "LIT") : Error("LIT trigger output file was not found or could not be read.");
             }
             else
-                Error(std::string("ShellExecute on LIT.bat failed: " + std::to_string(resultCode)).c_str());
+                Error("ShellExecute on LIT.bat failed: " + std::to_string(resultCode));
         }
         else
             Error("Failed to write LIT.bat");

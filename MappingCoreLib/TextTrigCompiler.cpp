@@ -34,29 +34,30 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
         CleanText(text);
 
         Section TRIG(new buffer((u32)SectionId::TRIG));
-        char error[maxErrorMessageSize];
+        std::stringstream compilerError;
+        std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, *TRIG, error) )
+        if ( ParseTriggers(text, *TRIG, compilerError) )
         {
-            if ( BuildNewStringTable(chk) )
+            if ( BuildNewStringTable(chk, stringTableError) )
             {
                 if ( !chk->HasTrigSection() )
                 {
                     if ( chk->AddSection(TRIG) )
                         return true;
                     else
-                        std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+                        compilerError << "No text errors, but compilation must abort due to low memory.";
                 }
                 else if ( chk->ReplaceTrigSection(TRIG) )
                     return true;
                 else
-                    std::snprintf(error, sizeof(error), "No text errors, but TRIG could not be overwritten.\n\n%s", LastError);
+                    compilerError << "No text errors, but TRIG could not be overwritten.";
             }
             else
-                std::snprintf(error, sizeof(error), "No text errors, but compilation must abort.\n\n%s", LastError);
+                compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
         }
 
-        CHKD_ERR(error);
+        CHKD_ERR(compilerError.str());
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
@@ -77,18 +78,19 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
     {
         CleanText(text);
         Section TRIG(new buffer((u32)SectionId::TRIG));
-        char error[maxErrorMessageSize];
+        std::stringstream compilerError;
+        std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, *TRIG, error) )
+        if ( ParseTriggers(text, *TRIG, compilerError) )
         {
-            if ( BuildNewStringTable(chk) )
+            if ( BuildNewStringTable(chk, stringTableError) )
             {
                 if ( !chk->HasTrigSection() )
                 {
                     if ( chk->AddSection(TRIG) )
                         return true;
                     else
-                        std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+                        compilerError << "No text errors, but compilation must abort due to low memory.";
                 }
                 else
                 {
@@ -106,14 +108,14 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
                         return true;
                     }
                     else
-                        std::snprintf(error, sizeof(error), "No text errors, but trigger could not be transferred.\n\n%s", LastError);
+                        compilerError << "No text errors, but trigger could not be transferred.";
                 }
             }
             else
-                std::snprintf(error, sizeof(error), "No text errors, but compilation must abort due to low memory.\n\n%s", LastError);
+                compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
         }
 
-        CHKD_ERR(error);
+        CHKD_ERR(compilerError.str());
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
@@ -159,12 +161,16 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
         txcd.addStr(conditionArgText.c_str(), conditionArgText.size()) &&
         txcd.add<u8>(0) )
     {
-        char error[256] = { };
+        std::stringstream argumentError;
         u32 argsLeft = numConditionArgs((ConditionId)condition.condition) - argMap[argNum];
-        if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (ConditionId)condition.condition, argsLeft, error) )
+        if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (ConditionId)condition.condition, argsLeft, argumentError) )
             return true;
         else
-            CHKD_ERR("Unable to parse condition.\n\n%s", error);
+        {
+            std::stringstream errorMessage("Unable to parse condition.");
+            errorMessage << std::endl << std::endl << argumentError.str();
+            CHKD_ERR(errorMessage.str());
+        }
     }
     return false;
 }
@@ -209,12 +215,16 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
         txac.addStr(actionArgText.c_str(), actionArgText.size()) &&
         txac.add<u8>(0) )
     {
-        char error[256] = {};
+        std::stringstream argumentError;
         u32 argsLeft = numActionArgs((ActionId)action.action) - argMap[argNum];
-        if ( ParseActionArg(txac, action, 0, txac.size() - 1, (ActionId)action.action, argsLeft, error) )
+        if ( ParseActionArg(txac, action, 0, txac.size() - 1, (ActionId)action.action, argsLeft, argumentError) )
             return true;
         else
-            CHKD_ERR("Unable to parse action.\n\n%s", error);
+        {
+            std::stringstream errorMessage("Unable to parse action.");
+            errorMessage << std::endl << std::endl << argumentError.str();
+            CHKD_ERR(errorMessage.str());
+        }
     }
     return false;
 }
@@ -443,7 +453,7 @@ void TextTrigCompiler::CleanText(buffer &text)
     text.overwrite((const char*)dest.getPtr(0), dest.size());
 }
 
-bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
+bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringstream &error)
 {
     text.add<u8>(0); // Add a terminating null character
 
@@ -570,7 +580,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
 
                 if ( !output.add<Trigger&>(currTrig) )
                 {
-                    std::snprintf(error, maxErrorMessageSize, "Failed to add trigger.\n\n%s", LastError);
+                    error << "Failed to add trigger." << std::endl << std::endl;
                     return false;
                 }
 
@@ -578,7 +588,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
                 expecting = 0;
                 if ( text.has('\0', pos) ) // End of Text
                 {
-                    std::strcpy(error, "Success!");
+                    error << "Success!";
                     return true;
                 }
             }
@@ -589,7 +599,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, char *error)
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      trigger
     // or   %NULL
@@ -613,7 +623,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
             return false;
         }
     }
@@ -623,13 +633,13 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, char* 
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \"Trigger\" or End of Text", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \"Trigger\" or End of Text";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig)
+inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -666,20 +676,20 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, char* e
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Player Identifier", line);
+                error << "Line: " << line << std::endl << std::endl << "Expected: Player Identifier";
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \',\' or \')\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \',\' or \')\'";
             return false;
         }
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      {
     if ( text.has('{', pos) )
@@ -689,13 +699,13 @@ inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, char* e
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: '{'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: '{'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      conditions:
     // or   actions:
@@ -740,20 +750,20 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, char*
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+                error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \"Conditions\" or \"Actions\" or \"Flags\" or \'}\'";
             return false;
         }
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
     u32 &conditionEnd, u32 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
     Condition*& currCondition, Trigger &currTrig)
 {
@@ -781,7 +791,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
             {
                 if ( numConditions > NUM_TRIG_CONDITIONS )
                 {
-                    std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nCondition Max Exceeded!", line);
+                    error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                     return false;
                 }
                 currCondition = &currTrig.conditions[numConditions];
@@ -806,19 +816,19 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
                 }
                 else
                 {
-                    std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+                    error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
                     return false;
                 }
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Condition Name", line);
+                error << "Line: " << line << std::endl << std::endl << "Expected: Condition Name";
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
             return false;
         }
     }
@@ -842,7 +852,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
             return false;
         }
     }
@@ -856,7 +866,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
             return false;
         }
     }
@@ -871,7 +881,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
         {
             if ( numConditions > NUM_TRIG_CONDITIONS )
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nCondition Max Exceeded!", line);
+                error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                 return false;
             }
             currCondition = &currTrig.conditions[numConditions];
@@ -896,25 +906,25 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, char* 
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+                error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Condition Name", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Condition Name";
             return false;
         }
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
+inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
     Condition*& currCondition, ConditionId &conditionId)
 {
     //      );
@@ -924,7 +934,7 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
     {
         if ( argsLeft > 0 )
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Condition Argument", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Condition Argument";
             return false;
         }
 
@@ -942,58 +952,60 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, char* 
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \';\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
             return false;
         }
     }
     else if ( argsLeft == 0 )
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \')\'%u", line, pos);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
         return false;
     }
     else if ( argsLeft == 1 )
     {
         if ( text.getNextUnquoted(')', pos, argEnd) )
         {
-            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, error) )
+            std::stringstream argumentError;
+            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
             {
                 pos = argEnd;
                 argsLeft --;
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\n%s", line, LastError);
+                error << "Line: " << line << std::endl << std::endl << argumentError.str();
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \')\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
             return false;
         }
     }
     else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
     {
-        if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, error) )
+        std::stringstream argumentError;
+        if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
         {
             pos = argEnd+1;
             argsLeft --;
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\n%s", line, LastError);
+            error << "Line: " << line << std::endl << std::endl << argumentError.str();
             return false;
         }
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \',\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \',\'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      actions:
     // or   flags:
@@ -1016,15 +1028,15 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, char* e
     else
     {
         if ( text.has("ACTIONS", pos, 7) || text.has("FLAGS", pos, 5) )
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
         else
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \"Actions\" or \"Flags\" or '}'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \"Actions\" or \"Flags\" or '}'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
     u8 &flags, u32 &actionEnd, u32 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
     Action*& currAction, Trigger &currTrig)
 {
@@ -1046,7 +1058,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
             {
                 if ( numActions > NUM_TRIG_ACTIONS )
                 {
-                    std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nAction Max Exceeded!", line);
+                    error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                     return false;
                 }
                 currAction = &currTrig.actions[numActions];
@@ -1062,7 +1074,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Action Name or \'}\'", line);
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
                 return false;
             }
         }
@@ -1082,7 +1094,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
             return false;
         }
     }
@@ -1097,7 +1109,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
         {
             if ( numActions > NUM_TRIG_ACTIONS )
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nAction Max Exceeded!", line);
+                error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                 return false;
             }
             currAction = &currTrig.actions[numActions];
@@ -1113,19 +1125,19 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, char*
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Action Name or \'}\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
             return false;
         }
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'(\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
     u32 &argsLeft, u32 &argEnd, Action*& currAction, ActionId &actionId)
 {
     //      );
@@ -1135,7 +1147,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
     {
         if ( argsLeft > 0 )
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Action Argument", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument";
             return false;
         }
 
@@ -1153,59 +1165,61 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, char*
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \';\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
             return false;
         }
     }
     else if ( argsLeft == 0 )
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \')\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
         return false;
     }
     else if ( argsLeft == 1 )
     {
         if ( text.getNextUnquoted(')', pos, argEnd) )
         {
-            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, error) )
+            std::stringstream argumentError;
+            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
             {
                 pos = argEnd;
                 argsLeft --;
             }
             else
             {
-                std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
                 return false;
             }
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \')\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
             return false;
         }
     }
     else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
     {
-        if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, error) )
+        std::stringstream argumentError;
+        if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
         {
             pos = argEnd+1;
             argsLeft --;
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Action Argument\n\n%s", line, LastError);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
             return false;
         }
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Additional Arguments\n\n%s", line, LastError);
+        error << "Line: " << line << std::endl << std::endl << "Expected: Additional Arguments";
         return false;
     }
 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      }
     // or   flags:,
@@ -1222,15 +1236,15 @@ inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, char* 
     else
     {
         if ( text.has("FLAGS", pos, 5) )
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \':\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
         else
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \"Flags\" or \'}\'", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: \"Flags\" or \'}\'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, char*error, u32 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
     u32 &flagsEnd, Trigger& currTrig)
 {
     //      ;
@@ -1249,19 +1263,19 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, char*er
         }
         else
         {
-            std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: Binary Execution Flags (32-bit max).", line);
+            error << "Line: " << line << std::endl << std::endl << "Expected: Binary Execution Flags (32-bit max).";
             return false;
         }
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \';\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
         return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting)
 {
     //      }
     if ( text.has('}', pos) )
@@ -1271,7 +1285,7 @@ inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, char
     }
     else
     {
-        std::snprintf(error, maxErrorMessageSize, "Line: %u\n\nExpected: \'}\'", line);
+        error << "Line: " << line << std::endl << std::endl << "Expected: \'}\'";
         return false;
     }
     return true;
@@ -1894,7 +1908,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, u32 pos, u32 end, bool diabled,
     return id != ActionId::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, char *error)
+bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
@@ -2008,7 +2022,7 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
     if ( condition )                                        \
         return true;                                        \
     else {                                                  \
-        std::snprintf(LastError, maxErrorMessageSize, msg); \
+        error << msg;                                       \
         return false;                                       \
     }
 
@@ -2087,7 +2101,7 @@ ParseConditionDeathOffsetField: // 4 bytes
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, char *error)
+bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
@@ -4018,7 +4032,7 @@ bool TextTrigCompiler::PrepScriptTable(ScData &scData)
     return true;
 }
 
-bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
+bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map, std::stringstream &error)
 {
     std::vector<StringTableNode> standardStrList;
     std::vector<StringTableNode> extendedStrList;
@@ -4032,7 +4046,7 @@ bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map)
                 standardStrList.push_back(str);
         }
     } catch ( std::bad_alloc ) {
-        std::snprintf(LastError, maxErrorMessageSize, "Out of memory!");
+        error << "Out of memory!";
         return false;
     }
 

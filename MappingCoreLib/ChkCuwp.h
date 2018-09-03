@@ -2,6 +2,8 @@
 #define CHKCUWP_H
 #include "Basics.h"
 
+#pragma pack(push, 1)
+__declspec(align(1))
 class ChkCuwp
 {
     public:
@@ -15,8 +17,6 @@ class ChkCuwp
         u16 numInHanger;
         u16 flags;
         u32 unknown;
-
-        virtual ~ChkCuwp();
 
         bool IsCloakValid();
         bool IsBurrowValid();
@@ -56,6 +56,7 @@ class ChkCuwp
         void SetUnitIsHallucinated(bool unitIsHallucinated);
         void SetUnitIsInvincible(bool unitIsInvincible);
 };
+#pragma pack(pop)
 
 enum class ValidCUWPSpecPropFlags : uint16_t
 {

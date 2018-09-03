@@ -61,9 +61,9 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
         for ( int i = 0; i < cuwpCapacity; i++ )
         {
             if ( CM->IsCuwpUsed(i) )
-                cuwpTree.InsertTreeItem(NULL, std::string("CUWP #" + std::to_string(i)).c_str(), i);
+                cuwpTree.InsertTreeItem(NULL, "CUWP #" + std::to_string(i), i);
             else
-                cuwpTree.InsertTreeItem(NULL, std::string("(#" + std::to_string(i) + ")").c_str(), i);
+                cuwpTree.InsertTreeItem(NULL, "(#" + std::to_string(i) + ")", i);
         }
     }
 

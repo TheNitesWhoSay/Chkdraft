@@ -33,9 +33,9 @@ void LocationTree::RebuildLocationTree()
                 (loc->stringNum != 0 || loc->xc1 != 0 || loc->xc2 != 0 || loc->yc1 != 0 || loc->xc2 != 0 || loc->elevation != 0) )
             {
                 if ( CM->getLocationName((u16)i, locName) )
-                    InsertLocationItem(locName.c_str(), i);
+                    InsertLocationItem(locName, i);
                 else
-                    InsertLocationItem(std::string("Location " + std::to_string(i)).c_str(), i);
+                    InsertLocationItem("Location " + std::to_string(i), i);
             }
         }
     }

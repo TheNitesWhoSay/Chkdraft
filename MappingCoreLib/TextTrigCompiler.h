@@ -7,6 +7,8 @@
 #include "StringUsage.h"
 #include "StringTableNode.h"
 #include <unordered_map>
+#include <sstream>
+#include <string>
 
 struct LocationTableNode {
     RawString locationName;
@@ -63,34 +65,34 @@ class TextTrigCompiler : public StaticTrigComponentParser
         void ClearCompiler(); // Clears data loaded for a run of the compiler
         void CleanText(buffer& text); // Remove spacing and standardize line endings
 
-        bool ParseTriggers(buffer& text, buffer& output, char* error); // Parse trigger, generate a trig section in buffer output
-        inline bool ParsePartZero(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartOne(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig);
-        inline bool ParsePartTwo(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartThree(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartFour(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+        bool ParseTriggers(buffer& text, buffer& output, std::stringstream &error); // Parse trigger, generate a trig section in buffer output
+        inline bool ParsePartZero(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartOne(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &playerEnd, u32 &lineEnd, Trigger &currTrig);
+        inline bool ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartThree(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartFour(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
             u32 &conditionEnd, u32 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
             Condition*& currCondition, Trigger &currTrig);
-        inline bool ParsePartFive(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
+        inline bool ParsePartFive(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting, u32 &argsLeft, u32 &argEnd,
             Condition*& currCondition, ConditionId &conditionId);
-        inline bool ParsePartSix(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartSeven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+        inline bool ParsePartSix(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
             u8 &flags, u32 &actionEnd, u32 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
             Action*& currAction, Trigger &currTrig);
-        inline bool ParsePartEight(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting,
+        inline bool ParsePartEight(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
             u32 &argsLeft, u32 &argEnd, Action*& currAction, ActionId &actionId);
-        inline bool ParsePartNine(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartTen(buffer& text, buffer& output, char*error, u32 &pos, u32 &line, u32 &expecting,
+        inline bool ParsePartNine(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartTen(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting,
             u32 &flagsEnd, Trigger& currTrig);
-        inline bool ParsePartEleven(buffer& text, buffer& output, char* error, u32 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, u32 &pos, u32 &line, u32 &expecting);
 
         bool ParseExecutingPlayer(buffer &text, Trigger &currTrig, u32 pos, u32 end); // Parse a player that the trigger is executed by
         bool ParseConditionName(buffer &arg, ConditionId &conditionId);
         bool ParseCondition(buffer &text, u32 pos, u32 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
         bool ParseActionName(buffer &arg, ActionId &id);
         bool ParseAction(buffer& text, u32 pos, u32 end, bool disabled, ActionId &id, u8& flags, u32& argsLeft); // Find the equivilant actionID
-        bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, char* error); // Parse an argument belonging to a condition
-        bool ParseActionArg(buffer& text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, char* error); // Parse an argument belonging to an action
+        bool ParseConditionArg(buffer& text, Condition& currCondition, u32 pos, u32 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to a condition
+        bool ParseActionArg(buffer& text, Action& currAction, u32 pos, u32 end, ActionId actionId, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to an action
         bool ParseExecutionFlags(buffer& text, u32 pos, u32 end, u32& flags);
 
         bool ParseString(buffer &text, u32& dest, u32 pos, u32 end); // Find a given string in the map, prepare to add it if necessary
@@ -124,7 +126,6 @@ class TextTrigCompiler : public StaticTrigComponentParser
         std::vector<StringTableNode> addedStrings; // Forward list of strings added during compilation
         StringUsageTable strUsage; // Table of strings currently used in the map
         StringUsageTable extendedStrUsage; // Table of extended strings currently used in the map
-        char LastError[maxErrorMessageSize];
 
         bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
@@ -133,7 +134,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool PrepScriptTable(ScData &scData); // Fills scriptTable
         bool PrepStringTable(ScenarioPtr map); // Fills stringTable
 
-        bool BuildNewStringTable(ScenarioPtr chk); // Builds a new STR section using stringTable and addedStrings
+        bool BuildNewStringTable(ScenarioPtr chk, std::stringstream &error); // Builds a new STR section using stringTable and addedStrings
 };
 
 #endif

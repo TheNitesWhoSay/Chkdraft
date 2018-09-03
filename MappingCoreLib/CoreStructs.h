@@ -12,4 +12,9 @@
 #include "ModifiedAsset.h"
 #include "StringTableNode.h"
 
+/**
+    Note that structs/classes with any virtual functions have an extra eight-bytes,
+    So no virtual functions can be present for structures intending to have 1-1 serialization
+*/
+
 #endif

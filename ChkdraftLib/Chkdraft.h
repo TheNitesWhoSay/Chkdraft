@@ -18,7 +18,6 @@ class Chkdraft : public WinLib::ClassWindow
 /*  Main Items  */  ScData scData; // Data from StarCraft files
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
-                    Logger logger; // Primary logger
 
 /* Dialog Boxes */  NewMap newMap; // New map DialogBox
 
@@ -81,6 +80,8 @@ class Chkdraft : public WinLib::ClassWindow
                     void ComboEditChanged(HWND hCombo, u16 comboId);
                     void ComboSelChanged(HWND hCombo, u16 comboId);
 };
+
+extern Logger logger;
 
 /** The main instance of Chkdraft.
     By signaling that chkd is declared externally here,

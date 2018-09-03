@@ -374,7 +374,7 @@ public:
 /*   File IO    */  bool ParseScenario(buffer &chk); // Parses supplied scenario file data
                     bool CreateNew(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
                     void WriteFile(FILE* pFile); // Writes all sections to the supplied file
-                    bool Serialize(void* &data); /** Writes all sections to a buffer in memory as it would to a .chk file
+                    std::shared_ptr<void> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                                      includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
                     bool Deserialize(const void* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
 

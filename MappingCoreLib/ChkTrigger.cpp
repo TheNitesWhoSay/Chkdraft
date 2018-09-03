@@ -8,11 +8,6 @@ Trigger::Trigger() : internalData(0)
     memset(players, 0, NUM_TRIG_PLAYERS);
 }
 
-Trigger::~Trigger()
-{
-
-}
-
 Condition& Trigger::condition(u8 index)
 {
     if ( index < NUM_TRIG_CONDITIONS )

@@ -1,4 +1,5 @@
 #include "ListViewControl.h"
+#include "../CommanderLib/Logger.h"
 #include <SimpleIcu.h>
 #include <iostream>
 
@@ -87,7 +88,7 @@ namespace WinLib {
 
     void ListViewControl::SetItemText(int row, int column, int value)
     {
-        SetItemText(row, column, std::to_string(value).c_str());
+        SetItemText(row, column, std::to_string(value));
     }
 
     void ListViewControl::SetItemData(int row, int column, u32 data)

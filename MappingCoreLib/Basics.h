@@ -264,38 +264,38 @@ enum class PlayerUnitSettingsDataLoc {
 #define PlayerTechSettingsDataLocDefaultReserached(isExpansion) (isExpansion?1100:600)
 #define PlayerTechSettingsDataLocPlayerUsesDefault(isExpansion, player) (isExpansion?(1144+44*(u32)player):(624+24*(u32)player))
 
-extern const char* DefaultUnitDisplayName[233];
+extern const std::vector<std::string> DefaultUnitDisplayNames;
 
-extern const char* LegacyTextTrigDisplayName[233];
+extern const std::vector<std::string> LegacyTextTrigDisplayNames;
 
-extern const char* VirtualSoundFiles[];
+extern const std::vector<std::string> VirtualSoundFiles;
 
 constexpr s32 NumUnitNames = 233;
 constexpr s32 NumRealUnits = 227;
 constexpr s32 NumVirtualSounds = 1143;
 
 enum class DatFilePriority : u32 {
-    MaximumPriority = u32_max,
-    PatchRt = 300,
+    MaximumPriority = 0,
+    PatchRt = 100,
     BrooDat = 200,
-    StarDat = 100,
-    MinimumPriority = 0
+    StarDat = 300,
+    MinimumPriority = u32_max
 };
 
 extern const std::string starCraftFileName;
 extern const std::string starDatFileName;
 extern const std::string brooDatFileName;
 extern const std::string patchRtFileName;
-extern const std::unordered_map<DatFilePriority, std::string> defaultStarCraftDatFiles;
+extern std::unordered_map<DatFilePriority, std::string> getDefaultStarCraftDatFiles();
 
-extern const std::map<std::string, std::string> mpqFilter;
-extern const std::map<std::string, std::string> openMapFilters;
-extern const std::map<std::string, std::string> saveMapFilters;
-extern const std::map<std::string, std::string> saveTextFilters;
-extern const std::map<std::string, std::string> soundFilters;
-extern const std::map<std::string, std::string> starDatFilter;
-extern const std::map<std::string, std::string> brooDatFilter;
-extern const std::map<std::string, std::string> patchRtFilter;
-extern const std::map<std::string, std::string> starCraftExeFilter;
+extern std::vector<std::pair<std::string, std::string>> getMpqFilter();
+extern std::vector<std::pair<std::string, std::string>> getOpenMapFilters();
+extern std::vector<std::pair<std::string, std::string>> getSaveMapFilters();
+extern std::vector<std::pair<std::string, std::string>> getSaveTextFilters();
+extern std::vector<std::pair<std::string, std::string>> getSoundFilters();
+extern std::vector<std::pair<std::string, std::string>> getStarDatFilter();
+extern std::vector<std::pair<std::string, std::string>> getBrooDatFilter();
+extern std::vector<std::pair<std::string, std::string>> getPatchRtFilter();
+extern std::vector<std::pair<std::string, std::string>> getStarCraftExeFilter();
 
 #endif

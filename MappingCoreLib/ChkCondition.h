@@ -5,6 +5,8 @@
 enum class ConditionArgType;
 enum class ConditionId;
 
+#pragma pack(push, 1)
+__declspec(align(1))
 class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Trigger
 {
     public:
@@ -29,12 +31,12 @@ class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Tr
         Condition();
         Condition(u8 condition);
         Condition(ConditionId condition);
-        virtual ~Condition();
         void ToggleDisabled();
         bool isDisabled();
         static ConditionArgType TextTrigArgType(u8 argNum, ConditionId condition);
         ConditionArgType TextTrigArgType(u8 argNum);
 };
+#pragma pack(pop)
 
 enum class ConditionArgType
 {

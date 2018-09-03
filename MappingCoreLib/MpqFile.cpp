@@ -82,8 +82,8 @@ bool MpqFile::open(const std::string &filePath, const FileBrowserPtr fileBrowser
     std::string browseFilePath = "";
     if ( !filePath.empty() && FindFile(filePath) )
         return open(filePath);
-    else if ( fileBrowser != nullptr && fileBrowser->browseForFilePath(browseFilePath, filterIndex) )
-        return open(browseFilePath);
+    else if ( fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) )
+        return open(browseFilePath, false);
     else
         return false;
 }
@@ -92,7 +92,7 @@ bool MpqFile::open(const FileBrowserPtr fileBrowser)
 {
     u32 filterIndex = 0;
     std::string browseFilePath = "";
-    return fileBrowser != nullptr && fileBrowser->browseForFilePath(browseFilePath, filterIndex) && open(browseFilePath);
+    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && open(browseFilePath);
 }
 
 void MpqFile::close(bool updateListFile)

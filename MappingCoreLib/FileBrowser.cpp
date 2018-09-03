@@ -1,28 +1,32 @@
 #include "FileBrowser.h"
 #include "SystemIO.h"
 
-FileBrowser::FileBrowser() : filterToLabels(), initialDirectory(""), title(""), pathMustExist(false), provideOverwritePrompt(false)
+FileBrowser::FileBrowser() : filtersAndLabels(), initialDirectory(""), title(""), pathMustExist(false), provideOverwritePrompt(false)
 {
 
 }
 
-FileBrowser::FileBrowser(const std::map<std::string, std::string> &filterToLabels, const std::string &initialDirectory)
-    : filterToLabels(filterToLabels), initialDirectory(initialDirectory), title(""), pathMustExist(false), provideOverwritePrompt(false)
+FileBrowser::FileBrowser(const std::vector<std::pair<std::string, std::string>> &filtersAndLabels, const std::string &initialDirectory)
+    : filtersAndLabels(filtersAndLabels), initialDirectory(initialDirectory), title(""), pathMustExist(false), provideOverwritePrompt(false)
 {
 
 }
 
-FileBrowser::FileBrowser(const std::map<std::string, std::string> &filterToLabels, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
-    : filterToLabels(filterToLabels), initialDirectory(""), title(title), pathMustExist(pathMustExist), provideOverwritePrompt(provideOverwritePrompt)
+FileBrowser::FileBrowser(const std::vector<std::pair<std::string, std::string>> &filtersAndLabels, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
+    : filtersAndLabels(filtersAndLabels), initialDirectory(""), title(title), pathMustExist(pathMustExist), provideOverwritePrompt(provideOverwritePrompt)
 {
 
 }
 
-bool FileBrowser::browseForFilePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+bool FileBrowser::browseForOpenPath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
 {
-    return BrowseForFile(filePath, filterIndex, getFilterToLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt());
+    return BrowseForFile(filePath, filterIndex, getFiltersAndLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt());
 }
 
+bool FileBrowser::browseForSavePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+{
+    return BrowseForSave(filePath, filterIndex, getFiltersAndLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt());
+}
 
 bool FileBrowser::promptTryBrowse(const std::string &tryBrowseMessage) const
 {
@@ -39,9 +43,9 @@ bool FileBrowser::promptSaveRetry(const std::string &saveRetryMessage) const
     return GetYesNo(saveRetryMessage, "Save") == PromptResult::Yes;
 }
 
-std::map<std::string, std::string> FileBrowser::getFilterToLabels() const
+std::vector<std::pair<std::string, std::string>> FileBrowser::getFiltersAndLabels() const
 {
-    return filterToLabels;
+    return filtersAndLabels;
 }
 
 std::string FileBrowser::getInitialDirectory() const
@@ -64,9 +68,9 @@ bool FileBrowser::getProvideOverwritePrompt() const
     return provideOverwritePrompt;
 }
 
-void FileBrowser::setFilterToLabels(const std::map<std::string, std::string> &filterToLabels)
+void FileBrowser::setFiltersAndLabels(const std::vector<std::pair<std::string, std::string>> &filtersAndLabels)
 {
-    this->filterToLabels = filterToLabels;
+    this->filtersAndLabels = filtersAndLabels;
 }
 
 void FileBrowser::setInitialDirectory(const std::string &initialDirectory)

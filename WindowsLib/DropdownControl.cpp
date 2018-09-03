@@ -1,4 +1,5 @@
 #include "DropdownControl.h"
+#include <SimpleIcu.h>
 #include <memory>
 
 namespace WinLib {
@@ -33,7 +34,7 @@ namespace WinLib {
             HWND hWnd = getHandle();
             SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
             for ( size_t i = 0; i < items.size(); i++ )
-                SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)items[i].c_str());
+                SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(items[i]).c_str());
             return true;
         }
         return false;
@@ -59,10 +60,10 @@ namespace WinLib {
         LRESULT textLength = SendMessage(getHandle(), CB_GETLBTEXTLEN, index, 0);
         if ( textLength != CB_ERR )
         {
-            std::unique_ptr<char> text(new char[textLength + 1]);
+            std::unique_ptr<icux::codepoint> text(new icux::codepoint[textLength + 1]);
             if ( SendMessage(getHandle(), CB_GETLBTEXT, index, (LPARAM)text.get()) != CB_ERR )
             {
-                dest = text.get();
+                dest = icux::toUtf8(text.get());
                 return true;
             }
         }
@@ -76,7 +77,7 @@ namespace WinLib {
 
     bool DropdownControl::AddItem(const std::string &item)
     {
-        LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)item.c_str());
+        LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
         return result != CB_ERR && result != CB_ERRSPACE;
     }
 
@@ -113,7 +114,7 @@ namespace WinLib {
     template <typename numType>
     bool DropdownControl::SetEditNum(numType num)
     {
-        return WindowsItem::SetWinText(std::to_string(num).c_str());
+        return WindowsItem::SetWinText(std::to_string(num));
     }
     template bool DropdownControl::SetEditNum<u8>(u8 num);
     template bool DropdownControl::SetEditNum<s8>(s8 num);

@@ -51,7 +51,7 @@ void StringEditorWindow::RefreshWindow()
         if ( extended )
             textAboutStrings.SetText("");
         else
-            textAboutStrings.SetText(std::string(std::to_string(CM->strBytesUsed()) + " / 65536 Bytes Used").c_str());
+            textAboutStrings.SetText(std::string(std::to_string(CM->strBytesUsed()) + " / 65536 Bytes Used"));
         
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
@@ -79,7 +79,7 @@ void StringEditorWindow::RefreshWindow()
         }
         listStrings.SetRedraw(true);
         if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
-            chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [String #") + std::to_string(currSelString) + ']').c_str());
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
         else
         {
             currSelString = 0; // Clear currSelString if selection fails
@@ -134,7 +134,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr &&
                     CM->GetString(str, currSelString) && str.length() > 0 )
                 {
-                    editString.SetText(str.c_str());
+                    editString.SetText(str);
 
                     u32 locs, trigs, briefs, props, forces, wavs, units, switches;
                     CM->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
@@ -146,8 +146,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     addUseItem("WAVs", wavs);
                     addUseItem("Units", units);
                     addUseItem("Switches", switches);
-                    chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [String #") +
-                        std::to_string(currSelString) + ']').c_str());
+                    chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
                 }
                 else
                     chkd.mapSettingsWindow.SetWinText("Map Settings");
@@ -278,7 +277,7 @@ void StringEditorWindow::saveStrings()
 {
     u32 filterIndex = 0;
     std::string filePath = "";
-    if ( BrowseForSave(filePath, filterIndex, saveTextFilters, "", "Save File", false, true) )
+    if ( BrowseForSave(filePath, filterIndex, getSaveTextFilters(), "", "Save File", false, true) )
     {
         if ( filterIndex == 1 && !hasExtension(filePath, ".txt") )
             filePath = MakeExtSystemFilePath(filePath, ".txt");
@@ -302,7 +301,7 @@ void StringEditorWindow::saveStrings()
 void StringEditorWindow::addUseItem(std::string str, u32 amount)
 {
     if ( amount > 0 )
-        listUsage.AddString((str + ": " + std::to_string(amount)).c_str());
+        listUsage.AddString(str + ": " + std::to_string(amount));
 }
 
 bool StringEditorWindow::updateString(u32 stringNum)

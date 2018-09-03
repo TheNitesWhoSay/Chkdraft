@@ -26,7 +26,7 @@ namespace WinLib {
 
     void StatusControl::SetText(int index, const std::string &newText)
     {
-        SendMessage(getHandle(), SB_SETTEXT, index, (INT_PTR)newText.c_str());
+        SendMessage(getHandle(), SB_SETTEXT, index, (INT_PTR)icux::toUistring(newText).c_str());
     }
 
 }

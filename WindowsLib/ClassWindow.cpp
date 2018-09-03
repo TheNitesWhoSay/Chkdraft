@@ -2,6 +2,9 @@
 #include <SimpleIcu.h>
 #include <sstream>
 #include <iostream>
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -267,6 +270,7 @@ namespace WinLib {
 
             case WM_DROPFILES:
             {
+                logger << "File dropped" << std::endl;
                 icux::codepoint dropFilePath[MAX_PATH];
                 DragQueryFile((HDROP)wParam, 0, dropFilePath, MAX_PATH);
                 DragFinish((HDROP)wParam);

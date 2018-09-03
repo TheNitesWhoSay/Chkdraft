@@ -4,7 +4,6 @@
 /**
     The WindowsLib acts as a wrapper between windows functionality and the other projects in this solution.
     All public methods within WindowsLib take UTF-8 strings as input, and returns UTF-8 strings as output.
-    Occassionally for fields with windows-defined constants are used a UTF-16 std::wstring may be used as input.
     Internally much is converted and handled as UTF-16 strings.
 */
 

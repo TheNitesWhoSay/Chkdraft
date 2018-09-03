@@ -8,6 +8,9 @@
 #include <chrono>
 #include <regex>
 #include <winres.h>
+#include <shellapi.h>
+
+//extern Logger logger;
 
 enum MainWindow {
     IDR_MAIN_TOOLBAR = ID_FIRST,
@@ -34,7 +37,7 @@ void Chkdraft::OnLoadTest()
     }*/
 }
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logger(), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr)
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr)
 {
 
 }
@@ -126,12 +129,9 @@ bool Chkdraft::CreateThis()
         }
     }
 
-    std::string sWindowName(std::string("Chkdraft ") + GetFullVersionString());
-    static char cWindowName[200] = {};
-    strncpy(cWindowName, sWindowName.c_str(), sWindowName.size());
+    std::string windowName = "Chkdraft " + GetFullVersionString();
 
     DWORD exStyle = 0;
-    LPCSTR windowName = cWindowName;
     DWORD style = WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN;
     int windowX = CW_USEDEFAULT,
         windowY = CW_USEDEFAULT,
@@ -471,7 +471,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_WINDOW_CLOSE: maps.destroyActive(); break;
 
         // Help
-    case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/starcraft/Main_Page"); break;
+    case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
     case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
     case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;

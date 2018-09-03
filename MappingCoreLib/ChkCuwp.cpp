@@ -1,10 +1,5 @@
 #include "ChkCuwp.h"
 
-ChkCuwp::~ChkCuwp()
-{
-
-}
-
 bool ChkCuwp::IsCloakValid()
 {
     return (validSpecProps & (u16)ValidCUWPSpecPropFlags::CloakIsValid) == (u16)ValidCUWPSpecPropFlags::CloakIsValid;

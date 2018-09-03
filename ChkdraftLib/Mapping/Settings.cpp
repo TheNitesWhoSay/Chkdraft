@@ -7,7 +7,7 @@ std::string Settings::patchRtPath("");
 u32 Settings::deathTableStart(0x0058A364);
 bool Settings::useAddressesForMemory(true);
 
-bool ParseLong(const char* text, u32& dest, u32 pos, u32 end)
+bool ParseLong(const std::string &text, u32& dest, u32 pos, u32 end)
 {
     int size = end - pos;
     if ( size < 12 )
@@ -118,7 +118,7 @@ bool Settings::readSettingsFile()
                 else if ( key == "deathTableStart" )
                 {
                     u32 temp = 0;
-                    if ( ParseLong(value.c_str(), temp, 0, value.length()) )
+                    if ( ParseLong(value, temp, 0, value.length()) )
                         deathTableStart = temp;
                 }
                 else if ( key == "useAddressesForMemory" )

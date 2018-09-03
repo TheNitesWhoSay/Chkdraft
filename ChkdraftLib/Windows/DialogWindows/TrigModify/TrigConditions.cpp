@@ -70,15 +70,11 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
                     numArgs = 8;
 
                 gridConditions.item(1, y).SetDisabled(false);
-                gridConditions.item(1, y).SetText(
-                    ttg.GetConditionName(condition.condition).c_str()
-                );
+                gridConditions.item(1, y).SetText(ttg.GetConditionName(condition.condition));
                 for ( u8 x=0; x<numArgs; x++ )
                 {
                     gridConditions.item(x + 2, y).SetDisabled(false);
-                    gridConditions.item(x+2, y).SetText(
-                        ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.condition]).c_str()
-                    );
+                    gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.condition]));
                 }
                 for ( u8 x = numArgs; x < 8; x++ )
                 {
@@ -601,8 +597,8 @@ void TrigConditionsWindow::SuggestUnit()
             SingleLineChkdString str;
             CM->getUnitName(str, i);
             suggestions.AddString(str);
-            if ( str.compare(std::string(DefaultUnitDisplayName[i])) != 0 )
-                suggestions.AddString(std::string(DefaultUnitDisplayName[i]));
+            if ( str.compare(std::string(DefaultUnitDisplayNames[i])) != 0 )
+                suggestions.AddString(std::string(DefaultUnitDisplayNames[i]));
         }
     }
     suggestions.Show();

@@ -49,8 +49,8 @@ ChkdraftTest
 		Library Directories: $(SolutionDir)$(Platform)\$(Configuration)\
 	C/C++
 		Preprocessor
-			DEBUG: CHKDRAFT;CHKD_DEBUG
-			RELEASE: CHKDRAFT
+			DEBUG: CHKDRAFT;CHKD_DEBUG;STORMLIB_NO_AUTO_LINK;DU_STATIC_IMPLEMENTATION;NOMINMAX;
+			RELEASE: CHKDRAFT;STORMLIB_NO_AUTO_LINK;DU_STATIC_IMPLEMENTATION;NOMINMAX;
 		Code Generation
 			Runtime Library: /MTd (debug) or /MT (release)
 	Linker
@@ -127,7 +127,7 @@ MappingCoreLib
 			Runtime Library: /MTd (debug) or /MT (release)
 
 MappingCoreTest
-	Project Dependencies: GoogleTestLib, IcuLib, MappingCoreLib
+	Project Dependencies: GoogleTestLib, IcuLib, MappingCoreLib, CommanderLib
 	General
 		Windows SDK Version: 10.0.14393.0
 		Platform Toolset: Visual Studio 2017 (v141)

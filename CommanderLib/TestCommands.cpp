@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 
+extern Logger logger;
+
 std::string ExampleCommand::text;
 
 ExampleCommand::ExampleCommand(const std::string &addition) : GenericCommand(true, (u32)CommandClass::ExampleCommand, (u32)UndoRedoType::Example), addition(addition)
@@ -22,11 +24,11 @@ ExampleCommandPtr ExampleCommand::C(const std::string &addition)
 void ExampleCommand::Do()
 {
     text += addition;
-    std::cout << text << std::endl;
+    logger.info(text);
 }
 
 void ExampleCommand::Undo()
 {
     text = text.substr(0, text.size()-addition.size());
-    std::cout << text << std::endl;
+    logger.info(text);
 }

@@ -58,7 +58,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
-        editText.SetText(trigText.c_str());
+        editText.SetText(trigText);
     else
         mb(trigIndex, "Failed to generate text triggers.");
 }

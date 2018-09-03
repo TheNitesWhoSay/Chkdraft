@@ -78,7 +78,7 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
     //Show();
-    WindowsItem::SetWinText((std::string("Modify Trigger #") + std::to_string(trigIndex)).c_str());
+    WindowsItem::SetWinText("Modify Trigger #" + std::to_string(trigIndex));
     generalWindow.RefreshWindow(trigIndex);
     playersWindow.RefreshWindow(trigIndex);
     conditionsWindow.RefreshWindow(trigIndex);
@@ -202,8 +202,8 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             {
                 SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0 ));
                 tabs.FindThis(hWnd, IDC_TRIGMODIFYTABS);
-                const char* tabLabels[] = { "General", "Players", "Conditions", "Actions", "Text" };
-                for ( int i=0; i<sizeof(tabLabels)/sizeof(const char*); i++ )
+                const std::vector<std::string> tabLabels = { "General", "Players", "Conditions", "Actions", "Text" };
+                for ( int i=0; i<tabLabels.size(); i++ )
                     tabs.InsertTab(i, tabLabels[i]);
                 CreateSubWindows(hWnd);
                 DoSize();

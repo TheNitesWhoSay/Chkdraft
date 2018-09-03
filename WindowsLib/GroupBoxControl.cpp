@@ -14,9 +14,4 @@ namespace WinLib {
                                              x, y, width, height, hParent, (HMENU)id, false );
     }
 
-    bool GroupBoxControl::SetText(const std::string& newText)
-    {
-        return SetWindowText(getHandle(), icux::toUistring(newText).c_str()) == TRUE;
-    }
-
 }

@@ -66,7 +66,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u32 windowId)
 
                 groupForce[force].CreateThis(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force], 0);
                 editForceName[force].CreateThis(hForces, 20+293*x, 70+239*y, 268, 20, false, EDIT_F1NAME+force);
-                editForceName[force].SetText(forceName.c_str());
+                editForceName[force].SetText(forceName);
                 dragForces[force].CreateThis(hForces, 20+293*x, 95+239*y, 268, 121, LB_F1PLAYERS+force);
                 checkAllied[force].CreateThis(hForces, 15+293*x, 232+239*y, 100, 20, allied, "Allied", CHECK_F1ALLIED+force);
                 checkSharedVision[force].CreateThis(hForces, 15+293*x, 252+239*y, 100, 20, vision, "Share Vision", CHECK_F1VISION+force);
@@ -145,7 +145,7 @@ void ForcesWindow::RefreshWindow()
                          << playerRaces.at(race) << " (" << playerOwners.at(displayOwner) << ")";
                 HWND hListBox = GetDlgItem(hWnd, LB_F1PLAYERS+force);
                 if ( hListBox != NULL )
-                    SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)ssplayer.str().c_str());
+                    SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(ssplayer.str()).c_str());
             }
         }
     }
@@ -255,12 +255,11 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                             {
                                 int index = LBItemFromPt(dragInfo->hWnd, dragInfo->ptCursor, FALSE);
                                 LRESULT length = SendMessage(dragInfo->hWnd, LB_GETTEXTLEN, index, 0)+1;
-                                char* str;
-                                try { str = new char[length]; } catch ( std::bad_alloc ) { return FALSE; }
-                                length = SendMessage(dragInfo->hWnd, LB_GETTEXT, index, (LPARAM)str);
-                                if ( length != LB_ERR && length > 8 && str[7] >= '1' && str[7] <= '8' )
+                                std::unique_ptr<TCHAR> str = std::unique_ptr<TCHAR>(new TCHAR[length]);
+                                length = SendMessage(dragInfo->hWnd, LB_GETTEXT, index, (LPARAM)str.get());
+                                if ( length != LB_ERR && length > 8 && str.get()[7] >= '1' && str.get()[7] <= '8' )
                                 {
-                                    playerBeingDragged = str[7]-'1';
+                                    playerBeingDragged = str.get()[7]-'1';
                                     for ( int id=LB_F1PLAYERS; id<=LB_F4PLAYERS; id++ )
                                     {
                                         HWND hForceLb = GetDlgItem(hWnd, id);
@@ -307,7 +306,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                             RefreshWindow();
                                             std::stringstream ssPlayer;
                                             ssPlayer << "Player " << playerBeingDragged+1;
-                                            SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)ssPlayer.str().c_str());
+                                            SendMessage(GetDlgItem(hWnd, LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)icux::toUistring(ssPlayer.str()).c_str());
                                             CM->notifyChange(false);
                                             chkd.trigEditorWindow.RefreshWindow();
                                             SetFocus(getHandle());

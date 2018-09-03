@@ -22,9 +22,9 @@ bool StringGuideWindow::CreateThis(HWND hParent)
         for (size_t i = 0; i < strColors.size(); i++)
         {
             auto Color = strColors.at(i);
-            GetTextExtentPoint32A(hDC, std::get<2>(Color).c_str(), std::get<2>(Color).length(), &strSize);
-            colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, std::get<2>(Color).c_str(), 0);
-            color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, std::get<1>(Color).c_str(), TEXT_COLOR_FIRST+i);
+            GetTextExtentPoint32(hDC, icux::toUistring(std::get<2>(Color)).c_str(), icux::toUistring(std::get<2>(Color)).length(), &strSize);
+            colorPrefix[i].CreateThis(hStringGuide, 2, i*13, strSize.cx, 13, std::get<2>(Color), 0);
+            color[i].CreateThis(hStringGuide, strSize.cx+3, i*13, 100, 13, std::get<1>(Color), TEXT_COLOR_FIRST+i);
         }
         ReleaseDC(hDC);
         return true;

@@ -15,7 +15,7 @@ bool getOneCharHexVal(char character, u8 &value)
     return true;
 }
 
-bool getTwoCharHexVal(const char* firstCharPtr, u8& value)
+bool getTwoCharHexVal(const std::string &firstCharPtr, u8& value)
 {
     if ( firstCharPtr[0] >= '0' && firstCharPtr[0] <= '9' )
         value = (u8)((firstCharPtr[0] - '0') << 4);
@@ -48,7 +48,7 @@ bool getOneCharOctVal(const char character, u8 &value)
     return false;
 }
 
-bool getTwoCharOctVal(const char* firstCharPtr, u8 &value)
+bool getTwoCharOctVal(const std::string &firstCharPtr, u8 &value)
 {
     if ( firstCharPtr[0] >= '0' && firstCharPtr[0] <= '7' &&
         firstCharPtr[1] >= '0' && firstCharPtr[1] <= '7' )
@@ -60,7 +60,7 @@ bool getTwoCharOctVal(const char* firstCharPtr, u8 &value)
     return false;
 }
 
-bool getThreeCharOctVal(const char* firstCharPtr, u8 &value)
+bool getThreeCharOctVal(const std::string &firstCharPtr, u8 &value)
 {
     if ( firstCharPtr[0] >= '0' && firstCharPtr[0] <= '7' &&
         firstCharPtr[1] >= '0' && firstCharPtr[1] <= '7' &&
@@ -109,7 +109,7 @@ ChkdString::ChkdString()
 
 }
 
-ChkdString::ChkdString(const std::string &str)
+ChkdString::ChkdString(const std::string &str) : std::string(str)
 {
 
 }
@@ -144,7 +144,7 @@ bool SingleLineChkdString::isOneLine()
     return true;
 }
 
-bool MakeEscStr(const char* inRawString, size_t inRawStringLength, EscString &outEscString)
+bool MakeEscStr(const std::string &inRawString, size_t inRawStringLength, EscString &outEscString)
 {
     outEscString.clear();
     try
@@ -189,10 +189,10 @@ bool MakeEscStr(const char* inRawString, size_t inRawStringLength, EscString &ou
 
 bool MakeEscStr(RawString &inRawString, EscString &outEscString)
 {
-    return MakeEscStr(inRawString.c_str(), inRawString.length(), outEscString);
+    return MakeEscStr(inRawString, inRawString.length(), outEscString);
 }
 
-bool GetSlashEscCodeChar(const char* escString, size_t escStringLength, size_t slashPos, char &character, size_t &lastCharPos)
+bool GetSlashEscCodeChar(const std::string &escString, size_t escStringLength, size_t slashPos, char &character, size_t &lastCharPos)
 {
     lastCharPos = 0;
     character = '\0';
@@ -283,7 +283,7 @@ bool ParseEscStr(EscString &inEscString, RawString &outRawString)
         {
             currChar = inEscString[i];
             if ( currChar == '\\' && // Escape sequence detected
-                GetSlashEscCodeChar(inEscString.c_str(), strLength, i, escapedChar, lastEscCharPos) &&
+                GetSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
@@ -317,7 +317,7 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes)
         {
             currChar = inEscString[i];
             if ( currChar == '\\' && // Escape sequence detected
-                GetSlashEscCodeChar(inEscString.c_str(), strLength, i, escapedChar, lastEscCharPos) )
+                GetSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;
@@ -332,7 +332,7 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes)
     return false;
 }
 
-bool MakeOneLineChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString)
+bool MakeOneLineChkdStr(const std::string &inRawString, size_t inRawStringLength, ChkdString &outChkdString)
 {
     try
     {
@@ -382,7 +382,7 @@ bool MakeOneLineChkdStr(const char* inRawString, size_t inRawStringLength, ChkdS
     return false;
 }
 
-bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString)
+bool MakeChkdStr(const std::string &inRawString, size_t inRawStringLength, ChkdString &outChkdString)
 {
     if ( outChkdString.isOneLine() )
         return MakeOneLineChkdStr(inRawString, inRawStringLength, outChkdString);
@@ -429,12 +429,12 @@ bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &
 bool MakeChkdStr(RawString &inRawString, ChkdString &outChkdString)
 {
     if ( outChkdString.isOneLine() )
-        return MakeOneLineChkdStr(inRawString.c_str(), inRawString.length(), outChkdString);
+        return MakeOneLineChkdStr(inRawString, inRawString.length(), outChkdString);
     else
-        return MakeChkdStr(inRawString.c_str(), inRawString.length(), outChkdString);
+        return MakeChkdStr(inRawString, inRawString.length(), outChkdString);
 }
 
-bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos)
+bool GetChkdEscCodeChar(const std::string &chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos)
 {
     lastCharPos = 0;
     character = '\0';
@@ -484,14 +484,14 @@ bool ParseChkdStr(const ChkdString &inChkdString, RawString &outRawString)
         {
             currChar = inChkdString[i];
             if ( currChar == '\\' && // Possible slash escape sequence
-                GetSlashEscCodeChar(inChkdString.c_str(), strLength, i, escapedChar, lastEscCharPos) &&
+                GetSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
                 i = lastEscCharPos;
             }
             else if ( currChar == '<' && /// Possible chkd escape sequence
-                GetChkdEscCodeChar(inChkdString.c_str(), strLength, i, escapedChar, lastEscCharPos) &&
+                GetChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
@@ -525,13 +525,13 @@ bool ParseChkdBytes(const ChkdString &inChkdString, std::vector<u8> &outRawBytes
         {
             currChar = inChkdString[i];
             if ( currChar == '\\' && // Possible slash escape sequence
-                GetSlashEscCodeChar(inChkdString.c_str(), strLength, i, escapedChar, lastEscCharPos) )
+                GetSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;
             }
             else if ( currChar == '<' && /// Possible chkd escape sequence
-                GetChkdEscCodeChar(inChkdString.c_str(), strLength, i, escapedChar, lastEscCharPos) )
+                GetChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;

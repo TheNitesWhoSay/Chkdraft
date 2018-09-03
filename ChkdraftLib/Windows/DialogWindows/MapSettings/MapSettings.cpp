@@ -137,7 +137,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
         case WM_INITDIALOG:
             {
-                const char* tabTitles[7] = {
+                const std::vector<std::string> tabTitles = {
                     "Map Properties", "Forces", "Unit Settings", "Upgrade Settings",
                     "Tech Settings", "String Editor", "Wav Editor"
                 };
@@ -147,13 +147,11 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 tabs.SetSmallIcon(icon);
                 tabs.SetFont(defaultFont, false);
                 
-
-
                 TCITEM item = { };
                 item.mask = TCIF_TEXT;
                 item.iImage = -1;
                 
-                for ( int i=0; i<sizeof(tabs)/sizeof(const char*); i++ )
+                for ( int i=0; i<tabTitles.size(); i++ )
                     tabs.InsertTab(i, tabTitles[i]);
                 
                 mapPropertiesWindow.CreateThis(tabs.getHandle(), WIN_MAPPROPERTIES);

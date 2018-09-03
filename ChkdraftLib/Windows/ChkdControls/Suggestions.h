@@ -12,11 +12,10 @@ class Suggestions : public WinLib::ClassWindow
         bool CreateThis(HWND hParent, int x, int y, int width, int height);
         void ClearStrings();
 
-        void AddStrings(const std::vector<std::string>& strings);
-        void AddStrings(const char* strings[], int numStrings);
+        void AddStrings(const std::vector<std::string> &strings);
         void AddString(const std::string &string); // Adds a string to the stored list but does not yet display it
         void SetStrings(); // Sets all the strings in the stored list to the display
-        void SetStrings(const char* strings[], int numStrings);
+        void SetStrings(const std::vector<std::string> &strings);
         void Show();
         void Hide();
         void SuggestNear(const std::string &str);

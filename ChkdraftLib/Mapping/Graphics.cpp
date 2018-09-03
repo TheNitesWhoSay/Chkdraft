@@ -245,8 +245,6 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
 void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
     ChkLocation* loc;
-    s32 screenRight = screenLeft+screenWidth;
-    s32 screenBottom = screenTop+screenHeight;
     u32 bitMax = screenWidth*screenHeight;
 
     for ( u16 locNum = 0; locNum < map.locationCapacity(); locNum++ )
@@ -254,16 +252,16 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
         if ( (locNum != 63 || showAnywhere) && map.getLocation(loc, locNum) )
         {
             s32 leftMost = std::min(loc->xc1, loc->xc2);
-            if ( leftMost < screenRight )
+            if ( leftMost < screenLeft+screenWidth )
             {
                 s32 rightMost = std::max(loc->xc1, loc->xc2);
-                if ( rightMost > screenLeft )
+                if ( rightMost >= screenLeft )
                 {
                     s32 topMost = std::min(loc->yc1, loc->yc2);
-                    if ( topMost < screenBottom )
+                    if ( topMost < screenTop+screenHeight )
                     {
                         s32 bottomMost = std::max(loc->yc1, loc->yc2);
-                        if ( bottomMost > screenTop )
+                        if ( bottomMost >= screenTop )
                         {
                             bool leftMostOnScreen = true,
                                 rightMostOnScreen = true,
@@ -276,9 +274,9 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
                                 leftMost = screenLeft;
                                 leftMostOnScreen = false;
                             }
-                            if ( rightMost > screenRight )
+                            if ( rightMost >= screenLeft+screenWidth )
                             {
-                                rightMost = screenRight;
+                                rightMost = screenLeft+screenWidth-1;
                                 rightMostOnScreen = false;
                             }
                             if ( topMost < screenTop )
@@ -286,9 +284,9 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
                                 topMost = screenTop;
                                 topMostOnScreen = false;
                             }
-                            if ( bottomMost > screenBottom )
+                            if ( bottomMost >= screenTop+screenHeight )
                             {
-                                bottomMost = screenBottom;
+                                bottomMost = screenTop+screenHeight-1;
                                 bottomMostOnScreen = false;
                             }
 
@@ -353,12 +351,12 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
             s32 rightMost = std::max(loc->xc1, loc->xc2);
             s32 topMost = std::min(loc->yc1, loc->yc2);
             s32 bottomMost = std::max(loc->yc1, loc->yc2);
-            if ( leftMost < screenRight && rightMost > screenLeft && topMost < screenBottom && bottomMost > screenTop )
+            if ( leftMost < screenLeft+screenWidth && rightMost >= screenLeft && topMost < screenTop+screenHeight && bottomMost >= screenTop )
             {
                 bool leftMostOnScreen = leftMost >= screenLeft,
-                    rightMostOnScreen = rightMost <= screenRight,
+                    rightMostOnScreen = rightMost < screenLeft+screenWidth,
                     topMostOnScreen = topMost >= screenTop,
-                    bottomMostOnScreen = bottomMost <= screenBottom;
+                    bottomMostOnScreen = bottomMost < screenTop+screenHeight;
 
                 if ( !leftMostOnScreen )
                     leftMost = 0;

@@ -6,6 +6,7 @@
 #include "../../Mapping/Undos/ChkdUndos/LocationCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationMove.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationChange.h"
+#include "../../../CommanderLib/Logger.h"
 
 bool GuiMap::doAutoBackups = false;
 
@@ -33,10 +34,10 @@ bool GuiMap::CanExit()
     if ( unsavedChanges )
     {
         WinLib::PromptResult result = WinLib::PromptResult::Unknown;
-        if ( MapFile::GetFilePath().length() <= 0 )
+        if ( MapFile::getFilePath().length() <= 0 )
             result = WinLib::GetYesNoCancel("Save Changes?", "Untitled");
         else
-            result = WinLib::GetYesNoCancel("Save Changes?", MapFile::GetFilePath());
+            result = WinLib::GetYesNoCancel("Save Changes?", MapFile::getFilePath());
 
         if ( result == WinLib::PromptResult::Yes )
             SaveFile(false);
@@ -1255,7 +1256,7 @@ bool GuiMap::CreateThis(HWND hClient, const std::string &title)
             DestroyCursor(hCursor);
     }
 
-    return CreateMdiChild(title.c_str(), WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
+    return CreateMdiChild(title, WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
 }
 
 void GuiMap::ReturnKeyPress()
@@ -1976,14 +1977,14 @@ bool GuiMap::GetBackupPath(time_t currTime, std::string &outFilePath)
 bool GuiMap::TryBackup(bool &outCopyFailed)
 {
     outCopyFailed = false;
-    if ( doAutoBackups && MapFile::GetFilePath().length() > 0 )
+    if ( doAutoBackups && MapFile::getFilePath().length() > 0 )
     {
         time_t currTime = time(0);
         // If there are no previous backups or enough time has elapsed since the last...
         if ( (lastBackupTime == -1 || difftime(lastBackupTime, currTime) >= minSecondsBetweenBackups) )
         {
             std::string backupPath;
-            if ( GetBackupPath(currTime, backupPath) && MakeFileCopy(MapFile::GetFilePath(), backupPath) )
+            if ( GetBackupPath(currTime, backupPath) && MakeFileCopy(MapFile::getFilePath(), backupPath) )
             {
                 lastBackupTime = currTime;
                 return true;

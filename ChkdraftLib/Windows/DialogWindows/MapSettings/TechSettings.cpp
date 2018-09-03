@@ -187,7 +187,7 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
         else
             ssPlayerTech << player+1;
 
-        checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str().c_str(), CHECK_P1TECHDEFAULT+player);
+        checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str(), CHECK_P1TECHDEFAULT+player);
         dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, false, DROP_P1TECHSETTINGS+player, playerTechSettings, defaultFont);
     }
 

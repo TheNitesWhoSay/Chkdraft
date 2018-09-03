@@ -10,8 +10,8 @@ class UnitTree : public WinLib::TreeViewControl
         bool AddThis(HWND hTree, HTREEITEM hRoot);
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id);
 
-        void UpdateUnitNames(const char** displayNames);
-        void UpdateUnitName(int UnitID);
+        void UpdateUnitNames(const std::vector<std::string> &displayNames);
+        void UpdateUnitName(int unitId);
 
     protected:
         void InsertAllUnits(HTREEITEM hParent);
@@ -23,9 +23,8 @@ class UnitTree : public WinLib::TreeViewControl
 
     private:
         HTREEITEM UnitItems[228];
-        const char* UnitDisplayName[233];
-
-        void InsertUnits(HTREEITEM hParent, const int* items, int amount);
+        std::vector<std::string> unitDisplayNames;
+        void AddUnitItems(HTREEITEM hParent, const std::vector<u16> &unitIds);
 };
 
 #endif

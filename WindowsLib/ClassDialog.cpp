@@ -132,9 +132,9 @@ namespace WinLib {
     {
         if ( msg == WM_INITDIALOG )
         {
-            LONG_PTR classPtr = lParam;
+            LONG_PTR classPtr = (LONG_PTR)lParam;
             SetWindowLongPtr(hWnd, DWLP_USER, classPtr);
-            if ( GetWindowLongPtr(hWnd, DWLP_USER) == classPtr && classPtr != 0 && SetWindowLong(hWnd, DWLP_DLGPROC, (LONG_PTR)ForwardDlgProc) != 0 )
+            if ( GetWindowLongPtr(hWnd, DWLP_USER) == classPtr && classPtr != 0 && SetWindowLongPtr(hWnd, DWLP_DLGPROC, (LONG_PTR)ForwardDlgProc) != 0 )
             {
                 ((ClassDialog*)classPtr)->setHandle(hWnd); // Preload the window handle
                 return ((ClassDialog*)classPtr)->DlgProc(hWnd, msg, wParam, lParam);
@@ -148,7 +148,7 @@ namespace WinLib {
 
     BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        ClassDialog* classDialog = (ClassDialog*)GetWindowLong(hWnd, DWLP_USER);
+        ClassDialog* classDialog = (ClassDialog*)GetWindowLongPtr(hWnd, DWLP_USER);
         switch ( msg )
         {
             case WM_SHOWWINDOW:

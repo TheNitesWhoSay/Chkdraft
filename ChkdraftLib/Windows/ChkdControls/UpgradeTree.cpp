@@ -36,7 +36,7 @@ void UpgradeTree::InsertUpgrades()
         for ( int j=0; j<nTreeUpgrades[i]; j++ )
         {
             u32 upgradeId = upgrades[j];
-            InsertTreeItem(LastGroup, upgradeNames.at(upgradeId).c_str(), TreeTypeUpgrade|upgradeId);
+            InsertTreeItem(LastGroup, upgradeNames.at(upgradeId), TreeTypeUpgrade|upgradeId);
         }
     }
 }

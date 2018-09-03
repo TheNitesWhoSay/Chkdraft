@@ -87,43 +87,43 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                 case TERRAIN_BADLANDS: // Badlands
                     for (auto initTerrain : badlandsInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_SPACE: // Space Platform
                     for (auto initTerrain : spaceInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_INSTALLATION: // Installation
                     for (auto initTerrain : installInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     break;
                 case TERRAIN_ASH: // Ash World
                     for (auto initTerrain : ashInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_JUNGLE: // Jungle World
                     for (auto initTerrain : jungInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_DESERT: // Desert World
                     for (auto initTerrain : desertInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_ICE: // Ice World
                     for (auto initTerrain : iceInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 case TERRAIN_TWILIGHT: // Twilight World
                     for (auto initTerrain : twilightInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)initTerrain.c_str());
+                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
                 }
@@ -157,6 +157,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     "Melee with observers (6 players)", "Melee with observers (7 players)"
                 };
                 dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, COMBO_TRIGS, defaultTriggerTitles, defaultFont);
+                dropDefaultTriggers.SetSel(0);
 
                 editWidth.FindThis(hWnd, IDC_EDIT_WIDTH);
                 editWidth.SetTextLimit(10);

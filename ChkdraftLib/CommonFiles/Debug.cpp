@@ -1,12 +1,15 @@
 #include "Debug.h"
 #include "CommonFiles.h"
 #include "../../WindowsLib/WindowsUi.h"
+#include "../../CommanderLib/Logger.h"
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <crtdbg.h>
 #include <SimpleIcu.h>
+
+extern Logger logger;
 
 bool debugging = false;
 
@@ -16,7 +19,6 @@ char LastErrorLoc[MAX_ERROR_LENGTH]; // Purposed for debugging internal errors
 
 void PrintError(const std::string &file, unsigned int line, const std::string msg, ...)
 {
-    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
     va_list args;
 #ifdef WINDOWS_UTF16
     const icux::uistring sysMsg = icux::toUistring(msg);
@@ -24,7 +26,7 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
     const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
     va_start(args, msg);
     _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
-    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s\nLine: %u", icux::toUistring(file).c_str(), line);
+    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s | Line: %u", icux::toUistring(file).c_str(), line);
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else
@@ -33,11 +35,11 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file.c_str(), line);
 #endif
     va_end(args);
+    logger.error() << LastErrorLoc << " | " << LastError << std::endl;
 }
 
 void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...)
 {
-    //std::cout << LastErrorLoc << " | " << LastError << std::endl;
     va_list args;
 #ifdef WINDOWS_UTF16
     const icux::uistring sysMsg = icux::toUistring(msg);
@@ -45,7 +47,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
     const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
     va_start(args, msg);
     _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
-    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s\nLine: %u", icux::toUistring(file).c_str(), line);
+    _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s | Line: %u", icux::toUistring(file).c_str(), line);
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else
@@ -54,13 +56,14 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
     std::snprintf(LastErrorLoc, MAX_ERROR_LENGTH, "File: %s\nLine: %u", file.c_str(), line);
 #endif
     va_end(args);
+    logger.error() << LastErrorLoc << " | " << LastError << std::endl;
 }
 
 #ifdef CHKD_DEBUG
-    void CheckInvariant(bool condition, const char* file, int line)
+    void CheckInvariant(bool condition, const std::string &file, int line)
     {
         char invarError[MAX_ERROR_LENGTH];
-        std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", file, line);
+        std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", file.c_str(), line);
 
         if ( condition == false )
             WinLib::Message(invarError, "Error!");

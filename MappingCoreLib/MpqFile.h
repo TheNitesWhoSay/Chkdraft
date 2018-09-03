@@ -10,6 +10,10 @@
 #include <string>
 #include <map>
 
+#ifdef max
+#undef max
+#endif
+
 /**
 While the format of strings may vary in the filesystem...
 in MPQs they can be treated as UTF8
@@ -39,7 +43,7 @@ public:
     bool deletingOnClose() const;
 
     // Gets the filePath, the filePath will be empty unless an MPQ is open
-    const std::string &getFilePath() const;
+    virtual const std::string &getFilePath() const;
 
     // Checks whether this MPQ is open
     inline bool isOpen() const;

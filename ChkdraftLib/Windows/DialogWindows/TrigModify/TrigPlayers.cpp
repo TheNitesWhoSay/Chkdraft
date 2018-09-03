@@ -106,7 +106,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
             << "By Player 6: " << strTimesExecuted[exec[5]] << std::endl
             << "By Player 7: " << strTimesExecuted[exec[6]] << std::endl
             << "By Player 8: " << strTimesExecuted[exec[7]] << std::endl;
-        textPlayerStats.SetText(ssStats.str().c_str());
+        textPlayerStats.SetText(ssStats.str());
 
         for ( u8 i=0; i<8; i++ )
             checkMainPlayers[i].SetCheck(trig->players[Player1+i] & 1);
@@ -147,14 +147,14 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
     {
         std::stringstream ssPlayer;
         ssPlayer << "Player " << (i+1);
-        checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str().c_str(), CHECK_PLAYER1+i);
+        checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str(), CHECK_PLAYER1+i);
     }
     int yPos = 24;
     for ( u8 i=0; i<4; i++ )
     {
         std::stringstream ssPlayer;
         ssPlayer << "Force " << (i+1);
-        checkForces[i].CreateThis(hWnd, 110, 24+18*i, 75, 17, false, ssPlayer.str().c_str(), CHECK_FORCE1+i);
+        checkForces[i].CreateThis(hWnd, 110, 24+18*i, 75, 17, false, ssPlayer.str(), CHECK_FORCE1+i);
         yPos += 18;
     }
     checkAllPlayers.CreateThis(hWnd, 110, yPos, 75, 17, false, "All Players", CHECK_ALL_PLAYERS);
@@ -163,10 +163,10 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
     groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", GROUP_EXECUTINGPLAYERS);
     groupNonExecutingPlayers.CreateThis(hWnd, 340, 5, 210, 190, "Non-Executing Players", GROUP_UNUSEDPLAYERS);
     for ( u8 i=0; i<9; i++ )
-        checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i).c_str(), CHECK_PLAYER9+i);
+        checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i), CHECK_PLAYER9+i);
 
     for ( u8 i=0; i<6; i++ )
-        checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i).c_str(), CHECK_UNUSED1+i);
+        checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i), CHECK_UNUSED1+i);
 
     groupRawEdit.CreateThis(hWnd, 5, 200, 545, 160, "Raw Data", GROUP_RAWEDIT);
     textExtendedData.CreateThis(hWnd, 12, 219, 220, 60, "While not used in StarCraft modifying these bytes can be useful with 3rd party programs. Bytes 22-25 are used by Chkdraft and should not be manually altered. Numbers are in hex.", TEXT_EXTENDEDDATA);

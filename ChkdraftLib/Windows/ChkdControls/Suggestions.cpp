@@ -73,16 +73,10 @@ void Suggestions::ClearStrings()
     listSuggestions.ClearItems();
 }
 
-void Suggestions::AddStrings(const std::vector<std::string>& strings)
+void Suggestions::AddStrings(const std::vector<std::string> &strings)
 {
     for (auto string : strings)
         strList.push_back(string);
-}
-
-void Suggestions::AddStrings(const char* strings[], int numStrings)
-{
-    for ( int i = 0; i < numStrings; i++ )
-        strList.push_back(std::string(strings[i]));
 }
 
 void Suggestions::AddString(const std::string &string)
@@ -97,14 +91,14 @@ void Suggestions::SetStrings()
 
     strList.sort(alphabetize);
     for ( auto &str : strList )
-        listSuggestions.AddString(str.c_str());
+        listSuggestions.AddString(str);
 }
 
-void Suggestions::SetStrings(const char* strings[], int numStrings)
+void Suggestions::SetStrings(const std::vector<std::string> &strings)
 {
     strList.clear();
-    for ( int i = 0; i < numStrings; i++ )
-        strList.push_back(std::string(strings[i]));
+    for ( auto str : strings )
+        strList.push_back(str);
 
     SetStrings();
 }
@@ -226,7 +220,7 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         //case WM_SIZE: DoSize(); break;
-    case WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
+        case WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
         case WM_KEYDOWN: KeyDown(wParam); break;
         case WM_ERASEBKGND: EraseBackground((HDC)wParam); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;

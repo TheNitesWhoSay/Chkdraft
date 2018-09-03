@@ -4,6 +4,7 @@
 #include "../../../MappingCoreLib/MappingCore.h"
 #include "../../CommonFiles/CommonFiles.h"
 #include "Suggestions.h"
+#include <string>
 
 class ICndActGridUser // ~Interface
 {
@@ -43,7 +44,7 @@ class CndActGrid : public WinLib::GridViewControl
 
     protected:
         bool CreateSubWindows(HWND hWnd);
-        virtual void StartEditing(int xClick, int yClick, char initChar);
+        virtual void StartEditing(int xClick, int yClick, const std::string &initChar);
         virtual void KeyDown(WPARAM wParam);
         virtual void EditTextChanged(const std::string &str);
 

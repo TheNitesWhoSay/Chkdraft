@@ -23,7 +23,7 @@ class Maps : public WinLib::MdiClient
 
         bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
         bool OpenMap(std::string fileName);
-        bool OpenMap(); // Accelerator for OpenMap
+        bool OpenMap(FileBrowserPtr fileBrowser = MapFile::getDefaultOpenMapBrowser()); // Accelerator for OpenMap
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);
         void CloseActive();

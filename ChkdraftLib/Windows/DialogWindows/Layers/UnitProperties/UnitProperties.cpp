@@ -198,7 +198,7 @@ bool UnitPropertiesWindow::AddUnitItem(u16 index, ChkUnit unit)
     CM->getUnitName(unitName, unitId);
 
     listUnits.AddRow(4, index);
-    listUnits.SetItemText(index, (int)UnitListColumn::Name, unitName.c_str());
+    listUnits.SetItemText(index, (int)UnitListColumn::Name, unitName);
     listUnits.SetItemText(index, (int)UnitListColumn::Owner, owner);
     listUnits.SetItemText(index, (int)UnitListColumn::Xc, xc);
     listUnits.SetItemText(index, (int)UnitListColumn::Yc, yc);
@@ -270,7 +270,7 @@ void UnitPropertiesWindow::RepopulateList()
 
             ChkdString unitName;
             CM->getUnitName(unitName, unit.id);
-            WindowsItem::SetWinText(unitName.c_str());
+            WindowsItem::SetWinText(unitName);
 
             int row = listUnits.GetItemRow(selections.getHighestIndex());
             listUnits.EnsureVisible(row, false);
@@ -347,16 +347,16 @@ void UnitPropertiesWindow::SetUnitFieldText(ChkUnit unit)
     if ( unit.owner < 12 )
         dropPlayer.SetSel(unit.owner);
     else
-        dropPlayer.SetWinText(std::to_string(unit.owner + 1).c_str());
+        dropPlayer.SetWinText(std::to_string(unit.owner + 1));
 
-    editLife.SetText(std::to_string(unit.hitpoints).c_str());
-    editMana.SetText(std::to_string(unit.energy).c_str());
-    editShield.SetText(std::to_string(unit.shields).c_str());
-    editResources.SetText(std::to_string(unit.resources).c_str());
-    editHanger.SetText(std::to_string(unit.hanger).c_str());
-    editUnitId.SetText(std::to_string(unit.id).c_str());
-    editXc.SetText(std::to_string(unit.xc).c_str());
-    editYc.SetText(std::to_string(unit.yc).c_str());
+    editLife.SetText(std::to_string(unit.hitpoints));
+    editMana.SetText(std::to_string(unit.energy));
+    editShield.SetText(std::to_string(unit.shields));
+    editResources.SetText(std::to_string(unit.resources));
+    editHanger.SetText(std::to_string(unit.hanger));
+    editUnitId.SetText(std::to_string(unit.id));
+    editXc.SetText(std::to_string(unit.xc));
+    editYc.SetText(std::to_string(unit.yc));
 
     checkInvincible.SetCheck((unit.stateFlags&UNIT_STATE_INVINCIBLE) == UNIT_STATE_INVINCIBLE);
     checkHallucinated.SetCheck((unit.stateFlags&UNIT_STATE_HALLUCINATED) == UNIT_STATE_HALLUCINATED);
@@ -493,7 +493,7 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
             ChkUnit unit = CM->getUnit(index);
             ChkdString unitName;
             CM->getUnitName(unitName, unit.id);
-            WindowsItem::SetWinText(unitName.c_str());
+            WindowsItem::SetWinText(unitName);
             SetUnitFieldText(unit);
 
             CM->Redraw(false);
@@ -961,10 +961,10 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
 
                 ChkdString unitName;
                 CM->getUnitName(unitName, unitID);
-                listUnits.SetItemText(row, (int)UnitListColumn::Name, unitName.c_str());
+                listUnits.SetItemText(row, (int)UnitListColumn::Name, unitName);
 
                 if ( unitIndex == CM->GetSelections().getFirstUnit() )
-                    WindowsItem::SetWinText(unitName.c_str());
+                    WindowsItem::SetWinText(unitName);
             }
         }
         CM->Redraw(true);

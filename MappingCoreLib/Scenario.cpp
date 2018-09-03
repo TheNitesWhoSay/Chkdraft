@@ -11,6 +11,9 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 Scenario::Scenario() : mapIsProtected(false), caching(false), tailLength(0),
 
@@ -735,7 +738,7 @@ bool Scenario::getUnitName(RawString &dest, u16 unitID)
 
         try
         {
-            dest = DefaultUnitDisplayName[unitID];
+            dest = DefaultUnitDisplayNames[unitID];
             return true;
         }
         catch ( std::exception ) {}
@@ -767,7 +770,7 @@ bool Scenario::getUnitName(ChkdString &dest, u16 unitID)
 
         try
         {
-            dest = DefaultUnitDisplayName[unitID];
+            dest = DefaultUnitDisplayNames[unitID];
             return true;
         }
         catch ( std::exception ) {}
@@ -1602,7 +1605,7 @@ bool Scenario::addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags)
 
 bool Scenario::addUnit(ChkUnit unit)
 {
-    return UNIT().add<ChkUnit&>(unit);
+    return UNIT().add<ChkUnit>(unit);
 }
 
 bool Scenario::createLocation(s32 xc1, s32 yc1, s32 xc2, s32 yc2, u16& locationIndex)
@@ -3774,9 +3777,9 @@ bool Scenario::ToSingleBuffer(buffer& chk)
     {
         for ( auto &section : sections )
         {
-            if ( !chk.add<u32>(section->titleVal()) &&
-                chk.add<u32>(section->size()) &&
-                (section->size() == 0 || chk.addStr((const char*)section->getPtr(0), section->size())) )
+            if ( !( chk.add<u32>(section->titleVal()) &&
+                    chk.add<u32>(section->size()) &&
+                    ( section->size() == 0 || chk.addStr((const char*)section->getPtr(0), section->size()) ) ) )
             {
                 return false;
             }
@@ -3791,10 +3794,13 @@ bool Scenario::ToSingleBuffer(buffer& chk)
         return false;
 }
 
-bool Scenario::Serialize(void* &data)
+std::shared_ptr<void> Scenario::Serialize()
 {
     buffer chk("CHK ");
-    return ToSingleBuffer(chk) && chk.serialize(data);
+    if ( ToSingleBuffer(chk) )
+        return chk.serialize();
+    else
+        return nullptr;
 }
 
 bool Scenario::Deserialize(const void* data)

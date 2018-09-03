@@ -160,16 +160,42 @@ bool Maps::OpenMap(std::string fileName)
     return false;
 }
 
-bool Maps::OpenMap()
+bool Maps::OpenMap(FileBrowserPtr fileBrowser)
 {
-    return OpenMap("");
+    auto newMap = AddEmptyMap();
+
+    if ( newMap->LoadMapFile(fileBrowser) )
+    {
+        if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
+        {
+            newMap->SetWinText(newMap->getFilePath());
+            EnableMapping();
+            Focus(newMap);
+
+            if ( newMap->isProtected() && newMap->hasPassword() )
+                chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+            else if ( newMap->isProtected() )
+                mb("Map is protected and will be opened as view only");
+
+            SetFocus(chkd.getHandle());
+            currentlyActiveMap->Scroll(true, true, false);
+            currentlyActiveMap->Redraw(true);
+            currentlyActiveMap->refreshScenario();
+            return true;
+        } 
+        else
+            Error("Failed to create MDI Child Window!");
+    }
+
+    RemoveMap(newMap);
+    return false;
 }
 
 bool Maps::SaveCurr(bool saveAs)
 {
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
-        currentlyActiveMap->SetWinText(currentlyActiveMap->GetFilePath());
+        currentlyActiveMap->SetWinText(currentlyActiveMap->getFilePath());
         currentlyActiveMap->refreshScenario();
         return true;
     }
@@ -239,7 +265,7 @@ void Maps::ChangeLayer(Layer newLayer)
         currentlyActiveMap->Redraw(false);
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
-            chkd.statusBar.SetText(1, layerString.c_str());
+            chkd.statusBar.SetText(1, layerString);
     }
 }
 

@@ -1,6 +1,7 @@
 #include "GridView.h"
 #include <iostream>
 #include <string>
+#include <SimpleIcu.h>
 
 namespace WinLib {
 
@@ -129,7 +130,7 @@ namespace WinLib {
                     hasDeleted = true;
                     if ( SendMessage(GetParent(getHandle()), WM_GRIDITEMDELETING, MAKEWPARAM(x, y), 0) == TRUE )
                     {
-                        item(x, y).SetText(str.c_str());
+                        item(x, y).SetText(str);
                         EditTextChanged(str);
                     }
                 }
@@ -236,7 +237,7 @@ namespace WinLib {
     {
         if ( editing )
         {
-            editBox.SetText(text.c_str());
+            editBox.SetText(text);
             SetCaretPos(text.length());
         }
     }
@@ -254,7 +255,7 @@ namespace WinLib {
                 if ( gotText &&
                      SendMessage(GetParent(getHandle()), WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
                 {
-                    item(focusedX, focusedY).SetText(str.c_str());
+                    item(focusedX, focusedY).SetText(str);
                 }
                 RedrawThis();
                 SendMessage(GetParent(getHandle()), WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), 0);
@@ -589,7 +590,7 @@ namespace WinLib {
         }
     }
 
-    void GridViewControl::StartEditing(int xClick, int yClick, char initChar)
+    void GridViewControl::StartEditing(int xClick, int yClick, const std::string &initChar)
     {
         RECT rect = { };
         if ( editing == false &&
@@ -607,12 +608,12 @@ namespace WinLib {
             {
                 std::string str;
                 if ( item(x, y).getText(str) )
-                    editBox.SetText(str.c_str());
+                    editBox.SetText(str);
             
                 if ( xClick >= 0 && yClick >= 0 )
                     UpdateCaretPos(xClick, yClick);
             }
-            else if ( initChar == '\10' )
+            else if ( initChar == "\b" )
             {
                 editBox.SetText("");
                 SetCaretPos(0);
@@ -620,11 +621,8 @@ namespace WinLib {
             else // By input start
             {
                 startedByInput = true;
-                char newText[2] = { };
-                newText[0] = initChar;
-                newText[1] = '\0';
                 editBox.SetForwardArrowKeys(true);
-                editBox.SetText(newText);
+                editBox.SetText(initChar);
                 SetCaretPos(1);
             }
             editBox.ExpandToText();
@@ -633,13 +631,7 @@ namespace WinLib {
             SendMessage(GetParent(getHandle()), WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), 0);
 
             if ( startedByInput )
-            {
-                char newText[2] = {};
-                newText[0] = initChar;
-                newText[1] = '\0';
-                std::string sNewText(newText);
-                EditTextChanged(sNewText);
-            }
+                EditTextChanged(initChar);
         }
     }
 
@@ -684,10 +676,10 @@ namespace WinLib {
         editBox.FocusThis();
     }
 
-    void GridViewControl::Char(WPARAM wParam)
+    void GridViewControl::Char(const std::string &character)
     {
         if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
-            StartEditing(-1, -1, (char)wParam);
+            StartEditing(-1, -1, character);
     }
 
     void GridViewControl::KeyDown(WPARAM wParam)
@@ -811,7 +803,7 @@ namespace WinLib {
         int x = -1;
         int y = -1;
         if ( ListViewControl::GetItemAt(xClick, yClick, y, x) && x == focusedX && y == focusedY )
-            StartEditing(xClick, yClick, '\0');
+            StartEditing(xClick, yClick, "");
     }
 
     void GridViewControl::MouseMove(int xMove, int yMove, WPARAM wParam)
@@ -1067,7 +1059,7 @@ namespace WinLib {
         {
             case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
             case WM_KEYDOWN: KeyDown(wParam); break;
-            case WM_CHAR: Char(wParam); break;
+            case WM_CHAR: Char(icux::toUtf8(std::wstring({(wchar_t)HIWORD(wParam), (wchar_t)LOWORD(wParam), icux::u16NullChar}))); break;
             case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_MOUSEMOVE: MouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
             case WM_MOUSEHOVER: MouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;

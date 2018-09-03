@@ -15,8 +15,7 @@ namespace WinLib {
 
     bool TextControl::SetText(const std::string &newText)
     {
-        icux::uistring sysNewText = icux::toUistring(newText);
-        return Static_SetText(getHandle(), sysNewText.c_str()) != 0;
+        return Static_SetText(getHandle(), icux::toUistring(newText).c_str()) != 0;
     }
 
 }

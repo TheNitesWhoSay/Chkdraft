@@ -73,15 +73,11 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
                 if ( numArgs > 8 )
                     numArgs = 8;
 
-                gridActions.item(1, y).SetText(
-                    ttg.GetActionName(action.action).c_str()
-                    );
+                gridActions.item(1, y).SetText(ttg.GetActionName(action.action));
                 for ( u8 x = 0; x<numArgs; x++ )
                 {
                     gridActions.item(x + 2, y).SetDisabled(false);
-                    gridActions.item(x + 2, y).SetText(
-                        ttg.GetActionArgument(action, x, actionArgMaps[action.action]).c_str()
-                        );
+                    gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, x, actionArgMaps[action.action]));
                 }
                 for ( u8 x = numArgs; x < 8; x++ )
                 {
@@ -846,8 +842,8 @@ void TrigActionsWindow::SuggestUnit()
             SingleLineChkdString str;
             CM->getUnitName(str, i);
             suggestions.AddString(str);
-            if ( str.compare(std::string(DefaultUnitDisplayName[i])) != 0 )
-                suggestions.AddString(std::string(DefaultUnitDisplayName[i]));
+            if ( str.compare(std::string(DefaultUnitDisplayNames[i])) != 0 )
+                suggestions.AddString(std::string(DefaultUnitDisplayNames[i]));
         }
     }
     suggestions.Show();
@@ -901,8 +897,8 @@ void TrigActionsWindow::SuggestResourceType()
 
 void TrigActionsWindow::SuggestStateMod()
 {
-    const char* stateMods[] = { "Disable", "Enable", "Toggle" };
-    suggestions.AddStrings(stateMods, sizeof(stateMods)/sizeof(const char*));
+    const std::vector<std::string> stateMods = { "Disable", "Enable", "Toggle" };
+    suggestions.AddStrings(stateMods);
     suggestions.Show();
 }
 
@@ -916,8 +912,8 @@ void TrigActionsWindow::SuggestPercent()
 
 void TrigActionsWindow::SuggestOrder()
 {
-    const char* orders[] = { "Attack", "Move", "Patrol" };
-    suggestions.AddStrings(orders, sizeof(orders)/sizeof(const char*));
+    const std::vector<std::string> orders = { "Attack", "Move", "Patrol" };
+    suggestions.AddStrings(orders);
     suggestions.Show();
 }
 
@@ -962,15 +958,15 @@ void TrigActionsWindow::SuggestScript()
 
 void TrigActionsWindow::SuggestAllyState()
 {
-    const char* allyStates[] = { "Allied Victory", "Ally", "Enemy" };
-    suggestions.AddStrings(allyStates, sizeof(allyStates) / sizeof(const char*));
+    const std::vector<std::string> allyStates = { "Allied Victory", "Ally", "Enemy" };
+    suggestions.AddStrings(allyStates);
     suggestions.Show();
 }
 
 void TrigActionsWindow::SuggestNumericMod()
 {
-    const char* numericMod[] = { "Add", "Set to", "Subtract" };
-    suggestions.AddStrings(numericMod, sizeof(numericMod) / sizeof(const char*));
+    const std::vector<std::string> numericMod = { "Add", "Set to", "Subtract" };
+    suggestions.AddStrings(numericMod);
     suggestions.Show();
 }
 
@@ -996,8 +992,8 @@ void TrigActionsWindow::SuggestSwitch()
 
 void TrigActionsWindow::SuggestSwitchMod()
 {
-    const char* switchMod[] = { "Clear", "Randomize", "Set", "Toggle" };
-    suggestions.AddStrings(switchMod, sizeof(switchMod) / sizeof(const char*));
+    const std::vector<std::string> switchMod = { "Clear", "Randomize", "Set", "Toggle" };
+    suggestions.AddStrings(switchMod);
     suggestions.Show();
 }
 

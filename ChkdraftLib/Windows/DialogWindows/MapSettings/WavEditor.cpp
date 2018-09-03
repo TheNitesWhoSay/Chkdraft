@@ -114,13 +114,11 @@ void WavEditorWindow::UpdateWindowText()
 
         if ( wavIndex == u16_max )
         {
-            chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [WAV #null, String #") +
-                std::to_string(wavStringIndex) + wavStatusString + "]").c_str());
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #null, String #" + std::to_string(wavStringIndex) + wavStatusString + "]");
         }
         else
         {
-            chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [WAV #") +
-                std::to_string(wavIndex) + ", String #" + std::to_string(wavStringIndex) + wavStatusString + "]").c_str());
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #" + std::to_string(wavIndex) + ", String #" + std::to_string(wavStringIndex) + wavStatusString + "]");
         }
     }
     else
@@ -158,7 +156,8 @@ void WavEditorWindow::PlaySoundButtonPressed()
         {
             PlaySound((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
         }
-        else if ( CM->GetString(wavString, wavStringIndex) && CM->IsInVirtualWavList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser())) )
+        else if ( CM->GetString(wavString, wavStringIndex) && CM->IsInVirtualWavList(wavString) &&
+            chkd.scData.GetScAsset(wavString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
         {
             PlaySound((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
         }
@@ -195,7 +194,7 @@ void WavEditorWindow::ExtractSoundButtonPressed()
         std::string wavFileName = GetMpqFileName(wavMpqPath);
         u32 filterIndex = 0;
         std::string saveFilePath = "";
-        if ( BrowseForSave(saveFilePath, filterIndex, soundFilters, "", "Save Sound", false, true) )
+        if ( BrowseForSave(saveFilePath, filterIndex, getSoundFilters(), "", "Save Sound", false, true) )
         {
             if ( !CM->ExtractMpqAsset(wavMpqPath, saveFilePath) )
                 Error("Error Extracting Asset!");
@@ -208,11 +207,12 @@ void WavEditorWindow::ExtractSoundButtonPressed()
 void WavEditorWindow::BrowseButtonPressed()
 {
     OPENFILENAME ofn = { };
-    std::map<std::string, std::string> filterToLabel = { {"*.wav", "WAV File"}, {"*.*", "All Files"} };
+    std::vector<std::pair<std::string, std::string>> filtersAndLabels = { std::make_pair<std::string, std::string>("*.wav", "WAV File"), std::make_pair<std::string, std::string>("*.*", "All Files") };
     std::string initPath = Settings::starCraftPath + GetSystemFileSeparator() + "Maps";
 
+    u32 filterIndex = 0;
     std::string soundFilePath;
-    if ( WinLib::BrowseForFile(soundFilePath, filterToLabel, 0, initPath, "", true, false) )
+    if ( BrowseForFile(soundFilePath, filterIndex, filtersAndLabels, initPath, "Open Sound", true, false) )
     {
         buttonPreviewPlaySound.DisableThis();
         listVirtualSounds.ClearSel();
@@ -245,7 +245,7 @@ void WavEditorWindow::AddFileButtonPressed()
         else
             addedWav = CM->AddWav(filePath, wavQuality, true);
     }
-    else if ( !useVirtualFile && FindFile(filePath.c_str()) )
+    else if ( !useVirtualFile && FindFile(filePath) )
     {
         if ( useCustomMpqString )
             addedWav = CM->AddWav(filePath, customMpqPath, wavQuality, false);
@@ -367,7 +367,7 @@ void WavEditorWindow::VirtualSoundSelectionChanged()
     {
         dropCompressionLevel.SetSel(0);
         buttonPreviewPlaySound.EnableThis();
-        editFileName.SetText(virtualSoundPath.c_str());
+        editFileName.SetText(virtualSoundPath);
         checkVirtualFile.EnableThis();
         checkVirtualFile.SetCheck(true);
         checkCustomMpqString.SetCheck(false);

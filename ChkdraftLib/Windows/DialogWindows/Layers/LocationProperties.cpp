@@ -110,10 +110,10 @@ void LocationWindow::RefreshLocationInfo()
     ChkLocation* locRef = nullptr;
     if ( currentLocationIndex != NO_LOCATION && CM->getLocation(locRef, currentLocationIndex) )
     {
-        editLocLeft.SetText(std::to_string(locRef->xc1).c_str());
-        editLocTop.SetText(std::to_string(locRef->yc1).c_str());
-        editLocRight.SetText(std::to_string(locRef->xc2).c_str());
-        editLocBottom.SetText(std::to_string(locRef->yc2).c_str());
+        editLocLeft.SetText(std::to_string(locRef->xc1));
+        editLocTop.SetText(std::to_string(locRef->yc1));
+        editLocRight.SetText(std::to_string(locRef->xc2));
+        editLocBottom.SetText(std::to_string(locRef->yc2));
 
         char text[20];
         _itoa_s(locRef->elevation, text, 20, 2);
@@ -131,7 +131,7 @@ void LocationWindow::RefreshLocationInfo()
 
         ChkdString locName;
         if ( CM->GetString(locName, locRef->stringNum) )
-            editLocName.SetText(locName.c_str());
+            editLocName.SetText(locName);
         else
             editLocName.SetText("ERROR");
     }

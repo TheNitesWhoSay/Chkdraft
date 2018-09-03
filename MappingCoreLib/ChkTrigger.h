@@ -7,6 +7,8 @@
 #define NUM_TRIG_CONDITIONS 16
 #define NUM_TRIG_ACTIONS 64
 #define NUM_TRIG_PLAYERS 28
+#pragma pack(push, 1)
+__declspec(align(1))
 class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
 {
     public:
@@ -18,7 +20,6 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
             #define NOT_EXECUTED_BY_PLAYER 0
 
         Trigger();
-        virtual ~Trigger();
         Condition& condition(u8 index);
         Action& action(u8 index);
 
@@ -48,6 +49,7 @@ class Trigger // A trigger as found in a scenario.chk's TRIG and MBRF sections
         static Condition junkCondition;
         static Action junkAction;
 };
+#pragma pack(pop)
 #define TRIG_STRUCT_SIZE 2400
 
 enum TrigPlayers

@@ -1169,14 +1169,14 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
                     unitName = "\"" + unquotedName + "\"";
                 }
                 else
-                    unitName = ChkdString("\"" + std::string(LegacyTextTrigDisplayName[unitID]) + "\"");
+                    unitName = ChkdString("\"" + std::string(LegacyTextTrigDisplayNames[unitID]) + "\"");
             }
             else
             {
                 if ( useCustomNames && unitID < 228 )
                     map->getUnitName(unitName, unitID);
                 else
-                    unitName = ChkdString(LegacyTextTrigDisplayName[unitID]);
+                    unitName = ChkdString(LegacyTextTrigDisplayNames[unitID]);
             }
 
             unitTable.push_back( unitName );

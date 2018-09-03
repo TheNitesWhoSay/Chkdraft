@@ -113,28 +113,28 @@ void UnitSettingsWindow::RefreshWindow()
 
         if ( groundWeapon == 130 )
         {
-            groupGroundWeapon.SetText("No Ground Weapon");
+            groupGroundWeapon.SetWinText("No Ground Weapon");
             groupGroundWeapon.DisableThis();
-            editGroundDamage.SetText("");
+            editGroundDamage.SetWinText("");
             editGroundDamage.DisableThis();
-            editGroundBonus.SetText("");
+            editGroundBonus.SetWinText("");
             editGroundBonus.DisableThis();
             textGroundDamage.DisableThis();
             textGroundBonus.DisableThis();
         }
         else
         {
-            groupGroundWeapon.SetText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
+            groupGroundWeapon.SetWinText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
         }
 
         if ( airWeapon == 130 || airWeapon == groundWeapon )
         {
             if ( airWeapon != 130 && airWeapon == groundWeapon )
             {
-                groupAirWeapon.SetText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+                groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
             }
             else
-                groupAirWeapon.SetText("No Air Weapon");
+                groupAirWeapon.SetWinText("No Air Weapon");
 
             groupAirWeapon.DisableThis();
             editAirDamage.SetText("");
@@ -146,7 +146,7 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else
         {
-            groupAirWeapon.SetText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+            groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
         }
 
         if ( useDefaultSettings )
@@ -223,8 +223,8 @@ void UnitSettingsWindow::RefreshWindow()
             
         ChkdString unitName;
         CM->getUnitName(unitName, unitId);
-        editUnitName.SetText(unitName.c_str());
-        chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [") + DefaultUnitDisplayName[unitId] + ']').c_str());
+        editUnitName.SetText(unitName);
+        chkd.mapSettingsWindow.SetWinText("Map Settings - [" + DefaultUnitDisplayNames[unitId] + ']');
     }
     else
         DisableUnitEditing();
@@ -234,7 +234,7 @@ void UnitSettingsWindow::RefreshWindow()
 
 void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
-    unitTree.UpdateUnitNames(DefaultUnitDisplayName);
+    unitTree.UpdateUnitNames(DefaultUnitDisplayNames);
     unitTree.CreateThis(hParent, 5, 5, 200, 489, false, TREE_UNITSETTINGS);
     buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", BUTTON_RESETALLUNITDEFAULTS);
     checkUseUnitDefaults.CreateThis(hParent, 210, 5, 100, 20, false, "Use Unit Defaults", CHECK_USEUNITDEFAULTS);
@@ -282,12 +282,12 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
             else
                 ssPlayer << "Player " << player+1;
 
-            textPlayerAvailability[player].CreateThis(hParent, 215+188*x, 336+27*y, 75, 20, ssPlayer.str().c_str(), TEXT_P1UNITAVAILABILITY+player);
+            textPlayerAvailability[player].CreateThis(hParent, 215+188*x, 336+27*y, 75, 20, ssPlayer.str(), TEXT_P1UNITAVAILABILITY+player);
         }
     }
 
     const std::vector<std::string> items = { "Default", "Yes", "No" };
-    int numItems = sizeof(items)/sizeof(const char*);
+    int numItems = items.size();
 
     for ( int y=0; y<6; y++ )
     {
@@ -444,7 +444,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         CM->setUnixStringId(selectedUnit, 0);
         ChkdString unitName;
         CM->getUnitName(unitName, (u16)selectedUnit);
-        editUnitName.SetText(unitName.c_str());
+        editUnitName.SetText(unitName);
         checkUseDefaultName.DisableThis();
         editUnitName.DisableThis();
         CM->removeUnusedString(origName);
@@ -621,7 +621,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setUnixStringId(selectedUnit, 0);
                     ChkdString unitName;
                     CM->getUnitName(unitName, (u16)selectedUnit);
-                    editUnitName.SetText(unitName.c_str());
+                    editUnitName.SetText(unitName);
                     chkd.unitWindow.RepopulateList();
                     RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
                 }
@@ -825,7 +825,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             {
                 RefreshWindow();
                 if ( selectedUnit != -1 )
-                    chkd.mapSettingsWindow.SetWinText((std::string("Map Settings - [") + DefaultUnitDisplayName[selectedUnit] + ']').c_str());
+                    chkd.mapSettingsWindow.SetWinText(std::string("Map Settings - [") + DefaultUnitDisplayNames[selectedUnit] + ']');
                 else
                     chkd.mapSettingsWindow.SetWinText("Map Settings");
             }

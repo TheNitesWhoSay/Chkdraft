@@ -67,10 +67,10 @@ class SingleLineChkdString : public ChkdString
     All ASCII Characters < 32 or >= 127 are given a \xhh format,
         where hh is the corresponding hex string.
     Returns true and outEscString on success, false and an empty outEscString on faliure. */
-bool MakeEscStr(const char* inRawString, size_t inRawStringLength, EscString &outEscString);
+bool MakeEscStr(const std::string &inRawString, size_t inRawStringLength, EscString &outEscString);
 bool MakeEscStr(RawString &inRawString, EscString &outEscString);
 
-bool GetSlashEscCodeChar(const char* escString, size_t escStringLength, size_t slashPos, char &character, size_t &lastCharPos);
+bool GetSlashEscCodeChar(const std::string &escString, size_t escStringLength, size_t slashPos, char &character, size_t &lastCharPos);
 
 /** Parsing an EscString into a RawString uses these rules...
     All "\\a" in the EscString become "\a" in the RawString.
@@ -107,10 +107,10 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes);
     All other characters >= 32 or < 127 are added as they are.
 
     Returns true and outChkdString on success, false and an empty outChkdString on faliure. */
-bool MakeChkdStr(const char* inRawString, size_t inRawStringLength, ChkdString &outChkdString);
+bool MakeChkdStr(const std::string &inRawString, size_t inRawStringLength, ChkdString &outChkdString);
 bool MakeChkdStr(RawString &inRawString, ChkdString &outChkdString);
 
-bool GetChkdEscCodeChar(const char* chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos);
+bool GetChkdEscCodeChar(const std::string &chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos);
 
 /** Parses a ChkdString into a RawString using these rules...
     All "\\<" in the ChkdString become "<" in the RawString.
@@ -130,13 +130,13 @@ bool ParseChkdBytes(const ChkdString &inChkdString, std::vector<u8> &outRawBytes
 
 bool getOneCharHexVal(const char character, u8 &value);
 
-bool getTwoCharHexVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
+bool getTwoCharHexVal(const std::string &firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
 
 bool getOneCharOctVal(const char character, u8 &value);
 
-bool getTwoCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
+bool getTwoCharOctVal(const std::string &firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 2 characters long
 
-bool getThreeCharOctVal(const char* firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 3 characters long
+bool getThreeCharOctVal(const std::string &firstCharPtr, u8 &value); // firstCharPtr must point to a string at least 3 characters long
 
 typedef std::shared_ptr<RawString> RawStringPtr;
 typedef std::shared_ptr<EscString> EscStringPtr;

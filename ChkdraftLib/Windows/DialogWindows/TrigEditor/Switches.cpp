@@ -69,7 +69,7 @@ void SwitchesWindow::RefreshWindow()
                 isExtendedString = CM->isExtendedString(switchStringNum);
                 ChkdString switchName;
                 if ( CM->getSwitchName(switchName, (u8)selectedSwitch) )
-                    editSwitchName.SetText(switchName.c_str());
+                    editSwitchName.SetText(switchName);
             }
             else
             {
@@ -103,9 +103,9 @@ void SwitchesWindow::RefreshSwitchList()
         {
             ChkdString switchName;
             if ( CM->getSwitchName(switchName, i) )
-                item = switchList.InsertTreeItem(NULL, (std::string("Switch ") + std::to_string(i + 1) + " - " + switchName).c_str(), i);
+                item = switchList.InsertTreeItem(NULL, "Switch " + std::to_string(i + 1) + " - " + switchName, i);
             else
-                item = switchList.InsertTreeItem(NULL, (std::string("Switch ") + std::to_string(i + 1)).c_str(), i);
+                item = switchList.InsertTreeItem(NULL, "Switch " + std::to_string(i + 1), i);
 
             if ( i == (u32)selectedSwitch )
                 TreeView_SelectItem(switchList.getHandle(), item);

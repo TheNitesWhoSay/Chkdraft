@@ -50,19 +50,13 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                 break;
                             case REPLACE_TRIGGERS_TEXT:
                                 {
-                                    char* inputText = nullptr;
-                                    try { inputText = new char[length+1]; }
-                                    catch ( std::bad_alloc ) {
-                                        WinLib::Message("Compilation failed, couldn't allocate space for input text.", "Error!");
-                                        return FALSE;
-                                    }
-                                    std::memcpy(inputText, copyData, length);
-                                    if ( inputText[length-2] != '\0' ) // Ensure NUL-terminated
-                                        inputText[length-1] = '\0';
+                                    std::unique_ptr<char> inputText = std::unique_ptr<char>(new char[length+1]);
+                                    std::memcpy(inputText.get(), copyData, length);
+                                    if ( inputText.get()[length-2] != '\0' ) // Ensure NUL-terminated
+                                        inputText.get()[length-1] = '\0';
     
                                     buffer textBuf("TxTr");
-                                    textBuf.addStr(inputText, length);
-                                    delete[] inputText;
+                                    textBuf.addStr(inputText.get(), length);
 
                                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
                                     if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )
@@ -99,13 +93,12 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     u16 mapID = chkd.maps.GetMapID(map);
                     COPYDATASTRUCT copyData;
                     copyData.dwData = (ULONG_PTR)MAKELONG(COPY_CHK_FILE, mapID);
-                    void* chkFile;
-                    if ( map->Serialize(chkFile) )
+                    std::shared_ptr<void> chkFile = map->Serialize();
+                    if ( chkFile != nullptr )
                     {
-                        copyData.lpData = chkFile;
-                        copyData.cbData = ((u32*)chkFile)[1]+8;
+                        copyData.lpData = chkFile.get();
+                        copyData.cbData = ((u32*)chkFile.get())[1]+8;
                         SendMessage((HWND)wParam, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&copyData);
-                        delete[] ((char*)chkFile);
                         return mapID;
                     }
                 }

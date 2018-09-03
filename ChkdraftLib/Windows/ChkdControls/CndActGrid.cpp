@@ -203,9 +203,9 @@ bool CndActGrid::CreateSubWindows(HWND hWnd)
     return true;
 }
 
-void CndActGrid::StartEditing(int xClick, int yClick, char initChar)
+void CndActGrid::StartEditing(int xClick, int yClick, const std::string &initChar)
 {
-    if ( initChar == '\0' ) // Started via click
+    if ( initChar.empty() ) // Started via click
     {
         startedByClick = true;
         GridViewControl::EditBox().SetForwardArrowKeys(false);

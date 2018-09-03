@@ -8,9 +8,12 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include "../CommanderLib/Logger.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
+
+extern Logger logger;
 
 bool hasExtension(const std::string &systemFilePath, const std::string &extension)
 {
@@ -41,11 +44,14 @@ std::string GetSystemFileName(const std::string &systemFilePath)
 std::string GetSystemFileExtension(const std::string &systemFilePath)
 {
     const std::string systemExtensionSeparator = ".";
-    size_t lastSeparator = systemFilePath.find_last_of(systemExtensionSeparator);
-    if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length()-systemExtensionSeparator.length() )
-        return systemFilePath.substr(lastSeparator+systemExtensionSeparator.length(), systemFilePath.length());
-    else
-        return "";
+    size_t lastExtensionSeparator = systemFilePath.find_last_of(systemExtensionSeparator);
+    if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < systemFilePath.length()-systemExtensionSeparator.length() )
+    {
+        size_t lastPathSeparator = systemFilePath.find_last_of(GetSystemFileSeparator());
+        if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
+            return systemFilePath.substr(lastExtensionSeparator, systemFilePath.length() - lastExtensionSeparator); 
+    }
+    return "";
 }
 
 std::string GetSystemFileDirectory(const std::string &systemFilePath, bool includeTrailingSeparator)
@@ -378,7 +384,7 @@ PromptResult GetYesNoCancel(const std::string &text, const std::string &caption)
 #endif
 }
 
-bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::map<std::string, std::string> &filterToLabel,
+bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32
@@ -398,26 +404,30 @@ bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterInd
     }
 
     std::string filterString = "";
-    for ( auto filterLabel : filterToLabel )
+    for ( auto filterAndLabel : filtersAndLabels )
     {
-        const std::string &filter = filterLabel.first;
-        const std::string &label = filterLabel.second;
+        const std::string &filter = filterAndLabel.first;
+        const std::string &label = filterAndLabel.second;
         filterString += label + '\0' + filter + '\0';
     }
 
+    icux::uistring sysFilterString = icux::toUistring(filterString);
+    icux::filestring sysInitialDir = icux::toFilestring(initialDirectory);
+    icux::uistring sysTitle = icux::toUistring(title);
+
     ofn.lStructSize = sizeof(OPENFILENAME);
-    ofn.lpstrFilter = icux::toUistring(filterString).c_str();
+    ofn.lpstrFilter = sysFilterString.c_str();
     ofn.lpstrFile = fileNameBuffer;
 
     if ( initialDirectory.empty() )
         ofn.lpstrInitialDir = NULL;
     else
-        ofn.lpstrInitialDir = icux::toFilestring(initialDirectory).c_str();
+        ofn.lpstrInitialDir = sysInitialDir.c_str();
 
     if ( title.empty() )
         ofn.lpstrTitle = NULL;
     else
-        ofn.lpstrTitle = icux::toUistring(title).c_str();
+        ofn.lpstrTitle = sysTitle.c_str();
 
     ofn.hwndOwner = NULL;
     ofn.nMaxFile = FILENAME_MAX;
@@ -443,7 +453,7 @@ bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterInd
 #endif
 }
 
-bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::map<std::string, std::string> &filterToLabel,
+bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32
@@ -463,26 +473,30 @@ bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterInd
     }
 
     std::string filterString = "";
-    for ( auto filterLabel : filterToLabel )
+    for ( auto filtersAndLabel : filtersAndLabels )
     {
-        const std::string &filter = filterLabel.first;
-        const std::string &label = filterLabel.second;
+        const std::string &filter = filtersAndLabel.first;
+        const std::string &label = filtersAndLabel.second;
         filterString += label + '\0' + filter + '\0';
     }
 
+    icux::uistring sysFilterString = icux::toUistring(filterString);
+    icux::filestring sysInitialDir = icux::toFilestring(initialDirectory);
+    icux::uistring sysTitle = icux::toUistring(title);
+
     ofn.lStructSize = sizeof(OPENFILENAME);
-    ofn.lpstrFilter = icux::toUistring(filterString).c_str();
+    ofn.lpstrFilter = sysFilterString.c_str();
     ofn.lpstrFile = fileNameBuffer;
 
     if ( initialDirectory.empty() )
         ofn.lpstrInitialDir = NULL;
     else
-        ofn.lpstrInitialDir = icux::toFilestring(initialDirectory).c_str();
+        ofn.lpstrInitialDir = sysInitialDir.c_str();
 
     if ( title.empty() )
         ofn.lpstrTitle = NULL;
     else
-        ofn.lpstrTitle = icux::toUistring(title).c_str();
+        ofn.lpstrTitle = sysTitle.c_str();
 
     ofn.hwndOwner = NULL;
     ofn.nMaxFile = FILENAME_MAX;
@@ -495,7 +509,7 @@ bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterInd
     ofn.Flags = flags;
     ofn.nFilterIndex = filterIndex;
 
-    bool success = GetOpenFileName(&ofn) == TRUE;
+    bool success = GetSaveFileName(&ofn) == TRUE;
     if ( success )
     {
         filePath = icux::toUtf8(fileNameBuffer);

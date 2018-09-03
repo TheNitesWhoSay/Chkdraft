@@ -15,11 +15,6 @@ Condition::Condition(ConditionId condition) : locationNum(0), players(0), amount
 
 }
 
-Condition::~Condition()
-{
-
-}
-
 void Condition::ToggleDisabled()
 {
     if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )

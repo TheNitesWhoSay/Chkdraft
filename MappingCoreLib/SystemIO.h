@@ -47,10 +47,10 @@ enum class PromptResult
 PromptResult GetYesNo(const std::string &text, const std::string &caption);
 PromptResult GetYesNoCancel(const std::string &text, const std::string &caption);
 
-bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::map<std::string, std::string> &filterToLabel,
+bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt);
 
-bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::map<std::string, std::string> &filterToLabel,
+bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt);
 
 #endif

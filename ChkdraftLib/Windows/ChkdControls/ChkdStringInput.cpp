@@ -51,7 +51,7 @@ BOOL ChkdStringInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
     if ( msg == WM_INITDIALOG )
     {
         editString.FindThis(hWnd, IDC_EDIT1);
-        editString.SetText(initialString.c_str());
+        editString.SetText(initialString);
         SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
     }
 

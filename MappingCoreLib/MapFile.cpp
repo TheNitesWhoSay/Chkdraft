@@ -10,10 +10,17 @@ std::hash<std::string> MapFile::strHash;
 std::map<u32, std::string> MapFile::virtualWavTable;
 u64 MapFile::nextAssetFileId(0);
 
-FileBrowserPtr MapFile::defaultOpenMapBrowser(new FileBrowser(openMapFilters, "Open Map", true, false));
-FileBrowserPtr MapFile::defaultSaveMapBrowser(new FileBrowser(saveMapFilters, "Save Map", false, true));
+FileBrowserPtr MapFile::getDefaultOpenMapBrowser()
+{
+    return FileBrowserPtr(new FileBrowser(getOpenMapFilters(), "Open Map", true, false));
+}
 
-MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath("")
+FileBrowserPtr MapFile::getDefaultSaveMapBrowser()
+{
+    return FileBrowserPtr(new FileBrowser(getSaveMapFilters(), "Save Map", false, true));
+}
+
+MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath("")
 {
     if ( MapFile::virtualWavTable.size() == 0 )
     {
@@ -31,21 +38,16 @@ MapFile::~MapFile()
 
 }
 
-bool MapFile::LoadMapFile(const std::string &filePath, FileBrowserPtr fileBrowser)
+bool MapFile::LoadMapFile(std::string &filePath)
 {
-    if ( !filePath.empty() )
-        return OpenMapFile(filePath);
-
-    std::string browseFilePath = "";
-    u32 filterIndex = 0;
-    return fileBrowser != nullptr && fileBrowser->browseForFilePath(browseFilePath, filterIndex) && OpenMapFile(browseFilePath);
+    return !filePath.empty() && OpenMapFile(filePath);
 }
 
 bool MapFile::LoadMapFile(FileBrowserPtr fileBrowser)
 {
     std::string browseFilePath = "";
     u32 filterIndex = 0;
-    return fileBrowser != nullptr && fileBrowser->browseForFilePath(browseFilePath, filterIndex) && OpenMapFile(browseFilePath);
+    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && OpenMapFile(browseFilePath);
 }
 
 bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrowser)
@@ -58,8 +60,8 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrow
     {
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
         {
-            u32 filterIndex = 0;
-            if ( fileBrowser != nullptr && fileBrowser->browseForFilePath(mapFilePath, filterIndex) )
+            u32 filterIndex = (u32)saveType;
+            if ( fileBrowser != nullptr && fileBrowser->browseForSavePath(mapFilePath, filterIndex) )
             {
                 saveType = (SaveType)filterIndex;
                 std::string extension = GetSystemFileExtension(mapFilePath);
@@ -74,8 +76,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrow
                 }
                 else // Extension specified, give it precedence over filterIndex
                 {
-                    if ( extension == ".chk" && (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
-                        saveType == SaveType::ExpansionScx) )
+                    if ( extension == ".chk" && (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) )
                     {
                         if ( saveType == SaveType::ExpansionScx )
                             saveType = SaveType::ExpansionChk;
@@ -117,6 +118,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrow
                                 CHKD_ERR("Processing assets failed!");
 
                             MpqFile::close(updateListFile);
+                            return true;
                         }
                         else
                             CHKD_ERR("Failed to create the new MPQ file!");
@@ -149,13 +151,12 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrow
     return false;
 }
 
-bool MapFile::GetTemporaryMpqPath(std::string &temporaryMpqFilePath)
+bool MapFile::OpenTemporaryMpq()
 {
     if ( temporaryMpq.isOpen() )
-    {
-        temporaryMpqFilePath = temporaryMpq.getFilePath();
         return true;
-    }
+    else if ( !temporaryMpqPath.empty() )
+        return temporaryMpq.open(temporaryMpqPath, false);
 
     std::string assetFileDirectory("");
     std::string assetFilePath("");
@@ -169,7 +170,7 @@ bool MapFile::GetTemporaryMpqPath(std::string &temporaryMpqFilePath)
             assetFilePath = MakeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
             nextAssetFileId ++;
         }
-        while ( FindFile(assetFilePath.c_str()) ); // Try again if the file already exists
+        while ( FindFile(assetFilePath) ); // Try again if the file already exists
     }
 #endif
 
@@ -181,7 +182,7 @@ bool MapFile::GetTemporaryMpqPath(std::string &temporaryMpqFilePath)
             {
                 assetFileDirectory = GetSystemFileDirectory(mapFilePath, true);
                 assetFilePath = MakeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
-            } while ( FindFile(assetFilePath.c_str()) ); // Try again if the file already exists
+            } while ( FindFile(assetFilePath) ); // Try again if the file already exists
         }
         else // Use the C library to find an appropriate temporary location
         {
@@ -192,9 +193,11 @@ bool MapFile::GetTemporaryMpqPath(std::string &temporaryMpqFilePath)
     if ( assetFilePath.length() > 0 )
     {
         try {
-            temporaryMpq.create(assetFilePath);
-            temporaryMpqFilePath = temporaryMpq.getFilePath();
-            return true;
+            if ( temporaryMpq.create(assetFilePath) )
+            {
+                temporaryMpqPath = temporaryMpq.getFilePath();
+                return true;
+            }
         } catch ( std::exception ) {
             CHKD_ERR("Failed to setup temporary asset storage, out of memory!");
         }
@@ -205,16 +208,17 @@ bool MapFile::GetTemporaryMpqPath(std::string &temporaryMpqFilePath)
     return false;
 }
 
-bool MapFile::OpenMapFile(const std::string &filePath, FileBrowserPtr fileBrowser)
+bool MapFile::OpenMapFile(std::string &filePath)
 {
     std::string extension = GetSystemFileExtension(filePath);
     if ( !extension.empty() )
     {
         buffer chk("oMAP");
-        if ( extension == ".scm" && extension == ".scx" )
+        if ( extension == ".scm" || extension == ".scx" )
         {
-            if ( MpqFile::open(filePath, fileBrowser) )
+            if ( MpqFile::open(filePath, false) )
             {
+                this->mapFilePath = MpqFile::getFilePath();
                 if ( !MpqFile::getFile("staredit\\scenario.chk", chk) )
                     CHKD_ERR("Failed to get scenario file from MPQ.");
                 
@@ -236,6 +240,7 @@ bool MapFile::OpenMapFile(const std::string &filePath, FileBrowserPtr fileBrowse
                     else if ( true ) // Could search for clues to map version here
                         saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
                     
+                    filePath = this->mapFilePath;
                     return true;
                 }
                 else
@@ -264,6 +269,7 @@ bool MapFile::OpenMapFile(const std::string &filePath, FileBrowserPtr fileBrowse
                     else if ( true ) // Could search for clues to map version here
                         saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
                     
+                    this->mapFilePath = filePath;
                     return true;
                 }
                 else
@@ -272,15 +278,16 @@ bool MapFile::OpenMapFile(const std::string &filePath, FileBrowserPtr fileBrowse
             else
                 CHKD_ERR("Error Reading CHK File");
         }
+        else
+            CHKD_ERR("Unrecognized Extension!");
     }
     return false;
 }
 
 bool MapFile::ProcessModifiedAssets(bool updateListfile)
 {
-    std::string temporaryMpqPath = "";
     std::vector<std::vector<ModifiedAssetPtr>::iterator> processedAssets;
-    if ( GetTemporaryMpqPath(temporaryMpqPath) && temporaryMpq.open(temporaryMpqPath, false) )
+    if ( OpenTemporaryMpq() )
     {
         for ( auto modifiedAsset = modifiedAssets.begin(); modifiedAsset != modifiedAssets.end(); ++modifiedAsset )
         {
@@ -337,13 +344,12 @@ std::string MapFile::GetStandardWavDir()
 bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::string &assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
-    if ( FindFile(assetSystemFilePath.c_str()) )
+    if ( FindFile(assetSystemFilePath) )
     {
-        std::string temporaryMpqPath = "";
-        if ( GetTemporaryMpqPath(temporaryMpqPath) && temporaryMpq.open(temporaryMpqPath) )
+        if ( OpenTemporaryMpq() )
         {
             ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-            const char* tempMpqPath = modifiedAssetPtr->assetTempMpqPath.c_str();
+            const std::string &tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
             if ( temporaryMpq.addFile(tempMpqPath, assetSystemFilePath) )
             {
                 modifiedAssets.push_back(modifiedAssetPtr);
@@ -366,12 +372,10 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
 bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &asset, WavQuality wavQuality)
 {
     bool success = false;
-    std::string temporaryMpqPath = "";
-    if ( GetTemporaryMpqPath(temporaryMpqPath) )
+    if ( OpenTemporaryMpq() )
     {
         ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-        const char* tempMpqPath = modifiedAssetPtr->assetTempMpqPath.c_str();
-
+        const std::string &tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
         if ( temporaryMpq.open(temporaryMpqPath) )
         {
             if ( temporaryMpq.addFile(modifiedAssetPtr->assetTempMpqPath, asset) )
@@ -414,8 +418,7 @@ void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
         modifiedAssets.erase(recentlyAddedAset);
 
         // Try to remove it from the temporary file for some short-term disk saving; ignore errors, if any
-        std::string temporaryMpqPath = "";
-        if ( GetTemporaryMpqPath(temporaryMpqPath) && temporaryMpq.open(temporaryMpqPath) )
+        if ( OpenTemporaryMpq() )
         {
             temporaryMpq.removeFile(tempMpqFilePath);
             temporaryMpq.close();
@@ -432,8 +435,7 @@ bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetB
     {
         if ( asset->actionTaken == AssetAction::Add && asset->assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
         {
-            std::string temporaryMpqPath = "";
-            if ( GetTemporaryMpqPath(temporaryMpqPath) && temporaryMpq.open(temporaryMpqPath) )
+            if ( OpenTemporaryMpq() )
             {
                 success = temporaryMpq.getFile(asset->assetTempMpqPath, outAssetBuffer);
                 temporaryMpq.close();
@@ -444,7 +446,7 @@ bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetB
 
     if ( MpqFile::open(mapFilePath) )
     {
-        success = MpqFile::getFile(mapFilePath, outAssetBuffer);
+        success = MpqFile::getFile(assetMpqFilePath, outAssetBuffer);
         MpqFile::close();
     }
 
@@ -574,7 +576,7 @@ WavStatus MapFile::GetWavStatus(u32 wavStringIndex)
             }
 
             HANDLE hMpq = NULL;
-            if ( MpqFile::open(mapFilePath) )
+            if ( MpqFile::open(mapFilePath, false) )
             {
                 WavStatus wavStatus = WavStatus::NoMatch;
                 if ( MpqFile::findFile(wavString) )
@@ -584,6 +586,8 @@ WavStatus MapFile::GetWavStatus(u32 wavStringIndex)
                 MpqFile::close();
                 return wavStatus;
             }
+            else if ( IsInVirtualWavList(wavString) )
+                return WavStatus::VirtualFile;
             else
                 return WavStatus::FileInUse;
         }
@@ -670,7 +674,7 @@ std::string MapFile::GetFileName()
         return std::string("");
 }
 
-std::string MapFile::GetFilePath()
+const std::string &MapFile::getFilePath() const
 {
     return mapFilePath;
 }
