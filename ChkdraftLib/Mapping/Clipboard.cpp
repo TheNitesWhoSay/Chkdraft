@@ -4,21 +4,24 @@
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include <set>
 
+extern Logger logger;
+
 void StringToWindowsClipboard(const std::string &str)
 {
     if ( OpenClipboard(NULL) != 0 )
     {
         if ( EmptyClipboard() != 0 )
         {
-            HGLOBAL globalData = GlobalAlloc(GMEM_MOVEABLE, str.size() + 1);
+            icux::uistring sysText = icux::toUistring(str);
+            HGLOBAL globalData = GlobalAlloc(GMEM_MOVEABLE, sysText.size()*sizeof(icux::codepoint) + sizeof(icux::codepoint));
             if ( globalData != NULL )
             {
                 LPVOID lockedData = GlobalLock(globalData);
                 if ( lockedData != NULL )
                 {
-                    memcpy(lockedData, str.c_str(), str.size() + 1);
+                    memcpy(lockedData, sysText.c_str(), sysText.size()*sizeof(icux::codepoint) + sizeof(icux::codepoint));
                     GlobalUnlock(lockedData);
-                    SetClipboardData(CF_TEXT, globalData);
+                    SetClipboardData(CF_UNICODETEXT, globalData);
                 }
                 GlobalFree(globalData);
             }
@@ -41,14 +44,8 @@ bool WindowsClipboardToString(std::string &str)
                 SIZE_T maxStringSize = GlobalSize(lockedData);
                 if ( maxStringSize != 0 )
                 {
-                    const wchar_t* cString = (const wchar_t*)lockedData;
-
-                    str.clear();
-                    try {
-                        str = icux::toUtf8(str);
-                        success = true;
-                    }
-                    catch ( std::exception ) {}
+                    str = icux::toUtf8((wchar_t*)lockedData, (size_t)maxStringSize/sizeof(icux::codepoint));
+                    success = true;
                 }
                 GlobalUnlock(lockedData);
             }
