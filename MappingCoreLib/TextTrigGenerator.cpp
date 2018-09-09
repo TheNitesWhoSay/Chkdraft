@@ -255,9 +255,9 @@ std::string TextTrigGenerator::GetActionArgument(Action& action, u8 argNum, std:
 ChkdString TextTrigGenerator::GetTrigLocation(u32 locationNum)
 {
     if ( locationNum >= 0 && locationNum < locationTable.size() )
-        return ChkdString(locationTable[locationNum], true);
+        return SingleLineChkdString(locationTable[locationNum]);
     else
-        return ChkdString(std::to_string(locationNum), true);
+        return ChkdString(std::to_string(locationNum));
 }
 
 ChkdString TextTrigGenerator::GetTrigString(u32 stringNum)
@@ -1115,7 +1115,7 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
     ChkLocation* loc;
     SingleLineChkdString locationName;
 
-    locationTable.push_back(ChkdString("No Location", true));
+    locationTable.push_back(SingleLineChkdString("No Location"));
 
     if ( map->HasLocationSection() && map->hasStrSection(false) )
     {

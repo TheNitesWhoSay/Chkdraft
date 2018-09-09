@@ -503,8 +503,8 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         {
             u8 textTrigArgNum = actionArgMaps[action.action][argNum];
             ActionArgType argType = action.TextTrigArgType(textTrigArgNum, (ActionId)action.action);
-            ChkdString chkdSuggestText = ChkdString(suggestionString, true);
-            ChkdString chkdNewText = ChkdString(newText, true);
+            SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
+            SingleLineChkdString chkdNewText = ChkdString(newText);
 
             bool madeChange = false;
             if ( argType == ActionArgType::ActString || argType == ActionArgType::ActWav )
@@ -664,6 +664,7 @@ int TrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
         UINT width = 0, height = 0;
         if ( GetStringDrawSize(hDC, width, height, text) )
             return width + 2;
+
         ReleaseDC(hDC);
     }
     return 0;
@@ -1052,7 +1053,7 @@ void TrigActionsWindow::DisableStringEdit()
 
 void TrigActionsWindow::ButtonEditString()
 {
-    ChkdString str;
+    ChkdString str = "";
     if ( ChkdStringInputDialog::GetChkdString(str, GetCurrentActionsString(), getHandle()) )
     {
         int focusedX, focusedY;
@@ -1301,7 +1302,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
             ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
             if ( argType == ActionArgType::ActString )
             {
-                ChkdString dest(false);
+                ChkdString dest;
                 if ( CM->GetString(dest, action.stringNum) )
                     return dest;
             }
@@ -1326,7 +1327,7 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
             ActionArgType argType = action.TextTrigArgType(argMap[i], (ActionId)actionNum);
             if ( argType == ActionArgType::ActWav )
             {
-                ChkdString dest(false);
+                ChkdString dest;
                 if ( CM->GetString(dest, action.wavID) )
                     return dest;
             }

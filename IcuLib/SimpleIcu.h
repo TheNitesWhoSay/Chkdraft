@@ -74,6 +74,10 @@ namespace icux {
 
     std::string toUtf8(const std::wstring &utf16Str);
 
+    std::string toUtf8(wchar_t utf32Char);
+
+    std::string toUtf8(char32_t utf32Char);
+
     std::wstring toUtf16(const char* utf8Str, size_t length);
 
     std::wstring toUtf16(const std::string &utf8Str);

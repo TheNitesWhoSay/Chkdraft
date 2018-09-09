@@ -25,6 +25,27 @@ namespace icux {
         return toUtf8(utf16Str.c_str(), utf16Str.size());
     }
 
+    std::string toUtf8(wchar_t utf32Char)
+    {
+        return toUtf8(&utf32Char, 1);
+    }
+
+    std::string toUtf8(char32_t utf32Char)
+    {
+        int32_t utf16Size = 0;
+        UChar utf16Char[4] = {};
+        UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
+        u_strFromUTF32(utf16Char, 4, &utf16Size, (UChar32*)&utf32Char, 1, &errorCode);
+        if ( errorCode == UErrorCode::U_ZERO_ERROR )
+        {
+            char utf8Char[16] = {};
+            int32_t utf8Size = 0;
+            u_strToUTF8(utf8Char, 16, &utf8Size, utf16Char, utf16Size, &errorCode); 
+            return std::string(utf8Char, (size_t)utf8Size);
+        }
+        return std::string();
+    }
+
     std::wstring toUtf16(const char* utf8Str, size_t length)
     {
         int32_t bufferSize = int32_t(length)*2+1;

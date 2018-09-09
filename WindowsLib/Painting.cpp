@@ -1,5 +1,8 @@
 #include "Painting.h"
 #include <SimpleIcu.h>
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -94,30 +97,44 @@ namespace WinLib {
 
     bool getTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height)
     {
-        SIZE size;
-        icux::uistring sysText = icux::toUistring(text);
-        if ( GetTextExtentPoint32(hdc, sysText.c_str(), (int)sysText.length(), &size) != 0 )
+        if ( text.length() > 0 )
         {
-            width = size.cx;
-            height = size.cy;
-            return true;
+            SIZE size;
+            icux::uistring sysText = icux::toUistring(text);
+            if ( GetTextExtentPoint32(hdc, sysText.c_str(), (int)sysText.length(), &size) != 0 )
+            {
+                width = size.cx;
+                height = size.cy;
+                return true;
+            }
         }
-        else
-            return false;
+        else // Empty text
+        {
+            width = 0;
+            height = 0;
+        }
+        return false;
     }
 
     bool getTabTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height)
     {
-        icux::uistring sysText = icux::toUistring(text);
-        DWORD result = GetTabbedTextExtent(hdc, sysText.c_str(), (int)sysText.size(), 0, NULL);
-        if ( result != 0 )
+        if ( text.length() > 0 )
         {
-            width = LOWORD(result);
-            height = HIWORD(result);
-            return true;
+            icux::uistring sysText = icux::toUistring(text);
+            DWORD result = GetTabbedTextExtent(hdc, sysText.c_str(), (int)sysText.size(), 0, NULL);
+            if ( result != 0 )
+            {
+                width = LOWORD(result);
+                height = HIWORD(result);
+                return true;
+            }
         }
-        else
-            return false;
+        else // Empty text
+        {
+            width = 0;
+            height = 0;
+        }
+        return false;
     }
 
     bool drawText(HDC hdc, const std::string &text, int x, int y, RECT &rect, bool clipped, bool opaque)

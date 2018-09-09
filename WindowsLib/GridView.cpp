@@ -2,6 +2,9 @@
 #include <iostream>
 #include <string>
 #include <SimpleIcu.h>
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -604,7 +607,7 @@ namespace WinLib {
 
             int x = -1;
             int y = -1;
-            if ( GetItemAt(xClick, yClick, y, x) )
+            if ( initChar.empty() && GetItemAt(xClick, yClick, y, x) )
             {
                 std::string str;
                 if ( item(x, y).getText(str) )
@@ -618,7 +621,7 @@ namespace WinLib {
                 editBox.SetText("");
                 SetCaretPos(0);
             }
-            else // By input start
+            else if ( !initChar.empty() ) // By input start
             {
                 startedByInput = true;
                 editBox.SetForwardArrowKeys(true);
@@ -1059,7 +1062,8 @@ namespace WinLib {
         {
             case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
             case WM_KEYDOWN: KeyDown(wParam); break;
-            case WM_CHAR: Char(icux::toUtf8(std::wstring({(wchar_t)HIWORD(wParam), (wchar_t)LOWORD(wParam), icux::u16NullChar}))); break;
+            case WM_CHAR: Char(icux::toUtf8((wchar_t)wParam)); break;
+            case WM_UNICHAR: Char(icux::toUtf8((char32_t)wParam)); break;
             case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_MOUSEMOVE: MouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
             case WM_MOUSEHOVER: MouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
