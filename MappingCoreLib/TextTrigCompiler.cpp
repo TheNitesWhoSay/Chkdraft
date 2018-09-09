@@ -167,8 +167,8 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
             return true;
         else
         {
-            std::stringstream errorMessage("Unable to parse condition.");
-            errorMessage << std::endl << std::endl << argumentError.str();
+            std::stringstream errorMessage;
+            errorMessage << "Unable to parse condition." << std::endl << std::endl << argumentError.str();
             CHKD_ERR(errorMessage.str());
         }
     }
@@ -221,8 +221,8 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
             return true;
         else
         {
-            std::stringstream errorMessage("Unable to parse action.");
-            errorMessage << std::endl << std::endl << argumentError.str();
+            std::stringstream errorMessage;
+            errorMessage << "Unable to parse action." << std::endl << std::endl << argumentError.str();
             CHKD_ERR(errorMessage.str());
         }
     }
