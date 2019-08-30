@@ -1,5 +1,5 @@
 #include "ChkCuwp.h"
-
+/*
 bool ChkCuwp::IsCloakValid()
 {
     return (validSpecProps & (u16)ValidCUWPSpecPropFlags::CloakIsValid) == (u16)ValidCUWPSpecPropFlags::CloakIsValid;
@@ -207,3 +207,4 @@ void ChkCuwp::SetUnitIsInvincible(bool unitIsInvincible)
     else
         flags &= (u16)CUWPUnitPropertyFlags::xUnitIsInvincible;
 }
+*/

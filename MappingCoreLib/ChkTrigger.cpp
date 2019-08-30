@@ -1,5 +1,5 @@
 #include "ChkTrigger.h"
-
+/*
 Condition Trigger::junkCondition;
 Action Trigger::junkAction;
 
@@ -227,3 +227,4 @@ void Trigger::alignTop()
         }
     }
 }
+*/

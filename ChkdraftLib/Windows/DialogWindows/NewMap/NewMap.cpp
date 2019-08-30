@@ -1,5 +1,6 @@
 #include "NewMap.h"
 #include "../../../Chkdraft.h"
+#include "../../../../MappingCoreLib/MappingCore.h"
 
 enum ID {
     COMBO_TRIGS = ID_FIRST
@@ -36,7 +37,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( height > 65535 ) height %= 65536;
             if ( (u32)width*height < 429496729 )
             {
-                if ( chkd.maps.NewMap(width, height, tileset, terrain, triggers) )
+                if ( chkd.maps.NewMap(width, height, (Sc::Terrain::Tileset)tileset, terrain, triggers) )
                 {
                     CM->Scroll(true, true, false);
 
@@ -85,43 +86,43 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
                 switch ( itemIndex )
                 {
-                case TERRAIN_BADLANDS: // Badlands
+                case (u32)Sc::Terrain::Tileset::Badlands: // Badlands
                     for (auto initTerrain : badlandsInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_SPACE: // Space Platform
+                case (u32)Sc::Terrain::Tileset::SpacePlatform: // Space Platform
                     for (auto initTerrain : spaceInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_INSTALLATION: // Installation
+                case (u32)Sc::Terrain::Tileset::Installation: // Installation
                     for (auto initTerrain : installInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     break;
-                case TERRAIN_ASH: // Ash World
+                case (u32)Sc::Terrain::Tileset::Ashworld: // Ash World
                     for (auto initTerrain : ashInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_JUNGLE: // Jungle World
+                case (u32)Sc::Terrain::Tileset::Jungle: // Jungle World
                     for (auto initTerrain : jungInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_DESERT: // Desert World
+                case (u32)Sc::Terrain::Tileset::Desert: // Desert World
                     for (auto initTerrain : desertInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_ICE: // Ice World
+                case (u32)Sc::Terrain::Tileset::Arctic: // Ice World
                     for (auto initTerrain : iceInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case TERRAIN_TWILIGHT: // Twilight World
+                case (u32)Sc::Terrain::Tileset::Twilight: // Twilight World
                     for (auto initTerrain : twilightInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);

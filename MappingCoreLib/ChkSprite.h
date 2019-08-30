@@ -1,7 +1,7 @@
 #ifndef CHKSPRITE_H
 #define CHKSPRITE_H
 #include "Basics.h"
-
+/*
 #pragma pack(push, 1)
 __declspec(align(1))
 class ChkSprite // A sprite as found in a scenario.chk's THG2 section
@@ -20,5 +20,5 @@ class ChkSprite // A sprite as found in a scenario.chk's THG2 section
 };
 #pragma pack(pop)
 #define SPRITE_STRUCT_SIZE 10
-
+*/
 #endif

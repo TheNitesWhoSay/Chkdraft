@@ -1,5 +1,5 @@
 #include "ChkCondition.h"
-
+/*
 Condition::Condition() : locationNum(0), players(0), amount(0), unitID(0), comparison(0), condition(0), typeIndex(0), flags(0), internalData(0)
 {
 
@@ -174,3 +174,4 @@ ConditionArgType Condition::TextTrigArgType(u8 argNum)
 {
     return TextTrigArgType(argNum, (ConditionId)condition);
 }
+*/

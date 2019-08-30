@@ -76,8 +76,8 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
             CM->getMapTitle(mapTitle);
             CM->getMapDescription(mapDescription);
             currTileset = CM->getTileset(),
-            currWidth = CM->XSize(),
-            currHeight = CM->YSize();
+            currWidth = CM->getWidth(),
+            currHeight = CM->getHeight();
         }
 
         textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
@@ -148,8 +148,8 @@ void MapPropertiesWindow::RefreshWindow()
         CM->getMapTitle(mapTitle);
         CM->getMapDescription(mapDescription);
         u16 tileset = CM->getTileset(),
-            currWidth = CM->XSize(),
-            currHeight = CM->YSize();
+            currWidth = CM->getWidth(),
+            currHeight = CM->getHeight();
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
@@ -167,7 +167,7 @@ void MapPropertiesWindow::RefreshWindow()
                     
         for ( int player=0; player<12; player++ )
         {
-            u8 displayOwner(CM->GetPlayerOwnerStringIndex(player)), race(0), color(0);
+            u8 displayOwner(CM->GetPlayerOwnerStringId(player)), race(0), color(0);
             CM->getPlayerRace(player, race);
             dropPlayerOwner[player].SetSel(displayOwner);
             dropPlayerOwner[player].ClearEditSel();

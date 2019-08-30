@@ -69,13 +69,15 @@ public:
     // Attempts to open an MPQ at filePath, if filePath is empty or no file can be found at filePath, and a fileBrowser is provided, attempts to resolve the path using fileBrowser->browseForFilePath("", 0)
     // If this MPQ is already open with the given filePath or the filePath browsed, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath or the filePath browsed, it is closed before attempting to open the new MPQ
-    bool open(const std::string &filePath, const FileBrowserPtr fileBrowser);
+    template <typename FilterId>
+    bool open(const std::string &filePath, const FileBrowserPtr<FilterId> fileBrowser);
 
     // Attempts to open an MPQ if a fileBrowser is provided and fileBrowser->browseForFilePath("", 0) succeeds in finding a path
     // If this MPQ is already open with the browsed filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the filePath browsed, it is closed before attempting to open the new MPQ
     // Calling this method automatically closes the current MPQ if open
-    bool open(const FileBrowserPtr fileBrowser);
+    template <typename FilterId>
+    bool open(const FileBrowserPtr<FilterId> fileBrowser);
 
     // Saves an MPQ, if changes have been made then the MPQ is saved, if updateListFile is specified the listFile is updated with all changes made
     // If no MPQ is open calling this method has no affect
@@ -128,5 +130,28 @@ private:
     // Removes this MPQ from the disk, only valid if the MPQ has already been closed but filePath is still set
     bool remove();
 };
+
+template <typename FilterId>
+bool MpqFile::open(const std::string &filePath, const FileBrowserPtr<FilterId> fileBrowser)
+{
+    u32 filterIndex = 0;
+    std::string browseFilePath = "";
+    if ( !filePath.empty() && FindFile(filePath) )
+        return open(filePath);
+    else if ( fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) )
+        return open(browseFilePath, false);
+    else
+        return false;
+}
+
+template <typename FilterId>
+bool MpqFile::open(const FileBrowserPtr<FilterId> fileBrowser)
+{
+    u32 filterIndex = 0;
+    std::string browseFilePath = "";
+    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && open(browseFilePath);
+}
+
+extern std::vector<FilterEntry<u32>> getMpqFilter();
 
 #endif

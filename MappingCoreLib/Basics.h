@@ -61,6 +61,9 @@ constexpr u8 u8_max = UINT8_MAX;
 constexpr u16 u16_max = UINT16_MAX;
 constexpr u32 u32_max = UINT32_MAX;
 
+constexpr s32 s32_min = INT32_MIN;
+constexpr s32 s32_max = INT32_MAX;
+
 constexpr u32 size_1kb = 0x400;
 constexpr u32 size_1mb = 0x100000;
 constexpr u32 size_1gb = 0x40000000;
@@ -173,21 +176,6 @@ BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };
 const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 
-enum class SectionId : uint32_t {
-    TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
-    VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
-    DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
-    UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
-    TILE = 1162627412, DD2 = 540165188, THG2 = 843532372, MASK = 1263747405,
-    STR = 542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
-    TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
-    WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
-    SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
-    UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
-
-    KSTR = 1381258059
-};
-
 enum class ForceFlags : uint8_t {
     None = 0,
     RandomizeStartLocation = BIT_0,
@@ -270,8 +258,7 @@ extern const std::vector<std::string> LegacyTextTrigDisplayNames;
 
 extern const std::vector<std::string> VirtualSoundFiles;
 
-constexpr s32 NumUnitNames = 233;
-constexpr s32 NumRealUnits = 227;
+constexpr s32 NumRealUnits = 228;
 constexpr s32 NumVirtualSounds = 1143;
 
 enum class DatFilePriority : u32 {
@@ -288,14 +275,11 @@ extern const std::string brooDatFileName;
 extern const std::string patchRtFileName;
 extern std::unordered_map<DatFilePriority, std::string> getDefaultStarCraftDatFiles();
 
-extern std::vector<std::pair<std::string, std::string>> getMpqFilter();
-extern std::vector<std::pair<std::string, std::string>> getOpenMapFilters();
-extern std::vector<std::pair<std::string, std::string>> getSaveMapFilters();
-extern std::vector<std::pair<std::string, std::string>> getSaveTextFilters();
-extern std::vector<std::pair<std::string, std::string>> getSoundFilters();
-extern std::vector<std::pair<std::string, std::string>> getStarDatFilter();
-extern std::vector<std::pair<std::string, std::string>> getBrooDatFilter();
-extern std::vector<std::pair<std::string, std::string>> getPatchRtFilter();
-extern std::vector<std::pair<std::string, std::string>> getStarCraftExeFilter();
+class NotImplemented : public std::logic_error
+{
+    public:
+        NotImplemented() : std::logic_error("Function not yet implemented") { };
+        NotImplemented(const std::string &str) : std::logic_error(str) { };
+};
 
 #endif

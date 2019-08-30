@@ -149,19 +149,19 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
     if ( map.HasLocationSection() )
     {
-        ChkLocation* loc;
         u16 numLocations = map.locationCapacity();
         u16 firstRecentlySelected = NO_LOCATION;
         bool madeSelection = false;
     
         for ( u16 i=0; i<numLocations; i++ )
         {
-            if ( i != selectedLocation && ( i != 63 || canSelectAnywhere ) && map.getLocation(loc, i) )
+            Chk::LocationPtr loc = i != selectedLocation && ( i != 63 || canSelectAnywhere ) ? map.layers.getLocation(i) : nullptr;
+            if ( loc != nullptr )
             {
-                s32 locLeft = std::min(loc->xc1, loc->xc2),
-                    locRight = std::max(loc->xc1, loc->xc2),
-                    locTop = std::min(loc->yc1, loc->yc2),
-                    locBottom = std::max(loc->yc1, loc->yc2);
+                s32 locLeft = std::min(loc->left, loc->right),
+                    locRight = std::max(loc->left, loc->right),
+                    locTop = std::min(loc->top, loc->bottom),
+                    locBottom = std::max(loc->top, loc->bottom);
 
                 if ( clickX >= locLeft && clickX <= locRight &&
                      clickY >= locTop && clickY <= locBottom    )

@@ -5,7 +5,7 @@ ChkdDatFileBrowser::ChkdDatFileBrowser() : updatedPaths(false)
 
 }
 
-std::vector<MpqFilePtr> ChkdDatFileBrowser::openScDatFiles(const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles, const std::string &expectedStarCraftDirectory, FileBrowserPtr starCraftBrowser)
+std::vector<MpqFilePtr> ChkdDatFileBrowser::openScDatFiles(const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles, const std::string &expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     updatedPaths = false;
     const std::vector<MpqFilePtr> &scDatFiles = DatFileBrowser::openScDatFiles(datFiles, expectedStarCraftDirectory, starCraftBrowser);
@@ -15,7 +15,7 @@ std::vector<MpqFilePtr> ChkdDatFileBrowser::openScDatFiles(const std::unordered_
     return scDatFiles;
 }
 
-bool ChkdDatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory, FileBrowserPtr starCraftBrowser)
+bool ChkdDatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     bool foundStarCraftDirectory = DatFileBrowser::findStarCraftDirectory(starCraftDirectory, declinedBrowse, expectedStarCraftDirectory, starCraftBrowser);
     if ( foundStarCraftDirectory && Settings::starCraftPath != starCraftDirectory )

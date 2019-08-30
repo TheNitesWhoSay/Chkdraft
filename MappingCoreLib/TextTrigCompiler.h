@@ -12,27 +12,27 @@
 
 struct LocationTableNode {
     RawString locationName;
-    u8 locationNum;
+    u8 locationId;
 };
 struct UnitTableNode {
     RawString unitName;
-    u16 unitID;
+    Sc::Unit::Type unitType;
 };
 struct SwitchTableNode {
     RawString switchName;
-    u8 switchNum;
+    u8 switchId;
 };
 struct WavTableNode {
     RawString wavName;
-    u32 wavID;
+    u32 wavId;
 };
 struct GroupTableNode {
     RawString groupName;
-    u32 groupID;
+    u32 groupId;
 };
 struct ScriptTableNode {
     RawString scriptName;
-    u32 scriptID;
+    u32 scriptId;
 };
 
 constexpr u32 maxErrorMessageSize = 512;
@@ -45,18 +45,18 @@ class TextTrigCompiler : public StaticTrigComponentParser
         virtual ~TextTrigCompiler();
         bool CompileTriggers(std::string trigText, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTriggers(buffer& text, ScenarioPtr chk, ScData &scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
-        bool CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
+        bool CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
+        bool CompileTrigger(buffer& text, Chk::Trigger* trigger, ScenarioPtr chk, ScData &scData); // Compiles text, fills trigger upon success
 
         // Attempts to compile the argNum'th condition argument into the given condition
-        bool ParseConditionName(std::string text, ConditionId &conditionId);
-        bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk, ScData &scData);
-        bool ParseActionName(std::string text, ActionId &id);
-        bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> &argMap, Action &action, ScenarioPtr chk, ScData &scData);
-        static u8 defaultConditionFlags(ConditionId CID);
-        static u8 defaultActionFlags(ActionId AID);
-        static u8 numConditionArgs(ConditionId CID);
-        static u8 numActionArgs(ActionId actionId);
+        bool ParseConditionName(std::string text, Chk::Condition::Type &conditionType);
+        bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> &argMap, Chk::Condition& condition, ScenarioPtr chk, ScData &scData);
+        bool ParseActionName(std::string text, Chk::Action::Type &actionType);
+        bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> &argMap, Chk::Action &action, ScenarioPtr chk, ScData &scData);
+        static u8 defaultConditionFlags(Chk::Condition::Type conditionType);
+        static u8 defaultActionFlags(Chk::Action::Type actionType);
+        static u8 numConditionArgs(Chk::Condition::VirtualType conditionType);
+        static u8 numActionArgs(Chk::Action::VirtualType actionType);
 
 
     protected:
@@ -67,37 +67,37 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         bool ParseTriggers(buffer& text, buffer& output, std::stringstream &error); // Parse trigger, generate a trig section in buffer output
         inline bool ParsePartZero(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartOne(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Trigger &currTrig);
+        inline bool ParsePartOne(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Chk::Trigger &currTrig);
         inline bool ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
         inline bool ParsePartThree(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
         inline bool ParsePartFour(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-            s64 &conditionEnd, s64 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
-            Condition*& currCondition, Trigger &currTrig);
+            s64 &conditionEnd, s64 &lineEnd, Chk::Condition::VirtualType &conditionType, u8 &flags, u32 &argsLeft, u32 &numConditions,
+            Chk::Condition*& currCondition, Chk::Trigger &currTrig);
         inline bool ParsePartFive(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
-            Condition*& currCondition, ConditionId &conditionId);
+            Chk::Condition*& currCondition, Chk::Condition::VirtualType &conditionType);
         inline bool ParsePartSix(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
         inline bool ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-            u8 &flags, s64 &actionEnd, s64 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
-            Action*& currAction, Trigger &currTrig);
+            u8 &flags, s64 &actionEnd, s64 &lineEnd, Chk::Action::VirtualType &actionType, u32 &argsLeft, u32 &numActions,
+            Chk::Action*& currAction, Chk::Trigger &currTrig);
         inline bool ParsePartEight(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-            u32 &argsLeft, s64 &argEnd, Action*& currAction, ActionId &actionId);
+            u32 &argsLeft, s64 &argEnd, Chk::Action*& currAction, Chk::Action::VirtualType &actionType);
         inline bool ParsePartNine(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
         inline bool ParsePartTen(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-            s64 &flagsEnd, Trigger& currTrig);
+            s64 &flagsEnd, Chk::Trigger& currTrig);
         inline bool ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
 
-        bool ParseExecutingPlayer(buffer &text, Trigger &currTrig, s64 pos, s64 end); // Parse a player that the trigger is executed by
-        bool ParseConditionName(buffer &arg, ConditionId &conditionId);
-        bool ParseCondition(buffer &text, s64 pos, s64 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft); // Find the equivilant conditionID
-        bool ParseActionName(buffer &arg, ActionId &id);
-        bool ParseAction(buffer& text, s64 pos, s64 end, bool disabled, ActionId &id, u8& flags, u32& argsLeft); // Find the equivilant actionID
-        bool ParseConditionArg(buffer& text, Condition& currCondition, s64 pos, s64 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to a condition
-        bool ParseActionArg(buffer& text, Action& currAction, s64 pos, s64 end, ActionId actionId, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to an action
+        bool ParseExecutingPlayer(buffer &text, Chk::Trigger &currTrig, s64 pos, s64 end); // Parse a player that the trigger is executed by
+        bool ParseConditionName(buffer &arg, Chk::Condition::VirtualType &conditionType);
+        bool ParseCondition(buffer &text, s64 pos, s64 end, bool disabled, Chk::Condition::VirtualType &conditionType, u8& flags, u32 &argsLeft); // Find the equivilant conditionType
+        bool ParseActionName(buffer &arg, Chk::Action::VirtualType &actionType);
+        bool ParseAction(buffer& text, s64 pos, s64 end, bool disabled, Chk::Action::VirtualType &actionType, u8& flags, u32& argsLeft); // Find the equivilant actionType
+        bool ParseConditionArg(buffer& text, Chk::Condition& currCondition, s64 pos, s64 end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to a condition
+        bool ParseActionArg(buffer& text, Chk::Action& currAction, s64 pos, s64 end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to an action
         bool ParseExecutionFlags(buffer& text, s64 pos, s64 end, u32& flags);
 
         bool ParseString(buffer &text, u32& dest, s64 pos, s64 end); // Find a given string in the map, prepare to add it if necessary
         bool ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 end); // Find a location in the map by its string
-        bool ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end); // Get a unitID using a unit name
+        bool ParseUnitName(buffer &text, Sc::Unit::Type &dest, s64 pos, s64 end); // Get a unitID using a unit name
         bool ParseWavName(buffer &text, u32 &dest, s64 pos, s64 end); // Find a wav in the map by its string, redundant? remove me?
         bool ParsePlayer(buffer &text, u32 &dest, s64 pos, s64 end); // Get a groupID using a group/player name
         bool ParseSwitch(buffer &text, u8 &dest, s64 pos, s64 end); // Find a switch in the map by name (or standard name)
@@ -105,11 +105,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         bool ParseSwitch(buffer &text, u32 &dest, s64 pos, s64 end); // Accelerator for 4-byte switches
 
-        u8 ExtendedToRegularCID(ConditionId extendedCID); // Returns the conditionID the extended condition is based on
-        u8 ExtendedToRegularAID(ActionId extendedAID); // Returns the actionID the extended action is based on
+        Chk::Condition::Type ExtendedToRegularCID(Chk::Condition::VirtualType extendedConditionType); // Returns the conditionType the extended condition is based on
+        Chk::Action::Type ExtendedToRegularAID(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
 
-        static s32 ExtendedNumConditionArgs(ConditionId extendedCID); // Returns the number of arguments for the extended condition
-        static s32 ExtendedNumActionArgs(ActionId extendedAID); // Returns the number of arguments for the extended action
+        static s32 ExtendedNumConditionArgs(Chk::Condition::VirtualType extendedConditionType); // Returns the number of arguments for the extended condition
+        static s32 ExtendedNumActionArgs(Chk::Action::VirtualType extendedActionType); // Returns the number of arguments for the extended action
 
 
     private:
@@ -124,8 +124,10 @@ class TextTrigCompiler : public StaticTrigComponentParser
         std::unordered_multimap<size_t, GroupTableNode> groupTable; // Binary tree of the maps groups
         std::unordered_multimap<size_t, ScriptTableNode> scriptTable; // Binary tree of map scripts
         std::vector<StringTableNode> addedStrings; // Forward list of strings added during compilation
-        StringUsageTable strUsage; // Table of strings currently used in the map
-        StringUsageTable extendedStrUsage; // Table of extended strings currently used in the map
+        std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
+        std::bitset<Chk::MaxStrings> extendedStringUsed; // Table of extended strings currently used in the map
+        bool useNextString(u32 &index);
+        bool useNextExtendedString(u32 &index);
 
         bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable

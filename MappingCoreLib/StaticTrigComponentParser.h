@@ -1,5 +1,6 @@
 #ifndef STATICTRIGCOMPONENTPARSER_H
 #define STATICTRIGCOMPONENTPARSER_H
+#include "Sections.h"
 #include "Basics.h"
 
 class StaticTrigComponentParser
@@ -7,8 +8,8 @@ class StaticTrigComponentParser
     public:
 
         virtual ~StaticTrigComponentParser();
-        bool ParseNumericComparison(char* text, u8 &dest, s64 pos, s64 end); // At least, at most, exactly
-        bool ParseSwitchState(char* text, u8 &dest, s64 pos, s64 end); // Set, cleared
+        bool ParseNumericComparison(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end); // At least, at most, exactly
+        bool ParseSwitchState(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end); // Set, cleared
         bool ParseSpecialUnitAmount(char* text, u8 &dest, s64 pos, s64 end); // All
         bool ParseAllianceStatus(char* text, u16 &dest, s64 pos, s64 end); // Ally, Enemy, Allied Victory
         bool ParseResourceType(char* text, u8 &dest, s64 pos, s64 end); // Ore, Gas, Ore and Gas

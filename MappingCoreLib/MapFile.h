@@ -4,6 +4,7 @@
 #include "SystemIO.h"
 #include "FileBrowser.h"
 #include "MpqFile.h"
+#include <memory>
 #include <cstdio>
 #include <time.h>
 #include <map>
@@ -24,10 +25,10 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         MapFile();
         virtual ~MapFile();
 
-        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr fileBrowser = getDefaultSaveMapBrowser());
+        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser());
 
-        bool LoadMapFile(std::string &filePath); // If you're not providing a path, pass in an empty string
-        bool LoadMapFile(FileBrowserPtr fileBrowser = getDefaultOpenMapBrowser());
+        bool LoadMapFile(const std::string &filePath);
+        bool LoadMapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
 
         void SetSaveType(SaveType newSaveType);
 
@@ -37,23 +38,26 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         void RemoveMpqAsset(const std::string &assetMpqFilePath);
         bool GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetBuffer);
         bool ExtractMpqAsset(const std::string &assetMpqFilePath, const std::string &systemFilePath);
-        virtual bool GetWav(u16 wavIndex, u32 &outStringIndex);
-        bool GetWav(u32 stringIndex, buffer &outWavData);
-        bool AddWav(u32 stringIndex); // Adds a WAV string to the WAV list
+        virtual bool GetWav(u16 wavIndex, u32 &outStringId);
+        bool GetWav(u32 stringId, buffer &outWavData);
+        bool AddWav(u32 stringId); // Adds a WAV string to the WAV list
         bool AddWav(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile);
         bool AddWav(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile);
         bool AddWav(const std::string &destMpqPath, buffer &wavContents, WavQuality wavQuality);
         virtual bool RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed);
-        virtual bool RemoveWavByStringIndex(u32 stringIndex, bool removeIfUsed);
-        WavStatus GetWavStatus(u32 wavStringIndex);
-        bool GetWavStatusMap(std::map<u32/*stringIndex*/, WavStatus> &outWavStatus, bool includePureStringWavs);
+        virtual bool RemoveWavByStringId(u32 stringId, bool removeIfUsed);
+        WavStatus GetWavStatus(u32 wavStringId);
+        bool GetWavStatusMap(std::map<u32/*stringId*/, WavStatus> &outWavStatus, bool includePureStringWavs);
         bool IsInVirtualWavList(const std::string &wavMpqPath);
 
         std::string GetFileName();
         virtual const std::string &getFilePath() const;
 
-        static FileBrowserPtr getDefaultOpenMapBrowser();
-        static FileBrowserPtr getDefaultSaveMapBrowser();
+        static FileBrowserPtr<SaveType> getDefaultOpenMapBrowser();
+        static FileBrowserPtr<SaveType> getDefaultSaveMapBrowser();
+
+    protected:
+        virtual bool getSaveDetails(inout_param SaveType &saveType, output_param std::string &saveFilePath, output_param bool &overwriting, FileBrowserPtr<SaveType> fileBrowser);
 
     private:
         std::string mapFilePath;
@@ -66,24 +70,27 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         static std::map<size_t, std::string> virtualWavTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
-        bool OpenMapFile(std::string &filePath);
+        bool OpenMapFile(const std::string &filePath);
         bool OpenTemporaryMpq();
         bool ProcessModifiedAssets(bool updateListfile);
 };
 
 /** The types of files a map can be saved as, one
-    through the number of selectable save types should
-    correspond to the selectable types in save dialogs */
+through the number of selectable save types should
+correspond to the selectable types in save dialogs */
 enum class SaveType
 {
-    CustomFilter = 0,
     StarCraftScm = 1,
     HybridScm = 2,
     ExpansionScx = 3,
     StarCraftChk = 4,
     HybridChk = 5,
     ExpansionChk = 6,
-    AllMaps = 7,
+    AllScm = 7,
+    AllScx = 8,
+    AllChk = 9,
+    AllMaps = 10,
+    AllFiles = 11,
     Unknown // Have this higher than all other SaveTypes
 };
 
@@ -97,5 +104,10 @@ enum class WavStatus
     FileInUse,
     Unknown
 };
+
+extern std::vector<FilterEntry<SaveType>> getOpenMapFilters();
+extern std::vector<FilterEntry<SaveType>> getSaveMapFilters();
+extern std::vector<FilterEntry<u32>> getSaveTextFilters();
+extern std::vector<FilterEntry<u32>> getSoundFilters();
 
 #endif

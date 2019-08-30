@@ -4,18 +4,28 @@
 #include "Basics.h"
 #include "EscapeStrings.h"
 #include "CoreStructs.h"
+#include "Sections.h"
 #include <cstdio>
 #include <list>
+#include <array>
 #include <memory>
 #include <string>
 #include <map>
 
-using Section = std::shared_ptr<buffer>;
-using TrigSegment = Section;
+class Scenario;
+class ScenarioSaver;
+typedef std::shared_ptr<ScenarioSaver> ScenarioSaverPtr;
+enum class ChkVersion : u32;
 
 class Scenario
 {
     public:
+/*   Sections   */  Versions versions; // All version and validation related information
+                    Strings strings; // All string related information: map title and description, strings used by other sections
+                    Players players; // All player related information: slot owners, races, player colors, forces
+                    Layers layers; // All layers (stuff with coordinates) - terrain, units, fog of war, sprites, doodads, locations
+                    Properties properties; // All property sheets: unit settings, unit availability, upgrade costs, upgrade leveling, technology costs, technology leveling
+                    Triggers triggers; // All scenario triggers and mission briefing triggers and their metadata - CUWPs, switches, and sounds
 
 /* Constructors */  Scenario();
 
@@ -26,23 +36,18 @@ class Scenario
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*  Expansion   */  bool isExpansion(); // Check if the map uses expansion settings
-protected:          buffer& unitSettings(); // Gets settings from UNIS/UNIx based on whether the map is expansion
-                    buffer& upgradeSettings(); // Gets settings from UPGS/UPGx based on whether the map is expansion
-                    buffer& upgradeRestrictions(); // Gets upgradeAvailability from UPGR/PUPx based on whether the map is expansion
-                    buffer& techSettings(); // Gets settings from TECS/TECx based on whether the map is expansion
-                    buffer& techRestrictions(); // Gets PTEC/PTEx based on whether the map is expansion
-public:
+
 /*   Version    */  bool HasVerSection();
                     bool IsScOrig();
                     bool IsHybrid();
                     bool IsScExp();
-                    bool ChangeToScOrig();
-                    bool ChangeToHybrid();
-                    bool ChangeToScExp();
+                    void ChangeToScOrig();
+                    void ChangeToHybrid();
+                    void ChangeToScExp();
+                    bool isVersion(ChkVersion chkVersion) { return false; } // Checks whether all sections are valid for the given ChkVersion
 
-
-/*  Description */  u16 GetMapTitleStrIndex();
-                    u16 GetMapDescriptionStrIndex();
+/*  Description */  u16 GetMapTitleStrId();
+                    u16 GetMapDescriptionStrId();
                     bool getMapTitle(ChkdString &dest);
                     bool getMapDescription(ChkdString &dest);
                     bool SetMapTitle(ChkdString &newMapTitle);
@@ -70,8 +75,8 @@ public:
                     bool setForceName(u8 forceNum, ChkdString &newName);
 
 
-/*  Dimensions  */  u16 XSize(); // Get width of map
-                    u16 YSize(); // Get height of map
+/*  Dimensions  */  u16 getWidth(); // Get width of map
+                    u16 getHeight(); // Get height of map
                     bool setDimensions(u16 newWidth, u16 newHeight); // Sets new dimensions for the map
 
 
@@ -87,18 +92,13 @@ public:
 
 
 /*    Units     */  u16 numUnits(); // Returns number of units in UNIT section
-                    ChkUnit getUnit(u16 index);
-                    bool ReplaceUnit(u16 index, ChkUnit newUnit);
-                    bool insertUnit(u16 index, ChkUnit &unit);
-                    //bool getUnit(ChkUnit* &unitRef, u16 index); // Gets unit at index
+                    //bool getUnit(Chk::Unit* &unitRef, u16 index); // Gets unit at index
                     bool addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags); // Attempts to create a unit
-                    bool addUnit(ChkUnit unit);
                     bool getUnitName(RawString &dest, u16 unitID);
                     bool getUnitName(ChkdString &dest, u16 unitID);
                     bool deleteUnit(u16 index);
-                    bool SwapUnits(u16 firstIndex, u16 secondIndex);
-                    u32 GetUnitFieldData(u16 unitIndex, ChkUnitField field);
-                    bool SetUnitFieldData(u16 unitIndex, ChkUnitField field, u32 data);
+                    u32 GetUnitFieldData(u16 unitIndex, Chk::Unit::Field field);
+                    bool SetUnitFieldData(u16 unitIndex, Chk::Unit::Field field, u32 data);
                     bool SetUnitHitpoints(u16 unitIndex, u8 newHitpoints);
                     bool SetUnitEnergy(u16 unitIndex, u8 newEnergy);
                     bool SetUnitShields(u16 unitIndex, u8 newShields);
@@ -110,19 +110,14 @@ public:
 
 
 /*   Sprites    */  u16 SpriteSectionCapacity();
-                    bool GetSpriteRef(ChkSprite* &spriteRef, u16 index);
+                    bool GetSpriteRef(Chk::Sprite* &spriteRef, u16 index);
                     
 
 /*  Locations   */  bool HasLocationSection();
-                    bool getLocation(ChkLocation* &locRef, u16 index); // Gets location at index
-                    ChkLocation getLocation(u16 locationIndex);
-                    bool getLocationName(u16 locationIndex, RawString &str);
-                    bool getLocationName(u16 locationIndex, ChkdString &str);
-                    bool MoveLocation(u16 locationIndex, s32 xChange, s32 yChange);
-                    u32 GetLocationFieldData(u16 locationIndex, u8 field);
-                    bool SetLocationFieldData(u16 locationIndex, u8 field, u32 data);
-                    bool insertLocation(u16 index, ChkLocation &location, RawString &name);
-                    bool insertLocation(u16 index, ChkLocation &location, ChkdString &name);
+                    u32 GetLocationFieldData(u16 locationIndex, Chk::Location::Field field);
+                    bool SetLocationFieldData(u16 locationIndex, Chk::Location::Field field, u32 data);
+                    bool insertLocation(u16 index, Chk::Location &location, RawString &name);
+                    bool insertLocation(u16 index, Chk::Location &location, ChkdString &name);
                     u8 numLocations(); // Gets the current amount of used locations in the map
                     u16 locationCapacity(); // Gets the map's current location capacity
                     bool locationIsUsed(u16 locationIndex);
@@ -132,41 +127,40 @@ public:
 
 
 /*   Triggers   */  bool HasTrigSection();
-                    bool ReplaceTrigSection(Section newTrigSection);
+                    bool AddOrReplaceTrigSection(buffer & newTrigSection);
                     u32 numTriggers(); // Returns the number of triggers in this scenario
-                    bool getTrigger(Trigger* &trigRef, u32 index); // Gets the trigger at index
-                    bool getActiveComment(Trigger* trigger, RawString &comment);
-                    bool addTrigger(Trigger &trigger);
-                    bool insertTrigger(u32 triggerId, Trigger &trigger);
+                    bool getActiveComment(Chk::Trigger* trigger, RawString &comment) { return false; }
+                    bool addTrigger(Chk::Trigger &trigger) { return false; }
+                    bool insertTrigger(u32 triggerId, Chk::Trigger &trigger) { return false; }
                     bool deleteTrigger(u32 triggerId);
                     bool copyTrigger(u32 triggerId);
                     bool moveTriggerUp(u32 triggerId); // Moves the given trigger up one absolute index
                     bool moveTriggerDown(u32 triggerId); // Moves the given trigger down one absolute index
                     bool moveTrigger(u32 triggerId, u32 destId); // Moves the given trigger to the destination index
-                    TrigSegment GetTrigSection();
+                    TrigSectionPtr GetTrigSection();
                     
 
-/*     CUWPs    */  bool GetCuwp(u8 cuwpIndex, ChkCuwp &outPropStruct);
-                    bool AddCuwp(ChkCuwp &propStruct, u8 &outCuwpIndex);
-                    bool ReplaceCuwp(ChkCuwp &propStruct, u8 cuwpIndex);
+/*     CUWPs    */  bool GetCuwp(u8 cuwpIndex, Chk::Cuwp &outPropStruct);
+                    bool AddCuwp(Chk::Cuwp &propStruct, u8 &outCuwpIndex);
+                    bool ReplaceCuwp(Chk::Cuwp &propStruct, u8 cuwpIndex);
                     bool IsCuwpUsed(u8 cuwpIndex);
                     bool SetCuwpUsed(u8 cuwpIndex, bool isUsed);
-                    bool FindCuwp(const ChkCuwp &cuwpToFind, u8 &outCuwpIndex);
+                    bool FindCuwp(const Chk::Cuwp &cuwpToFind, u8 &outCuwpIndex);
                     int CuwpCapacity();
                     int NumUsedCuwps();
 
 /*     WAVs     */  u32 WavSectionCapacity();
-                    virtual bool GetWav(u16 wavIndex, u32 &outStringIndex);
+                    virtual bool GetWav(u16 wavIndex, u32 &outStringId);
                     bool GetWavString(u16 wavIndex, RawString &outString);
-                    bool AddWav(u32 stringIndex);
+                    bool AddWav(u32 stringId);
                     bool AddWav(const RawString &wavMpqPath);
                     virtual bool RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed);
-                    virtual bool RemoveWavByStringIndex(u32 stringIndex, bool removeIfUsed);
+                    virtual bool RemoveWavByStringId(u32 stringId, bool removeIfUsed);
                     bool WavHasString(u16 wavIndex);
-                    bool IsStringUsedWithWavs(u32 stringIndex);
-                    bool GetWavs(std::map<u32/*stringIndex*/, u16/*wavIndex*/> &wavMap, bool includePureStringWavs);
-                    bool MapUsesWavString(u32 wavStringIndex);
-                    void ZeroWavUsers(u32 wavStringIndex);
+                    bool IsStringUsedWithWavs(u32 stringId);
+                    bool GetWavs(std::map<u32/*stringId*/, u16/*wavIndex*/> &wavMap, bool includePureStringWavs);
+                    bool MapUsesWavString(u32 wavStringId);
+                    void ZeroWavUsers(u32 wavStringId);
 
 /*   Switches   */  u32 NumNameableSwitches();
                     bool getSwitchStrId(u8 switchId, u32 &stringNum);
@@ -178,7 +172,7 @@ public:
                     bool SwitchUsesExtendedName(u8 switchId);
                     bool ToggleUseExtendedSwitchName(u8 switchId);
 
-/*   Briefing   */  bool getBriefingTrigger(Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
+/*   Briefing   */  bool getBriefingTrigger(Chk::Trigger* &trigRef, u32 index); // Gets the briefing trigger at index
 
 
 /* UnitSettings */  bool ReplaceUNISSection(buffer &newUNISSection);
@@ -356,7 +350,7 @@ public:
                     bool addAllUsedStrings(std::vector<StringTableNode>& strList, bool includeStandard, bool includeExtended);
                     bool rebuildStringTable(std::vector<StringTableNode> &strList, bool extendedTable); // Rebuilds string table using the provided list
                     bool buildStringTables(std::vector<StringTableNode> &strList, bool extendedTable,
-                        Section &offsets, buffer &strPortion, s64 strPortionOffset, u32 numStrs, bool recycleSubStrings);
+                        StrSection &offsets, buffer &strPortion, s64 strPortionOffset, u32 numStrs, bool recycleSubStrings) { return false; }
 
 
 /*  Validation  */  bool GoodVCOD(); // Check if VCOD is valid
@@ -372,49 +366,50 @@ public:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*   File IO    */  bool ParseScenario(buffer &chk); // Parses supplied scenario file data
-                    bool CreateNew(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
+                    bool CreateNew(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers);
                     void WriteFile(FILE* pFile); // Writes all sections to the supplied file
                     std::shared_ptr<void> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                                      includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
                     bool Deserialize(const void* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
+                    
+                    /** Makes whatever changes are required for saving in the given ChkVersion
+                        and writes the scenario to outputStream
+                        
+                        Returns true upon success, returns false and rolls back any changes made during save on failure */
+                    bool Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver = nullptr);
+                    bool PrepareSaveSectionChanges(ChkVersion chkVersion, std::unordered_map<Section, Section> &sectionsToReplace,
+                        std::vector<Section> sectionsToAdd, std::vector<SectionName> sectionsToRemove, ScenarioSaverPtr scenarioSaver = nullptr) { return false; }
 
 /*  Rebuilders  */  void correctMTXM(); // Corrects MTXM of protected maps for view-only purposes
 
-/* Section mgmt */  bool RemoveSection(SectionId sectionId); // Removes section containing this buffer
+/* Section mgmt */  Section FindLast(SectionName sectionName) { return nullptr; } // Finds the last instance of a section
+                    bool RemoveSection(SectionName sectionName) { return false; } // Removes section containing this buffer
                     bool RemoveSection(Section sectionToRemove);
                     bool AddSection(Section sectionToAdd); // Adds a buffer as a new map section
-                    Section AddSection(u32 sectionId); // Adds a section with the given id to the map
+                    Section AddSection(SectionName sectionName) { return nullptr; } // Adds a section with the given id to the map
+                    bool AddOrReplaceSection(Section section);
                     void Flush(); // Deletes all sections and clears map protection
+
+/*   Defaults   */  static ScenarioSaverPtr getDefaultScenarioSaver() { return nullptr; }
 
 
     private:
                     
-                    /** Referances to section buffers used by Chkdraft. All buffer methods are
-                        safe to call whether or not the map/buffer exists, though you should
-                        check that they exist at some point to match the user expectations. */
-                    buffer& TYPE(); buffer& VER (); buffer& IVER(); buffer& IVE2();
-                    buffer& VCOD(); buffer& IOWN(); buffer& OWNR(); buffer& ERA ();
-                    buffer& DIM (); buffer& SIDE(); buffer& MTXM(); buffer& PUNI();
-                    buffer& UPGR(); buffer& PTEC(); buffer& UNIT(); buffer& ISOM();
-                    buffer& TILE(); buffer& DD2 (); buffer& THG2(); buffer& MASK();
-                    buffer& STR (); buffer& UPRP(); buffer& UPUS(); buffer& MRGN();
-                    buffer& TRIG(); buffer& MBRF(); buffer& SPRP(); buffer& FORC();
-                    buffer& WAV (); buffer& UNIS(); buffer& UPGS(); buffer& TECS();
-                    buffer& SWNM(); buffer& COLR(); buffer& PUPx(); buffer& PTEx();
-                    buffer& UNIx(); buffer& UPGx(); buffer& TECx();
+                    /** Pointers to sections used by Chkdraft. These are never null, but unless they're in allSections they aren't saved with the map */
+/*   Sections   */  TypeSectionPtr TYPE; VerSectionPtr VER; IverSectionPtr IVER; Ive2SectionPtr IVE2; VcodSectionPtr VCOD; IownSectionPtr IOWN;
+                    OwnrSectionPtr OWNR; EraSectionPtr ERA; DimSectionPtr DIM; SideSectionPtr SIDE; MtxmSectionPtr MTXM; PuniSectionPtr PUNI;
+                    UpgrSectionPtr UPGR; PtecSectionPtr PTEC; UnitSectionPtr UNIT; IsomSectionPtr ISOM; TileSectionPtr TILE; Dd2SectionPtr DD2;
+                    Thg2SectionPtr THG2; MaskSectionPtr MASK; StrSectionPtr STR; UprpSectionPtr UPRP; UpusSectionPtr UPUS; MrgnSectionPtr MRGN;
+                    TrigSectionPtr TRIG; MbrfSectionPtr MBRF; SprpSectionPtr SPRP; ForcSectionPtr FORC; WavSectionPtr WAV; UnisSectionPtr UNIS;
+                    UpgsSectionPtr UPGS; TecsSectionPtr TECS; SwnmSectionPtr SWNM; ColrSectionPtr COLR; PupxSectionPtr PUPx; PtexSectionPtr PTEx;
+                    UnixSectionPtr UNIx; UpgxSectionPtr UPGx; TecxSectionPtr TECx;
 
-                    // Extended sections
-                    buffer& KSTR();
-
+                    KstrSectionPtr KSTR;
 
     protected:
 
-        /** Find section with the given header id
-        ie: to get a referance to VCOD call getSection(HEADER_VCOD); */
-        Section getSection(u32 id);
-
         bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
-        bool ParseSection(buffer &chk, s64 position, s64 &nextPosition);
+        bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
         void CacheSections(); // Caches all section references for fast access
 
         bool GetStrInfo(char* &ptr, size_t &length, u32 stringNum); // Gets a pointer to the string and its length if successful
@@ -424,13 +419,14 @@ public:
 
     private:
 
-        std::vector<Section> sections; // Holds all the sections of a map
+        std::vector<Section> allSections; // Holds all the sections of a map
+        std::array<u8, 7> tailData; // The 0-7 bytes just before the Scenario file ends, after the last valid section
         u8 tailLength; // 0 for no tail data, must be less than 8
-        u8 tailData[7]; // The 0-7 bytes just before the Scenario file ends, after the last valid section
         bool mapIsProtected; // Flagged if map is protected
         bool caching; // if true, section add/remove/moves currently result in re-caching
+        bool jumpCompress; // If true, the map will attempt to compress using jump sections when saving
 
-        // Cached regular section pointers
+        /*// Cached regular section pointers
         Section type, ver, iver, ive2, vcod, iown, ownr, era,
             dim, side, mtxm, puni, upgr, ptec, unit, isom,
             tile, dd2, thg2, mask, str, uprp, upus, mrgn,
@@ -438,9 +434,22 @@ public:
             swnm, colr, pupx, ptex, unix, upgx, tecx;
 
         // Cached extended section pointers
-        Section kstr;
+        Section kstr;*/
+};
+typedef std::shared_ptr<Scenario> ScenarioPtr;
+
+class ScenarioSaver
+{
+    public:
+        virtual bool confirmRemoveLocations(Scenario &chk) = 0;
 };
 
-typedef std::shared_ptr<Scenario> ScenarioPtr;
+enum class ChkVersion : u32
+{
+    StarCraft = 0,
+    Hybrid = 1,
+    BroodWar = 2,
+    Unchanged = 3
+};
 
 #endif

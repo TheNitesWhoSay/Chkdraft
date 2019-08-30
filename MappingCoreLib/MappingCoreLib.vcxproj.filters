@@ -38,9 +38,6 @@
     <ClInclude Include="Buffer.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="DefaultCHK.h">
-      <Filter>Header Files\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="EscapeStrings.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
@@ -113,15 +110,15 @@
     <ClInclude Include="SystemIO.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Sections.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="Buffer.cpp">
-      <Filter>Source Files\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="DefaultCHK.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="EscapeStrings.cpp">
@@ -194,6 +191,9 @@
       <Filter>Source Files\Trigger Text</Filter>
     </ClCompile>
     <ClCompile Include="SystemIO.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Sections.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
   </ItemGroup>

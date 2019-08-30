@@ -3,7 +3,7 @@
 #include "Scenario.h"
 #include "Basics.h"
 #include <list>
-
+/*
 class StringUsageTable
 {
     public:
@@ -21,7 +21,7 @@ class StringUsageTable
 
         bool useNext(u32 &index); /** Next avaliable string index stored in 'index', marking 'index' as unavaliable
                                         returns false if no index can plausibly be used. */
-        bool useNext(u16 &index);
+/*        bool useNext(u16 &index);
 
         bool isUsed(u32 index); // Returns if a given index is in use
 
@@ -35,6 +35,6 @@ class StringUsageTable
 
         buffer stringUsed; /** Array of bytes, byte at stringNum is 1 if used, 0 if not
                                First byte is always unused/set to 1 */
-};
-
+/*};
+*/
 #endif

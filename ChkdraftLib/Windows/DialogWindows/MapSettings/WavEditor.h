@@ -65,7 +65,8 @@ class WavEditorWindow : public WinLib::ClassWindow
         int selectedSoundListIndex;
         WavQuality wavQuality;
         HDC wavListDC; // WAV list HDC for speeding up string measurement
-        std::map<u32/*stringIndex*/, u16/*wavIndex*/> wavMap;
+        std::map<u32/*stringId*/, u16/*wavIndex*/> wavMap;
+        static FileBrowserPtr<u32> getDefaultSoundBrowser();
 };
 
 #endif

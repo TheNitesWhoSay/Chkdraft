@@ -16,12 +16,12 @@ using DatFileBrowserPtr = std::shared_ptr<DatFileBrowser>;
 class DatFileDescriptor
 {
 public:
-    DatFileDescriptor(DatFilePriority datFilePriority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr browser = nullptr, bool expectedInScDirectory = true);
+    DatFileDescriptor(DatFilePriority datFilePriority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
 
     DatFilePriority getDatFilePriority() const;
     const std::string &getFileName() const;
     const std::string &getExpectedFilePath() const;
-    FileBrowserPtr getBrowser() const;
+    FileBrowserPtr<u32> getBrowser() const;
     bool getExpectedInScDirectory() const;
 
     void setExpectedFilePath(const std::string &expectedFilePath);
@@ -30,7 +30,7 @@ private:
     DatFilePriority datFilePriority;
     std::string fileName;
     std::string expectedFilePath;
-    FileBrowserPtr browser;
+    FileBrowserPtr<u32> browser;
     bool expectedInScDirectory;
 };
 
@@ -40,13 +40,13 @@ public:
     virtual std::vector<MpqFilePtr> openScDatFiles(
         const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles,
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = getDefaultStarCraftBrowser());
+        FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-    virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr starCraftBrowser = nullptr);
+    virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
 
     virtual MpqFilePtr openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor);
 
-    static FileBrowserPtr getDefaultStarCraftBrowser();
+    static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
 };
 
 bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
@@ -179,7 +179,7 @@ struct UNITDAT
     u16 BuildScore;
     u16 DestroyScore;
     u16 UnitMapString;
-    u8 BroodwarUnitFlag;
+    u8 BroodWarUnitFlag;
     u16 StarEditAvailabilityFlags;
 };
 
@@ -446,13 +446,13 @@ public:
     bool Load(DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
         const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
+        FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     bool GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents,
         DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
         const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
-        FileBrowserPtr starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
+        FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     static std::unordered_map<DatFilePriority, DatFileDescriptor> getDefaultDatFiles();
 
@@ -468,5 +468,10 @@ bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
 
 #define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) \
 (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64 \
+
+extern std::vector<FilterEntry<u32>> getStarDatFilter();
+extern std::vector<FilterEntry<u32>> getBrooDatFilter();
+extern std::vector<FilterEntry<u32>> getPatchRtFilter();
+extern std::vector<FilterEntry<u32>> getStarCraftExeFilter();
 
 #endif

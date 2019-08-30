@@ -155,11 +155,11 @@ bool TrigModifyTextWindow::CompileEditText(std::string &newText)
 {
     if ( CM != nullptr )
     {
-        Trigger* trigger;
-        if ( CM->getTrigger(trigger, trigIndex) )
+        Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+        if ( trigger != nullptr )
         {
             TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.CompileTrigger(newText, trigger, CM, chkd.scData) )
+            if ( compiler.CompileTrigger(newText, &(*trigger), CM, chkd.scData) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

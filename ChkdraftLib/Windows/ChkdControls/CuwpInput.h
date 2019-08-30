@@ -7,19 +7,19 @@ class CuwpInputDialog : public WinLib::ClassDialog
 {
     public:
         virtual ~CuwpInputDialog();
-        static bool GetCuwp(ChkCuwp &cuwp, const ChkCuwp &initialCuwp, HWND hParent);
+        static bool GetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent);
 
     protected:
         CuwpInputDialog();
         void ClearStoredCuwps();
-        bool InternalGetCuwp(ChkCuwp &cuwp, const ChkCuwp &initialCuwp, HWND hParent);
+        bool InternalGetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent);
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
         bool gotCuwp;
-        ChkCuwp newCuwp;
-        ChkCuwp initialCuwp;
+        Chk::Cuwp newCuwp;
+        Chk::Cuwp initialCuwp;
 
         WinLib::EditControl editHitpointPercent, editManaPercent, editShieldPercent, editResources, editHanger;
         WinLib::CheckBoxControl checkInvincible, checkBurrowed, checkLifted, checkHallucinated, checkCloaked;

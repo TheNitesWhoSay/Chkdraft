@@ -124,8 +124,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
     screenWidth = bitWidth;
     screenHeight = bitHeight;
 
-    mapWidth = map.XSize();
-    mapHeight = map.YSize();
+    mapWidth = map.getWidth();
+    mapHeight = map.getHeight();
 
     if ( displayingElevations )
         DrawTileElevations(bitmap);
@@ -244,30 +244,31 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
 
 void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
-    ChkLocation* loc;
     u32 bitMax = screenWidth*screenHeight;
 
-    for ( u16 locNum = 0; locNum < map.locationCapacity(); locNum++ )
+    for ( size_t locNum = 0; locNum < map.locationCapacity(); locNum++ )
     {
-        if ( (locNum != 63 || showAnywhere) && map.getLocation(loc, locNum) )
+        Chk::LocationPtr loc = map.layers.getLocation(locNum);
+        if ( (locNum != 63 || showAnywhere) && loc != nullptr )
         {
-            s32 leftMost = std::min(loc->xc1, loc->xc2);
+            
+            s32 leftMost = std::min(loc->left, loc->right);
             if ( leftMost < screenLeft+screenWidth )
             {
-                s32 rightMost = std::max(loc->xc1, loc->xc2);
+                s32 rightMost = std::max(loc->left, loc->right);
                 if ( rightMost >= screenLeft )
                 {
-                    s32 topMost = std::min(loc->yc1, loc->yc2);
+                    s32 topMost = std::min(loc->top, loc->bottom);
                     if ( topMost < screenTop+screenHeight )
                     {
-                        s32 bottomMost = std::max(loc->yc1, loc->yc2);
+                        s32 bottomMost = std::max(loc->top, loc->bottom);
                         if ( bottomMost >= screenTop )
                         {
                             bool leftMostOnScreen = true,
                                 rightMostOnScreen = true,
                                 topMostOnScreen = true,
                                 bottomMostOnScreen = true,
-                                inverted = (loc->xc1 > loc->xc2 || loc->yc1 > loc->yc2);
+                                inverted = (loc->left > loc->right || loc->top > loc->bottom);
 
                             if ( leftMost < screenLeft )
                             {
@@ -345,12 +346,13 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
     u16 selectedLoc = selections.getSelectedLocation();
     if ( selectedLoc != NO_LOCATION )
     {
-        if ( map.getLocation(loc, selectedLoc) )
+        Chk::LocationPtr loc = map.layers.getLocation(selectedLoc);
+        if ( loc != nullptr )
         {
-            s32 leftMost = std::min(loc->xc1, loc->xc2);
-            s32 rightMost = std::max(loc->xc1, loc->xc2);
-            s32 topMost = std::min(loc->yc1, loc->yc2);
-            s32 bottomMost = std::max(loc->yc1, loc->yc2);
+            s32 leftMost = std::min(loc->left, loc->right);
+            s32 rightMost = std::max(loc->left, loc->right);
+            s32 topMost = std::min(loc->top, loc->bottom);
+            s32 bottomMost = std::max(loc->top, loc->bottom);
             if ( leftMost < screenLeft+screenWidth && rightMost >= screenLeft && topMost < screenTop+screenHeight && bottomMost >= screenTop )
             {
                 bool leftMostOnScreen = leftMost >= screenLeft,
@@ -414,24 +416,24 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
 
     for ( u16 unitNum = 0; unitNum < map.numUnits(); unitNum++ )
     {
-        ChkUnit unit = map.getUnit(unitNum);
-        if ( (s32)unit.xc + (s32)MaxUnitBounds::Right > screenLeft &&
-            (s32)unit.xc - (s32)MaxUnitBounds::Left < screenRight )
+        Chk::UnitPtr unit = map.layers.getUnit(unitNum);
+        if ( (s32)unit->xc + (s32)MaxUnitBounds::Right > screenLeft &&
+            (s32)unit->xc - (s32)MaxUnitBounds::Left < screenRight )
             // If within screen x-bounds
         {
-            if ( (s32)unit.yc + (s32)MaxUnitBounds::Down > screenTop &&
-                (s32)unit.yc - (s32)MaxUnitBounds::Up < screenBottom )
+            if ( (s32)unit->yc + (s32)MaxUnitBounds::Down > screenTop &&
+                (s32)unit->yc - (s32)MaxUnitBounds::Up < screenBottom )
                 // If within screen y-bounds
             {
                 u16 frame = 0;
                 u8 color = 0;
-                if ( !map.getPlayerColor(unit.owner, color) )
-                    color = unit.owner;
+                if ( !map.getPlayerColor(unit->owner, color) )
+                    color = unit->owner;
 
                 bool isSelected = selections.unitIsSelected(unitNum);
 
                 UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                    screenLeft, screenTop, unit.id, unit.xc, unit.yc,
+                    screenLeft, screenTop, (u16)unit->type, unit->xc, unit->yc,
                     u16(frame), isSelected);
             }
         }
@@ -446,7 +448,7 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
     u16 tileset = map.getTileset();
 
     buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
-    ChkSprite* sprite;
+    Chk::Sprite* sprite;
 
     for ( s32 spriteId = 0; spriteId < map.SpriteSectionCapacity(); spriteId++ )
     {
@@ -461,17 +463,17 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
                     // If within screen y-bounds
                 {
                     u16 frame = 0;
-                    bool isSprite = sprite->IsDrawnAsSprite();;
+                    bool isSprite = sprite->isDrawnAsSprite();
                     u8 color = 0;
                     if ( !map.getPlayerColor(sprite->owner, color) )
                         color = sprite->owner;
 
                     if ( isSprite )
                         SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                            screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc);
+                            screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc);
                     else
                         UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                            screenLeft, screenTop, sprite->id, sprite->xc, sprite->yc,
+                            screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc,
                             frame, false);
                 }
             }
@@ -483,7 +485,6 @@ void Graphics::DrawLocationNames(HDC hDC)
 {
     s32 screenRight = screenLeft + screenWidth;
     s32 screenBottom = screenTop + screenHeight;
-    ChkLocation* loc;
 
     WinLib::PaintFontPtr numFontPtr = WinLib::PaintFont::createFont(14, 5, "Microsoft Sans Serif");
     HFONT numFont = numFontPtr->getFont();
@@ -493,28 +494,29 @@ void Graphics::DrawLocationNames(HDC hDC)
 
     for ( u32 locId = 0; locId < map.locationCapacity(); locId++ )
     {
-        if ( locId != 63 && map.getLocation(loc, locId) )
+        Chk::LocationPtr loc = map.layers.getLocation(locId);
+        if ( locId != 63 && loc != nullptr )
         {
-            s32 leftMost = std::min(loc->xc1, loc->xc2);
+            s32 leftMost = std::min(loc->left, loc->right);
             if ( leftMost < screenRight )
             {
-                s32 rightMost = std::max(loc->xc1, loc->xc2);
+                s32 rightMost = std::max(loc->left, loc->right);
                 if ( rightMost > screenLeft )
                 {
-                    s32 topMost = std::min(loc->yc1, loc->yc2);
+                    s32 topMost = std::min(loc->top, loc->bottom);
                     if ( topMost < screenBottom )
                     {
-                        s32 bottomMost = std::max(loc->yc1, loc->yc2);
+                        s32 bottomMost = std::max(loc->top, loc->bottom);
                         if ( bottomMost > screenTop )
                         {
-                            ChkdString str;
-                            if ( map.getLocationName(locId, str) )
+                            std::shared_ptr<ChkdString> str = map.strings.getLocationName<ChkdString>(locId, Chk::Scope::EditorOverGame);
+                            if ( str != nullptr )
                             {
                                 leftMost = leftMost - screenLeft + 2;
                                 topMost = topMost - screenTop + 2;
                                 RECT rect = {};
                                 s32 lineWidth = 0, lineHeight = 0;
-                                WinLib::getTextExtent(hDC, str, lineWidth, lineHeight);
+                                WinLib::getTextExtent(hDC, *str, lineWidth, lineHeight);
                                 if ( clipLocationNames )
                                 {
                                     rect.left = (leftMost < 0) ? 0 : leftMost;
@@ -525,41 +527,41 @@ void Graphics::DrawLocationNames(HDC hDC)
                                         rectHeight = rect.bottom - rect.top;
 
                                     if ( lineWidth < rectWidth )
-                                        WinLib::drawText(hDC, str, leftMost, topMost, rect, true, false);
+                                        WinLib::drawText(hDC, *str, leftMost, topMost, rect, true, false);
                                     else if ( rectHeight > lineHeight ) // Can word wrap
                                     {
-                                        size_t lastCharPos = str.size() - 1;
+                                        size_t lastCharPos = str->size() - 1;
                                         s32 prevBottom = rect.top;
 
-                                        while ( rect.bottom - prevBottom > lineHeight && str.size() > 0 )
+                                        while ( rect.bottom - prevBottom > lineHeight && str->size() > 0 )
                                         {
                                             // Binary search for the character length of this line
                                             size_t floor = 0;
-                                            size_t ceil = str.size();
+                                            size_t ceil = str->size();
                                             while ( ceil - 1 > floor )
                                             {
                                                 lastCharPos = (ceil - floor) / 2 + floor;
-                                                WinLib::getTextExtent(hDC, str.substr(0, lastCharPos), lineWidth, lineHeight);
+                                                WinLib::getTextExtent(hDC, str->substr(0, lastCharPos), lineWidth, lineHeight);
                                                 if ( lineWidth > rectWidth )
                                                     ceil = lastCharPos;
                                                 else
                                                     floor = lastCharPos;
                                             }
-                                            WinLib::getTextExtent(hDC, str.substr(0, floor + 1), lineWidth, lineHeight); // Correct last character if needed
+                                            WinLib::getTextExtent(hDC, str->substr(0, floor + 1), lineWidth, lineHeight); // Correct last character if needed
                                             if ( lineWidth > rectWidth )
                                                 lastCharPos = floor;
                                             else
                                                 lastCharPos = ceil;
                                             // End binary search
 
-                                            WinLib::drawText(hDC, str.substr(0, lastCharPos), leftMost, prevBottom, rect, true, false);
-                                            str = str.substr(lastCharPos, str.size());
+                                            WinLib::drawText(hDC, str->substr(0, lastCharPos), leftMost, prevBottom, rect, true, false);
+                                            (*str) = str->substr(lastCharPos, str->size());
                                             prevBottom += lineHeight;
                                         }
                                     }
                                 }
                                 else
-                                    WinLib::drawText(hDC, str, leftMost, topMost, rect, false, false);
+                                    WinLib::drawText(hDC, *str, leftMost, topMost, rect, false, false);
                             }
                         }
                     }
@@ -1339,12 +1341,12 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto &pasteUnit : units )
             {
-                u8 color = pasteUnit.unit.owner;
-                map.getPlayerColor(pasteUnit.unit.owner, color);
+                u8 color = pasteUnit.unit->owner;
+                map.getPlayerColor(pasteUnit.unit->owner, color);
                 if ( cursor.y+ pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        pasteUnit.unit.id, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
+                        (u16)pasteUnit.unit->type, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
                 }
             }
         }
@@ -1368,14 +1370,14 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections
     }
     else
     {
-        ChkLocation* loc;
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION && map.getLocation(loc, selectedLocation) ) // Draw location resize/movement graphics
+        Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? map.layers.getLocation((size_t)selectedLocation) : nullptr;
+        if ( loc != nullptr ) // Draw location resize/movement graphics
         {
-            s32 locLeft = loc->xc1-screenLeft;
-            s32 locRight = loc->xc2-screenLeft;
-            s32 locTop = loc->yc1-screenTop;
-            s32 locBottom = loc->yc2-screenTop;
+            s32 locLeft = loc->left-screenLeft;
+            s32 locRight = loc->right-screenLeft;
+            s32 locTop = loc->top-screenTop;
+            s32 locBottom = loc->bottom-screenTop;
             s32 dragX = end.x-start.x;
             s32 dragY = end.y-start.y;
 
@@ -1544,14 +1546,14 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 {
     for ( u16 i = 0; i < map.numUnits(); i++ )
     {
-        ChkUnit unit = map.getUnit(i);
+        Chk::UnitPtr unit = map.layers.getUnit(i);
         u8 color = 0;
-        if ( !map.getPlayerColor(unit.owner, color) )
-            color = unit.owner;
+        if ( !map.getPlayerColor(unit->owner, color) )
+            color = unit->owner;
 
         u32 bitIndex = (
-            ((u32)((unit.yc / 32)*scale) + yOffset) * 128
-            + (u32)((unit.xc / 32)*scale) + xOffset
+            ((u32)((unit->yc / 32)*scale) + yOffset) * 128
+            + (u32)((unit->xc / 32)*scale) + xOffset
             );
 
         if ( bitIndex < MINI_MAP_MAXBIT )
@@ -1560,10 +1562,10 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 
     for ( u16 i = 0; i < map.SpriteSectionCapacity(); i++ )
     {
-        ChkSprite* sprite = nullptr;
+        Chk::Sprite* sprite = nullptr;
         if ( map.GetSpriteRef(sprite, i) )
         {
-            if ( sprite->IsDrawnAsSprite() )
+            if ( sprite->isDrawnAsSprite() )
             {
                 u8 color = 0;
                 if ( !map.getPlayerColor(sprite->owner, color) )

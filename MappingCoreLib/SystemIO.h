@@ -1,10 +1,29 @@
 #ifndef SYSTEMIO_H
 #define SYSTEMIO_H
-#include "Buffer.h"
 #include <fstream>
 #include <direct.h>
 #include <algorithm>
+#include <vector>
 #include <map>
+
+#ifdef output_param
+#undef output_param
+#endif
+#define output_param /* Syntactic sugar denoting an output parameter - unless a function indicates that there has been an error it's obligated to set out params before returning */
+
+#ifdef inout_param
+#undef inout_param
+#endif
+#define inout_param /* Syntactic sugar denoting a parameter that may optionally be used for input, and unless a function indicates that there's been an error it's obligated to set inout params before returning */
+
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u16 = std::uint16_t;
+using s16 = std::int16_t;
+using u8 = std::uint8_t;
+using s8 = std::int8_t;
 
 bool hasExtension(const std::string &systemFilePath, const std::string &extension);
 std::string GetSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /
@@ -22,7 +41,6 @@ std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &
 bool FindFile(const std::string &filePath);
 bool PatientFindFile(const std::string &filePath, int numWaitTimes, int* waitTimes);
 
-bool FileToBuffer(const std::string &fileName, buffer &buf);
 bool FileToString(const std::string &fileName, std::string &str);
 
 bool MakeFileCopy(const std::string &inFilePath, const std::string &outFilePath);
@@ -32,7 +50,7 @@ bool RemoveFile(const std::string &filePath);
 bool RemoveFiles(const std::string &firstFileName, const std::string &secondFileName);
 bool RemoveFiles(const std::string &firstFileName, const std::string &secondFileName, const std::string &thirdFileName);
 
-bool GetModuleDirectory(output_param std::string &moduleDirectory);
+bool GetModuleDirectory(output_param std::string &moduleDirectory, bool includeTrailingSeparator = false);
 
 bool GetDefaultScPath(output_param std::string &data);
 std::string GetDefaultScPath();

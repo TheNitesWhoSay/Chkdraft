@@ -303,7 +303,7 @@
     <ClInclude Include="ChkTrigger.h" />
     <ClInclude Include="ChkUnit.h" />
     <ClInclude Include="CoreStructs.h" />
-    <ClInclude Include="DefaultCHK.h" />
+    <ClInclude Include="Sections.h" />
     <ClInclude Include="EscapeStrings.h" />
     <ClInclude Include="FileBrowser.h" />
     <ClInclude Include="SystemIO.h" />
@@ -332,7 +332,7 @@
     <ClCompile Include="ChkSprite.cpp" />
     <ClCompile Include="ChkTrigger.cpp" />
     <ClCompile Include="ChkUnit.cpp" />
-    <ClCompile Include="DefaultCHK.cpp" />
+    <ClCompile Include="Sections.cpp" />
     <ClCompile Include="EscapeStrings.cpp" />
     <ClCompile Include="FileBrowser.cpp" />
     <ClCompile Include="SystemIO.cpp" />

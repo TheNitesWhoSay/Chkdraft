@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <memory>
 
+class buffer;
+typedef std::shared_ptr<buffer> BufferPtr;
+
+// TODO: Let this throw OutOfMemory exceptions
 class buffer
 {
     public:
@@ -12,6 +16,8 @@ class buffer
                     buffer(const std::string &bufferTitle);
                     buffer(u32 bufferTitleVal);
                     buffer(const buffer &rhs);
+                    template <typename StructType>
+                        static BufferPtr make(StructType & data);
 
 /*  Destructor  */  virtual ~buffer();
 
@@ -21,9 +27,10 @@ class buffer
 
                     // Puts data in 'dest' if 'location' is within the buffer
                     template <typename valueType>
-                        bool get(valueType &dest, s64 location);
+                        bool get(valueType &dest, s64 location) const;
                     bool getBit(bool &dest, s64 location, u32 bitNum);
-                    bool getString(char* dest, s64 location, s64 size);
+                    bool getString(char* dest, s64 location, s64 size) const;
+                    std::string getString(s64 location, s64 size) const;
                     template <typename valueType>
                         bool getArray(valueType* dest, s64 location, s64 numElements);
 
@@ -35,21 +42,24 @@ class buffer
 
                     // Returns data if the location is < sizeUsed, otherwise returns 0
                     template <typename valueType>
-                        valueType get(s64 location);
+                        valueType get(s64 location) const;
                     bool getBit(s64 location, u32 bitNum);
 
 /*   Searching  */  // Returns true if the sequence was found at the location
+                    bool is(const char* str, s64 size);
+                    template <typename valueType>
+                        bool is(const valueType &value);
                     bool has(char character, s64 location);
                     bool hasCaseless(char character, s64 location);
                     bool has(const char* str, s64 location, s64 size);
                     bool hasCaseless(const char* str, s64 location, s64 size);
 
                     // Puts next instance of 'character' in 'dest' if found
-                    bool getNext(char character, s64 start, s64 &dest);
-                    bool getNextUnquoted(char character, s64 start, s64 &dest);
-                    bool getNextUnquoted(char character, s64 start, s64 &dest, char terminator);
-                    bool getNextUnquoted(char character, s64 start, s64 end, s64 &dest);
-                    bool getNextUnescaped(char character, s64 start, s64 &dest);
+                    bool getNext(char character, s64 start, s64 &dest) const;
+                    bool getNextUnquoted(char character, s64 start, s64 &dest) const;
+                    bool getNextUnquoted(char character, s64 start, s64 &dest, char terminator) const;
+                    bool getNextUnquoted(char character, s64 start, s64 end, s64 &dest) const;
+                    bool getNextUnescaped(char character, s64 start, s64 &dest) const;
 
 /*   Mutators   */  // Adds data onto the end of the buffer
                     template <typename valueType>
@@ -96,8 +106,14 @@ class buffer
                     bool delRange(s64 startLocation, s64 endLocation);
                     bool del(s64 startLocation, s64 size);
 
+                    // Sets a buffer to the given size, trimming any excess data and zero-filling any data that is not present
+                    bool trimTo(s64 size);
+
 /*  IO Methods  */  // Writes the data to 'pFile'
                     void write(FILE* pFile, bool includeHeader);
+                    
+                    // Writes the data to 'outputBuffer'
+                    std::ostream & write(std::ostream &outputBuffer, bool includeHeader);
 
                     // Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
                     bool extract(buffer &buf, s64 position);
@@ -111,8 +127,10 @@ class buffer
                     // Converts raw data to buffer data, be sure to free any allocated data afterwards
                     bool deserialize(const void* incomingData); // First four bytes: bufTitle, second four: sizeUsed, after is sizeUsed bytes of data
 
+                    std::shared_ptr<buffer> makeCopy();
+                    std::shared_ptr<buffer> makeCopy(s64 size);
+
                     friend bool getFile(void* mpqFile, const std::string &mpqPath, buffer &fileData); // Used by MpqFile
-                    friend bool FileToBuffer(void* &hMpq, const std::string &fileName, buffer &buf);
                     friend bool FileToBuffer(const std::string &fileName, buffer &buf);
 
 /*     Misc     */  // Checks whether a referance or pointer to a buffer is valid
@@ -124,13 +142,13 @@ class buffer
                     // Deletes data and sets sizeUsed and sizeAllotted to zero, bufTitle is unaffected
                     void flush();
 
-
     private:
 
 /*     Data     */  s8* data; // The actual data contained by the buffer
                     s64 sizeUsed; // Size of data being used
                     s64 sizeAllotted; // Size allocated for data
                     char bufTitle[5]; // Title of the buffer
+                    bool isSizeLocked;
 
 /* Priv Methods */  /** Called to increase or decrease buffer size
                         If multiplySize is set, it multiplies the size

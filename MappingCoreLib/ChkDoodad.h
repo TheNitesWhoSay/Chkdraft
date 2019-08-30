@@ -1,7 +1,7 @@
 #ifndef CHKDOODAD_H
 #define CHKDOODAD_H
 #include "Basics.h"
-
+/*
 #pragma pack(push, 1)
 __declspec(align(1))
 struct ChkDoodad // A doodad as found in a scenario.chk's DD2 section
@@ -14,5 +14,5 @@ struct ChkDoodad // A doodad as found in a scenario.chk's DD2 section
 };
 #pragma pack(pop)
 #define DOODAD_STRUCT_SIZE 8
-
+*/
 #endif

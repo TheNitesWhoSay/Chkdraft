@@ -324,28 +324,13 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( WinLib::GetYesNo("Are you sure you want to reset all tech settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
-                    buffer newTECS((u32)SectionId::TECS), newTECx((u32)SectionId::TECx),
-                        newPTEC((u32)SectionId::PTEC), newPTEx((u32)SectionId::PTEx);
-
-                    if ( Get_TECS(newTECS) )
+                    Section newTECS = TecsSection::GetDefault(), newTECx = TecxSection::GetDefault(), newPTEC = PtecSection::GetDefault(), newPTEx = PtexSection::GetDefault();
+                    if ( newTECS != nullptr && newTECx != nullptr && newPTEC != nullptr && newPTEx != nullptr )
                     {
-                        newTECS.del(0, 8);
-                        CM->ReplaceTECSSection(newTECS);
-                    }
-                    if ( Get_TECx(newTECx) )
-                    {
-                        newTECx.del(0, 8);
-                        CM->ReplaceTECxSection(newTECx);
-                    }
-                    if ( Get_PTEC(newPTEC) )
-                    {
-                        newPTEC.del(0, 8);
-                        CM->ReplacePTECSection(newPTEC);
-                    }
-                    if ( Get_PTEx(newPTEx) )
-                    {
-                        newPTEx.del(0, 8);
-                        CM->ReplacePTExSection(newPTEx);
+                        CM->AddOrReplaceSection(newTECS);
+                        CM->AddOrReplaceSection(newTECx);
+                        CM->AddOrReplaceSection(newPTEC);
+                        CM->AddOrReplaceSection(newPTEx);
                     }
 
                     CM->notifyChange(false);

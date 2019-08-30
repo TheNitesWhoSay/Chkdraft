@@ -1,7 +1,7 @@
 #ifndef CHKCUWP_H
 #define CHKCUWP_H
 #include "Basics.h"
-
+/*
 #pragma pack(push, 1)
 __declspec(align(1))
 class ChkCuwp
@@ -106,5 +106,5 @@ enum class CUWPUnitPropertyFlags : uint16_t
     xUnitIsHallucinated = x16BIT_3,
     xUnitIsInvincible = x16BIT_4
 };
-
+*/
 #endif

@@ -1,4 +1,5 @@
 #include "StringEditor.h"
+#include "../../../../../MappingCoreLib/FileBrowser.h"
 #include "../../../../Chkdraft.h"
 #include <fstream>
 #include <string>
@@ -17,7 +18,7 @@ enum ID {
     BUTTON_SWITCH,
 };
 
-StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDC(NULL)
+StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDC(NULL), fileBrowser(getSaveTextFilters(), "Save Text", false, true)
 {
 
 }
@@ -57,23 +58,21 @@ void StringEditorWindow::RefreshWindow()
         listStrings.ClearItems();
         numVisibleStrings = 0;
         int toSelect = -1;
-        StringUsageTable strUse;
-        if ( strUse.populateTable(CM->scenario(), extended) )
+        std::bitset<Chk::MaxStrings> strUsed;
+        CM->strings.markUsedStrings(strUsed, Chk::Scope::Either, Chk::Scope::Game);
+        ChkdString str;
+        u32 lastIndex = extended ? CM->kstrSectionCapacity() : (u32)CM->strSectionCapacity();
+        for ( u32 i = 0; i <= lastIndex; i++ )
         {
-            ChkdString str;
-            u32 lastIndex = extended ? CM->kstrSectionCapacity() : (u32)CM->strSectionCapacity();
-            for ( u32 i = 0; i <= lastIndex; i++ )
+            u32 strId = extended ? 65536 - i : i;
+            if ( strUsed[i] && CM->GetString(str, strId) && str.size() > 0 )
             {
-                u32 strIndex = extended ? 65536 - i : i;
-                if ( strUse.isUsed(i) && CM->GetString(str, strIndex) && str.size() > 0 )
+                int newListIndex = listStrings.AddItem(strId);
+                if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
                 {
-                    int newListIndex = listStrings.AddItem(strIndex);
-                    if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
-                    {
-                        numVisibleStrings++;
-                        if ( currSelString == strIndex ) // This string is the currSelString
-                            toSelect = newListIndex; // Mark position for selection
-                    }
+                    numVisibleStrings++;
+                    if ( currSelString == strId ) // This string is the currSelString
+                        toSelect = newListIndex; // Mark position for selection
                 }
             }
         }
@@ -277,7 +276,8 @@ void StringEditorWindow::saveStrings()
 {
     u32 filterIndex = 0;
     std::string filePath = "";
-    if ( BrowseForSave(filePath, filterIndex, getSaveTextFilters(), "", "Save File", false, true) )
+
+    if ( fileBrowser.browseForSavePath(filePath, filterIndex) )
     {
         if ( filterIndex == 1 && !hasExtension(filePath, ".txt") )
             filePath = MakeExtSystemFilePath(filePath, ".txt");

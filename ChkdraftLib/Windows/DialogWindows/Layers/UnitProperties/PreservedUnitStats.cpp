@@ -2,7 +2,7 @@
 #include "../../../../Chkdraft.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitChange.h"
 
-PreservedUnitStats::PreservedUnitStats() : field(ChkUnitField::Serial)
+PreservedUnitStats::PreservedUnitStats() : field(Chk::Unit::Field::ClassId)
 {
 
 }
@@ -14,36 +14,36 @@ PreservedUnitStats::~PreservedUnitStats()
 
 void PreservedUnitStats::Clear()
 {
-    field = ChkUnitField::Serial;
+    field = Chk::Unit::Field::ClassId;
     preservedValues.clear();
 }
 
-void PreservedUnitStats::AddStats(Selections &sel, ChkUnitField statField)
+void PreservedUnitStats::AddStats(Selections &sel, Chk::Unit::Field statField)
 {
     Clear();
     field = statField;
     auto &unitIndexes = sel.getUnits();
     for ( u16 &unitIndex : unitIndexes )
     {
-        ChkUnit unit = CM->getUnit(unitIndex);
+        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         switch ( field )
         {
-            case ChkUnitField::Serial: preservedValues.push_back(unit.serial); break;
-            case ChkUnitField::Xc: preservedValues.push_back(unit.xc); break;
-            case ChkUnitField::Yc: preservedValues.push_back(unit.yc); break;
-            case ChkUnitField::Id: preservedValues.push_back(unit.id); break;
-            case ChkUnitField::LinkType: preservedValues.push_back(unit.linkType); break;
-            case ChkUnitField::Special: preservedValues.push_back(unit.special); break;
-            case ChkUnitField::ValidFlags: preservedValues.push_back(unit.validFlags); break;
-            case ChkUnitField::Owner: preservedValues.push_back(unit.owner); break;
-            case ChkUnitField::Hitpoints: preservedValues.push_back(unit.hitpoints); break;
-            case ChkUnitField::Shields: preservedValues.push_back(unit.shields); break;
-            case ChkUnitField::Energy: preservedValues.push_back(unit.energy); break;
-            case ChkUnitField::Resources: preservedValues.push_back(unit.resources); break;
-            case ChkUnitField::Hanger: preservedValues.push_back(unit.hanger); break;
-            case ChkUnitField::StateFlags: preservedValues.push_back(unit.stateFlags); break;
-            case ChkUnitField::Unused: preservedValues.push_back(unit.unused); break;
-            case ChkUnitField::Link: preservedValues.push_back(unit.link); break;
+            case Chk::Unit::Field::ClassId: preservedValues.push_back(unit->classId); break;
+            case Chk::Unit::Field::Xc: preservedValues.push_back(unit->xc); break;
+            case Chk::Unit::Field::Yc: preservedValues.push_back(unit->yc); break;
+            case Chk::Unit::Field::Type: preservedValues.push_back((u16)unit->type); break;
+            case Chk::Unit::Field::RelationFlags: preservedValues.push_back(unit->relationFlags); break;
+            case Chk::Unit::Field::ValidStateFlags: preservedValues.push_back(unit->validStateFlags); break;
+            case Chk::Unit::Field::ValidFieldFlags: preservedValues.push_back(unit->validFieldFlags); break;
+            case Chk::Unit::Field::Owner: preservedValues.push_back(unit->owner); break;
+            case Chk::Unit::Field::HitpointPercent: preservedValues.push_back(unit->hitpointPercent); break;
+            case Chk::Unit::Field::ShieldPercent: preservedValues.push_back(unit->shieldPercent); break;
+            case Chk::Unit::Field::EnergyPercent: preservedValues.push_back(unit->energyPercent); break;
+            case Chk::Unit::Field::ResourceAmount: preservedValues.push_back(unit->resourceAmount); break;
+            case Chk::Unit::Field::HangerAmount: preservedValues.push_back(unit->hangerAmount); break;
+            case Chk::Unit::Field::StateFlags: preservedValues.push_back(unit->stateFlags); break;
+            case Chk::Unit::Field::Unused: preservedValues.push_back(unit->unused); break;
+            case Chk::Unit::Field::RelationClassId: preservedValues.push_back(unit->relationClassId); break;
         }
     }
 }

@@ -36,10 +36,10 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                 break;
                             case REPLACE_TRIGGERS_BYTES:
                                 {
-                                    Section trigs(new buffer((u32)SectionId::TRIG));
-                                    if ( trigs->deserialize(copyData) )
+                                    buffer trigs((u32)SectionName::TRIG);
+                                    if ( trigs.deserialize(copyData) )
                                     {
-                                        if ( map->ReplaceTrigSection(trigs) )
+                                        if ( map->AddOrReplaceTrigSection(trigs) )
                                         {
                                             map->refreshScenario();
                                             map->notifyChange(false);

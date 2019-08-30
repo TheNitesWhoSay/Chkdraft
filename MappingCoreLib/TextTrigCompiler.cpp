@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#undef PlaySound
 
 TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
@@ -33,25 +34,18 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
     {
         CleanText(text);
 
-        Section TRIG(new buffer((u32)SectionId::TRIG));
+        buffer TRIG((u32)SectionName::TRIG);
         std::stringstream compilerError;
         std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, *TRIG, compilerError) )
+        if ( ParseTriggers(text, TRIG, compilerError) )
         {
             if ( BuildNewStringTable(chk, stringTableError) )
             {
-                if ( !chk->HasTrigSection() )
-                {
-                    if ( chk->AddSection(TRIG) )
-                        return true;
-                    else
-                        compilerError << "No text errors, but compilation must abort due to low memory.";
-                }
-                else if ( chk->ReplaceTrigSection(TRIG) )
+                if ( chk->AddOrReplaceTrigSection(TRIG) )
                     return true;
                 else
-                    compilerError << "No text errors, but TRIG could not be overwritten.";
+                    compilerError << "No text errors, but compilation must abort due to low memory.";
             }
             else
                 compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
@@ -63,13 +57,13 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string trigText, Trigger* trigger, ScenarioPtr chk, ScData &scData)
+bool TextTrigCompiler::CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, ScData &scData)
 {
     buffer text("TxTr");
     return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk, scData);
 }
 
-bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPtr chk, ScData &scData)
+bool TextTrigCompiler::CompileTrigger(buffer& text, Chk::Trigger* trigger, ScenarioPtr chk, ScData &scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -77,34 +71,27 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
     try
     {
         CleanText(text);
-        Section TRIG(new buffer((u32)SectionId::TRIG));
+        buffer TRIG((u32)SectionName::TRIG);
         std::stringstream compilerError;
         std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, *TRIG, compilerError) )
+        if ( ParseTriggers(text, TRIG, compilerError) )
         {
             if ( BuildNewStringTable(chk, stringTableError) )
             {
                 if ( !chk->HasTrigSection() )
                 {
-                    if ( chk->AddSection(TRIG) )
+                    if ( chk->AddOrReplaceTrigSection(TRIG) )
                         return true;
                     else
                         compilerError << "No text errors, but compilation must abort due to low memory.";
                 }
                 else
                 {
-                    Trigger* trig;
-                    if ( TRIG->getPtr<Trigger>(trig, 0, TRIG_STRUCT_SIZE) )
+                    Chk::Trigger* trig;
+                    if ( TRIG.getPtr<Chk::Trigger>(trig, 0, sizeof(Chk::Trigger)) )
                     {
-                        trigger->internalData = trig->internalData;
-                        for ( u8 i = 0; i < NUM_TRIG_PLAYERS; i++ )
-                            trigger->players[i] = trig->players[i];
-                        for ( u8 i = 0; i < NUM_TRIG_CONDITIONS; i++ )
-                            trigger->conditions[i] = trig->conditions[i];
-                        for ( u8 i = 0; i < NUM_TRIG_ACTIONS; i++ )
-                            trigger->actions[i] = trig->actions[i];
-
+                        *trigger = *trig;
                         return true;
                     }
                     else
@@ -121,28 +108,32 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Trigger* trigger, ScenarioPt
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(std::string text, ConditionId &conditionId)
+bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type &conditionType)
 {
     buffer txcd("TxCd");
     if ( txcd.addStr(text.c_str(), text.size()) )
     {
         CleanText(txcd);
-        ConditionId CID = ConditionId::NoCondition;
-        if ( ParseConditionName(txcd, CID) && CID != ConditionId::Custom )
+        Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
+        if ( ParseConditionName(txcd, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
         {
-            if ( ((s32)CID) < 0 )
-                conditionId = (ConditionId)ExtendedToRegularCID(CID);
+            if ( ((s32)newConditionType) < 0 )
+                conditionType = ExtendedToRegularCID(newConditionType);
             else
-                conditionId = CID;
+                conditionType = (Chk::Condition::Type)newConditionType;
 
             return true;
         }
         else
         {
-            u8 temp = 0;
-            if ( ParseByte((char*)txcd.getPtr(0), temp, 0, txcd.size()) )
+            u32 temp = 0;
+            if ( ParseLong((char*)txcd.getPtr(0), temp, 0, txcd.size()) )
             {
-                conditionId = (ConditionId)temp;
+                if ( ((s32)temp) < 0 )
+                    conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
+                else
+                    conditionType = (Chk::Condition::Type)temp;
+
                 return true;
             }
         }
@@ -151,7 +142,7 @@ bool TextTrigCompiler::ParseConditionName(std::string text, ConditionId &conditi
 }
 
 bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
-    std::vector<u8> &argMap, Condition& condition, ScenarioPtr chk, ScData &scData)
+    std::vector<u8> &argMap, Chk::Condition& condition, ScenarioPtr chk, ScData &scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -162,8 +153,8 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
         txcd.add<u8>(0) )
     {
         std::stringstream argumentError;
-        u32 argsLeft = numConditionArgs((ConditionId)condition.condition) - argMap[argNum];
-        if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (ConditionId)condition.condition, argsLeft, argumentError) )
+        u32 argsLeft = numConditionArgs((Chk::Condition::VirtualType)condition.conditionType) - argMap[argNum];
+        if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (Chk::Condition::VirtualType)condition.conditionType, argsLeft, argumentError) )
             return true;
         else
         {
@@ -175,28 +166,32 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
     return false;
 }
 
-bool TextTrigCompiler::ParseActionName(std::string text, ActionId &id)
+bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & actionType)
 {
     buffer txac("TxAc");
     if ( txac.addStr(text.c_str(), text.size()) )
     {
         CleanText(txac);
-        ActionId AID = ActionId::NoAction;
-        if ( ParseActionName(txac, AID) && AID != ActionId::Custom )
+        Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
+        if ( ParseActionName(txac, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
         {
-            if ( ((s32)AID) < 0 )
-                id = (ActionId)ExtendedToRegularAID(AID);
+            if ( ((s32)newActionType) < 0 )
+                actionType = ExtendedToRegularAID(newActionType);
             else
-                id = AID;
+                actionType = (Chk::Action::Type)newActionType;
 
             return true;
         }
         else
         {
-            u8 temp = 0;
-            if ( ParseByte((char*)txac.getPtr(0), temp, 0, txac.size()) )
+            u32 temp = 0;
+            if ( ParseLong((char*)txac.getPtr(0), temp, 0, txac.size()) )
             {
-                id = (ActionId)temp;
+                if ( ((s32)temp) < 0 )
+                    actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
+                else
+                    actionType = (Chk::Action::Type)temp;
+
                 return true;
             }
         }
@@ -205,7 +200,7 @@ bool TextTrigCompiler::ParseActionName(std::string text, ActionId &id)
 }
 
 bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
-    std::vector<u8> &argMap, Action &action, ScenarioPtr chk, ScData &scData)
+    std::vector<u8> &argMap, Chk::Action &action, ScenarioPtr chk, ScData &scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -216,8 +211,8 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
         txac.add<u8>(0) )
     {
         std::stringstream argumentError;
-        u32 argsLeft = numActionArgs((ActionId)action.action) - argMap[argNum];
-        if ( ParseActionArg(txac, action, 0, txac.size() - 1, (ActionId)action.action, argsLeft, argumentError) )
+        u32 argsLeft = numActionArgs((Chk::Action::VirtualType)action.actionType) - argMap[argNum];
+        if ( ParseActionArg(txac, action, 0, txac.size() - 1, (Chk::Action::VirtualType)action.actionType, argsLeft, argumentError) )
             return true;
         else
         {
@@ -229,19 +224,19 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
     return false;
 }
 
-u8 TextTrigCompiler::defaultConditionFlags(ConditionId conditionId)
+u8 TextTrigCompiler::defaultConditionFlags(Chk::Condition::Type conditionType)
 {
     u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
         0, 0, 0, 0, 0,    16, 16, 16, 16, 0,
         0, 0, 0, 0 };
 
-    if ( (s32)conditionId >= 0 && (s32)conditionId < sizeof(defaultFlags)/sizeof(const u8) )
-        return defaultFlags[(s32)conditionId];
+    if ( (size_t)conditionType < sizeof(defaultFlags)/sizeof(const u8) )
+        return defaultFlags[(size_t)conditionType];
     else
         return 0;
 }
 
-u8 TextTrigCompiler::defaultActionFlags(ActionId AID)
+u8 TextTrigCompiler::defaultActionFlags(Chk::Action::Type actionType)
 {
     u8 defaultFlags[] = { 0, 4, 4, 4, 4,        4, 4, 0, 4, 0,
         4, 28, 0, 4, 4,       4, 4, 16, 16, 0,
@@ -250,25 +245,25 @@ u8 TextTrigCompiler::defaultActionFlags(ActionId AID)
         4, 4, 20, 20, 20,     20, 20, 0, 20, 20,
         20, 20, 4, 20, 4,     4, 4, 4, 0, 0 };
 
-    if ( (u8)AID >= 0 && (u8)AID < sizeof(defaultFlags) / sizeof(const u8) )
-        return defaultFlags[(u8)AID];
+    if ( (size_t)actionType < sizeof(defaultFlags) / sizeof(const u8) )
+        return defaultFlags[(size_t)actionType];
     else
         return 0;
 }
 
-u8 TextTrigCompiler::numConditionArgs(ConditionId conditionId)
+u8 TextTrigCompiler::numConditionArgs(Chk::Condition::VirtualType conditionType)
 {
     const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
         1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
         1, 4, 0, 0 };
 
-    if ( (s32)conditionId >= 0 && (s32)conditionId < sizeof(conditionNumArgs) / sizeof(const u8) )
-        return conditionNumArgs[(s32)conditionId];
+    if ( (size_t)conditionType < sizeof(conditionNumArgs) / sizeof(const u8) )
+        return conditionNumArgs[(size_t)conditionType];
     else
-        return ExtendedNumConditionArgs(conditionId);
+        return ExtendedNumConditionArgs(conditionType);
 }
 
-u8 TextTrigCompiler::numActionArgs(ActionId actionId)
+u8 TextTrigCompiler::numActionArgs(Chk::Action::VirtualType actionType)
 {
     const u8 actionNumArgs[] = { 0, 0, 0, 0, 1,  0, 0, 8, 2, 2,
         1, 5, 1, 2, 2,  1, 2, 2, 3, 2,
@@ -277,10 +272,10 @@ u8 TextTrigCompiler::numActionArgs(ActionId actionId)
         1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
         5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
 
-    if ( (s32)actionId >= 0 && (s32)actionId < sizeof(actionNumArgs) / sizeof(const u8) )
-        return actionNumArgs[(s32)actionId];
+    if ( (size_t)actionType < sizeof(actionNumArgs) / sizeof(const u8) )
+        return actionNumArgs[(size_t)actionType];
     else
-        return ExtendedNumActionArgs(actionId);
+        return ExtendedNumActionArgs(actionType);
 }
 
 // protected
@@ -288,7 +283,12 @@ u8 TextTrigCompiler::numActionArgs(ActionId actionId)
 bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, ScData &scData)
 {
     ClearCompiler();
-    return strUsage.populateTable(chk.get(), false) && extendedStrUsage.populateTable(chk.get(), true) &&
+    stringUsed.reset();
+    extendedStringUsed.reset();
+    chk->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
+    chk->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Either);
+
+    return
         PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
         PrepGroupTable(chk) && PrepStringTable(chk) && PrepScriptTable(scData);
 }
@@ -303,8 +303,8 @@ void TextTrigCompiler::ClearCompiler()
 
     addedStrings.clear();
 
-    strUsage.clearTable();
-    extendedStrUsage.clearTable();
+    stringUsed.reset();
+    extendedStringUsed.reset();
 }
 
 void TextTrigCompiler::CleanText(buffer &text)
@@ -473,12 +473,12 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
         numConditions = 0,
         numActions = 0;
 
-    ConditionId conditionId;
-    ActionId actionId;
+    Chk::Condition::VirtualType conditionId;
+    Chk::Action::VirtualType actionId;
 
-    Trigger currTrig = { };
-    Condition* currCondition = &currTrig.conditions[0];
-    Action* currAction = &currTrig.actions[0];
+    Chk::Trigger currTrig = { };
+    Chk::Condition* currCondition = &currTrig.condition(0);
+    Chk::Action* currAction = &currTrig.action(0);
 
     while ( pos < text.size() )
     {
@@ -581,13 +581,13 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                 numConditions = 0;
                 numActions = 0;
 
-                if ( !output.add<Trigger&>(currTrig) )
+                if ( !output.add<Chk::Trigger&>(currTrig) )
                 {
                     error << "Failed to add trigger." << std::endl << std::endl;
                     return false;
                 }
 
-                std::memset(&currTrig, 0, sizeof(Trigger));
+                std::memset(&currTrig, 0, sizeof(Chk::Trigger));
                 expecting = 0;
                 if ( text.has('\0', pos) ) // End of Text
                 {
@@ -642,7 +642,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Trigger &currTrig)
+inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Chk::Trigger &currTrig)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -767,8 +767,8 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::
 }
 
 inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-    s64 &conditionEnd, s64 &lineEnd, ConditionId &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
-    Condition*& currCondition, Trigger &currTrig)
+    s64 &conditionEnd, s64 &lineEnd, Chk::Condition::VirtualType &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
+    Chk::Condition*& currCondition, Chk::Trigger &currTrig)
 {
     //      %ConditionName(
     // or   ;%ConditionName(
@@ -792,17 +792,17 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
 
             if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags, argsLeft) )
             {
-                if ( numConditions > NUM_TRIG_CONDITIONS )
+                if ( numConditions > Chk::Trigger::MaxConditions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                     return false;
                 }
-                currCondition = &currTrig.conditions[numConditions];
-                currCondition->flags = flags | (u8)Condition::Flags::Disabled;
+                currCondition = &currTrig.condition(numConditions);
+                currCondition->flags = flags | (u8)Chk::Condition::Flags::Disabled;
                 if ( (s32)conditionId < 0 )
-                    currCondition->condition = ExtendedToRegularCID(conditionId);
+                    currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
                 else
-                    currCondition->condition = (u8)conditionId;
+                    currCondition->conditionType = (Chk::Condition::Type)(u8)conditionId;
                 numConditions ++;
 
                 pos = conditionEnd;
@@ -882,17 +882,17 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
 
         if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags, argsLeft) )
         {
-            if ( numConditions > NUM_TRIG_CONDITIONS )
+            if ( numConditions > Chk::Trigger::MaxConditions )
             {
                 error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                 return false;
             }
-            currCondition = &currTrig.conditions[numConditions];
+            currCondition = &currTrig.condition(numConditions);
             currCondition->flags = flags;
             if ( (s32)conditionId < 0 )
-                currCondition->condition = ExtendedToRegularCID(conditionId);
+                currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
             else
-                currCondition->condition = (u8)conditionId;
+                currCondition->conditionType = (Chk::Condition::Type)conditionId;
             numConditions ++;
 
             pos = conditionEnd;
@@ -928,7 +928,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
 }
 
 inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
-    Condition*& currCondition, ConditionId &conditionId)
+    Chk::Condition*& currCondition, Chk::Condition::VirtualType &conditionId)
 {
     //      );
     // or   %ConditionArg,
@@ -1040,8 +1040,8 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::st
 }
 
 inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-    u8 &flags, s64 &actionEnd, s64 &lineEnd, ActionId &actionId, u32 &argsLeft, u32 &numActions,
-    Action*& currAction, Trigger &currTrig)
+    u8 &flags, s64 &actionEnd, s64 &lineEnd, Chk::Action::VirtualType &actionId, u32 &argsLeft, u32 &numActions,
+    Chk::Action*& currAction, Chk::Trigger &currTrig)
 {
     //      %ActionName(
     // or   ;%ActionName(
@@ -1059,17 +1059,17 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
 
             if ( ParseAction(text, pos, actionEnd, true, actionId, flags, argsLeft) )
             {
-                if ( numActions > NUM_TRIG_ACTIONS )
+                if ( numActions > Chk::Trigger::MaxActions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                     return false;
                 }
-                currAction = &currTrig.actions[numActions];
-                currAction->flags = flags | (u8)Action::Flags::Disabled;
+                currAction = &currTrig.action(numActions);
+                currAction->flags = flags | (u8)Chk::Action::Flags::Disabled;
                 if ( (s32)actionId < 0 )
-                    currAction->action = (u8)ExtendedToRegularAID(actionId);
+                    currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
                 else
-                    currAction->action = (u8)actionId;
+                    currAction->actionType = (Chk::Action::Type)(u8)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
@@ -1110,17 +1110,17 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
 
         if ( ParseAction(text, pos, actionEnd, false, actionId, flags, argsLeft) )
         {
-            if ( numActions > NUM_TRIG_ACTIONS )
+            if ( numActions > Chk::Trigger::MaxActions )
             {
                 error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                 return false;
             }
-            currAction = &currTrig.actions[numActions];
+            currAction = &currTrig.action(numActions);
             currAction->flags = flags;
             if ( (s32)actionId < 0 )
-                currAction->action = (u8)ExtendedToRegularAID(actionId);
+                currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
             else
-                currAction->action = (u8)actionId;
+                currAction->actionType = (Chk::Action::Type)(u8)actionId;
             numActions ++;
 
             pos = actionEnd+1;
@@ -1141,7 +1141,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
 }
 
 inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-    u32 &argsLeft, s64 &argEnd, Action*& currAction, ActionId &actionId)
+    u32 &argsLeft, s64 &argEnd, Chk::Action*& currAction, Chk::Action::VirtualType &actionId)
 {
     //      );
     // or   %ActionArg,
@@ -1248,7 +1248,7 @@ inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::s
 }
 
 inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-    s64 &flagsEnd, Trigger& currTrig)
+    s64 &flagsEnd, Chk::Trigger& currTrig)
 {
     //      ;
     // or  %32BitFlags;
@@ -1259,7 +1259,7 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::st
     }
     else if ( text.getNext(';', pos, flagsEnd) )
     {
-        if ( ParseExecutionFlags(text, pos, flagsEnd, currTrig.internalData) )
+        if ( ParseExecutionFlags(text, pos, flagsEnd, currTrig.flags) )
         {
             pos = flagsEnd+1;
             expecting ++;
@@ -1294,7 +1294,7 @@ inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std:
     return true;
 }
 
-bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, s64 pos, s64 end)
+bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Chk::Trigger &currTrig, s64 pos, s64 end)
 {
     u32 group;
     s64 separator;
@@ -1306,18 +1306,18 @@ bool TextTrigCompiler::ParseExecutingPlayer(buffer &text, Trigger &currTrig, s64
         if ( !ParseByte((char*)text.getPtr(0), appendedValue, separator+1, end) )
             appendedValue = 1;
 
-        currTrig.players[group] = appendedValue;
+        currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
         return true;
     }
     else if ( ParsePlayer(text, group, pos, end) && group < 28 )
     {
-        currTrig.players[group] = 1;
+        currTrig.owners[group] = Chk::Trigger::Owned::Yes;
         return true;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(buffer &arg, ConditionId &conditionId)
+bool TextTrigCompiler::ParseConditionName(buffer &arg, Chk::Condition::VirtualType &conditionType)
 {
     char currChar = arg.get<u8>(0);
     switch ( currChar )
@@ -1325,15 +1325,15 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, ConditionId &conditionId)
     case 'A':
     {
         if ( arg.has("CCUMULATE", 1, 9) )
-            conditionId = ConditionId::Accumulate;
+            conditionType = Chk::Condition::VirtualType::Accumulate;
         else if ( arg.has("LWAYS", 1, 5) )
-            conditionId = ConditionId::Always;
+            conditionType = Chk::Condition::VirtualType::Always;
     }
     break;
 
     case 'B':
         if ( arg.has("RING", 1, 4) )
-            conditionId = ConditionId::Bring;
+            conditionType = Chk::Condition::VirtualType::Bring;
         break;
 
     case 'C':
@@ -1342,96 +1342,96 @@ bool TextTrigCompiler::ParseConditionName(buffer &arg, ConditionId &conditionId)
             if ( arg.has("THELEAST", 7, 8) )
             {
                 if ( arg.has("AT", 15, 2) )
-                    conditionId = ConditionId::CommandTheLeastAt;
+                    conditionType = Chk::Condition::VirtualType::CommandTheLeastAt;
                 else if ( arg.size() == 15 )
-                    conditionId = ConditionId::CommandTheLeast;
+                    conditionType = Chk::Condition::VirtualType::CommandTheLeast;
             }
             else if ( arg.has("THEMOST", 7, 7) )
             {
                 if ( arg.has("AT", 14, 2) )
-                    conditionId = ConditionId::CommandTheMostAt;
+                    conditionType = Chk::Condition::VirtualType::CommandTheMostAt;
                 else if ( arg.size() == 14 )
-                    conditionId = ConditionId::CommandTheMost;
+                    conditionType = Chk::Condition::VirtualType::CommandTheMost;
             }
             else if ( arg.has("STHEMOSTAT", 7, 10) ) // command'S', added for backwards compatibility
-                conditionId = ConditionId::CommandTheMostAt;
+                conditionType = Chk::Condition::VirtualType::CommandTheMostAt;
             else if ( arg.size() == 7 )
-                conditionId = ConditionId::Command;
+                conditionType = Chk::Condition::VirtualType::Command;
         }
         else if ( arg.has("OUNTDOWNTIMER", 1, 13) )
-            conditionId = ConditionId::CountdownTimer;
+            conditionType = Chk::Condition::VirtualType::CountdownTimer;
         else if ( arg.has("USTOM", 1, 5) )
-            conditionId = ConditionId::Custom;
+            conditionType = Chk::Condition::VirtualType::Custom;
         break;
 
     case 'D':
         if ( arg.has("EATHS", 1, 5) )
-            conditionId = ConditionId::Deaths;
+            conditionType = Chk::Condition::VirtualType::Deaths;
         break;
 
     case 'E':
         if ( arg.has("LAPSEDTIME", 1, 10) )
-            conditionId = ConditionId::ElapsedTime;
+            conditionType = Chk::Condition::VirtualType::ElapsedTime;
         break;
 
     case 'H':
         if ( arg.has("IGHESTSCORE", 1, 11) )
-            conditionId = ConditionId::HighestScore;
+            conditionType = Chk::Condition::VirtualType::HighestScore;
         break;
 
     case 'K':
         if ( arg.has("ILL", 1, 3) )
-            conditionId = ConditionId::Kill;
+            conditionType = Chk::Condition::VirtualType::Kill;
         break;
 
     case 'L':
         if ( arg.has("EAST", 1, 4) )
         {
             if ( arg.has("KILLS", 5, 5) )
-                conditionId = ConditionId::LeastKills;
+                conditionType = Chk::Condition::VirtualType::LeastKills;
             else if ( arg.has("RESOURCES", 5, 9) )
-                conditionId = ConditionId::LeastResources;
+                conditionType = Chk::Condition::VirtualType::LeastResources;
         }
         else if ( arg.has("OWESTSCORE", 1, 10) )
-            conditionId = ConditionId::LowestScore;
+            conditionType = Chk::Condition::VirtualType::LowestScore;
         break;
 
     case 'M':
         if ( arg.has("EMORY", 1, 5) )
-            conditionId = ConditionId::Memory;
+            conditionType = Chk::Condition::VirtualType::Memory;
         else if ( arg.has("OST", 1, 3) )
         {
             if ( arg.has("KILLS", 4, 5) )
-                conditionId = ConditionId::MostKills;
+                conditionType = Chk::Condition::VirtualType::MostKills;
             else if ( arg.has("RESOURCES", 4, 9) )
-                conditionId = ConditionId::MostResources;
+                conditionType = Chk::Condition::VirtualType::MostResources;
         }
         break;
 
     case 'N':
         if ( arg.has("EVER", 1, 4) )
-            conditionId = ConditionId::Never;
+            conditionType = Chk::Condition::VirtualType::Never;
         break;
 
     case 'O':
         if ( arg.has("PPONENTS", 1, 8) )
-            conditionId = ConditionId::Opponents;
+            conditionType = Chk::Condition::VirtualType::Opponents;
         break;
 
     case 'S':
         if ( arg.has("CORE", 1, 4) )
-            conditionId = ConditionId::Score;
+            conditionType = Chk::Condition::VirtualType::Score;
         else if ( arg.has("WITCH", 1, 5) )
-            conditionId = ConditionId::Switch;
+            conditionType = Chk::Condition::VirtualType::Switch;
         break;
     }
 
-    return conditionId != ConditionId::NoCondition;
+    return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(buffer &text, s64 pos, s64 end, bool disabled, ConditionId &conditionId, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseCondition(buffer &text, s64 pos, s64 end, bool disabled, Chk::Condition::VirtualType &conditionType, u8& flags, u32 &argsLeft)
 {
-    conditionId = ConditionId::NoCondition;
+    conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
 
     s64 size = end - pos;
@@ -1452,56 +1452,56 @@ bool TextTrigCompiler::ParseCondition(buffer &text, s64 pos, s64 end, bool disab
             arg.del<u8>(i);
     }
 
-    ParseConditionName(arg, conditionId);
+    ParseConditionName(arg, conditionType);
 
-    flags = defaultConditionFlags(conditionId);
-    argsLeft = numConditionArgs(conditionId);
+    flags = defaultConditionFlags((Chk::Condition::Type)conditionType);
+    argsLeft = numConditionArgs(conditionType);
 
-    return conditionId != ConditionId::NoCondition;
+    return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
+bool TextTrigCompiler::ParseActionName(buffer &arg, Chk::Action::VirtualType &actionType)
 {
     char currChar = arg.get<u8>(0);
     switch ( currChar )
     {
     case 'C':
         if ( arg.has("OMMENT", 1, 6) )
-            id = ActionId::Comment;
+            actionType = Chk::Action::VirtualType::Comment;
         else if ( arg.has("REATEUNIT", 1, 9) )
         {
             if ( arg.has("WITHPROPERTIES", 10, 14) )
-                id = ActionId::CreateUnitWithProperties;
+                actionType = Chk::Action::VirtualType::CreateUnitWithProperties;
             else if ( arg.size() == 10 )
-                id = ActionId::CreateUnit;
+                actionType = Chk::Action::VirtualType::CreateUnit;
         }
         else if ( arg.has("ENTERVIEW", 1, 9) )
-            id = ActionId::CenterView;
+            actionType = Chk::Action::VirtualType::CenterView;
         else if ( arg.has("USTOM", 1, 5) )
-            id = ActionId::Custom;
+            actionType = Chk::Action::VirtualType::Custom;
         break;
 
     case 'D':
         if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
-            id = ActionId::DisplayTextMessage;
+            actionType = Chk::Action::VirtualType::DisplayTextMessage;
         else if ( arg.has("EFEAT", 1, 5) )
-            id = ActionId::Defeat;
+            actionType = Chk::Action::VirtualType::Defeat;
         else if ( arg.has("RAW", 1, 3) )
-            id = ActionId::Draw;
+            actionType = Chk::Action::VirtualType::Draw;
         break;
 
     case 'G':
         if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
-            id = ActionId::GiveUnitsToPlayer;
+            actionType = Chk::Action::VirtualType::GiveUnitsToPlayer;
         break;
 
     case 'K':
         if ( arg.has("ILLUNIT", 1, 7) )
         {
             if ( arg.has("ATLOCATION", 8, 10) )
-                id = ActionId::KillUnitAtLocation;
+                actionType = Chk::Action::VirtualType::KillUnitAtLocation;
             else if ( arg.size() == 8 )
-                id = ActionId::KillUnit;
+                actionType = Chk::Action::VirtualType::KillUnit;
         }
         break;
 
@@ -1513,85 +1513,85 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
                 if ( arg.has("CONTROL", 15, 7) )
                 {
                     if ( arg.has("ATLOCATION", 22, 10) )
-                        id = ActionId::LeaderboardGoalCtrlAtLoc;
+                        actionType = Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc;
                     else if ( arg.size() == 22 )
-                        id = ActionId::LeaderboardGoalCtrl;
+                        actionType = Chk::Action::VirtualType::LeaderboardGoalCtrl;
                 }
                 else if ( arg.has("KILLS", 15, 5) )
-                    id = ActionId::LeaderboardGoalKills;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalKills;
                 else if ( arg.has("POINTS", 15, 6) )
-                    id = ActionId::LeaderboardGoalPoints;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalPoints;
                 else if ( arg.has("RESOURCES", 15, 9) )
-                    id = ActionId::LeaderboardGoalResources;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalResources;
             }
             else
             {
                 if ( arg.has("CONTROL", 11, 7) )
                 {
                     if ( arg.has("ATLOCATION", 18, 10) )
-                        id = ActionId::LeaderboardCtrlAtLoc;
+                        actionType = Chk::Action::VirtualType::LeaderboardCtrlAtLoc;
                     else if ( arg.size() == 18 )
-                        id = ActionId::LeaderboardCtrl;
+                        actionType = Chk::Action::VirtualType::LeaderboardCtrl;
                 }
                 else if ( arg.has("GREED", 11, 5) )
-                    id = ActionId::LeaderboardGreed;
+                    actionType = Chk::Action::VirtualType::LeaderboardGreed;
                 else if ( arg.has("KILLS", 11, 5) )
-                    id = ActionId::LeaderboardKills;
+                    actionType = Chk::Action::VirtualType::LeaderboardKills;
                 else if ( arg.has("POINTS", 11, 6) )
-                    id = ActionId::LeaderboardPoints;
+                    actionType = Chk::Action::VirtualType::LeaderboardPoints;
                 else if ( arg.has("RESOURCES", 11, 9) )
-                    id = ActionId::LeaderboardResources;
+                    actionType = Chk::Action::VirtualType::LeaderboardResources;
                 else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
-                    id = ActionId::LeaderboardCompPlayers;
+                    actionType = Chk::Action::VirtualType::LeaderboardCompPlayers;
             }
         }
         break;
 
     case 'M':
         if ( arg.has("EMORY", 1, 5) )
-            id = ActionId::SetMemory;
+            actionType = Chk::Action::VirtualType::SetMemory;
         else if ( arg.has("OVE", 1, 3) )
         {
             if ( arg.has("UNIT", 4, 4) )
-                id = ActionId::MoveUnit;
+                actionType = Chk::Action::VirtualType::MoveUnit;
             else if ( arg.has("LOCATION", 4, 8) )
-                id = ActionId::MoveLocation;
+                actionType = Chk::Action::VirtualType::MoveLocation;
         }
         else if ( arg.has("ODIFYUNIT", 1, 9) )
         {
             if ( arg.has("ENERGY", 10, 6) )
-                id = ActionId::ModifyUnitEnergy;
+                actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
             else if ( arg.has("HANGERCOUNT", 10, 11) )
-                id = ActionId::ModifyUnitHangerCount;
+                actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
             else if ( arg.has("HITPOINTS", 10, 9) )
-                id = ActionId::ModifyUnitHitpoints;
+                actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
             else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
-                id = ActionId::ModifyUnitResourceAmount;
+                actionType = Chk::Action::VirtualType::ModifyUnitResourceAmount;
             else if ( arg.has("SHIELDPOINTS", 10, 12) )
-                id = ActionId::ModifyUnitShieldPoints;
+                actionType = Chk::Action::VirtualType::ModifyUnitShieldPoints;
         }
         else if ( arg.has("INIMAPPING", 1, 10) )
-            id = ActionId::MinimapPing;
+            actionType = Chk::Action::VirtualType::MinimapPing;
         else if ( arg.has("UTEUNITSPEECH", 1, 13) )
-            id = ActionId::MuteUnitSpeech;
+            actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'O':
         if ( arg.has("RDER", 1, 4) )
-            id = ActionId::Order;
+            actionType = Chk::Action::VirtualType::Order;
         break;
 
     case 'P':
         if ( arg.has("RESERVETRIGGER", 1, 14) )
-            id = ActionId::PreserveTrigger;
+            actionType = Chk::Action::VirtualType::PreserveTrigger;
         else if ( arg.has("LAYWAV", 1, 6) )
-            id = ActionId::PlayWav;
+            actionType = Chk::Action::VirtualType::PlaySound;
         else if ( arg.has("AUSE", 1, 4) )
         {
             if ( arg.has("GAME", 5, 4) )
-                id = ActionId::PauseGame;
+                actionType = Chk::Action::VirtualType::PauseGame;
             else if ( arg.has("TIMER", 5, 5) )
-                id = ActionId::PauseTimer;
+                actionType = Chk::Action::VirtualType::PauseTimer;
         }
         break;
 
@@ -1599,16 +1599,16 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
         if ( arg.has("EMOVEUNIT", 1, 9) )
         {
             if ( arg.has("ATLOCATION", 10, 10) )
-                id = ActionId::RemoveUnitAtLocation;
+                actionType = Chk::Action::VirtualType::RemoveUnitAtLocation;
             else if ( arg.size() == 10 )
-                id = ActionId::RemoveUnit;
+                actionType = Chk::Action::VirtualType::RemoveUnit;
         }
         else if ( arg.has("UNAISCRIPT", 1, 10) )
         {
             if ( arg.has("ATLOCATION", 11, 10) )
-                id = ActionId::RunAiScriptAtLocation;
+                actionType = Chk::Action::VirtualType::RunAiScriptAtLocation;
             else if ( arg.size() == 11 )
-                id = ActionId::RunAiScript;
+                actionType = Chk::Action::VirtualType::RunAiScript;
         }
         break;
 
@@ -1616,66 +1616,66 @@ bool TextTrigCompiler::ParseActionName(buffer &arg, ActionId &id)
         if ( arg.has("ET", 1, 2) )
         {
             if ( arg.has("DEATHS", 3, 6) )
-                id = ActionId::SetDeaths;
+                actionType = Chk::Action::VirtualType::SetDeaths;
             else if ( arg.has("SWITCH", 3, 6) )
-                id = ActionId::SetSwitch;
+                actionType = Chk::Action::VirtualType::SetSwitch;
             else if ( arg.has("RESOURCES", 3, 9) )
-                id = ActionId::SetResources;
+                actionType = Chk::Action::VirtualType::SetResources;
             else if ( arg.has("SCORE", 3, 5) )
-                id = ActionId::SetScore;
+                actionType = Chk::Action::VirtualType::SetScore;
             else if ( arg.has("ALLIANCESTATUS", 3, 14) )
-                id = ActionId::SetAllianceStatus;
+                actionType = Chk::Action::VirtualType::SetAllianceStatus;
             else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
-                id = ActionId::SetCountdownTimer;
+                actionType = Chk::Action::VirtualType::SetCountdownTimer;
             else if ( arg.has("DOODADSTATE", 3, 11) )
-                id = ActionId::SetDoodadState;
+                actionType = Chk::Action::VirtualType::SetDoodadState;
             else if ( arg.has("INVINCIBILITY", 3, 13) )
-                id = ActionId::SetInvincibility;
+                actionType = Chk::Action::VirtualType::SetInvincibility;
             else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
-                id = ActionId::SetMissionObjectives;
+                actionType = Chk::Action::VirtualType::SetMissionObjectives;
             else if ( arg.has("NEXTSCENARIO", 3, 12) )
-                id = ActionId::SetNextScenario;
+                actionType = Chk::Action::VirtualType::SetNextScenario;
             else if ( arg.has("MEMORY", 3, 6) )
-                id = ActionId::SetMemory;
+                actionType = Chk::Action::VirtualType::SetMemory;
         }
         break;
 
     case 'T':
         if ( arg.has("ALKINGPORTRAIT", 1, 14) )
-            id = ActionId::TalkingPortrait;
+            actionType = Chk::Action::VirtualType::TalkingPortrait;
         else if ( arg.has("RANSMISSION", 1, 11) )
-            id = ActionId::Transmission;
+            actionType = Chk::Action::VirtualType::Transmission;
         break;
 
     case 'U':
         if ( arg.has("NPAUSE", 1, 6) )
         {
             if ( arg.has("TIMER", 7, 5) )
-                id = ActionId::UnpauseTimer;
+                actionType = Chk::Action::VirtualType::UnpauseTimer;
             else if ( arg.has("GAME", 7, 4) )
-                id = ActionId::UnpauseGame;
+                actionType = Chk::Action::VirtualType::UnpauseGame;
         }
         else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
-            id = ActionId::MuteUnitSpeech;
+            actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'V':
         if ( arg.has("ICTORY", 1, 6) )
-            id = ActionId::Victory;
+            actionType = Chk::Action::VirtualType::Victory;
         break;
 
     case 'W':
         if ( arg.has("AIT", 1, 3) )
-            id = ActionId::Wait;
+            actionType = Chk::Action::VirtualType::Wait;
         break;
     }
 
-    return id != ActionId::NoAction;
+    return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled, ActionId &id, u8& flags, u32 &argsLeft)
+bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled, Chk::Action::VirtualType &actionType, u8& flags, u32 &argsLeft)
 {
-    id = ActionId::NoAction;
+    actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
 
     s64 size = end - pos;
@@ -1702,41 +1702,41 @@ bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled,
     {
     case 'C':
         if ( arg.has("OMMENT", 1, 6) )
-            id = ActionId::Comment;
+            actionType = Chk::Action::VirtualType::Comment;
         else if ( arg.has("REATEUNIT", 1, 9) )
         {
             if ( arg.has("WITHPROPERTIES", 10, 14) )
-                id = ActionId::CreateUnitWithProperties;
+                actionType = Chk::Action::VirtualType::CreateUnitWithProperties;
             else if ( arg.size() == 10 )
-                id = ActionId::CreateUnit;
+                actionType = Chk::Action::VirtualType::CreateUnit;
         }
         else if ( arg.has("ENTERVIEW", 1, 9) )
-            id = ActionId::CenterView;
+            actionType = Chk::Action::VirtualType::CenterView;
         else if ( arg.has("USTOM", 1, 5) )
-            id = ActionId::Custom;
+            actionType = Chk::Action::VirtualType::Custom;
         break;
 
     case 'D':
         if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
-            id = ActionId::DisplayTextMessage;
+            actionType = Chk::Action::VirtualType::DisplayTextMessage;
         else if ( arg.has("EFEAT", 1, 5) )
-            id = ActionId::Defeat;
+            actionType = Chk::Action::VirtualType::Defeat;
         else if ( arg.has("RAW", 1, 3) )
-            id = ActionId::Draw;
+            actionType = Chk::Action::VirtualType::Draw;
         break;
 
     case 'G':
         if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
-            id = ActionId::GiveUnitsToPlayer;
+            actionType = Chk::Action::VirtualType::GiveUnitsToPlayer;
         break;
 
     case 'K':
         if ( arg.has("ILLUNIT", 1, 7) )
         {
             if ( arg.has("ATLOCATION", 8, 10) )
-                id = ActionId::KillUnitAtLocation;
+                actionType = Chk::Action::VirtualType::KillUnitAtLocation;
             else if ( arg.size() == 8 )
-                id = ActionId::KillUnit;
+                actionType = Chk::Action::VirtualType::KillUnit;
         }
         break;
 
@@ -1748,85 +1748,85 @@ bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled,
                 if ( arg.has("CONTROL", 15, 7) )
                 {
                     if ( arg.has("ATLOCATION", 22, 10) )
-                        id = ActionId::LeaderboardGoalCtrlAtLoc;
+                        actionType = Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc;
                     else if ( arg.size() == 22 )
-                        id = ActionId::LeaderboardGoalCtrl;
+                        actionType = Chk::Action::VirtualType::LeaderboardGoalCtrl;
                 }
                 else if ( arg.has("KILLS", 15, 5) )
-                    id = ActionId::LeaderboardGoalKills;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalKills;
                 else if ( arg.has("POINTS", 15, 6) )
-                    id = ActionId::LeaderboardGoalPoints;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalPoints;
                 else if ( arg.has("RESOURCES", 15, 9) )
-                    id = ActionId::LeaderboardGoalResources;
+                    actionType = Chk::Action::VirtualType::LeaderboardGoalResources;
             }
             else
             {
                 if ( arg.has("CONTROL", 11, 7) )
                 {
                     if ( arg.has("ATLOCATION", 18, 10) )
-                        id = ActionId::LeaderboardCtrlAtLoc;
+                        actionType = Chk::Action::VirtualType::LeaderboardCtrlAtLoc;
                     else if ( arg.size() == 18 )
-                        id = ActionId::LeaderboardCtrl;
+                        actionType = Chk::Action::VirtualType::LeaderboardCtrl;
                 }
                 else if ( arg.has("GREED", 11, 5) )
-                    id = ActionId::LeaderboardGreed;
+                    actionType = Chk::Action::VirtualType::LeaderboardGreed;
                 else if ( arg.has("KILLS", 11, 5) )
-                    id = ActionId::LeaderboardKills;
+                    actionType = Chk::Action::VirtualType::LeaderboardKills;
                 else if ( arg.has("POINTS", 11, 6) )
-                    id = ActionId::LeaderboardPoints;
+                    actionType = Chk::Action::VirtualType::LeaderboardPoints;
                 else if ( arg.has("RESOURCES", 11, 9) )
-                    id = ActionId::LeaderboardResources;
+                    actionType = Chk::Action::VirtualType::LeaderboardResources;
                 else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
-                    id = ActionId::LeaderboardCompPlayers;
+                    actionType = Chk::Action::VirtualType::LeaderboardCompPlayers;
             }
         }
         break;
 
     case 'M':
         if ( arg.has("EMORY", 1, 5) )
-            id = ActionId::SetMemory;
+            actionType = Chk::Action::VirtualType::SetMemory;
         else if ( arg.has("OVE", 1, 3) )
         {
             if ( arg.has("UNIT", 4, 4) )
-                id = ActionId::MoveUnit;
+                actionType = Chk::Action::VirtualType::MoveUnit;
             else if ( arg.has("LOCATION", 4, 8) )
-                id = ActionId::MoveLocation;
+                actionType = Chk::Action::VirtualType::MoveLocation;
         }
         else if ( arg.has("ODIFYUNIT", 1, 9) )
         {
             if ( arg.has("ENERGY", 10, 6) )
-                id = ActionId::ModifyUnitEnergy;
+                actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
             else if ( arg.has("HANGERCOUNT", 10, 11) )
-                id = ActionId::ModifyUnitHangerCount;
+                actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
             else if ( arg.has("HITPOINTS", 10, 9) )
-                id = ActionId::ModifyUnitHitpoints;
+                actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
             else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
-                id = ActionId::ModifyUnitResourceAmount;
+                actionType = Chk::Action::VirtualType::ModifyUnitResourceAmount;
             else if ( arg.has("SHIELDPOINTS", 10, 12) )
-                id = ActionId::ModifyUnitShieldPoints;
+                actionType = Chk::Action::VirtualType::ModifyUnitShieldPoints;
         }
         else if ( arg.has("INIMAPPING", 1, 10) )
-            id = ActionId::MinimapPing;
+            actionType = Chk::Action::VirtualType::MinimapPing;
         else if ( arg.has("UTEUNITSPEECH", 1, 13) )
-            id = ActionId::MuteUnitSpeech;
+            actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'O':
         if ( arg.has("RDER", 1, 4) )
-            id = ActionId::Order;
+            actionType = Chk::Action::VirtualType::Order;
         break;
 
     case 'P':
         if ( arg.has("RESERVETRIGGER", 1, 14) )
-            id = ActionId::PreserveTrigger;
+            actionType = Chk::Action::VirtualType::PreserveTrigger;
         else if ( arg.has("LAYWAV", 1, 6) )
-            id = ActionId::PlayWav;
+            actionType = Chk::Action::VirtualType::PlaySound;
         else if ( arg.has("AUSE", 1, 4) )
         {
             if ( arg.has("GAME", 5, 4) )
-                id = ActionId::PauseGame;
+                actionType = Chk::Action::VirtualType::PauseGame;
             else if ( arg.has("TIMER", 5, 5) )
-                id = ActionId::PauseTimer;
+                actionType = Chk::Action::VirtualType::PauseTimer;
         }
         break;
 
@@ -1834,16 +1834,16 @@ bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled,
         if ( arg.has("EMOVEUNIT", 1, 9) )
         {
             if ( arg.has("ATLOCATION", 10, 10) )
-                id = ActionId::RemoveUnitAtLocation;
+                actionType = Chk::Action::VirtualType::RemoveUnitAtLocation;
             else if ( arg.size() == 10 )
-                id = ActionId::RemoveUnit;
+                actionType = Chk::Action::VirtualType::RemoveUnit;
         }
         else if ( arg.has("UNAISCRIPT", 1, 10) )
         {
             if ( arg.has("ATLOCATION", 11, 10) )
-                id = ActionId::RunAiScriptAtLocation;
+                actionType = Chk::Action::VirtualType::RunAiScriptAtLocation;
             else if ( arg.size() == 11 )
-                id = ActionId::RunAiScript;
+                actionType = Chk::Action::VirtualType::RunAiScript;
         }
         break;
 
@@ -1851,74 +1851,74 @@ bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled,
         if ( arg.has("ET", 1, 2) )
         {
             if ( arg.has("DEATHS", 3, 6) )
-                id = ActionId::SetDeaths;
+                actionType = Chk::Action::VirtualType::SetDeaths;
             else if ( arg.has("SWITCH", 3, 6) )
-                id = ActionId::SetSwitch;
+                actionType = Chk::Action::VirtualType::SetSwitch;
             else if ( arg.has("RESOURCES", 3, 9) )
-                id = ActionId::SetResources;
+                actionType = Chk::Action::VirtualType::SetResources;
             else if ( arg.has("SCORE", 3, 5) )
-                id = ActionId::SetScore;
+                actionType = Chk::Action::VirtualType::SetScore;
             else if ( arg.has("ALLIANCESTATUS", 3, 14) )
-                id = ActionId::SetAllianceStatus;
+                actionType = Chk::Action::VirtualType::SetAllianceStatus;
             else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
-                id = ActionId::SetCountdownTimer;
+                actionType = Chk::Action::VirtualType::SetCountdownTimer;
             else if ( arg.has("DOODADSTATE", 3, 11) )
-                id = ActionId::SetDoodadState;
+                actionType = Chk::Action::VirtualType::SetDoodadState;
             else if ( arg.has("INVINCIBILITY", 3, 13) )
-                id = ActionId::SetInvincibility;
+                actionType = Chk::Action::VirtualType::SetInvincibility;
             else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
-                id = ActionId::SetMissionObjectives;
+                actionType = Chk::Action::VirtualType::SetMissionObjectives;
             else if ( arg.has("NEXTSCENARIO", 3, 12) )
-                id = ActionId::SetNextScenario;
+                actionType = Chk::Action::VirtualType::SetNextScenario;
             else if ( arg.has("MEMORY", 3, 6) )
-                id = ActionId::SetMemory;
+                actionType = Chk::Action::VirtualType::SetMemory;
         }
         break;
 
     case 'T':
         if ( arg.has("ALKINGPORTRAIT", 1, 14) )
-            id = ActionId::TalkingPortrait;
+            actionType = Chk::Action::VirtualType::TalkingPortrait;
         else if ( arg.has("RANSMISSION", 1, 11) )
-            id = ActionId::Transmission;
+            actionType = Chk::Action::VirtualType::Transmission;
         break;
 
     case 'U':
         if ( arg.has("NPAUSE", 1, 6) )
         {
             if ( arg.has("TIMER", 7, 5) )
-                id = ActionId::UnpauseTimer;
+                actionType = Chk::Action::VirtualType::UnpauseTimer;
             else if ( arg.has("GAME", 7, 4) )
-                id = ActionId::UnpauseGame;
+                actionType = Chk::Action::VirtualType::UnpauseGame;
         }
         else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
-            id = ActionId::UnmuteUnitSpeech;
+            actionType = Chk::Action::VirtualType::UnmuteUnitSpeech;
         break;
 
     case 'V':
         if ( arg.has("ICTORY", 1, 6) )
-            id = ActionId::Victory;
+            actionType = Chk::Action::VirtualType::Victory;
         break;
 
     case 'W':
         if ( arg.has("AIT", 1, 3) )
-            id = ActionId::Wait;
+            actionType = Chk::Action::VirtualType::Wait;
         break;
     }
 
-    flags = defaultActionFlags(id);
-    argsLeft = numActionArgs(id);
+    flags = defaultActionFlags((Chk::Action::Type)actionType);
+    argsLeft = numActionArgs(actionType);
 
-    return id != ActionId::NoAction;
+    return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition, s64 pos, s64 end, ConditionId conditionId, u32 argsLeft, std::stringstream &error)
+bool TextTrigCompiler::ParseConditionArg(buffer &text, Chk::Condition& currCondition, s64 pos, s64 end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
     // Search for condition ID
-    switch ( conditionId )
+    switch ( conditionType )
     {
-    case ConditionId::Custom:
+    case Chk::Condition::VirtualType::Custom:
         switch ( argsLeft ) {
         case 9: goto ParseConditionLocationField    ; break;
         case 8: goto ParseConditionPlayerField      ; break;
@@ -1931,14 +1931,14 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
         case 1: goto ParseConditionInternalDataField; break;
         }
         break;
-    case ConditionId::Memory: // deathTable+, mod, num
+    case Chk::Condition::VirtualType::Memory: // deathTable+, mod, num
         switch ( argsLeft ) {
         case 3: goto ParseConditionDeathOffsetField      ; break;
         case 2: goto ParseConditionNumericComparisonField; break;
         case 1: goto ParseConditionAmountField           ; break;
         }
         break;
-    case ConditionId::Accumulate: // player, mod, num, resouce
+    case Chk::Condition::VirtualType::Accumulate: // player, mod, num, resouce
         switch ( argsLeft ) {
         case 4: goto ParseConditionPlayerField           ; break;
         case 3: goto ParseConditionNumericComparisonField; break;
@@ -1946,7 +1946,7 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
         case 1: goto ParseConditionResourceTypeField     ; break;
         }
         break;
-    case ConditionId::Bring: // player, mod, num, unit, location
+    case Chk::Condition::VirtualType::Bring: // player, mod, num, unit, location
         switch ( argsLeft ) {
         case 5: goto ParseConditionPlayerField           ; break;
         case 4: goto ParseConditionUnitField             ; break;
@@ -1955,9 +1955,9 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
         case 1: goto ParseConditionAmountField           ; break;
         }
         break;
-    case ConditionId::Command: // Player, Unit, NumericComparison, Amount
-    case ConditionId::Deaths:  // Player, Unit, NumericComparison, Amount
-    case ConditionId::Kill:    // Player, Unit, NumericComparison, Amount
+    case Chk::Condition::VirtualType::Command: // Player, Unit, NumericComparison, Amount
+    case Chk::Condition::VirtualType::Deaths:  // Player, Unit, NumericComparison, Amount
+    case Chk::Condition::VirtualType::Kill:    // Player, Unit, NumericComparison, Amount
         switch ( argsLeft ) {
         case 4: goto ParseConditionPlayerField           ; break;
         case 3: goto ParseConditionUnitField             ; break;
@@ -1966,42 +1966,42 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
 
         }
         break;
-    case ConditionId::CommandTheLeast: // unit
-    case ConditionId::CommandTheMost:  // unit
-    case ConditionId::LeastKills:      // unit
-    case ConditionId::MostKills:       // unit
+    case Chk::Condition::VirtualType::CommandTheLeast: // unit
+    case Chk::Condition::VirtualType::CommandTheMost:  // unit
+    case Chk::Condition::VirtualType::LeastKills:      // unit
+    case Chk::Condition::VirtualType::MostKills:       // unit
         if ( argsLeft == 1 ) goto ParseConditionUnitField;
         break;
-    case ConditionId::CommandTheLeastAt: // unit, location
-    case ConditionId::CommandTheMostAt:  // unit, location
+    case Chk::Condition::VirtualType::CommandTheLeastAt: // unit, location
+    case Chk::Condition::VirtualType::CommandTheMostAt:  // unit, location
         switch ( argsLeft ) {
         case 2: goto ParseConditionUnitField    ; break;
         case 1: goto ParseConditionLocationField; break;
         }
         break;
-    case ConditionId::CountdownTimer: // NumericComparison, Amount
-    case ConditionId::ElapsedTime: // NumericComparison, Amount
+    case Chk::Condition::VirtualType::CountdownTimer: // NumericComparison, Amount
+    case Chk::Condition::VirtualType::ElapsedTime: // NumericComparison, Amount
         switch ( argsLeft ) {
         case 2: goto ParseConditionNumericComparisonField; break;
         case 1: goto ParseConditionAmountField           ; break;
         }
         break;
-    case ConditionId::HighestScore: // scoreType
-    case ConditionId::LowestScore: // scoreType
+    case Chk::Condition::VirtualType::HighestScore: // scoreType
+    case Chk::Condition::VirtualType::LowestScore: // scoreType
         if ( argsLeft == 1 ) goto ParseConditionScoreTypeField;
         break;
-    case ConditionId::LeastResources: // resource
-    case ConditionId::MostResources: // resource
+    case Chk::Condition::VirtualType::LeastResources: // resource
+    case Chk::Condition::VirtualType::MostResources: // resource
         if ( argsLeft == 1 ) goto ParseConditionResourceTypeField;
         break;
-    case ConditionId::Opponents: // Player, NumericComparison, Amount
+    case Chk::Condition::VirtualType::Opponents: // Player, NumericComparison, Amount
         switch ( argsLeft ) {
         case 3: goto ParseConditionPlayerField           ; break;
         case 2: goto ParseConditionNumericComparisonField; break;
         case 1: goto ParseConditionAmountField           ; break;
         }
         break;
-    case ConditionId::Score: // Player, ScoreType, NumericComparison, Amount
+    case Chk::Condition::VirtualType::Score: // Player, ScoreType, NumericComparison, Amount
         switch ( argsLeft ) {
         case 4: goto ParseConditionPlayerField           ; break;
         case 3: goto ParseConditionScoreTypeField        ; break;
@@ -2009,7 +2009,7 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
         case 1: goto ParseConditionAmountField           ; break;
         }
         break;
-    case ConditionId::Switch: // Switch, SwitchState
+    case Chk::Condition::VirtualType::Switch: // Switch, SwitchState
         switch ( argsLeft ) {
         case 2: goto ParseConditionSwitchField     ; break;
         case 1: goto ParseConditionSwitchStateField; break;
@@ -2030,13 +2030,13 @@ bool TextTrigCompiler::ParseConditionArg(buffer &text, Condition& currCondition,
     }
 
 ParseConditionLocationField: // 4 bytes
-    returnMsg( ParseLocationName(text, currCondition.locationNum, pos, end) ||
-        ParseLong(textPtr, currCondition.locationNum, pos, end),
+    returnMsg( ParseLocationName(text, currCondition.locationId, pos, end) ||
+        ParseLong(textPtr, currCondition.locationId, pos, end),
         "Expected: Location name or 4-byte locationNum" );
 
 ParseConditionPlayerField: // 4 bytes
-    returnMsg( ParsePlayer(text, currCondition.players, pos, end) ||
-        ParseLong(textPtr, currCondition.players, pos, end),
+    returnMsg( ParsePlayer(text, currCondition.player, pos, end) ||
+        ParseLong(textPtr, currCondition.player, pos, end),
         "Expected: Player/group name or 4-byte id" );
 
 ParseConditionAmountField: // 4 bytes
@@ -2044,28 +2044,28 @@ ParseConditionAmountField: // 4 bytes
         "Expected: 4-byte amount" );
 
 ParseConditionUnitField: // 2 bytes
-    returnMsg( ParseUnitName(text, currCondition.unitID, pos, end) ||
-        ParseShort(textPtr, currCondition.unitID, pos, end),
+    returnMsg( ParseUnitName(text, currCondition.unitType, pos, end) ||
+        ParseShort(textPtr, (u16 &)currCondition.unitType, pos, end),
         "Expected: Unit name or 2-byte unitID" );
 
 ParseConditionNumericComparisonField: // 1 byte
     returnMsg( ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
-        ParseByte(textPtr, currCondition.comparison, pos, end),
+        ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
         "Expected: Numeric comparison or 1-byte comparisonID" );
 
 ParseConditionSwitchStateField: // 1 byte
     returnMsg( ParseSwitchState(textPtr, currCondition.comparison, pos, end) ||
-        ParseByte(textPtr, currCondition.comparison, pos, end),
+        ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
         "Expected: Switch state or 1-byte comparisonID" );
 
 ParseConditionComparisonField: // 1 byte, comparison type or switch state
-    returnMsg( ParseByte(textPtr, currCondition.comparison, pos, end) ||
+    returnMsg( ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end) ||
         ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
         ParseSwitchState(textPtr, currCondition.comparison, pos, end),
         "Expected: 1-byte comparison" );
 
 ParseConditionConditionField: // 1 byte, only used by custom
-    returnMsg( ParseByte(textPtr, currCondition.condition, pos, end),
+    returnMsg( ParseByte(textPtr, (u8 &)currCondition.conditionType, pos, end),
         "Expected: 1-byte conditionID" );
 
 ParseConditionResourceTypeField: // 1 byte
@@ -2074,7 +2074,7 @@ ParseConditionResourceTypeField: // 1 byte
         "Expected: Resource type or 1-byte resourceID" );
 
 ParseConditionScoreTypeField: // 1 byte
-    returnMsg( ParseScoreType(textPtr, currCondition.typeIndex, pos, end) ||
+    returnMsg( ParseScoreType(textPtr,currCondition.typeIndex, pos, end) ||
         ParseByte(textPtr, currCondition.typeIndex, pos, end),
         "Expected: Score type or 1-byte scoreID" );
 
@@ -2095,22 +2095,22 @@ ParseConditionFlagsField: // 1 byte
         "Expected: 1-byte flags" );
 
 ParseConditionInternalDataField: // 2 bytes
-    returnMsg( ParseShort(textPtr, currCondition.internalData, pos, end),
+    returnMsg( ParseShort(textPtr, (u16 &)currCondition.maskFlag, pos, end),
         "Expected: 2-byte internal data" );
 
 ParseConditionDeathOffsetField: // 4 bytes
-    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.players, pos, end, deathTableOffset) ||
-        !useAddressesForMemory && ParseLong(textPtr, currCondition.players, pos, end)),
+    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.player, pos, end, deathTableOffset) ||
+        !useAddressesForMemory && ParseLong(textPtr, currCondition.player, pos, end)),
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos, s64 end, ActionId actionId, u32 argsLeft, std::stringstream &error)
+bool TextTrigCompiler::ParseActionArg(buffer &text, Chk::Action& currAction, s64 pos, s64 end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream &error)
 {
     char* textPtr = (char*)text.getPtr(0);
 
-    switch ( actionId )
+    switch ( actionType )
     {
-    case ActionId::Custom: // bytes: 4, 4, 4, 4, 4, 4, 2, 1, 1, 1, 3
+    case Chk::Action::VirtualType::Custom: // bytes: 4, 4, 4, 4, 4, 4, 2, 1, 1, 1, 3
         switch ( argsLeft ) {
         case 11: goto ParseActionLocationField    ; break;
         case 10: goto ParseActionTextField        ; break;
@@ -2125,24 +2125,24 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case  1: goto ParseActionInternalDataField; break;
         }
         break;
-    case ActionId::SetMemory: // deathTable+, mod, num
+    case Chk::Action::VirtualType::SetMemory: // deathTable+, mod, num
         switch ( argsLeft ) {
         case 3: goto ParseActionDeathOffsetField    ; break;
         case 2: goto ParseActionNumericModifierField; break;
         case 1: goto ParseActionAmountField         ; break;
         }
         break;
-    case ActionId::CenterView:  // Location
-    case ActionId::MinimapPing: // Location
+    case Chk::Action::VirtualType::CenterView:  // Location
+    case Chk::Action::VirtualType::MinimapPing: // Location
         if ( argsLeft == 1 ) goto ParseActionLocationField;
         break;
-    case ActionId::Comment:              // String
-    case ActionId::SetMissionObjectives: // String
-    case ActionId::SetNextScenario:      // String
+    case Chk::Action::VirtualType::Comment:              // String
+    case Chk::Action::VirtualType::SetMissionObjectives: // String
+    case Chk::Action::VirtualType::SetNextScenario:      // String
         if ( argsLeft == 1 ) goto ParseActionTextField;
         break;
-    case ActionId::CreateUnit:         // Player, Unit, NumUnits, Location
-    case ActionId::KillUnitAtLocation: // Player, Unit, NumUnits, Location
+    case Chk::Action::VirtualType::CreateUnit:         // Player, Unit, NumUnits, Location
+    case Chk::Action::VirtualType::KillUnitAtLocation: // Player, Unit, NumUnits, Location
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionUnitField; break;
@@ -2150,7 +2150,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::CreateUnitWithProperties: // Player, Unit, NumUnits, Location, Amount
+    case Chk::Action::VirtualType::CreateUnitWithProperties: // Player, Unit, NumUnits, Location, Amount
         switch ( argsLeft ) {
         case 5: goto ParseActionFirstGroupField; break;
         case 4: goto ParseActionUnitField; break;
@@ -2159,13 +2159,13 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionAmountField; break;
         }
         break;
-    case ActionId::DisplayTextMessage: // TextFlags, String
+    case Chk::Action::VirtualType::DisplayTextMessage: // TextFlags, String
         switch ( argsLeft ) {
         case 2: goto ParseActionTextFlagField; break;
         case 1: goto ParseActionTextField; break;
         }
         break;
-    case ActionId::GiveUnitsToPlayer: // Player, SecondPlayer, Unit, NumUnits, Location
+    case Chk::Action::VirtualType::GiveUnitsToPlayer: // Player, SecondPlayer, Unit, NumUnits, Location
         switch ( argsLeft ) {
         case 5: goto ParseActionFirstGroupField; break;
         case 4: goto ParseActionSecondGroupField; break;
@@ -2174,46 +2174,46 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::KillUnit:   // Player, Unit
-    case ActionId::RemoveUnit: // Player, Unit
+    case Chk::Action::VirtualType::KillUnit:   // Player, Unit
+    case Chk::Action::VirtualType::RemoveUnit: // Player, Unit
         switch ( argsLeft ) {
         case 2: goto ParseActionFirstGroupField; break;
         case 1: goto ParseActionUnitField; break;
         }
         break;
-    case ActionId::LeaderboardCtrlAtLoc: // String, Unit, Location
+    case Chk::Action::VirtualType::LeaderboardCtrlAtLoc: // String, Unit, Location
         switch ( argsLeft ) {
         case 3: goto ParseActionTextField; break;
         case 2: goto ParseActionUnitField; break;
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::LeaderboardCtrl:  // String, Unit
-    case ActionId::LeaderboardKills: // String, Unit
+    case Chk::Action::VirtualType::LeaderboardCtrl:  // String, Unit
+    case Chk::Action::VirtualType::LeaderboardKills: // String, Unit
         switch ( argsLeft ) {
         case 2: goto ParseActionTextField; break;
         case 1: goto ParseActionUnitField; break;
         }
         break;
-    case ActionId::LeaderboardGreed: // Amount
+    case Chk::Action::VirtualType::LeaderboardGreed: // Amount
         if ( argsLeft == 1 ) goto ParseActionAmountField;
         break;
-    case ActionId::LeaderboardPoints: // String, ScoreType
+    case Chk::Action::VirtualType::LeaderboardPoints: // String, ScoreType
         switch ( argsLeft ) {
         case 2: goto ParseActionTextField; break;
         case 1: goto ParseActionScoreTypeField; break;
         }
         break;
-    case ActionId::LeaderboardResources: // String, ResourceType
+    case Chk::Action::VirtualType::LeaderboardResources: // String, ResourceType
         switch ( argsLeft ) {
         case 2: goto ParseActionTextField; break;
         case 1: goto ParseActionResourceTypeField; break;
         }
         break;
-    case ActionId::LeaderboardCompPlayers: // StateModifier
+    case Chk::Action::VirtualType::LeaderboardCompPlayers: // StateModifier
         if ( argsLeft == 1 ) goto ParseActionStateModifierField;
         break;
-    case ActionId::LeaderboardGoalCtrlAtLoc: // String, Unit, Amount, Location
+    case Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc: // String, Unit, Amount, Location
         switch ( argsLeft ) {
         case 4: goto ParseActionTextField    ; break;
         case 3: goto ParseActionUnitField    ; break;
@@ -2221,32 +2221,32 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::LeaderboardGoalCtrl: // String, Unit, Amount
-    case ActionId::LeaderboardGoalKills:   // String, Unit, Amount
+    case Chk::Action::VirtualType::LeaderboardGoalCtrl: // String, Unit, Amount
+    case Chk::Action::VirtualType::LeaderboardGoalKills:   // String, Unit, Amount
         switch ( argsLeft ) {
         case 3: goto ParseActionTextField; break;
         case 2: goto ParseActionUnitField; break;
         case 1: goto ParseActionAmountField; break;
         }
         break;
-    case ActionId::LeaderboardGoalPoints: // String, ScoreType, Amount
+    case Chk::Action::VirtualType::LeaderboardGoalPoints: // String, ScoreType, Amount
         switch ( argsLeft ) {
         case 3: goto ParseActionTextField     ; break;
         case 2: goto ParseActionScoreTypeField; break;
         case 1: goto ParseActionAmountField   ; break;
         }
         break;
-    case ActionId::LeaderboardGoalResources: // String, Amount, ResourceType
+    case Chk::Action::VirtualType::LeaderboardGoalResources: // String, Amount, ResourceType
         switch ( argsLeft ) {
         case 3: goto ParseActionTextField; break;
         case 2: goto ParseActionAmountField; break;
         case 1: goto ParseActionResourceTypeField; break;
         }
         break;
-    case ActionId::ModifyUnitEnergy:       // Player, Unit, Amount, NumUnits, Location
-    case ActionId::ModifyUnitHangerCount:  // Player, Unit, Amount, NumUnits, Location
-    case ActionId::ModifyUnitHitpoints:    // Player, Unit, Amount, NumUnits, Location
-    case ActionId::ModifyUnitShieldPoints: // Player, Unit, Amount, NumUnits, Location
+    case Chk::Action::VirtualType::ModifyUnitEnergy:       // Player, Unit, Amount, NumUnits, Location
+    case Chk::Action::VirtualType::ModifyUnitHangerCount:  // Player, Unit, Amount, NumUnits, Location
+    case Chk::Action::VirtualType::ModifyUnitHitpoints:    // Player, Unit, Amount, NumUnits, Location
+    case Chk::Action::VirtualType::ModifyUnitShieldPoints: // Player, Unit, Amount, NumUnits, Location
         switch ( argsLeft ) {
         case 5: goto ParseActionFirstGroupField; break;
         case 4: goto ParseActionUnitField; break;
@@ -2255,7 +2255,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::ModifyUnitResourceAmount: // Player, Amount, NumUnits, Location
+    case Chk::Action::VirtualType::ModifyUnitResourceAmount: // Player, Amount, NumUnits, Location
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionAmountField; break;
@@ -2263,7 +2263,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::MoveLocation: // Player, Unit, LocDest, Location
+    case Chk::Action::VirtualType::MoveLocation: // Player, Unit, LocDest, Location
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionUnitField; break;
@@ -2271,7 +2271,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionSecondLocationField; break;
         }
         break;
-    case ActionId::MoveUnit: // Player, Unit, NumUnits, Location, LocDest
+    case Chk::Action::VirtualType::MoveUnit: // Player, Unit, NumUnits, Location, LocDest
         switch ( argsLeft ) {
         case 5: goto ParseActionFirstGroupField; break;
         case 4: goto ParseActionUnitField; break;
@@ -2280,7 +2280,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionSecondLocationField; break;
         }
         break;
-    case ActionId::Order: // Player, Unit, Location, LocDest, OrderType
+    case Chk::Action::VirtualType::Order: // Player, Unit, Location, LocDest, OrderType
         switch ( argsLeft ) {
         case 5: goto ParseActionFirstGroupField; break;
         case 4: goto ParseActionUnitField; break;
@@ -2289,13 +2289,13 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionOrderField; break;
         }
         break;
-    case ActionId::PlayWav: // Wav, Duration
+    case Chk::Action::VirtualType::PlaySound: // Wav, Duration
         switch ( argsLeft ) {
         case 2: goto ParseActionWavField; break;
         case 1: goto ParseActionDurationField; break;
         }
         break;
-    case ActionId::RemoveUnitAtLocation: // Player, Unit, NumUnits, Location
+    case Chk::Action::VirtualType::RemoveUnitAtLocation: // Player, Unit, NumUnits, Location
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionUnitField; break;
@@ -2303,36 +2303,36 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::RunAiScript: // Script
+    case Chk::Action::VirtualType::RunAiScript: // Script
         if ( argsLeft == 1 ) goto ParseActionScriptField;
         break;
-    case ActionId::RunAiScriptAtLocation: // Script, Location
+    case Chk::Action::VirtualType::RunAiScriptAtLocation: // Script, Location
         switch ( argsLeft ) {
         case 2: goto ParseActionScriptField  ; break;
         case 1: goto ParseActionLocationField; break;
         }
         break;
-    case ActionId::SetAllianceStatus: // Player, AllyState
+    case Chk::Action::VirtualType::SetAllianceStatus: // Player, AllyState
         switch ( argsLeft ) {
         case 2: goto ParseActionFirstGroupField    ; break;
         case 1: goto ParseActionAllianceStatusField; break;
         }
         break;
-    case ActionId::SetCountdownTimer: // NumericModifier, Duration
+    case Chk::Action::VirtualType::SetCountdownTimer: // NumericModifier, Duration
         switch ( argsLeft ) {
         case 2: goto ParseActionNumericModifierField; break;
         case 1: goto ParseActionDurationField; break;
         }
         break;
-    case ActionId::SetDeaths: // Player, Unit, NumericModifier, Amount
+    case Chk::Action::VirtualType::SetDeaths: // Player, Unit, NumericModifier, Amount
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionUnitField; break;
         case 2: goto ParseActionNumericModifierField; break;
         case 1: goto ParseActionAmountField; break;
         }
-    case ActionId::SetDoodadState:   // Player, Unit, Location, StateMod
-    case ActionId::SetInvincibility: // Player, Unit, Location, StateMod
+    case Chk::Action::VirtualType::SetDoodadState:   // Player, Unit, Location, StateMod
+    case Chk::Action::VirtualType::SetInvincibility: // Player, Unit, Location, StateMod
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField; break;
         case 3: goto ParseActionUnitField; break;
@@ -2340,14 +2340,14 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionStateModifierField; break;
         }
         break;
-    case ActionId::SetResources: // Player, NumericModifier, Amount, ResourceType
+    case Chk::Action::VirtualType::SetResources: // Player, NumericModifier, Amount, ResourceType
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField     ; break;
         case 3: goto ParseActionNumericModifierField; break;
         case 2: goto ParseActionAmountField         ; break;
         case 1: goto ParseActionResourceTypeField   ; break;
         }
-    case ActionId::SetScore: // Player, NumericModifier, Amount, ScoreType
+    case Chk::Action::VirtualType::SetScore: // Player, NumericModifier, Amount, ScoreType
         switch ( argsLeft ) {
         case 4: goto ParseActionFirstGroupField     ; break;
         case 3: goto ParseActionNumericModifierField; break;
@@ -2355,19 +2355,19 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionScoreTypeField      ; break;
         }
         break;
-    case ActionId::SetSwitch: // Switch, SwitchMod
+    case Chk::Action::VirtualType::SetSwitch: // Switch, SwitchMod
         switch ( argsLeft ) {
         case 2: goto ParseActionSwitchField; break;
         case 1: goto ParseActionSwitchModifierField; break;
         }
         break;
-    case ActionId::TalkingPortrait: // Unit, Duration
+    case Chk::Action::VirtualType::TalkingPortrait: // Unit, Duration
         switch ( argsLeft ) {
         case 2: goto ParseActionUnitField    ; break;
         case 1: goto ParseActionDurationField; break;
         }
         break;
-    case ActionId::Transmission: // TextFlags, String, Unit, Location, NumericModifier, SecondAmount, Wav, Duration
+    case Chk::Action::VirtualType::Transmission: // TextFlags, String, Unit, Location, NumericModifier, SecondAmount, Wav, Duration
         switch ( argsLeft ) {
         case 8: goto ParseActionTextFlagField; break;
         case 7: goto ParseActionTextField; break;
@@ -2379,7 +2379,7 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
         case 1: goto ParseActionDurationField; break;
         }
         break;
-    case ActionId::Wait: // Duration
+    case Chk::Action::VirtualType::Wait: // Duration
         if ( argsLeft == 1 ) goto ParseActionDurationField;
         break;
     }
@@ -2388,18 +2388,18 @@ bool TextTrigCompiler::ParseActionArg(buffer &text, Action& currAction, s64 pos,
     return false;
 
 ParseActionLocationField: // 4 bytes
-    returnMsg( ParseLocationName(text, currAction.location, pos, end) ||
-        ParseLong(textPtr, currAction.location, pos, end),
+    returnMsg( ParseLocationName(text, currAction.locationId, pos, end) ||
+        ParseLong(textPtr, currAction.locationId, pos, end),
         "Expected: Location name or 4-byte locationNum" );
 
 ParseActionTextField: // 4 bytes
-    returnMsg( ParseString(text, currAction.stringNum, pos, end) ||
-        ParseLong(textPtr, currAction.stringNum, pos, end),
+    returnMsg( ParseString(text, currAction.stringId, pos, end) ||
+        ParseLong(textPtr, currAction.stringId, pos, end),
         "Expected: String or stringNum" );
 
 ParseActionWavField: // 4 bytes
-    returnMsg( ParseWavName(text, currAction.wavID, pos, end) ||
-        ParseLong(textPtr, currAction.wavID, pos, end),
+    returnMsg( ParseWavName(text, currAction.soundStringId, pos, end) ||
+        ParseLong(textPtr, currAction.soundStringId, pos, end),
         "Expected: Wav name or 4-byte wavID" );
 
 ParseActionDurationField: // 4 bytes
@@ -2444,7 +2444,7 @@ ParseActionAmountField: // 4 bytes
         "Expected: 4-byte number" );
 
 ParseActionTypeIndexField: // 2 bytes
-    returnMsg( ParseUnitName(text, currAction.type, pos, end) ||
+    returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
         ParseScoreType(textPtr, currAction.type, pos, end) ||
         ParseResourceType(textPtr, currAction.type, pos, end) ||
         ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
@@ -2452,8 +2452,8 @@ ParseActionTypeIndexField: // 2 bytes
         "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
 
 ParseActionUnitField: // 2 bytes
-    returnMsg( ParseUnitName(text, currAction.type, pos, end) ||
-        ParseShort(textPtr, currAction.type, pos, end),
+    returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
+        ParseShort(textPtr, (u16 &)currAction.type, pos, end),
         "Expected: Unit name or 2-byte unitID" );
 
 ParseActionScoreTypeField: // 2 bytes
@@ -2472,7 +2472,7 @@ ParseActionAllianceStatusField:
         "Expected: Alliance status or 2-byte number" );
 
 ParseActionActionField: // 1 byte, only used by custom
-    returnMsg( ParseByte(textPtr, currAction.action, pos, end),
+    returnMsg( ParseByte(textPtr, (u8 &)currAction.actionType, pos, end),
         "Expected: 1-byte actionID" );
 
 ParseActionTypeIndexField2: // 1 byte
@@ -2519,8 +2519,8 @@ ParseActionTextFlagField: // 1 byte
         "Expected: Always display text flags or 1-byte flag data" );
 
 ParseActionInternalDataField: // 3 bytes
-    returnMsg( ParseTriplet(textPtr, currAction.internalData, pos, end),
-        "Expected: 3-byte internal data" );
+    returnMsg( ParseShort(textPtr, (u16 &)currAction.maskFlag, pos, end),
+        "Expected: 2-byte mask flag" );
 
 ParseActionDeathOffsetField: // 4 bytes
     returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currAction.group, pos, end, deathTableOffset) ||
@@ -2613,7 +2613,7 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
             StringTableNode &node = stringTable.find(hash)->second;
             if ( node.string.compare(str) == 0 && isExtended == node.isExtended )
             {
-                dest = node.stringNum;
+                dest = node.stringId;
                 success = true;
             }
         }
@@ -2627,14 +2627,14 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
-                        dest = node.stringNum;
+                        dest = node.stringId;
                         success = true;
                     }
                     else // If matches have previously been found
                     {
-                        if ( node.stringNum < dest )
+                        if ( node.stringId < dest )
                         { // Replace if stringNum < prevStringNum
-                            dest = node.stringNum;
+                            dest = node.stringId;
                         }
                     }
                 }
@@ -2648,15 +2648,15 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
             node.string = str;
             node.isExtended = isExtended;
 
-            if ( (isExtended && extendedStrUsage.useNext(node.stringNum)) ||
-                (!isExtended && strUsage.useNext(node.stringNum)) )
+            if ( (isExtended && useNextExtendedString(node.stringId) ||
+                (!isExtended && useNextString(node.stringId))) )
             {
                 if ( isExtended )
-                    node.stringNum = 65536 - node.stringNum; // Convert to the index the string will hold in the normal table
+                    node.stringId = 65536 - node.stringId; // Convert to the index the string will hold in the normal table
 
                 addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
                 stringTable.insert(std::pair<size_t, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
-                dest = node.stringNum;
+                dest = node.stringId;
                 success = true;
             }
         }
@@ -2708,7 +2708,7 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 e
             LocationTableNode &node = locationTable.find(hash)->second;
             if ( node.locationName.compare(locStringPtr) == 0 )
             {
-                dest = node.locationNum;
+                dest = node.locationId;
                 success = true;
             }
         }
@@ -2722,13 +2722,13 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 e
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
-                        dest = node.locationNum;
+                        dest = node.locationId;
                         success = true;
                     }
                     else // If matches have previously been found
                     {
-                        if ( u32(node.locationNum) < dest )
-                            dest = node.locationNum; // Replace if locationNum < previous locationNum
+                        if ( u32(node.locationId) < dest )
+                            dest = node.locationId; // Replace if locationNum < previous locationNum
                     }
                 }
             }
@@ -2738,14 +2738,14 @@ bool TextTrigCompiler::ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 e
     return success;
 }
 
-bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseUnitName(buffer &text, Sc::Unit::Type &dest, s64 pos, s64 end)
 {
     if ( text.get<u8>(pos) == '\"' ) // If quoted, ignore quotes
     {
         pos ++;
         end --;
     }
-    else if ( ParseShort((char*)text.getPtr(0), dest, pos, end) )
+    else if ( ParseShort((char*)text.getPtr(0), (u16 &)dest, pos, end) )
         return true;
 
     s64 size = end-pos;
@@ -2776,111 +2776,111 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
             switch ( unit[0] ) // First search standard unit names
             {
             case 'A':
-                if      ( strcmp(&unit[1], "LAN SCHEZAR (GOLIATH)"         ) == 0 ) { dest =  17; success = true; }
-                else if ( strcmp(&unit[1], "LAN SCHEZAR TURRET"            ) == 0 ) { dest =  18; success = true; }
-                else if ( strcmp(&unit[1], "LDARIS (TEMPLAR)"              ) == 0 ) { dest =  87; success = true; }
-                else if ( strcmp(&unit[1], "LEXEI STUKOV (GHOST)"          ) == 0 ) { dest = 100; success = true; }
-                else if ( strcmp(&unit[1], "NY UNIT"                       ) == 0 ) { dest = 229; success = true; }
-                else if ( strcmp(&unit[1], "RCTURUS MENGSK (BATTLECRUISER)") == 0 ) { dest =  27; success = true; }
-                else if ( strcmp(&unit[1], "RTANIS (SCOUT)"                ) == 0 ) { dest =  88; success = true; }
+                if      ( strcmp(&unit[1], "LAN SCHEZAR (GOLIATH)"         ) == 0 ) { dest = Sc::Unit::Type::AlanSchezar_Goliath; success = true; }
+                else if ( strcmp(&unit[1], "LAN SCHEZAR TURRET"            ) == 0 ) { dest = Sc::Unit::Type::AlanTurret; success = true; }
+                else if ( strcmp(&unit[1], "LDARIS (TEMPLAR)"              ) == 0 ) { dest = Sc::Unit::Type::Aldaris_Templar; success = true; }
+                else if ( strcmp(&unit[1], "LEXEI STUKOV (GHOST)"          ) == 0 ) { dest = Sc::Unit::Type::AlexeiStukov_Ghost; success = true; }
+                else if ( strcmp(&unit[1], "NY UNIT"                       ) == 0 ) { dest = Sc::Unit::Type::AnyUnit; success = true; }
+                else if ( strcmp(&unit[1], "RCTURUS MENGSK (BATTLECRUISER)") == 0 ) { dest = Sc::Unit::Type::ArcturusMengsk_Battlecruiser; success = true; }
+                else if ( strcmp(&unit[1], "RTANIS (SCOUT)"                ) == 0 ) { dest = Sc::Unit::Type::Artanis_Scout; success = true; }
                 break;
             case 'B':
-                if      ( strcmp(&unit[1], "ENGALAAS (JUNGLE CRITTER)") == 0 ) { dest =  90; success = true; }
-                else if ( strcmp(&unit[1], "UILDINGS"                 ) == 0 ) { dest = 231; success = true; }
+                if      ( strcmp(&unit[1], "ENGALAAS (JUNGLE CRITTER)") == 0 ) { dest = Sc::Unit::Type::Bengalaas_Jungle; success = true; }
+                else if ( strcmp(&unit[1], "UILDINGS"                 ) == 0 ) { dest = Sc::Unit::Type::Buildings; success = true; }
                 break;
             case 'C':
-                if      ( strcmp(&unit[1], "ARGO SHIP (UNUSED)") == 0 ) { dest =  91; success = true; }
-                else if ( strcmp(&unit[1], "ATINA (UNUSED)"    ) == 0 ) { dest = 181; success = true; }
-                else if ( strcmp(&unit[1], "AVE (UNUSED)"      ) == 0 ) { dest = 179; success = true; }
-                else if ( strcmp(&unit[1], "AVE-IN (UNUSED)"   ) == 0 ) { dest = 180; success = true; }
+                if      ( strcmp(&unit[1], "ARGO SHIP (UNUSED)") == 0 ) { dest = Sc::Unit::Type::CargoShip_Unused; success = true; }
+                else if ( strcmp(&unit[1], "ATINA (UNUSED)"    ) == 0 ) { dest = Sc::Unit::Type::Cantina; success = true; }
+                else if ( strcmp(&unit[1], "AVE (UNUSED)"      ) == 0 ) { dest = Sc::Unit::Type::Cave; success = true; }
+                else if ( strcmp(&unit[1], "AVE-IN (UNUSED)"   ) == 0 ) { dest = Sc::Unit::Type::CaveIn; success = true; }
                 break;
             case 'D':
-                if      ( strcmp(&unit[1], "ANIMOTH (ARBITER)"      ) == 0 ) { dest =  86; success = true; }
-                else if ( strcmp(&unit[1], "ARK SWARM"              ) == 0 ) { dest = 202; success = true; }
-                else if ( strcmp(&unit[1], "ATA DISC"               ) == 0 ) { dest = 218; success = true; }
-                else if ( strcmp(&unit[1], "EVOURING ONE (ZERGLING)") == 0 ) { dest =  54; success = true; }
-                else if ( strcmp(&unit[1], "ISRUPTION WEB"          ) == 0 ) { dest = 105; success = true; }
+                if      ( strcmp(&unit[1], "ANIMOTH (ARBITER)"      ) == 0 ) { dest = Sc::Unit::Type::Danimoth_Arbiter; success = true; }
+                else if ( strcmp(&unit[1], "ARK SWARM"              ) == 0 ) { dest = Sc::Unit::Type::DarkSwarm; success = true; }
+                else if ( strcmp(&unit[1], "ATA DISC"               ) == 0 ) { dest = Sc::Unit::Type::DataDisc; success = true; }
+                else if ( strcmp(&unit[1], "EVOURING ONE (ZERGLING)") == 0 ) { dest = Sc::Unit::Type::DevouringOne_Zergling; success = true; }
+                else if ( strcmp(&unit[1], "ISRUPTION WEB"          ) == 0 ) { dest = Sc::Unit::Type::DisruptionField; success = true; }
                 break;
             case 'E':
-                if      ( strcmp(&unit[1], "DMUND DUKE (SIEGE MODE)"       ) == 0 ) { dest = 25; success = true; }
-                else if ( strcmp(&unit[1], "DMUND DUKE (TANK MODE)"        ) == 0 ) { dest = 23; success = true; }
-                else if ( strcmp(&unit[1], "DMUND DUKE TURRET (SIEGE MODE)") == 0 ) { dest = 26; success = true; }
-                else if ( strcmp(&unit[1], "DMUND DUKE TURRET (TANK MODE)" ) == 0 ) { dest = 24; success = true; }
+                if      ( strcmp(&unit[1], "DMUND DUKE (SIEGE MODE)"       ) == 0 ) { dest = Sc::Unit::Type::EdmundDuke_SiegeMode; success = true; }
+                else if ( strcmp(&unit[1], "DMUND DUKE (TANK MODE)"        ) == 0 ) { dest = Sc::Unit::Type::EdmundDuke_SiegeTank; success = true; }
+                else if ( strcmp(&unit[1], "DMUND DUKE TURRET (SIEGE MODE)") == 0 ) { dest = Sc::Unit::Type::DukeTurretType2; success = true; }
+                else if ( strcmp(&unit[1], "DMUND DUKE TURRET (TANK MODE)" ) == 0 ) { dest = Sc::Unit::Type::DukeTurretType1; success = true; }
                 break;
             case 'F':
-                if      ( strcmp(&unit[1], "ACTORIES"           ) == 0 ) { dest = 232; success = true; }
-                else if ( strcmp(&unit[1], "ENIX (DRAGOON)"     ) == 0 ) { dest =  78; success = true; }
-                else if ( strcmp(&unit[1], "ENIX (ZEALOT)"      ) == 0 ) { dest =  77; success = true; }
-                else if ( strcmp(&unit[1], "LAG"                ) == 0 ) { dest = 215; success = true; }
-                else if ( strcmp(&unit[1], "LOOR GUN TRAP"      ) == 0 ) { dest = 209; success = true; }
-                else if ( strcmp(&unit[1], "LOOR HATCH (UNUSED)") == 0 ) { dest = 204; success = true; }
-                else if ( strcmp(&unit[1], "LOOR MISSILE TRAP"  ) == 0 ) { dest = 203; success = true; }
+                if      ( strcmp(&unit[1], "ACTORIES"           ) == 0 ) { dest = Sc::Unit::Type::Factories; success = true; }
+                else if ( strcmp(&unit[1], "ENIX (DRAGOON)"     ) == 0 ) { dest = Sc::Unit::Type::Fenix_Dragoon; success = true; }
+                else if ( strcmp(&unit[1], "ENIX (ZEALOT)"      ) == 0 ) { dest = Sc::Unit::Type::Fenix_Zealot; success = true; }
+                else if ( strcmp(&unit[1], "LAG"                ) == 0 ) { dest = Sc::Unit::Type::Flag; success = true; }
+                else if ( strcmp(&unit[1], "LOOR GUN TRAP"      ) == 0 ) { dest = Sc::Unit::Type::FloorGunTrap; success = true; }
+                else if ( strcmp(&unit[1], "LOOR HATCH (UNUSED)") == 0 ) { dest = Sc::Unit::Type::FloorHatch_Unused; success = true; }
+                else if ( strcmp(&unit[1], "LOOR MISSILE TRAP"  ) == 0 ) { dest = Sc::Unit::Type::FloorMissileTrap; success = true; }
                 break;
             case 'G':
-                if      ( strcmp(&unit[1], "ANTRITHOR (CARRIER)"          ) == 0 ) { dest =  82; success = true; }
-                else if ( strcmp(&unit[1], "ERARD DUGALLE (BATTLECRUISER)") == 0 ) { dest = 102; success = true; }
-                else if ( strcmp(&unit[1], "OLIATH TURRET"                ) == 0 ) { dest =   4; success = true; }
-                else if ( strcmp(&unit[1], "UI MONTAG (FIREBAT)"          ) == 0 ) { dest =  10; success = true; }
+                if      ( strcmp(&unit[1], "ANTRITHOR (CARRIER)"          ) == 0 ) { dest = Sc::Unit::Type::Gantrithor_Carrier; success = true; }
+                else if ( strcmp(&unit[1], "ERARD DUGALLE (BATTLECRUISER)") == 0 ) { dest = Sc::Unit::Type::GerardDuGalle_BattleCruiser; success = true; }
+                else if ( strcmp(&unit[1], "OLIATH TURRET"                ) == 0 ) { dest = Sc::Unit::Type::GoliathTurret; success = true; }
+                else if ( strcmp(&unit[1], "UI MONTAG (FIREBAT)"          ) == 0 ) { dest = Sc::Unit::Type::GuiMontag_Firebat; success = true; }
                 break;
             case 'H':
-                if      ( strcmp(&unit[1], "UNTER KILLER (HYDRALISK)") == 0 ) { dest = 53; success = true; }
-                else if ( strcmp(&unit[1], "YPERION (BATTLECRUISER)" ) == 0 ) { dest = 28; success = true; }
+                if      ( strcmp(&unit[1], "UNTER KILLER (HYDRALISK)") == 0 ) { dest = Sc::Unit::Type::HunterKiller_Hydralisk; success = true; }
+                else if ( strcmp(&unit[1], "YPERION (BATTLECRUISER)" ) == 0 ) { dest = Sc::Unit::Type::Hyperion_Battlecruiser; success = true; }
                 break;
             case 'I':
                 if ( unit[1] == 'D' && unit[2] == ':' )
-                    success = ParseShort(unit, dest, 3, size);
-                else if ( strcmp(&unit[1], "NDEPENDENT COMMAND CENTER (UNUSED)"  ) == 0 ) { dest = 183; success = true; }
-                else if ( strcmp(&unit[1], "NDEPENDENT JUMP GATE (UNUSED)"       ) == 0 ) { dest = 185; success = true; }
-                else if ( strcmp(&unit[1], "NDEPENDENT STARPORT (UNUSED)"        ) == 0 ) { dest = 184; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED COMMAND CENTER"              ) == 0 ) { dest = 130; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED DURAN (INFESTED TERRAN)"     ) == 0 ) { dest = 104; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED KERRIGAN (INFESTED TERRAIN)" ) == 0 ) { dest =  51; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED TERRAN"                      ) == 0 ) { dest =  50; success = true; }
-                else if ( strcmp(&unit[1], "ON CANNON"                           ) == 0 ) { dest = 127; success = true; }
+                    success = ParseShort(unit, (u16 &)dest, 3, size);
+                else if ( strcmp(&unit[1], "NDEPENDENT COMMAND CENTER (UNUSED)"  ) == 0 ) { dest = Sc::Unit::Type::IndependentCommandCenter_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NDEPENDENT JUMP GATE (UNUSED)"       ) == 0 ) { dest = Sc::Unit::Type::IndependentJumpGate_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NDEPENDENT STARPORT (UNUSED)"        ) == 0 ) { dest = Sc::Unit::Type::IndependentStarport_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED COMMAND CENTER"              ) == 0 ) { dest = Sc::Unit::Type::InfestedCommandCenter; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED DURAN (INFESTED TERRAN)"     ) == 0 ) { dest = Sc::Unit::Type::InfestedDuran; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED KERRIGAN (INFESTED TERRAIN)" ) == 0 ) { dest = Sc::Unit::Type::InfestedKerrigan_InfestedTerran; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED TERRAN"                      ) == 0 ) { dest = Sc::Unit::Type::InfestedTerran; success = true; }
+                else if ( strcmp(&unit[1], "ON CANNON"                           ) == 0 ) { dest = Sc::Unit::Type::IonCannon; success = true; }
                 break;
             case 'J':
-                if      ( strcmp(&unit[1], "IM RAYNOR (MARINE)" ) == 0 ) { dest = 20; success = true; }
-                else if ( strcmp(&unit[1], "IM RAYNOR (VULTURE)") == 0 ) { dest = 19; success = true; }
+                if      ( strcmp(&unit[1], "IM RAYNOR (MARINE)" ) == 0 ) { dest = Sc::Unit::Type::JimRaynor_Marine; success = true; }
+                else if ( strcmp(&unit[1], "IM RAYNOR (VULTURE)") == 0 ) { dest = Sc::Unit::Type::JimRaynor_Vulture; success = true; }
                 break;
             case 'K':
-                if      ( strcmp(&unit[1], "AKARU (TWILIGHT CRITTER)"          ) == 0 ) { dest =  94; success = true; }
-                else if ( strcmp(&unit[1], "HADARIN CRYSTAL FORMATION (UNUSED)") == 0 ) { dest = 187; success = true; }
-                else if ( strcmp(&unit[1], "HALIS CRYSTAL"                     ) == 0 ) { dest = 129; success = true; }
-                else if ( strcmp(&unit[1], "HAYDARIN CRYSTAL"                  ) == 0 ) { dest = 219; success = true; }
-                else if ( strcmp(&unit[1], "HAYDARIN CRYSTAL FORMATION"        ) == 0 ) { dest = 173; success = true; }
-                else if ( strcmp(&unit[1], "UKULZA (GUARDIAN)"                 ) == 0 ) { dest =  56; success = true; }
-                else if ( strcmp(&unit[1], "UKULZA (MUTALISK)"                 ) == 0 ) { dest =  55; success = true; }
+                if      ( strcmp(&unit[1], "AKARU (TWILIGHT CRITTER)"          ) == 0 ) { dest = Sc::Unit::Type::Kakaru_TwilightCritter; success = true; }
+                else if ( strcmp(&unit[1], "HADARIN CRYSTAL FORMATION (UNUSED)") == 0 ) { dest = Sc::Unit::Type::KhadarinCrystalFormation_Unused; success = true; }
+                else if ( strcmp(&unit[1], "HALIS CRYSTAL"                     ) == 0 ) { dest = Sc::Unit::Type::KhalisCrystal; success = true; }
+                else if ( strcmp(&unit[1], "HAYDARIN CRYSTAL"                  ) == 0 ) { dest = Sc::Unit::Type::KhaydarinCrystal; success = true; }
+                else if ( strcmp(&unit[1], "HAYDARIN CRYSTAL FORMATION"        ) == 0 ) { dest = Sc::Unit::Type::KhaydarinCrystalFormation; success = true; }
+                else if ( strcmp(&unit[1], "UKULZA (GUARDIAN)"                 ) == 0 ) { dest = Sc::Unit::Type::Kukulza_Guardian; success = true; }
+                else if ( strcmp(&unit[1], "UKULZA (MUTALISK)"                 ) == 0 ) { dest = Sc::Unit::Type::Kukulza_Mutalisk; success = true; }
                 break;
             case 'L':
-                if      ( strcmp(&unit[1], "EFT PIT DOOR"         ) == 0 ) { dest = 207; success = true; }
-                else if ( strcmp(&unit[1], "EFT UPPER LEVEL DOOR" ) == 0 ) { dest = 205; success = true; }
-                else if ( strcmp(&unit[1], "EFT WALL FLAME TRAP"  ) == 0 ) { dest = 211; success = true; }
-                else if ( strcmp(&unit[1], "EFT WALL MISSILE TRAP") == 0 ) { dest = 210; success = true; }
-                else if ( strcmp(&unit[1], "URKER EGG"            ) == 0 ) { dest =  97; success = true; }
+                if      ( strcmp(&unit[1], "EFT PIT DOOR"         ) == 0 ) { dest = Sc::Unit::Type::LeftPitDoor; success = true; }
+                else if ( strcmp(&unit[1], "EFT UPPER LEVEL DOOR" ) == 0 ) { dest = Sc::Unit::Type::LeftUpperLevelDoor; success = true; }
+                else if ( strcmp(&unit[1], "EFT WALL FLAME TRAP"  ) == 0 ) { dest = Sc::Unit::Type::LeftWallFlameTrap; success = true; }
+                else if ( strcmp(&unit[1], "EFT WALL MISSILE TRAP") == 0 ) { dest = Sc::Unit::Type::LeftWallMissileTrap; success = true; }
+                else if ( strcmp(&unit[1], "URKER EGG"            ) == 0 ) { dest = Sc::Unit::Type::LurkerEgg; success = true; }
                 break;
             case 'M':
-                if      ( strcmp(&unit[1], "AGELLAN (SCIENCE VESSEL)" ) == 0 ) { dest =  22; success = true; }
-                else if ( strcmp(&unit[1], "AP REVEALER"              ) == 0 ) { dest = 101; success = true; }
-                else if ( strcmp(&unit[1], "ATRIARCH (QUEEN)"         ) == 0 ) { dest =  49; success = true; }
-                else if ( strcmp(&unit[1], "ATURE CRYSALIS"           ) == 0 ) { dest = 150; success = true; }
-                else if ( strcmp(&unit[1], "EN"                       ) == 0 ) { dest = 230; success = true; }
-                else if ( strcmp(&unit[1], "ERCENARY GUNSHIP (UNUSED)") == 0 ) { dest =  92; success = true; }
-                else if ( strcmp(&unit[1], "INERAL CLUSTER TYPE 1"    ) == 0 ) { dest = 220; success = true; }
-                else if ( strcmp(&unit[1], "INERAL CLUSTER TYPE 2"    ) == 0 ) { dest = 221; success = true; }
-                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 1)"    ) == 0 ) { dest = 176; success = true; }
-                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 2)"    ) == 0 ) { dest = 177; success = true; }
-                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 3)"    ) == 0 ) { dest = 178; success = true; }
-                else if ( strcmp(&unit[1], "INING PLATFORM (UNUSED)"  ) == 0 ) { dest = 182; success = true; }
-                else if ( strcmp(&unit[1], "OJO (SCOUT)"              ) == 0 ) { dest =  80; success = true; }
-                else if ( strcmp(&unit[1], "UTALISK COCOON"           ) == 0 ) { dest =  50; success = true; }
+                if      ( strcmp(&unit[1], "AGELLAN (SCIENCE VESSEL)" ) == 0 ) { dest = Sc::Unit::Type::Magellan_ScienceVessel; success = true; }
+                else if ( strcmp(&unit[1], "AP REVEALER"              ) == 0 ) { dest = Sc::Unit::Type::MapRevealer; success = true; }
+                else if ( strcmp(&unit[1], "ATRIARCH (QUEEN)"         ) == 0 ) { dest = Sc::Unit::Type::Matriarch_Queen; success = true; }
+                else if ( strcmp(&unit[1], "ATURE CRYSALIS"           ) == 0 ) { dest = Sc::Unit::Type::MatureCrysalis; success = true; }
+                else if ( strcmp(&unit[1], "EN"                       ) == 0 ) { dest = Sc::Unit::Type::Men; success = true; }
+                else if ( strcmp(&unit[1], "ERCENARY GUNSHIP (UNUSED)") == 0 ) { dest = Sc::Unit::Type::MercenaryGunship_Unused; success = true; }
+                else if ( strcmp(&unit[1], "INERAL CLUSTER TYPE 1"    ) == 0 ) { dest = Sc::Unit::Type::MineralClusterType1; success = true; }
+                else if ( strcmp(&unit[1], "INERAL CLUSTER TYPE 2"    ) == 0 ) { dest = Sc::Unit::Type::MineralClusterType2; success = true; }
+                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 1)"    ) == 0 ) { dest = Sc::Unit::Type::MineralFieldType1; success = true; }
+                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 2)"    ) == 0 ) { dest = Sc::Unit::Type::MineralFieldType2; success = true; }
+                else if ( strcmp(&unit[1], "INERAL FIELD (TYPE 3)"    ) == 0 ) { dest = Sc::Unit::Type::MineralFieldType3; success = true; }
+                else if ( strcmp(&unit[1], "INING PLATFORM (UNUSED)"  ) == 0 ) { dest = Sc::Unit::Type::MiningPlatform_Unused; success = true; }
+                else if ( strcmp(&unit[1], "OJO (SCOUT)"              ) == 0 ) { dest = Sc::Unit::Type::Mojo_Scout; success = true; }
+                else if ( strcmp(&unit[1], "UTALISK COCOON"           ) == 0 ) { dest = Sc::Unit::Type::Cocoon; success = true; }
                 break;
             case 'N':
-                if      ( strcmp(&unit[1], "ORAD II (BATTLECRUISER)") == 0 ) { dest =  29; success = true; }
-                else if ( strcmp(&unit[1], "ORAD II (CRASHED)"      ) == 0 ) { dest = 126; success = true; }
-                else if ( strcmp(&unit[1], "UCLEAR MISSILE"         ) == 0 ) { dest =  14; success = true; }
+                if      ( strcmp(&unit[1], "ORAD II (BATTLECRUISER)") == 0 ) { dest = Sc::Unit::Type::NoradII_Battlecruiser; success = true; }
+                else if ( strcmp(&unit[1], "ORAD II (CRASHED)"      ) == 0 ) { dest = Sc::Unit::Type::NoradII_Crashed; success = true; }
+                else if ( strcmp(&unit[1], "UCLEAR MISSILE"         ) == 0 ) { dest = Sc::Unit::Type::NuclearMissile; success = true; }
                 break;
             case 'O':
-                if      ( strcmp(&unit[1], "VERMIND COCOON") == 0 ) { dest = 201; success = true; }
+                if      ( strcmp(&unit[1], "VERMIND COCOON") == 0 ) { dest = Sc::Unit::Type::OvermindCocoon; success = true; }
                 break;
             case 'P':
                 if ( unit[1] == 'R' )
@@ -2888,109 +2888,109 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
                     switch ( unit[8] )
                     {
                     case 'A':
-                        if      ( strcmp(&unit[2], "OTOSS ARBITER"         ) == 0 ) { dest =  71; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS ARBITER TRIBUNAL") == 0 ) { dest = 170; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS ARCHON"          ) == 0 ) { dest =  68; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS ASSIMILATOR"    ) == 0 ) { dest = 157; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS ARBITER"         ) == 0 ) { dest = Sc::Unit::Type::ProtossArbiter; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS ARBITER TRIBUNAL") == 0 ) { dest = Sc::Unit::Type::ProtossArbiterTribunal; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS ARCHON"          ) == 0 ) { dest = Sc::Unit::Type::ProtossArchon; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS ASSIMILATOR"    ) == 0 ) { dest = Sc::Unit::Type::ProtossAssimilator; success = true; }
                         break;
                     case 'B':
-                        if ( strcmp(&unit[2], "OTOSS BEACON") == 0 ) { dest = 196; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS BEACON") == 0 ) { dest = Sc::Unit::Type::ProtossBeacon; success = true; }
                         break;
                     case 'C':
-                        if      ( strcmp(&unit[2], "OTOSS CARRIER"         ) == 0 ) { dest =  72; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS CITADEL OF ADUN" ) == 0 ) { dest = 163; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS CORSAIR"         ) == 0 ) { dest =  60; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS CYBERNETICS CORE") == 0 ) { dest = 164; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS CARRIER"         ) == 0 ) { dest = Sc::Unit::Type::ProtossCarrier; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS CITADEL OF ADUN" ) == 0 ) { dest = Sc::Unit::Type::ProtossCitadelOfAdum; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS CORSAIR"         ) == 0 ) { dest = Sc::Unit::Type::ProtossCorsair; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS CYBERNETICS CORE") == 0 ) { dest = Sc::Unit::Type::ProtossCyberneticsCore; success = true; }
                         break;
                     case 'D':
-                        if      ( strcmp(&unit[2], "OTOSS DARK ARCHON"        ) == 0 ) { dest =  63; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS DARK TEMPLAR (HERO)") == 0 ) { dest =  74; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS DARK TEMPLAR (UNIT)") == 0 ) { dest =  61; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS DRAGOON"            ) == 0 ) { dest =  66; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS DARK ARCHON"        ) == 0 ) { dest = Sc::Unit::Type::ProtossDarkArchon; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS DARK TEMPLAR (HERO)") == 0 ) { dest = Sc::Unit::Type::DarkTemplar_Hero; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS DARK TEMPLAR (UNIT)") == 0 ) { dest = Sc::Unit::Type::ProtossDarkTemplar; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS DRAGOON"            ) == 0 ) { dest = Sc::Unit::Type::ProtossDragoon; success = true; }
                         break;
                     case 'F':
-                        if      ( strcmp(&unit[2], "OTOSS FLAG BEACON" ) == 0 ) { dest = 199; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS FLEET BEACON") == 0 ) { dest = 169; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS FORGE"       ) == 0 ) { dest = 166; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS FLAG BEACON" ) == 0 ) { dest = Sc::Unit::Type::ProtossFlagBeacon; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS FLEET BEACON") == 0 ) { dest = Sc::Unit::Type::ProtossFleetBeacon; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS FORGE"       ) == 0 ) { dest = Sc::Unit::Type::ProtossForge; success = true; }
                         break;
                     case 'G':
-                        if ( strcmp(&unit[2], "OTOSS GATEWAY") == 0 ) { dest = 160; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS GATEWAY") == 0 ) { dest = Sc::Unit::Type::ProtossGateway; success = true; }
                         break;
                     case 'H':
-                        if ( strcmp(&unit[2], "OTOSS HIGH TEMPLAR") == 0 ) { dest =  67; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS HIGH TEMPLAR") == 0 ) { dest = Sc::Unit::Type::ProtossHighTemplar; success = true; }
                         break;
                     case 'I':
-                        if ( strcmp(&unit[2], "OTOSS INTERCEPTOR") == 0 ) { dest =  73; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS INTERCEPTOR") == 0 ) { dest = Sc::Unit::Type::ProtossInterceptor; success = true; }
                         break;
                     case 'M':
-                        if ( strcmp(&unit[2], "OTOSS MARKER") == 0 ) { dest = 193; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS MARKER") == 0 ) { dest = Sc::Unit::Type::ProtossMarker; success = true; }
                         break;
                     case 'N':
-                        if ( strcmp(&unit[2], "OTOSS NEXUS") == 0 ) { dest = 154; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS NEXUS") == 0 ) { dest = Sc::Unit::Type::ProtossNexus; success = true; }
                         break;
                     case 'O':
-                        if      ( strcmp(&unit[2], "OTOSS OBSERVATORY") == 0 ) { dest = 159; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS OBSERVER"   ) == 0 ) { dest =  84; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS OBSERVATORY") == 0 ) { dest = Sc::Unit::Type::ProtossObservatory; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS OBSERVER"   ) == 0 ) { dest = Sc::Unit::Type::ProtossObserver; success = true; }
                         break;
                     case 'P':
-                        if      ( strcmp(&unit[2], "OTOSS PHOTON CANNON") == 0 ) { dest = 162; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS PROBE"        ) == 0 ) { dest =  64; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS PYLON"        ) == 0 ) { dest = 156; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS PHOTON CANNON") == 0 ) { dest = Sc::Unit::Type::ProtossPhotonCannon; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS PROBE"        ) == 0 ) { dest = Sc::Unit::Type::ProtossProbe; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS PYLON"        ) == 0 ) { dest = Sc::Unit::Type::ProtossPylon; success = true; }
                         break;
                     case 'R':
-                        if      ( strcmp(&unit[2], "OTOSS REAVER"              ) == 0 ) { dest =  83; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS ROBOTICS FACILITY"   ) == 0 ) { dest = 155; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS ROBOTICS SUPPORT BAY") == 0 ) { dest = 171; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS REAVER"              ) == 0 ) { dest = Sc::Unit::Type::ProtossReaver; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS ROBOTICS FACILITY"   ) == 0 ) { dest = Sc::Unit::Type::ProtossRoboticsFacility; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS ROBOTICS SUPPORT BAY") == 0 ) { dest = Sc::Unit::Type::ProtossRoboticsSupportBay; success = true; }
                         break;
                     case 'S':
-                        if      ( strcmp(&unit[2], "OTOSS SCARAB"        ) == 0 ) { dest =  85; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS SCOUT"         ) == 0 ) { dest =  70; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS SHIELD BATTERY") == 0 ) { dest = 172; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS SHUTTLE"       ) == 0 ) { dest =  69; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS STARGATE"      ) == 0 ) { dest = 167; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS SCARAB"        ) == 0 ) { dest = Sc::Unit::Type::ProtossScarab; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS SCOUT"         ) == 0 ) { dest = Sc::Unit::Type::ProtossScout; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS SHIELD BATTERY") == 0 ) { dest = Sc::Unit::Type::ProtossShieldBattery; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS SHUTTLE"       ) == 0 ) { dest = Sc::Unit::Type::ProtossShuttle; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS STARGATE"      ) == 0 ) { dest = Sc::Unit::Type::ProtossStargate; success = true; }
                         break;
                     case 'T':
-                        if      ( strcmp(&unit[2], "OTOSS TEMPLAR ARCHIVES") == 0 ) { dest = 165; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS TEMPLE"          ) == 0 ) { dest = 174; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS TEMPLAR ARCHIVES") == 0 ) { dest = Sc::Unit::Type::ProtossTemplarArchives; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS TEMPLE"          ) == 0 ) { dest = Sc::Unit::Type::ProtossTemple; success = true; }
                         break;
                     case 'V':
-                        if      ( strcmp(&unit[2], "OTOSS VESPENE GAS ORB TYPE 1") == 0 ) { dest = 222; success = true; }
-                        else if ( strcmp(&unit[2], "OTOSS VESPENE GAS ORB TYPE 2") == 0 ) { dest = 223; success = true; }
+                        if      ( strcmp(&unit[2], "OTOSS VESPENE GAS ORB TYPE 1") == 0 ) { dest = Sc::Unit::Type::ProtossVespeneGasOrbType1; success = true; }
+                        else if ( strcmp(&unit[2], "OTOSS VESPENE GAS ORB TYPE 2") == 0 ) { dest = Sc::Unit::Type::ProtossVespeneGasOrbType2; success = true; }
                         break;
                     case 'Z':
-                        if ( strcmp(&unit[2], "OTOSS ZEALOT") == 0 ) { dest =  65; success = true; }
+                        if ( strcmp(&unit[2], "OTOSS ZEALOT") == 0 ) { dest = Sc::Unit::Type::ProtossZealot; success = true; }
                         break;
                     }
                 }
                 else if ( unit[1] == 'S' )
                 {
-                    if      ( strcmp(&unit[2], "I DISRUPTER") == 0 ) { dest = 190; success = true; }
-                    else if ( strcmp(&unit[2], "I EMITTER"  ) == 0 ) { dest = 217; success = true; }
+                    if      ( strcmp(&unit[2], "I DISRUPTER") == 0 ) { dest = Sc::Unit::Type::PsiDistrupter; success = true; }
+                    else if ( strcmp(&unit[2], "I EMITTER"  ) == 0 ) { dest = Sc::Unit::Type::PsiEmitter; success = true; }
                 }
-                else if ( strcmp(&unit[1], "OWER GENERATOR") == 0 ) { dest = 200; success = true; }
+                else if ( strcmp(&unit[1], "OWER GENERATOR") == 0 ) { dest = Sc::Unit::Type::PowerGenerator; success = true; }
                 break;
             case 'R':
-                if      ( strcmp(&unit[1], "AGNASAUR (ASHWORLD CRITTER)") == 0 ) { dest =  95; success = true; }
-                else if ( strcmp(&unit[1], "ASZAGAL (CORSAIR)"          ) == 0 ) { dest =  98; success = true; }
-                else if ( strcmp(&unit[1], "EPAIR BAY (UNUSED)"         ) == 0 ) { dest = 121; success = true; }
-                else if ( strcmp(&unit[1], "HYNADON (BADLANDS CRITTER)" ) == 0 ) { dest =  89; success = true; }
-                else if ( strcmp(&unit[1], "IGHT PIT DOOR"              ) == 0 ) { dest = 208; success = true; }
-                else if ( strcmp(&unit[1], "IGHT UPPER LEVEL DOOR"      ) == 0 ) { dest = 206; success = true; }
-                else if ( strcmp(&unit[1], "IGHT WALL FLAME TRAP"       ) == 0 ) { dest = 213; success = true; }
-                else if ( strcmp(&unit[1], "IGHT WALL MISSILE TRAP"     ) == 0 ) { dest = 212; success = true; }
-                else if ( strcmp(&unit[1], "UINS (UNUSED)"              ) == 0 ) { dest = 186; success = true; }
+                if      ( strcmp(&unit[1], "AGNASAUR (ASHWORLD CRITTER)") == 0 ) { dest = Sc::Unit::Type::Ragnasaur_AshworldCritter; success = true; }
+                else if ( strcmp(&unit[1], "ASZAGAL (CORSAIR)"          ) == 0 ) { dest = Sc::Unit::Type::Raszagal_Corsair; success = true; }
+                else if ( strcmp(&unit[1], "EPAIR BAY (UNUSED)"         ) == 0 ) { dest = Sc::Unit::Type::RepairBay_Unused; success = true; }
+                else if ( strcmp(&unit[1], "HYNADON (BADLANDS CRITTER)" ) == 0 ) { dest = Sc::Unit::Type::Rhynadon_BadlandsCritter; success = true; }
+                else if ( strcmp(&unit[1], "IGHT PIT DOOR"              ) == 0 ) { dest = Sc::Unit::Type::RightPitDoor; success = true; }
+                else if ( strcmp(&unit[1], "IGHT UPPER LEVEL DOOR"      ) == 0 ) { dest = Sc::Unit::Type::RightUpperLevelDoor; success = true; }
+                else if ( strcmp(&unit[1], "IGHT WALL FLAME TRAP"       ) == 0 ) { dest = Sc::Unit::Type::RightWallFlameTrap; success = true; }
+                else if ( strcmp(&unit[1], "IGHT WALL MISSILE TRAP"     ) == 0 ) { dest = Sc::Unit::Type::RightWallMissileTrap; success = true; }
+                else if ( strcmp(&unit[1], "UINS (UNUSED)"              ) == 0 ) { dest = Sc::Unit::Type::Ruins_Unused; success = true; }
                 break;
             case 'S':
-                if      ( strcmp(&unit[1], "AMIR DURAN (GHOST)"           ) == 0 ) { dest =  99; success = true; }
-                else if ( strcmp(&unit[1], "ARAH KERRIGAN (GHOST)"        ) == 0 ) { dest =  16; success = true; }
-                else if ( strcmp(&unit[1], "CANNER SWEEP"                 ) == 0 ) { dest =  33; success = true; }
-                else if ( strcmp(&unit[1], "CANTID (DESERT CRITTER)"      ) == 0 ) { dest =  93; success = true; }
-                else if ( strcmp(&unit[1], "IEGE TANK TURRET (SIEGE MODE)") == 0 ) { dest =  31; success = true; }
-                else if ( strcmp(&unit[1], "IEGE TANK TURRET (TANK MODE)" ) == 0 ) { dest =   6; success = true; }
-                else if ( strcmp(&unit[1], "PIDER MINE"                   ) == 0 ) { dest =  13; success = true; }
-                else if ( strcmp(&unit[1], "TARBASE (UNUSED)"             ) == 0 ) { dest = 119; success = true; }
-                else if ( strcmp(&unit[1], "TART LOCATION"                ) == 0 ) { dest = 214; success = true; }
-                else if ( strcmp(&unit[1], "TASIS CELL/PRISON"            ) == 0 ) { dest = 168; success = true; }
+                if      ( strcmp(&unit[1], "AMIR DURAN (GHOST)"           ) == 0 ) { dest = Sc::Unit::Type::SamirDuran_Ghost; success = true; }
+                else if ( strcmp(&unit[1], "ARAH KERRIGAN (GHOST)"        ) == 0 ) { dest = Sc::Unit::Type::SarahKerrigan_Ghost; success = true; }
+                else if ( strcmp(&unit[1], "CANNER SWEEP"                 ) == 0 ) { dest = Sc::Unit::Type::ScannerSweep; success = true; }
+                else if ( strcmp(&unit[1], "CANTID (DESERT CRITTER)"      ) == 0 ) { dest = Sc::Unit::Type::Scantid_DesertCritter; success = true; }
+                else if ( strcmp(&unit[1], "IEGE TANK TURRET (SIEGE MODE)") == 0 ) { dest = Sc::Unit::Type::SiegeTankTurret_SiegeMode; success = true; }
+                else if ( strcmp(&unit[1], "IEGE TANK TURRET (TANK MODE)" ) == 0 ) { dest = Sc::Unit::Type::SiegeTankTurret_TankMode; success = true; }
+                else if ( strcmp(&unit[1], "PIDER MINE"                   ) == 0 ) { dest = Sc::Unit::Type::SpiderMine; success = true; }
+                else if ( strcmp(&unit[1], "TARBASE (UNUSED)"             ) == 0 ) { dest = Sc::Unit::Type::Starbase_Unused; success = true; }
+                else if ( strcmp(&unit[1], "TART LOCATION"                ) == 0 ) { dest = Sc::Unit::Type::StartLocation; success = true; }
+                else if ( strcmp(&unit[1], "TASIS CELL/PRISON"            ) == 0 ) { dest = Sc::Unit::Type::StasisCellPrison; success = true; }
                 break;
             case 'T':
                 if ( unit[1] == 'E' )
@@ -2998,106 +2998,106 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
                     switch ( unit[7] )
                     {
                     case 'A':
-                        if      ( strcmp(&unit[2], "RRAN ACADEMY") == 0 ) { dest = 112; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN ARMORY" ) == 0 ) { dest = 123; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN ACADEMY") == 0 ) { dest = Sc::Unit::Type::TerranAcademy; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN ARMORY" ) == 0 ) { dest = Sc::Unit::Type::TerranArmory; success = true; }
                         break;
                     case 'B':
-                        if      ( strcmp(&unit[2], "RRAN BARRACKS"     ) == 0 ) { dest = 111; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN BATTLECRUISER") == 0 ) { dest =  12; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN BEACON"       ) == 0 ) { dest = 195; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN BUNKER"       ) == 0 ) { dest = 125; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN BARRACKS"     ) == 0 ) { dest = Sc::Unit::Type::TerranBarracks; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN BATTLECRUISER") == 0 ) { dest = Sc::Unit::Type::TerranBattlecruiser; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN BEACON"       ) == 0 ) { dest = Sc::Unit::Type::TerranBeacon; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN BUNKER"       ) == 0 ) { dest = Sc::Unit::Type::TerranBunker; success = true; }
                         break;
                     case 'C':
-                        if      ( strcmp(&unit[2], "RRAN CIVILIAN"      ) == 0 ) { dest =  15; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN COMMAND CENTER") == 0 ) { dest = 106; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN COMSAT STATION") == 0 ) { dest = 107; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN CONTROL TOWER" ) == 0 ) { dest = 115; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN COVERT OPS"    ) == 0 ) { dest = 117; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN CIVILIAN"      ) == 0 ) { dest = Sc::Unit::Type::TerranCivilian; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN COMMAND CENTER") == 0 ) { dest = Sc::Unit::Type::TerranCommandCenter; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN COMSAT STATION") == 0 ) { dest = Sc::Unit::Type::TerranComsatStation; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN CONTROL TOWER" ) == 0 ) { dest = Sc::Unit::Type::TerranControlTower; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN COVERT OPS"    ) == 0 ) { dest = Sc::Unit::Type::TerranCovertOps; success = true; }
                         break;
                     case 'D':
-                        if ( strcmp(&unit[2], "RRAN DROPSHIP") == 0 ) { dest =  11; success = true; }
+                        if ( strcmp(&unit[2], "RRAN DROPSHIP") == 0 ) { dest = Sc::Unit::Type::TerranDropship; success = true; }
                         break;
                     case 'E':
-                        if ( strcmp(&unit[2], "RRAN ENGINEERING BAY") == 0 ) { dest = 122; success = true; }
+                        if ( strcmp(&unit[2], "RRAN ENGINEERING BAY") == 0 ) { dest = Sc::Unit::Type::TerranEngineeringBay; success = true; }
                         break;
                     case 'F':
-                        if      ( strcmp(&unit[2], "RRAN FACTORY"    ) == 0 ) { dest = 113; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN FIREBAT"    ) == 0 ) { dest =  32; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN FLAG BEACON") == 0 ) { dest = 198; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN FACTORY"    ) == 0 ) { dest = Sc::Unit::Type::TerranFactory; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN FIREBAT"    ) == 0 ) { dest = Sc::Unit::Type::TerranFirebat; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN FLAG BEACON") == 0 ) { dest = Sc::Unit::Type::TerranFlagBeacon; success = true; }
                         break;
                     case 'G':
-                        if      ( strcmp(&unit[2], "RRAN GHOST"  ) == 0 ) { dest =   1; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN GOLIATH") == 0 ) { dest =   3; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN GHOST"  ) == 0 ) { dest = Sc::Unit::Type::TerranGhost; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN GOLIATH") == 0 ) { dest = Sc::Unit::Type::TerranGoliath; success = true; }
                         break;
                     case 'M':
-                        if      ( strcmp(&unit[2], "RRAN MACHINE SHOP"  ) == 0 ) { dest = 120; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN MARINE"        ) == 0 ) { dest =   0; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN MARKER"        ) == 0 ) { dest = 192; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN MEDIC"         ) == 0 ) { dest =  34; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN MISSILE TURRET") == 0 ) { dest = 124; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN MACHINE SHOP"  ) == 0 ) { dest = Sc::Unit::Type::TerranMachineShop; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN MARINE"        ) == 0 ) { dest = Sc::Unit::Type::TerranMarine; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN MARKER"        ) == 0 ) { dest = Sc::Unit::Type::TerranMarker; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN MEDIC"         ) == 0 ) { dest = Sc::Unit::Type::TerranMedic; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN MISSILE TURRET") == 0 ) { dest = Sc::Unit::Type::TerranMissileTurret; success = true; }
                         break;
                     case 'N':
-                        if ( strcmp(&unit[2], "RRAN NUCLEAR SILO") == 0 ) { dest = 108; success = true; }
+                        if ( strcmp(&unit[2], "RRAN NUCLEAR SILO") == 0 ) { dest = Sc::Unit::Type::TerranNuclearSilo; success = true; }
                         break;
                     case 'P':
-                        if ( strcmp(&unit[2], "RRAN PHYSICS LAB") == 0 ) { dest = 118; success = true; }
+                        if ( strcmp(&unit[2], "RRAN PHYSICS LAB") == 0 ) { dest = Sc::Unit::Type::TerranPhysicsLab; success = true; }
                         break;
                     case 'R':
-                        if ( strcmp(&unit[2], "RRAN REFINERY") == 0 ) { dest = 110; success = true; }
+                        if ( strcmp(&unit[2], "RRAN REFINERY") == 0 ) { dest = Sc::Unit::Type::TerranRefinery; success = true; }
                         break;
                     case 'S':
-                        if      ( strcmp(&unit[2], "RRAN SCIENCE FACILITY"       ) == 0 ) { dest = 116; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN SCIENCE VESSEL"         ) == 0 ) { dest =   9; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN SCV"                    ) == 0 ) { dest =   7; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN SIEGE TANK (SIEGE MODE)") == 0 ) { dest =  30; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN SIEGE TANK (TANK MODE)" ) == 0 ) { dest =   5; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN STARPORT"               ) == 0 ) { dest = 114; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN SUPPLY DEPOT"           ) == 0 ) { dest = 109; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN SCIENCE FACILITY"       ) == 0 ) { dest = Sc::Unit::Type::TerranScienceFacility; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN SCIENCE VESSEL"         ) == 0 ) { dest = Sc::Unit::Type::TerranScienceVessel; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN SCV"                    ) == 0 ) { dest = Sc::Unit::Type::TerranScv; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN SIEGE TANK (SIEGE MODE)") == 0 ) { dest = Sc::Unit::Type::TerranSiegeTank_SiegeMode; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN SIEGE TANK (TANK MODE)" ) == 0 ) { dest = Sc::Unit::Type::TerranSiegeTank_TankMode; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN STARPORT"               ) == 0 ) { dest = Sc::Unit::Type::TerranStarport; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN SUPPLY DEPOT"           ) == 0 ) { dest = Sc::Unit::Type::TerranSupplyDepot; success = true; }
                         break;
                     case 'V':
-                        if      ( strcmp(&unit[2], "RRAN VALKYRIE"               ) == 0 ) { dest =  58; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN VESPENE GAS TANK TYPE 1") == 0 ) { dest = 226; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN VESPENE GAS TANK TYPE 2") == 0 ) { dest = 227; success = true; }
-                        else if ( strcmp(&unit[2], "RRAN VULTURE"                ) == 0 ) { dest =   2; success = true; }
+                        if      ( strcmp(&unit[2], "RRAN VALKYRIE"               ) == 0 ) { dest = Sc::Unit::Type::TerranValkrie; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN VESPENE GAS TANK TYPE 1") == 0 ) { dest = Sc::Unit::Type::TerranVespeneGasTankType1; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN VESPENE GAS TANK TYPE 2") == 0 ) { dest = Sc::Unit::Type::TerranVespeneGasTankType2; success = true; }
+                        else if ( strcmp(&unit[2], "RRAN VULTURE"                ) == 0 ) { dest = Sc::Unit::Type::TerranVulture; success = true; }
                         break;
                     case 'W':
-                        if ( strcmp(&unit[2], "RRAN WRAITH") == 0 ) { dest =   8; success = true; }
+                        if ( strcmp(&unit[2], "RRAN WRAITH") == 0 ) { dest = Sc::Unit::Type::TerranWraith; success = true; }
                         break;
                     }
                 }
                 else if ( unit[1] == 'A' )
                 {
-                    if      ( strcmp(&unit[2], "SSADAR (TEMPLAR)"       ) == 0 ) { dest =  79; success = true; }
-                    else if ( strcmp(&unit[2], "SSADAR/ZERATUL (ARCHON)") == 0 ) { dest =  76; success = true; }
+                    if      ( strcmp(&unit[2], "SSADAR (TEMPLAR)"       ) == 0 ) { dest = Sc::Unit::Type::Tassadar_Templar; success = true; }
+                    else if ( strcmp(&unit[2], "SSADAR/ZERATUL (ARCHON)") == 0 ) { dest = Sc::Unit::Type::TassadarZeratul_Archon; success = true; }
                 }
                 else if ( unit[1] == 'O' )
                 {
-                    if      ( strcmp(&unit[2], "M KAZANSKY (WRAITH)") == 0 ) { dest =  21; success = true; }
-                    else if ( strcmp(&unit[2], "RRASQUE (ULTRALISK)") == 0 ) { dest =  48; success = true; }
+                    if      ( strcmp(&unit[2], "M KAZANSKY (WRAITH)") == 0 ) { dest = Sc::Unit::Type::TomKazansky_Wraith; success = true; }
+                    else if ( strcmp(&unit[2], "RRASQUE (ULTRALISK)") == 0 ) { dest = Sc::Unit::Type::Torrasque_Ultralisk; success = true; }
                 }
                 break;
             case 'U':
-                if      ( strcmp(&unit[1], "NCLEAN ONE (DEFILER)"      ) == 0 ) { dest =  52; success = true; }
-                else if ( strcmp(&unit[1], "NUSED PROTOSS BUILDING 1"  ) == 0 ) { dest = 158; success = true; }
-                else if ( strcmp(&unit[1], "NUSED PROTOSS BUILDING 2"  ) == 0 ) { dest = 161; success = true; }
-                else if ( strcmp(&unit[1], "NUSED ZERG BUILDING 1"     ) == 0 ) { dest = 145; success = true; }
-                else if ( strcmp(&unit[1], "NUSED ZERG BUILDING 2"     ) == 0 ) { dest = 153; success = true; }
-                else if ( strcmp(&unit[1], "RAJ CRYSTAL"               ) == 0 ) { dest = 128; success = true; }
-                else if ( strcmp(&unit[1], "RSADON (ICE WORLD CRITTER)") == 0 ) { dest =  96; success = true; }
+                if      ( strcmp(&unit[1], "NCLEAN ONE (DEFILER)"      ) == 0 ) { dest = Sc::Unit::Type::UncleanOne_Defiler; success = true; }
+                else if ( strcmp(&unit[1], "NUSED PROTOSS BUILDING 1"  ) == 0 ) { dest = Sc::Unit::Type::UnusedProtossBuilding1; success = true; }
+                else if ( strcmp(&unit[1], "NUSED PROTOSS BUILDING 2"  ) == 0 ) { dest = Sc::Unit::Type::UnusedProtossBuilding2; success = true; }
+                else if ( strcmp(&unit[1], "NUSED ZERG BUILDING 1"     ) == 0 ) { dest = Sc::Unit::Type::UnusedZergBuilding1; success = true; }
+                else if ( strcmp(&unit[1], "NUSED ZERG BUILDING 2"     ) == 0 ) { dest = Sc::Unit::Type::UnusedZergBuilding1; success = true; }
+                else if ( strcmp(&unit[1], "RAJ CRYSTAL"               ) == 0 ) { dest = Sc::Unit::Type::UrajCrystal; success = true; }
+                else if ( strcmp(&unit[1], "RSADON (ICE WORLD CRITTER)") == 0 ) { dest = Sc::Unit::Type::Ursadon_IceWorldCritter; success = true; }
                 break;
             case 'V':
-                if      ( strcmp(&unit[1], "ESPENE GEYSER") == 0 ) { dest = 188; success = true; }
+                if      ( strcmp(&unit[1], "ESPENE GEYSER") == 0 ) { dest = Sc::Unit::Type::VespeneGeyser; success = true; }
                 break;
             case 'W':
-                if      ( strcmp(&unit[1], "ARBRINGER (REAVER)") == 0 ) { dest =  81; success = true; }
-                else if ( strcmp(&unit[1], "ARP GATE"          ) == 0 ) { dest = 189; success = true; }
+                if      ( strcmp(&unit[1], "ARBRINGER (REAVER)") == 0 ) { dest = Sc::Unit::Type::Warbringer_Reaver; success = true; }
+                else if ( strcmp(&unit[1], "ARP GATE"          ) == 0 ) { dest = Sc::Unit::Type::WarpGate; success = true; }
                 break;
             case 'X':
-                if      ( strcmp(&unit[1], "EL'NAGA TEMPLE") == 0 ) { dest = 175; success = true; }
+                if      ( strcmp(&unit[1], "EL'NAGA TEMPLE") == 0 ) { dest = Sc::Unit::Type::XelNagaTemple; success = true; }
                 break;
             case 'Y':
-                if      ( strcmp(&unit[1], "GGDRASILL (OVERLORD)") == 0 ) { dest =  57; success = true; }
-                else if ( strcmp(&unit[1], "OUNG CHRYSALIS"      ) == 0 ) { dest = 216; success = true; }
+                if      ( strcmp(&unit[1], "GGDRASILL (OVERLORD)") == 0 ) { dest = Sc::Unit::Type::Yggdrasill_Overlord; success = true; }
+                else if ( strcmp(&unit[1], "OUNG CHRYSALIS"      ) == 0 ) { dest = Sc::Unit::Type::YoungChrysalis; success = true; }
                 break;
             case 'Z':
                 if ( unit[3] == 'G' )
@@ -3105,80 +3105,80 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
                     switch ( unit[5] )
                     {
                     case 'B':
-                        if      ( strcmp(&unit[1], "ERG BEACON"   ) == 0 ) { dest = 194; success = true; }
-                        else if ( strcmp(&unit[1], "ERG BROODLING") == 0 ) { dest =  40; success = true; }
+                        if      ( strcmp(&unit[1], "ERG BEACON"   ) == 0 ) { dest = Sc::Unit::Type::ZergBeacon; success = true; }
+                        else if ( strcmp(&unit[1], "ERG BROODLING") == 0 ) { dest = Sc::Unit::Type::ZergBroodling; success = true; }
                         break;
                     case 'C':
-                        if      ( strcmp(&unit[1], "ERG CEREBRATE"        ) == 0 ) { dest = 151; success = true; }
-                        else if ( strcmp(&unit[1], "ERG CEREBRATE DAGGOTH") == 0 ) { dest = 152; success = true; }
-                        else if ( strcmp(&unit[1], "ERG CREEP COLONY"     ) == 0 ) { dest = 143; success = true; }
+                        if      ( strcmp(&unit[1], "ERG CEREBRATE"        ) == 0 ) { dest = Sc::Unit::Type::ZergCerebrate; success = true; }
+                        else if ( strcmp(&unit[1], "ERG CEREBRATE DAGGOTH") == 0 ) { dest = Sc::Unit::Type::ZergCerebrateDaggoth; success = true; }
+                        else if ( strcmp(&unit[1], "ERG CREEP COLONY"     ) == 0 ) { dest = Sc::Unit::Type::ZergCreepColony; success = true; }
                         break;
                     case 'D':
-                        if      ( strcmp(&unit[1], "ERG DEFILER"      ) == 0 ) { dest =  46; success = true; }
-                        else if ( strcmp(&unit[1], "ERG DEFILER MOUND") == 0 ) { dest = 136; success = true; }
-                        else if ( strcmp(&unit[1], "ERG DEVOURER"     ) == 0 ) { dest =  62; success = true; }
-                        else if ( strcmp(&unit[1], "ERG DRONE"        ) == 0 ) { dest =  41; success = true; }
+                        if      ( strcmp(&unit[1], "ERG DEFILER"      ) == 0 ) { dest = Sc::Unit::Type::ZergDefiler; success = true; }
+                        else if ( strcmp(&unit[1], "ERG DEFILER MOUND") == 0 ) { dest = Sc::Unit::Type::ZergDefilerMound; success = true; }
+                        else if ( strcmp(&unit[1], "ERG DEVOURER"     ) == 0 ) { dest = Sc::Unit::Type::ZergDevourer; success = true; }
+                        else if ( strcmp(&unit[1], "ERG DRONE"        ) == 0 ) { dest = Sc::Unit::Type::ZergDrone; success = true; }
                         break;
                     case 'E':
-                        if      ( strcmp(&unit[1], "ERG EGG"              ) == 0 ) { dest =  36; success = true; }
-                        else if ( strcmp(&unit[1], "ERG EVOLUTION CHAMBER") == 0 ) { dest = 139; success = true; }
-                        else if ( strcmp(&unit[1], "ERG EXTRACTOR"        ) == 0 ) { dest = 149; success = true; }
+                        if      ( strcmp(&unit[1], "ERG EGG"              ) == 0 ) { dest = Sc::Unit::Type::ZergEgg; success = true; }
+                        else if ( strcmp(&unit[1], "ERG EVOLUTION CHAMBER") == 0 ) { dest = Sc::Unit::Type::ZergEvolutionChamber; success = true; }
+                        else if ( strcmp(&unit[1], "ERG EXTRACTOR"        ) == 0 ) { dest = Sc::Unit::Type::ZergExtractor; success = true; }
                         break;
                     case 'F':
-                        if ( strcmp(&unit[1], "ERG FLAG BEACON") == 0 ) { dest = 197; success = true; }
+                        if ( strcmp(&unit[1], "ERG FLAG BEACON") == 0 ) { dest = Sc::Unit::Type::ZergFlagBeacon; success = true; }
                         break;
                     case 'G':
-                        if      ( strcmp(&unit[1], "ERG GREATER SPIRE") == 0 ) { dest = 137; success = true; }
-                        else if ( strcmp(&unit[1], "ERG GUARDIAN"     ) == 0 ) { dest =  44; success = true; }
+                        if      ( strcmp(&unit[1], "ERG GREATER SPIRE") == 0 ) { dest = Sc::Unit::Type::ZergGreaterSpire; success = true; }
+                        else if ( strcmp(&unit[1], "ERG GUARDIAN"     ) == 0 ) { dest = Sc::Unit::Type::ZergGuardian; success = true; }
                         break;
                     case 'H':
-                        if      ( strcmp(&unit[1], "ERG HATCHERY"     ) == 0 ) { dest = 131; success = true; }
-                        else if ( strcmp(&unit[1], "ERG HIVE"         ) == 0 ) { dest = 133; success = true; }
-                        else if ( strcmp(&unit[1], "ERG HYDRALISK"    ) == 0 ) { dest =  38; success = true; }
-                        else if ( strcmp(&unit[1], "ERG HYDRALISK DEN") == 0 ) { dest = 135; success = true; }
+                        if      ( strcmp(&unit[1], "ERG HATCHERY"     ) == 0 ) { dest = Sc::Unit::Type::ZergHatchery; success = true; }
+                        else if ( strcmp(&unit[1], "ERG HIVE"         ) == 0 ) { dest = Sc::Unit::Type::ZergHive; success = true; }
+                        else if ( strcmp(&unit[1], "ERG HYDRALISK"    ) == 0 ) { dest = Sc::Unit::Type::ZergHydralisk; success = true; }
+                        else if ( strcmp(&unit[1], "ERG HYDRALISK DEN") == 0 ) { dest = Sc::Unit::Type::ZergHydraliskDen; success = true; }
                         break;
                     case 'L':
-                        if      ( strcmp(&unit[1], "ERG LAIR"  ) == 0 ) { dest = 132; success = true; }
-                        else if ( strcmp(&unit[1], "ERG LARVA" ) == 0 ) { dest =  35; success = true; }
-                        else if ( strcmp(&unit[1], "ERG LURKER") == 0 ) { dest = 103; success = true; }
+                        if      ( strcmp(&unit[1], "ERG LAIR"  ) == 0 ) { dest = Sc::Unit::Type::ZergLair; success = true; }
+                        else if ( strcmp(&unit[1], "ERG LARVA" ) == 0 ) { dest = Sc::Unit::Type::ZergLarva; success = true; }
+                        else if ( strcmp(&unit[1], "ERG LURKER") == 0 ) { dest = Sc::Unit::Type::ZergLurker; success = true; }
                         break;
                     case 'M':
-                        if      ( strcmp(&unit[1], "ERG MARKER"  ) == 0 ) { dest = 191; success = true; }
-                        else if ( strcmp(&unit[1], "ERG MUTALISK") == 0 ) { dest =  43; success = true; }
+                        if      ( strcmp(&unit[1], "ERG MARKER"  ) == 0 ) { dest = Sc::Unit::Type::ZergMarker; success = true; }
+                        else if ( strcmp(&unit[1], "ERG MUTALISK") == 0 ) { dest = Sc::Unit::Type::ZergMutalisk; success = true; }
                         break;
                     case 'N':
-                        if ( strcmp(&unit[1], "ERG NYDUS CANAL") == 0 ) { dest = 134; success = true; }
+                        if ( strcmp(&unit[1], "ERG NYDUS CANAL") == 0 ) { dest = Sc::Unit::Type::ZergNydusCanal; success = true; }
                         break;
                     case 'O':
-                        if      ( strcmp(&unit[1], "ERG OVERLORD"             ) == 0 ) { dest =  42; success = true; }
-                        else if ( strcmp(&unit[1], "ERG OVERMIND"             ) == 0 ) { dest = 148; success = true; }
-                        else if ( strcmp(&unit[1], "ERG OVERMIND (WITH SHELL)") == 0 ) { dest = 147; success = true; }
+                        if      ( strcmp(&unit[1], "ERG OVERLORD"             ) == 0 ) { dest = Sc::Unit::Type::ZergOverlord; success = true; }
+                        else if ( strcmp(&unit[1], "ERG OVERMIND"             ) == 0 ) { dest = Sc::Unit::Type::ZergOvermind; success = true; }
+                        else if ( strcmp(&unit[1], "ERG OVERMIND (WITH SHELL)") == 0 ) { dest = Sc::Unit::Type::ZergOvermind_WithShell; success = true; }
                         break;
                     case 'Q':
-                        if      ( strcmp(&unit[1], "ERG QUEEN"       ) == 0 ) { dest =  45; success = true; }
-                        else if ( strcmp(&unit[1], "ERG QUEEN'S NEST") == 0 ) { dest = 138; success = true; }
+                        if      ( strcmp(&unit[1], "ERG QUEEN"       ) == 0 ) { dest = Sc::Unit::Type::ZergQueen; success = true; }
+                        else if ( strcmp(&unit[1], "ERG QUEEN'S NEST") == 0 ) { dest = Sc::Unit::Type::ZergQueensNest; success = true; }
                         break;
                     case 'S':
-                        if      ( strcmp(&unit[1], "ERG SCOURGE"      ) == 0 ) { dest =  47; success = true; }
-                        else if ( strcmp(&unit[1], "ERG SPAWNING POOL") == 0 ) { dest = 142; success = true; }
-                        else if ( strcmp(&unit[1], "ERG SPIRE"        ) == 0 ) { dest = 141; success = true; }
-                        else if ( strcmp(&unit[1], "ERG SPORE COLONY" ) == 0 ) { dest = 144; success = true; }
-                        else if ( strcmp(&unit[1], "ERG SUNKEN COLONY") == 0 ) { dest = 146; success = true; }
+                        if      ( strcmp(&unit[1], "ERG SCOURGE"      ) == 0 ) { dest = Sc::Unit::Type::ZergScourge; success = true; }
+                        else if ( strcmp(&unit[1], "ERG SPAWNING POOL") == 0 ) { dest = Sc::Unit::Type::ZergSpawningPool; success = true; }
+                        else if ( strcmp(&unit[1], "ERG SPIRE"        ) == 0 ) { dest = Sc::Unit::Type::ZergSpire; success = true; }
+                        else if ( strcmp(&unit[1], "ERG SPORE COLONY" ) == 0 ) { dest = Sc::Unit::Type::ZergSporeColony; success = true; }
+                        else if ( strcmp(&unit[1], "ERG SUNKEN COLONY") == 0 ) { dest = Sc::Unit::Type::ZergSunkenColony; success = true; }
                         break;
                     case 'U':
-                        if      ( strcmp(&unit[1], "ERG ULTRALISK"       ) == 0 ) { dest =  39; success = true; }
-                        else if ( strcmp(&unit[1], "ERG ULTRALISK CAVERN") == 0 ) { dest = 140; success = true; }
+                        if      ( strcmp(&unit[1], "ERG ULTRALISK"       ) == 0 ) { dest = Sc::Unit::Type::ZergUltralisk; success = true; }
+                        else if ( strcmp(&unit[1], "ERG ULTRALISK CAVERN") == 0 ) { dest = Sc::Unit::Type::ZergUltraliskCavern; success = true; }
                         break;
                     case 'V':
-                        if      ( strcmp(&unit[1], "ERG VESPENE GAS SAC TYPE 1") == 0 ) { dest = 224; success = true; }
-                        else if ( strcmp(&unit[1], "ERG VESPENE GAS SAC TYPE 2") == 0 ) { dest = 225; success = true; }
+                        if      ( strcmp(&unit[1], "ERG VESPENE GAS SAC TYPE 1") == 0 ) { dest = Sc::Unit::Type::ZergVespeneGasSacType1; success = true; }
+                        else if ( strcmp(&unit[1], "ERG VESPENE GAS SAC TYPE 2") == 0 ) { dest = Sc::Unit::Type::ZergVespeneGasSacType2; success = true; }
                         break;
                     case 'Z':
-                        if ( strcmp(&unit[1], "ERG ZERGLING") == 0 ) { dest =  37; success = true; }
+                        if ( strcmp(&unit[1], "ERG ZERGLING") == 0 ) { dest = Sc::Unit::Type::ZergZergling; success = true; }
                         break;
                     }
                 }
-                else if ( strcmp(&unit[1], "ERATUL (DARK TEMPLAR)") == 0 ) { dest = 75; success = true; }
+                else if ( strcmp(&unit[1], "ERATUL (DARK TEMPLAR)") == 0 ) { dest = Sc::Unit::Type::Zeratul_DarkTemplar; success = true; }
                 break;
             }
         }
@@ -3193,7 +3193,7 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
                 UnitTableNode &node = unitTable.find(hash)->second;
                 if ( node.unitName.compare(unitNamePtr) == 0 )
                 {
-                    dest = node.unitID;
+                    dest = node.unitType;
                     success = true;
                 }
             }
@@ -3207,13 +3207,13 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
                     {
                         if ( success == false ) // If no matches have previously been found
                         {
-                            dest = node.unitID;
+                            dest = node.unitType;
                             success = true;
                         }
                         else // If matches have previously been found
                         {
-                            if ( u32(node.unitID) < dest )
-                                dest = node.unitID; // Replace if unitID < previous unitID
+                            if ( node.unitType < dest )
+                                dest = node.unitType; // Replace if unitID < previous unitID
                         }
                     }
                 }
@@ -3225,93 +3225,93 @@ bool TextTrigCompiler::ParseUnitName(buffer &text, u16 &dest, s64 pos, s64 end)
             switch ( unit[0] )
             {
             case '[':
-                if      ( strcmp(&unit[1], "ANY UNIT]" ) == 0 ) { dest = 229; success = true; }
-                else if ( strcmp(&unit[1], "BUILDINGS]") == 0 ) { dest = 231; success = true; }
-                else if ( strcmp(&unit[1], "FACTORIES]") == 0 ) { dest = 232; success = true; }
-                else if ( strcmp(&unit[1], "MEN]"      ) == 0 ) { dest = 230; success = true; }
+                if      ( strcmp(&unit[1], "ANY UNIT]" ) == 0 ) { dest = Sc::Unit::Type::AnyUnit; success = true; }
+                else if ( strcmp(&unit[1], "BUILDINGS]") == 0 ) { dest = Sc::Unit::Type::Buildings; success = true; }
+                else if ( strcmp(&unit[1], "FACTORIES]") == 0 ) { dest = Sc::Unit::Type::Factories; success = true; }
+                else if ( strcmp(&unit[1], "MEN]"      ) == 0 ) { dest = Sc::Unit::Type::Men; success = true; }
                 break;
             case 'A':
-                if ( strcmp(&unit[1], "LAN TURRET") == 0 ) { dest = 18; success = true; }
+                if ( strcmp(&unit[1], "LAN TURRET") == 0 ) { dest = Sc::Unit::Type::AlanTurret; success = true; }
                 break;
             case 'B':
-                if ( strcmp(&unit[1], "ENGALAAS (JUNGLE)") == 0 ) { dest = 90; success = true; }
+                if ( strcmp(&unit[1], "ENGALAAS (JUNGLE)") == 0 ) { dest = Sc::Unit::Type::Bengalaas_Jungle; success = true; }
                 break;
             case 'C':
-                if      ( strcmp(&unit[1], "ANTINA") == 0 ) { dest = 181; success = true; }
-                else if ( strcmp(&unit[1], "AVE"   ) == 0 ) { dest = 179; success = true; }
-                else if ( strcmp(&unit[1], "AVE-IN") == 0 ) { dest = 180; success = true; }
-                else if ( strcmp(&unit[1], "OCOON" ) == 0 ) { dest = 59; success = true; }
+                if      ( strcmp(&unit[1], "ANTINA") == 0 ) { dest = Sc::Unit::Type::Cantina; success = true; }
+                else if ( strcmp(&unit[1], "AVE"   ) == 0 ) { dest = Sc::Unit::Type::Cave; success = true; }
+                else if ( strcmp(&unit[1], "AVE-IN") == 0 ) { dest = Sc::Unit::Type::CaveIn; success = true; }
+                else if ( strcmp(&unit[1], "OCOON" ) == 0 ) { dest = Sc::Unit::Type::Cocoon; success = true; }
                 break;
             case 'D':
-                if      ( strcmp(&unit[1], "ARK TEMPLAR (HERO)") == 0 ) { dest =  74; success = true; }
-                else if ( strcmp(&unit[1], "ISRUPTION FIELD"   ) == 0 ) { dest = 105; success = true; }
-                else if ( strcmp(&unit[1], "UKE TURRET TYPE 1" ) == 0 ) { dest =  24; success = true; }
-                else if ( strcmp(&unit[1], "UKE TURRET TYPE 2" ) == 0 ) { dest =  26; success = true; }
+                if      ( strcmp(&unit[1], "ARK TEMPLAR (HERO)") == 0 ) { dest = Sc::Unit::Type::DarkTemplar_Hero; success = true; }
+                else if ( strcmp(&unit[1], "ISRUPTION FIELD"   ) == 0 ) { dest = Sc::Unit::Type::DisruptionField; success = true; }
+                else if ( strcmp(&unit[1], "UKE TURRET TYPE 1" ) == 0 ) { dest = Sc::Unit::Type::DukeTurretType1; success = true; }
+                else if ( strcmp(&unit[1], "UKE TURRET TYPE 2" ) == 0 ) { dest = Sc::Unit::Type::DukeTurretType2; success = true; }
                 break;
             case 'E':
-                if ( strcmp(&unit[1], "DMUND DUKE (SIEGE TANK)") == 0 ) { dest = 23; success = true; }
+                if ( strcmp(&unit[1], "DMUND DUKE (SIEGE TANK)") == 0 ) { dest = Sc::Unit::Type::EdmundDuke_SiegeTank; success = true; }
                 break;
             case 'G':
-                if ( strcmp(&unit[1], "ERARD DUGALLE (GHOST)") == 0 ) { dest = 102; success = true; }
+                if ( strcmp(&unit[1], "ERARD DUGALLE (GHOST)") == 0 ) { dest = Sc::Unit::Type::GerardDuGalle_BattleCruiser; success = true; }
                 break;
             case 'I':
-                if      ( strcmp(&unit[1], "NDEPENDENT COMMAND CENTER"         ) == 0 ) { dest = 183; success = true; }
-                else if ( strcmp(&unit[1], "NDEPENDENT STARPORT"               ) == 0 ) { dest = 184; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED DURAN"                     ) == 0 ) { dest = 104; success = true; }
-                else if ( strcmp(&unit[1], "NFESTED KERRIGAN (INFESTED TERRAN)") == 0 ) { dest =  51; success = true; }
+                if      ( strcmp(&unit[1], "NDEPENDENT COMMAND CENTER"         ) == 0 ) { dest = Sc::Unit::Type::IndependentCommandCenter_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NDEPENDENT STARPORT"               ) == 0 ) { dest = Sc::Unit::Type::IndependentStarport_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED DURAN"                     ) == 0 ) { dest = Sc::Unit::Type::InfestedDuran; success = true; }
+                else if ( strcmp(&unit[1], "NFESTED KERRIGAN (INFESTED TERRAN)") == 0 ) { dest = Sc::Unit::Type::InfestedKerrigan_InfestedTerran; success = true; }
                 break;
             case 'J':
-                if ( strcmp(&unit[1], "UMP GATE") == 0 ) { dest = 185; success = true; }
+                if ( strcmp(&unit[1], "UMP GATE") == 0 ) { dest = Sc::Unit::Type::IndependentJumpGate_Unused; success = true; }
                 break;
             case 'K':
-                if      ( strcmp(&unit[1], "AKARU (TWILIGHT)"         ) == 0 ) { dest = 94; success = true; }
-                else if ( strcmp(&unit[1], "YADARIN CRYSTAL FORMATION") == 0 ) { dest = 187; success = true; }
+                if      ( strcmp(&unit[1], "AKARU (TWILIGHT)"         ) == 0 ) { dest = Sc::Unit::Type::Kakaru_TwilightCritter; success = true; }
+                else if ( strcmp(&unit[1], "YADARIN CRYSTAL FORMATION") == 0 ) { dest = Sc::Unit::Type::KhaydarinCrystalFormation; success = true; }
                 break;
             case 'M':
-                if      ( strcmp(&unit[1], "INING PLATFORM"       ) == 0 ) { dest = 182; success = true; }
-                else if ( strcmp(&unit[1], "INERAL CHUNK (TYPE 1)") == 0 ) { dest = 220; success = true; }
-                else if ( strcmp(&unit[1], "INERAL CHUNK (TYPE 2)") == 0 ) { dest = 221; success = true; }
+                if      ( strcmp(&unit[1], "INING PLATFORM"       ) == 0 ) { dest = Sc::Unit::Type::MiningPlatform_Unused; success = true; }
+                else if ( strcmp(&unit[1], "INERAL CHUNK (TYPE 1)") == 0 ) { dest = Sc::Unit::Type::MineralClusterType1; success = true; }
+                else if ( strcmp(&unit[1], "INERAL CHUNK (TYPE 2)") == 0 ) { dest = Sc::Unit::Type::MineralClusterType2; success = true; }
                 break;
             case 'N':
-                if ( strcmp(&unit[1], "ORAD II (CRASHED BATTLECRUISER)") == 0 ) { dest = 126; success = true; }
+                if ( strcmp(&unit[1], "ORAD II (CRASHED BATTLECRUISER)") == 0 ) { dest = Sc::Unit::Type::NoradII_Crashed; success = true; }
                 break;
             case 'P':
-                if      ( strcmp(&unit[1], "ROTOSS DARK TEMPLAR" ) == 0 ) { dest =  61; success = true; }
-                else if ( strcmp(&unit[1], "ROTOSS UNUSED TYPE 1") == 0 ) { dest = 158; success = true; }
-                else if ( strcmp(&unit[1], "ROTOSS UNUSED TYPE 2") == 0 ) { dest = 161; success = true; }
+                if      ( strcmp(&unit[1], "ROTOSS DARK TEMPLAR" ) == 0 ) { dest = Sc::Unit::Type::ProtossDarkTemplar; success = true; }
+                else if ( strcmp(&unit[1], "ROTOSS UNUSED TYPE 1") == 0 ) { dest = Sc::Unit::Type::UnusedProtossBuilding1; success = true; }
+                else if ( strcmp(&unit[1], "ROTOSS UNUSED TYPE 2") == 0 ) { dest = Sc::Unit::Type::UnusedProtossBuilding2; success = true; }
                 break;
             case 'R':
-                if      ( strcmp(&unit[1], "AGNASAUR (ASH WORLD)"  ) == 0 ) { dest =  95; success = true; }
-                else if ( strcmp(&unit[1], "UINS"                  ) == 0 ) { dest = 186; success = true; }
-                else if ( strcmp(&unit[1], "HYNADON (BADLANDS)"    ) == 0 ) { dest =  89; success = true; }
-                else if ( strcmp(&unit[1], "ASZAGAL (DARK TEMPLAR)") == 0 ) { dest =  98; success = true; }
+                if      ( strcmp(&unit[1], "AGNASAUR (ASH WORLD)"  ) == 0 ) { dest = Sc::Unit::Type::Ragnasaur_AshworldCritter; success = true; }
+                else if ( strcmp(&unit[1], "UINS"                  ) == 0 ) { dest = Sc::Unit::Type::Ruins_Unused; success = true; }
+                else if ( strcmp(&unit[1], "HYNADON (BADLANDS)"    ) == 0 ) { dest = Sc::Unit::Type::Rhynadon_BadlandsCritter; success = true; }
+                else if ( strcmp(&unit[1], "ASZAGAL (DARK TEMPLAR)") == 0 ) { dest = Sc::Unit::Type::Raszagal_Corsair; success = true; }
             case 'S':
-                if ( strcmp(&unit[1], "CANTID (DESERT)") == 0 ) { dest = 93; success = true; }
+                if ( strcmp(&unit[1], "CANTID (DESERT)") == 0 ) { dest = Sc::Unit::Type::Scantid_DesertCritter; success = true; }
                 break;
             case 'T':
-                if      ( strcmp(&unit[1], "ANK TURRET TYPE 1") == 0 ) { dest =  6; success = true; }
-                else if ( strcmp(&unit[1], "ANK TURRET TYPE 2") == 0 ) { dest = 31; success = true; }
+                if      ( strcmp(&unit[1], "ANK TURRET TYPE 1") == 0 ) { dest = Sc::Unit::Type::SiegeTankTurret_TankMode; success = true; }
+                else if ( strcmp(&unit[1], "ANK TURRET TYPE 2") == 0 ) { dest = Sc::Unit::Type::SiegeTankTurret_SiegeMode; success = true; }
                 break;
             case 'U':
-                if      ( strcmp(&unit[1], "NUSED TERRAN BLDG TYPE 1") == 0 ) { dest = 119; success = true; }
-                else if ( strcmp(&unit[1], "NUSED TERRAN BLDG TYPE 2") == 0 ) { dest = 121; success = true; }
-                else if ( strcmp(&unit[1], "NUSED TYPE 1"            ) == 0 ) { dest =  91; success = true; }
-                else if ( strcmp(&unit[1], "NUSED TYPE 2"            ) == 0 ) { dest =  92; success = true; }
-                else if ( strcmp(&unit[1], "NUSED ZERG BLDG"         ) == 0 ) { dest = 145; success = true; }
-                else if ( strcmp(&unit[1], "NUSED ZERG BLDG 5"       ) == 0 ) { dest = 153; success = true; }
-                else if ( strcmp(&unit[1], "RSADON (ICE WORLD)"      ) == 0 ) { dest =  96; success = true; }
+                if      ( strcmp(&unit[1], "NUSED TERRAN BLDG TYPE 1") == 0 ) { dest = Sc::Unit::Type::Starbase_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NUSED TERRAN BLDG TYPE 2") == 0 ) { dest = Sc::Unit::Type::RepairBay_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NUSED TYPE 1"            ) == 0 ) { dest = Sc::Unit::Type::CargoShip_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NUSED TYPE 2"            ) == 0 ) { dest = Sc::Unit::Type::MercenaryGunship_Unused; success = true; }
+                else if ( strcmp(&unit[1], "NUSED ZERG BLDG"         ) == 0 ) { dest = Sc::Unit::Type::UnusedZergBuilding1; success = true; }
+                else if ( strcmp(&unit[1], "NUSED ZERG BLDG 5"       ) == 0 ) { dest = Sc::Unit::Type::UnusedZergBuilding2; success = true; }
+                else if ( strcmp(&unit[1], "RSADON (ICE WORLD)"      ) == 0 ) { dest = Sc::Unit::Type::Ursadon_IceWorldCritter; success = true; }
                 break;
             case 'V':
-                if      ( strcmp(&unit[1], "ULTURE SPIDER MINE"         ) == 0 ) { dest =  13; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE TANK (TERRAN TYPE 1)") == 0 ) { dest = 226; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE TANK (TERRAN TYPE 2)") == 0 ) { dest = 227; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE ORB (PROTOSS TYPE 1)") == 0 ) { dest = 222; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE ORB (PROTOSS TYPE 2)") == 0 ) { dest = 223; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE SAC (ZERG TYPE 1)"   ) == 0 ) { dest = 224; success = true; }
-                else if ( strcmp(&unit[1], "ESPENE SAC (ZERG TYPE 2)"   ) == 0 ) { dest = 225; success = true; }
+                if      ( strcmp(&unit[1], "ULTURE SPIDER MINE"         ) == 0 ) { dest = Sc::Unit::Type::SpiderMine; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE TANK (TERRAN TYPE 1)") == 0 ) { dest = Sc::Unit::Type::TerranVespeneGasTankType1; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE TANK (TERRAN TYPE 2)") == 0 ) { dest = Sc::Unit::Type::TerranVespeneGasTankType2; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE ORB (PROTOSS TYPE 1)") == 0 ) { dest = Sc::Unit::Type::ProtossVespeneGasOrbType1; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE ORB (PROTOSS TYPE 2)") == 0 ) { dest = Sc::Unit::Type::ProtossVespeneGasOrbType2; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE SAC (ZERG TYPE 1)"   ) == 0 ) { dest = Sc::Unit::Type::ZergVespeneGasSacType1; success = true; }
+                else if ( strcmp(&unit[1], "ESPENE SAC (ZERG TYPE 2)"   ) == 0 ) { dest = Sc::Unit::Type::ZergVespeneGasSacType2; success = true; }
                 break;
             case 'Z':
-                if ( strcmp(&unit[1], "ERG LURKER EGG") == 0 ) { dest = 97; success = true; }
+                if ( strcmp(&unit[1], "ERG LURKER EGG") == 0 ) { dest = Sc::Unit::Type::LurkerEgg; success = true; }
                 break;
             }
         }
@@ -3586,7 +3586,7 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, s64 pos, s64 end)
             GroupTableNode &node = groupTable.find(hash)->second;
             if ( node.groupName.compare(groupStrPtr) == 0 )
             {
-                dest = node.groupID;
+                dest = node.groupId;
                 success = true;
             }
         }
@@ -3600,13 +3600,13 @@ bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, s64 pos, s64 end)
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
-                        dest = node.groupID;
+                        dest = node.groupId;
                         success = true;
                     }
                     else // If matches have previously been found
                     {
-                        if ( u32(node.groupID) < dest )
-                            dest = node.groupID; // Replace if groupID < previous groupID
+                        if ( u32(node.groupId) < dest )
+                            dest = node.groupId; // Replace if groupID < previous groupID
                     }
                 }
             }
@@ -3674,7 +3674,7 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, s64 pos, s64 end)
                 SwitchTableNode &node = switchTable.find(hash)->second;
                 if ( node.switchName.compare(switchNamePtr) == 0 )
                 {
-                    dest = node.switchNum;
+                    dest = node.switchId;
                     success = true;
                 }
             }
@@ -3688,13 +3688,13 @@ bool TextTrigCompiler::ParseSwitch(buffer &text, u8 &dest, s64 pos, s64 end)
                     {
                         if ( success == false ) // If no matches have previously been found
                         {
-                            dest = node.switchNum;
+                            dest = node.switchId;
                             success = true;
                         }
                         else // If matches have previously been found
                         {
-                            if ( u32(node.switchNum) < dest )
-                                dest = node.switchNum; // Replace if switchID < previous switchID
+                            if ( node.switchId < dest )
+                                dest = node.switchId; // Replace if switchID < previous switchId
                         }
                     }
                 }
@@ -3753,7 +3753,7 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, s64 pos, s64 end)
             ScriptTableNode &node = scriptTable.find(hash)->second;
             if ( node.scriptName.compare(scriptStringPtr) == 0 )
             {
-                dest = node.scriptID;
+                dest = node.scriptId;
                 success = true;
             }
         }
@@ -3765,7 +3765,7 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, s64 pos, s64 end)
                 ScriptTableNode &node = pair->second;
                 if ( node.scriptName.compare(scriptStringPtr) == 0 && success == false ) // Compare equal and no prev matches
                 {
-                    dest = node.scriptID;
+                    dest = node.scriptId;
                     success = true;
                     break;
                 }
@@ -3796,49 +3796,49 @@ bool TextTrigCompiler::ParseScript(buffer &text, u32 &dest, s64 pos, s64 end)
     return success;
 }
 
-u8 TextTrigCompiler::ExtendedToRegularCID(ConditionId extendedCID)
+Chk::Condition::Type TextTrigCompiler::ExtendedToRegularCID(Chk::Condition::VirtualType conditionType)
 {
-    switch ( extendedCID )
+    switch ( conditionType )
     {
         // Don't include CID_CUSTOM, that is set while parsing args
-    case ConditionId::Memory:
-        return (u8)ExtendedConditionBase::Memory;
+    case Chk::Condition::VirtualType::Memory:
+        return (Chk::Condition::Type)Chk::Condition::ExtendedBaseType::Memory;
         break;
     }
-    return (u8)extendedCID;
+    return (Chk::Condition::Type)conditionType;
 }
 
-u8 TextTrigCompiler::ExtendedToRegularAID(ActionId actionId)
+Chk::Action::Type TextTrigCompiler::ExtendedToRegularAID(Chk::Action::VirtualType actionType)
 {
-    switch ( actionId )
+    switch ( actionType )
     {
         // Don't include AID_CUSTOM, that is set while parsing args
-    case ActionId::SetMemory:
-        return (u8)ExtendedActionBase::SetMemory;
+    case Chk::Action::VirtualType::SetMemory:
+        return (Chk::Action::Type)Chk::Action::ExtendedBaseType::SetMemory;
         break;
     }
-    return 0;
+    return (Chk::Action::Type)actionType;
 }
 
-s32 TextTrigCompiler::ExtendedNumConditionArgs(ConditionId conditionId)
+s32 TextTrigCompiler::ExtendedNumConditionArgs(Chk::Condition::VirtualType conditionType)
 {
-    switch ( conditionId )
+    switch ( conditionType )
     {
-    case ConditionId::Custom:
+    case Chk::Condition::VirtualType::Custom:
         return 9;
-    case ConditionId::Memory:
+    case Chk::Condition::VirtualType::Memory:
         return 3;
     }
     return 0;
 }
 
-s32 TextTrigCompiler::ExtendedNumActionArgs(ActionId actionId)
+s32 TextTrigCompiler::ExtendedNumActionArgs(Chk::Action::VirtualType actionType)
 {
-    switch ( actionId )
+    switch ( actionType )
     {
-    case ActionId::Custom:
+    case Chk::Action::VirtualType::Custom:
         return 11;
-    case ActionId::SetMemory:
+    case Chk::Action::VirtualType::SetMemory:
         return 3;
     }
     return 0;
@@ -3846,29 +3846,55 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(ActionId actionId)
 
 // private
 
+bool TextTrigCompiler::useNextString(u32 &index)
+{
+    for ( size_t i=1; i>0 && i<Chk::MaxStrings; i++ )
+    {
+        if ( !stringUsed[i] )
+        {
+            index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TextTrigCompiler::useNextExtendedString(u32 &index)
+{
+    for ( size_t i=1; i>0 && i<Chk::MaxStrings; i++ )
+    {
+        if ( !extendedStringUsed[i] )
+        {
+            index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
     LocationTableNode locNode;
     if ( map->hasStrSection(false) )
     {
         locationTable.reserve(map->locationCapacity()+1);
-        locNode.locationNum = 0;
+        locNode.locationId = 0;
         locNode.locationName = "No Location";
         locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
         for ( u32 i=0; i<map->locationCapacity(); i++ )
         {
-            ChkLocation loc = map->getLocation(i);
+            Chk::LocationPtr loc = map->layers.getLocation(i);
             locNode.locationName = "";
 
             if ( i == 63 )
             {
-                locNode.locationNum = 64;
+                locNode.locationId = 64;
                 locNode.locationName = "Anywhere";
                 locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
-            else if ( loc.stringNum > 0 && map->GetString(locNode.locationName, loc.stringNum) )
+            else if ( loc->stringId > 0 && map->GetString(locNode.locationName, loc->stringId) )
             {
-                locNode.locationNum = u8(i+1);
+                locNode.locationId = u8(i+1);
                 locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
         }
@@ -3882,19 +3908,19 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
     UnitTableNode unitNode;
     if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
     {
-        u16 stringID;
-        for ( int unitID=0; unitID<228; unitID++ )
+        u16 stringId = 0;
+        for ( int unitId=0; unitId<228; unitId++ )
         {
-            if ( map->getUnitStringNum(unitID, stringID) &&
-                stringID > 0 )
+            if ( map->getUnitStringNum(unitId, stringId) &&
+                stringId > 0 )
             {
-                unitNode.unitID = unitID;
-                map->GetString(unitNode.unitName, stringID);
+                unitNode.unitType = (Sc::Unit::Type)unitId;
+                map->GetString(unitNode.unitName, stringId);
                 unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
             }
 
             RawString regUnitName;
-            map->getUnitName(regUnitName, unitID);
+            map->getUnitName(regUnitName, unitId);
             if ( regUnitName.compare(unitNode.unitName) != 0 )
             {
                 unitNode.unitName = regUnitName;
@@ -3910,14 +3936,14 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
     SwitchTableNode switchNode;
     if ( map->hasSwitchSection() && map->hasStrSection(false) )
     {
-        u32 stringID;
-        for ( u32 switchID=0; switchID<256; switchID++ )
+        u32 stringId = 0;
+        for ( u32 switchId=0; switchId<256; switchId++ )
         {
-            if ( map->getSwitchStrId((u8)switchID, stringID) &&
-                stringID > 0 &&
-                map->GetString(switchNode.switchName, stringID) )
+            if ( map->getSwitchStrId((u8)switchId, stringId) &&
+                stringId > 0 &&
+                map->GetString(switchNode.switchName, stringId) )
             {
-                switchNode.switchNum = u8(switchID);
+                switchNode.switchId = u8(switchId);
                 switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
             }
         }
@@ -3936,7 +3962,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
             if ( stringID > 0 &&
                 map->GetString(groupNode.groupName, stringID) )
             {
-                groupNode.groupID = i + 18;
+                groupNode.groupId = i + 18;
                 groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
             }
         }
@@ -3951,56 +3977,53 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
         StringTableNode node;
 #define AddStrIffOverZero(index)                                                                        \
             if ( index > 0 && chk->GetString(node.string, index) ) {                                    \
-                node.stringNum = index;                                                                 \
-                node.isExtended = chk->isExtendedString(node.stringNum);                                \
+                node.stringId = index;                                                                 \
+                node.isExtended = chk->isExtendedString(node.stringId);                                \
                 if ( !strIsInHashTable(node.string, strHash, stringTable) ) {                           \
                     stringTable.insert( std::pair<size_t, StringTableNode>(strHash(node.string), node) );  \
                 }                                                                                       \
             }
 
-        ChkLocation* loc;
         for ( u32 i=0; i<chk->locationCapacity(); i++ )
         {
-            if ( chk->getLocation(loc, u16(i)) )
-                AddStrIffOverZero(loc->stringNum);
+            Chk::LocationPtr loc = chk->layers.getLocation(i);
+            if ( loc != nullptr )
+                AddStrIffOverZero(loc->stringId);
         }
 
-        Trigger* trig;
-        int trigNum = 0;
-        while ( chk->getTrigger(trig, trigNum) )
+        size_t numTrigs = chk->triggers.numTriggers();
+        for ( size_t i=0; i<numTrigs; i++ )
         {
-            for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+            Chk::TriggerPtr trig = chk->triggers.getTrigger(i);
+            for ( size_t actionIndex=0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
-                AddStrIffOverZero( trig->actions[i].stringNum );
-                AddStrIffOverZero( trig->actions[i].wavID );
+                AddStrIffOverZero( trig->action(i).stringId );
+                AddStrIffOverZero( trig->action(i).soundStringId );
             }
-
-            trigNum ++;
         }
 
-        trigNum = 0;
-        while ( chk->getBriefingTrigger(trig, trigNum) )
+        size_t numBriefingTrigs = chk->triggers.numBriefingTriggers();
+        for ( size_t i=0; i<numTrigs; i++ )
         {
-            for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+            Chk::TriggerPtr trig = chk->triggers.getBriefingTrigger(i);
+            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
-                AddStrIffOverZero( trig->actions[i].stringNum );
-                AddStrIffOverZero( trig->actions[i].wavID );
+                AddStrIffOverZero( trig->action(i).stringId );
+                AddStrIffOverZero( trig->action(i).soundStringId );
             }
-
-            trigNum ++;
         }
 
-        AddStrIffOverZero( chk->GetMapTitleStrIndex() ); // Scenario Name
-        AddStrIffOverZero( chk->GetMapDescriptionStrIndex() ); // Scenario Description
+        AddStrIffOverZero( chk->GetMapTitleStrId() ); // Scenario Name
+        AddStrIffOverZero( chk->GetMapDescriptionStrId() ); // Scenario Description
 
         for ( int i=0; i<4; i++ )
             AddStrIffOverZero( chk->getForceStringNum(i) );
 
         for ( u32 i = 0; i < chk->WavSectionCapacity(); i++ )
         {
-            u32 wavStrIndex = 0;
-            if ( chk->GetWav(i, wavStrIndex) )
-                AddStrIffOverZero(wavStrIndex);
+            u32 wavStrId = 0;
+            if ( chk->GetWav(i, wavStrId) )
+                AddStrIffOverZero(wavStrId);
         }
 
         for ( int i=0; i<228; i++ )
@@ -4029,7 +4052,7 @@ bool TextTrigCompiler::PrepScriptTable(ScData &scData)
     for ( int i = 0; i < numScripts; i++ )
     {
         ScriptTableNode scriptNode;
-        if ( scData.aiScripts.GetAiIdAndName(i, scriptNode.scriptID, scriptNode.scriptName) )
+        if ( scData.aiScripts.GetAiIdAndName(i, scriptNode.scriptId, scriptNode.scriptName) )
             scriptTable.insert(std::pair<size_t, ScriptTableNode>(strHash(scriptNode.scriptName), scriptNode));
     }
     return true;
@@ -4060,7 +4083,7 @@ bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map, std::stringstream &e
         {
             // Convert to the index the string will have in the KSTR section
             for ( auto &extendedStr : extendedStrList )
-                extendedStr.stringNum = 65536 - extendedStr.stringNum;
+                extendedStr.stringId = 65536 - extendedStr.stringId;
 
             return map->addAllUsedStrings(extendedStrList, false, true) &&
                 map->rebuildStringTable(extendedStrList, true);

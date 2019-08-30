@@ -62,18 +62,6 @@ extern const std::vector<std::string> triggerScores;
 extern const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors;
 constexpr int numScStringColors = 28; // Could make StringGuide dynamic with respect to the size of strColors
 
-enum Tileset
-{
-    TERRAIN_BADLANDS,
-    TERRAIN_SPACE,
-    TERRAIN_INSTALLATION,
-    TERRAIN_ASH,
-    TERRAIN_JUNGLE,
-    TERRAIN_DESERT,
-    TERRAIN_ICE,
-    TERRAIN_TWILIGHT
-};
-
 extern const std::vector<std::string> tilesetNames;
 
 extern const std::vector<std::string> badlandsInitTerrain;

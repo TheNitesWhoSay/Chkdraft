@@ -24,16 +24,16 @@ void LocationTree::RebuildLocationTree()
 
     if ( CM->HasLocationSection() )
     {
-        ChkLocation* loc;
-        ChkdString locName;
         for ( u16 i = 0; i < CM->locationCapacity(); i++ )
         {
             // In general a location must have a string or non-zero coordinates or a specified elevation
-            if ( (i != 63 || !CM->LockAnywhere()) && CM->getLocation(loc, u8(i)) &&
-                (loc->stringNum != 0 || loc->xc1 != 0 || loc->xc2 != 0 || loc->yc1 != 0 || loc->xc2 != 0 || loc->elevation != 0) )
+            Chk::LocationPtr loc = CM->layers.getLocation(i);
+            if ( (i != 63 || !CM->LockAnywhere()) && loc != nullptr &&
+                (loc->stringId != 0 || loc->left != 0 || loc->right != 0 || loc->top != 0 || loc->bottom != 0 || loc->elevationFlags != 0) )
             {
-                if ( CM->getLocationName((u16)i, locName) )
-                    InsertLocationItem(locName, i);
+                std::shared_ptr<ChkdString> locName = CM->strings.getLocationName<ChkdString>(i);
+                if ( locName != nullptr )
+                    InsertLocationItem(*locName, i);
                 else
                     InsertLocationItem("Location " + std::to_string(i), i);
             }

@@ -6,7 +6,7 @@ LocationCreateDel::~LocationCreateDel()
 
 }
 
-std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationIndex, ChkLocation &location, std::string &locationName)
+std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationIndex, Chk::Location &location, std::string &locationName)
 {
     return std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationIndex, location, locationName));
 }
@@ -20,9 +20,10 @@ void LocationCreateDel::Reverse(void *guiMap)
 {
     if ( location == nullptr ) // Do delete
     {
-        location = std::unique_ptr<ChkLocation>(new ChkLocation);
-        *location = ((GuiMap*)guiMap)->getLocation(locationIndex);
-        ((GuiMap*)guiMap)->getLocationName(locationIndex, locationName);
+        location = std::unique_ptr<Chk::Location>(new Chk::Location);
+        *location = *((GuiMap*)guiMap)->layers.getLocation(locationIndex);
+        std::shared_ptr<RawString> locName = ((GuiMap*)guiMap)->strings.getLocationName<RawString>((size_t)locationIndex, Chk::Scope::Game);
+        locationName = locName != nullptr ? *locName : "";
         ((GuiMap*)guiMap)->deleteLocation(locationIndex);
     }
     else // Do create
@@ -38,10 +39,10 @@ int32_t LocationCreateDel::GetType()
     return (int32_t)UndoTypes::LocationChange;
 }
 
-LocationCreateDel::LocationCreateDel(u16 locationIndex, ChkLocation &location, std::string &locationName) // Undo deletion
+LocationCreateDel::LocationCreateDel(u16 locationIndex, Chk::Location &location, std::string &locationName) // Undo deletion
     : locationIndex(locationIndex), location(nullptr), locationName(locationName)
 {
-    this->location = std::unique_ptr<ChkLocation>(new ChkLocation);
+    this->location = std::unique_ptr<Chk::Location>(new Chk::Location);
     (*(this->location)) = location;
 }
 

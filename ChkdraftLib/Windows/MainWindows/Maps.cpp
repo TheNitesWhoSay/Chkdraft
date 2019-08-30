@@ -92,7 +92,7 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
+bool Maps::NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers)
 {
     if ( width == 0 || height == 0 )
     {
@@ -129,7 +129,7 @@ bool Maps::NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers)
     return false;
 }
 
-bool Maps::OpenMap(std::string fileName)
+bool Maps::OpenMap(const std::string &fileName)
 {
     auto newMap = AddEmptyMap();
 
@@ -160,7 +160,7 @@ bool Maps::OpenMap(std::string fileName)
     return false;
 }
 
-bool Maps::OpenMap(FileBrowserPtr fileBrowser)
+bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
     auto newMap = AddEmptyMap();
 
@@ -309,7 +309,7 @@ void Maps::ChangePlayer(u8 newPlayer)
         {
             auto &units = clipboard.getUnits();
             for ( auto &pasteUnit : units )
-                pasteUnit.unit.owner = newPlayer;
+                pasteUnit.unit->owner = newPlayer;
         }
 
         u16 numUnits = currentlyActiveMap->numUnits();
@@ -448,13 +448,13 @@ void Maps::updateCursor(s32 xc, s32 yc)
         u16 selectedLocation = selections.getSelectedLocation();
         if ( selectedLocation != NO_LOCATION )
         {
-            ChkLocation* loc;
-            if ( currentlyActiveMap->getLocation(loc, selectedLocation) )
+            Chk::LocationPtr loc = currentlyActiveMap->layers.getLocation(selectedLocation);
+            if ( loc != nullptr )
             {
-                s32 locationLeft = std::min(loc->xc1, loc->xc2),
-                    locationRight = std::max(loc->xc1, loc->xc2),
-                    locationTop = std::min(loc->yc1, loc->yc2),
-                    locationBottom = std::max(loc->yc1, loc->yc2),
+                s32 locationLeft = std::min(loc->left, loc->right),
+                    locationRight = std::max(loc->left, loc->right),
+                    locationTop = std::min(loc->top, loc->bottom),
+                    locationBottom = std::max(loc->top, loc->bottom),
                     leftOuterBound = locationLeft-5,
                     rightOuterBound = locationRight+5,
                     topOuterBound = locationTop-5,

@@ -10,11 +10,11 @@ class PreservedUnitStats
         PreservedUnitStats();
         virtual ~PreservedUnitStats();
         void Clear();
-        void AddStats(Selections &sel, ChkUnitField statField);
+        void AddStats(Selections &sel, Chk::Unit::Field statField);
         void convertToUndo();
 
     private:
-        ChkUnitField field;
+        Chk::Unit::Field field;
         std::vector<u32> preservedValues;
 };
 

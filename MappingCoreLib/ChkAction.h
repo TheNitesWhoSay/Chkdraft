@@ -1,7 +1,7 @@
 #ifndef CHKACTION_H
 #define CHKACTION_H
 #include "Basics.h"
-
+/*
 enum class ActionArgType;
 enum class ActionId;
 
@@ -24,7 +24,7 @@ class Action // A trigger action, as found in sets of 64 in a Trigger
         
         enum Flags {
             Unknown_0 = BIT_0, Disabled = BIT_1, AlwaysDisplay = BIT_2, UnitPropertiesUsed = BIT_3,
-            UnitTypeUsed = BIT_4, UnitIdUsed = BIT_5 /* Probably Unnecessary*/, Unknown_6 = BIT_6, Unknown_7 = BIT_7,
+            UnitTypeUsed = BIT_4, UnitIdUsed = BIT_5 /* Probably Unnecessary*//*, Unknown_6 = BIT_6, Unknown_7 = BIT_7,
             xAlwaysDisplay = x8BIT_2, xDisabled = x8BIT_1
         };
 
@@ -139,5 +139,5 @@ enum class ExtendedActionBase : s32
 {
     SetMemory = (u8)ActionId::SetDeaths,
 };
-
+*/
 #endif

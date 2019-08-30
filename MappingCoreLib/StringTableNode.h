@@ -9,7 +9,7 @@ class StringTableNode // An object comprehensively representing a StarCraft stri
     public:
 
         RawString string; // A given string from the map
-        u32 stringNum; // The ID associated with this string
+        u32 stringId; // The identifier associated with this string
         bool isExtended; // Whether or not the given string is extended
         u32 propStruct; // propStruct (extended strings only)
 

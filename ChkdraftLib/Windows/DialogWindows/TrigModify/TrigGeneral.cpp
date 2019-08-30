@@ -66,17 +66,17 @@ void TrigGeneralWindow::RefreshWindow(u32 trigIndex)
 {
     refreshing = true;
     this->trigIndex = trigIndex;
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
-        editRawFlags.SetEditBinaryNum<s32>(trigger->internalData);
+        editRawFlags.SetEditBinaryNum<s32>(trigger->flags);
         checkPreservedFlag.SetCheck(trigger->preserveTriggerFlagged());
         checkDisabled.SetCheck(trigger->disabled());
         checkIgnoreConditionsOnce.SetCheck(trigger->ignoreConditionsOnce());
         checkIgnoreWaitSkipOnce.SetCheck(trigger->ignoreWaitSkipOnce());
         checkIgnoreManyActions.SetCheck(trigger->ignoreMiscActionsOnce());
         checkIgnoreDefeatDraw.SetCheck(trigger->ignoreDefeatDraw());
-        checkFlagPaused.SetCheck(trigger->flagPaused());
+        checkFlagPaused.SetCheck(trigger->pauseFlagged());
     }
     refreshing = false;
 }
@@ -201,8 +201,8 @@ void TrigGeneralWindow::OnLeave()
 
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setPreserveTriggerFlagged(preserve);
         CM->notifyChange(false);
@@ -212,8 +212,8 @@ void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setDisabled(disabled);
         CM->notifyChange(false);
@@ -223,8 +223,8 @@ void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setIgnoreConditionsOnce(ignoreConditionsOnce);
         CM->notifyChange(false);
@@ -234,8 +234,8 @@ void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
         CM->notifyChange(false);
@@ -245,8 +245,8 @@ void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
         CM->notifyChange(false);
@@ -256,8 +256,8 @@ void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
         trigger->setIgnoreDefeatDraw(ignoreDefeatDraw);
         CM->notifyChange(false);
@@ -267,10 +267,10 @@ void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
-        trigger->setFlagPaused(paused);
+        trigger->setPauseFlagged(paused);
         CM->notifyChange(false);
         RefreshWindow(trigIndex);
     }
@@ -278,10 +278,10 @@ void TrigGeneralWindow::SetPausedTrigger(bool paused)
 
 void TrigGeneralWindow::ParseRawFlagsText()
 {
-    Trigger* trigger;
-    if ( CM->getTrigger(trigger, trigIndex) )
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
     {
-        if ( editRawFlags.GetEditBinaryNum(trigger->internalData) )
+        if ( editRawFlags.GetEditBinaryNum(trigger->flags) )
             CM->notifyChange(false);
         
         RefreshWindow(trigIndex);

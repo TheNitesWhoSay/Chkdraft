@@ -1,7 +1,7 @@
 #ifndef CHKUNIT_H
 #define CHKUNIT_H
 #include "Basics.h"
-
+/*
 #pragma pack(push, 1)
 __declspec(align(1))
 class ChkUnit // A unit as found in a scenario.chk's UNIT section
@@ -37,5 +37,5 @@ enum class ChkUnitField { Serial, Xc, Yc, Id, LinkType, Special, ValidFlags, Own
     Hitpoints, Shields, Energy, Resources, Hanger, StateFlags, Unused, Link };
 const u8 unitFieldSize[] = {  4,  2,  2,  2,  2,  2,  2,  1,  1,  1,  1,  4,  2,  2,  4,  4 };
 const u8 unitFieldLoc [] = {  0,  4,  6,  8, 10, 12, 14, 16, 17, 18, 19, 20, 24, 26, 28, 32 };
-
+*/
 #endif

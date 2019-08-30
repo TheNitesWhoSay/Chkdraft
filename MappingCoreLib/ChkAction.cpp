@@ -1,5 +1,5 @@
 #include "ChkAction.h"
-
+/*
 u32 location; // 1 based
 u32 stringNum;
 u32 wavID;
@@ -393,3 +393,4 @@ ActionArgType Action::TextTrigArgType(u8 argNum, ActionId actionId)
     }
     return ActionArgType::ActNoType;
 }
+*/

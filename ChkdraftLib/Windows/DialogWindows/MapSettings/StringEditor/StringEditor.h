@@ -42,6 +42,7 @@ class StringEditorWindow : public WinLib::ClassWindow
         WinLib::ListBoxControl listStrings;
         WinLib::ListBoxControl listUsage;
         HDC stringListDC; // String list HDC for speeding up string measurement
+        FileBrowser<> fileBrowser;
 };
 
 LRESULT CALLBACK StringPreviewProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

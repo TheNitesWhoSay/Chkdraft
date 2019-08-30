@@ -1,7 +1,7 @@
 #ifndef CONDITION_H
 #define CONDITION_H
 #include "Basics.h"
-
+/*
 enum class ConditionArgType;
 enum class ConditionId;
 
@@ -20,12 +20,19 @@ class Condition // 20 bytes, A trigger condition, as found in sets of 16 in a Tr
         u8 flags;
         u16 internalData; // Number of which condition to process next?
 
-        enum Flags
+        enum class Flags : u8
         {
-            Unknown_0 = BIT_0, Disabled = BIT_1, AlwaysDisplay = BIT_2, UnitPropertiesUsed = BIT_3,
-            UnitTypeUsed = BIT_4 /* Possibly Unnecessary */, UnitIdUsed = BIT_5, /* Probably Unnecessary */
-            Unknown_6 = BIT_6, Unknown_7 = BIT_7,
+            Disabled = BIT_1, // If set, the trigger condition/action is disabled/ignored
+            AlwaysDisplay = BIT_2,
+            UnitPropertiesUsed = BIT_3, // If set, unit properties is used
+            UnitTypeUsed = BIT_4, // If set the unit type is used (may be unnecessary)
+            UnitIdUsed = BIT_5, // If set, the unitId is used (unnecessary)
+
             xDisabled = x8BIT_1,
+            xAlwaysDisplay = x8BIT_2,
+            xUnitPropertiesUsed = x8BIT_3,
+            xUnitTypeUsed = x8BIT_4,
+            xUnitIdUsed = x8BIT_5
         };
 
         Condition();
@@ -88,9 +95,9 @@ enum class ConditionId : s32
     Memory = -2,
 };
 
-enum class ExtendedConditionBase : s32
+enum class ExtendedConditionBase : u8
 {
     Memory = (u8)ConditionId::Deaths,
 };
-
+*/
 #endif

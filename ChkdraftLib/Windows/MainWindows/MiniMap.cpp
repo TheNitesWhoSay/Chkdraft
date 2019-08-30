@@ -22,8 +22,8 @@ void MiniMap::MiniMapClick(LPARAM ClickPoints)
         RECT rect;
         GetClientRect(CM->getHandle(), &rect);
 
-        u16 xSize = CM->XSize(),
-            ySize = CM->YSize();
+        u16 xSize = CM->getWidth(),
+            ySize = CM->getHeight();
 
         if ( xSize == 0 || ySize == 0 )
             return;

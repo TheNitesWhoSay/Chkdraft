@@ -1,6 +1,7 @@
 #include "WavEditor.h"
 #include "../../../Chkdraft.h"
 #include "../../../Mapping/DatFileBrowsers.h"
+#include "../../../../MappingCoreLib/MappingCore.h"
 
 enum ID {
     TEXT_MAPSOUNDFILES = ID_FIRST,
@@ -58,8 +59,8 @@ void WavEditorWindow::RefreshWindow()
         listMapSounds.ClearItems();
         for ( auto pair : wavMap )
         {
-            u32 wavStringIndex = pair.first;
-            listMapSounds.AddItem(wavStringIndex);
+            u32 wavStringId = pair.first;
+            listMapSounds.AddItem(wavStringId);
         }
         listMapSounds.SetRedraw(true);
 
@@ -86,15 +87,15 @@ void WavEditorWindow::RefreshWindow()
 
 void WavEditorWindow::UpdateWindowText()
 {
-    u32 wavStringIndex = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+    u32 wavStringId = 0;
+    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
     {
         u16 wavIndex = u16_max;
-        auto wavEntry = wavMap.find(wavStringIndex);
+        auto wavEntry = wavMap.find(wavStringId);
         if ( wavEntry != wavMap.end() )
             wavIndex = wavEntry->second;
 
-        WavStatus wavStatus = CM->GetWavStatus(wavStringIndex);
+        WavStatus wavStatus = CM->GetWavStatus(wavStringId);
 
         std::string wavStatusString = "";
         if ( wavStatus == WavStatus::NoMatch )
@@ -114,11 +115,11 @@ void WavEditorWindow::UpdateWindowText()
 
         if ( wavIndex == u16_max )
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #null, String #" + std::to_string(wavStringIndex) + wavStatusString + "]");
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #null, String #" + std::to_string(wavStringId) + wavStatusString + "]");
         }
         else
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #" + std::to_string(wavIndex) + ", String #" + std::to_string(wavStringIndex) + wavStatusString + "]");
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [WAV #" + std::to_string(wavIndex) + ", String #" + std::to_string(wavStringId) + wavStatusString + "]");
         }
     }
     else
@@ -147,19 +148,27 @@ void WavEditorWindow::UpdateCustomStringList()
 
 void WavEditorWindow::PlaySoundButtonPressed()
 {
-    u32 wavStringIndex = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+    u32 wavStringId = 0;
+    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
     {
         buffer wavBuffer("WaBu");
         RawString wavString;
-        if ( CM->GetWav(wavStringIndex, wavBuffer) )
+        if ( CM->GetWav(wavStringId, wavBuffer) )
         {
-            PlaySound((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#ifdef UNICODE
+            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#else
+            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#endif
         }
-        else if ( CM->GetString(wavString, wavStringIndex) && CM->IsInVirtualWavList(wavString) &&
+        else if ( CM->GetString(wavString, wavStringId) && CM->IsInVirtualWavList(wavString) &&
             chkd.scData.GetScAsset(wavString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
         {
-            PlaySound((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#ifdef UNICODE
+            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#else
+            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#endif
         }
         else
             Error("Failed to get WAV buffer!");
@@ -176,7 +185,13 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
     if ( listVirtualSounds.GetCurSelString(wavString) )
     {
         if ( CM->IsInVirtualWavList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
-            PlaySound((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC | SND_MEMORY);
+        {
+#ifdef UNICODE
+            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#else
+            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#endif
+        }
     }
     else
         Error("Failed to get selected virtual WAV string!");
@@ -188,20 +203,17 @@ void WavEditorWindow::ExtractSoundButtonPressed()
         selectedSoundListIndex = -1;
 
     RawString wavMpqPath;
-    u32 wavStringIndex = 0;
-    if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) && CM->GetString(wavMpqPath, wavStringIndex) )
+    std::string wavFileName = GetMpqFileName(wavMpqPath);
+    u32 filterIndex = 0;
+    std::string saveFilePath = "";
+    FileBrowserPtr<u32> fileBrowser = getDefaultSoundBrowser();
+    if ( fileBrowser->browseForSavePath(wavMpqPath, filterIndex) )
     {
-        std::string wavFileName = GetMpqFileName(wavMpqPath);
-        u32 filterIndex = 0;
-        std::string saveFilePath = "";
-        if ( BrowseForSave(saveFilePath, filterIndex, getSoundFilters(), "", "Save Sound", false, true) )
-        {
-            if ( !CM->ExtractMpqAsset(wavMpqPath, saveFilePath) )
-                Error("Error Extracting Asset!");
-        }
-        else
-            Error("Error Retrieving File Name.");
+        if ( !CM->ExtractMpqAsset(wavMpqPath, saveFilePath) )
+            Error("Error Extracting Asset!");
     }
+    else
+        Error("Error Retrieving File Name.");
 }
 
 void WavEditorWindow::BrowseButtonPressed()
@@ -342,10 +354,10 @@ void WavEditorWindow::MapSoundSelectionChanged()
     else
     {
         buttonDeleteSound.EnableThis();
-        u32 wavStringIndex = 0;
-        if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+        u32 wavStringId = 0;
+        if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
         {
-            WavStatus wavStatus = CM->GetWavStatus(wavStringIndex);
+            WavStatus wavStatus = CM->GetWavStatus(wavStringId);
             if ( wavStatus == WavStatus::PendingMatch || wavStatus == WavStatus::CurrentMatch || wavStatus == WavStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
         }
@@ -377,21 +389,25 @@ void WavEditorWindow::VirtualSoundSelectionChanged()
 
 void WavEditorWindow::StopSoundsButtonPressed()
 {
-    PlaySound(NULL, NULL, 0);
+#ifdef UNICODE
+    PlaySoundW(NULL, NULL, 0);
+#else
+    PlaySoundA(NULL, NULL, 0);
+#endif
 }
 
 void WavEditorWindow::DeleteSoundButtonPressed()
 {
-    u32 wavStringIndex = 0;
-    if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringIndex) )
+    u32 wavStringId = 0;
+    if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
     {
-        if ( CM->MapUsesWavString(wavStringIndex) )
+        if ( CM->MapUsesWavString(wavStringId) )
         {
-            WavStatus wavStatus = CM->GetWavStatus(wavStringIndex);
+            WavStatus wavStatus = CM->GetWavStatus(wavStringId);
             if ( wavStatus == WavStatus::NoMatch || wavStatus == WavStatus::NoMatchExtended )
             {
                 selectedSoundListIndex = -1;
-                CM->RemoveWavByStringIndex(wavStringIndex, true);
+                CM->RemoveWavByStringId(wavStringId, true);
                 CM->notifyChange(false);
                 CM->refreshScenario();
             }
@@ -411,7 +427,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundListIndex = -1;
-                    CM->RemoveWavByStringIndex(wavStringIndex, true);
+                    CM->RemoveWavByStringId(wavStringId, true);
                     CM->notifyChange(false);
                     CM->refreshScenario();
                 }
@@ -420,7 +436,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
         else
         {
             selectedSoundListIndex = -1;
-            CM->RemoveWavByStringIndex(wavStringIndex, false);
+            CM->RemoveWavByStringId(wavStringId, false);
             CM->notifyChange(false);
             CM->refreshScenario();
         }
@@ -610,4 +626,9 @@ void WavEditorWindow::EnableSoundCustomization()
     dropCompressionLevel.EnableThis();
     checkVirtualFile.EnableThis();
     buttonAddFile.EnableThis();
+}
+
+FileBrowserPtr<u32> WavEditorWindow::getDefaultSoundBrowser()
+{
+    return FileBrowserPtr<u32>(new FileBrowser<u32>(getSoundFilters(), "Open Sound", true, false));
 }

@@ -11,13 +11,13 @@ extern Logger logger;
 
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
-buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0)
+buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
 {
     for ( int i=0; i<5; i++ ) // NUL fill title
         bufTitle[0] = '\0';
 }
 
-buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
 {
     int numChars = std::min((int)bufferTitle.length(), 4);
     for ( int i=0; i<numChars; i++ )
@@ -26,13 +26,13 @@ buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), siz
         bufTitle[i] = '\0';
 }
 
-buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
 {
     (u32&)bufTitle = bufferTitleVal;
     bufTitle[4] = '\0';
 }
 
-buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0)
+buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
 {
     for ( int i = 0; i < 5; i++ )
         this->bufTitle[i] = rhs.bufTitle[i];
@@ -51,6 +51,20 @@ buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0)
         sizeAllotted = 0;
     }
 }
+
+
+/* Templates */ #endif
+                #ifdef INCLUDE_TEMPLATES_ONLY
+template <typename StructType>
+BufferPtr buffer::make(StructType & data)
+{
+    BufferPtr bufferPtr(new (std::nothrow) buffer());
+    if ( bufferPtr != nullptr )
+        bufferPtr->add<StructType>(data);
+
+    return bufferPtr;
+}
+/* End templates */ #else
 
 buffer::~buffer()
 {
@@ -85,7 +99,7 @@ u32 buffer::titleVal()
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::get(valueType &dest, s64 location)
+bool buffer::get(valueType &dest, s64 location) const
 {
     if ( this != nullptr )
     {
@@ -117,7 +131,7 @@ bool buffer::getBit(bool &dest, s64 location, u32 bitNum)
     return false;
 }
 
-bool buffer::getString(char* dest, s64 location, s64 size)
+bool buffer::getString(char* dest, s64 location, s64 size) const
 {
     if ( this != nullptr )
     {
@@ -128,6 +142,18 @@ bool buffer::getString(char* dest, s64 location, s64 size)
         }
     }
     return false;
+}
+
+std::string buffer::getString(s64 location, s64 size) const
+{
+    if ( this != nullptr )
+    {
+        if ( location > 0 && size > 0 && location+size <= sizeUsed )
+        {
+            return std::string((char*)&data[location], (size_t)size);
+        }
+    }
+    return std::string();
 }
 
 /* Templates */ #endif
@@ -177,7 +203,7 @@ bool buffer::getPtr(valueType* &dest, s64 location, s64 sizeRequested)
 }
 
 template <typename valueType>
-valueType buffer::get(s64 location)
+valueType buffer::get(s64 location) const
 {
     if ( this != nullptr && location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
         return (valueType &)data[location];
@@ -200,6 +226,20 @@ bool buffer::getBit(s64 location, u32 bitNum)
     }
     return false;
 }
+
+bool buffer::is(const char* str, s64 size)
+{
+    return this != nullptr && this->sizeUsed == size && memcmp(str, data, size) == 0;
+}
+
+/* Templates */ #endif
+                #ifdef INCLUDE_TEMPLATES_ONLY
+template <typename valueType>
+bool buffer::is(const valueType &value)
+{
+    return this != nullptr && sizeUsed == s64(sizeof(valueType)) && memcmp(data, &value, sizeUsed) == 0;
+}
+/* End templates */ #else
 
 bool buffer::has(char character, s64 location)
 {
@@ -239,7 +279,7 @@ bool buffer::hasCaseless(const char* str, s64 location, s64 size)
     return false;
 }
 
-bool buffer::getNext(char character, s64 start, s64 &dest)
+bool buffer::getNext(char character, s64 start, s64 &dest) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -255,7 +295,7 @@ bool buffer::getNext(char character, s64 start, s64 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 &dest)
+bool buffer::getNextUnquoted(char character, s64 start, s64 &dest) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -276,7 +316,7 @@ bool buffer::getNextUnquoted(char character, s64 start, s64 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminator)
+bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminator) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -299,7 +339,7 @@ bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminat
     return false;
 }
 
-bool buffer::getNextUnescaped(char character, s64 start, s64 &dest)
+bool buffer::getNextUnescaped(char character, s64 start, s64 &dest) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -316,7 +356,7 @@ bool buffer::getNextUnescaped(char character, s64 start, s64 &dest)
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 &dest)
+bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 &dest) const
 {
     if ( this != nullptr && start >= 0 && end > start )
     {
@@ -357,7 +397,6 @@ bool buffer::add(const valueType &value)
         
         (valueType &)data[sizeUsed] = value;
         sizeUsed += sizeof(valueType);
-
         return true;
     }
     return false;
@@ -646,9 +685,9 @@ bool buffer::overwrite(const char* chunk, s64 chunkSize)
 {
     if ( this != nullptr )
     {
-        flush();
-
-        if ( chunkSize > 0 && setSize(chunkSize) )
+        if ( chunkSize == 0 )
+            flush();
+        else if ( setSize(chunkSize) )
         {
             std::memcpy(data, chunk, chunkSize);
             sizeUsed = chunkSize;
@@ -780,6 +819,32 @@ bool buffer::del(s64 startLocation, s64 size)
     return false;
 }
 
+bool buffer::trimTo(s64 size)
+{
+    if ( this != nullptr && size >= 0 )
+    {
+        s64 sizeChange = size - sizeUsed;
+        if ( sizeChange == 0 )
+            return true;
+        else // if ( sizeChange != 0 )
+        {
+            try {
+                resize(sizeChange, false);
+            } catch ( const BadResize &e ) {
+                CHKD_ERR("Failed to trim size of %s buffer: %s", bufTitle, e.what());
+                return false;
+            }
+
+            if ( sizeUsed < size )
+                memset(&data[sizeUsed], 0, size-sizeUsed);
+
+            sizeUsed = size;
+            return true;
+        }
+    }
+    return false;
+}
+
 void buffer::write(FILE* pFile, bool includeHeader)
 {
     if ( this != nullptr )
@@ -793,6 +858,22 @@ void buffer::write(FILE* pFile, bool includeHeader)
         if ( sizeUsed > 0 )
             fwrite(data, sizeUsed, 1, pFile);
     }
+}
+
+std::ostream & buffer::write(std::ostream &outputBuffer, bool includeHeader)
+{
+    if ( this != nullptr )
+    {
+        if ( includeHeader )
+        {
+            outputBuffer.write(bufTitle, 4);
+            outputBuffer << sizeUsed;
+        }
+
+        if ( sizeUsed > 0 )
+            outputBuffer.write((const char*)data, sizeUsed);
+    }
+    return outputBuffer;
 }
 
 bool buffer::extract(buffer &buf, s64 position)
@@ -884,6 +965,35 @@ bool buffer::deserialize(const void* incomingData)
     return false;
 }
 
+std::shared_ptr<buffer> buffer::makeCopy()
+{
+    return makeCopy(sizeUsed);
+}
+
+std::shared_ptr<buffer> buffer::makeCopy(s64 size)
+{
+    std::shared_ptr<buffer> bufferCopy(new (std::nothrow) buffer(this->titleVal()));
+    if ( bufferCopy != nullptr && bufferCopy->setSize(size) )
+    {
+        bufferCopy->sizeUsed = size;
+        if ( size > sizeUsed )
+        {
+            std::memcpy(bufferCopy->data, data, sizeUsed);
+            std::memset(&bufferCopy->data[sizeUsed], 0, size-sizeUsed);
+        }
+        else // if ( size <= sizeUsed )
+            std::memcpy(bufferCopy->data, data, size);
+
+        return bufferCopy;
+    }
+    return nullptr;
+}
+
+bool FileToBuffer(const std::string &fileName, buffer &buf)
+{
+    throw std::exception("Not Implemented");
+}
+
 bool buffer::exists()
 {
     return this != nullptr;
@@ -891,15 +1001,18 @@ bool buffer::exists()
 
 bool buffer::setSize(s64 size)
 {
-    if ( this != nullptr && size > 0 && size >= sizeUsed )
+    if ( this != nullptr )
     {
-        try {
-            resize(size-sizeAllotted, false);
-        } catch ( const BadResize &e ) {
-            CHKD_ERR("Failed to set new size of %s buffer: %s", bufTitle, e.what());
-            return false;
+        if ( size == sizeUsed )
+            return true;
+        else // if ( size != sizeUsed )
+        {
+            try {
+                return resize(size-sizeAllotted, false);
+            } catch ( const BadResize &e ) {
+                CHKD_ERR("Failed to set new size of %s buffer: %s", bufTitle, e.what());
+            }
         }
-        return true;
     }
     return false;
 }
@@ -973,7 +1086,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
     return false;
 }
 
-static const char* errorMessages[] = { 
+const char* errorMessages[] = { 
     "could not create a temporary buffer - you may have ran out of memory.",
     "could not initialize buffer - you may have ran out of memory.",
     ""
@@ -991,5 +1104,7 @@ const char* BadResize::what() const throw()
             break;
     }
 }
+
+const char sizeLockedMessage[] = "Buffer size is locked and cannot be altered.";
 
 /* End file partitioning */ #endif

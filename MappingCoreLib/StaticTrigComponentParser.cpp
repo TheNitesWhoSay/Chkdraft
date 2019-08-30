@@ -8,7 +8,7 @@ StaticTrigComponentParser::~StaticTrigComponentParser()
 
 }
 
-bool StaticTrigComponentParser::ParseNumericComparison(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -41,17 +41,17 @@ bool StaticTrigComponentParser::ParseNumericComparison(char* text, u8 &dest, s64
     switch ( comparison[0] )
     {
         case 'A':
-            if      ( strcmp(&comparison[1], "TLEAST") == 0 ) { dest = 0; success = true; }
-            else if ( strcmp(&comparison[1], "TMOST" ) == 0 ) { dest = 1; success = true; }
+            if      ( strcmp(&comparison[1], "TLEAST") == 0 ) { dest = Chk::Condition::Comparison::AtLeast; success = true; }
+            else if ( strcmp(&comparison[1], "TMOST" ) == 0 ) { dest = Chk::Condition::Comparison::AtMost; success = true; }
             break;
         case 'E':
-            if ( strcmp(&comparison[1], "XACTLY") == 0 ) { dest = 10; success = true; }
+            if ( strcmp(&comparison[1], "XACTLY") == 0 ) { dest = Chk::Condition::Comparison::Exactly; success = true; }
             break;
     }
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchState(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -84,13 +84,13 @@ bool StaticTrigComponentParser::ParseSwitchState(char* text, u8 &dest, s64 pos, 
     switch ( comparison[0] )
     {
         case 'C':
-            if ( strcmp(&comparison[1], "LEARED") == 0 ) { dest = 3; success = true; }
+            if ( strcmp(&comparison[1], "LEARED") == 0 ) { dest = Chk::Condition::Comparison::NotSet; success = true; }
             break;
         case 'N':
-            if ( strcmp(&comparison[1], "OTSET") == 0 ) { dest = 3; success = true; }
+            if ( strcmp(&comparison[1], "OTSET") == 0 ) { dest = Chk::Condition::Comparison::NotSet; success = true; }
             break;
         case 'S':
-            if ( strcmp(&comparison[1], "ET") == 0 ) { dest = 2; success = true; }
+            if ( strcmp(&comparison[1], "ET") == 0 ) { dest = Chk::Condition::Comparison::Set; success = true; }
             break;
     }
     return success;
@@ -318,10 +318,10 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 &dest, s64 p
     switch ( comparison[0] )
     {
         case 'A':
-            if ( strcmp(&comparison[1], "LWAYSDISPLAY") == 0 ) { dest |= (u8)Action::Flags::AlwaysDisplay; success = true; }
+            if ( strcmp(&comparison[1], "LWAYSDISPLAY") == 0 ) { dest |= (u8)Chk::Action::Flags::AlwaysDisplay; success = true; }
             break;
         case 'D':
-            if ( strcmp(&comparison[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= (u8)Action::Flags::xAlwaysDisplay; success = true; }
+            if ( strcmp(&comparison[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= (u8)Chk::Action::Flags::xAlwaysDisplay; success = true; }
             break;
     }
     return success;

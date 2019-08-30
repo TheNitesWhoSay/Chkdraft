@@ -556,21 +556,12 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             if ( WinLib::GetYesNo("Are you sure you want to reset all unit settings?", "Confirm") == WinLib::PromptResult::Yes )
             {
-                buffer newUNIS((u32)SectionId::UNIS), newUNIx((u32)SectionId::UNIx), newPUNI((u32)SectionId::PUNI);
-                if ( Get_UNIS(newUNIS) )
+                Section newUnis = UnisSection::GetDefault(), newUnix = UnixSection::GetDefault(), newPuni = PuniSection::GetDefault();
+                if ( newUnis != nullptr && newUnix != nullptr && newPuni != nullptr )
                 {
-                    newUNIS.del(0, 8);
-                    CM->ReplaceUNISSection(newUNIS);
-                }
-                if ( Get_UNIx(newUNIx) )
-                {
-                    newUNIx.del(0, 8);
-                    CM->ReplaceUNIxSection(newUNIx);
-                }
-                if ( Get_PUNI(newPUNI) )
-                {
-                    newPUNI.del(0, 8);
-                    CM->ReplacePUNISection(newPUNI);
+                    CM->AddOrReplaceSection(newUnis);
+                    CM->AddOrReplaceSection(newUnix);
+                    CM->AddOrReplaceSection(newPuni);
                 }
 
                 CM->cleanStringTable(false);

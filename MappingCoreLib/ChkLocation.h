@@ -1,7 +1,7 @@
 #ifndef CHKLOCATION_H
 #define CHKLOCATION_H
 #include "Basics.h"
-
+/*
 #pragma pack(push, 1)
 __declspec(align(1))
 struct ChkLocation // A location as found in a scenario.chk's MRGN section
@@ -30,5 +30,5 @@ struct ChkLocation // A location as found in a scenario.chk's MRGN section
 #define LOC_FIELD_ELEVATION   5
 const u8 locationFieldSize[] = {  4,  4,  4,  4,  2,  2  };
 const u8 locationFieldLoc [] = {  0,  4,  8,  12, 16, 18 };
-
+*/
 #endif

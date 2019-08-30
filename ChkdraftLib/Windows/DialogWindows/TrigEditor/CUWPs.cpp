@@ -53,7 +53,7 @@ bool CUWPsWindow::DestroyThis()
 
 void CUWPsWindow::RefreshWindow(bool includeTree)
 {
-    ChkCuwp cuwp = {};
+    Chk::Cuwp cuwp = {};
     if ( includeTree )
     {
         cuwpTree.EmptySubTree(NULL);
@@ -70,17 +70,17 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
     if ( selectedCuwp != -1 && CM->GetCuwp(selectedCuwp, cuwp) )
     {
         checkUsed.SetCheck(CM->IsCuwpUsed(selectedCuwp));
-        editHitpointPercent.SetEditNum<u8>(cuwp.percentHitpoints);
-        editManaPercent.SetEditNum<u8>(cuwp.percentEnergyPoints);
-        editShieldPercent.SetEditNum<u8>(cuwp.percentShieldPoints);
+        editHitpointPercent.SetEditNum<u8>(cuwp.hitpointPercent);
+        editManaPercent.SetEditNum<u8>(cuwp.energyPercent);
+        editShieldPercent.SetEditNum<u8>(cuwp.shieldPercent);
         editResources.SetEditNum<u32>(cuwp.resourceAmount);
-        editHanger.SetEditNum<u16>(cuwp.numInHanger);
+        editHanger.SetEditNum<u16>(cuwp.hangerAmount);
 
-        checkInvincible.SetCheck(cuwp.IsUnitInvincible());
-        checkBurrowed.SetCheck(cuwp.IsUnitBurrowed());
-        checkLifted.SetCheck(cuwp.IsBuildingInTransit());
-        checkHallucinated.SetCheck(cuwp.IsUnitHallucinated());
-        checkCloaked.SetCheck(cuwp.IsUnitCloaked());
+        checkInvincible.SetCheck(cuwp.isInvincible());
+        checkBurrowed.SetCheck(cuwp.isBurrowed());
+        checkLifted.SetCheck(cuwp.isInTransit());
+        checkHallucinated.SetCheck(cuwp.isHallucinated());
+        checkCloaked.SetCheck(cuwp.isCloaked());
     }
     else
         DisableEditing();
@@ -192,16 +192,16 @@ void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    ChkCuwp cuwp = {};
+    Chk::Cuwp cuwp = {};
     if ( CM->GetCuwp(selectedCuwp, cuwp) )
     {
         switch ( idFrom )
         {
-            case CheckInvincible: cuwp.SetUnitIsInvincible(checkInvincible.isChecked()); break;
-            case CheckBurrowed: cuwp.SetUnitIsBurrowed(checkBurrowed.isChecked()); break;
-            case CheckLifted: cuwp.SetBuildingInTransit(checkLifted.isChecked()); break;
-            case CheckHallucinated: cuwp.SetUnitIsHallucinated(checkHallucinated.isChecked()); break;
-            case CheckCloaked: cuwp.SetUnitIsCloaked(checkCloaked.isChecked()); break;
+            case CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
+            case CheckBurrowed: cuwp.setBurrowed(checkBurrowed.isChecked()); break;
+            case CheckLifted: cuwp.setInTransit(checkLifted.isChecked()); break;
+            case CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
+            case CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
         CM->notifyChange(false);
@@ -210,17 +210,17 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-    ChkCuwp cuwp = {};
+    Chk::Cuwp cuwp = {};
     if ( CM->GetCuwp(selectedCuwp, cuwp) )
     {
         int editNum = 0;
         switch ( idFrom )
         {
-            case EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.percentHitpoints = editNum; break;
-            case EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.percentEnergyPoints = editNum; break;
-            case EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.percentShieldPoints = editNum; break;
+            case EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.hitpointPercent = editNum; break;
+            case EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
+            case EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
             case EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
-            case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.numInHanger = editNum; break;
+            case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
         CM->notifyChange(false);

@@ -498,26 +498,13 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( WinLib::GetYesNo("Are you sure you want to reset all ugprade settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
-                    buffer newUPGS("UPGS"), newUPGx("UPGx"), newUPGR("UPGR"), newPUPx("PUPx");
-                    if ( Get_UPGS(newUPGS) )
+                    Section newUpgs = UpgsSection::GetDefault(), newUpgx = UpgxSection::GetDefault(), newUpgr = UpgrSection::GetDefault(), newPupx = PupxSection::GetDefault();
+                    if ( newUpgs != nullptr && newUpgx != nullptr && newUpgr != nullptr && newPupx != nullptr )
                     {
-                        newUPGS.del(0, 8);
-                        CM->ReplaceUPGSSection(newUPGS);
-                    }
-                    if ( Get_UPGx(newUPGx) )
-                    {
-                        newUPGx.del(0, 8);
-                        CM->ReplaceUPGxSection(newUPGx);
-                    }
-                    if ( Get_UPGR(newUPGR) )
-                    {
-                        newUPGR.del(0, 8);
-                        CM->ReplaceUPGRSection(newUPGR);
-                    }
-                    if ( Get_PUPx(newPUPx) )
-                    {
-                        newPUPx.del(0, 8);
-                        CM->ReplacePUPxSection(newPUPx);
+                        CM->AddOrReplaceSection(newUpgs);
+                        CM->AddOrReplaceSection(newUpgx);
+                        CM->AddOrReplaceSection(newUpgr);
+                        CM->AddOrReplaceSection(newPupx);
                     }
 
                     CM->notifyChange(false);

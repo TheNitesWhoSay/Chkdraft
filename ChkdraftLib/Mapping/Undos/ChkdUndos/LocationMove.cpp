@@ -13,7 +13,11 @@ std::shared_ptr<LocationMove> LocationMove::Make(u16 locationIndex, s32 xChange,
 
 void LocationMove::Reverse(void *guiMap)
 {
-    ((GuiMap*)guiMap)->MoveLocation(locationIndex, xChange, yChange);
+    auto loc = ((GuiMap*)guiMap)->layers.getLocation(locationIndex);
+    loc->left += xChange;
+    loc->right += xChange;
+    loc->top += yChange;
+    loc->bottom += yChange;
     xChange = -xChange;
     yChange = -yChange;
 }

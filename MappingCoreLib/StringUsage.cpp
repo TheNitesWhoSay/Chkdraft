@@ -1,5 +1,5 @@
 #include "StringUsage.h"
-
+/*
 StringUsageTable::StringUsageTable()
 {
 
@@ -15,7 +15,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
     /*buffer* strings = &chk->STR();
     if ( extendedTable )
         strings = &chk->KSTR();*/
-
+/*
     if ( chk->hasStrSection(extendedTable) )
     {
         u32 currMaxStrings = 0;
@@ -35,7 +35,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
                   & UNIS = chk->UNIS(),
                   & SWNM = chk->SWNM(),
                   & UNIx = chk->UNIx();*/
-
+/*
             #define MarkIfOverZero(index)                         \
                 if ( index > 0 )                                  \
                 {                                                 \
@@ -46,7 +46,7 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
                 }
 
             // MRGN - location strings
-            ChkLocation* loc;
+            Chk::Location* loc;
             for ( u32 i=0; i<chk->locationCapacity(); i++ )
             {
                 if ( chk->getLocation(loc, u8(i)) )
@@ -54,15 +54,15 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
             }
 
             // TRIG - trigger strings
-            Trigger* trig;
+            Chk::Trigger* trig;
             int trigNum = 0;
 
             while ( chk->getTrigger(trig, trigNum) )
             {
-                for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+                for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
                 {
-                    MarkIfOverZero( trig->actions[i].stringNum );
-                    MarkIfOverZero( trig->actions[i].wavID );
+                    MarkIfOverZero( trig->action(i).stringId );
+                    MarkIfOverZero( trig->action(i).wavStringId );
                 }
             
                 trigNum ++;
@@ -73,18 +73,18 @@ bool StringUsageTable::populateTable(Scenario* chk, bool extendedTable)
 
             while ( chk->getBriefingTrigger(trig, trigNum) )
             {
-                for ( int i=0; i<NUM_TRIG_ACTIONS; i++ )
+                for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
                 {
-                    MarkIfOverZero( trig->actions[i].stringNum );
-                    MarkIfOverZero( trig->actions[i].wavID );
+                    MarkIfOverZero( trig->action(i).stringId );
+                    MarkIfOverZero( trig->action(i).wavStringId );
                 }
 
                 trigNum ++;
             }
     
             // SPRP - scenario property strings
-            MarkIfOverZero(chk->GetMapTitleStrIndex());
-            MarkIfOverZero(chk->GetMapDescriptionStrIndex());
+            MarkIfOverZero(chk->GetMapTitleStrId());
+            MarkIfOverZero(chk->GetMapDescriptionStrId());
 
             // FORC - force strings
             for ( int i=0; i<4; i++ )
@@ -145,7 +145,7 @@ bool StringUsageTable::populateTable(std::list<StringTableNode> strList, u32 num
     {
         strList.sort(CompareStrTblNode);
         for ( auto &str : strList )
-            stringUsed.replace<u8>(str.stringNum, 1);
+            stringUsed.replace<u8>(str.stringId, 1);
 
         return true;
     }
@@ -252,3 +252,4 @@ bool StringUsageTable::popFragmentedString(u32& firstEmpty, u32 &lastFragmented)
     firstEmpty = 0;
     return false;
 }
+*/

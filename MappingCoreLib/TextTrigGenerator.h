@@ -28,11 +28,11 @@ class TextTrigGenerator
         void ClearScenario(); // Clears loaded scenario data
 
         std::string GetConditionName(u8 CID);
-        std::string GetConditionArgument(Condition& condition, u8 stdTextTrigArgNum);
-        std::string GetConditionArgument(Condition& condition, u8 argNum, std::vector<u8> &argMap);
+        std::string GetConditionArgument(Chk::Condition& condition, u8 stdTextTrigArgNum);
+        std::string GetConditionArgument(Chk::Condition& condition, u8 argNum, std::vector<u8> &argMap);
         std::string GetActionName(u8 AID);
-        std::string GetActionArgument(Action &action, u8 stdTextTrigArgNum);
-        std::string GetActionArgument(Action &action, u8 argNum, std::vector<u8> &argMap);
+        std::string GetActionArgument(Chk::Action &action, u8 stdTextTrigArgNum);
+        std::string GetActionArgument(Chk::Action &action, u8 argNum, std::vector<u8> &argMap);
 
         ChkdString GetTrigLocation(u32 locationNum);
         ChkdString GetTrigString(u32 stringNum);
@@ -56,9 +56,9 @@ class TextTrigGenerator
     
     protected:
 
-        inline void AddConditionArgument(buffer &output, Condition &condition, ConditionId CID, u8 &stdTextTrigArgNum);
-        inline void AddActionArgument(buffer &output, Action &action, ActionId AID, u8 &stdTextTrigArgNum);
-        bool BuildTextTrigs(ScenarioPtr map, TrigSegment triggerData, std::string &trigString);
+        inline void AddConditionArgument(buffer &output, Chk::Condition &condition, Chk::Condition::VirtualType conditionType, u8 &stdTextTrigArgNum);
+        inline void AddActionArgument(buffer &output, Chk::Action &action, Chk::Action::VirtualType actionType, u8 &stdTextTrigArgNum);
+        bool BuildTextTrigs(ScenarioPtr map, TrigSectionPtr triggerData, std::string &trigString);
         bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
         bool CorrectLineEndings(buffer& buf); // Corrects any improperly formatted line endings
 

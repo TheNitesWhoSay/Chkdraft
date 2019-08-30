@@ -3,7 +3,7 @@
 
 #include "Basics.h"
 #include "Buffer.h"
-#include "DefaultCHK.h"
+#include "Sections.h"
 #include "EscapeStrings.h"
 #include "FileBrowser.h"
 #include "SystemIO.h"
@@ -12,6 +12,7 @@
 #include "MpqFile.h"
 #include "ScData.h"
 #include "Scenario.h"
+#include "Sections.h"
 #include "StringUsage.h"
 #include "SubStringMap.h"
 

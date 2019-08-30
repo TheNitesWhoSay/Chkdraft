@@ -4,6 +4,8 @@
 #include "../../../Mapping/Settings.h"
 #include <string>
 
+#undef PlaySound
+
 #define TRIGGER_TOP_PADDING 1
 #define TRIGGER_LEFT_PADDING 1
 #define TRIGGER_RIGHT_PADDING 1
@@ -33,7 +35,7 @@ enum ID {
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
     changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
 {
-    for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
 }
 
@@ -260,11 +262,11 @@ void TriggersWindow::MoveTrigTo()
 
 void TriggersWindow::ButtonNew()
 {
-    Trigger trigger = { };
-    for ( u8 i=Player1; i<=Player8; i++ )
+    Chk::Trigger trigger = { };
+    for ( u8 i=(u8)Sc::Player::Id::Player1; i<=(u8)Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
-            trigger.players[i] = 1;
+            trigger.owners[i] = Chk::Trigger::Owned::Yes;
     }
 
     bool insertedTrigger = false;
@@ -311,288 +313,288 @@ void TriggersWindow::ButtonModify()
     }
 }
 
-std::string TriggersWindow::GetConditionString(u8 conditionNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
 {
     std::stringstream ssCondition;
-    Condition &condition = trigger->conditions[conditionNum];
-    ConditionId conditionId = (ConditionId)condition.condition;
+    Chk::Condition &condition = trigger->condition(conditionNum);
+    Chk::Condition::Type conditionType = (Chk::Condition::Type)condition.conditionType;
     if ( condition.isDisabled() )
         ssCondition << "(disabled) ";
 
-    switch ( conditionId )
+    switch ( conditionType )
     {
-        case ConditionId::Accumulate: // Players, Comparison, Amount, TypeIndex
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C accumulates \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+        case Chk::Condition::Type::Accumulate: // Players, Comparison, Amount, TypeIndex
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C accumulates \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
                 << "\x0C \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
             break;
-        case ConditionId::Always:
+        case Chk::Condition::Type::Always:
             ssCondition << "Always";
             break;
-        case ConditionId::Bring: // Players, Comparison, Amount, UnitID, Location
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C brings \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C to \'\x08"
-                << tt.GetTrigLocation(condition.locationNum) << "\x0C\'.";
+        case Chk::Condition::Type::Bring: // Players, Comparison, Amount, UnitID, Location
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C brings \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C to \'\x08"
+                << tt.GetTrigLocation(condition.locationId) << "\x0C\'.";
             break;
-        case ConditionId::Command: // Players, Comparison, Amount, UnitID
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C commands \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::Command: // Players, Comparison, Amount, UnitID
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C commands \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::CommandTheLeast: // UnitID
-            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::CommandTheLeast: // UnitID
+            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::CommandTheLeastAt: // UnitID, Location
-            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C at \x08"
-                << tt.GetTrigLocation(condition.locationNum) << "\x0C.";
+        case Chk::Condition::Type::CommandTheLeastAt: // UnitID, Location
+            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C at \x08"
+                << tt.GetTrigLocation(condition.locationId) << "\x0C.";
             break;
-        case ConditionId::CommandTheMost: // UnitID
-            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::CommandTheMost: // UnitID
+            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::CommandTheMostAt: // UnitID, Location
-            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C at \x08"
-                << tt.GetTrigLocation(condition.locationNum) << "\x0C.";
+        case Chk::Condition::Type::CommandTheMostAt: // UnitID, Location
+            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C at \x08"
+                << tt.GetTrigLocation(condition.locationId) << "\x0C.";
             break;
-        case ConditionId::CountdownTimer: // Comparison, Amount
-            ssCondition << "Countdown timer is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+        case Chk::Condition::Type::CountdownTimer: // Comparison, Amount
+            ssCondition << "Countdown timer is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C game seconds.";
             break;
-        case ConditionId::Deaths: // Players, Comparison, Amount, UnitID
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C has suffered \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
-                << "\x0C deaths of \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::Deaths: // Players, Comparison, Amount, UnitID
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C has suffered \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+                << "\x0C deaths of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::ElapsedTime: // Comparison, Amount
-            ssCondition << "Elapsed scenario time is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+        case Chk::Condition::Type::ElapsedTime: // Comparison, Amount
+            ssCondition << "Elapsed scenario time is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C game seconds.";
             break;
-        case ConditionId::HighestScore: // TypeIndex
+        case Chk::Condition::Type::HighestScore: // TypeIndex
             ssCondition << "Current player has highest score \x08" << tt.GetTrigScoreType(condition.typeIndex) << "\x0C.";
             break;
-        case ConditionId::Kill: // Players, Comparison, Amount, UnitID
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C kills \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::Kill: // Players, Comparison, Amount, UnitID
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C kills \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::LeastKills: // UnitID
-            ssCondition << "Current player has least kills of \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::LeastKills: // UnitID
+            ssCondition << "Current player has least kills of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::LeastResources: // TypeIndex
+        case Chk::Condition::Type::LeastResources: // TypeIndex
             ssCondition << "Current player has least \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
             break;
-        case ConditionId::LowestScore: // TypeIndex
+        case Chk::Condition::Type::LowestScore: // TypeIndex
             ssCondition << "Current player has lowest score \x08" << tt.GetTrigScoreType(condition.typeIndex) << "\x0C.";
             break;
-        case ConditionId::MostKills: // UnitID
-            ssCondition << "Current player has the most kills of \x08" << tt.GetTrigUnit(condition.unitID) << "\x0C.";
+        case Chk::Condition::Type::MostKills: // UnitID
+            ssCondition << "Current player has the most kills of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
             break;
-        case ConditionId::MostResources: // TypeIndex
+        case Chk::Condition::Type::MostResources: // TypeIndex
             ssCondition << "Current player has most \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
             break;
-        case ConditionId::Never:
+        case Chk::Condition::Type::Never:
             ssCondition << "Never";
             break;
-        case ConditionId::NeverAlt:
+        case Chk::Condition::Type::IsBriefing:
             ssCondition << "Never (alt)";
             break;
-        case ConditionId::NoCondition:
+        case Chk::Condition::Type::NoCondition:
             ssCondition << "(No condition)";
             break;
-        case ConditionId::Opponents: // Players, Comparison, Amount
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C has \x08"
-                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+        case Chk::Condition::Type::Opponents: // Players, Comparison, Amount
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C has \x08"
+                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
                 << "\x0C opponents remaining in the game.";
             break;
-        case ConditionId::Score: // Players, TypeIndex, Comparison, Amount
-            ssCondition << '\x08' << tt.GetTrigPlayer(condition.players) << "\x0C \x08" << tt.GetTrigScoreType(condition.typeIndex)
-                << "\x0C score is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+        case Chk::Condition::Type::Score: // Players, TypeIndex, Comparison, Amount
+            ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C \x08" << tt.GetTrigScoreType(condition.typeIndex)
+                << "\x0C score is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C.";
             break;
-        case ConditionId::Switch: // TypeIndex, Comparison
+        case Chk::Condition::Type::Switch: // TypeIndex, Comparison
             ssCondition << "\'\x08" << tt.GetTrigSwitch(condition.typeIndex) << "\x0C\' is \x08"
-                << tt.GetTrigSwitchState(condition.comparison) << "\x0C.";
+                << tt.GetTrigSwitchState((u8)condition.comparison) << "\x0C.";
             break;
         default: // Location, Player, Amount, Unit, NumericComparison, Condition, TypeIndex, Flags, Internal
-            ssCondition << "Condition: \x08" << condition.locationNum << "\x0C, \x08" << condition.players << "\x0C, \x08"
-                << condition.amount << "\x0C, \x08" << condition.unitID << "\x0C, \x08" << u16(condition.comparison)
-                << "\x0C, \x08" << u16(condition.condition) << "\x0C, \x08" << u16(condition.typeIndex) << "\x0C, \x08"
-                << u16(condition.flags) << "\x0C, \x08" << condition.internalData << '\x0C';
+            ssCondition << "Condition: \x08" << condition.locationId << "\x0C, \x08" << condition.player << "\x0C, \x08"
+                << condition.amount << "\x0C, \x08" << (u16)condition.unitType << "\x0C, \x08" << u16((u8)condition.comparison)
+                << "\x0C, \x08" << u16(condition.conditionType) << "\x0C, \x08" << u16(condition.typeIndex) << "\x0C, \x08"
+                << u16(condition.flags) << "\x0C, \x08" << (u16)condition.maskFlag << '\x0C';
             break;
     }
     return ssCondition.str();
 }
 
-std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
 {
     std::stringstream ssAction;
-    Action &action = trigger->actions[actionNum];
-    ActionId actionId = (ActionId)action.action;
+    Chk::Action&action = trigger->action(actionNum);
+    Chk::Action::Type actionType = action.actionType;
     if ( action.isDisabled() )
         ssAction << "(disabled) ";
 
-    switch ( actionId )
+    switch ( actionType )
     {
-        case ActionId::CenterView: // Location
-            ssAction << "Center view for current player at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\'.";
+        case Chk::Action::Type::CenterView: // Location
+            ssAction << "Center view for current player at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
             break;
-        case ActionId::Comment: // String
-            ssAction << "Comment:\x08" << tt.GetTrigString(action.stringNum) << "\x0C";
+        case Chk::Action::Type::Comment: // String
+            ssAction << "Comment:\x08" << tt.GetTrigString(action.stringId) << "\x0C";
             break;
-        case ActionId::CreateUnit: // Type2, Type, Location, Players
+        case Chk::Action::Type::CreateUnit: // Type2, Type, Location, Players
             ssAction << "Create \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\' for \x08"
+                << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\' for \x08"
                 << tt.GetTrigPlayer(action.group) << "\x0C.";
             break;
-        case ActionId::CreateUnitWithProperties: // Type2, Type, Location, Players, Number
+        case Chk::Action::Type::CreateUnitWithProperties: // Type2, Type, Location, Players, Number
             ssAction << "Create \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\' for \x08"
+                << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\' for \x08"
                 << tt.GetTrigPlayer(action.group) << "\x0C. Apply \x08properties\x0C.";
             break;
-        case ActionId::Defeat:
+        case Chk::Action::Type::Defeat:
             ssAction << "End scenario in defeat for current player.";
             break;
-        case ActionId::DisplayTextMessage: // String
-            ssAction << "Display for current player:\x08" << tt.GetTrigString(action.stringNum) << '\x0C';
+        case Chk::Action::Type::DisplayTextMessage: // String
+            ssAction << "Display for current player:\x08" << tt.GetTrigString(action.stringId) << '\x0C';
             break;
-        case ActionId::Draw:
+        case Chk::Action::Type::Draw:
             ssAction << "End the scenario in a draw for all players.";
             break;
-        case ActionId::GiveUnitsToPlayer: // Type2, Type, Players, Location, Number
+        case Chk::Action::Type::GiveUnitsToPlayer: // Type2, Type, Players, Location, Number
             ssAction << "Give \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
                 << "\x0C\' to \x08" << tt.GetTrigPlayer(action.number) << "\x0C.";
             break;
-        case ActionId::KillUnit: // Type, Players
+        case Chk::Action::Type::KillUnit: // Type, Players
             ssAction << "Kill all \x08" << tt.GetTrigUnit(action.type) << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
             break;
-        case ActionId::KillUnitAtLocation: // Type2, Type, Players, Location
+        case Chk::Action::Type::KillUnitAtLocation: // Type2, Type, Players, Location
             ssAction << "Kill \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+                << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
                 << "\x0C\'.";
             break;
-        case ActionId::LeaderboardCtrlAtLoc: // Type, Location, String
+        case Chk::Action::Type::LeaderboardCtrlAtLoc: // Type, Location, String
             ssAction << "Show Leader Board for most control of \x08" << tt.GetTrigUnit(action.type) << "\x0C at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\'. Display label: \'\x08" << tt.GetTrigString(action.stringNum)
+                << tt.GetTrigLocation(action.locationId) << "\x0C\'. Display label: \'\x08" << tt.GetTrigString(action.stringId)
                 << "\x0C\'";
             break;
-        case ActionId::LeaderboardCtrl: // Type, String
+        case Chk::Action::Type::LeaderboardCtrl: // Type, String
             ssAction << "Show Leader Board for most control of \x08" << tt.GetTrigUnit(action.type) << "\x0C. Display label: \'\x08"
-                << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardGreed: // Number
+        case Chk::Action::Type::LeaderboardGreed: // Number
             ssAction << "Show Greed Leader Board for player closest to accumulation of \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C ore and gas.";
             break;
-        case ActionId::LeaderboardKills: // Type, String
+        case Chk::Action::Type::LeaderboardKills: // Type, String
             ssAction << "Show Leader Board for most kills of \x08" << tt.GetTrigUnit(action.type) << "\x0C. Display label: \'\x08"
-                << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardPoints: // Type, String
+        case Chk::Action::Type::LeaderboardPoints: // Type, String
             ssAction << "Show Leader Board for most \x08" << tt.GetTrigScoreType(action.type) << "\x0C. Display label: \'\x08"
-                << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardResources: // Type, String
+        case Chk::Action::Type::LeaderboardResources: // Type, String
             ssAction << "Show Leader board for accumulation of most \x08" << tt.GetTrigResourceType(action.type)
-                << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardCompPlayers: // Type2
+        case Chk::Action::Type::LeaderboardCompPlayers: // Type2
             ssAction << '\x08' << tt.GetTrigStateModifier(action.type2) << "\x0C use of computer players in leaderboard calculations.";
             break;
-        case ActionId::LeaderboardGoalCtrlAtLoc: // Number, Type, Location, String
+        case Chk::Action::Type::LeaderboardGoalCtrlAtLoc: // Number, Type, Location, String
             ssAction << "Show Leader Board for player closest to control of \x08" << tt.GetTrigNumber(action.number) << "\x0C of \x08"
-                << tt.GetTrigUnit(action.type) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
-                << "\x0C\'. Display label: \'\x08" << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigUnit(action.type) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
+                << "\x0C\'. Display label: \'\x08" << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardGoalCtrl: // Number, Type, String
+        case Chk::Action::Type::LeaderboardGoalCtrl: // Number, Type, String
             ssAction << "Show Leader Board for player closest to control of \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C of \x08" << tt.GetTrigUnit(action.type) << "\x0C. Display label: \'\x08"
-                << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardGoalKills: // Number, Type, String
+        case Chk::Action::Type::LeaderboardGoalKills: // Number, Type, String
             ssAction << "Show Leader Board for player closest to \x08" << tt.GetTrigNumber(action.number) << "\x0C kills of \x08"
-                << tt.GetTrigUnit(action.type) << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigUnit(action.type) << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardGoalPoints: // Number, Type, String
+        case Chk::Action::Type::LeaderboardGoalPoints: // Number, Type, String
             ssAction << "Show Leader Board for player closest to \x08" << tt.GetTrigNumber(action.number) << "\x0C \x08"
-                << tt.GetTrigScoreType(action.type) << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigScoreType(action.type) << "\x0C. Display label: \'\x08" << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::LeaderboardGoalResources: // Number, Type, String
+        case Chk::Action::Type::LeaderboardGoalResources: // Number, Type, String
             ssAction << "Show Leader Board for player closest to accumulation of \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C \x08" << tt.GetTrigResourceType(action.type) << "\x0C. Display label: \'\x08"
-                << tt.GetTrigString(action.stringNum) << "\x0C\'";
+                << tt.GetTrigString(action.stringId) << "\x0C\'";
             break;
-        case ActionId::MinimapPing: // Location
-            ssAction << "Show minimap ping for current player at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\'";
+        case Chk::Action::Type::MinimapPing: // Location
+            ssAction << "Show minimap ping for current player at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\'";
             break;
-        case ActionId::ModifyUnitEnergy: // Type2, Type, Players, Location, Number
+        case Chk::Action::Type::ModifyUnitEnergy: // Type2, Type, Players, Location, Number
             ssAction << "Set energy points for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
                 << "\x0C\' to \x08" << tt.GetTrigNumber(action.number) << "\x0C%.";
             break;
-        case ActionId::ModifyUnitHangerCount: // Number, Type2, Type, Location, Players
+        case Chk::Action::Type::ModifyUnitHangerCount: // Number, Type2, Type, Location, Players
             ssAction << "Add at most \x08" << tt.GetTrigNumber(action.number) << "\x0C to hanger for \x08"
                 << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type) << "\x0C at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\' owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
+                << tt.GetTrigLocation(action.locationId) << "\x0C\' owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
             break;
-        case ActionId::ModifyUnitHitpoints: // Type2, Type, Players, Location, Number
+        case Chk::Action::Type::ModifyUnitHitpoints: // Type2, Type, Players, Location, Number
             ssAction << "Set hit points for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08"
                 << tt.GetTrigUnit(action.type) << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group)
-                << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\' to \x08"
+                << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\' to \x08"
                 << tt.GetTrigNumber(action.number) << "\x0C%";
             break;
-        case ActionId::ModifyUnitResourceAmount: // Type2, Players, Location, Number
+        case Chk::Action::Type::ModifyUnitResourceAmount: // Type2, Players, Location, Number
             ssAction << "Set resource amount for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C resource sources owned by \x08"
-                << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\' to \x08"
+                << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\' to \x08"
                 << tt.GetTrigNumber(action.number) << "\x0C.";
             break;
-        case ActionId::ModifyUnitShieldPoints: // Type2, Type, Players, Location, Number
+        case Chk::Action::Type::ModifyUnitShieldPoints: // Type2, Type, Players, Location, Number
             ssAction << "Set shield points for \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+                << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
                 << "\x0C\' to \x08" << tt.GetTrigNumber(action.number) << "\x0C%.";
             break;
-        case ActionId::MoveLocation: // Number, Type, Players, Location
+        case Chk::Action::Type::MoveLocation: // Number, Type, Players, Location
             ssAction << "Center location labeled \'\x08" << tt.GetTrigLocation(action.number) << "\x0C\' on \x08"
                 << tt.GetTrigUnit(action.type) << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
             break;
-        case ActionId::MoveUnit: // Type2, Type, Players, Location, Number
+        case Chk::Action::Type::MoveUnit: // Type2, Type, Players, Location, Number
             ssAction << "Move \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
                 << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.number)
-                << "\x0C\' to \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                << "\x0C\' to \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
             break;
-        case ActionId::MuteUnitSpeech:
+        case Chk::Action::Type::MuteUnitSpeech:
             ssAction << "Mute all non-trigger unit sounds for current player.";
             break;
-        case ActionId::NoAction:
+        case Chk::Action::Type::NoAction:
             ssAction << "(No action)";
             break;
-        case ActionId::Order: // Type, Players, Location, Type2, Number
+        case Chk::Action::Type::Order: // Type, Players, Location, Type2, Number
             ssAction << "Issue order to all \x08" << tt.GetTrigUnit(action.type) << "\x0C owned by \x08"
-                << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\':\x08"
+                << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\':\x08"
                 << tt.GetTrigOrder(action.type2) << "\x0C to \'\x08" << tt.GetTrigLocation(action.number) << "\x0C\'.";
             break;
-        case ActionId::PauseGame:
+        case Chk::Action::Type::PauseGame:
             ssAction << "Pause the game.";
             break;
-        case ActionId::PauseTimer:
+        case Chk::Action::Type::PauseTimer:
             ssAction << "Pause the countdown timer.";
             break;
-        case ActionId::PlayWav: // Wav, Duration
-            ssAction << "Play \'\x08" << tt.GetTrigWav(action.wavID) << "\x0C\'.";
+        case Chk::Action::Type::PlaySound: // Wav, Duration
+            ssAction << "Play \'\x08" << tt.GetTrigWav(action.soundStringId) << "\x0C\'.";
             break;
-        case ActionId::PreserveTrigger:
+        case Chk::Action::Type::PreserveTrigger:
             ssAction << "Preserve trigger.";
             break;
-        case ActionId::RemoveUnit: // Type, Players
+        case Chk::Action::Type::RemoveUnit: // Type, Players
             ssAction << "Remove all \x08" << tt.GetTrigUnit(action.type) << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C.";
             break;
-        case ActionId::RemoveUnitAtLocation: // Type2, Type, Players, Location
+        case Chk::Action::Type::RemoveUnitAtLocation: // Type2, Type, Players, Location
             ssAction << "Remove \x08" << tt.GetTrigNumUnits(action.type2) << "\x0C \x08" << tt.GetTrigUnit(action.type)
-                << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.location)
+                << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId)
                 << "\x0C\'.";
             break;
-        case ActionId::RunAiScript: // Number
+        case Chk::Action::Type::RunAiScript: // Number
             {
                 std::string aiName = "";
                 if ( chkd.scData.aiScripts.GetAiName(action.number, aiName) )
@@ -601,105 +603,105 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Trigger* trigger, Text
                     ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\'.";
             }
             break;
-        case ActionId::RunAiScriptAtLocation: // Number, Location
+        case Chk::Action::Type::RunAiScriptAtLocation: // Number, Location
             {
                 std::string aiName = "";
                 if ( chkd.scData.aiScripts.GetAiName(action.number, aiName) )
                 {
                     ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.GetTrigScript(action.number) << ")\x0C\' at \'\x08"
-                        << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                        << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
                 }
                 else
                 {
                     ssAction << "Execute AI script \'\x08" << tt.GetTrigScript(action.number) << "\x0C\' at \'\x08"
-                        << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                        << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
                 }
             }
             break;
-        case ActionId::SetAllianceStatus: // Players, Type
+        case Chk::Action::Type::SetAllianceStatus: // Players, Type
             ssAction << "Set \x08" << tt.GetTrigPlayer(action.group) << "\x0C to \x08" << tt.GetTrigAllyState(action.type) << "\x0C.";
             break;
-        case ActionId::SetCountdownTimer: // Type2, Duration
+        case Chk::Action::Type::SetCountdownTimer: // Type2, Duration
             ssAction << "Modify Countdown Timer: \x08" << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08"
                 << tt.GetTrigNumber(action.time) << "\x0C seconds.";
             break;
-        case ActionId::SetDeaths: // Players, Type2, Number, Type
+        case Chk::Action::Type::SetDeaths: // Players, Type2, Number, Type
             ssAction << "Modify death counts for \x08" << tt.GetTrigPlayer(action.group) << "\x0C: \x08"
                 << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C for \x08" << tt.GetTrigUnit(action.type) << "\x0C.";
             break;
-        case ActionId::SetDoodadState: // Type2, Type, Players, Location
+        case Chk::Action::Type::SetDoodadState: // Type2, Type, Players, Location
             ssAction << '\x08' << tt.GetTrigStateModifier(action.type2) << "\x0C doodad state for \x08"
                 << tt.GetTrigUnit(action.type) << "\x0C for \x08" << tt.GetTrigPlayer(action.group) << "\x0C at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
             break;
-        case ActionId::SetInvincibility: // Type2, Type, Players, Location
+        case Chk::Action::Type::SetInvincibility: // Type2, Type, Players, Location
             ssAction << '\x08' << tt.GetTrigStateModifier(action.type2) << "\x0C invincibility for \x08"
                 << tt.GetTrigUnit(action.type) << "\x0C owned by \x08" << tt.GetTrigPlayer(action.group)
-                << "\x0C at \'\x08" << tt.GetTrigLocation(action.location) << "\x0C\'.";
+                << "\x0C at \'\x08" << tt.GetTrigLocation(action.locationId) << "\x0C\'.";
             break;
-        case ActionId::SetMissionObjectives: // String
-            ssAction << "Set Mission Objectives to:\x08" << tt.GetTrigString(action.stringNum) << '\x0C';
+        case Chk::Action::Type::SetMissionObjectives: // String
+            ssAction << "Set Mission Objectives to:\x08" << tt.GetTrigString(action.stringId) << '\x0C';
             break;
-        case ActionId::SetNextScenario: // String
-            ssAction << "Load \'\x08" << tt.GetTrigString(action.stringNum) << "\x0C\' after completion of current game.";
+        case Chk::Action::Type::SetNextScenario: // String
+            ssAction << "Load \'\x08" << tt.GetTrigString(action.stringId) << "\x0C\' after completion of current game.";
             break;
-        case ActionId::SetResources: // Players, Type2, Number, Type
+        case Chk::Action::Type::SetResources: // Players, Type2, Number, Type
             ssAction << "Modify resources for \x08" << tt.GetTrigPlayer(action.group) << "\x0C: \x08"
                 << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C \x08" << tt.GetTrigResourceType(action.type) << "\x0C.";
             break;
-        case ActionId::SetScore: // Players, Type2, Number, Type
+        case Chk::Action::Type::SetScore: // Players, Type2, Number, Type
             ssAction << "Modify score for \x08" << tt.GetTrigPlayer(action.group) << "\x0C: \x08"
                 << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08" << tt.GetTrigNumber(action.number)
                 << "\x0C \x08" << tt.GetTrigScoreType(action.type) << "\x0C.";
             break;
-        case ActionId::SetSwitch: // Type2, Number
+        case Chk::Action::Type::SetSwitch: // Type2, Number
             ssAction << '\x08' << tt.GetTrigSwitchModifier(action.type2) << "\x0C \'\x08" << tt.GetTrigSwitch(action.number) << "\x0C\'.";
             break;
-        case ActionId::TalkingPortrait: // Type, Duration
+        case Chk::Action::Type::TalkingPortrait: // Type, Duration
             ssAction << "Show \x08" << tt.GetTrigUnit(action.type) << "\x0C talking to current player for \x08"
                 << tt.GetTrigNumber(action.time) << "\x0C miliseconds.";
             break;
-        case ActionId::Transmission: // Type, Location, Wav, Type2, Number, String
+        case Chk::Action::Type::Transmission: // Type, Location, Wav, Type2, Number, String
             ssAction << "Send transmission to current player from \x08" << tt.GetTrigUnit(action.type) << "\x0C at \'\x08"
-                << tt.GetTrigLocation(action.location) << "\x0C\'. Play '\x08" << tt.GetTrigWav(action.wavID)
+                << tt.GetTrigLocation(action.locationId) << "\x0C\'. Play '\x08" << tt.GetTrigWav(action.soundStringId)
                 << "\x0C\'. Modify duration: \x08" << tt.GetTrigNumericModifier(action.type2) << "\x0C \x08"
                 << tt.GetTrigNumber(action.number) << "\x0C miliseconds. Display text:\x08"
-                << tt.GetTrigString(action.stringNum) << '\x0C';
+                << tt.GetTrigString(action.stringId) << '\x0C';
             break;
-        case ActionId::UnmuteUnitSpeech:
+        case Chk::Action::Type::UnmuteUnitSpeech:
             ssAction << "Unmute all non-trigger unit sounds for current player.";
             break;
-        case ActionId::UnpauseGame:
+        case Chk::Action::Type::UnpauseGame:
             ssAction << "Unpause the game.";
             break;
-        case ActionId::UnpauseTimer:
+        case Chk::Action::Type::UnpauseTimer:
             ssAction << "Unpause the countdown timer.";
             break;
-        case ActionId::Victory:
+        case Chk::Action::Type::Victory:
             ssAction << "End scenario in victory for current player.";
             break;
-        case ActionId::Wait: // Duration
+        case Chk::Action::Type::Wait: // Duration
             ssAction << "Wait for \x08" << tt.GetTrigNumber(action.time) << "\x0C miliseconds.";
             break;//*/
         default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
-            ssAction << "Action: \x08" << action.location << "\x0C, \x08" << action.stringNum << "\x0C, \x08" << action.wavID
+            ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
                 << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)
-                << "\x0C, \x08" << TripletToInt(action.internalData) << "\x0C.";
+                << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << (u16)action.maskFlag << "\x0C.";
             break;
     }
     return ssAction.str();
 }
 
-std::string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
 {
     bool more = false;
     std::stringstream ssTrigger;
     u8 remainingLines = 13;
-    u8 numConditions = trigger->numUsedConditions();
-    u8 numActions = trigger->numUsedActions();
+    size_t numConditions = trigger->numUsedConditions();
+    size_t numActions = trigger->numUsedActions();
     if ( numConditions == 0 && numActions == 0 )
         ssTrigger << "<EMPTY>" << TRIGGER_NUM_PREFACE << trigNum << "\x0C\r\n";
     else
@@ -710,7 +712,7 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, Text
             u8 i=0;
             while ( numConditions > 0 && i < 16 )
             {
-                if ( trigger->conditions[i].condition != (u8)ConditionId::NoCondition )
+                if ( trigger->condition(i).conditionType != Chk::Condition::Type::NoCondition )
                 {
                     ssTrigger << ' ' << GetConditionString(i, trigger, textTrigGenerator) << "\r\n";
 
@@ -736,7 +738,7 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Trigger* trigger, Text
             u8 i=0;
             while ( numActions > 0 && i < 64 )
             {
-                if ( trigger->actions[i].action != (u8)ActionId::NoAction )
+                if ( trigger->action(i).actionType != Chk::Action::Type::NoAction )
                 {
                     ssTrigger << ' ' << GetActionString(i, trigger, textTrigGenerator) << "\r\n";
 
@@ -783,21 +785,21 @@ void TriggersWindow::RefreshGroupList()
     listGroups.ClearItems();
 
     u8 firstNotFound = 0;
-    bool addedPlayer[NUM_TRIG_PLAYERS];
-    for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+    bool addedPlayer[Chk::Trigger::MaxOwners];
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         addedPlayer[i] = false;
 
     if ( CM != nullptr && CM->HasTrigSection() )
     {
-        Trigger* trigger;
         u32 numTriggers = CM->numTriggers();
         for ( u32 i=0; i<numTriggers; i++ )
         {
-            if ( CM->getTrigger(trigger, i) )
+            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            if ( trigger != nullptr )
             {
-                for ( u8 player=firstNotFound; player<NUM_TRIG_PLAYERS; player++ )
+                for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
                 {
-                    if ( !addedPlayer[player] && trigger->players[player] != 0 )
+                    if ( !addedPlayer[player] && trigger->owners[player] != Chk::Trigger::Owned::No )
                     {
                         addedPlayer[player] = true;
                         if ( player == firstNotFound ) // Skip already-found players
@@ -820,13 +822,13 @@ void TriggersWindow::RefreshGroupList()
         if ( addedPlayer[17] ) // All Players
             listGroups.AddItem(17);
         if ( numTriggers > 0 ) // Show All
-            selectAllIndex = listGroups.AddItem(NUM_TRIG_PLAYERS);
+            selectAllIndex = listGroups.AddItem(Chk::Trigger::MaxOwners);
         for ( u8 i=12; i<17; i++ ) // Lower unused groups
         {
             if ( addedPlayer[i] )
                 listGroups.AddItem(i);
         }
-        for ( u8 i=22; i<NUM_TRIG_PLAYERS; i++ ) // Upper unused groups
+        for ( u8 i=22; i<Chk::Trigger::MaxOwners; i++ ) // Upper unused groups
         {
             if ( addedPlayer[i] )
                 listGroups.AddItem(i);
@@ -854,11 +856,11 @@ void TriggersWindow::RefreshTrigList()
 
     if ( CM != nullptr && CM->HasTrigSection() )
     {
-        Trigger* trigger;
         u32 numTriggers = CM->numTriggers();
         for ( u32 i=0; i<numTriggers; i++ )
         {
-            if ( CM->getTrigger(trigger, i) && ShowTrigger(trigger) )
+            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            if ( trigger != nullptr && ShowTrigger(&(*trigger)) )
             {
                 int newListIndex = listTriggers.AddItem(i);
                 if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
@@ -1081,14 +1083,14 @@ bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u
     }
 }
 
-bool TriggersWindow::ShowTrigger(Trigger* trigger)
+bool TriggersWindow::ShowTrigger(Chk::Trigger* trigger)
 {
     if ( displayAll )
         return true;
 
-    for ( u8 i=0; i<NUM_TRIG_PLAYERS; i++ )
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
     {
-        if ( groupSelected[i] && trigger->players[i] != 0 )
+        if ( groupSelected[i] && trigger->owners[i] != Chk::Trigger::Owned::No )
             return true;
     }
 
@@ -1101,7 +1103,7 @@ void TriggersWindow::ClearGroups()
         groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
+bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
     RawString str;
     if ( chk->getActiveComment(trigger, str) )
@@ -1179,7 +1181,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
     }
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Trigger* trigger)
+void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
     HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
     if ( hBackground != NULL )
@@ -1334,11 +1336,11 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             if ( wParam == LIST_TRIGGERS )
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                Trigger* trigger;
                 u32 triggerNum = (u32)mis->itemData;
-
-                if ( CM->getTrigger(trigger, triggerNum) )
-                    GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, CM, triggerNum, trigger);
+                
+                Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
+                if ( trigger != nullptr )
+                    GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, CM, triggerNum, &(*trigger));
                 
                 return TRUE;
             }
@@ -1387,11 +1389,11 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    Trigger* trigger;
                     u32 triggerNum = (u32)pdis->itemData;
                     
-                    if ( CM != nullptr && CM->getTrigger(trigger, triggerNum) )
-                        DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, CM, triggerNum, trigger);
+                    Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
+                    if ( CM != nullptr && trigger != nullptr )
+                        DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, CM, triggerNum, &(*trigger));
                 }
 
                 if ( !drawingAll )

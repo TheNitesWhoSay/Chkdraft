@@ -32,7 +32,7 @@ class EscString : public std::string
         virtual ~EscString();
 };
 
-/** A Scenario string in CHKDrafts <00> format; it may also
+/** A Scenario string in Chkdrafts <00> format; it may also
     use the slash escaped format (though by default the <00>
     format will given by programs).
     See MakeChkdStr and ParseChkdStr for details on use */
@@ -68,7 +68,7 @@ class SingleLineChkdString : public ChkdString
         where hh is the corresponding hex string.
     Returns true and outEscString on success, false and an empty outEscString on faliure. */
 bool MakeEscStr(const std::string &inRawString, size_t inRawStringLength, EscString &outEscString);
-bool MakeEscStr(RawString &inRawString, EscString &outEscString);
+bool MakeEscStr(const RawString &inRawString, EscString &outEscString);
 
 bool GetSlashEscCodeChar(const std::string &escString, size_t escStringLength, size_t slashPos, char &character, size_t &lastCharPos);
 
@@ -93,10 +93,10 @@ bool GetSlashEscCodeChar(const std::string &escString, size_t escStringLength, s
     All other characters/sequences are added as they are.
 
     Returns true and outRawString on success, false and an empty outRawString on faliure. */
-bool ParseEscStr(EscString &inEscString, RawString &outRawString);
+bool ParseEscStr(const EscString &inEscString, RawString &outRawString);
 /** Parses a EscString into RawBytes, same rules as ParseEscStr except...
     All "\\0" in the EscString become "\0" in the RawString. */
-bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes);
+bool ParseEscBytes(const EscString &inEscString, std::vector<u8> &outRawBytes);
 
 /** Makes a ChkdString from a RawString using these rules...
     All "\r\n" (paired only) and "\t" are added as normal.
@@ -108,7 +108,7 @@ bool ParseEscBytes(EscString &inEscString, std::vector<u8> &outRawBytes);
 
     Returns true and outChkdString on success, false and an empty outChkdString on faliure. */
 bool MakeChkdStr(const std::string &inRawString, size_t inRawStringLength, ChkdString &outChkdString);
-bool MakeChkdStr(RawString &inRawString, ChkdString &outChkdString);
+bool MakeChkdStr(const RawString &inRawString, ChkdString &outChkdString);
 
 bool GetChkdEscCodeChar(const std::string &chkdString, size_t chkdStringLength, size_t lessThanPos, char &character, size_t &lastCharPos);
 
@@ -141,5 +141,8 @@ bool getThreeCharOctVal(const std::string &firstCharPtr, u8 &value); // firstCha
 typedef std::shared_ptr<RawString> RawStringPtr;
 typedef std::shared_ptr<EscString> EscStringPtr;
 typedef std::shared_ptr<ChkdString> ChkdStringPtr;
+
+template <typename StringTypeIn, typename StringTypeOut>
+void ConvertStr(const StringTypeIn &inString, StringTypeOut &outString);
 
 #endif

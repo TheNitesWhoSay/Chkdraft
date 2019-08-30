@@ -40,7 +40,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void EdgeDrag(HWND hWnd, int x, int y);
 
                     /** Takes a player number, outputs the string/string index of the associated owner (i.e. rescuable) */
-                    u8 GetPlayerOwnerStringIndex(u8 player);
+                    u8 GetPlayerOwnerStringId(u8 player);
 
                     void refreshScenario();
 
@@ -96,7 +96,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
                     enum class LocSnapFlags : u32 { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
                         SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 };
-                    bool SnapLocationDimensions(s32& x1, s32& y1, s32& x2, s32& y2, LocSnapFlags locSnapFlags);
+                    bool SnapLocationDimensions(u32& x1, u32& y1, u32& x2, u32& y2, LocSnapFlags locSnapFlags);
 
                     void UpdateLocationMenuItems();
                     void UpdateZoomMenuItems();

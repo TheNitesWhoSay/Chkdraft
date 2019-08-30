@@ -47,17 +47,17 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         bool isPasting;
 
         std::hash<std::string> strHash; // A hasher to help generate tables
-        std::vector<u8> actionArgMaps[64];
+        std::vector<u8> actionArgMaps[60];
         std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
         Suggestions &suggestions;
 
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        void ChangeActionType(Action &action, ActionId newId);
-        bool TransformAction(Action &action, ActionId newId, bool refreshImmediately);
+        void ChangeActionType(Chk::Action &action, Chk::Action::Type newType);
+        bool TransformAction(Chk::Action &action, Chk::Action::Type newType, bool refreshImmediately);
         void RefreshActionAreas();
-        void ClearArgument(Action &action, u8 argNum, bool refreshImmediately);
+        void ClearArgument(Chk::Action &action, u8 argNum, bool refreshImmediately);
         void UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately);
         void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText, bool refreshImmediately);
         BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str);

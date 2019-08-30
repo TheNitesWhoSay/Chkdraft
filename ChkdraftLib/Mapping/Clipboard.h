@@ -26,11 +26,11 @@ class PasteTileNode
 class PasteUnitNode
 {
     public:
-        ChkUnit unit;
+        Chk::UnitPtr unit;
         s32 xc;
         s32 yc;
 
-        PasteUnitNode(ChkUnit &unitRef);
+        PasteUnitNode(Chk::UnitPtr unit);
         virtual ~PasteUnitNode();
 
     private:
@@ -51,7 +51,7 @@ class Clipboard
         void addQuickTile(u16 index, s32 xc, s32 yc);
         bool hasQuickTiles() { return quickTiles.size() > 0; }
 
-        void addQuickUnit(ChkUnit &unitRef);
+        void addQuickUnit(Chk::UnitPtr unit);
         bool hasQuickUnits() { return quickUnits.size() > 0; }
 
         void beginPasting(bool isQuickPaste);

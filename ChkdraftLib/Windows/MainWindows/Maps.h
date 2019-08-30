@@ -21,9 +21,9 @@ class Maps : public WinLib::MdiClient
         GuiMapPtr GetMap(u16 mapId);
         u16 GetMapID(GuiMapPtr guiMap);
 
-        bool NewMap(u16 width, u16 height, u16 tileset, u32 terrain, u32 triggers);
-        bool OpenMap(std::string fileName);
-        bool OpenMap(FileBrowserPtr fileBrowser = MapFile::getDefaultOpenMapBrowser()); // Accelerator for OpenMap
+        bool NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers);
+        bool OpenMap(const std::string &fileName);
+        bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser()); // Accelerator for OpenMap
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);
         void CloseActive();

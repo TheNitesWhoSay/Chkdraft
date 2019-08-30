@@ -10,14 +10,14 @@ std::hash<std::string> MapFile::strHash;
 std::map<size_t, std::string> MapFile::virtualWavTable;
 u64 MapFile::nextAssetFileId(0);
 
-FileBrowserPtr MapFile::getDefaultOpenMapBrowser()
+FileBrowserPtr<SaveType> MapFile::getDefaultOpenMapBrowser()
 {
-    return FileBrowserPtr(new FileBrowser(getOpenMapFilters(), "Open Map", true, false));
+    return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getOpenMapFilters(), "Open Map", true, false));
 }
 
-FileBrowserPtr MapFile::getDefaultSaveMapBrowser()
+FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
 {
-    return FileBrowserPtr(new FileBrowser(getSaveMapFilters(), "Save Map", false, true));
+    return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
 MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true)
@@ -38,19 +38,19 @@ MapFile::~MapFile()
 
 }
 
-bool MapFile::LoadMapFile(std::string &filePath)
+bool MapFile::LoadMapFile(const std::string &filePath)
 {
     return !filePath.empty() && OpenMapFile(filePath);
 }
 
-bool MapFile::LoadMapFile(FileBrowserPtr fileBrowser)
+bool MapFile::LoadMapFile(FileBrowserPtr<SaveType> fileBrowser)
 {
     std::string browseFilePath = "";
-    u32 filterIndex = 0;
-    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && OpenMapFile(browseFilePath);
+    SaveType saveType;
+    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && OpenMapFile(browseFilePath);
 }
 
-bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrowser)
+bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser)
 {
     std::string prevFilePath(mapFilePath);
 
@@ -58,42 +58,14 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr fileBrow
         CHKD_ERR("Cannot save protected maps!");
     else
     {
+        bool newSaveDetails = false;
+        SaveType newSaveType = SaveType::Unknown;
+        std::string newMapFilePath;
+        bool overwriting = true;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-        {
-            u32 filterIndex = (u32)saveType;
-            if ( fileBrowser != nullptr && fileBrowser->browseForSavePath(mapFilePath, filterIndex) )
-            {
-                saveType = (SaveType)filterIndex;
-                std::string extension = GetSystemFileExtension(mapFilePath);
-                if ( extension.empty() ) // No extension specified, need to add
-                {
-                    if ( saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm )
-                        mapFilePath += ".scm";
-                    else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::AllMaps )
-                        mapFilePath += ".scx";
-                    else if ( saveType == SaveType::StarCraftChk || saveType == SaveType::HybridChk || saveType == SaveType::ExpansionChk )
-                        mapFilePath += ".chk";
-                }
-                else // Extension specified, give it precedence over filterIndex
-                {
-                    if ( extension == ".chk" && (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) )
-                    {
-                        if ( saveType == SaveType::ExpansionScx )
-                            saveType = SaveType::ExpansionChk;
-                        else
-                            saveType = SaveType::HybridChk;
-                    }
-                    else if ( extension == ".scm" && saveType != SaveType::StarCraftScm )
-                        saveType = SaveType::HybridScm;
-                    else if ( extension == ".scx" )
-                        saveType = SaveType::ExpansionScx;
-                    else if ( saveType == SaveType::AllMaps )
-                        saveType = SaveType::ExpansionScx;
-                }
-            }
-        }
+            newSaveDetails = getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser);
 
-        if ( !mapFilePath.empty() ) // Map path has been determined
+        if ( newSaveDetails || !mapFilePath.empty() ) // Map path has been determined
         {
             if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
                 Scenario::ChangeToScOrig();
@@ -208,7 +180,7 @@ bool MapFile::OpenTemporaryMpq()
     return false;
 }
 
-bool MapFile::OpenMapFile(std::string &filePath)
+bool MapFile::OpenMapFile(const std::string &filePath)
 {
     std::string extension = GetSystemFileExtension(filePath);
     if ( !extension.empty() )
@@ -239,8 +211,7 @@ bool MapFile::OpenMapFile(std::string &filePath)
                         saveType = SaveType::ExpansionScx; // Expansion
                     else if ( true ) // Could search for clues to map version here
                         saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
-                    
-                    filePath = this->mapFilePath;
+
                     return true;
                 }
                 else
@@ -269,7 +240,6 @@ bool MapFile::OpenMapFile(std::string &filePath)
                     else if ( true ) // Could search for clues to map version here
                         saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
                     
-                    this->mapFilePath = filePath;
                     return true;
                 }
                 else
@@ -459,24 +429,24 @@ bool MapFile::ExtractMpqAsset(const std::string &assetMpqFilePath, const std::st
     return false;
 }
 
-bool MapFile::GetWav(u16 wavIndex, u32 &outStringIndex)
+bool MapFile::GetWav(u16 wavIndex, u32 &outStringId)
 {
-    return Scenario::GetWav(wavIndex, outStringIndex);
+    return Scenario::GetWav(wavIndex, outStringId);
 }
 
-bool MapFile::GetWav(u32 stringIndex, buffer &outWavData)
+bool MapFile::GetWav(u32 stringId, buffer &outWavData)
 {
     RawString wavString;
-    return Scenario::GetString(wavString, stringIndex) &&
+    return Scenario::GetString(wavString, stringId) &&
         GetMpqAsset(wavString, outWavData);
 }
 
-bool MapFile::AddWav(u32 stringIndex)
+bool MapFile::AddWav(u32 stringId)
 {
     RawString wavString;
-    return Scenario::GetString(wavString, stringIndex) &&
+    return Scenario::GetString(wavString, stringId) &&
         MpqFile::findFile(mapFilePath, wavString) &&
-        Scenario::AddWav(stringIndex);
+        Scenario::AddWav(stringId);
 }
 
 bool MapFile::AddWav(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile)
@@ -539,11 +509,11 @@ bool MapFile::RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed)
     return false;
 }
 
-bool MapFile::RemoveWavByStringIndex(u32 wavStringIndex, bool removeIfUsed)
+bool MapFile::RemoveWavByStringId(u32 wavStringId, bool removeIfUsed)
 {
     RawString wavString;
-    bool hasString = Scenario::GetString(wavString, wavStringIndex);
-    if ( Scenario::RemoveWavByStringIndex(wavStringIndex, removeIfUsed) )
+    bool hasString = Scenario::GetString(wavString, wavStringId);
+    if ( Scenario::RemoveWavByStringId(wavStringId, removeIfUsed) )
     {
         if ( hasString )
             RemoveMpqAsset(wavString);
@@ -553,14 +523,14 @@ bool MapFile::RemoveWavByStringIndex(u32 wavStringIndex, bool removeIfUsed)
     return false;
 }
 
-WavStatus MapFile::GetWavStatus(u32 wavStringIndex)
+WavStatus MapFile::GetWavStatus(u32 wavStringId)
 {
-    if ( Scenario::isExtendedString(wavStringIndex) ) // Extended strings are not used in SC and therefore never match
+    if ( Scenario::isExtendedString(wavStringId) ) // Extended strings are not used in SC and therefore never match
         return WavStatus::NoMatch;
     else
     {
         RawString wavString;
-        if ( Scenario::GetString(wavString, wavStringIndex) )
+        if ( Scenario::GetString(wavString, wavStringId) )
         {
             for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
             {
@@ -588,26 +558,26 @@ WavStatus MapFile::GetWavStatus(u32 wavStringIndex)
     return WavStatus::Unknown;
 }
 
-bool MapFile::GetWavStatusMap(std::map<u32/*stringIndex*/, WavStatus> &outWavStatus, bool includePureStringWavs)
+bool MapFile::GetWavStatusMap(std::map<u32/*stringId*/, WavStatus> &outWavStatus, bool includePureStringWavs)
 {
-    std::map<u32/*stringIndex*/, u16/*wavIndex*/> wavMap;
+    std::map<u32/*stringId*/, u16/*wavIndex*/> wavMap;
     if ( Scenario::GetWavs(wavMap, includePureStringWavs) )
     {
         for ( auto entry : wavMap )
         {
-            u32 wavStringIndex = entry.first;
-            if ( Scenario::isExtendedString(wavStringIndex) ) // Extended strings are not used in SC and therefore never match
-                outWavStatus.insert(std::pair<u32, WavStatus>(wavStringIndex, WavStatus::NoMatchExtended));
+            u32 wavStringId = entry.first;
+            if ( Scenario::isExtendedString(wavStringId) ) // Extended strings are not used in SC and therefore never match
+                outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::NoMatchExtended));
             else
             {
                 RawString wavString;
-                if ( Scenario::GetString(wavString, wavStringIndex) )
+                if ( Scenario::GetString(wavString, wavStringId) )
                 {
                     for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
                     {
                         if ( modifiedAsset->actionTaken == AssetAction::Add && modifiedAsset->assetMpqPath == wavString )
                         {
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringIndex, WavStatus::PendingMatch));
+                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::PendingMatch));
                             continue;
                         }
                     }
@@ -615,14 +585,14 @@ bool MapFile::GetWavStatusMap(std::map<u32/*stringIndex*/, WavStatus> &outWavSta
                     if ( MapFile::open(mapFilePath) )
                     {
                         if ( MapFile::findFile(wavString) )
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringIndex, WavStatus::CurrentMatch));
+                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::CurrentMatch));
                         else
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringIndex, WavStatus::NoMatch));
+                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::NoMatch));
 
                         MapFile::close();
                     }
                     else
-                        outWavStatus.insert(std::pair<u32, WavStatus>(wavStringIndex, WavStatus::FileInUse));
+                        outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::FileInUse));
                 }
             }
         }
@@ -670,4 +640,93 @@ std::string MapFile::GetFileName()
 const std::string &MapFile::getFilePath() const
 {
     return mapFilePath;
+}
+
+bool MapFile::getSaveDetails(inout_param SaveType &saveType, output_param std::string &saveFilePath, output_param bool &overwriting, FileBrowserPtr<SaveType> fileBrowser)
+{
+    if ( fileBrowser != nullptr )
+    {
+        SaveType newSaveType = saveType;
+        std::string newSaveFilePath;
+        while ( fileBrowser->browseForSavePath(newSaveFilePath, newSaveType) )
+        {
+            std::string extension = GetSystemFileExtension(newSaveFilePath);
+            bool inferredExtension = extension.empty();
+            if ( inferredExtension ) // No extension specified, infer based on the SaveType
+            {
+                if ( newSaveType == SaveType::StarCraftScm || newSaveType == SaveType::HybridScm )
+                    newSaveFilePath += ".scm";
+                else if ( newSaveType == SaveType::ExpansionScx || newSaveType == SaveType::AllMaps )
+                    newSaveFilePath += ".scx";
+                else if ( newSaveType == SaveType::StarCraftChk || newSaveType == SaveType::HybridChk || newSaveType == SaveType::ExpansionChk )
+                    newSaveFilePath += ".chk";
+                else
+                    inferredExtension = false;
+            }
+            else // Extension specified, give it precedence over filterIndex
+            {
+                if ( extension == ".chk" && (newSaveType == SaveType::StarCraftScm || newSaveType == SaveType::HybridScm || newSaveType == SaveType::ExpansionScx) )
+                {
+                    if ( newSaveType == SaveType::ExpansionScx )
+                        newSaveType = SaveType::ExpansionChk;
+                    else
+                        newSaveType = SaveType::HybridChk;
+                }
+                else if ( extension == ".scm" && newSaveType != SaveType::StarCraftScm )
+                    newSaveType = SaveType::HybridScm;
+                else if ( extension == ".scx" )
+                    newSaveType = SaveType::ExpansionScx;
+                else if ( newSaveType == SaveType::AllMaps )
+                    newSaveType = SaveType::ExpansionScx;
+            }
+
+            bool fileExists = FindFile(newSaveFilePath);
+            bool mustConfirmOverwrite = fileExists && inferredExtension;
+            if ( !mustConfirmOverwrite || fileBrowser->confirmOverwrite(GetSystemFileName(newSaveFilePath) + " already exists.\nDo you want to replace it?") )
+            { // Either the save path was complete during browsing and the browser checked
+                saveType = newSaveType;
+                saveFilePath = newSaveFilePath;
+                overwriting = fileExists;
+                return true;
+            } // Else try browsing again
+        }
+    }
+    return false;
+}
+
+std::vector<FilterEntry<SaveType>> getOpenMapFilters()
+{
+    return std::vector<FilterEntry<SaveType>> {
+        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps"),
+        FilterEntry<SaveType>(SaveType::AllScm, "*.scm", "StarCraft Maps"),
+        FilterEntry<SaveType>(SaveType::AllScx, "*.scx", "BroodWar Maps"),
+        FilterEntry<SaveType>(SaveType::AllChk, "*.chk", "Raw Scenario Files")
+    };
+}
+std::vector<FilterEntry<SaveType>> getSaveMapFilters()
+{
+    return std::vector<FilterEntry<SaveType>> {
+        FilterEntry<SaveType>(SaveType::StarCraftScm, "*.scm", "StarCraft Map(*.scm)", ".scm"),
+        FilterEntry<SaveType>(SaveType::HybridScm, "*.scm", "StarCraft Hybrid Map(*.scm)", ".scm"),
+        FilterEntry<SaveType>(SaveType::ExpansionScx, "*.scx", "BroodWar Map(*.scx)", ".scx"),
+        FilterEntry<SaveType>(SaveType::StarCraftChk, "*.chk", "Raw StarCraft Map(*.chk)", ".chk"),
+        FilterEntry<SaveType>(SaveType::HybridChk, "*.chk", "Raw StarCraft Hybrid Map(*.chk)", ".chk"),
+        FilterEntry<SaveType>(SaveType::ExpansionChk, "*.chk", "Raw BroodWar Map(*.chk)", ".chk"),
+        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps", ".scx"),
+        FilterEntry<SaveType>(SaveType::AllFiles, "*", "All Files")
+    };
+}
+std::vector<FilterEntry<u32>> getSaveTextFilters()
+{
+    return std::vector<FilterEntry<u32>> {
+        FilterEntry<u32>("*.txt", "Text Documents(*.txt)", ".txt"),
+        FilterEntry<u32>("*", "All Files")
+    };
+}
+std::vector<FilterEntry<u32>> getSoundFilters()
+{
+    return std::vector<FilterEntry<u32>> {
+        FilterEntry<u32>("*.wav", "Waveform Audio(*.wav)"),
+        FilterEntry<u32>("*.ogg", "Ogg Audio(*.ogg)")
+    };
 }

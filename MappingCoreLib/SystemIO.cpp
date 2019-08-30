@@ -13,6 +13,10 @@
 #include <Windows.h>
 #endif
 
+constexpr u32 size_1kb = 0x400;
+constexpr u32 size_1mb = 0x100000;
+constexpr u32 size_1gb = 0x40000000;
+
 extern Logger logger;
 
 bool hasExtension(const std::string &systemFilePath, const std::string &extension)
@@ -113,22 +117,22 @@ std::string MakeExtSystemFilePath(const std::string &systemDirectory, const std:
 
 std::string GetMpqFileSeparator()
 {
-    return "\\";
+    return "/";
 }
 
 std::string GetMpqFileName(const std::string &mpqFilePath)
 {
-    std::string mpqFileSeparator = GetMpqFileSeparator();
+    const std::string mpqFileSeparator = GetMpqFileSeparator();
     size_t lastSeparator = mpqFilePath.find_last_of(mpqFileSeparator);
-    if ( lastSeparator >= 0 && lastSeparator < mpqFilePath.length()-mpqFileSeparator.length() )
-        return mpqFilePath.substr(lastSeparator+mpqFileSeparator.length(), mpqFilePath.length());
-    else
-        return mpqFilePath;
+    if ( lastSeparator >= 0 && lastSeparator < mpqFilePath.length() )
+        return mpqFilePath.substr(0, lastSeparator);
+
+    return mpqFilePath;
 }
 
 std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &fileName)
 {
-    std::string mpqFileSeparator = GetMpqFileSeparator();
+    const std::string mpqFileSeparator = GetMpqFileSeparator();
     size_t lastSeparator = mpqDirectory.find_last_of(mpqFileSeparator);
     if ( lastSeparator == mpqDirectory.length() - mpqFileSeparator.length() )
         return mpqDirectory + fileName;
@@ -168,30 +172,6 @@ bool PatientFindFile(const std::string &filePath, int numWaitTimes, int* waitTim
     }
 
     return false;
-}
-
-bool FileToBuffer(const std::string &fileName, buffer &buf)
-{
-    bool success = false;
-    if ( fileName.length() > 0 )
-    {
-        FILE* pFile = std::fopen(fileName.c_str(), "rb");
-        if ( pFile != nullptr )
-        {
-            buf.flush();
-            std::fseek(pFile, 0, SEEK_END);
-            u32 fileSize = (u32)std::ftell(pFile);
-            if ( buf.setSize(fileSize) )
-            {
-                buf.sizeUsed = fileSize;
-                std::rewind(pFile);
-                size_t lengthRead = std::fread(buf.data, 1, buf.sizeUsed, pFile);
-                success = (lengthRead == buf.sizeUsed);
-            }
-            std::fclose(pFile);
-        }
-    }
-    return success;
 }
 
 bool FileToString(const std::string &fileName, std::string &str)
@@ -281,7 +261,7 @@ bool RemoveFiles(const std::string &firstFileName, const std::string &secondFile
     return success;
 }
 
-bool GetModuleDirectory(output_param std::string &moduleDirectory)
+bool GetModuleDirectory(output_param std::string &moduleDirectory, bool includeTrailingSeparator)
 {
 #ifdef _WIN32
     icux::codepoint cModulePath[MAX_PATH] = {};
@@ -291,7 +271,7 @@ bool GetModuleDirectory(output_param std::string &moduleDirectory)
         auto lastBackslashPos = modulePath.find_last_of('\\');
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
         {
-            moduleDirectory = icux::toUtf8(modulePath.substr(0, lastBackslashPos));
+            moduleDirectory = icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? GetSystemFileSeparator() : "");
             return true;
         }
     }
@@ -299,9 +279,19 @@ bool GetModuleDirectory(output_param std::string &moduleDirectory)
     return false;
 }
 
+bool GetDefaultScPath(output_param std::string &data)
+{
+    return ""; // TODO: Implement me
+}
+
+std::string GetDefaultScPath()
+{
+    return ""; // TODO: Implement me
+}
+
 // Windows registry functions
 #ifdef _WIN32
-DWORD GetSubKeyString(HKEY hParentKey, const std::string &subKey, const std::string &valueName, output_param std::string &data)
+DWORD GetSubKeyString(HKEY hParentKey, const std::string &subKey, const std::string &valueName, std::string &data)
 {
     icux::filestring sysSubKey = icux::toFilestring(subKey);
     icux::filestring sysValueName = icux::toFilestring(valueName);
@@ -327,7 +317,7 @@ DWORD GetSubKeyString(HKEY hParentKey, const std::string &subKey, const std::str
     return errorCode; // Return success/error message
 }
 
-bool GetRegString(const std::string &subKey, const std::string &valueName, output_param std::string &data)
+bool GetRegString(const std::string &subKey, const std::string &valueName, std::string &data)
 {
     DWORD errorCode = GetSubKeyString(HKEY_CURRENT_USER, subKey, valueName, data); // Try HKCU
     if ( errorCode != ERROR_SUCCESS ) // Not found in HKCU
@@ -336,24 +326,6 @@ bool GetRegString(const std::string &subKey, const std::string &valueName, outpu
     return errorCode == ERROR_SUCCESS;
 }
 #endif
-
-bool GetDefaultScPath(output_param std::string &data)
-{
-#ifdef _WIN32
-    return GetRegString("SOFTWARE\\Blizzard Entertainment\\Starcraft", "InstallPath", data);
-#else
-    return false;
-#endif
-}
-
-std::string GetDefaultScPath()
-{
-    std::string scPath;
-    if ( GetDefaultScPath(scPath) )
-        return scPath;
-    else
-        return "";
-}
 
 PromptResult GetYesNo(const std::string &text, const std::string &caption)
 {
@@ -384,7 +356,7 @@ PromptResult GetYesNoCancel(const std::string &text, const std::string &caption)
 #endif
 }
 
-bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
+bool BrowseForFile(std::string &filePath, uint32_t &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32
@@ -453,7 +425,7 @@ bool BrowseForFile(inout_param std::string &filePath, inout_param u32 &filterInd
 #endif
 }
 
-bool BrowseForSave(inout_param std::string &filePath, inout_param u32 &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
+bool BrowseForSave(std::string &filePath, uint32_t &filterIndex, const std::vector<std::pair<std::string, std::string>> &filtersAndLabels,
     const std::string &initialDirectory, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32
