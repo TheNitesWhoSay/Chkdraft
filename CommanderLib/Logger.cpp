@@ -281,7 +281,7 @@ Logger & Logger::info()
 
     if ( (uint32_t)LogLevel::Info <= logLevel && outputStream != nullptr )
         *outputStream << getPrefix((uint32_t)LogLevel::Info);
-        
+    
     return *this;
 }
 
@@ -312,6 +312,14 @@ Logger & Logger::trace()
 std::shared_ptr<std::ostream> Logger::getDefaultOutputStream()
 {
     return std::shared_ptr<std::ostream>(&std::cout, [](std::ostream*){});
+}
+
+int Logger::sync()
+{
+    if ( outputStream != nullptr )
+        outputStream->flush();
+
+    return aggregator != nullptr ? aggregator->sync() : 0;
 }
 
 int Logger::overflow(int c)

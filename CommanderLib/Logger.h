@@ -87,7 +87,8 @@ class Logger : public std::ostream, public std::streambuf
         static std::shared_ptr<std::ostream> getDefaultOutputStream(); // Gets a reference to the default output stream (std::out)
 
     protected:
-        int overflow(int c);
+        virtual int sync();
+        virtual int overflow(int c);
         void overflowAggregator(int c, uint32_t sourceStreamLogLevel);
 
     private:
