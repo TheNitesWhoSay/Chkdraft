@@ -16,13 +16,13 @@ namespace WinLib
 
     bool executeOpen(const std::string &filePath, int &resultCode)
     {
-        resultCode = (int)ShellExecute(NULL, icux::toFilestring("open").c_str(), icux::toFilestring(filePath).c_str(), NULL, NULL, SW_SHOWDEFAULT);
+        resultCode = (int)(s64)ShellExecute(NULL, icux::toFilestring("open").c_str(), icux::toFilestring(filePath).c_str(), NULL, NULL, SW_SHOWDEFAULT) > 32;
         return resultCode > 32;
     }
 
     bool executeOpen(const std::string &file, const std::string &directory, int &resultCode)
     {
-        resultCode = (int)ShellExecute(NULL, icux::toFilestring("open").c_str(), icux::toFilestring(file).c_str(), NULL, icux::toFilestring(directory).c_str(), SW_SHOWDEFAULT);
+        resultCode = (int)(s64)ShellExecute(NULL, icux::toFilestring("open").c_str(), icux::toFilestring(file).c_str(), NULL, icux::toFilestring(directory).c_str(), SW_SHOWDEFAULT);
         return resultCode > 32;
     }
 

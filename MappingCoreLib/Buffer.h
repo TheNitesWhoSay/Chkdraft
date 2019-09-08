@@ -4,6 +4,12 @@
 #include <stdexcept>
 #include <memory>
 
+/**
+    Buffer provides a way to hold, read, and modify an arbitrary set of bytes
+
+    Buffer should not contain any system specific code
+*/
+
 class buffer;
 typedef std::shared_ptr<buffer> BufferPtr;
 

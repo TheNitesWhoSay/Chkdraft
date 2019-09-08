@@ -4,8 +4,6 @@
 #include "StaticTrigComponentParser.h"
 #include "ScData.h"
 #include "Scenario.h"
-#include "StringUsage.h"
-#include "StringTableNode.h"
 #include <unordered_map>
 #include <sstream>
 #include <string>
@@ -95,7 +93,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool ParseActionArg(buffer& text, Chk::Action& currAction, s64 pos, s64 end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream &error); // Parse an argument belonging to an action
         bool ParseExecutionFlags(buffer& text, s64 pos, s64 end, u32& flags);
 
-        bool ParseString(buffer &text, u32& dest, s64 pos, s64 end); // Find a given string in the map, prepare to add it if necessary
+        bool zzParseString(buffer &text, u32& dest, s64 pos, s64 end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
         bool ParseLocationName(buffer &text, u32 &dest, s64 pos, s64 end); // Find a location in the map by its string
         bool ParseUnitName(buffer &text, Sc::Unit::Type &dest, s64 pos, s64 end); // Get a unitID using a unit name
         bool ParseWavName(buffer &text, u32 &dest, s64 pos, s64 end); // Find a wav in the map by its string, redundant? remove me?
@@ -117,13 +115,15 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
         u32 deathTableOffset;
         std::hash<std::string> strHash; // A hasher to help generate tables
-        std::unordered_multimap<size_t, StringTableNode> stringTable; // Binary tree of the maps strings
         std::unordered_multimap<size_t, LocationTableNode> locationTable; // Binary tree of the maps locations
         std::unordered_multimap<size_t, UnitTableNode> unitTable; // Binary tree of the maps untis
         std::unordered_multimap<size_t, SwitchTableNode> switchTable; // Binary tree of the maps switches
         std::unordered_multimap<size_t, GroupTableNode> groupTable; // Binary tree of the maps groups
         std::unordered_multimap<size_t, ScriptTableNode> scriptTable; // Binary tree of map scripts
-        std::vector<StringTableNode> addedStrings; // Forward list of strings added during compilation
+        std::unordered_multimap<size_t, zzStringTableNode> zzStringTable; // Binary tree of the maps strings
+        std::unordered_multimap<size_t, zzStringTableNode> extendedStringTable; // Binary tree of the maps strings
+        std::vector<zzStringTableNode> zzAddedStrings; // Forward list of strings added during compilation
+        std::vector<zzStringTableNode> addedExtendedStrings; // Forward list of extended strings added during compilation
         std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
         std::bitset<Chk::MaxStrings> extendedStringUsed; // Table of extended strings currently used in the map
         bool useNextString(u32 &index);
@@ -134,7 +134,8 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
         bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
         bool PrepScriptTable(ScData &scData); // Fills scriptTable
-        bool PrepStringTable(ScenarioPtr map); // Fills stringTable
+        bool PrepStringTable(ScenarioPtr map); // Fills stringUsed and stringTable
+        bool PrepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
 
         bool BuildNewStringTable(ScenarioPtr chk, std::stringstream &error); // Builds a new STR section using stringTable and addedStrings
 };

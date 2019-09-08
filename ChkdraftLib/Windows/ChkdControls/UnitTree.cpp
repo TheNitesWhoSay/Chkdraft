@@ -35,7 +35,7 @@ void UnitTree::UpdateUnitNames(const std::vector<std::string> &displayNames)
 
 void UnitTree::UpdateUnitName(int unitId)
 {
-    if ( unitId < unitDisplayNames.size() )
+    if ( (size_t)unitId < unitDisplayNames.size() )
         TreeViewControl::SetItemText(UnitItems[unitId], unitDisplayNames.at(unitId));
 }
 
@@ -71,7 +71,7 @@ void UnitTree::InsertZergItems(HTREEITEM hParent)
         "Special Buildings", "Zerg" };
 
     HTREEITEM LastRace = InsertTreeItem(hParent, "Zerg", TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( int i=0; i<treeZerg.size(); i++ )
+    for ( size_t i=0; i<treeZerg.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeZerg[i], TreeTypeCategory | (LPARAM)Layer::Units);
         AddUnitItems(LastGroup, treeZerg[i]);
@@ -103,7 +103,7 @@ void UnitTree::InsertTerranItems(HTREEITEM hParent)
         "Special", "Special Buildings", "Terran" };
 
     HTREEITEM LastRace = InsertTreeItem(hParent, "Terran", TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( int i=0; i<treeTerran.size(); i++ )
+    for ( size_t i=0; i<treeTerran.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeTerran[i], TreeTypeCategory | (LPARAM)Layer::Units);
         AddUnitItems(LastGroup, treeTerran[i]);
@@ -133,7 +133,7 @@ void UnitTree::InsertProtossItems(HTREEITEM hParent)
         "Special Buildings" };
 
     HTREEITEM LastRace = InsertTreeItem(hParent, "Protoss", TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( int i=0; i<treeProtoss.size(); i++ )
+    for ( size_t i=0; i<treeProtoss.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeProtoss[i], TreeTypeCategory | (LPARAM)Layer::Units);
         AddUnitItems(LastGroup, treeProtoss[i]);
@@ -164,7 +164,7 @@ void UnitTree::InsertNeutralItems(HTREEITEM hParent)
         "Special", "Start Location", "Zerg" };
 
     HTREEITEM LastRace = InsertTreeItem(hParent, "Neutral", TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( int i=0; i<treeNeutral.size(); i++ )
+    for ( size_t i=0; i<treeNeutral.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeNeutral[i], TreeTypeCategory | (LPARAM)Layer::Units);
         AddUnitItems(LastGroup, treeNeutral[i]);
@@ -179,7 +179,7 @@ void UnitTree::InsertUndefinedItems(HTREEITEM hParent)
     const char* sTreeUndefined[] = { "Independent" };
 
     HTREEITEM LastRace = InsertTreeItem(hParent, "Undefined", TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( int i=0; i<treeUndefined.size(); i++ )
+    for ( size_t i=0; i<treeUndefined.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(LastRace, sTreeUndefined[i], TreeTypeCategory | (LPARAM)Layer::Units);
         AddUnitItems(LastGroup, treeUndefined[i]);

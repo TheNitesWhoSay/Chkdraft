@@ -9,6 +9,21 @@
 #include <tuple>
 #include <map>
 
+// TOOD: Finish Sc.h and delete this file
+
+enum class DatFilePriority : u32 {
+    MaximumPriority = u32_max,
+    PatchRt = 30000,
+    BrooDat = 20000,
+    StarDat = 10000,
+    MinimumPriority = 0
+};
+
+extern const std::string starCraftFileName;
+extern const std::string starDatFileName;
+extern const std::string brooDatFileName;
+extern const std::string patchRtFileName;
+
 class DatFileDescriptor;
 class DatFileBrowser;
 using DatFileBrowserPtr = std::shared_ptr<DatFileBrowser>;
@@ -250,14 +265,6 @@ struct IMAGEDAT
     u32 LiftOffOverlay;
 };
 
-struct FRAME
-{
-    u8 xOffset;
-    u8 yOffset;
-    u8 frameWidth;
-    u8 frameHeight;
-};
-
 class GRP
 {
 private:
@@ -273,6 +280,9 @@ public:
     u8 yOffset(u32 frame) { return imageDat.get<u8>(0x7+frame*8); }
     u8 frameWidth(u32 frame) { return imageDat.get<u8>(0x8+frame*8); }
     u8 frameHeight(u32 frame) { return imageDat.get<u8>(0x9+frame*8); }
+    u32 frameOffset(u32 frame) { return imageDat.get<u32>(0xA+frame*8); }
+    u16 lineOffset(u32 frameOffset, u32 line) { return imageDat.get<u32>(frameOffset+line*2); }
+    u8* frameData(u32 frame, u32 line) { return (u8*)imageDat.getPtr(frameOffset(frame)+lineOffset(frameOffset(frame), line)); }
     u8* data(u32 frame, u32 line);
 };
 
@@ -347,27 +357,29 @@ public:
     buffer pcxDat;
     virtual ~PCX();
     bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &fileName);
-    enum class DataLocs
+
+    class PcxFile
     {
-        Manufacuturer = 0x00,
-        VerInfo = 0x01,
-        Encoding = 0x02,
-        BitCount = 0x03,
-        LeftMargin = 0x04,
-        UpperMargin = 0x06,
-        RightMargin = 0x08,
-        LowerMargin = 0x0A,
-        HozDpi = 0x0C,
-        VertDpi = 0x0E,
-        Palette = 0x10,
-        Reserved = 0x40,
-        Ncp = 0x41,
-        Nbs = 0x42,
-        PalInfo = 0x44,
-        HozScreenSize = 0x46,
-        VertScreenSize = 0x48,
-        Reserved2 = 0x4A,
-        Data = 0x80
+    public:
+        u8 manufacturer;
+        u8 verInfo;
+        u8 encoding;
+        u8 bitCount;
+        u16 leftMargin;
+        u16 upperMargin;
+        u16 rightMargin;
+        u16 lowerMargin;
+        u16 hozDpi;
+        u16 vertDpi;
+        u8 palette[48];
+        u8 reserved;
+        u8 ncp;
+        u16 nbs;
+        u16 palInfo;
+        u16 hozScreenSize;
+        u16 vertScreenSize;
+        u8 reserved2[54];
+        u8 data[1];
     };
 };
 
@@ -397,24 +409,24 @@ private:
     buffer stat_txtTbl;
 };
 
-class AiScripts
-{
-public:
-    AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
-    virtual ~AiScripts();
-    bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
-    bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
-    int GetNumAiScripts();
-    bool GetAiIdentifier(int aiNum, u32 &outAiId);
-    bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
-    bool GetAiName(int aiNum, std::string &outAiName);
-    bool GetAiName(u32 aiId, std::string &outAiName);
-    bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
+    class AiScripts
+    {
+    public:
+        AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
+        virtual ~AiScripts();
+        bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
+        bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
+        int GetNumAiScripts();
+        bool GetAiIdentifier(int aiNum, u32 &outAiId);
+        bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
+        bool GetAiName(int aiNum, std::string &outAiName);
+        bool GetAiName(u32 aiId, std::string &outAiName);
+        bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
 
-private:
-    buffer aiScriptBin;
-    TblFiles &tblFiles;
-};
+    private:
+        buffer aiScriptBin;
+        TblFiles &tblFiles;
+    };
 
 class ScData
 {

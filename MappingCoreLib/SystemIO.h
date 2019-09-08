@@ -6,6 +6,11 @@
 #include <vector>
 #include <map>
 
+/**
+    SystemIO provides methods to interact directly with the system, all methods shall either use only C++ standard code
+    or wrap all system specific code in compiler checks (e.g. #ifdef _WIN32) for that specific system, and return false/Unknown/Unsupported for any unsupported system
+*/
+
 #ifdef output_param
 #undef output_param
 #endif
@@ -16,14 +21,14 @@
 #endif
 #define inout_param /* Syntactic sugar denoting a parameter that may optionally be used for input, and unless a function indicates that there's been an error it's obligated to set inout params before returning */
 
-using u64 = std::uint64_t;
-using s64 = std::int64_t;
-using u32 = std::uint32_t;
-using s32 = std::int32_t;
-using u16 = std::uint16_t;
-using s16 = std::int16_t;
 using u8 = std::uint8_t;
 using s8 = std::int8_t;
+using u16 = std::uint16_t;
+using s16 = std::int16_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
 
 bool hasExtension(const std::string &systemFilePath, const std::string &extension);
 std::string GetSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /

@@ -3,21 +3,22 @@
 #include "Basics.h"
 #include "Buffer.h"
 #include "FileBrowser.h"
+#include "ArchiveFile.h"
 #include "../StormLib/src/StormLib.h"
-#include <cstdint>
 #include <algorithm>
-#include <vector>
-#include <string>
-#include <map>
-
-#ifdef max
-#undef max
-#endif
+#include <memory>
 
 /**
-While the format of strings may vary in the filesystem...
-in MPQs they can be treated as UTF8
+    An MPQ file is nothing more than an archive format (like .zip) specialized for StarCraft
+
+    An MPQ file may be created or deleted, files may be added or removed from the archive, and files within may be enumerated (not always with their original file names) and their contents read
+
+    MpqFile is in turn built on top of a version of StormLib that has been modified for use in Mapping Core
 */
+
+enum class AssetAction;
+class ModifiedAsset;
+using ModifiedAssetPtr = std::shared_ptr<ModifiedAsset>;
 
 enum class WavQuality : uint32_t
 {
@@ -30,96 +31,96 @@ enum class WavQuality : uint32_t
 class MpqFile;
 using MpqFilePtr = std::shared_ptr<MpqFile>;
 
-class MpqFile
+class MpqFile : public ArchiveFile
 {
 public:
     // Constructs an unopened MPQ file, if delete is specified the MPQ is removed from the disk when close() is called
-    MpqFile(bool deleteOnClose = false);
+    MpqFile(bool deleteOnClose = false, bool updateListFile = true);
 
     // Calls close()
     virtual ~MpqFile();
 
-    // Checks whether this MPQ will be deleted when close() is called
-    bool deletingOnClose() const;
-
     // Gets the filePath, the filePath will be empty unless an MPQ is open
-    virtual const std::string &getFilePath() const;
+    virtual const std::string & getFilePath() const;
 
     // Checks whether this MPQ is open
-    inline bool isOpen() const;
+    virtual bool isOpen() const;
 
     // Checks whether an MPQ with the given filePath is open
-    inline bool isOpen(const std::string &filePath) const;
+    virtual bool isOpen(const std::string &filePath) const;
+
+    // Checks whether the listfile will be opened upon save
+    virtual bool isUpdatingListFile() const;
 
     // Checks whether an openable MPQ exists at filePath
-    bool isValid(const std::string &filePath) const;
+    virtual bool isValid(const std::string &filePath) const;
 
     // Creates and opens an MPQ at the given filePath
     // If this MPQ is already open with the given filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath, it is closed before attempting to create the new MPQ
     // If a file already exists at filePath it is replaced with the new MPQ
-    bool create(const std::string &filePath);
+    virtual bool create(const std::string &filePath);
 
     // Attempts to open an MPQ at filePath
     // If createIfNotFound is specified and no file can be found at filePath, the MPQ will be automatically created
     // If this MPQ is already open with the given filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath, it is closed before attempting to open the new MPQ
-    bool open(const std::string &filePath, bool createIfNotFound = true);
+    virtual bool open(const std::string &filePath, bool createIfNotFound = true);
 
-    // Attempts to open an MPQ at filePath, if filePath is empty or no file can be found at filePath, and a fileBrowser is provided, attempts to resolve the path using fileBrowser->browseForFilePath("", 0)
-    // If this MPQ is already open with the given filePath or the filePath browsed, no operation occurs and the method returns true
-    // If this MPQ is already open with a filePath not matching the given filePath or the filePath browsed, it is closed before attempting to open the new MPQ
-    template <typename FilterId>
-    bool open(const std::string &filePath, const FileBrowserPtr<FilterId> fileBrowser);
+    virtual void setUpdatingListFile(bool updateListFile);
 
-    // Attempts to open an MPQ if a fileBrowser is provided and fileBrowser->browseForFilePath("", 0) succeeds in finding a path
-    // If this MPQ is already open with the browsed filePath, no operation occurs and the method returns true
-    // If this MPQ is already open with a filePath not matching the filePath browsed, it is closed before attempting to open the new MPQ
-    // Calling this method automatically closes the current MPQ if open
-    template <typename FilterId>
-    bool open(const FileBrowserPtr<FilterId> fileBrowser);
+    // Saves an MPQ, if changes have been made then the MPQ is saved, if updateListFile was specified the listFile is updated with all changes made
+    // If no MPQ is open calling this method has no affect
+    virtual void save();
 
-    // Saves an MPQ, if changes have been made then the MPQ is saved, if updateListFile is specified the listFile is updated with all changes made
+    // Closes an MPQ, if changes have been made then the MPQ is saved, if updateListFile was specified the listFile is updated with all changes made
     // If no MPQ is open calling this method has no affect
     // If the temporary flag was specified the MPQ is removed from disk after being closed
-    void save(bool updateListFile = true);
-
-    // Closes an MPQ, if changes have been made then the MPQ is saved, if updateListFile is specified the listFile is updated with all changes made
-    // If no MPQ is open calling this method has no affect
-    // If the temporary flag was specified the MPQ is removed from disk after being closed
-    void close(bool updateListFile = true);
+    virtual void close();
 
     // Checks whether an file exists within the MPQ at the given mpqPath
     // Cannot be used unless the MPQ is already open
-    bool findFile(const std::string &mpqPath) const;
+    virtual bool findFile(const std::string &mpqPath) const;
 
     // Checks whether an file exists within the MPQ at the given mpqPath
     // If an MPQ is already open with a filePath matching the provided filePath, the already opened MPQ is searched
     // Else attempts to find and search an MPQ at filePath
-    bool findFile(const std::string &filePath, const std::string &mpqPath) const;
+    virtual bool findFile(const std::string &filePath, const std::string &mpqPath) const;
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    bool getFile(const std::string &mpqPath, buffer &fileData);
+    virtual bool getFile(const std::string &mpqPath, buffer &fileData);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    bool addFile(const std::string &mpqPath, const buffer &fileData, WavQuality wavQuality = WavQuality::Uncompressed);
+    virtual bool addFile(const std::string &mpqPath, const buffer &fileData);
+
+    // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool addFile(const std::string &mpqPath, const buffer &fileData, WavQuality wavQuality);
 
     // Attempts to add the file at filePath to this MPQ at mpqPath
     // Cannot be used unless the MPQ is already open
-    bool addFile(const std::string &mpqPath, const std::string &filePath, WavQuality wavQuality = WavQuality::Uncompressed);
+    virtual bool addFile(const std::string &mpqPath, const std::string &filePath);
+
+    // Attempts to add the file at filePath to this MPQ at mpqPath
+    // Cannot be used unless the MPQ is already open
+    virtual bool addFile(const std::string &mpqPath, const std::string &filePath, WavQuality wavQuality);
 
     // Attempts to rename the file in this MPQ at mpqPath to newMpqPath
     // Cannot be used unless the MPQ is already open
-    bool renameFile(const std::string &mpqPath, const std::string &newMpqPath, WavQuality wavQuality = WavQuality::Uncompressed);
+    virtual bool renameFile(const std::string &mpqPath, const std::string &newMpqPath);
 
     // Attempts to remove a file at mpqPath within this MPQ
     // Cannot be used unless the MPQ is already open
-    bool removeFile(const std::string &mpqPath);
+    virtual bool removeFile(const std::string &mpqPath);
+
+protected:
+    virtual bool virtualizableOpen(const std::string &filePath, const FileBrowserPtr<u32> fileBrowser);
+    virtual bool virtualizableOpen(const FileBrowserPtr<u32> fileBrowser);
 
 private:
-    bool deleteOnClose;
+    bool updateListFile;
     bool madeChanges;
     std::vector<std::string> addedMpqAssetPaths;
     std::string filePath;
@@ -131,26 +132,27 @@ private:
     bool remove();
 };
 
-template <typename FilterId>
-bool MpqFile::open(const std::string &filePath, const FileBrowserPtr<FilterId> fileBrowser)
-{
-    u32 filterIndex = 0;
-    std::string browseFilePath = "";
-    if ( !filePath.empty() && FindFile(filePath) )
-        return open(filePath);
-    else if ( fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) )
-        return open(browseFilePath, false);
-    else
-        return false;
-}
+enum class AssetAction {
+    Add, Remove
+};
 
-template <typename FilterId>
-bool MpqFile::open(const FileBrowserPtr<FilterId> fileBrowser)
+// Describes a file modified in an MPQ
+class ModifiedAsset
 {
-    u32 filterIndex = 0;
-    std::string browseFilePath = "";
-    return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, filterIndex) && open(browseFilePath);
-}
+public:
+    std::string assetMpqPath;
+    std::string assetTempMpqPath; // Unique path auto-generated by constructor
+    WavQuality wavQualitySelected;
+    AssetAction actionTaken;
+
+    ModifiedAsset(const std::string &assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
+    virtual ~ModifiedAsset();
+
+private:
+    static u64 nextAssetId; // Changes are needed if this is accessed in a multi-threaded environment
+
+    ModifiedAsset(); // Disallow ctor
+};
 
 extern std::vector<FilterEntry<u32>> getMpqFilter();
 

@@ -39,10 +39,10 @@ buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0),
 
     try
     {
-        data = new s8[rhs.sizeUsed];
+        data = new s8[(size_t)rhs.sizeUsed];
         sizeUsed = rhs.sizeUsed;
         sizeAllotted = rhs.sizeUsed;
-        std::memcpy(this->data, rhs.data, rhs.sizeUsed);
+        std::memcpy(this->data, rhs.data, (size_t)rhs.sizeUsed);
     }
     catch ( std::exception )
     {
@@ -137,7 +137,7 @@ bool buffer::getString(char* dest, s64 location, s64 size) const
     {
         if ( location >= 0 && size > 0 && location+size <= sizeUsed )
         {
-            std::memcpy(dest, &data[location], size);
+            std::memcpy(dest, &data[location], (size_t)size);
             return true;
         }
     }
@@ -229,7 +229,7 @@ bool buffer::getBit(s64 location, u32 bitNum)
 
 bool buffer::is(const char* str, s64 size)
 {
-    return this != nullptr && this->sizeUsed == size && memcmp(str, data, size) == 0;
+    return this != nullptr && this->sizeUsed == size && memcmp(str, data, (size_t)size) == 0;
 }
 
 /* Templates */ #endif
@@ -260,7 +260,7 @@ bool buffer::hasCaseless(char character, s64 location)
 bool buffer::has(const char* str, s64 location, s64 size)
 {
     if ( this != nullptr && location >= 0 && size > 0 && location+size <= sizeUsed )
-        return memcmp(str, &data[location], size) == 0;
+        return memcmp(str, &data[location], (size_t)size) == 0;
     else
         return false;
 }
@@ -448,7 +448,7 @@ bool buffer::addStr(const char* chunk, s64 chunkSize)
                 return false;
             }
         }
-        std::memcpy(&data[sizeUsed], chunk, chunkSize);
+        std::memcpy(&data[sizeUsed], chunk, (size_t)chunkSize);
         sizeUsed += chunkSize;
         return true;
     }
@@ -500,7 +500,7 @@ bool buffer::insert(s64 location, valueType value, s64 amount)
 
         std::memmove( &data[location+sizeof(valueType)*amount],
                       &data[location],
-                      sizeUsed - location );
+                      size_t(sizeUsed - location) );
         
         for ( s64 i=0; i<amount; i++)
             (valueType &)data[location+(i*sizeof(valueType))] = value;
@@ -528,11 +528,11 @@ bool buffer::insertStr(s64 startLocation, const char* chunk, s64 chunkSize)
 
         std::memmove( &data[startLocation+chunkSize],
                       &data[startLocation],
-                      sizeUsed-startLocation );
+                      size_t(sizeUsed-startLocation) );
 
         std::memcpy( &data[startLocation],
                      chunk,
-                     chunkSize );
+                     (size_t)chunkSize );
 
         sizeUsed += chunkSize;
         return true;
@@ -573,7 +573,7 @@ bool buffer::replaceStr(s64 startLocation, const char* chunk, s64 chunkSize)
     {
         std::memcpy( &data[startLocation],
                      chunk,
-                     chunkSize );
+                     (size_t)chunkSize );
 
         return true;
     }
@@ -597,21 +597,21 @@ bool buffer::replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s
 
             std::memmove( &data[startLocation+initialSize], // Move everything after initial chunk forward differance
                           &data[startLocation+initialSize+difference],
-                          sizeUsed-startLocation-initialSize );
+                          size_t(sizeUsed-startLocation-initialSize) );
 
             std::memcpy( &data[startLocation],
                          chunk,
-                         chunkSize );
+                         (size_t)chunkSize );
         }
         else if ( difference < 0 ) // Contract area, insert data
         {
             std::memmove( &data[startLocation+chunkSize], // Move everything after initial chunk back differance
                           &data[startLocation+initialSize],
-                          sizeUsed-startLocation-initialSize );
+                          size_t(sizeUsed-startLocation-initialSize) );
 
             std::memcpy( &data[startLocation],
                          chunk,
-                         chunkSize );
+                         (size_t)chunkSize );
 
             try {
                 resize(difference, false);
@@ -624,7 +624,7 @@ bool buffer::replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s
         {
             std::memcpy( &data[startLocation],
                          chunk,
-                         chunkSize );
+                         (size_t)chunkSize );
         }
 
         sizeUsed += difference;
@@ -673,9 +673,9 @@ bool buffer::swapStr(s64 location1, s64 location2, s64 swapSize)
 {
     if ( this != nullptr && location1 >= 0 && location2 >= 0 && swapSize > 0 && location1+swapSize <= sizeUsed && location2+swapSize <= sizeUsed )
     {
-        std::unique_ptr<char> temp = std::unique_ptr<char>(new char[swapSize]);
-        std::memcpy(temp.get(), &data[location1], swapSize);
-        std::memcpy(&data[location2], temp.get(), swapSize);
+        std::unique_ptr<char> temp = std::unique_ptr<char>(new char[(size_t)swapSize]);
+        std::memcpy(temp.get(), &data[location1], (size_t)swapSize);
+        std::memcpy(&data[location2], temp.get(), (size_t)swapSize);
         return true;
     }
     return false;
@@ -689,7 +689,7 @@ bool buffer::overwrite(const char* chunk, s64 chunkSize)
             flush();
         else if ( setSize(chunkSize) )
         {
-            std::memcpy(data, chunk, chunkSize);
+            std::memcpy(data, chunk, (size_t)chunkSize);
             sizeUsed = chunkSize;
             return true;
         }
@@ -755,7 +755,7 @@ bool buffer::del(s64 location)
             std::memmove(
                 &data[location],
                 &data[location+sizeof(valueType)],
-                sizeUsed-location-sizeof(valueType)
+                size_t(sizeUsed-location-sizeof(valueType))
             );
         }
 
@@ -780,7 +780,7 @@ bool buffer::delRange(s64 startLocation, s64 endLocation)
         s64 difference = endLocation-startLocation;
 
         if ( endLocation < sizeUsed )
-            std::memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
+            std::memmove(&data[startLocation], &data[endLocation], size_t(sizeUsed-endLocation));
 
         sizeUsed -= difference;
 
@@ -803,7 +803,7 @@ bool buffer::del(s64 startLocation, s64 size)
         if ( endLocation <= sizeUsed )
         {
             if ( endLocation < sizeUsed )
-                std::memmove(&data[startLocation], &data[endLocation], sizeUsed-endLocation);
+                std::memmove(&data[startLocation], &data[endLocation], size_t(sizeUsed-endLocation));
 
             sizeUsed -= size;
 
@@ -836,7 +836,7 @@ bool buffer::trimTo(s64 size)
             }
 
             if ( sizeUsed < size )
-                memset(&data[sizeUsed], 0, size-sizeUsed);
+                memset(&data[sizeUsed], 0, size_t(size-sizeUsed));
 
             sizeUsed = size;
             return true;
@@ -856,7 +856,7 @@ void buffer::write(FILE* pFile, bool includeHeader)
         }
 
         if ( sizeUsed > 0 )
-            fwrite(data, sizeUsed, 1, pFile);
+            fwrite(data, (size_t)sizeUsed, 1, pFile);
     }
 }
 
@@ -921,10 +921,10 @@ bool buffer::extract(buffer &src, s64 position, s64 length)
         { // length > 0, no overflow in the position+length sum or the src buffer 
             try
             {
-                data = new s8[length];
+                data = new s8[(size_t)length];
                 sizeUsed = length;
                 sizeAllotted = length;
-                std::memcpy(data, &src.data[position], length);
+                std::memcpy(data, &src.data[position], (size_t)length);
                 return true;
             }
             catch ( std::exception )
@@ -942,12 +942,12 @@ std::shared_ptr<void> buffer::serialize()
 {
     if ( this != nullptr )
     {
-        std::shared_ptr<void> rawDataBuf = std::shared_ptr<void>(new u8[sizeUsed+8]);
+        std::shared_ptr<void> rawDataBuf = std::shared_ptr<void>(new u8[size_t(sizeUsed+8)]);
         u8* rawData = (u8*)rawDataBuf.get();
         (u32&)rawData[0] = (u32&)bufTitle;
         (u32&)rawData[4] = (u32)sizeUsed;
         if ( sizeUsed > 0 )
-            std::memcpy(&rawData[8], data, sizeUsed);
+            std::memcpy(&rawData[8], data, (size_t)sizeUsed);
 
         return rawDataBuf;
     }
@@ -978,11 +978,11 @@ std::shared_ptr<buffer> buffer::makeCopy(s64 size)
         bufferCopy->sizeUsed = size;
         if ( size > sizeUsed )
         {
-            std::memcpy(bufferCopy->data, data, sizeUsed);
-            std::memset(&bufferCopy->data[sizeUsed], 0, size-sizeUsed);
+            std::memcpy(bufferCopy->data, data, (size_t)sizeUsed);
+            std::memset(&bufferCopy->data[sizeUsed], 0, size_t(size-sizeUsed));
         }
         else // if ( size <= sizeUsed )
-            std::memcpy(bufferCopy->data, data, size);
+            std::memcpy(bufferCopy->data, data, (size_t)size);
 
         return bufferCopy;
     }
@@ -1045,15 +1045,15 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
         {
             s8* newBuffer;
             try {
-                newBuffer = new s8[sizeAllotted];
+                newBuffer = new s8[(size_t)sizeAllotted];
             } catch ( std::bad_alloc ) {
                 throw( BadResize(0) );
             }
 
             if ( sizeUsed <= sizeAllotted )
-                std::memcpy( newBuffer, data, sizeUsed*sizeof(char) );
+                std::memcpy( newBuffer, data, size_t(sizeUsed*sizeof(char)) );
             else
-                std::memcpy( newBuffer, data, sizeAllotted*sizeof(char) );
+                std::memcpy( newBuffer, data, size_t(sizeAllotted*sizeof(char)) );
 
             if ( data )
             {
@@ -1074,7 +1074,7 @@ bool buffer::resize(s64 sizeChange, bool multiplySize)
             if ( sizeAllotted > 0 )
             {
                 try {
-                    data = new s8[sizeAllotted];
+                    data = new s8[(size_t)sizeAllotted];
                 } catch ( std::bad_alloc ) {
                     sizeAllotted = 0;
                     throw( BadResize(1) );

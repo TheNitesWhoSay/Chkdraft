@@ -4,7 +4,17 @@
 #include "SystemIO.h"
 #include <memory>
 #include <string>
-#include <map>
+
+/**
+    This file defines a standard, extensible interface for browsing for file paths, be they a location to save files at or open files from
+    FileBrowser has methods which bring up generic system UIs for performing these tasks, but the methods can all be overridden to use a custom UI
+
+    Strings here are all UTF8
+
+    FileBrowser should not contain any system specific code, however it calls functions in SystemIO which does make system-specific calls
+    However the system-specific code in SystemIO is wrapped in compiler checks to make them possible to cross-platform/safe to use on other systems
+    If no code exists for the system in question to browse for save or open file paths, then the methods simply return false
+*/
 
 template <typename FilterId = u32> class FilterEntry;
 template <typename FilterId = u32> class FileBrowser;
@@ -40,12 +50,18 @@ public:
 protected:
     virtual std::vector<std::pair<std::string, std::string>> getFiltersAndLabels() const;
 
+public:
+    // Classes cannot have virtual template methods, this alternate method together with type erasure form a workaround for client classes
+    virtual bool virtualizableBrowseForOpenPath(inout_param std::string &filePath, inout_param u32 &filterIndex) const;
+    // Classes cannot have virtual template methods, this alternate method together with type erasure form a workaround for client classes
+    virtual bool virtualizableBrowseForSavePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const;
+
 private:
-    std::vector<FilterEntry<FilterId>> filters;
     std::string initialDirectory;
     std::string title;
     bool pathMustExist;
     bool provideOverwritePrompt;
+    std::vector<FilterEntry<FilterId>> filters;
 };
 
 template <typename FilterId>
@@ -60,10 +76,10 @@ public:
     FilterEntry(const FilterId &filterId, const std::string &filterString, const std::string &filterLabel, const std::string &defaultExtension = "")
         : filterId(filterId), filterString(filterString), filterLabel(filterLabel), defaultExtension(defaultExtension) {}
 
-    const FilterId filterId;
     const std::string filterString;
     const std::string filterLabel;
     const std::string defaultExtension;
+    const FilterId filterId;
 };
 
 #define INCLUDE_TEMPLATES_ONLY

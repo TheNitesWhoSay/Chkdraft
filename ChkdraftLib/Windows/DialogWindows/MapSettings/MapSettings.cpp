@@ -151,7 +151,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 item.mask = TCIF_TEXT;
                 item.iImage = -1;
                 
-                for ( int i=0; i<tabTitles.size(); i++ )
+                for ( u32 i=0; i<tabTitles.size(); i++ )
                     tabs.InsertTab(i, tabTitles[i]);
                 
                 mapPropertiesWindow.CreateThis(tabs.getHandle(), WIN_MAPPROPERTIES);

@@ -355,9 +355,9 @@ usprep_getProfile(const char* path,
         LocalMemory<char> keyName;
         LocalMemory<char> keyPath;
         if( key.allocateInsteadAndReset() == NULL ||
-            keyName.allocateInsteadAndCopy(uprv_strlen(name)+1) == NULL ||
+            keyName.allocateInsteadAndCopy(int32_t(uprv_strlen(name)+1)) == NULL ||
             (path != NULL &&
-             keyPath.allocateInsteadAndCopy(uprv_strlen(path)+1) == NULL)
+             keyPath.allocateInsteadAndCopy(int32_t(uprv_strlen(path)+1)) == NULL)
          ) {
             *status = U_MEMORY_ALLOCATION_ERROR;
             usprep_unload(newProfile.getAlias());

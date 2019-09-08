@@ -1,5 +1,4 @@
 #include "ModifiedAsset.h"
-#include <iostream>
 
 u64 ModifiedAsset::nextAssetId(0);
 

@@ -1,7 +1,6 @@
 #include "MapFile.h"
 #include "SystemIO.h"
 #include "EscapeStrings.h"
-#include "ModifiedAsset.h"
 #include <cstdio>
 #include <cstdarg>
 #include <SimpleIcu.h>
@@ -20,13 +19,14 @@ FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true)
+MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
 {
     if ( MapFile::virtualWavTable.size() == 0 )
     {
-        for ( s32 i=0; i<NumVirtualSounds; i++ )
+        size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
+        for ( size_t i=0; i<numVirtualSounds; i++ )
         {
-            std::string wavPath(VirtualSoundFiles[i]);
+            std::string wavPath(Sc::Sound::virtualSoundPaths[i]);
             size_t hash = strHash(wavPath);
             virtualWavTable.insert(std::pair<size_t, std::string>(hash, wavPath));
         }
@@ -89,7 +89,8 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                             if ( !ProcessModifiedAssets(updateListFile) )
                                 CHKD_ERR("Processing assets failed!");
 
-                            MpqFile::close(updateListFile);
+                            MpqFile::setUpdatingListFile(updateListFile);
+                            MpqFile::close();
                             return true;
                         }
                         else
@@ -254,7 +255,7 @@ bool MapFile::OpenMapFile(const std::string &filePath)
     return false;
 }
 
-bool MapFile::ProcessModifiedAssets(bool updateListfile)
+bool MapFile::ProcessModifiedAssets(bool updateListFile)
 {
     std::vector<std::vector<ModifiedAssetPtr>::iterator> processedAssets;
     if ( OpenTemporaryMpq() )
@@ -284,7 +285,8 @@ bool MapFile::ProcessModifiedAssets(bool updateListfile)
                     CHKD_ERR("Failed to remove %s from map archive", assetMpqPath.c_str());
             }
         }
-        temporaryMpq.save(updateListfile);
+        temporaryMpq.setUpdatingListFile(updateListFile);
+        temporaryMpq.save();
     }
 
     if ( processedAssets.size() == modifiedAssets.size() )
@@ -328,7 +330,8 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
             else
                 CHKD_ERR("Failed to add file!");
             
-            temporaryMpq.save(true);
+            temporaryMpq.setUpdatingListFile(true);
+            temporaryMpq.save();
         }
         else
             CHKD_ERR("Failed to setup asset temporary storage!");
@@ -355,8 +358,9 @@ bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &ass
             }
             else
                 CHKD_ERR("Failed to add file!");
-
-            temporaryMpq.save(true);
+            
+            temporaryMpq.setUpdatingListFile(true);
+            temporaryMpq.save();
         }
         else
             CHKD_ERR("Failed to open temp file!\n\nThe file may be in use elsewhere.");
@@ -663,21 +667,28 @@ bool MapFile::getSaveDetails(inout_param SaveType &saveType, output_param std::s
                 else
                     inferredExtension = false;
             }
-            else // Extension specified, give it precedence over filterIndex
+            else // Extension specified, give it precedence over filterIndex (that is, update newSaveType if it's not already appropriate for the extension)
             {
-                if ( extension == ".chk" && (newSaveType == SaveType::StarCraftScm || newSaveType == SaveType::HybridScm || newSaveType == SaveType::ExpansionScx) )
+                if ( extension == ".chk" && newSaveType != SaveType::StarCraftChk && newSaveType != SaveType::HybridChk && newSaveType != SaveType::ExpansionChk && newSaveType != SaveType::AllChk )
                 {
                     if ( newSaveType == SaveType::ExpansionScx )
                         newSaveType = SaveType::ExpansionChk;
-                    else
+                    else if ( newSaveType == SaveType::StarCraftScm )
+                        newSaveType = SaveType::StarCraftChk;
+                    else // Default to hybrid chk
                         newSaveType = SaveType::HybridChk;
                 }
-                else if ( extension == ".scm" && newSaveType != SaveType::StarCraftScm )
-                    newSaveType = SaveType::HybridScm;
-                else if ( extension == ".scx" )
+                else if ( extension == ".scm" && newSaveType != SaveType::StarCraftScm && newSaveType != SaveType::HybridScm )
+                {
+                    if ( newSaveType == SaveType::StarCraftChk )
+                        newSaveType = SaveType::StarCraftScm;
+                    else // Default to hybrid scm
+                        newSaveType = SaveType::HybridScm;
+                }
+                else if ( extension == ".scx" && newSaveType != SaveType::ExpansionScx )
                     newSaveType = SaveType::ExpansionScx;
                 else if ( newSaveType == SaveType::AllMaps )
-                    newSaveType = SaveType::ExpansionScx;
+                    newSaveType = SaveType::ExpansionScx; // Default to expansion scx
             }
 
             bool fileExists = FindFile(newSaveFilePath);

@@ -292,8 +292,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FileIoTest.cpp" />
+    <ClCompile Include="BasicsTest.cpp" />
+    <ClCompile Include="SystemIoTest.cpp" />
     <ClCompile Include="MappingCoreTestMain.cpp" />
+    <ClCompile Include="TextTrigCompilerTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

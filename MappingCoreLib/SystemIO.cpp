@@ -8,16 +8,12 @@
 #include <memory>
 #include <thread>
 #include <chrono>
-#include "../CommanderLib/Logger.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
 constexpr u32 size_1kb = 0x400;
-constexpr u32 size_1mb = 0x100000;
 constexpr u32 size_1gb = 0x40000000;
-
-extern Logger logger;
 
 bool hasExtension(const std::string &systemFilePath, const std::string &extension)
 {

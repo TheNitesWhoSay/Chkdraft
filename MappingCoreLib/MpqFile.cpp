@@ -2,7 +2,7 @@
 #include "SystemIO.h"
 #include <SimpleIcu.h>
 
-MpqFile::MpqFile(bool deleteOnClose) : deleteOnClose(deleteOnClose), madeChanges(false), filePath(""), hMpq(NULL)
+MpqFile::MpqFile(bool deleteOnClose, bool updateListFile) : ArchiveFile(deleteOnClose), updateListFile(updateListFile), madeChanges(false), filePath(""), hMpq(NULL)
 {
 
 }
@@ -12,12 +12,7 @@ MpqFile::~MpqFile()
     close();
 }
 
-bool MpqFile::deletingOnClose() const
-{
-    return deleteOnClose;
-}
-
-const std::string &MpqFile::getFilePath() const
+const std::string & MpqFile::getFilePath() const
 {
     return filePath;
 }
@@ -31,6 +26,11 @@ inline bool MpqFile::isOpen() const
 inline bool MpqFile::isOpen(const std::string &filePath) const
 {
     return hMpq != NULL && filePath == this->filePath;
+}
+
+inline bool MpqFile::isUpdatingListFile() const
+{
+    return updateListFile;
 }
 
 bool MpqFile::isValid(const std::string &filePath) const
@@ -76,7 +76,12 @@ bool MpqFile::open(const std::string &filePath, bool createIfNotFound)
     return false;
 }
 
-void MpqFile::save(bool updateListFile)
+void MpqFile::setUpdatingListFile(bool updateListFile)
+{
+    this->updateListFile = updateListFile;
+}
+
+void MpqFile::save()
 {
     if ( isOpen() )
     {
@@ -100,7 +105,7 @@ void MpqFile::save(bool updateListFile)
     }
 }
 
-void MpqFile::close(bool updateListFile)
+void MpqFile::close()
 {
     if ( isOpen() )
     {
@@ -122,10 +127,10 @@ void MpqFile::close(bool updateListFile)
         SFileCloseArchive(hMpq);
         hMpq = NULL;
 
-        if ( deleteOnClose )
+        if ( ArchiveFile::deletingOnClose() )
             remove();
 
-        deleteOnClose = false;
+        setDeleteOnClose(false);
         madeChanges = false;
         filePath = "";
     }
@@ -208,6 +213,16 @@ bool MpqFile::getFile(const std::string &mpqPath, buffer &fileData)
     return ::getFile(this, mpqPath, fileData);
 }
 
+bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData)
+{
+    if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
+    {
+        addedMpqAssetPaths.push_back(mpqPath);
+        return true;
+    }
+    return false;
+}
+
 bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData, WavQuality wavQuality)
 {
     bool addedFile = false;
@@ -222,6 +237,16 @@ bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData, WavQua
             addedMpqAssetPaths.push_back(mpqPath);
     }
     return addedFile;
+}
+
+bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath)
+{
+    if ( isOpen() && SFileAddFile(hMpq, icux::toFilestring(filePath).c_str(), mpqPath.c_str(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
+    {
+        addedMpqAssetPaths.push_back(mpqPath);
+        return true;
+    }
+    return false;
 }
 
 bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath, WavQuality wavQuality)
@@ -240,7 +265,7 @@ bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath, W
     return addedFile;
 }
 
-bool MpqFile::renameFile(const std::string &mpqPath, const std::string &newMpqPath, WavQuality wavQuality)
+bool MpqFile::renameFile(const std::string &mpqPath, const std::string &newMpqPath)
 {
     return isOpen() && SFileRenameFile(hMpq, mpqPath.c_str(), newMpqPath.c_str());
 }
@@ -271,6 +296,39 @@ bool MpqFile::remove()
         return true;
     }
     return false;
+}
+
+bool MpqFile::virtualizableOpen(const std::string &filePath, const FileBrowserPtr<u32> fileBrowser)
+{
+    u32 filterIndex = 0;
+    std::string browseFilePath = "";
+    if ( !filePath.empty() && FindFile(filePath) )
+        return open(filePath);
+    else if ( fileBrowser != nullptr && fileBrowser->virtualizableBrowseForOpenPath(browseFilePath, filterIndex) )
+        return open(browseFilePath, false);
+    else
+        return false;
+}
+
+bool MpqFile::virtualizableOpen(const FileBrowserPtr<u32> fileBrowser)
+{
+    u32 filterIndex = 0;
+    std::string browseFilePath = "";
+    return fileBrowser != nullptr && fileBrowser->virtualizableBrowseForSavePath(browseFilePath, filterIndex) && open(browseFilePath);
+}
+
+u64 ModifiedAsset::nextAssetId(0);
+
+ModifiedAsset::ModifiedAsset(const std::string &assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
+    : assetMpqPath(assetMpqPath), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
+{
+    assetTempMpqPath = std::to_string(nextAssetId);
+    nextAssetId ++;
+}
+
+ModifiedAsset::~ModifiedAsset()
+{
+
 }
 
 std::vector<FilterEntry<u32>> getMpqFilter()

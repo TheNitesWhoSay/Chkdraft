@@ -4,21 +4,43 @@
 #include <algorithm>
 #include <string>
 
+DWORD ColorCycler::prevTickCount = 0;
+
 enum class MaxUnitBounds
 {
     Left = 128, Right = 127, Up = 80, Down = 79
 };
 
-DWORD ColorCycler::ccticks(0);
-
-colorcycle ColorCycler::cctable[4][8] = { // Different color cycling definition tables
-    { { 1,8,0,1,6 },{ 1,8,0,7,13 },{ 1,8,0,248,254 },{ 0 } },
-    { { 0 } },
-    { { 1,8,0,1,4 },{ 1,8,0,5,8 },{ 1,8,0,9,13 },{ 0 } },
-    { { 1,8,0,1,13 },{ 1,8,0,248,254 },{ 0 } }
+const size_t ColorCycler::TilesetRotationSet[Sc::Terrain::MaxTilesets] = {
+    0, // badlands uses set 0
+    1, // platform uses set 1
+    1, // installation uses set 1
+    2, // ashworld uses set 2
+    0, // jungle uses set 0
+    3, // desert uses set 3
+    3, // iceworld uses set 3
+    3  // twilight uses set 3
 };
 
-const u8 ColorCycler::cctilesets[8] = { 0,1,1,2,0,3,3,3 };
+ColorCycler::Rotator ColorCycler::NoRotators[MaxRotatersPerSet] = {};
+
+ColorCycler::Rotator ColorCycler::RotatorSets[TotalRotatorSets][MaxRotatersPerSet] = {
+    { // Rotator set 0: Three rotators act on badlands and jungle
+        { Rotator::Enabled::Yes, 8, 0, 1, 6 }, // Every eight ticks rotate palette colors from indexes 1 to 6 (inclusive) rightwards
+        { Rotator::Enabled::Yes, 8, 0, 7, 13 }, // Every eight ticks rotate palette colors from indexes 7 to 13 (inclusive) rightwards
+        { Rotator::Enabled::Yes, 8, 0, 248, 254 } // Every eight ticks rotate palette colors from indexes 248 to 254 (inclusive) rightwards
+    },
+    {}, // Rotator set 1: No rotators act on platform or installation
+    { // Rotator set 2: Three rotators act on ashworld
+        { Rotator::Enabled::Yes, 8, 0, 1, 4 }, // Every eight ticks rotate palette colors from indexes 1 to 4 (inclusive) rightwards
+        { Rotator::Enabled::Yes, 8, 0, 5, 8 }, // Every eight ticks rotate palette colors from indexes 5 to 8 (inclusive) rightwards
+        { Rotator::Enabled::Yes, 8, 0, 9, 13 } // Every eight ticks rotate palette colors from indexes 9 to 13 (inclusive) rightwards
+    },
+    { // Rotator set 3: Two rotators act on desert, iceworld, and twilight
+        { Rotator::Enabled::Yes, 8, 0, 1, 13 }, // Every eight ticks rotate palette colors from indexes 1 to 13 (inclusive) rightwards
+        { Rotator::Enabled::Yes, 8, 0, 248, 254 } // Every eight ticks rotate palette colors from indexes 248 to 254 (inclusive) rightwards
+    }
+};
 
 ColorCycler::~ColorCycler()
 {
@@ -28,27 +50,31 @@ ColorCycler::~ColorCycler()
 bool ColorCycler::CycleColors(const u16 tileset)
 {
     bool redraw = false;
-    if ( GetTickCount() > ccticks ) // Time to update for next tick?
+    if ( GetTickCount() > prevTickCount )
     {
-        colorcycle* cc = cctable[cctilesets[tileset]]; // Get current tileset's definition table
-        for ( int ccset = 0; ccset < 8; ccset++ ) // For each record in table
+        size_t currentRotationSet = TilesetRotationSet[tileset];
+        Rotator* rotatorSet = currentRotationSet < TotalRotatorSets ? RotatorSets[currentRotationSet] : NoRotators;
+        for ( size_t rotatorIndex=0; rotatorIndex<8; rotatorIndex++ )
         {
-            if ( cc[ccset].enabled == false ) continue; // Not enabled
-            if ( cc[ccset].timer > 0 ) // Timer hasn't expired
+            Rotator & rotator = rotatorSet[rotatorIndex];
+            if ( rotator.enabled != Rotator::Enabled::No ) // Ensure this rotator is enabled/exists
             {
-                cc[ccset].timer--;
-            }
-            else // Do our thing !
-            {
-                cc[ccset].timer = cc[ccset].steps; // Reset timer
-                for ( int i = cc[ccset].stop; i > cc[ccset].start; i-- ) // For each from start to stop
-                    chkd.scData.tilesets.set[tileset].wpe.swap<u32>(i * 4, (i - 1) * 4); // Rotate right
-                
-                redraw = true; // Tell the caller the map should be redrawn
+                if ( rotator.ticksRemaining == 0 )
+                {
+                    for ( u16 paletteIndex = rotator.paletteIndexMax; paletteIndex > rotator.paletteIndexMin; paletteIndex-- )
+                        chkd.scData.tilesets.set[tileset].wpe.swap<u32>(4*paletteIndex, 4*paletteIndex-4); // Swap adjacent colors starting from max and ending at min, net effect is each rotates one to the right
+
+                    rotator.ticksRemaining = rotator.ticksBetweenRotations; // Reset the timer
+                    redraw = true; // Flag that anything using the palette should be redrawn
+                }
+                else
+                    rotator.ticksRemaining --; // Decrement the timer
             }
         }
-        ccticks = GetTickCount();
+
+        prevTickCount = GetTickCount();
     }
+
     return redraw;
 }
 
@@ -858,7 +884,7 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
         pos,
         x;
 
-    if ( line + yOffset < 0 ) // Prevent writing before the first line
+    if ( yOffset < 0 ) // Prevent writing before the first line
         line = (s16)(-yOffset);
 
     if ( yOffset+frameHeight > bitHeight ) // Prevent writing past the last line
@@ -884,12 +910,7 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
             {
                 for ( u8 i=0; i<compSect-0x40; i++ )
                 {
-                    u32 bitmapIndex;
-                    if ( flipped )
-                        bitmapIndex = (line+yOffset)*bitWidth+frameWidth-x+xOffset;
-                    else
-                        bitmapIndex = (line+yOffset)*bitWidth+x+xOffset;
-
+                    u32 bitmapIndex = flipped ? (line+yOffset)*bitWidth+frameWidth-x+xOffset : (line+yOffset)*bitWidth+x+xOffset;
                     if ( x+xOffset < bitWidth && x+xOffset > 0 )
                     {
                         if ( lineDat[pos] < 8 )
@@ -903,7 +924,7 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
                 }
                 pos++;
             }
-            else // Place compSect pixels directly from data
+            else // compSect < 0x40, place compSect pixels directly from data
             {
                 for ( u8 i=0; i<compSect; i++ )
                 {
@@ -923,6 +944,163 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
             }
         }
         line ++;
+    }
+}
+
+void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
+               Sc::Sprites::CompressedGrpFile &compressedGrpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
+{
+    if ( frame < compressedGrpFile.numFrames )
+    {
+        const Sc::Sprites::CompressedGrpFrameHeader compressedGrpFrameHeader = compressedGrpFile.frameHeaders[frame];
+        
+        s32 xOffset = grpXc-xStart-compressedGrpFile.grpWidth/2+compressedGrpFrameHeader.xOffset,
+            yOffset = grpYc-yStart-compressedGrpFile.grpHeight/2+compressedGrpFrameHeader.yOffset;
+
+        s16 row = 0;
+        if ( yOffset < 0 ) // Only draw visible rows by starting at row: |yOffset|, if yOffset is negative
+            row = (s16)(-yOffset);
+
+        u8 frameWidth = compressedGrpFrameHeader.frameWidth;
+        s16 frameHeight = compressedGrpFrameHeader.frameHeight;
+        if ( yOffset+frameHeight >= bitHeight ) // Only draw visible rows by limiting row < bitHeight-yOffset if yOffset+frameHeight >= bitHeight
+            frameHeight = bitHeight - yOffset;
+        
+        u32 frameOffset = compressedGrpFrameHeader.frameOffset;
+        const Sc::Sprites::CompressedGrpFrame & compressedGrpFrame = (const Sc::Sprites::CompressedGrpFrame &)((u8*)&compressedGrpFile)[frameOffset];
+        if ( flipped )
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                u16 rowOffset = compressedGrpFrame.rowOffsets[row];
+                const Sc::Sprites::CompressedPixelRow* compressedGrpPixelRow = (const Sc::Sprites::CompressedPixelRow*)((u8*)&compressedGrpFile)[frameOffset+(u32)rowOffset];
+                const Sc::Sprites::CompressedPixelLine* compressedPixelLine = (const Sc::Sprites::CompressedPixelLine*)&compressedGrpPixelRow->adjacentHorizontalLines[0];
+                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset + frameWidth - 1; // Start from the right-most pixel of this row of the frame
+                u32 compressedPixelLineOffset = 0;
+                for ( u8 xc=0; xc<frameWidth; xc++ )
+                {
+                    compressedPixelLineOffset ++; // Forward 1 byte for the header all line types share
+
+                    if ( compressedPixelLine->isTransparentLine() )
+                    {
+                        currPixel -= compressedPixelLine->transparentLineLength();
+                        compressedPixelLine ++; // Forward 1 byte for the header to get to the next compressedPixelLine
+                    }
+                    else if ( compressedPixelLine->isSolidLine() )
+                    {
+                        u8 lineLength = compressedPixelLine->solidLineLength();
+                        currPixel -= lineLength;
+                        std::fill_n(currPixel+1, lineLength, palette[compressedPixelLine->paletteIndex[0]]); // Place single color across the entire line
+                        compressedPixelLine += 2; // Forward 1 byte for the header and 1 for the solid line color to get to the next compressedPixelLine
+                    }
+                    else if ( compressedPixelLine->isSpeckled() )
+                    {
+                        u8 lineLength = compressedPixelLine->speckledLineLength();
+                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
+                            *currPixel = palette[compressedPixelLine->paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        compressedPixelLine += 1+lineLength; // Forward 1 byte for the header and lineLength for the colors to get to the next compressedPixelLine
+                    }
+                }
+            }
+        }
+        else // !flipped
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                u16 rowOffset = compressedGrpFrame.rowOffsets[row];
+                const Sc::Sprites::CompressedPixelRow* compressedGrpPixelRow = (const Sc::Sprites::CompressedPixelRow*)((u8*)&compressedGrpFile)[frameOffset+(u32)rowOffset];
+                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset; // Start from the left-most pixel of this row of the frame
+                u32 compressedPixelLineOffset = 0;
+                for ( u8 xc=0; xc<frameWidth; xc++ )
+                {
+                    const Sc::Sprites::CompressedPixelLine & compressedPixelLine = (const Sc::Sprites::CompressedPixelLine &)((u8*)compressedGrpPixelRow)[compressedPixelLineOffset];
+                    compressedPixelLineOffset ++; // Forward 1 byte for the header all line types share
+
+                    if ( compressedPixelLine.isTransparentLine() )
+                        currPixel += compressedPixelLine.transparentLineLength();
+                    else if ( compressedPixelLine.isSolidLine() )
+                    {
+                        u8 lineLength = compressedPixelLine.solidLineLength();
+                        currPixel += lineLength;
+                        std::fill_n(currPixel+1, lineLength, palette[compressedPixelLine.paletteIndex[0]]); // Place single color across the entire line
+                        compressedPixelLineOffset ++; // Forward 1 byte for the solid line color
+                    }
+                    else if ( compressedPixelLine.isSpeckled() )
+                    {
+                        u8 lineLength = compressedPixelLine.speckledLineLength();
+                        compressedPixelLineOffset += lineLength; // Forward lineLength pixels for the palette index array
+                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                            *currPixel = palette[compressedPixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                    }
+                }
+            }
+        }
+    }
+}
+
+void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
+               Sc::Sprites::GrpFile &grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
+{
+    if ( frame < grpFile.numFrames )
+    {
+        const Sc::Sprites::GrpFrame & grpFrame = grpFile.frames[frame];
+        
+        s32 xOffset = grpXc-xStart-grpFile.grpWidth/2+grpFrame.xOffset,
+            yOffset = grpYc-yStart-grpFile.grpHeight/2+grpFrame.yOffset;
+
+        s16 row = 0;
+        if ( yOffset < 0 ) // Only draw visible rows by starting at row: |yOffset|, if yOffset is negative
+            row = (s16)(-yOffset);
+
+        u8 frameWidth = grpFrame.frameWidth;
+        s16 frameHeight = grpFrame.frameHeight;
+        if ( yOffset+frameHeight >= bitHeight ) // Only draw visible rows by limiting row < bitHeight-yOffset if yOffset+frameHeight >= bitHeight
+            frameHeight = bitHeight - yOffset;
+        
+        if ( flipped )
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                const Sc::Sprites::GrpPixelRow & grpPixelRow = grpFrame.rows[row];
+                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset + frameWidth - 1; // Start from the right-most pixel of this row of the frame
+                for ( u8 line=0; line<grpPixelRow.totalLines; line++ )
+                {
+                    const Sc::Sprites::GrpPixelLine & grpPixelLine = grpPixelRow.adjacentHorizontalPixelLines[line];
+                    auto nextLineStartPixel = currPixel - grpPixelLine.lineWidth; // Since we're flipped, next horizontal line will start backward grpPixelLine.lineWidth pixels
+
+                    if ( grpPixelLine.isSingleColor )
+                        std::fill_n(nextLineStartPixel+1, grpPixelLine.lineWidth, palette[grpPixelLine.paletteIndex[0]]); // Place single color across the entire line
+                    else if ( grpPixelLine.isSpeckled )
+                    {
+                        for ( u8 linePixel=0; linePixel<grpPixelLine.lineWidth; linePixel++, --currPixel ) // For every pixel in the line
+                            *currPixel = palette[grpPixelLine.paletteIndex[linePixel]]; // Place color specified in the array at current pixel
+                    }
+                    currPixel = nextLineStartPixel; // Move to the start of the next line
+                }
+            }
+        }
+        else // !flipped
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                const Sc::Sprites::GrpPixelRow & grpPixelRow = grpFrame.rows[row];
+                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset; // Start from the left-most pixel of this row of the frame
+                for ( u8 line=0; line<grpPixelRow.totalLines; line++ )
+                {
+                    const Sc::Sprites::GrpPixelLine & grpPixelLine = grpPixelRow.adjacentHorizontalPixelLines[line];
+                    auto nextLineStartPixel = currPixel + grpPixelLine.lineWidth; // Next horizontal line will start forward grpPixelLine.lineWidth pixels
+
+                    if ( grpPixelLine.isSingleColor )
+                        std::fill_n(currPixel, grpPixelLine.lineWidth, palette[grpPixelLine.paletteIndex[0]]); // Place single color across the entire line
+                    else if ( grpPixelLine.isSpeckled )
+                    {
+                        for ( u8 linePixel=0; linePixel<grpPixelLine.lineWidth; linePixel++, ++currPixel ) // For every pixel in the line
+                            *currPixel = palette[grpPixelLine.paletteIndex[linePixel]]; // Place color specified in the array at current pixel
+                    }
+                    currPixel = nextLineStartPixel; // Move to the start of the next line
+                }
+            }
+        }
     }
 }
 
@@ -1666,7 +1844,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
     size_t chunkStartChar = 0;
     bool center = false,
          right = false;
-    for ( int i=0; i<size; i++ )
+    for ( size_t i=0; i<size; i++ )
     {
         if ( u8(cStr[i]) < 32 && cStr[i] != '\11' ) // Not tab, must be color or alignment
         {

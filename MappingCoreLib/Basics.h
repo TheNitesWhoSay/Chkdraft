@@ -4,10 +4,24 @@
 #include <cstring>
 #include <cstdint>
 #include <vector>
+#include <cstdarg>
 #include <unordered_map>
 #include <map>
 
-#ifdef CHKDRAFT // Globally defined in project properties if this is used in CHKDraft
+/**
+    Basics contains several things...
+        - Logging and debugging
+        - Syntactic Sugar (e.g. output_param, inout_param)
+        - Definitions for useful data types (e.g. u8: unsigned 8-bit number, s8: signed 8-bit number) and their limits (e.g. s8_min, s8_max)
+        - Definitions for useful generic constants (e.g. size_1kb, size_1mb)
+        - Definitions for bit and xBit values (xBit being the inversion of the bit for a given data size) and arrays for enumerating the bit values
+        - The "NotImplemented" exception class
+        - Convenience macros and methods
+
+    Basics should not contain any system specific code
+*/
+
+#ifdef CHKDRAFT // Globally defined in project properties if this is used in Chkdraft
 void Debug();
 void DebugIf(bool condition);
 void NoDebug();
@@ -48,25 +62,33 @@ void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ig
 #endif
 #define inout_param /* Syntactic sugar denoting a parameter that may optionally be used for input, and unless a function indicates that there's been an error it's obligated to set inout params before returning */
 
-using u64 = std::uint64_t;
-using s64 = std::int64_t;
-using u32 = std::uint32_t;
-using s32 = std::int32_t;
-using u16 = std::uint16_t;
-using s16 = std::int16_t;
 using u8 = std::uint8_t;
 using s8 = std::int8_t;
+using u16 = std::uint16_t;
+using s16 = std::int16_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
 
 constexpr u8 u8_max = UINT8_MAX;
 constexpr u16 u16_max = UINT16_MAX;
 constexpr u32 u32_max = UINT32_MAX;
+constexpr u64 u64_max = UINT64_MAX;
 
+constexpr s8 s8_min = INT8_MIN;
+constexpr s8 s8_max = INT8_MAX;
+constexpr s16 s16_min = INT16_MIN;
+constexpr s16 s16_max = INT16_MAX;
 constexpr s32 s32_min = INT32_MIN;
 constexpr s32 s32_max = INT32_MAX;
+constexpr s64 s64_min = INT64_MIN;
+constexpr s64 s64_max = INT64_MAX;
 
 constexpr u32 size_1kb = 0x400;
 constexpr u32 size_1mb = 0x100000;
 constexpr u32 size_1gb = 0x40000000;
+constexpr u64 size_1tb = 0x10000000000;
 
 #define BIT_0  0x1
 #define BIT_1  0x2
@@ -168,112 +190,15 @@ constexpr u32 size_1gb = 0x40000000;
 #define x32BIT_30 0xBFFFFFFF
 #define x32BIT_31 0x7FFFFFFF
 
-const u32 u32Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
-BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15,
-BIT_16, BIT_17, BIT_18, BIT_19, BIT_20, BIT_21, BIT_22, BIT_23,
-BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };
+const u8 u8Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
 
 const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 
-enum class ForceFlags : uint8_t {
-    None = 0,
-    RandomizeStartLocation = BIT_0,
-    Allied = BIT_1,
-    AlliedVictory = BIT_2,
-    SharedVision = BIT_3
-};
-
-enum class UnitEnabledState : uint8_t
-{
-    Default = 0,
-    Enabled = 1,
-    Disabled = 2
-};
-
-enum class NumericComparison : uint8_t
-{
-    AtLeast = 0,
-    AtMost = 1,
-    Exactly = 10
-};
-
-enum class NumericModifier : uint8_t
-{
-    Add = 8,
-    Subtract = 9,
-    SetTo = 7
-};
-
-enum class SwitchState : uint8_t
-{
-    Cleared = 3,
-    Set = 2
-};
-
-enum class SwitchModifier : uint8_t
-{
-    Set = 4,
-    Clear = 5,
-    Toggle = 6,
-    Randomize = 11
-};
-
-enum class UnitSettingsDataLoc {
-    HitPoints = 228, ShieldPoints = 1140, Armor = 1596, BuildTime = 1824,
-    MineralCost = 2280, GasCost = 2736, StringIds = 3192, BaseWeapon = 3648,
-};
-#define UnitSettingsDataLocBonusWeapon(isExpansion) (isExpansion?3908:3848)
-enum class PlayerUnitSettingsDataLoc {
-    GlobalAvailability = 2736, PlayerUsesDefault = 2964
-};
-
-#define UpgradeSettingsDataLocMineralCost(isExpansion) (isExpansion?62:46)
-#define UpgradeSettingsDataLocMineralFactor(isExpansion) (isExpansion?184:138)
-#define UpgradeSettingsDataLocGasCost(isExpansion) (isExpansion?306:230)
-#define UpgradeSettingsDataLocGasFactor(isExpansion) (isExpansion?428:322)
-#define UpgradeSettingsDataLocTimeCost(isExpansion) (isExpansion?550:414)
-#define UpgradeSettingsDataLocTimeFactor(isExpansion) (isExpansion?672:506)
-
-#define UpgradeSettingsDataLocPlayerMaxLevel(isExpansion, player) (isExpansion?(61*(u32)player):(46*(u32)player))
-#define UpgradeSettingsDataLocPlayerStartLevel(isExpansion, player) (isExpansion?(732+61*(u32)player):(552+46*(u32)player))
-#define UpgradeSettingsDataLocDefaultMaxLevel(isExpansion) (isExpansion?1464:1104)
-#define UpgradeSettingsDataLocDefaultStartLevel(isExpansion) (isExpansion?1525:1150)
-#define UpgradeSettingsDataLocPlayerUsesDefault(isExpansion, player) (isExpansion?(1586+61*(u32)player):(1196+46*(u32)player))
-
-#define TechSettingsDataLocMineralCost(isExpansion) (isExpansion?44:24)
-#define TechSettingsDataLocGasCost(isExpansion) (isExpansion?132:72)
-#define TechSettingsDataLocTimeCost(isExpansion) (isExpansion?220:120)
-#define TechSettingsDataLocEnergyCost(isExpansion) (isExpansion?308:168)
-
-#define PlayerTechSettingsDataLocAvailableForPlayer(isExpansion, player) (isExpansion?(44*(u32)player):(24*(u32)player))
-#define PlayerTechSettingsDataLocResearchedForPlayer(isExpansion, player) (isExpansion?(528+44*(u32)player):(288+24*(u32)player))
-#define PlayerTechSettingsDataLocDefaultAvailability(isExpansion) (isExpansion?1056:576)
-#define PlayerTechSettingsDataLocDefaultReserached(isExpansion) (isExpansion?1100:600)
-#define PlayerTechSettingsDataLocPlayerUsesDefault(isExpansion, player) (isExpansion?(1144+44*(u32)player):(624+24*(u32)player))
-
-extern const std::vector<std::string> DefaultUnitDisplayNames;
-
-extern const std::vector<std::string> LegacyTextTrigDisplayNames;
-
-extern const std::vector<std::string> VirtualSoundFiles;
-
-constexpr s32 NumRealUnits = 228;
-constexpr s32 NumVirtualSounds = 1143;
-
-enum class DatFilePriority : u32 {
-    MaximumPriority = 0,
-    PatchRt = 100,
-    BrooDat = 200,
-    StarDat = 300,
-    MinimumPriority = u32_max
-};
-
-extern const std::string starCraftFileName;
-extern const std::string starDatFileName;
-extern const std::string brooDatFileName;
-extern const std::string patchRtFileName;
-extern std::unordered_map<DatFilePriority, std::string> getDefaultStarCraftDatFiles();
+const u32 u32Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
+BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15,
+BIT_16, BIT_17, BIT_18, BIT_19, BIT_20, BIT_21, BIT_22, BIT_23,
+BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };
 
 class NotImplemented : public std::logic_error
 {
@@ -281,5 +206,32 @@ class NotImplemented : public std::logic_error
         NotImplemented() : std::logic_error("Function not yet implemented") { };
         NotImplemented(const std::string &str) : std::logic_error(str) { };
 };
+
+
+#define foreachin(item, range) for ( auto item = range.first; item != range.second; ++ item)
+
+template <typename valueType>
+void AscendingOrder(valueType &low, valueType &high);
+
+u32 SmallestOf(u32 &first, u32 &second);
+
+s32 SmallestOf(s32 &first, s32 &second);
+
+u32 SmallestOf(u32 &first, u32 &second, u32 &third);
+
+s32 SmallestOf(s32 &first, s32 &second, s32 &third);
+
+void LongToBytes(s32 value, u8* bytes);
+
+void ShortToBytes(u16 value, u8* bytes);
+
+s32 TripletToInt(u8* triplet);
+
+template <typename T>
+s32 round(T value);
+
+#define INCLUDE_TEMPLATES_ONLY
+#include "Basics.cpp"
+#undef INCLUDE_TEMPLATES_ONLY
 
 #endif

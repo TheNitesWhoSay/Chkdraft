@@ -9,6 +9,13 @@
 #include <time.h>
 #include <map>
 
+/**
+    A map file is a Scenario file wrapped inside of an MpqFile file and given an .scm or .scx extension
+
+    Sometimes a scenario file alone, which has a .chk extension, may be considered a map file and may still be fully edited as one
+    Though any attempt to save a map file as a scenario file will result in any sounds and any mpq assets not being included
+*/
+
 #ifdef CHKDRAFT
 bool GetPreSavePath(std::string &outPreSavePath); // Gets path holding assets to be written to the map file on save
 #endif

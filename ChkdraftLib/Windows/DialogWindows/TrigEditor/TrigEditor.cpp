@@ -85,8 +85,8 @@ void TrigEditorWindow::CreateSubWindows(HWND hWnd)
 {
     tabs.FindThis(hWnd, IDC_TRIGEDITTABS);
     const std::vector<std::string> tabLabels = { "Triggers", "Templates", "Counters", "CUWPs", "Switches" };
-    for ( int i=0; i<tabLabels.size(); i++ )
-        tabs.InsertTab(i, tabLabels[i]);
+    for ( size_t i=0; i<tabLabels.size(); i++ )
+        tabs.InsertTab((u32)i, tabLabels[i]);
 
     triggersWindow.CreateThis(tabs.getHandle(), WIN_TRIGGERS);
     templatesWindow.CreateThis(tabs.getHandle(), WIN_TEMPLATES);

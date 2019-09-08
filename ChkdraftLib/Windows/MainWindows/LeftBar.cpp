@@ -29,7 +29,7 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
         switch ( itemType )
         {
             //case TREE_TYPE_ROOT: // Same as category
-        case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break;
+        case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break; // The layer was AND'd with the category
         case TreeTypeIsom: if ( CM->getLayer() != Layer::Terrain ) chkd.maps.ChangeLayer(Layer::Terrain); break;
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
         case TreeTypeLocation: if ( CM->getLayer() != Layer::Locations ) chkd.maps.ChangeLayer(Layer::Locations); break;
@@ -171,7 +171,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, IDR_MAIN_TREE) )
                 {
                     SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-                    mainTree.unitTree.UpdateUnitNames(DefaultUnitDisplayNames);
+                    mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     mainTree.BuildMainTree();
                 }
             }

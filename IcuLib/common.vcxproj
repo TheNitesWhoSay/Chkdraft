@@ -213,6 +213,9 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\icuuc.lib</ImportLibrary>
     </Link>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAS|Win32'">
     <Midl>
@@ -252,6 +255,9 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\icuuc.lib</ImportLibrary>
     </Link>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugUS|Win32'">
     <Midl>
@@ -294,6 +300,9 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\icuucd.lib</ImportLibrary>
     </Link>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugAS|Win32'">
     <Midl>
@@ -336,6 +345,9 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\icuucd.lib</ImportLibrary>
     </Link>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUS|x64'">
     <Midl>
@@ -3319,12 +3331,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="common.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\stubdata\stubdata.vcxproj">
-      <Project>{203ec78a-0531-43f0-a636-285439bde025}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

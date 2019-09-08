@@ -3,12 +3,11 @@
 #include "../CommanderLib/TestCommands.h"
 #include "Mapping/DatFileBrowsers.h"
 #include "Mapping/Settings.h"
+#include <shellapi.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <regex>
-#include <winres.h>
-#include <shellapi.h>
 
 //extern Logger logger;
 
@@ -106,6 +105,7 @@ void Chkdraft::SetupLogging()
             }
         }));
         logger.setAggregator(logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
+        logger.info() << "Chkdraft version: " << GetFullVersionString() << std::endl;
     }
     else
         WinLib::Message("Failed to get logger path, log file disabled!");

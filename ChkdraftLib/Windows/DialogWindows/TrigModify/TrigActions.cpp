@@ -835,14 +835,14 @@ void TrigActionsWindow::SuggestUnit()
 {
     if ( CM != nullptr )
     {
-        u16 numUnitTypes = (u16)DefaultUnitDisplayNames.size();
+        u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
             SingleLineChkdString str;
             CM->getUnitName(str, i);
             suggestions.AddString(str);
-            if ( str.compare(std::string(DefaultUnitDisplayNames[i])) != 0 )
-                suggestions.AddString(std::string(DefaultUnitDisplayNames[i]));
+            if ( str.compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
+                suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));
         }
     }
     suggestions.Show();
@@ -1348,11 +1348,7 @@ LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 LRESULT TrigActionsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
-    switch ( nmhdr->code )
-    {
-        default: return ClassWindow::Notify(hWnd, idFrom, nmhdr); break;
-    }
-    return 0;
+    return ClassWindow::Notify(hWnd, idFrom, nmhdr);
 }
 
 LRESULT TrigActionsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

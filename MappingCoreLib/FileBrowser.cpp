@@ -26,9 +26,9 @@ template <typename FilterId>
 bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const
 {
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
-    if ( BrowseForFile(filePath, u32FilterIndex, getFiltersAndLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt()) )
+    if ( virtualizableBrowseForOpenPath(filePath, u32FilterIndex) )
     {
-        filterIndex = static_cast<FilterId>(filterIndex);
+        filterIndex = static_cast<FilterId>(u32FilterIndex);
         return true;
     }
     return false;
@@ -37,37 +37,12 @@ bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string &filePath,
 template <typename FilterId>
 bool FileBrowser<FilterId>::browseForSavePath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const
 {
-    bool checkingForOverwrite = getProvideOverwritePrompt();
-    bool rejectedOverwrite = false;
-    std::vector<std::pair<std::string, std::string>> filtersAndLabels = getFiltersAndLabels();
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
-    FilterId newFilterIndex = (FilterId)0;
-    std::string newFilePath("");
-    do
+    if ( virtualizableBrowseForSavePath(filePath, u32FilterIndex) )
     {
-        rejectedOverwrite = false;
-        if ( BrowseForSave(newFilePath, u32FilterIndex, filtersAndLabels, getInitialDirectory(), getTitle(), getPathMustExist(), checkingForOverwrite) )
-        {
-            newFilterIndex = static_cast<FilterId>(u32FilterIndex);
-            if ( GetSystemFileExtension(newFilePath).empty() && u32FilterIndex > 0 && u32FilterIndex <= filters.size() ) // No extension specified, but a valid filter was selected
-            { // Check there is a default extension for the given filter
-                const std::string &defaultExtension = filters.at(u32FilterIndex-1).defaultExtension;
-                if ( !defaultExtension.empty() )
-                { // There was a default extension, add it to the path
-                    newFilePath += defaultExtension;
-                    if ( checkingForOverwrite && FindFile(newFilePath) && !confirmOverwrite(GetSystemFileName(newFilePath) + " already exists.\nDo you want to replace it?") )
-                        rejectedOverwrite = true; // Checking for overwrite and the file exists and the user rejects overwriting the existing file
-                }
-            }
-            if ( !rejectedOverwrite )
-            {
-                filePath = newFilePath;
-                filterIndex = newFilterIndex;
-                return true;
-            }
-        }
+        filterIndex = static_cast<FilterId>(u32FilterIndex);
+        return true;
     }
-    while ( rejectedOverwrite );
     return false;
 }
 
@@ -163,6 +138,47 @@ std::vector<std::pair<std::string, std::string>> FileBrowser<FilterId>::getFilte
         filtersAndLabels.push_back(std::make_pair<std::string, std::string>(std::string(filterEntry.filterString), std::string(filterEntry.filterLabel)));
 
     return filtersAndLabels;
+}
+
+template <typename FilterId>
+bool FileBrowser<FilterId>::virtualizableBrowseForOpenPath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+{
+    return BrowseForFile(filePath, filterIndex, getFiltersAndLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt());
+}
+
+template <typename FilterId>
+bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+{
+    bool checkingForOverwrite = getProvideOverwritePrompt();
+    bool rejectedOverwrite = false;
+    std::vector<std::pair<std::string, std::string>> filtersAndLabels = getFiltersAndLabels();
+    u32 newFilterIndex = filterIndex;
+    std::string newFilePath("");
+    do
+    {
+        rejectedOverwrite = false;
+        if ( BrowseForSave(newFilePath, newFilterIndex, filtersAndLabels, getInitialDirectory(), getTitle(), getPathMustExist(), checkingForOverwrite) )
+        {
+            if ( GetSystemFileExtension(newFilePath).empty() && newFilterIndex > 0 && newFilterIndex <= filters.size() ) // No extension specified, but a valid filter was selected
+            { // Check there is a default extension for the given filter
+                const std::string &defaultExtension = filters.at(newFilterIndex-1).defaultExtension;
+                if ( !defaultExtension.empty() )
+                { // There was a default extension, add it to the path
+                    newFilePath += defaultExtension;
+                    if ( checkingForOverwrite && FindFile(newFilePath) && !confirmOverwrite(GetSystemFileName(newFilePath) + " already exists.\nDo you want to replace it?") )
+                        rejectedOverwrite = true; // Checking for overwrite and the file exists and the user rejects overwriting the existing file
+                }
+            }
+            if ( !rejectedOverwrite )
+            {
+                filePath = newFilePath;
+                filterIndex = newFilterIndex;
+                return true;
+            }
+        }
+    }
+    while ( rejectedOverwrite );
+    return false;
 }
 
 /* End templates */ #else

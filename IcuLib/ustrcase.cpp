@@ -1596,8 +1596,8 @@ static int32_t _cmpFold(
     }
 
     if(matchLen1) {
-        *matchLen1=m1-org1;
-        *matchLen2=m2-org2;
+        *matchLen1=int32_t(m1-org1);
+        *matchLen2=int32_t(m2-org2);
     }
     return cmpRes;
 }

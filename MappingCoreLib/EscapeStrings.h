@@ -5,6 +5,12 @@
 #include <vector>
 #include <memory>
 
+/**
+    This file defines several string types that extend basic strings in ways useful for mapping purposes
+    Using these types removes all ambiguity as to what type of string you're trying to use and aids in conversion between different formats
+    The type can tell you if it's the actual raw bytes stored in the scenario file, something with C++ like escape notation, or some more user friendly notation
+*/
+
 /** A Scenario string without any modification
     May not contain NUL characters besides the terminator. */
 class RawString : public std::string
@@ -141,6 +147,7 @@ bool getThreeCharOctVal(const std::string &firstCharPtr, u8 &value); // firstCha
 typedef std::shared_ptr<RawString> RawStringPtr;
 typedef std::shared_ptr<EscString> EscStringPtr;
 typedef std::shared_ptr<ChkdString> ChkdStringPtr;
+typedef std::shared_ptr<SingleLineChkdString> SingleLineChkdStringPtr;
 
 template <typename StringTypeIn, typename StringTypeOut>
 void ConvertStr(const StringTypeIn &inString, StringTypeOut &outString);

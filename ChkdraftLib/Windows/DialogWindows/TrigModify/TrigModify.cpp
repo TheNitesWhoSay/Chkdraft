@@ -203,8 +203,8 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0 ));
                 tabs.FindThis(hWnd, IDC_TRIGMODIFYTABS);
                 const std::vector<std::string> tabLabels = { "General", "Players", "Conditions", "Actions", "Text" };
-                for ( int i=0; i<tabLabels.size(); i++ )
-                    tabs.InsertTab(i, tabLabels[i]);
+                for ( size_t i=0; i<tabLabels.size(); i++ )
+                    tabs.InsertTab((u32)i, tabLabels[i]);
                 CreateSubWindows(hWnd);
                 DoSize();
                 ReplaceChildFonts(defaultFont);

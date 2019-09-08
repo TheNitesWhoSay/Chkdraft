@@ -263,7 +263,7 @@ void TriggersWindow::MoveTrigTo()
 void TriggersWindow::ButtonNew()
 {
     Chk::Trigger trigger = { };
-    for ( u8 i=(u8)Sc::Player::Id::Player1; i<=(u8)Sc::Player::Id::Player8; i++ )
+    for ( u8 i=Sc::Player::Id::Player1; i<=Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
             trigger.owners[i] = Chk::Trigger::Owned::Yes;

@@ -2,7 +2,7 @@
 #include "../MappingCoreLib/MappingCore.h"
 #include <regex>
 
-TEST(FileIoTest, Basic)
+TEST(SystemIoTest, Basic)
 {
     EXPECT_TRUE(true);
 }

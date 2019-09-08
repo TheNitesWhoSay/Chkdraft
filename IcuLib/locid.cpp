@@ -652,7 +652,7 @@ Locale::initBaseName(UErrorCode &status) {
 int32_t
 Locale::hashCode() const
 {
-    return ustr_hashCharsN(fullName, uprv_strlen(fullName));
+    return int32_t(ustr_hashCharsN(fullName, (int32_t)uprv_strlen(fullName)));
 }
 
 void

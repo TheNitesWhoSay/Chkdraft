@@ -28,7 +28,7 @@ class UnitSettingsWindow : public WinLib::ClassWindow
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        s32 selectedUnit;
+        Sc::Unit::Type selectedUnitType;
         bool possibleUnitNameUpdate;
         bool isDisabled;
         bool refreshing;

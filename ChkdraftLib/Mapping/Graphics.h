@@ -11,7 +11,8 @@ class GuiMap;
     - Final Tile Data (what MTXM will be)
     - Units & Sprites, northmost to southmost, in the case of a tie, the highest index is drawn first. */
 
-typedef std::vector<u32> ChkdBitmap;
+using ChkdBitmap = std::vector<u32>;
+using ChkdPalette = std::array<u32, 256>;
 
 struct colorcycle
 {
@@ -25,13 +26,40 @@ struct colorcycle
 class ColorCycler
 {
     public:
+        /**
+            A tileset has a set of between zero and eight rotators, after every tick (one change in GetTickCount: ~16ms), each rotator's ticksRemaining is decremented
+
+            If a rotator's ticksRemaining reaches zero, palette colors from min to max are each rotated one index to the right "palette[index+1] = palette[index]",
+            the rightmost entry "palette[paletteIndexMax]" wraps around to become the leftmost entry "palette[paletteIndexMin]"
+            following this, ticksRemaining gets set to ticksBetweenRotations, and anything using the palette should be redrawn
+        */
+        class Rotator
+        {
+        public:
+            enum class Enabled {
+                No = 0,
+                Yes = 1
+            };
+
+            Enabled enabled;
+            u8 ticksBetweenRotations; // 
+            u8 ticksRemaining; // When this reaches 0, palette colors from min to max are each rotated one index to the right, with the rightmost 
+            u16 paletteIndexMin;
+            u16 paletteIndexMax;
+        };
+
         virtual ~ColorCycler();
         static bool CycleColors(const u16 tileset); // Returns true if the map should be redrawn
 
     private:
-        static DWORD ccticks; // GetTickCount -- updated every time GetTickCount increases (~16 ms)
-        static colorcycle cctable[4][8]; // Different color cycling definition tables
-        static const u8 cctilesets[8]; // Table to use for each tileset
+        static constexpr size_t TotalRotatorSets = 4;
+        static constexpr size_t MaxRotatersPerSet = 8;
+
+        static DWORD prevTickCount; // Value from GetTickCount() -- updated every time GetTickCount increases (~16 ms)
+
+        static const size_t TilesetRotationSet[Sc::Terrain::MaxTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
+        static Rotator NoRotators[MaxRotatersPerSet]; // An empty rotator set
+        static Rotator RotatorSets[TotalRotatorSets][MaxRotatersPerSet]; // All rotator sets
 };
 
 class Graphics

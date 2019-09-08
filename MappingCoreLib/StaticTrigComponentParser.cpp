@@ -1,5 +1,4 @@
 #include "StaticTrigComponentParser.h"
-#include "ChkAction.h"
 #include <exception>
 #include <string>
 
@@ -570,7 +569,7 @@ bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32& dest, s64 pos, 
             else
             {
                 char potentialLong[36] = { };
-                std::memcpy(potentialLong, &text[pos], size);
+                std::memcpy(potentialLong, &text[pos], (size_t)size);
                 potentialLong[size] = '\0';
                 dest = (u32)strtoll(potentialLong, nullptr, 2);
                 return dest > 0;
@@ -593,7 +592,7 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, s64 pos, s64 en
         else if ( size > 2 && text[pos] == '0' && (text[pos + 1] == 'x' || text[pos + 1] == 'X') )
         {
             char potentialLong[12] = {};
-            std::memcpy(potentialLong, &text[pos + 2], size - 2);
+            std::memcpy(potentialLong, &text[pos + 2], size_t(size - 2));
             potentialLong[size - 2] = '\0';
             try {
                 dest = (u32)std::stoll(potentialLong, nullptr, 16);
@@ -604,7 +603,7 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, s64 pos, s64 en
         else
         {
             char potentialLong[12] = { };
-            std::memcpy(potentialLong, &text[pos], size);
+            std::memcpy(potentialLong, &text[pos], (size_t)size);
             potentialLong[size] = '\0';
             return ( (dest = (u32)std::atoll(potentialLong)) > 0 );
         }
@@ -651,7 +650,7 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, s64 pos, s64 e
         else if ( size > 2 && text[pos] == '0' && (text[pos + 1] == 'x' || text[pos + 1] == 'X') )
         {
             char potentialShort[7] = {};
-            std::memcpy(potentialShort, &text[pos + 2], size - 2);
+            std::memcpy(potentialShort, &text[pos + 2], size_t(size - 2));
             potentialShort[size - 2] = '\0';
             try {
                 dest = (u32)std::stol(potentialShort, nullptr, 16);
@@ -662,7 +661,7 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, s64 pos, s64 e
         else
         {
             char potentialShort[7] = {};
-            std::memcpy(potentialShort, &text[pos], size);
+            std::memcpy(potentialShort, &text[pos], (size_t)size);
             potentialShort[size] = '\0';
             return ((dest = std::atoi(potentialShort)) > 0);
         }
@@ -683,7 +682,7 @@ bool StaticTrigComponentParser::ParseByte(char* text, u8& dest, s64 pos, s64 end
         else if ( size > 2 && text[pos] == '0' && (text[pos + 1] == 'x' || text[pos + 1] == 'X') )
         {
             char potentialByte[5] = {};
-            std::memcpy(potentialByte, &text[pos + 2], size - 2);
+            std::memcpy(potentialByte, &text[pos + 2], size_t(size - 2));
             potentialByte[size - 2] = '\0';
             try {
                 dest = (u32)std::stol(potentialByte, nullptr, 16);
@@ -694,7 +693,7 @@ bool StaticTrigComponentParser::ParseByte(char* text, u8& dest, s64 pos, s64 end
         else
         {
             char potentialByte[5] = {};
-            std::memcpy(potentialByte, &text[pos], size);
+            std::memcpy(potentialByte, &text[pos], (size_t)size);
             potentialByte[size] = '\0';
             return ((dest = std::atoi(potentialByte)) > 0);
         }

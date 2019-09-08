@@ -130,12 +130,15 @@ void WavEditorWindow::UpdateCustomStringList()
 {
     if ( checkCustomMpqString.isChecked() )
     {
-        std::vector<StringTableNode> strList;
-        if ( CM->addAllUsedStrings(strList, true, false) )
+        dropCustomMpqString.ClearItems();
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        CM->strings.markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+        size_t stringCapacity = CM->strings.getCapacity(Chk::Scope::Game);
+        for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
         {
-            dropCustomMpqString.ClearItems();
-            for ( auto str : strList )
-                dropCustomMpqString.AddItem(str.string);
+            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(stringId, Chk::Scope::Game);
+            if ( str != nullptr )
+                dropCustomMpqString.AddItem(*str);
         }
         dropCustomMpqString.EnableThis();
     }
@@ -581,8 +584,9 @@ void WavEditorWindow::CreateSubWindows(HWND hWnd)
     dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, DROP_CUSTOMMPQPATH, {}, defaultFont);
     checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", CHECK_CUSTOMMPQPATH);
 
-    for ( s32 i=0; i<NumVirtualSounds; i++ )
-        listVirtualSounds.AddString(VirtualSoundFiles[i]);
+    size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
+    for ( size_t i=0; i<numVirtualSounds; i++ )
+        listVirtualSounds.AddString(Sc::Sound::virtualSoundPaths[i]);
 
     buttonPlaySound.DisableThis();
     

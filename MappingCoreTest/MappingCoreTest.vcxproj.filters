@@ -13,7 +13,13 @@
     <ClCompile Include="MappingCoreTestMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileIoTest.cpp">
+    <ClCompile Include="SystemIoTest.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicsTest.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigCompilerTest.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
   </ItemGroup>

@@ -295,13 +295,15 @@ bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, ScData &scData)
 
 void TextTrigCompiler::ClearCompiler()
 {
-    stringTable.clear();
     locationTable.clear();
     unitTable.clear();
     switchTable.clear();
     groupTable.clear();
+    zzStringTable.clear();
+    extendedStringTable.clear();
 
-    addedStrings.clear();
+    zzAddedStrings.clear();
+    addedExtendedStrings.clear();
 
     stringUsed.reset();
     extendedStringUsed.reset();
@@ -2393,7 +2395,7 @@ ParseActionLocationField: // 4 bytes
         "Expected: Location name or 4-byte locationNum" );
 
 ParseActionTextField: // 4 bytes
-    returnMsg( ParseString(text, currAction.stringId, pos, end) ||
+    returnMsg( zzParseString(text, currAction.stringId, pos, end) ||
         ParseLong(textPtr, currAction.stringId, pos, end),
         "Expected: String or stringNum" );
 
@@ -2554,7 +2556,7 @@ bool TextTrigCompiler::ParseExecutionFlags(buffer& text, s64 pos, s64 end, u32& 
     return ParseBinaryLong(argData, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
+bool TextTrigCompiler::zzParseString(buffer &text, u32& dest, s64 pos, s64 end)
 {
     if ( text.hasCaseless("No String", pos, 9) || text.hasCaseless("\"No String\"", pos, 11) )
     {
@@ -2562,24 +2564,10 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
         return true;
     }
 
-    bool isExtended = false; // Will need to do something with this for extended strings
-
     if ( text.get<u8>(pos) == '\"' )
     {
         pos ++;
         end --;
-    }
-    else if ( text.get<u8>(pos) == 'K' )
-    {
-        if ( text.get<u8>(pos+1) == '\"' )
-        {
-            pos += 2;
-            end --;
-
-            isExtended = true;
-        }
-        else
-            return ParseLong((char*)text.getPtr(0), dest, pos, end);
     }
     else
         return ParseLong((char*)text.getPtr(0), dest, pos, end);
@@ -2596,22 +2584,18 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
     {
         char temp = stringPtr[size];
         stringPtr[size] = '\0';
-        std::string str(stringPtr);
+        EscString escStr(stringPtr);
         stringPtr[size] = temp;
 
-        auto quotePos = str.find("\\\"");
-        while ( quotePos != std::string::npos )
-        {
-            str.replace(quotePos, 2, "\"");
-            quotePos = str.find("\\\"");
-        }
+        RawString str;
+        ConvertStr(escStr, str);
 
         size_t hash = strHash(str);
-        size_t numMatching = stringTable.count(hash);
+        size_t numMatching = zzStringTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
-            StringTableNode &node = stringTable.find(hash)->second;
-            if ( node.string.compare(str) == 0 && isExtended == node.isExtended )
+            zzStringTableNode &node = zzStringTable.find(hash)->second;
+            if ( node.scStr->compare<RawString>(str) == 0 )
             {
                 dest = node.stringId;
                 success = true;
@@ -2619,11 +2603,11 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
         }
         else if ( numMatching > 1 )
         {
-            auto range = stringTable.equal_range(hash);
+            auto range = zzStringTable.equal_range(hash);
             foreachin(pair, range)
             {
-                StringTableNode &node = pair->second;
-                if ( node.string.compare(str) == 0 && isExtended == node.isExtended )
+                zzStringTableNode &node = pair->second;
+                if ( node.scStr->compare<RawString>(str) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
@@ -2644,18 +2628,13 @@ bool TextTrigCompiler::ParseString(buffer &text, u32& dest, s64 pos, s64 end)
         if ( success == false ) // No string matches have been found
                                 // New string, try to add it to the map
         {
-            StringTableNode node;
-            node.string = str;
-            node.isExtended = isExtended;
+            zzStringTableNode node;
+            node.scStr = ScStrPtr(new ScStr(str));
 
-            if ( (isExtended && useNextExtendedString(node.stringId) ||
-                (!isExtended && useNextString(node.stringId))) )
+            if ( useNextString(node.stringId) )
             {
-                if ( isExtended )
-                    node.stringId = 65536 - node.stringId; // Convert to the index the string will hold in the normal table
-
-                addedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
-                stringTable.insert(std::pair<size_t, StringTableNode>(strHash(node.string), node)); // Add to search tree for recycling
+                zzAddedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
+                zzStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(str), node)); // Add to search tree for recycling
                 dest = node.stringId;
                 success = true;
             }
@@ -3330,7 +3309,7 @@ bool TextTrigCompiler::ParseWavName(buffer &text, u32 &dest, s64 pos, s64 end)
         return true;
     }
     else
-        return ParseString(text, dest, pos, end);
+        return zzParseString(text, dest, pos, end);
 }
 
 bool TextTrigCompiler::ParsePlayer(buffer &text, u32 &dest, s64 pos, s64 end)
@@ -3852,7 +3831,7 @@ bool TextTrigCompiler::useNextString(u32 &index)
     {
         if ( !stringUsed[i] )
         {
-            index = i;
+            index = (u32)i;
             return true;
         }
     }
@@ -3865,7 +3844,7 @@ bool TextTrigCompiler::useNextExtendedString(u32 &index)
     {
         if ( !extendedStringUsed[i] )
         {
-            index = i;
+            index = (u32)i;
             return true;
         }
     }
@@ -3909,7 +3888,7 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
     if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
     {
         u16 stringId = 0;
-        for ( int unitId=0; unitId<228; unitId++ )
+        for ( u16 unitId=0; unitId<228; unitId++ )
         {
             if ( map->getUnitStringNum(unitId, stringId) &&
                 stringId > 0 )
@@ -3970,76 +3949,43 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepStringTable(ScenarioPtr chk)
+bool TextTrigCompiler::PrepStringTable(ScenarioPtr map)
 {
-    if ( chk->hasStrSection(false) )
+    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
+    size_t stringCapacity = map->strings.getCapacity(Chk::Scope::Game);
+    for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
     {
-        StringTableNode node;
-#define AddStrIffOverZero(index)                                                                        \
-            if ( index > 0 && chk->GetString(node.string, index) ) {                                    \
-                node.stringId = index;                                                                 \
-                node.isExtended = chk->isExtendedString(node.stringId);                                \
-                if ( !strIsInHashTable(node.string, strHash, stringTable) ) {                           \
-                    stringTable.insert( std::pair<size_t, StringTableNode>(strHash(node.string), node) );  \
-                }                                                                                       \
-            }
-
-        for ( u32 i=0; i<chk->locationCapacity(); i++ )
+        if ( stringUsed[stringId] )
         {
-            Chk::LocationPtr loc = chk->layers.getLocation(i);
-            if ( loc != nullptr )
-                AddStrIffOverZero(loc->stringId);
-        }
-
-        size_t numTrigs = chk->triggers.numTriggers();
-        for ( size_t i=0; i<numTrigs; i++ )
-        {
-            Chk::TriggerPtr trig = chk->triggers.getTrigger(i);
-            for ( size_t actionIndex=0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+            RawStringPtr rawString = map->strings.getString<RawString>(stringId, Chk::Scope::Game);
+            if ( rawString != nullptr )
             {
-                AddStrIffOverZero( trig->action(i).stringId );
-                AddStrIffOverZero( trig->action(i).soundStringId );
+                zzStringTableNode node;
+                node.scStr = ScStrPtr(new ScStr(*rawString));
+                node.stringId = (u32)stringId;
+                zzStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(*rawString), node));
             }
         }
+    }
+    return true;
+}
 
-        size_t numBriefingTrigs = chk->triggers.numBriefingTriggers();
-        for ( size_t i=0; i<numTrigs; i++ )
+bool TextTrigCompiler::PrepExtendedStringTable(ScenarioPtr map)
+{
+    map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
+    size_t extendedStringCapacity = map->strings.getCapacity(Chk::Scope::Editor);
+    for ( size_t stringId=1; stringId<extendedStringCapacity; stringId++ )
+    {
+        if ( stringUsed[stringId] )
         {
-            Chk::TriggerPtr trig = chk->triggers.getBriefingTrigger(i);
-            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+            RawStringPtr rawString = map->strings.getString<RawString>(stringId, Chk::Scope::Editor);
+            if ( rawString != nullptr )
             {
-                AddStrIffOverZero( trig->action(i).stringId );
-                AddStrIffOverZero( trig->action(i).soundStringId );
+                zzStringTableNode node;
+                node.scStr = ScStrPtr(new ScStr(*rawString));
+                node.stringId = (u32)stringId;
+                extendedStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(*rawString), node));
             }
-        }
-
-        AddStrIffOverZero( chk->GetMapTitleStrId() ); // Scenario Name
-        AddStrIffOverZero( chk->GetMapDescriptionStrId() ); // Scenario Description
-
-        for ( int i=0; i<4; i++ )
-            AddStrIffOverZero( chk->getForceStringNum(i) );
-
-        for ( u32 i = 0; i < chk->WavSectionCapacity(); i++ )
-        {
-            u32 wavStrId = 0;
-            if ( chk->GetWav(i, wavStrId) )
-                AddStrIffOverZero(wavStrId);
-        }
-
-        for ( int i=0; i<228; i++ )
-        {
-            u16 stringId = 0;
-            if ( chk->getUnisStringId(i, stringId) )
-                AddStrIffOverZero(stringId);
-            if ( chk->getUnixStringId(i, stringId) )
-                AddStrIffOverZero(stringId);
-        }
-
-        for ( int i = 0; i < 256; i++ )
-        {
-            u32 stringId = 0;
-            if ( chk->getSwitchStrId(i, stringId) )
-                AddStrIffOverZero(stringId);
         }
     }
     return true;
@@ -4060,37 +4006,5 @@ bool TextTrigCompiler::PrepScriptTable(ScData &scData)
 
 bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map, std::stringstream &error)
 {
-    std::vector<StringTableNode> standardStrList;
-    std::vector<StringTableNode> extendedStrList;
-
-    try { // Include all strings added by text trigs
-        for ( auto &str : addedStrings )
-        {
-            if ( str.isExtended )
-                extendedStrList.push_back(str);
-            else
-                standardStrList.push_back(str);
-        }
-    } catch ( std::bad_alloc ) {
-        error << "Out of memory!";
-        return false;
-    }
-
-    if ( map->addAllUsedStrings(standardStrList, true, false) &&
-        map->rebuildStringTable(standardStrList, false) )
-    {
-        if ( extendedStrList.size() > 0 ) // Has extended strings
-        {
-            // Convert to the index the string will have in the KSTR section
-            for ( auto &extendedStr : extendedStrList )
-                extendedStr.stringId = 65536 - extendedStr.stringId;
-
-            return map->addAllUsedStrings(extendedStrList, false, true) &&
-                map->rebuildStringTable(extendedStrList, true);
-        }
-        else
-            return true;
-    }
-    else
-        return false;
+    return map->strings.addStrings(zzAddedStrings, Chk::Scope::Game, true) && map->strings.addStrings(addedExtendedStrings, Chk::Scope::Editor, true);
 }

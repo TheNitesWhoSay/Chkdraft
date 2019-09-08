@@ -1,5 +1,4 @@
 #include "TextTrigGenerator.h"
-#include "StringUsage.h"
 #include "Math.h"
 #include <string>
 
@@ -1182,14 +1181,14 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
                     unitName = "\"" + unquotedName + "\"";
                 }
                 else
-                    unitName = ChkdString("\"" + std::string(LegacyTextTrigDisplayNames[unitID]) + "\"");
+                    unitName = ChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\"");
             }
             else
             {
                 if ( useCustomNames && unitID < 228 )
                     map->getUnitName(unitName, unitID);
                 else
-                    unitName = ChkdString(LegacyTextTrigDisplayNames[unitID]);
+                    unitName = ChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]);
             }
 
             unitTable.push_back( unitName );
@@ -1360,11 +1359,11 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
         map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
         SingleLineChkdString str;
 
-        u32 numStrings = map->strings.getCapacity(Chk::Scope::Game);
-        for ( u32 i=0; i<numStrings; i++ )
+        size_t numStrings = map->strings.getCapacity(Chk::Scope::Game);
+        for ( size_t i=0; i<numStrings; i++ )
         {
             if ( stringUsed[i] )
-                map->GetString(str, i);
+                map->GetString(str, (u32)i);
             
             SingleLineChkdString newString;
             for ( auto &character : str )
@@ -1385,10 +1384,10 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
         }
 
         numStrings = map->strings.getCapacity(Chk::Scope::Editor);
-        for ( u32 i=0; i<numStrings; i++ )
+        for ( size_t i=0; i<numStrings; i++ )
         {
             if ( extendedStringUsed[i] )
-                map->GetString(str, (65536-i));
+                map->GetString(str, u32(65536-i));
 
             SingleLineChkdString newString;
             for ( auto &character : str )

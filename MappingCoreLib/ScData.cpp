@@ -3,6 +3,11 @@
 
 extern Logger logger;
 
+const std::string starCraftFileName = "StarCraft.exe";
+const std::string starDatFileName = "StarDat.mpq";
+const std::string brooDatFileName = "BrooDat.mpq";
+const std::string patchRtFileName = "patch_rt.mpq";
+
 bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents)
 {
     for ( auto mpqFile : orderedSourceFiles )
@@ -25,7 +30,7 @@ Tiles::~Tiles()
 
 bool Tiles::LoadSets(const std::vector<MpqFilePtr> &orderedSourceFiles)
 {
-    return    LoadSet(orderedSourceFiles, "badlands", 0)
+    return LoadSet(orderedSourceFiles, "badlands", 0)
         && LoadSet(orderedSourceFiles, "platform", 1)
         && LoadSet(orderedSourceFiles, "install" , 2)
         && LoadSet(orderedSourceFiles, "ashworld", 3)
@@ -75,8 +80,8 @@ u8* GRP::data(u32 frame, u32 line)
     {
         if ( line < imageDat.get<u8>(0x9+frame*8) )
         {
-            u32 globalOffset = imageDat.get<u32>(0xA+frame*8);
-            return (u8*)imageDat.getPtr(globalOffset+(u32)imageDat.get<u16>(globalOffset+line*2));
+            u32 frameOffset = imageDat.get<u32>(0xA+frame*8);
+            return (u8*)imageDat.getPtr(frameOffset+(u32)imageDat.get<u16>(frameOffset+line*2));
         }
     }
     return nullptr;
@@ -590,15 +595,15 @@ bool PCX::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::str
     buffer rawDat;
     if ( GetScAsset(orderedSourceFiles, fileName, rawDat) )
     {
-        if ( rawDat.get<u8>((u32)PCX::DataLocs::BitCount) != 8 )
+        if ( rawDat.get<u8>(3) != 8 ) // bitCount
         {
             CHKD_ERR("Unsupported PCX Format");
             return false;
         }
 
         u8* pal;
-        u8 ncp = rawDat.get<u8>((u32)PCX::DataLocs::Ncp);
-        u16 nbs = rawDat.get<u16>((u32)PCX::DataLocs::Nbs);
+        u8 ncp = rawDat.get<u8>(65); // ncp
+        u16 nbs = rawDat.get<u16>(66); // nbs
         s64 palStart = rawDat.size()-768;
 
         if ( !rawDat.getPtr(pal, palStart, 768) )
@@ -607,7 +612,7 @@ bool PCX::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::str
             return false;
         }
 
-        u32 pos = (u32)PCX::DataLocs::Data,
+        u32 pos = 128, // data
             pixel = 0;
 
         while ( pixel < ((u32)ncp)*((u32)nbs) )
@@ -955,8 +960,8 @@ std::vector<MpqFilePtr> DatFileBrowser::openScDatFiles(
         datFilePriorities.push_back(openedDatFile.first);
     
     datFilePriorities.sort();
-    for ( auto datFilePriority : datFilePriorities )
-        orderedDatFiles.push_back(openedDatFiles.find(datFilePriority)->second);
+    for ( auto datFilePriority = datFilePriorities.rbegin(); datFilePriority != datFilePriorities.rend(); ++datFilePriority )
+        orderedDatFiles.push_back(openedDatFiles.find(*datFilePriority)->second);
 
     return orderedDatFiles;
 }

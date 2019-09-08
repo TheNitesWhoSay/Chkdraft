@@ -28,11 +28,11 @@ void TechTree::InsertTechs()
     const std::vector<std::vector<u32>> treeTechs = { Techs_Zerg, Techs_Terran, Techs_Protoss, Techs_Other };
     const char* sTreeTechs[] = { "Zerg", "Terran", "Protoss", "Other" };
 
-    for ( int i=0; i<treeTechs.size(); i++ )
+    for ( size_t i=0; i<treeTechs.size(); i++ )
     {
         HTREEITEM LastGroup = InsertTreeItem(NULL, sTreeTechs[i], TreeTypeCategory | (LPARAM)Layer::Units);
         const std::vector<u32> techs = treeTechs[i];
-        for ( int j=0; j<techs.size(); j++ )
+        for ( size_t j=0; j<techs.size(); j++ )
         {
             u32 techId = techs[j];
             InsertTreeItem(LastGroup, techNames.at(techId), TreeTypeTech|techId);

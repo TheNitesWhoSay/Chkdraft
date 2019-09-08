@@ -2,12 +2,12 @@
 #include "CommonFiles.h"
 #include "../../WindowsLib/WindowsUi.h"
 #include "../../CommanderLib/Logger.h"
+#include <SimpleIcu.h>
+#include <crtdbg.h>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include <crtdbg.h>
-#include <SimpleIcu.h>
 
 extern Logger logger;
 
