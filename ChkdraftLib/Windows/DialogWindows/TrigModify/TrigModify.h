@@ -10,6 +10,14 @@
 class TrigModifyWindow : public WinLib::ClassDialog
 {
     public:
+        enum class Tab {
+            General,
+            Players,
+            Conditions,
+            Actions,
+            Text
+        };
+
         TrigConditionsWindow conditionsWindow;
         TrigActionsWindow actionsWindow;
 
@@ -17,7 +25,7 @@ class TrigModifyWindow : public WinLib::ClassDialog
         virtual ~TrigModifyWindow();
         bool CreateThis(HWND hParent, u32 trigIndex);
         bool DestroyThis();
-        void ChangeTab(u32 tabId);
+        void ChangeTab(Tab tab);
         void RefreshWindow(u32 trigIndex);
         void DoSize();
         bool onTrigTextTab();
@@ -29,7 +37,7 @@ class TrigModifyWindow : public WinLib::ClassDialog
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        u32 currTab;
+        Tab currTab;
         u32 trigIndex;
         WinLib::TabControl tabs;
 

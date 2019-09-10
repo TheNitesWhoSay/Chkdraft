@@ -131,7 +131,7 @@ namespace WinLib {
                 if ( item(x, y).isSelected() || isFocused(x, y) )
                 {
                     hasDeleted = true;
-                    if ( SendMessage(GetParent(getHandle()), WM_GRIDITEMDELETING, MAKEWPARAM(x, y), 0) == TRUE )
+                    if ( SendMessage(GetParent(getHandle()), (UINT)GV::WM_GRIDITEMDELETING, MAKEWPARAM(x, y), 0) == TRUE )
                     {
                         item(x, y).SetText(str);
                         EditTextChanged(str);
@@ -141,7 +141,7 @@ namespace WinLib {
         }
 
         if ( hasDeleted )
-            SendMessage(GetParent(getHandle()), WM_GRIDDELETEFINISHED, 0, 0);
+            SendMessage(GetParent(getHandle()), (UINT)GV::WM_GRIDDELETEFINISHED, 0, 0);
     }
 
     bool GridViewControl::DeleteAllItems()
@@ -231,7 +231,7 @@ namespace WinLib {
                 focusedX = x;
                 focusedY = y;
                 item(x, y).SetSelected(true);
-                SendMessage(GetParent(getHandle()), WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), 0);
+                SendMessage(GetParent(getHandle()), (UINT)GV::WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), 0);
             }
         }
     }
@@ -256,12 +256,12 @@ namespace WinLib {
             {
                 editing = false;
                 if ( gotText &&
-                     SendMessage(GetParent(getHandle()), WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
+                     SendMessage(GetParent(getHandle()), (UINT)GV::WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
                 {
                     item(focusedX, focusedY).SetText(str);
                 }
                 RedrawThis();
-                SendMessage(GetParent(getHandle()), WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), 0);
+                SendMessage(GetParent(getHandle()),(UINT)GV:: WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), 0);
             }
             ending = false;
         }
@@ -508,7 +508,7 @@ namespace WinLib {
             if ( item(x, y).getText(str) &&
                  ListViewControl::GetItemRect(focusedX, focusedY, rect) )
             {
-                int itemWidth = (int)SendMessage(GetParent(getHandle()), WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
+                int itemWidth = (int)SendMessage(GetParent(getHandle()), (UINT)GV::WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
                 if ( itemWidth > newWidth )
                     newWidth = itemWidth;
             }
@@ -631,7 +631,7 @@ namespace WinLib {
             editBox.ExpandToText();
             RedrawThis();
 
-            SendMessage(GetParent(getHandle()), WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), 0);
+            SendMessage(GetParent(getHandle()), (UINT)GV::WM_GRIDEDITSTART, MAKEWPARAM(focusedX, focusedY), 0);
 
             if ( startedByInput )
                 EditTextChanged(initChar);
@@ -659,7 +659,7 @@ namespace WinLib {
                 GridView (and use this if the request failed), though
                 there is not currently, so in this case use the last
                 position (text length). */
-            LRESULT result = SendMessage(GetParent(getHandle()), WM_GETGRIDITEMCARETPOS, MAKEWPARAM(x, y), MAKELPARAM(cx, cy));
+            LRESULT result = SendMessage(GetParent(getHandle()), (UINT)GV::WM_GETGRIDITEMCARETPOS, MAKEWPARAM(x, y), MAKELPARAM(cx, cy));
             if ( result != -1 )
                 SetCaretPos((int)result);
             else
@@ -848,7 +848,7 @@ namespace WinLib {
     void GridViewControl::LeftArrowKey()
     {
         // Focus next selectable cell directly to the left of focus
-        if ( !editing || allowKeyNavDuringEdit(GVLeft) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVLeft) )
         {
             DeselectAll();
 
@@ -866,7 +866,7 @@ namespace WinLib {
     void GridViewControl::UpArrowKey()
     {
         // Focus next selectable cell directly above focus
-        if ( !editing || allowKeyNavDuringEdit(GVUp) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVUp) )
         {
             DeselectAll();
 
@@ -884,7 +884,7 @@ namespace WinLib {
     void GridViewControl::RightArrowKey()
     {
         // Focus next selectable cell directly to the right of focus
-        if ( !editing || allowKeyNavDuringEdit(GVRight) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVRight) )
         {
             DeselectAll();
 
@@ -902,7 +902,7 @@ namespace WinLib {
     void GridViewControl::DownArrowKey()
     {
         // Focus next selectable cell directly below focus
-        if ( !editing || allowKeyNavDuringEdit(GVDown) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVDown) )
         {
             DeselectAll();
 
@@ -920,7 +920,7 @@ namespace WinLib {
     void GridViewControl::TabKey()
     {
         // Focus next selectable cell
-        if ( !editing || allowKeyNavDuringEdit(GVTab) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVTab) )
         {
             DeselectAll();
 
@@ -950,7 +950,7 @@ namespace WinLib {
     void GridViewControl::EnterKey()
     {
         // Focus first selectable cell lower rows
-        if ( !editing || allowKeyNavDuringEdit(GVReturn) )
+        if ( !editing || allowKeyNavDuringEdit(GVKey::GVReturn) )
         {
             DeselectAll();
 
@@ -1019,10 +1019,10 @@ namespace WinLib {
                             if ( state & LVIS_SELECTED ) dis.itemState |= ODS_SELECTED;
                             dis.rcItem.left = LVIR_BOUNDS;
                             if ( SendMessage(hWnd, LVM_GETITEMRECT, (WPARAM)y, rectPointer) == TRUE )
-                                SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
+                                SendMessage(hWndParent, (UINT)GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
                         }
 
-                        SendMessage(hWndParent, WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
+                        SendMessage(hWndParent, (UINT)GV::WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
                         BitBlt(hDC, rcCli.left, rcCli.top, width, height, dis.hDC, 0, 0, SRCCOPY);
                     }
                     DeleteObject(memBitmap);
@@ -1035,9 +1035,9 @@ namespace WinLib {
 
     void GridViewControl::Paint(HWND hWnd)
     {
-        SendMessage(GetParent(hWnd), WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
+        SendMessage(GetParent(hWnd), (UINT)LB::WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
         DrawItems(hWnd);
-        SendMessage(GetParent(hWnd), WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
+        SendMessage(GetParent(hWnd), (UINT)LB::WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
     }
 
     LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)

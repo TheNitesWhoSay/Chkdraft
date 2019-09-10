@@ -84,8 +84,8 @@ namespace WinLib {
         private:
 
     /*     Data     */  HWND hWndMDIClient; // Handle to the MDI client if applicable, NULL otherwise
-                        enum WindowTypes { None, Regular, MDIFrame, MDIChild, Dialog };
-                        WindowTypes windowType; // Specifies what type of window this is, see enumerated WindowTypes
+                        enum class WindowType { None, Regular, MDIFrame, MDIChild, Dialog };
+                        WindowType windowType; // Specifies what type of window this is, see enumerated WindowTypes
                         bool allowEditNotify; // Used to prevent edit update recursion
 
     /*   Internal   */  /* Calls NotifyEditUpdated and ensures the function is not called again until it returns */

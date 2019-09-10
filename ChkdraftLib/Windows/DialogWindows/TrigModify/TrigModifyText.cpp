@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include "../../../Mapping/Settings.h"
 
-enum ID {
+enum class Id {
     TAB_META = 0,
     TAB_PLAYERS,
     TAB_CONDITIONS,
@@ -90,12 +90,12 @@ void TrigModifyTextWindow::ParentHidden()
 
 void TrigModifyTextWindow::CreateSubWindows(HWND hWnd)
 {
-    editText.CreateThis(hWnd, 0, 0, 100, 100, true, EDIT_TRIGMODIFYTEXT);
-    checkAutoCompile.CreateThis(hWnd, 0, 0, 85, 20, false, "Auto-compile", CHECK_AUTOCOMPILE);
+    editText.CreateThis(hWnd, 0, 0, 100, 100, true, (u64)Id::EDIT_TRIGMODIFYTEXT);
+    checkAutoCompile.CreateThis(hWnd, 0, 0, 85, 20, false, "Auto-compile", (u64)Id::CHECK_AUTOCOMPILE);
     
-    buttonReload.CreateThis(hWnd, 0, 0, 75, 23, "Reset", BUTTON_RELOAD);
-    buttonCompile.CreateThis(hWnd, 20, 105, 75, 23, "Compile", BUTTON_COMPILE);
-    buttonCompileAndSave.CreateThis(hWnd, 75, 105, 93, 23, "Compile && Save", BUTTON_COMPILEANDSAVE);
+    buttonReload.CreateThis(hWnd, 0, 0, 75, 23, "Reset", (u64)Id::BUTTON_RELOAD);
+    buttonCompile.CreateThis(hWnd, 20, 105, 75, 23, "Compile", (u64)Id::BUTTON_COMPILE);
+    buttonCompileAndSave.CreateThis(hWnd, 75, 105, 93, 23, "Compile && Save", (u64)Id::BUTTON_COMPILEANDSAVE);
 }
 
 bool TrigModifyTextWindow::unsavedChanges()
@@ -183,21 +183,21 @@ void TrigModifyTextWindow::OnLeave()
 
 LRESULT TrigModifyTextWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-    switch ( LOWORD(wParam) )
+    switch ( (Id)LOWORD(wParam) )
     {
-    case CHECK_AUTOCOMPILE:
+    case Id::CHECK_AUTOCOMPILE:
         if ( HIWORD(wParam) == BN_CLICKED )
             autoCompile = checkAutoCompile.isChecked();
         break;
-    case BUTTON_RELOAD:
+    case Id::BUTTON_RELOAD:
         if ( HIWORD(wParam) == BN_CLICKED )
             RefreshWindow(trigIndex);
         break;
-    case BUTTON_COMPILE:
+    case Id::BUTTON_COMPILE:
         if ( HIWORD(wParam) == BN_CLICKED )
             Compile(false, false);
         break;
-    case BUTTON_COMPILEANDSAVE:
+    case Id::BUTTON_COMPILEANDSAVE:
         if ( HIWORD(wParam) == BN_CLICKED )
             Compile(false, true);
         break;

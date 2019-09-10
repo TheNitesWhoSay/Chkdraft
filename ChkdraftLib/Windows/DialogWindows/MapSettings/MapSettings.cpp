@@ -1,7 +1,7 @@
 #include "MapSettings.h"
 #include "../../../Chkdraft.h"
 
-enum ID {
+enum class Id {
     WIN_MAPPROPERTIES = ID_FIRST,
     WIN_FORCES,
     WIN_UNITSETTINGS,
@@ -11,7 +11,7 @@ enum ID {
     WIN_WAVEDITOR
 };
 
-MapSettingsWindow::MapSettingsWindow() : currTab(0)
+MapSettingsWindow::MapSettingsWindow() : currTab(Tab::MapProperties)
 {
 
 }
@@ -28,35 +28,35 @@ bool MapSettingsWindow::CreateThis(HWND hParent)
 
 bool MapSettingsWindow::DestroyThis()
 {
-    currTab = 0;
+    currTab = Tab::MapProperties;
     ClassDialog::DestroyDialog();
     return true;
 }
 
-void MapSettingsWindow::ChangeTab(u32 tabID)
+void MapSettingsWindow::ChangeTab(Tab tab)
 {
-    tabs.SetCurSel(tabID);
+    tabs.SetCurSel((u32)tab);
 
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_MAPPROPERTIES), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_FORCES), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UNITSETTINGS), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UPGRADESETTINGS), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_TECHSETTINGS), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_STRINGEDITOR), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), WIN_WAVEDITOR), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_MAPPROPERTIES), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_FORCES), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UNITSETTINGS), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UPGRADESETTINGS), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_TECHSETTINGS), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_WAVEDITOR), SW_HIDE);
 
-    switch ( tabID )
+    switch ( tab )
     {
-        case MapSettings::TAB_MAPPROPERTIES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_MAPPROPERTIES), SW_SHOW); break;
-        case MapSettings::TAB_FORCES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_FORCES), SW_SHOW); break;
-        case MapSettings::TAB_UNITSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UNITSETTINGS), SW_SHOW); break;
-        case MapSettings::TAB_UPGRADESETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UPGRADESETTINGS), SW_SHOW); break;
-        case MapSettings::TAB_TECHSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_TECHSETTINGS), SW_SHOW); break;
-        case MapSettings::TAB_STRINGEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_STRINGEDITOR), SW_SHOW); break;
-        case MapSettings::TAB_WAVEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_WAVEDITOR), SW_SHOW); break;
+        case Tab::MapProperties: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_MAPPROPERTIES), SW_SHOW); break;
+        case Tab::Forces: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_FORCES), SW_SHOW); break;
+        case Tab::UnitSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UNITSETTINGS), SW_SHOW); break;
+        case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UPGRADESETTINGS), SW_SHOW); break;
+        case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_TECHSETTINGS), SW_SHOW); break;
+        case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR), SW_SHOW); break;
+        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_WAVEDITOR), SW_SHOW); break;
     }
 
-    currTab = tabID;
+    currTab = tab;
 }
 
 void MapSettingsWindow::RefreshWindow()
@@ -76,32 +76,32 @@ BOOL MapSettingsWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     {
     case TCN_SELCHANGE:
     {
-        u32 selectedTab = tabs.GetCurSel();
+        Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case TAB_MAPPROPERTIES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_MAPPROPERTIES), SW_SHOW); break;
-        case TAB_FORCES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_FORCES), SW_SHOW); break;
-        case TAB_UNITSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UNITSETTINGS), SW_SHOW); break;
-        case TAB_UPGRADESETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UPGRADESETTINGS), SW_SHOW); break;
-        case TAB_TECHSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_TECHSETTINGS), SW_SHOW); break;
-        case TAB_STRINGEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_STRINGEDITOR), SW_SHOW); break;
-        case TAB_WAVEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_WAVEDITOR), SW_SHOW); break;
+        case Tab::MapProperties: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_MAPPROPERTIES), SW_SHOW); break;
+        case Tab::Forces: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_FORCES), SW_SHOW); break;
+        case Tab::UnitSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UNITSETTINGS), SW_SHOW); break;
+        case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UPGRADESETTINGS), SW_SHOW); break;
+        case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_TECHSETTINGS), SW_SHOW); break;
+        case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR), SW_SHOW); break;
+        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_WAVEDITOR), SW_SHOW); break;
         }
     }
     break;
 
     case TCN_SELCHANGING:
     {
-        u32 selectedTab = tabs.GetCurSel();
+        Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case TAB_MAPPROPERTIES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_MAPPROPERTIES), SW_HIDE); break;
-        case TAB_FORCES: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_FORCES), SW_HIDE); break;
-        case TAB_UNITSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UNITSETTINGS), SW_HIDE); break;
-        case TAB_UPGRADESETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_UPGRADESETTINGS), SW_HIDE); break;
-        case TAB_TECHSETTINGS: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_TECHSETTINGS), SW_HIDE); break;
-        case TAB_STRINGEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_STRINGEDITOR), SW_HIDE); break;
-        case TAB_WAVEDITOR: ShowWindow(GetDlgItem(tabs.getHandle(), WIN_WAVEDITOR), SW_HIDE); break;
+        case Tab::MapProperties: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_MAPPROPERTIES), SW_HIDE); break;
+        case Tab::Forces: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_FORCES), SW_HIDE); break;
+        case Tab::UnitSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UNITSETTINGS), SW_HIDE); break;
+        case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_UPGRADESETTINGS), SW_HIDE); break;
+        case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_TECHSETTINGS), SW_HIDE); break;
+        case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR), SW_HIDE); break;
+        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), (int)Id::WIN_WAVEDITOR), SW_HIDE); break;
         }
     }
     break;
@@ -154,21 +154,21 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 for ( u32 i=0; i<tabTitles.size(); i++ )
                     tabs.InsertTab(i, tabTitles[i]);
                 
-                mapPropertiesWindow.CreateThis(tabs.getHandle(), WIN_MAPPROPERTIES);
-                forcesWindow.CreateThis(tabs.getHandle(), WIN_FORCES);
-                unitSettingsWindow.CreateThis(tabs.getHandle(), WIN_UNITSETTINGS);
-                upgradeSettingsWindow.CreateThis(tabs.getHandle(), WIN_UPGRADESETTINGS);
-                techSettingsWindow.CreateThis(tabs.getHandle(), WIN_TECHSETTINGS);
-                stringEditorWindow.CreateThis(tabs.getHandle(), WIN_STRINGEDITOR);
-                wavEditorWindow.CreateThis(tabs.getHandle(), WIN_WAVEDITOR);
+                mapPropertiesWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_MAPPROPERTIES);
+                forcesWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_FORCES);
+                unitSettingsWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_UNITSETTINGS);
+                upgradeSettingsWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_UPGRADESETTINGS);
+                techSettingsWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_TECHSETTINGS);
+                stringEditorWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR);
+                wavEditorWindow.CreateThis(tabs.getHandle(), (int)Id::WIN_WAVEDITOR);
                 ReplaceChildFonts(defaultFont);
                 RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             }
             break;
 
         case WM_MOUSEWHEEL:
-            if ( currTab == MapSettings::TAB_STRINGEDITOR )
-                SendMessage(GetDlgItem(tabs.getHandle(), WIN_STRINGEDITOR), WM_MOUSEWHEEL, wParam, lParam);
+            if ( currTab == Tab::StringEditor )
+                SendMessage(GetDlgItem(tabs.getHandle(), (int)Id::WIN_STRINGEDITOR), WM_MOUSEWHEEL, wParam, lParam);
             else
                 return FALSE;
             break;

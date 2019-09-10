@@ -205,7 +205,7 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 std::string str;
                 if ( listSuggestions.GetCurSelString(str) )
-                    SendMessage(suggestParent, WinLib::LB::WM_NEWSELTEXT, 0, (LPARAM)&str);
+                    SendMessage(suggestParent, (UINT)WinLib::LB::WM_NEWSELTEXT, 0, (LPARAM)&str);
             }
             break;
         default:
@@ -220,7 +220,7 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         //case WM_SIZE: DoSize(); break;
-        case WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
+        case (UINT)WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
         case WM_KEYDOWN: KeyDown(wParam); break;
         case WM_ERASEBKGND: EraseBackground((HDC)wParam); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;

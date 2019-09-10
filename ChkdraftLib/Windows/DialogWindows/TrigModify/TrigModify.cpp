@@ -2,13 +2,7 @@
 #include "../../../Chkdraft.h"
 #include <string>
 
-enum ID {
-    TAB_GENERAL = 0,
-    TAB_PLAYERS,
-    TAB_CONDITIONS,
-    TAB_ACTIONS,
-    TAB_TEXT,
-
+enum class Id {
     WIN_GENERAL = ID_FIRST,
     WIN_PLAYERS,
     WIN_CONDITIONS,
@@ -18,7 +12,7 @@ enum ID {
 
 #define NO_TRIGGER (u32(-1))
 
-TrigModifyWindow::TrigModifyWindow() : currTab(0), trigIndex(NO_TRIGGER)
+TrigModifyWindow::TrigModifyWindow() : currTab(Tab::General), trigIndex(NO_TRIGGER)
 {
 
 }
@@ -52,26 +46,26 @@ bool TrigModifyWindow::DestroyThis()
     return ClassDialog::DestroyDialog();
 }
 
-void TrigModifyWindow::ChangeTab(u32 tabId)
+void TrigModifyWindow::ChangeTab(Tab tab)
 {
-    tabs.SetCurSel(tabId);
+    tabs.SetCurSel((u32)tab);
 
-    tabs.HideTab(WIN_GENERAL);
-    tabs.HideTab(WIN_PLAYERS);
-    tabs.HideTab(WIN_CONDITIONS);
-    tabs.HideTab(WIN_ACTIONS);
-    tabs.HideTab(WIN_TRIGMODIFYTEXT);
+    tabs.HideTab((u32)Id::WIN_GENERAL);
+    tabs.HideTab((u32)Id::WIN_PLAYERS);
+    tabs.HideTab((u32)Id::WIN_CONDITIONS);
+    tabs.HideTab((u32)Id::WIN_ACTIONS);
+    tabs.HideTab((u32)Id::WIN_TRIGMODIFYTEXT);
 
-    switch ( tabId )
+    switch ( tab )
     {
-        case TAB_GENERAL: tabs.ShowTab(WIN_GENERAL); break;
-        case TAB_PLAYERS: tabs.ShowTab(WIN_PLAYERS); break;
-        case TAB_CONDITIONS: tabs.ShowTab(WIN_CONDITIONS); break;
-        case TAB_ACTIONS: tabs.ShowTab(WIN_ACTIONS); break;
-        case TAB_TEXT: tabs.ShowTab(WIN_TRIGMODIFYTEXT); break;
+        case Tab::General: tabs.ShowTab((u32)Id::WIN_GENERAL); break;
+        case Tab::Players: tabs.ShowTab((u32)Id::WIN_PLAYERS); break;
+        case Tab::Conditions: tabs.ShowTab((u32)Id::WIN_CONDITIONS); break;
+        case Tab::Actions: tabs.ShowTab((u32)Id::WIN_ACTIONS); break;
+        case Tab::Text: tabs.ShowTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
     }
 
-    currTab = tabId;
+    currTab = tab;
 }
 
 void TrigModifyWindow::RefreshWindow(u32 trigIndex)
@@ -88,11 +82,11 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 
 void TrigModifyWindow::CreateSubWindows(HWND hWnd)
 {
-    generalWindow.CreateThis(tabs.getHandle(), WIN_GENERAL);
-    playersWindow.CreateThis(tabs.getHandle(), WIN_PLAYERS);
-    conditionsWindow.CreateThis(tabs.getHandle(), WIN_CONDITIONS);
-    actionsWindow.CreateThis(tabs.getHandle(), WIN_ACTIONS);
-    trigModifyTextWindow.CreateThis(tabs.getHandle(), WIN_TRIGMODIFYTEXT);
+    generalWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_GENERAL);
+    playersWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_PLAYERS);
+    conditionsWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_CONDITIONS);
+    actionsWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_ACTIONS);
+    trigModifyTextWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_TRIGMODIFYTEXT);
     DoSize();
 }
 
@@ -121,7 +115,7 @@ void TrigModifyWindow::DoSize()
 
 bool TrigModifyWindow::onTrigTextTab()
 {
-    return currTab == TAB_TEXT;
+    return currTab == Tab::Text;
 }
 
 void TrigModifyWindow::RedrawThis()
@@ -140,28 +134,28 @@ BOOL TrigModifyWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     {
     case TCN_SELCHANGE:
     {
-        u32 selectedTab = tabs.GetCurSel();
+        Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case TAB_GENERAL: tabs.ShowTab(WIN_GENERAL); break;
-        case TAB_PLAYERS: tabs.ShowTab(WIN_PLAYERS); break;
-        case TAB_CONDITIONS: tabs.ShowTab(WIN_CONDITIONS); break;
-        case TAB_ACTIONS: tabs.ShowTab(WIN_ACTIONS); break;
-        case TAB_TEXT: tabs.ShowTab(WIN_TRIGMODIFYTEXT); break;
+            case Tab::General: tabs.ShowTab((u32)Id::WIN_GENERAL); break;
+            case Tab::Players: tabs.ShowTab((u32)Id::WIN_PLAYERS); break;
+            case Tab::Conditions: tabs.ShowTab((u32)Id::WIN_CONDITIONS); break;
+            case Tab::Actions: tabs.ShowTab((u32)Id::WIN_ACTIONS); break;
+            case Tab::Text: tabs.ShowTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
         }
         currTab = selectedTab;
     }
     break;
     case TCN_SELCHANGING:
     {
-        u32 selectedTab = tabs.GetCurSel();
+        Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case TAB_GENERAL: tabs.HideTab(WIN_GENERAL); break;
-        case TAB_PLAYERS: tabs.HideTab(WIN_PLAYERS); break;
-        case TAB_CONDITIONS: tabs.HideTab(WIN_CONDITIONS); break;
-        case TAB_ACTIONS: tabs.HideTab(WIN_ACTIONS); break;
-        case TAB_TEXT: tabs.HideTab(WIN_TRIGMODIFYTEXT); break;
+            case Tab::General: tabs.HideTab((u32)Id::WIN_GENERAL); break;
+            case Tab::Players: tabs.HideTab((u32)Id::WIN_PLAYERS); break;
+            case Tab::Conditions: tabs.HideTab((u32)Id::WIN_CONDITIONS); break;
+            case Tab::Actions: tabs.HideTab((u32)Id::WIN_ACTIONS); break;
+            case Tab::Text: tabs.HideTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
         }
     }
     break;
@@ -179,7 +173,7 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
         case WM_SHOWWINDOW:
             if ( wParam == FALSE && onTrigTextTab() )
                 trigModifyTextWindow.ParentHidden();
-            else if ( wParam == FALSE && currTab == TAB_CONDITIONS )
+            else if ( wParam == FALSE && currTab == Tab::Conditions )
                 conditionsWindow.HideSuggestions();
             return FALSE;
             break;

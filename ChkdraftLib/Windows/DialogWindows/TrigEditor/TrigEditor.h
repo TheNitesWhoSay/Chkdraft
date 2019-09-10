@@ -12,13 +12,21 @@
 class TrigEditorWindow : public WinLib::ClassDialog
 {
     public:
+        enum class Tab : u32 {
+            Triggers,
+            Templates,
+            Counters,
+            Cuwps,
+            Switches
+        };
+
         TriggersWindow triggersWindow;
 
         TrigEditorWindow();
         virtual ~TrigEditorWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
-        void ChangeTab(u32 tabId);
+        void ChangeTab(Tab tab);
         void RefreshWindow();
 
     protected:
@@ -28,7 +36,7 @@ class TrigEditorWindow : public WinLib::ClassDialog
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        u32 currTab;
+        Tab currTab;
         WinLib::TabControl tabs;
 
         TemplatesWindow templatesWindow;

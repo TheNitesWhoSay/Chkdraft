@@ -20,7 +20,7 @@
 
 #define TRIGGER_NUM_PREFACE "\x12\x1A#"
 
-enum ID {
+enum class Id {
     BUTTON_NEW = ID_FIRST,
     BUTTON_MODIFY,
     BUTTON_DELETE,
@@ -263,7 +263,7 @@ void TriggersWindow::MoveTrigTo()
 void TriggersWindow::ButtonNew()
 {
     Chk::Trigger trigger = { };
-    for ( u8 i=Sc::Player::Id::Player1; i<=Sc::Player::Id::Player8; i++ )
+    for ( u8 i=(u8)Sc::Player::Id::Player1; i<=(u8)Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
             trigger.owners[i] = Chk::Trigger::Owned::Yes;
@@ -762,17 +762,17 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger,
 
 void TriggersWindow::CreateSubWindows(HWND hWnd)
 {
-    buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", BUTTON_NEW);
-    buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", BUTTON_MODIFY);
-    buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", BUTTON_DELETE);
-    buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", BUTTON_COPY);
+    buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", (u64)Id::BUTTON_NEW);
+    buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", (u64)Id::BUTTON_MODIFY);
+    buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", (u64)Id::BUTTON_DELETE);
+    buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", (u64)Id::BUTTON_COPY);
     
-    buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", BUTTON_MOVEUP);
-    buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", BUTTON_MOVEDOWN);
-    buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", BUTTON_MOVETO);
+    buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", (u64)Id::BUTTON_MOVEUP);
+    buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", (u64)Id::BUTTON_MOVEDOWN);
+    buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", (u64)Id::BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, LIST_GROUPS);
-    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, (u64)Id::LIST_GROUPS);
+    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, (u64)Id::LIST_TRIGGERS) )
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();
@@ -1240,7 +1240,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( HIWORD(wParam) )
     {
     case LBN_SELCHANGE:
-        if ( LOWORD(wParam) == LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
+        if ( (Id)LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
         {
             int sel;
             if ( !(listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger)) )
@@ -1248,7 +1248,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             else if ( trigModifyWindow.getHandle() != NULL )
                 trigModifyWindow.RefreshWindow(currTrigger);
         }
-        else if ( LOWORD(wParam) == LIST_GROUPS )
+        else if ( (Id)LOWORD(wParam) == Id::LIST_GROUPS )
         {
             currTrigger = NO_TRIGGER;
             if ( changeGroupHighlightOnly )
@@ -1274,28 +1274,28 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             RefreshTrigList();
         }
     case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
-        if ( LOWORD(wParam) == LIST_TRIGGERS )
+        if ( (Id)LOWORD(wParam) == Id::LIST_TRIGGERS )
         {
 
         }
-        else if ( LOWORD(wParam) == LIST_GROUPS )
+        else if ( (Id)LOWORD(wParam) == Id::LIST_GROUPS )
         {
 
         }
     case BN_CLICKED:
-        if ( LOWORD(wParam) == BUTTON_NEW )
+        if ( (Id)LOWORD(wParam) == Id::BUTTON_NEW )
             ButtonNew();
-        else if ( LOWORD(wParam) == BUTTON_MODIFY )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MODIFY )
             ButtonModify();
-        else if ( LOWORD(wParam) == BUTTON_DELETE )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_DELETE )
             DeleteSelection();
-        else if ( LOWORD(wParam) == BUTTON_COPY )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_COPY )
             CopySelection();
-        else if ( LOWORD(wParam) == BUTTON_MOVEUP )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVEUP )
             MoveUp();
-        else if ( LOWORD(wParam) == BUTTON_MOVEDOWN )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVEDOWN )
             MoveDown();
-        else if ( LOWORD(wParam) == BUTTON_MOVETO )
+        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVETO )
             MoveTrigTo();
         break;
     }
@@ -1315,7 +1315,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             break;
 
-        case WinLib::LB::WM_DBLCLKITEM:
+        case (UINT)WinLib::LB::WM_DBLCLKITEM:
             if ( listTriggers == (HWND)lParam )
                 ButtonModify();
             break;
@@ -1324,7 +1324,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             SendMessage(listTriggers.getHandle(), WM_MOUSEWHEEL, wParam, lParam);
             break;
 
-        case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
+        case (UINT)WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
             if ( this != nullptr )
             {
                 textTrigGenerator.LoadScenario(CM);
@@ -1333,7 +1333,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WM_MEASUREITEM:
-            if ( wParam == LIST_TRIGGERS )
+            if ( (Id)wParam == Id::LIST_TRIGGERS )
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 triggerNum = (u32)mis->itemData;
@@ -1344,7 +1344,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 
                 return TRUE;
             }
-            else if ( wParam == LIST_GROUPS )
+            else if ( (Id)wParam == Id::LIST_GROUPS )
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 listIndex = (u32)mis->itemData;
@@ -1355,7 +1355,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+        case (UINT)WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
             listTriggers.ReleaseDC(trigListDC);
             trigListDC = NULL;
             textTrigGenerator.ClearScenario();
@@ -1371,13 +1371,13 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case WinLib::LB::WM_PREDRAWITEMS:
+        case (UINT)WinLib::LB::WM_PREDRAWITEMS:
             textTrigGenerator.LoadScenario(CM);
             drawingAll = true;
             break;
 
         case WM_DRAWITEM:
-            if ( wParam == LIST_TRIGGERS )
+            if ( (Id)wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
                     textTrigGenerator.LoadScenario(CM);
@@ -1401,7 +1401,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
                 return TRUE;
             }
-            else if ( wParam == LIST_GROUPS )
+            else if ( (Id)wParam == Id::LIST_GROUPS )
             {
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
@@ -1416,7 +1416,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case WinLib::LB::WM_POSTDRAWITEMS:
+        case (UINT)WinLib::LB::WM_POSTDRAWITEMS:
             drawingAll = false;
             textTrigGenerator.ClearScenario();
             break;

@@ -12,7 +12,7 @@ namespace WinLib {
         may use some or all of the GV:: messages from
         Enumerations.h */
 
-    enum GVKey
+    enum class GVKey
     {
         GVLeft,
         GVUp,

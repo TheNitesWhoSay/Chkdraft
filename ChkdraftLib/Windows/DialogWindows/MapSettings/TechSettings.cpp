@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include <string>
 
-enum ID {
+enum class Id {
     TREE_TECHS = ID_FIRST,
     CHECK_DEFAULTTECHCOSTS,
     BUTTON_RESETTECHDEFAULTS,
@@ -156,26 +156,26 @@ void TechSettingsWindow::RefreshWindow()
 
 void TechSettingsWindow::CreateSubWindows(HWND hWnd)
 {
-    treeTechs.CreateThis(hWnd, 5, 5, 200, 489, false, TREE_TECHS);
-    checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 110, 20, false, "Use Default Costs", CHECK_DEFAULTTECHCOSTS);
-    buttonResetTechDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Techs To Default", BUTTON_RESETTECHDEFAULTS);
+    treeTechs.CreateThis(hWnd, 5, 5, 200, 489, false, (u64)Id::TREE_TECHS);
+    checkUseDefaultCosts.CreateThis(hWnd, 210, 5, 110, 20, false, "Use Default Costs", (u64)Id::CHECK_DEFAULTTECHCOSTS);
+    buttonResetTechDefaults.CreateThis(hWnd, 5, 494, 200, 25, "Reset All Techs To Default", (u64)Id::BUTTON_RESETTECHDEFAULTS);
 
-    groupTechCosts.CreateThis(hWnd, 210, 25, 377, 65, "Tech Costs", GROUP_TECHCOSTS);
-    textMineralCosts.CreateThis(hWnd, 215, 45, 75, 20, "Mineral", TEXT_MINERALCOSTS);
-    editMineralCosts.CreateThis(hWnd, 304, 45, 84, 20, false, EDIT_MINERALCOSTS);
-    textGasCosts.CreateThis(hWnd, 408, 45, 75, 20, "Gas", TEXT_GASCOSTS);
-    editGasCosts.CreateThis(hWnd, 497, 45, 84, 20, false, EDIT_GASCOSTS);
-    textTimeCosts.CreateThis(hWnd, 215, 65, 75, 20, "Time", TEXT_TIMECOSTS);
-    editTimeCosts.CreateThis(hWnd, 304, 65, 84, 20, false, EDIT_TIMECOSTS);
-    textEnergyCosts.CreateThis(hWnd, 408, 65, 75, 20, "Energy", TEXT_ENERGYCOSTS);
-    editEnergyCosts.CreateThis(hWnd, 497, 65, 84, 20, false, EDIT_ENERGYCOSTS);
+    groupTechCosts.CreateThis(hWnd, 210, 25, 377, 65, "Tech Costs", (u64)Id::GROUP_TECHCOSTS);
+    textMineralCosts.CreateThis(hWnd, 215, 45, 75, 20, "Mineral", (u64)Id::TEXT_MINERALCOSTS);
+    editMineralCosts.CreateThis(hWnd, 304, 45, 84, 20, false, (u64)Id::EDIT_MINERALCOSTS);
+    textGasCosts.CreateThis(hWnd, 408, 45, 75, 20, "Gas", (u64)Id::TEXT_GASCOSTS);
+    editGasCosts.CreateThis(hWnd, 497, 45, 84, 20, false, (u64)Id::EDIT_GASCOSTS);
+    textTimeCosts.CreateThis(hWnd, 215, 65, 75, 20, "Time", (u64)Id::TEXT_TIMECOSTS);
+    editTimeCosts.CreateThis(hWnd, 304, 65, 84, 20, false, (u64)Id::EDIT_TIMECOSTS);
+    textEnergyCosts.CreateThis(hWnd, 408, 65, 75, 20, "Energy", (u64)Id::TEXT_ENERGYCOSTS);
+    editEnergyCosts.CreateThis(hWnd, 497, 65, 84, 20, false, (u64)Id::EDIT_ENERGYCOSTS);
 
-    groupDefaultPlayerSettings.CreateThis(hWnd, 210, 105, 377, 80, "Default Player Setting", GROUP_DEFAULTPLAYERSETTINGS);
-    radioDisabledByDefault.CreateThis(hWnd, 215, 120, 110, 20, "Disabled by default", RADIO_DEFAULTDISABLED);
-    radioEnabledByDefault.CreateThis(hWnd, 215, 140, 110, 20, "Enabled by default", RADIO_DEFAULTENABLED);
-    radioResearchedByDefault.CreateThis(hWnd, 215, 160, 130, 20, "Researched by default", RADIO_DEFAULTRESEARCHED);
+    groupDefaultPlayerSettings.CreateThis(hWnd, 210, 105, 377, 80, "Default Player Setting", (u64)Id::GROUP_DEFAULTPLAYERSETTINGS);
+    radioDisabledByDefault.CreateThis(hWnd, 215, 120, 110, 20, "Disabled by default", (u64)Id::RADIO_DEFAULTDISABLED);
+    radioEnabledByDefault.CreateThis(hWnd, 215, 140, 110, 20, "Enabled by default", (u64)Id::RADIO_DEFAULTENABLED);
+    radioResearchedByDefault.CreateThis(hWnd, 215, 160, 130, 20, "Researched by default", (u64)Id::RADIO_DEFAULTRESEARCHED);
 
-    groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 265, "Player Settings", GROUP_TECHPLAYERSETTINGS);
+    groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 265, "Player Settings", (u64)Id::GROUP_TECHPLAYERSETTINGS);
 
     const std::vector<std::string> playerTechSettings = { "Disabled", "Enabled", "Researched" };
     for ( int player=0; player<12; player++ )
@@ -187,8 +187,8 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
         else
             ssPlayerTech << player+1;
 
-        checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str(), CHECK_P1TECHDEFAULT+player);
-        dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, false, DROP_P1TECHSETTINGS+player, playerTechSettings, defaultFont);
+        checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str(), (u64)Id::CHECK_P1TECHDEFAULT+player);
+        dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, false, (u64)Id::DROP_P1TECHSETTINGS+player, playerTechSettings, defaultFont);
     }
 
     DisableTechEditing();
@@ -317,9 +317,9 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     if ( refreshing == false )
     {
-        switch ( LOWORD(wParam) )
+        switch ( (Id)LOWORD(wParam) )
         {
-        case BUTTON_RESETTECHDEFAULTS:
+        case Id::BUTTON_RESETTECHDEFAULTS:
             if ( HIWORD(wParam) == BN_CLICKED )
             {
                 if ( WinLib::GetYesNo("Are you sure you want to reset all tech settings?", "Confirm") == WinLib::PromptResult::Yes )
@@ -339,7 +339,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             }
             break;
 
-        case CHECK_DEFAULTTECHCOSTS:
+        case Id::CHECK_DEFAULTTECHCOSTS:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 )
             {
                 LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
@@ -360,7 +360,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
             }
             break;
-        case EDIT_MINERALCOSTS:
+        case Id::EDIT_MINERALCOSTS:
             if ( HIWORD(wParam) == EN_CHANGE && selectedTech != -1 )
             {
                 u16 newMineralCost;
@@ -371,7 +371,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        case EDIT_GASCOSTS:
+        case Id::EDIT_GASCOSTS:
             if ( HIWORD(wParam) == EN_CHANGE && selectedTech != -1 )
             {
                 u16 newGasCost;
@@ -382,7 +382,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        case EDIT_TIMECOSTS:
+        case Id::EDIT_TIMECOSTS:
             if ( HIWORD(wParam) == EN_CHANGE && selectedTech != -1 )
             {
                 u16 newTimeCost;
@@ -397,7 +397,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        case EDIT_ENERGYCOSTS:
+        case Id::EDIT_ENERGYCOSTS:
             if ( HIWORD(wParam) == EN_CHANGE && selectedTech != -1 )
             {
                 u16 newEnergyCost;
@@ -408,7 +408,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        case RADIO_DEFAULTDISABLED:
+        case Id::RADIO_DEFAULTDISABLED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
                 SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
                 CM->setTechDefaultAvailability((u8)selectedTech, false) )
@@ -418,7 +418,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
             }
             break;
-        case RADIO_DEFAULTENABLED:
+        case Id::RADIO_DEFAULTENABLED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
                 SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
                 CM->setTechDefaultAvailability((u8)selectedTech, true) )
@@ -428,7 +428,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
             }
             break;
-        case RADIO_DEFAULTRESEARCHED:
+        case Id::RADIO_DEFAULTRESEARCHED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
                 SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
                 CM->setTechDefaultResearched((u8)selectedTech, true) )
@@ -440,9 +440,9 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             break;
         default:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-                LOWORD(wParam) >= CHECK_P1TECHDEFAULT && LOWORD(wParam) <= CHECK_P12TECHDEFAULT )
+                LOWORD(wParam) >= (WORD)Id::CHECK_P1TECHDEFAULT && LOWORD(wParam) <= (WORD)Id::CHECK_P12TECHDEFAULT )
             {
-                u8 player = (u8)(LOWORD(wParam) - CHECK_P1TECHDEFAULT);
+                u8 player = (u8)(LOWORD(wParam) - (WORD)Id::CHECK_P1TECHDEFAULT);
                 bool useDefault = (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED);
                 if ( useDefault )
                     dropPlayerTechSettings[player].DisableThis();
@@ -453,9 +453,9 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
             }
             if ( HIWORD(wParam) == CBN_SELCHANGE && selectedTech != -1 &&
-                LOWORD(wParam) >= DROP_P1TECHSETTINGS && LOWORD(wParam) <= DROP_P12TECHSETTINGS )
+                LOWORD(wParam) >= (WORD)Id::DROP_P1TECHSETTINGS && LOWORD(wParam) <= (WORD)Id::DROP_P12TECHSETTINGS )
             {
-                u8 player = (u8)(LOWORD(wParam) - DROP_P1TECHSETTINGS);
+                u8 player = (u8)(LOWORD(wParam) - (WORD)Id::DROP_P1TECHSETTINGS);
                 int selection = dropPlayerTechSettings[player].GetSel();
                 if ( selection == 0 ) // Disabled
                 {

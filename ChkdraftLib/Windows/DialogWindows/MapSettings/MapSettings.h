@@ -14,11 +14,21 @@
 class MapSettingsWindow : public WinLib::ClassDialog
 {
     public:
+        enum class Tab : u32 {
+            MapProperties,
+            Forces,
+            UnitSettings,
+            UpgradeSettings,
+            TechSettings,
+            StringEditor,
+            WavEditor
+        };
+
         MapSettingsWindow();
         virtual ~MapSettingsWindow();
         bool CreateThis(HWND hParent);
         bool DestroyThis();
-        void ChangeTab(u32 tabID);
+        void ChangeTab(Tab tab);
         void RefreshWindow();
 
     protected:
@@ -27,7 +37,7 @@ class MapSettingsWindow : public WinLib::ClassDialog
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        u32 currTab;
+        Tab currTab;
         WinLib::TabControl tabs;
         MapPropertiesWindow mapPropertiesWindow;
         ForcesWindow forcesWindow;
@@ -38,7 +48,7 @@ class MapSettingsWindow : public WinLib::ClassDialog
         WavEditorWindow wavEditorWindow;
 };
 
-enum MapSettings {
+enum class MapSettings {
     TAB_MAPPROPERTIES,
     TAB_FORCES,
     TAB_UNITSETTINGS,

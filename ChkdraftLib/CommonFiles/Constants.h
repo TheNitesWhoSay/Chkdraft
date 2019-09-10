@@ -117,4 +117,15 @@ constexpr DWORD TreeTypeTech = (0x80000000);
 ## WM_APP through 0xBFFF         ##
 \*###############################*/
 
+
+#define CHKDE_FIRST WINUI_LAST
+
+enum class CG : u32 {
+    /** Sent to the parent when a condition has been enabled
+        WPARAM: LOWORD = conditionNumber
+                HIWORD = 0 if enabled, nonzero (typically 1)
+                if disabled*/
+    WM_CONDITIONENABLED = 0
+};
+
 #endif

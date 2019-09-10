@@ -58,7 +58,6 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitIndexMove.h" />
     <ClInclude Include="Mapping\Undos\Reversibles.h" />
     <ClInclude Include="Mapping\Undos\Undos.h" />
-    <ClInclude Include="Windows\ChkdControls\ChkdCtrlEnums.h" />
     <ClInclude Include="Windows\ChkdControls\ChkdStringInput.h" />
     <ClInclude Include="Windows\ChkdControls\CndActGrid.h" />
     <ClInclude Include="Windows\ChkdControls\CuwpInput.h" />

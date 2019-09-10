@@ -4,7 +4,7 @@
 
 namespace WinLib {
 
-    enum PromptResult
+    enum class PromptResult
     {
         Unknown,
         Yes,

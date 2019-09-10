@@ -4,7 +4,7 @@
 
 namespace WinLib {
 
-    enum LB
+    enum class LB : u32
     {
         /** Sent to the parent when an item is double clicked
             The WPARAM specifies the item index that was double clicked
@@ -40,12 +40,12 @@ namespace WinLib {
         LB_LAST
     };
 
-    enum GV
+    enum class GV : u32
     {
         /** Sent to the parent to request a specific row be drawn
             The wParam and lParam are the same as in WM_DRAWITEM,
             the return value is ignored */
-        WM_DRAWGRIDVIEWITEM = LB::LB_LAST,
+        WM_DRAWGRIDVIEWITEM = (u32)LB::LB_LAST,
 
         /** Sent to the parent to allow it to draw any touchups
             after all the grid items have been drawn

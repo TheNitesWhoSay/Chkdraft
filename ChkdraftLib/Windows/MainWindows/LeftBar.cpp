@@ -1,7 +1,7 @@
 #include "LeftBar.h"
 #include "../../Chkdraft.h"
 
-enum ID
+enum class Id
 {
     IDR_MAIN_TREE,
     IDR_LEFT_BAR,
@@ -16,7 +16,7 @@ LeftBar::~LeftBar()
 bool LeftBar::CreateThis(HWND hParent)
 {
     return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
-           CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, 0, 0, 162, 50, hParent, (HMENU)IDR_LEFT_BAR);
+           CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, 0, 0, 162, 50, hParent, (HMENU)Id::IDR_LEFT_BAR);
 }
 
 void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
@@ -166,9 +166,9 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_CREATE:
             {
-                miniMap.CreateThis(hWnd, IDR_MINIMAP);
+                miniMap.CreateThis(hWnd, (u64)Id::IDR_MINIMAP);
 
-                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, IDR_MAIN_TREE) )
+                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, (u64)Id::IDR_MAIN_TREE) )
                 {
                     SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);

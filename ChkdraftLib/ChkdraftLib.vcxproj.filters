@@ -188,9 +188,6 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Windows\ChkdControls\ChkdCtrlEnums.h">
-      <Filter>Header Files\Windows\Chkd Controls</Filter>
-    </ClInclude>
     <ClInclude Include="Windows\ChkdControls\ChkdStringInput.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
     </ClInclude>

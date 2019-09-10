@@ -1,7 +1,7 @@
 #include "CUWPs.h"
 #include "../../../Chkdraft.h"
 
-enum ID
+enum class Id
 {
     CuwpTree = ID_FIRST,
     CheckUsed,
@@ -93,8 +93,8 @@ void CUWPsWindow::DoSize()
 
 void CUWPsWindow::CreateSubWindows(HWND hWnd)
 {
-    cuwpTree.CreateThis(hWnd, 5, 5, 175, 100, false, CuwpTree);
-    checkUsed.CreateThis(hWnd, 185, 5, 100, 20, false, "Is Used", CheckUsed);
+    cuwpTree.CreateThis(hWnd, 5, 5, 175, 100, false, (u64)Id::CuwpTree);
+    checkUsed.CreateThis(hWnd, 185, 5, 100, 20, false, "Is Used", (u64)Id::CheckUsed);
     checkUsed.DisableThis();
 
     healthPercent.CreateThis(hWnd, 190, 40, 65, 20, "Life (%): ", 0);
@@ -103,17 +103,17 @@ void CUWPsWindow::CreateSubWindows(HWND hWnd)
     resourceAmount.CreateThis(hWnd, 190, 115, 65, 20, "Resources: ", 0);
     hangerAmount.CreateThis(hWnd, 190, 140, 65, 20, "Hanger: ", 0);
 
-    editHitpointPercent.CreateThis(hWnd, 260, 38, 80, 20, false, EditHitpoints);
-    editManaPercent.CreateThis(hWnd, 260, 63, 80, 20, false, EditMana);
-    editShieldPercent.CreateThis(hWnd, 260, 88, 80, 20, false, EditShields);
-    editResources.CreateThis(hWnd, 260, 113, 80, 20, false, EditResources);
-    editHanger.CreateThis(hWnd, 260, 138, 80, 20, false, EditHanger);
+    editHitpointPercent.CreateThis(hWnd, 260, 38, 80, 20, false, (u64)Id::EditHitpoints);
+    editManaPercent.CreateThis(hWnd, 260, 63, 80, 20, false, (u64)Id::EditMana);
+    editShieldPercent.CreateThis(hWnd, 260, 88, 80, 20, false, (u64)Id::EditShields);
+    editResources.CreateThis(hWnd, 260, 113, 80, 20, false, (u64)Id::EditResources);
+    editHanger.CreateThis(hWnd, 260, 138, 80, 20, false, (u64)Id::EditHanger);
 
-    checkInvincible.CreateThis(hWnd, 190, 170, 100, 20, false, "Invincible", CheckInvincible);
-    checkBurrowed.CreateThis(hWnd, 190, 190, 100, 20, false, "Burrowed", CheckBurrowed);
-    checkLifted.CreateThis(hWnd, 190, 210, 100, 20, false, "Lifted", CheckLifted);
-    checkHallucinated.CreateThis(hWnd, 190, 230, 100, 20, false, "Hallucinated", CheckHallucinated);
-    checkCloaked.CreateThis(hWnd, 190, 250, 100, 20, false, "Cloaked", CheckCloaked);
+    checkInvincible.CreateThis(hWnd, 190, 170, 100, 20, false, "Invincible", (u64)Id::CheckInvincible);
+    checkBurrowed.CreateThis(hWnd, 190, 190, 100, 20, false, "Burrowed", (u64)Id::CheckBurrowed);
+    checkLifted.CreateThis(hWnd, 190, 210, 100, 20, false, "Lifted", (u64)Id::CheckLifted);
+    checkHallucinated.CreateThis(hWnd, 190, 230, 100, 20, false, "Hallucinated", (u64)Id::CheckHallucinated);
+    checkCloaked.CreateThis(hWnd, 190, 250, 100, 20, false, "Cloaked", (u64)Id::CheckCloaked);
 
     DisableEditing();
     RefreshWindow(true);
@@ -195,13 +195,13 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     Chk::Cuwp cuwp = {};
     if ( CM->GetCuwp(selectedCuwp, cuwp) )
     {
-        switch ( idFrom )
+        switch ( (Id)idFrom )
         {
-            case CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
-            case CheckBurrowed: cuwp.setBurrowed(checkBurrowed.isChecked()); break;
-            case CheckLifted: cuwp.setInTransit(checkLifted.isChecked()); break;
-            case CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
-            case CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
+            case Id::CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
+            case Id::CheckBurrowed: cuwp.setBurrowed(checkBurrowed.isChecked()); break;
+            case Id::CheckLifted: cuwp.setInTransit(checkLifted.isChecked()); break;
+            case Id::CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
+            case Id::CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
         CM->notifyChange(false);
@@ -214,13 +214,13 @@ void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
     if ( CM->GetCuwp(selectedCuwp, cuwp) )
     {
         int editNum = 0;
-        switch ( idFrom )
+        switch ( (Id)idFrom )
         {
-            case EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.hitpointPercent = editNum; break;
-            case EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
-            case EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
-            case EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
-            case EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
+            case Id::EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.hitpointPercent = editNum; break;
+            case Id::EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
+            case Id::EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
+            case Id::EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
+            case Id::EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
         }
         CM->ReplaceCuwp(cuwp, selectedCuwp);
         CM->notifyChange(false);

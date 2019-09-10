@@ -8,7 +8,7 @@
 #define BOTTOM_ACTION_PADDING 0
 #define DEFAULT_COLUMN_WIDTH 50
 
-enum ID
+enum class Id
 {
     GRID_ACTIONS = ID_FIRST,
     BUTTON_UNITPROPERTIES,
@@ -381,20 +381,20 @@ void TrigActionsWindow::InitializeScriptTable()
 
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
-    gridActions.CreateThis(hWnd, 2, 40, 100, 100, GRID_ACTIONS);
+    gridActions.CreateThis(hWnd, 2, 40, 100, 100, (u64)Id::GRID_ACTIONS);
     suggestions.CreateThis(hWnd, 0, 0, 262, 100);
-    buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", BUTTON_EDITSTRING);
+    buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", (u64)Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
-    buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", BUTTON_EDITWAV);
+    buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", (u64)Id::BUTTON_EDITWAV);
     buttonEditWav.Hide();
-    buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", BUTTON_UNITPROPERTIES);
+    buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", (u64)Id::BUTTON_UNITPROPERTIES);
     buttonUnitProperties.Hide();
     RefreshWindow(trigIndex);
 }
 
 LRESULT TrigActionsWindow::MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == GRID_ACTIONS )
+    if ( wParam == (WPARAM)Id::GRID_ACTIONS )
     {
         MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
         mis->itemWidth = DEFAULT_COLUMN_WIDTH;
@@ -728,7 +728,7 @@ void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, 
 
 void TrigActionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 {
-    if ( gridId == GRID_ACTIONS )
+    if ( gridId == (UINT)Id::GRID_ACTIONS )
     {
         bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
             drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
@@ -1356,11 +1356,11 @@ LRESULT TrigActionsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( HIWORD(wParam) )
     {
         case BN_CLICKED:
-            switch ( LOWORD(wParam) )
+            switch ( (Id)LOWORD(wParam) )
             {
-                case BUTTON_EDITSTRING: ButtonEditString(); break;
-                case BUTTON_EDITWAV: ButtonEditWav(); break;
-                case BUTTON_UNITPROPERTIES: ButtonEditUnitProperties(); break;
+                case Id::BUTTON_EDITSTRING: ButtonEditString(); break;
+                case Id::BUTTON_EDITWAV: ButtonEditWav(); break;
+                case Id::BUTTON_UNITPROPERTIES: ButtonEditUnitProperties(); break;
                 default: return ClassWindow::Command(hWnd, wParam, lParam); break;
             }
             break;
@@ -1376,19 +1376,19 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
         case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
-        case WinLib::GV::WM_GRIDSELCHANGED: NewSelection(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
-        case WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
-        case WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
-        case WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
-        case WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
-        case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
-        case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
-        case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
-        case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
+        case (UINT)WinLib::GV::WM_GRIDSELCHANGED: NewSelection(LOWORD(wParam), HIWORD(wParam)); break;
+        case (UINT)WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
+        case (UINT)WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
+        case (UINT)WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
+        case (UINT)WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
+        case (UINT)WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
+        case (UINT)WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
+        case (UINT)WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
+        case (UINT)WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
+        case (UINT)WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
+        case (UINT)WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
+        case (UINT)WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
+        case (UINT)WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

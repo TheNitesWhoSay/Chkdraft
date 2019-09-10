@@ -860,73 +860,73 @@ PuniSection::PuniSection() : StructSection<Chk::PUNI, false>(SectionName::PUNI)
 
 bool PuniSection::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUnitBuildable[unitType][playerIndex] != Chk::Available::No;
+            return data->playerUnitBuildable[(size_t)unitType][playerIndex] != Chk::Available::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 bool PuniSection::isUnitDefaultBuildable(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->defaultUnitBuildable[unitType] != Chk::Available::No;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->defaultUnitBuildable[(size_t)unitType] != Chk::Available::No;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 bool PuniSection::playerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUnitUsesDefault[unitType][playerIndex] != Chk::UseDefault::No;
+            return data->playerUnitUsesDefault[(size_t)unitType][playerIndex] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 void PuniSection::setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, bool buildable)
 {
     Chk::Available unitBuildable = buildable ? Chk::Available::Yes : Chk::Available::No;
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerUnitBuildable[unitType][playerIndex] = unitBuildable;
+            data->playerUnitBuildable[(size_t)unitType][playerIndex] = unitBuildable;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 void PuniSection::setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable)
 {
     Chk::Available unitDefaultBuildable = buildable ? Chk::Available::Yes : Chk::Available::No;
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->defaultUnitBuildable[unitType] = unitDefaultBuildable;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->defaultUnitBuildable[(size_t)unitType] = unitDefaultBuildable;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 void PuniSection::setPlayerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault)
 {
     Chk::UseDefault playerUnitUsesDefault = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerUnitUsesDefault[unitType][playerIndex] = playerUnitUsesDefault;
+            data->playerUnitUsesDefault[(size_t)unitType][playerIndex] = playerUnitUsesDefault;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the PUNI section!");
 }
 
 
@@ -954,113 +954,113 @@ UpgrSection::UpgrSection(Chk::UPGR & data) : StructSection<Chk::UPGR, false>(Sec
 
 size_t UpgrSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerMaxUpgradeLevel[upgradeType][playerIndex];
+            return data->playerMaxUpgradeLevel[(size_t)upgradeType][playerIndex];
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 size_t UpgrSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return (size_t)data->playerStartUpgradeLevel[upgradeType][playerIndex];
+            return (size_t)data->playerStartUpgradeLevel[(size_t)upgradeType][playerIndex];
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 size_t UpgrSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->defaultMaxLevel[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->defaultMaxLevel[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 size_t UpgrSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->defaultStartLevel[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->defaultStartLevel[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 bool UpgrSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUpgradeUsesDefault[upgradeType][playerIndex] != Chk::UseDefault::No;
+            return data->playerUpgradeUsesDefault[(size_t)upgradeType][playerIndex] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 void UpgrSection::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 maxUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerMaxUpgradeLevel[upgradeType][playerIndex] = maxUpgradeLevel;
+            data->playerMaxUpgradeLevel[(size_t)upgradeType][playerIndex] = maxUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 void UpgrSection::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 startUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerStartUpgradeLevel[upgradeType][playerIndex] = startUpgradeLevel;
+            data->playerStartUpgradeLevel[(size_t)upgradeType][playerIndex] = startUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 void UpgrSection::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 maxUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->defaultMaxLevel[upgradeType] = maxUpgradeLevel;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->defaultMaxLevel[(size_t)upgradeType] = maxUpgradeLevel;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 void UpgrSection::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 startUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->defaultStartLevel[upgradeType] = startUpgradeLevel;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->defaultStartLevel[(size_t)upgradeType] = startUpgradeLevel;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 void UpgrSection::setPlayerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault)
 {
     Chk::UseDefault playerUpgradeUsesDefault = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerUpgradeUsesDefault[upgradeType][playerIndex] = playerUpgradeUsesDefault;
+            data->playerUpgradeUsesDefault[(size_t)upgradeType][playerIndex] = playerUpgradeUsesDefault;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGR section!");
 }
 
 
@@ -1092,112 +1092,112 @@ PtecSection::PtecSection(Chk::PTEC & data) : StructSection<Chk::PTEC, false>(Sec
 
 bool PtecSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->techAvailableForPlayer[techType][playerIndex] != Chk::Available::No;
+            return data->techAvailableForPlayer[(size_t)techType][playerIndex] != Chk::Available::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEC section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 bool PtecSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->techResearchedForPlayer[techType][playerIndex] != Chk::Researched::No;
+            return data->techResearchedForPlayer[(size_t)techType][playerIndex] != Chk::Researched::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEC section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 bool PtecSection::techDefaultAvailable(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->techAvailableByDefault[techType] != Chk::Available::No;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->techAvailableByDefault[(size_t)techType] != Chk::Available::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 bool PtecSection::techDefaultResearched(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->techResearchedByDefault[techType] != Chk::Researched::No;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->techResearchedByDefault[(size_t)techType] != Chk::Researched::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 bool PtecSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUsesDefaultsForTech[techType][playerIndex] != Chk::UseDefault::No;
+            return data->playerUsesDefaultsForTech[(size_t)techType][playerIndex] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEC section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 void PtecSection::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available)
 {
     Chk::Available techAvailable = available ? Chk::Available::Yes : Chk::Available::No;
-    if ( techType < Sc::Tech::TotalOriginalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->techAvailableForPlayer[techType][playerIndex] = techAvailable;
+            data->techAvailableForPlayer[(size_t)techType][playerIndex] = techAvailable;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEC section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 void PtecSection::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched)
 {
     Chk::Researched techResearched = researched ? Chk::Researched::Yes : Chk::Researched::No;
-    if ( techType < Sc::Tech::TotalOriginalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->techResearchedForPlayer[techType][playerIndex] = techResearched;
+            data->techResearchedForPlayer[(size_t)techType][playerIndex] = techResearched;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEC section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 void PtecSection::setDefaultTechAvailable(Sc::Tech::Type techType, bool available)
 {
     Chk::Available techAvailable = available ? Chk::Available::Yes : Chk::Available::No;
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->techAvailableByDefault[techType] = techAvailable;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->techAvailableByDefault[(size_t)techType] = techAvailable;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 void PtecSection::setDefaultTechResearched(Sc::Tech::Type techType, bool researched)
 {
     Chk::Researched techResearched = researched ? Chk::Researched::Yes : Chk::Researched::No;
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->techResearchedByDefault[techType] = techResearched;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->techResearchedByDefault[(size_t)techType] = techResearched;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 void PtecSection::setPlayerUsesDefault(Sc::Tech::Type techType, size_t playerIndex, bool useDefault)
 {
     Chk::UseDefault playerUsesDefault = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->playerUsesDefaultsForTech[techType][playerIndex] = playerUsesDefault;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->playerUsesDefaultsForTech[(size_t)techType][playerIndex] = playerUsesDefault;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEC section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
 
@@ -2516,66 +2516,66 @@ UnisSection::UnisSection(Chk::UNIS & data) : StructSection<Chk::UNIS, false>(Sec
 
 bool UnisSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->useDefault[unitType] != Chk::UseDefault::No;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->useDefault[(size_t)unitType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u32 UnisSection::getUnitHitpoints(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->hitpoints[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->hitpoints[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u16 UnisSection::getUnitShieldPoints(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->shieldPoints[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->shieldPoints[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u8 UnisSection::getUnitArmorLevel(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->armorLevel[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->armorLevel[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u16 UnisSection::getUnitBuildTime(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
         return data->buildTime[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u16 UnisSection::getUnitMineralCost(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
         return data->mineralCost[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u16 UnisSection::getUnitGasCost(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->gasCost[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->gasCost[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 size_t UnisSection::getUnitNameStringId(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->nameStringId[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->nameStringId[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u16 UnisSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
@@ -2596,66 +2596,66 @@ u16 UnisSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType)
 
 void UnisSection::setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->useDefault[unitType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->useDefault[(size_t)unitType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->hitpoints[unitType] = hitpoints;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->hitpoints[(size_t)unitType] = hitpoints;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->shieldPoints[unitType] = shieldPoints;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->shieldPoints[(size_t)unitType] = shieldPoints;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->armorLevel[unitType] = armorLevel;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->armorLevel[(size_t)unitType] = armorLevel;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->buildTime[unitType] = buildTime;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->buildTime[(size_t)unitType] = buildTime;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->mineralCost[unitType] = mineralCost;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->mineralCost[(size_t)unitType] = mineralCost;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->gasCost[unitType] = gasCost;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->gasCost[(size_t)unitType] = gasCost;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setUnitNameStringId(Sc::Unit::Type unitType, u16 nameStringId)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->nameStringId[unitType] = nameStringId;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->nameStringId[(size_t)unitType] = nameStringId;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 void UnisSection::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage)
@@ -2736,115 +2736,115 @@ UpgsSection::UpgsSection(Chk::UPGS & data) : StructSection<Chk::UPGS, false>(Sec
 
 bool UpgsSection::upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->useDefault[upgradeType] != Chk::UseDefault::No;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->useDefault[(size_t)upgradeType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->baseMineralCost[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->baseMineralCost[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->mineralCostFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->mineralCostFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->baseGasCost[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->baseGasCost[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->gasCostFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->gasCostFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->baseResearchTime[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->baseResearchTime[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 u16 UpgsSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        return data->researchTimeFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        return data->researchTimeFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 
 void UpgsSection::setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->useDefault[upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->useDefault[(size_t)upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->baseMineralCost[upgradeType] = baseMineralCost;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->baseMineralCost[(size_t)upgradeType] = baseMineralCost;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->mineralCostFactor[upgradeType] = mineralCostFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->mineralCostFactor[(size_t)upgradeType] = mineralCostFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->baseGasCost[upgradeType] = baseGasCost;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->baseGasCost[(size_t)upgradeType] = baseGasCost;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCostFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->gasCostFactor[upgradeType] = gasCostFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->gasCostFactor[(size_t)upgradeType] = gasCostFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->baseResearchTime[upgradeType] = baseResearchTime;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->baseResearchTime[(size_t)upgradeType] = baseResearchTime;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 void UpgsSection::setResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->researchTimeFactor[upgradeType] = researchTimeFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
+        data->researchTimeFactor[(size_t)upgradeType] = researchTimeFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGS section!");
 }
 
 
@@ -2868,82 +2868,82 @@ TecsSection::TecsSection(Chk::TECS & data) : StructSection<Chk::TECS, false>(Sec
 
 bool TecsSection::techUsesDefaultSettings(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->useDefault[techType] != Chk::UseDefault::No;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->useDefault[(size_t)techType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 u16 TecsSection::getTechMineralCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->mineralCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->mineralCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 u16 TecsSection::getTechGasCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->gasCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->gasCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 u16 TecsSection::getTechResearchTime(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->researchTime[techType];
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->researchTime[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 u16 TecsSection::getTechEnergyCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        return data->energyCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        return data->energyCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 void TecsSection::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->useDefault[techType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->useDefault[(size_t)techType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 void TecsSection::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->mineralCost[techType] = mineralCost;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->mineralCost[(size_t)techType] = mineralCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 void TecsSection::setTechGasCost(Sc::Tech::Type techType, u16 gasCost)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->gasCost[techType] = gasCost;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->gasCost[(size_t)techType] = gasCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 void TecsSection::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->researchTime[techType] = researchTime;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->researchTime[(size_t)techType] = researchTime;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 void TecsSection::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost)
 {
-    if ( techType < Sc::Tech::TotalOriginalTypes )
-        data->energyCost[techType] = energyCost;
+    if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
+        data->energyCost[(size_t)techType] = energyCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECS section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
 
@@ -3065,112 +3065,112 @@ PupxSection::PupxSection(Chk::PUPx & data) : StructSection<Chk::PUPx, false>(Sec
 
 size_t PupxSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerMaxUpgradeLevel[upgradeType][playerIndex];
+            return data->playerMaxUpgradeLevel[(size_t)upgradeType][playerIndex];
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 size_t PupxSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerStartUpgradeLevel[upgradeType][playerIndex];
+            return data->playerStartUpgradeLevel[(size_t)upgradeType][playerIndex];
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 size_t PupxSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->defaultMaxLevel[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->defaultMaxLevel[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 size_t PupxSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->defaultStartLevel[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->defaultStartLevel[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 bool PupxSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUpgradeUsesDefault[upgradeType][playerIndex] != Chk::UseDefault::No;
+            return data->playerUpgradeUsesDefault[(size_t)upgradeType][playerIndex] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 void PupxSection::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerMaxUpgradeLevel[upgradeType][playerIndex] = (u8)maxUpgradeLevel;
+            data->playerMaxUpgradeLevel[(size_t)upgradeType][playerIndex] = (u8)maxUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 void PupxSection::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerStartUpgradeLevel[upgradeType][playerIndex] = (u8)startUpgradeLevel;
+            data->playerStartUpgradeLevel[(size_t)upgradeType][playerIndex] = (u8)startUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 void PupxSection::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->defaultMaxLevel[upgradeType] = (u8)maxUpgradeLevel;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->defaultMaxLevel[(size_t)upgradeType] = (u8)maxUpgradeLevel;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 void PupxSection::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->defaultStartLevel[upgradeType] = (u8)startUpgradeLevel;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->defaultStartLevel[(size_t)upgradeType] = (u8)startUpgradeLevel;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 void PupxSection::setPlayerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerUpgradeUsesDefault[upgradeType][playerIndex] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+            data->playerUpgradeUsesDefault[(size_t)upgradeType][playerIndex] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUPx section!");
     }
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the PUPx section!");
 }
 
 
@@ -3207,112 +3207,112 @@ PtexSection::PtexSection(Chk::PTEx & data) : StructSection<Chk::PTEx, false>(Sec
 
 bool PtexSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->techAvailableForPlayer[techType][playerIndex] != Chk::Available::No;
+            return data->techAvailableForPlayer[(size_t)techType][playerIndex] != Chk::Available::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEx section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 bool PtexSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->techResearchedForPlayer[techType][playerIndex] != Chk::Researched::No;
+            return data->techResearchedForPlayer[(size_t)techType][playerIndex] != Chk::Researched::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEx section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 bool PtexSection::techDefaultAvailable(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->techAvailableByDefault[techType] != Chk::Available::No;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->techAvailableByDefault[(size_t)techType] != Chk::Available::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 bool PtexSection::techDefaultResearched(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->techResearchedByDefault[techType] != Chk::Researched::No;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->techResearchedByDefault[(size_t)techType] != Chk::Researched::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 bool PtexSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex)
 {
-    if ( techType < Sc::Tech::TotalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return data->playerUsesDefaultsForTech[techType][playerIndex] != Chk::UseDefault::No;
+            return data->playerUsesDefaultsForTech[(size_t)techType][playerIndex] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEx section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 void PtexSection::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available)
 {
     Chk::Available techAvailable = available ? Chk::Available::Yes : Chk::Available::No;
-    if ( techType < Sc::Tech::TotalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->techAvailableForPlayer[techType][playerIndex] = techAvailable;
+            data->techAvailableForPlayer[(size_t)techType][playerIndex] = techAvailable;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEx section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 void PtexSection::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched)
 {
     Chk::Researched techResearched = researched ? Chk::Researched::Yes : Chk::Researched::No;
-    if ( techType < Sc::Tech::TotalTypes )
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->techResearchedForPlayer[techType][playerIndex] = techResearched;
+            data->techResearchedForPlayer[(size_t)techType][playerIndex] = techResearched;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PTEx section!");
     }
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 void PtexSection::setDefaultTechAvailable(Sc::Tech::Type techType, bool available)
 {
     Chk::Available techAvailable = available ? Chk::Available::Yes : Chk::Available::No;
-    if ( techType < Sc::Tech::TotalTypes )
-        data->techAvailableByDefault[techType] = techAvailable;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->techAvailableByDefault[(size_t)techType] = techAvailable;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 void PtexSection::setDefaultTechResearched(Sc::Tech::Type techType, bool researched)
 {
     Chk::Researched techResearched = researched ? Chk::Researched::Yes : Chk::Researched::No;
-    if ( techType < Sc::Tech::TotalTypes )
-        data->techResearchedByDefault[techType] = techResearched;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->techResearchedByDefault[(size_t)techType] = techResearched;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 void PtexSection::setPlayerUsesDefault(Sc::Tech::Type techType, size_t playerIndex, bool useDefault)
 {
     Chk::UseDefault playerUsesDefault = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
-    if ( techType < Sc::Tech::TotalTypes )
-        data->playerUsesDefaultsForTech[techType][playerIndex] = playerUsesDefault;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->playerUsesDefaultsForTech[(size_t)techType][playerIndex] = playerUsesDefault;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the PTEx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
 Section UnixSection::GetDefault()
@@ -3340,66 +3340,66 @@ UnixSection::UnixSection(Chk::UNIx & data) : StructSection<Chk::UNIx, false>(Sec
 
 bool UnixSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->useDefault[unitType] != Chk::UseDefault::No;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->useDefault[(size_t)unitType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIS section!");
 }
 
 u32 UnixSection::getUnitHitpoints(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->hitpoints[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->hitpoints[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u16 UnixSection::getUnitShieldPoints(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->shieldPoints[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->shieldPoints[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u8 UnixSection::getUnitArmorLevel(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->armorLevel[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->armorLevel[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u16 UnixSection::getUnitBuildTime(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->buildTime[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->buildTime[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u16 UnixSection::getUnitMineralCost(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->mineralCost[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->mineralCost[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u16 UnixSection::getUnitGasCost(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->gasCost[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->gasCost[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 size_t UnixSection::getUnitNameStringId(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->nameStringId[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->nameStringId[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 u16 UnixSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
@@ -3420,66 +3420,66 @@ u16 UnixSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType)
 
 void UnixSection::setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->useDefault[unitType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->useDefault[(size_t)unitType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->hitpoints[unitType] = hitpoints;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->hitpoints[(size_t)unitType] = hitpoints;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->shieldPoints[unitType] = shieldPoints;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->shieldPoints[(size_t)unitType] = shieldPoints;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->armorLevel[unitType] = armorLevel;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->armorLevel[(size_t)unitType] = armorLevel;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->buildTime[unitType] = buildTime;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->buildTime[(size_t)unitType] = buildTime;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->mineralCost[unitType] = mineralCost;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->mineralCost[(size_t)unitType] = mineralCost;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->gasCost[unitType] = gasCost;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->gasCost[(size_t)unitType] = gasCost;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setUnitNameStringId(Sc::Unit::Type unitType, u16 nameStringId)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->nameStringId[unitType] = nameStringId;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->nameStringId[(size_t)unitType] = nameStringId;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the UNIx section!");
 }
 
 void UnixSection::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage)
@@ -3560,115 +3560,115 @@ UpgxSection::UpgxSection(Chk::UPGx & data) : StructSection<Chk::UPGx, false>(Sec
 
 bool UpgxSection::upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->useDefault[upgradeType] != Chk::UseDefault::No;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->useDefault[(size_t)upgradeType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->baseMineralCost[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->baseMineralCost[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->mineralCostFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->mineralCostFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->baseGasCost[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->baseGasCost[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->gasCostFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->gasCostFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->baseResearchTime[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->baseResearchTime[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 u16 UpgxSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        return data->researchTimeFactor[upgradeType];
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        return data->researchTimeFactor[(size_t)upgradeType];
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 
 void UpgxSection::setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->useDefault[upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->useDefault[(size_t)upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->baseMineralCost[upgradeType] = baseMineralCost;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->baseMineralCost[(size_t)upgradeType] = baseMineralCost;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->mineralCostFactor[upgradeType] = mineralCostFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->mineralCostFactor[(size_t)upgradeType] = mineralCostFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->baseGasCost[upgradeType] = baseGasCost;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->baseGasCost[(size_t)upgradeType] = baseGasCost;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCostFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->gasCostFactor[upgradeType] = gasCostFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->gasCostFactor[(size_t)upgradeType] = gasCostFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->baseResearchTime[upgradeType] = baseResearchTime;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->baseResearchTime[(size_t)upgradeType] = baseResearchTime;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 void UpgxSection::setResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor)
 {
-    if ( upgradeType < Sc::Upgrade::TotalTypes )
-        data->researchTimeFactor[upgradeType] = researchTimeFactor;
+    if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
+        data->researchTimeFactor[(size_t)upgradeType] = researchTimeFactor;
     else
-        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
 Section TecxSection::GetDefault()
@@ -3691,83 +3691,83 @@ TecxSection::TecxSection(Chk::TECx & data) : StructSection<Chk::TECx, false>(Sec
 
 bool TecxSection::techUsesDefaultSettings(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->useDefault[techType] != Chk::UseDefault::No;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->useDefault[(size_t)techType] != Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 u16 TecxSection::getTechMineralCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->mineralCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->mineralCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 u16 TecxSection::getTechGasCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->gasCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->gasCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 u16 TecxSection::getTechResearchTime(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->researchTime[techType];
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->researchTime[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 u16 TecxSection::getTechEnergyCost(Sc::Tech::Type techType)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        return data->energyCost[techType];
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        return data->energyCost[(size_t)techType];
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 
 void TecxSection::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        data->useDefault[techType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->useDefault[(size_t)techType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 void TecxSection::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        data->mineralCost[techType] = mineralCost;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->mineralCost[(size_t)techType] = mineralCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 void TecxSection::setTechGasCost(Sc::Tech::Type techType, u16 gasCost)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        data->gasCost[techType] = gasCost;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->gasCost[(size_t)techType] = gasCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 void TecxSection::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        data->researchTime[techType] = researchTime;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->researchTime[(size_t)techType] = researchTime;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 void TecxSection::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost)
 {
-    if ( techType < Sc::Tech::TotalTypes )
-        data->energyCost[techType] = energyCost;
+    if ( (size_t)techType < Sc::Tech::TotalTypes )
+        data->energyCost[(size_t)techType] = energyCost;
     else
-        throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the TECx section!");
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
 Section OstrSection::GetDefault()
@@ -3816,18 +3816,18 @@ u32 OstrSection::getForceNameStringId(Chk::Force force)
 
 u32 OstrSection::getUnitNameStringId(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->unitName[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->unitName[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the OSTR section!");
 }
 
 u32 OstrSection::getExpUnitNameStringId(Sc::Unit::Type unitType)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        return data->expUnitName[unitType];
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        return data->expUnitName[(size_t)unitType];
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the OSTR section!");
 }
 
 u32 OstrSection::getSoundPathStringId(size_t soundIndex)
@@ -3874,18 +3874,18 @@ void OstrSection::setForceNameStringId(Chk::Force force, u32 forceNameStringId)
 
 void OstrSection::setUnitNameStringId(Sc::Unit::Type unitType, u32 unitNameStringId)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->unitName[unitType] = unitNameStringId;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->unitName[(size_t)unitType] = unitNameStringId;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the OSTR section!");
 }
 
 void OstrSection::setExpUnitNameStringId(Sc::Unit::Type unitType, u32 expUnitNameStringId)
 {
-    if ( unitType < Sc::Unit::TotalTypes )
-        data->expUnitName[unitType] = expUnitNameStringId;
+    if ( (size_t)unitType < Sc::Unit::TotalTypes )
+        data->expUnitName[(size_t)unitType] = expUnitNameStringId;
     else
-        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string((size_t)unitType) + " is out of range for the OSTR section!");
 }
 
 void OstrSection::setSoundPathStringId(size_t soundIndex, u32 soundPathStringId)

@@ -11,7 +11,7 @@
 
 //extern Logger logger;
 
-enum MainWindow {
+enum class Id {
     IDR_MAIN_TOOLBAR = ID_FIRST,
     IDR_MAIN_STATUS,
     IDR_MAIN_MDI,
@@ -564,13 +564,13 @@ bool Chkdraft::CreateSubWindows()
         int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
         return mainMenu.FindThis(hWnd) &&
-            mainToolbar.CreateThis(hWnd, IDR_MAIN_TOOLBAR) &&
+            mainToolbar.CreateThis(hWnd, (u64)Id::IDR_MAIN_TOOLBAR) &&
             statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
-                WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)IDR_MAIN_STATUS) &&
-            mainPlot.CreateThis(hWnd, IDR_MAIN_PLOT) &&
-            BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), ID_MDI_FIRSTCHILD,
+                WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)Id::IDR_MAIN_STATUS) &&
+            mainPlot.CreateThis(hWnd, (u64)Id::IDR_MAIN_PLOT) &&
+            BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), (UINT)Id::ID_MDI_FIRSTCHILD,
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-                0, 0, 0, 0, (HMENU)IDR_MAIN_MDI);
+                0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI);
     }
     else
         return false;
@@ -638,13 +638,13 @@ void Chkdraft::OpenMapSettings(u16 menuId)
     {
         switch ( menuId )
         {
-            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(TAB_MAPPROPERTIES); break;
-            case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(TAB_FORCES); break;
-            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(TAB_UNITSETTINGS); break;
-            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(TAB_UPGRADESETTINGS); break;
-            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(TAB_TECHSETTINGS); break;
-            case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(TAB_STRINGEDITOR); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(TAB_WAVEDITOR); break;
+            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
+            case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::Forces); break;
+            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
+            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
+            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
+            case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::WavEditor); break;
         }
         ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     }

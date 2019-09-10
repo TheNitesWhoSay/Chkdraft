@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
 
-enum ID {
+enum class Id {
     COMBO_TRIGS = ID_FIRST
 };
 
@@ -82,7 +82,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( LOWORD(wParam) == IDC_LIST_TILESET )
             {
                 HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-                HWND hDefaultTrigs = GetDlgItem(hWnd, COMBO_TRIGS);
+                HWND hDefaultTrigs = GetDlgItem(hWnd, (int)Id::COMBO_TRIGS);
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
                 switch ( itemIndex )
                 {
@@ -157,7 +157,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     "Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
                     "Melee with observers (6 players)", "Melee with observers (7 players)"
                 };
-                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, COMBO_TRIGS, defaultTriggerTitles, defaultFont);
+                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, (u64)Id::COMBO_TRIGS, defaultTriggerTitles, defaultFont);
                 dropDefaultTriggers.SetSel(0);
 
                 editWidth.FindThis(hWnd, IDC_EDIT_WIDTH);

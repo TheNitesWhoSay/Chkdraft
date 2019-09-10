@@ -8,7 +8,7 @@ extern Logger logger;
 
 namespace WinLib {
 
-    ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowTypes::None), allowEditNotify(true)
+    ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowType::None), allowEditNotify(true)
     {
         WindowClassName().clear();
     }
@@ -40,7 +40,7 @@ namespace WinLib {
     {
         if ( getHandle() == NULL && WindowClassName().length() > 0 )
         {
-            windowType = WindowTypes::Regular;
+            windowType = WindowType::Regular;
             icux::uistring sysWindowName = icux::toUistring(lpWindowName);
             icux::uistring sysWindowClassName = icux::toUistring(WindowClassName());
 
@@ -54,7 +54,7 @@ namespace WinLib {
                 return true;
             }
         }
-        windowType = WindowTypes::None;
+        windowType = WindowType::None;
         return false;
     }
 
@@ -62,7 +62,7 @@ namespace WinLib {
     {
         WindowsItem::DestroyThis();
         hWndMDIClient = NULL;
-        windowType = WindowTypes::None;
+        windowType = WindowType::None;
         allowEditNotify = true;
         WindowClassName().clear();
     }
@@ -76,7 +76,7 @@ namespace WinLib {
             icux::uistring sysWindowName = icux::toUistring(windowName);
             icux::uistring sysWindowClassName = icux::toUistring(WindowClassName());
 
-            windowType = WindowTypes::MDIChild;
+            windowType = WindowType::MDIChild;
             setHandle(CreateMDIWindow(sysWindowClassName.c_str(), sysWindowName.c_str(), dwStyle,
                 x, y, nWidth, nHeight,
                 hParent, GetModuleHandle(NULL), (LPARAM)this));
@@ -87,15 +87,15 @@ namespace WinLib {
                 return true;
             }
         }
-        windowType = WindowTypes::None;
+        windowType = WindowType::None;
         return false;
     }
 
     bool ClassWindow::BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
         int X, int Y, int nWidth, int nHeight, HMENU hMenu)
     {
-        WindowTypes prev = windowType;
-        windowType = WindowTypes::MDIFrame;
+        WindowType prev = windowType;
+        windowType = WindowType::MDIFrame;
         if ( client.CreateMdiClient( hWindowMenu, idFirstChild, dwStyle,
                                      X, Y, nWidth, nHeight, getHandle(), hMenu ) )
         {
@@ -110,8 +110,8 @@ namespace WinLib {
     {
         switch ( windowType )
         {
-            case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
-            case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
+            case WindowType::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
+            case WindowType::MDIChild: return DefMDIChildProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr); break;
         }
         return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
     }
@@ -180,8 +180,8 @@ namespace WinLib {
     {
         switch ( windowType )
         {
-            case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_COMMAND, wParam, lParam); break;
-            case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, WM_COMMAND, wParam, lParam); break;
+            case WindowType::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, WM_COMMAND, wParam, lParam); break;
+            case WindowType::MDIChild: return DefMDIChildProc(hWnd, WM_COMMAND, wParam, lParam); break;
         }
         return DefWindowProc(hWnd, WM_COMMAND, wParam, lParam);
     }
@@ -190,8 +190,8 @@ namespace WinLib {
     {
         switch ( windowType )
         {
-            case WindowTypes::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, msg, wParam, lParam); break;
-            case WindowTypes::MDIChild: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
+            case WindowType::MDIFrame: return DefFrameProc(hWnd, hWndMDIClient, msg, wParam, lParam); break;
+            case WindowType::MDIChild: return DefMDIChildProc(hWnd, msg, wParam, lParam); break;
         }
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }

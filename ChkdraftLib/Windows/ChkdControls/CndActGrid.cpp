@@ -4,7 +4,7 @@
 // Copy -> escape tabs to \t
 // Paste -> parse \t to tabs
 
-enum ID
+enum class Id
 {
     CHECK_ENABLED_1 = ID_FIRST,
     CHECK_ENABLED_16 = (CHECK_ENABLED_1 + 15),
@@ -198,7 +198,7 @@ bool CndActGrid::CreateSubWindows(HWND hWnd)
     for ( int i = 0; i < numUsedRows; i++ )
     {
         POINT pt = GridViewControl::GetItemTopLeft(0, i);
-        checkEnabled[i].CreateThis(getHandle(), 0, pt.y, 12, 13, true, false, "", CHECK_ENABLED_1 + i);
+        checkEnabled[i].CreateThis(getHandle(), 0, pt.y, 12, 13, true, false, "", (u64)Id::CHECK_ENABLED_1 + i);
     }
     return true;
 }
@@ -288,9 +288,9 @@ LRESULT CndActGrid::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             break;
         case BN_CLICKED:
             {
-                if ( LOWORD(wParam) >= CHECK_ENABLED_1 && LOWORD(wParam) <= CHECK_ENABLED_64 )
+                if ( LOWORD(wParam) >= (WORD)Id::CHECK_ENABLED_1 && LOWORD(wParam) <= (WORD)Id::CHECK_ENABLED_64 )
                 {
-                    u8 cndActNum = u8(LOWORD(wParam) - CHECK_ENABLED_1);
+                    u8 cndActNum = u8(LOWORD(wParam) - (WORD)Id::CHECK_ENABLED_1);
                     if ( cndActNum >= 0 && cndActNum < numUsedRows )
                         user.CndActEnableToggled(cndActNum);
                 }

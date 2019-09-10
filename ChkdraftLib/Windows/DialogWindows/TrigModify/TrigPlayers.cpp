@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include <sstream>
 
-enum ID
+enum class Id
 {
     GROUP_EXECUTINGPLAYERS = ID_FIRST,
     CHECK_PLAYER1,
@@ -74,14 +74,14 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
         std::stringstream ssStats;
         const char* strTimesExecuted[] = { "Never", "Once", "Twice", "Thrice" };
         u8 exec[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-        if ( (u8)trig->owners[Sc::Player::Id::AllPlayers] & (u8)Chk::Trigger::Owned::Yes )
+        if ( (u8)trig->owners[(size_t)Sc::Player::Id::AllPlayers] & (u8)Chk::Trigger::Owned::Yes )
         {
             for ( u8 player=0; player<8; player++ )
                 exec[player] ++;
         }
         for ( u8 force=0; force<4; force++ )
         {
-            if ( (u8)trig->owners[Sc::Player::Id::Force1+force] & (u8)Chk::Trigger::Owned::Yes )
+            if ( (u8)trig->owners[(size_t)Sc::Player::Id::Force1+force] & (u8)Chk::Trigger::Owned::Yes )
             {
                 for ( u8 player=0; player<8; player++ )
                 {
@@ -93,7 +93,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
         }
         for ( u8 player=0; player<8; player++ )
         {
-            if ( (u8)trig->owners[Sc::Player::Id::Player1+player] & (u8)Chk::Trigger::Owned::Yes )
+            if ( (u8)trig->owners[(size_t)Sc::Player::Id::Player1+player] & (u8)Chk::Trigger::Owned::Yes )
                 exec[player] ++;
         }
         ssStats << "For each trigger cycle..." << std::endl
@@ -109,14 +109,14 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
         textPlayerStats.SetText(ssStats.str());
 
         for ( u8 i=0; i<8; i++ )
-            checkMainPlayers[i].SetCheck((u8)trig->owners[Sc::Player::Id::Player1+i] & (u8)Chk::Trigger::Owned::Yes);
+            checkMainPlayers[i].SetCheck((u8)trig->owners[i+(u8)Sc::Player::Id::Player1] & (u8)Chk::Trigger::Owned::Yes);
         for ( u8 i=0; i<4; i++ )
-            checkForces[i].SetCheck((u8)trig->owners[Sc::Player::Id::Force1+i] & (u8)Chk::Trigger::Owned::Yes);
-        checkAllPlayers.SetCheck((u8)trig->owners[Sc::Player::Id::AllPlayers] & (u8)Chk::Trigger::Owned::Yes);
-        for ( u8 i=Sc::Player::Id::Player9; i<=Sc::Player::Id::NeutralPlayers; i++ )
-            checkNonExecutingPlayers[i-Sc::Player::Id::Player9].SetCheck((u8)trig->owners[i] & (u8)Chk::Trigger::Owned::Yes);
-        for ( u8 i=Sc::Player::Id::Unused1; i<=Sc::Player::Id::NonAlliedVictoryPlayers; i++ )
-            checkNonExecutingPlayers[i-Sc::Player::Id::Unused1+9].SetCheck((u8)trig->owners[i] & (u8)Chk::Trigger::Owned::Yes);
+            checkForces[i].SetCheck((u8)trig->owners[i+(u8)Sc::Player::Id::Force1] & (u8)Chk::Trigger::Owned::Yes);
+        checkAllPlayers.SetCheck((u8)trig->owners[(size_t)Sc::Player::Id::AllPlayers] & (u8)Chk::Trigger::Owned::Yes);
+        for ( u8 i=(u8)Sc::Player::Id::Player9; i<=(u8)Sc::Player::Id::NeutralPlayers; i++ )
+            checkNonExecutingPlayers[i-(u8)Sc::Player::Id::Player9].SetCheck((u8)trig->owners[i] & (u8)Chk::Trigger::Owned::Yes);
+        for ( u8 i=(u8)Sc::Player::Id::Unused1; i<=(u8)Sc::Player::Id::NonAlliedVictoryPlayers; i++ )
+            checkNonExecutingPlayers[i-(u8)Sc::Player::Id::Unused1+(u8)9].SetCheck((u8)trig->owners[i] & (u8)Chk::Trigger::Owned::Yes);
 
         editRawPlayers.SetHexByteString((u8*)&trig->owners[0], Chk::Trigger::MaxOwners);
     }
@@ -147,32 +147,34 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
     {
         std::stringstream ssPlayer;
         ssPlayer << "Player " << (i+1);
-        checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str(), CHECK_PLAYER1+i);
+        checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str(), (u64)Id::CHECK_PLAYER1+i);
     }
     int yPos = 24;
     for ( u8 i=0; i<4; i++ )
     {
         std::stringstream ssPlayer;
         ssPlayer << "Force " << (i+1);
-        checkForces[i].CreateThis(hWnd, 110, 24+18*i, 75, 17, false, ssPlayer.str(), CHECK_FORCE1+i);
+        checkForces[i].CreateThis(hWnd, 110, 24+18*i, 75, 17, false, ssPlayer.str(), (u64)Id::CHECK_FORCE1+i);
         yPos += 18;
     }
-    checkAllPlayers.CreateThis(hWnd, 110, yPos, 75, 17, false, "All Players", CHECK_ALL_PLAYERS);
-    textPlayerStats.CreateThis(hWnd, 200, 24, 120, 150, "", TEXT_STATS);
+    checkAllPlayers.CreateThis(hWnd, 110, yPos, 75, 17, false, "All Players", (u64)Id::CHECK_ALL_PLAYERS);
+    textPlayerStats.CreateThis(hWnd, 200, 24, 120, 150, "", (u64)Id::TEXT_STATS);
     
-    groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", GROUP_EXECUTINGPLAYERS);
-    groupNonExecutingPlayers.CreateThis(hWnd, 340, 5, 210, 190, "Non-Executing Players", GROUP_UNUSEDPLAYERS);
+    groupExecutingPlayers.CreateThis(hWnd, 5, 5, 330, 190, "Executing Players", (u64)Id::GROUP_EXECUTINGPLAYERS);
+    groupNonExecutingPlayers.CreateThis(hWnd, 340, 5, 210, 190, "Non-Executing Players", (u64)Id::GROUP_UNUSEDPLAYERS);
     for ( u8 i=0; i<9; i++ )
-        checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i), CHECK_PLAYER9+i);
+        checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i), (u64)Id::CHECK_PLAYER9+i);
 
     for ( u8 i=0; i<6; i++ )
-        checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i), CHECK_UNUSED1+i);
+        checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i), (u64)Id::CHECK_UNUSED1+i);
 
-    groupRawEdit.CreateThis(hWnd, 5, 200, 545, 160, "Raw Data", GROUP_RAWEDIT);
-    textExtendedData.CreateThis(hWnd, 12, 219, 220, 60, "While not used in StarCraft modifying these bytes can be useful with 3rd party programs. Bytes 22-25 are used by Chkdraft and should not be manually altered. Numbers are in hex.", TEXT_EXTENDEDDATA);
-    checkAllowRawEdit.CreateThis(hWnd, 240, 219, 110, 20, false, "Enable Raw Edit", CHECK_ALLOWRAWEDIT);
-    editRawPlayers.CreateThis(hWnd, 12, 284, 455, 20, false, EDIT_RAWPLAYERS);
-    buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", BUTTON_ADVANCED);
+    groupRawEdit.CreateThis(hWnd, 5, 200, 545, 160, "Raw Data", (u64)Id::GROUP_RAWEDIT);
+    textExtendedData.CreateThis(hWnd, 12, 219, 220, 60,
+        "While not used in StarCraft modifying these bytes can be useful with 3rd party programs. Bytes 22-25 are used by Chkdraft and should not be manually altered. Numbers are in hex.",
+        (u64)Id::TEXT_EXTENDEDDATA);
+    checkAllowRawEdit.CreateThis(hWnd, 240, 219, 110, 20, false, "Enable Raw Edit", (u64)Id::CHECK_ALLOWRAWEDIT);
+    editRawPlayers.CreateThis(hWnd, 12, 284, 455, 20, false, (u64)Id::EDIT_RAWPLAYERS);
+    buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", (u64)Id::BUTTON_ADVANCED);
     editRawPlayers.DisableThis();
 
     ToggleAdvancedMode();
@@ -183,46 +185,46 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        if ( checkId >= CHECK_PLAYER1 && checkId <= CHECK_PLAYER8 )
+        if ( checkId >= (u16)Id::CHECK_PLAYER1 && checkId <= (u16)Id::CHECK_PLAYER8 )
         {
-            u8 player = u8(checkId-CHECK_PLAYER1);
+            u8 player = u8(checkId-(u16)Id::CHECK_PLAYER1);
             if ( checkMainPlayers[player].isChecked() )
-                trig->owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
+                trig->owners[player+(u8)Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
             else
-                trig->owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
+                trig->owners[player+(u8)Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId >= CHECK_FORCE1 && checkId <= CHECK_FORCE4 )
+        else if ( checkId >= (u16)Id::CHECK_FORCE1 && checkId <= (u16)Id::CHECK_FORCE4 )
         {
-            u8 force = u8(checkId-CHECK_FORCE1);
+            u8 force = u8(checkId-(u16)Id::CHECK_FORCE1);
             if ( checkForces[force].isChecked() )
-                trig->owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
+                trig->owners[force+(u8)Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
             else
-                trig->owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
+                trig->owners[force+(u8)Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId == CHECK_ALL_PLAYERS )
+        else if ( checkId == (u16)Id::CHECK_ALL_PLAYERS )
         {
             if ( checkAllPlayers.isChecked() )
-                trig->owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
+                trig->owners[(size_t)Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
             else
-                trig->owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
+                trig->owners[(size_t)Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId >= CHECK_PLAYER9 && checkId <= CHECK_NEUTRALPLAYERS )
+        else if ( checkId >= (u16)Id::CHECK_PLAYER9 && checkId <= (u16)Id::CHECK_NEUTRALPLAYERS )
         {
-            u8 lowerNonExecutingPlayersId = u8(checkId-CHECK_PLAYER9);
+            u8 lowerNonExecutingPlayersId = u8(checkId-(u16)Id::CHECK_PLAYER9);
             if ( checkNonExecutingPlayers[lowerNonExecutingPlayersId].isChecked() )
-                trig->owners[checkId-CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+                trig->owners[checkId-(u16)Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
             else
-                trig->owners[checkId-CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+                trig->owners[checkId-(u16)Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId >= CHECK_UNUSED1 && checkId <= CHECK_ID27 )
+        else if ( checkId >= (u16)Id::CHECK_UNUSED1 && checkId <= (u16)Id::CHECK_ID27 )
         {
-            u8 upperNonExecutingPlayersId = u8(checkId-CHECK_UNUSED1+9);
+            u8 upperNonExecutingPlayersId = u8(checkId-(u16)Id::CHECK_UNUSED1+9);
             if ( checkNonExecutingPlayers[upperNonExecutingPlayersId].isChecked() )
-                trig->owners[checkId-CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+                trig->owners[checkId-(u16)Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
             else
-                trig->owners[checkId-CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+                trig->owners[checkId-(u16)Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId == CHECK_ALLOWRAWEDIT )
+        else if ( checkId == (u16)Id::CHECK_ALLOWRAWEDIT )
         {
             if ( checkAllowRawEdit.isChecked() )
                 editRawPlayers.EnableThis();
@@ -286,9 +288,9 @@ LRESULT TrigPlayersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     if ( !refreshing )
     {
-        switch ( LOWORD(wParam) )
+        switch ( (Id)LOWORD(wParam) )
         {
-        case EDIT_RAWPLAYERS:
+        case Id::EDIT_RAWPLAYERS:
             if ( HIWORD(wParam) == EN_KILLFOCUS )
                 ParseRawPlayers();
             break;
@@ -296,7 +298,7 @@ LRESULT TrigPlayersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         switch ( HIWORD(wParam) )
         {
         case BN_CLICKED:
-            if ( LOWORD(wParam) == BUTTON_ADVANCED )
+            if ( (Id)LOWORD(wParam) == Id::BUTTON_ADVANCED )
                 ToggleAdvancedMode();
             else
                 CheckBoxUpdated(LOWORD(wParam));

@@ -1,6 +1,6 @@
 #include "MainToolbar.h"
 
-enum ID
+enum class Id
 {
     COMBOBOX_LAYER = ID_FIRST,
     COMBOBOX_PLAYER,
@@ -68,24 +68,24 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
 
         // Add layer ComboBox to toolbar
         const std::vector<std::string> layerStrings = { "Terrain", "Doodads", "Fog of War", "Locations", "Units", "Sprites", "Preview Fog", "Copy\\Cut\\Paste\\Brush" };
-        layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, COMBOBOX_LAYER, layerStrings, defaultFont);
+        layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, (u64)Id::COMBOBOX_LAYER, layerStrings, defaultFont);
         layerBox.SetSel(0);
         ShowWindow(layerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add zoom ComboBox to toolbar
         const std::vector<std::string> zoomStrings = { "400% Zoom", "300% Zoom", "200% Zoom", "150% Zoom", "100% Zoom", "66% Zoom",
                                       "50% Zoom", "33% Zoom", "25% Zoom", "10% Zoom"};
-        zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, COMBOBOX_ZOOM, zoomStrings, defaultFont);
+        zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, (u64)Id::COMBOBOX_ZOOM, zoomStrings, defaultFont);
         zoomBox.SetSel(4);
         ShowWindow(zoomBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add player ComboBox to toolbar
-        playerBox.CreateThis(hTool, 483, 2, 75, 200, COMBOBOX_PLAYER, false);
+        playerBox.CreateThis(hTool, 483, 2, 75, 200, (u64)Id::COMBOBOX_PLAYER, false);
         ShowWindow(playerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add terrain ComboBox to toolbar
         const std::vector<std::string> terrPalette = { "Isometrical", "Rectangular", "Subtile", "Tileset Indexed", "Copy/Cut/Paste" };
-        terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, COMBOBOX_TERRAIN, terrPalette, defaultFont);
+        terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, (u64)Id::COMBOBOX_TERRAIN, terrPalette, defaultFont);
         terrainBox.SetSel(0);
         ShowWindow(terrainBox.getHandle(), SW_HIDE); // Hide until a map is open
 
