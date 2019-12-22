@@ -134,7 +134,7 @@ namespace Sc {
         static constexpr size_t TotalTypes = 228; // Number of real units; excludes Id228, AnyUnit, Men, Buildings, and Factories
         static constexpr size_t TotalReferenceTypes = 233; // Number of types referenced in triggers; includes all real units as well as Id228, AnyUnit, Men, Buildings, and Factories
         static constexpr size_t TotalFlingies = 209; // Number of flingy entries
-        enum class Type : u16 { // u16
+        enum_t(Type, u16, {
             TerranMarine = 0,
             TerranGhost = 1,
             TerranVulture = 2,
@@ -371,7 +371,7 @@ namespace Sc {
 
             NoSubUnit = 228,
             NoUnit = u16_max
-        };
+        });
         static constexpr size_t MaxCuwps = 64;
 
         static const std::vector<std::string> defaultDisplayNames;

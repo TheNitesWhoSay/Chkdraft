@@ -16,7 +16,7 @@
         - Definitions for useful generic constants (e.g. size_1kb, size_1mb)
         - Definitions for bit and xBit values (xBit being the inversion of the bit for a given data size) and arrays for enumerating the bit values
         - The "NotImplemented" exception class
-        - Convenience macros and methods
+        - Convenience macros (e.g. enchanced enumerators) and methods
 
     Basics should not contain any system specific code
 */
@@ -229,6 +229,24 @@ s32 TripletToInt(u8* triplet);
 
 template <typename T>
 s32 round(T value);
+
+
+/**
+    enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope
+    e.g. MyClass::MyEnum::Value cannot be accessed via MyClass::Value (as it could with regular enums) and potentially cause redefinition errors
+    while avoiding the property of enum classes that removes the one-to-one relationship with the underlying type (which forces excessive type-casting)
+
+    Usage:
+    enum_t(name, type, {
+        enumerator = constexpr,
+        enumerator = constexpr,
+        ...
+    });
+*/
+
+/** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
+#define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
+
 
 #define INCLUDE_TEMPLATES_ONLY
 #include "Basics.cpp"
