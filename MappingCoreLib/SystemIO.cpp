@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -26,7 +26,7 @@ bool hasExtension(const std::string &systemFilePath, const std::string &extensio
 
 std::string GetSystemFileSeparator()
 {
-    std::experimental::filesystem::path::value_type separatorChar = std::experimental::filesystem::path::preferred_separator;
+    std::filesystem::path::value_type separatorChar = std::filesystem::path::preferred_separator;
     icux::codepoint separatorArray[2] = {(icux::codepoint)separatorChar, icux::nullChar};
     return icux::toUtf8(icux::filestring(separatorArray));
 }

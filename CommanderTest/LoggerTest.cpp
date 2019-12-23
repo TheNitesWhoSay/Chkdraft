@@ -17,13 +17,13 @@ TEST(LoggerTest, CtorDtorLogLevel)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger()));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(LogLevel::Fatal)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Fatal);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -34,7 +34,7 @@ TEST(LoggerTest, CtorDtorLogLevelInt)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger((uint32_t)LogLevel::Error)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Error);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -46,13 +46,13 @@ TEST(LoggerTest, CtorDtorOsRefLogLevel)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, LogLevel::Warn)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Warn);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -64,7 +64,7 @@ TEST(LoggerTest, CtorDtorOsRefLogLevelInt)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, (uint32_t)LogLevel::Info)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Info);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -140,13 +140,13 @@ TEST(LoggerTest, CtorDtorOsPtrLogLevel)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, LogLevel::All)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::All);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -158,7 +158,7 @@ TEST(LoggerTest, CtorDtorOsPtrLogLevelInt)
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, (uint32_t)LogLevel::Default)));
     EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_EQ(logger->getAggregator(), nullptr);
+    EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 }
 
@@ -312,7 +312,7 @@ TEST(LoggerTest, GettersSetters)
     logger.setOutputStream(stringStreamPtr);
     EXPECT_EQ(logger.getOutputStream(), stringStreamPtr);
 
-    EXPECT_EQ(logger.getAggregator(), nullptr);
+    EXPECT_TRUE(logger.getAggregator() == nullptr);
     logger.setAggregator(aggregateLogger);
     EXPECT_EQ(logger.getAggregator().get(), &aggregateLogger);
 }
@@ -2782,5 +2782,5 @@ TEST(LoggerTest, NullOutputStream)
     logger.info() << "Nothing ";
     logger.info() << "Should ";
     logger.fatal() << "Write To Null Buffers";
-    ASSERT_EQ(logger.getOutputStream(), nullptr);
+    EXPECT_TRUE(logger.getOutputStream() == nullptr);
 }

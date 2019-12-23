@@ -3,7 +3,7 @@
 #include <regex>
 
 /**
-    This file purposefully tests several operations that involve turncating values, using underflows and overflows, the following pragmas disable warnings for these
+    This file purposefully tests several operations that involve truncating values, using underflows and overflows, the following pragmas disable warnings for these
 */
 #pragma warning(push)
 #pragma warning(disable: 4305) // Disable warnings for '=' truncation of non-constants

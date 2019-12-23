@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstdarg>
+#include <stdexcept>
 #include <unordered_map>
 #include <map>
 

@@ -7,8 +7,6 @@ int wmain(int argc, wchar_t* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
     int result = RUN_ALL_TESTS();
-    std::string buf;
-    std::cin >> buf;
     return result;
 }
 #endif
@@ -19,8 +17,6 @@ int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
     int result = RUN_ALL_TESTS();
-    std::string buf;
-    std::cin >> buf;
     return result;
 }
 #endif
