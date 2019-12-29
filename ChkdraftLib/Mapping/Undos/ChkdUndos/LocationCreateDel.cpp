@@ -24,11 +24,14 @@ void LocationCreateDel::Reverse(void *guiMap)
         *location = *((GuiMap*)guiMap)->layers.getLocation(locationIndex);
         std::shared_ptr<RawString> locName = ((GuiMap*)guiMap)->strings.getLocationName<RawString>((size_t)locationIndex, Chk::Scope::Game);
         locationName = locName != nullptr ? *locName : "";
-        ((GuiMap*)guiMap)->deleteLocation(locationIndex);
+        ((GuiMap*)guiMap)->layers.deleteLocation(locationIndex);
     }
     else // Do create
     {
-        ((GuiMap*)guiMap)->insertLocation(locationIndex, *location, locationName);
+        Chk::LocationPtr newLocation = Chk::LocationPtr(new Chk::Location(*location));
+        newLocation->stringId = 0;
+        ((GuiMap*)guiMap)->layers.addLocation(newLocation);
+        newLocation->stringId = (u16)((GuiMap*)guiMap)->strings.addString(locationName);
         location = nullptr;
         locationName.clear();
     }

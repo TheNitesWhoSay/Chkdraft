@@ -115,7 +115,7 @@ namespace Sc {
             Unused4 = 25,
             NonAlliedVictoryPlayers = 26
         };
-        enum class SlotOwner : u8 { // u8
+        enum_t(SlotType, u8, { // u8
             Inactive = 0,
             GameComputer = 1,
             GameHuman = 2,
@@ -126,7 +126,7 @@ namespace Sc {
             GameOpen = 6,
             Neutral = 7,
             GameClosed = 8
-        };
+        });
     };
 
     class Unit {
@@ -847,7 +847,7 @@ namespace Sc {
     public:
         static constexpr size_t TotalOriginalTypes = 46;
         static constexpr size_t TotalTypes = 61;
-        enum class Type : u32 { // u32
+        enum_t(Type, u32, { // u32
             TerranInfantryArmor = 0,
             TerranVehiclePlating = 1,
             TerranShipPlating = 2,
@@ -909,7 +909,7 @@ namespace Sc {
             UnusedUpgrade_58 = 58,
             UnusedUpgrade_59 = 59,
             SpecialUpgrade_60 = 60
-        };
+        });
 
         static const std::vector<std::string> names;
 
@@ -1650,7 +1650,7 @@ namespace Sc {
         static constexpr size_t MaxTilesets = 8;
         static constexpr size_t PixelsPerTile = 32;
 
-        enum class Tileset : u16 { // u16
+        enum_t(Tileset, u16, { // u16
             Badlands = 0,
             SpacePlatform = 1,
             Installation = 2,
@@ -1659,7 +1659,7 @@ namespace Sc {
             Desert = 5,
             Arctic = 6,
             Twilight = 7
-        };
+        });
 
         class Tiles
         {
@@ -1702,7 +1702,7 @@ namespace Sc {
     public:
         static constexpr size_t TotalOriginal = 100;
         static constexpr size_t Total = 130;
-        enum class Type : u8 { // u8
+        enum_t(Type, u8, { // u8
             GaussRifle_Normal = 0,
             GaussRifle_JimRaynorMarine = 1,
             C10ConcussionRifle_Normal = 2,
@@ -1833,7 +1833,7 @@ namespace Sc {
             Id127 = 127,
             Id128 = 128,
             Id129 = 129
-        };
+        });
         
         class WeaponDatEntry
         {

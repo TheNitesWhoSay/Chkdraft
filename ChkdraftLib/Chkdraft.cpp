@@ -81,7 +81,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset()) )
+        if ( CM != nullptr && ColorCycler::CycleColors(CM->layers.getTileset()) )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core

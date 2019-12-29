@@ -91,7 +91,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 u16 tile = 0;
                 editTileValue.GetEditNum<u16>(tile);
 
-                u16 tileset = CM->getTileset();
+                u16 tileset = CM->layers.getTileset();
                 TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
                 HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));

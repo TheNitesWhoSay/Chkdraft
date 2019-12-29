@@ -63,7 +63,7 @@ void TechSettingsWindow::RefreshWindow()
         if ( isDisabled )
             EnableTechEditing();
 
-        bool techUsesDefaultCosts = CM->techUsesDefaultCosts(tech);
+        bool techUsesDefaultCosts = CM->properties.techUsesDefaultSettings((Sc::Tech::Type)tech);
         checkUseDefaultCosts.SetCheck(techUsesDefaultCosts);
         if ( techUsesDefaultCosts )
         {
@@ -75,20 +75,15 @@ void TechSettingsWindow::RefreshWindow()
         }
         else
         {
-            u16 mineralCost, gasCost, timeCost, energyCost;
             EnableTechCosts();
-            if ( CM->getTechMineralCost(tech, mineralCost) )
-                editMineralCosts.SetEditNum<u16>(mineralCost);
-            if ( CM->getTechGasCost(tech, gasCost) )
-                editGasCosts.SetEditNum<u16>(gasCost);
-            if ( CM->getTechTimeCost(tech, timeCost) )
-                editTimeCosts.SetEditNum<u16>(timeCost/15);
-            if ( CM->getTechEnergyCost(tech, energyCost) )
-                editEnergyCosts.SetEditNum<u16>(energyCost);
+            editMineralCosts.SetEditNum<u16>(CM->properties.getTechMineralCost((Sc::Tech::Type)tech));
+            editGasCosts.SetEditNum<u16>(CM->properties.getTechGasCost((Sc::Tech::Type)tech));
+            editTimeCosts.SetEditNum<u16>(CM->properties.getTechResearchTime((Sc::Tech::Type)tech));
+            editEnergyCosts.SetEditNum<u16>(CM->properties.getTechEnergyCost((Sc::Tech::Type)tech));
         }
 
-        bool enabledByDefault = CM->techAvailableByDefault(tech),
-             researchedByDefault = CM->techResearchedByDefault(tech);
+        bool enabledByDefault = CM->properties.techDefaultAvailable((Sc::Tech::Type)tech),
+             researchedByDefault = CM->properties.techDefaultResearched((Sc::Tech::Type)tech);
         
         if ( enabledByDefault )
         {
@@ -113,11 +108,11 @@ void TechSettingsWindow::RefreshWindow()
 
         for ( u8 player=0; player<12; player++ )
         {
-            checkUsePlayerDefaults[player].SetCheck(CM->playerUsesDefaultTechSettings(tech, player));
+            checkUsePlayerDefaults[player].SetCheck(CM->properties.playerUsesDefaultTechSettings((Sc::Tech::Type)tech, player));
             
-            bool playerUsesDefaults = CM->playerUsesDefaultTechSettings(tech, player),
-                 playerEnabledByDefault = CM->techAvailableForPlayer(tech, player),
-                 playerResearchedByDefault = CM->techResearchedForPlayer(tech, player);
+            bool playerUsesDefaults = CM->properties.playerUsesDefaultTechSettings((Sc::Tech::Type)tech, player),
+                playerEnabledByDefault = CM->properties.techAvailable((Sc::Tech::Type)tech, player),
+                playerResearchedByDefault = CM->properties.techResearched((Sc::Tech::Type)tech, player);
 
             if ( playerUsesDefaults ) // Player uses default settings for this tech
             {
@@ -244,7 +239,7 @@ void TechSettingsWindow::EnableTechEditing()
 {
     checkUseDefaultCosts.EnableThis();
 
-    if ( CM->techUsesDefaultCosts((u8)selectedTech) == false )
+    if ( !CM->properties.techUsesDefaultSettings((Sc::Tech::Type)selectedTech) )
         EnableTechCosts();
 
     groupDefaultPlayerSettings.EnableThis();
@@ -269,10 +264,10 @@ void TechSettingsWindow::SetDefaultTechCosts()
         u8 tech = (u8)selectedTech;
         TECHDAT* techDat = chkd.scData.techs.TechDat(tech);
 
-        CM->setTechMineralCost(tech, techDat->MineralCost);
-        CM->setTechGasCost(tech, techDat->VespeneCost);
-        CM->setTechTimeCost(tech, techDat->ResearchTime);
-        CM->setTechEnergyCost(tech, techDat->EnergyCost);
+        CM->properties.setTechMineralCost((Sc::Tech::Type)tech, techDat->MineralCost);
+        CM->properties.setTechGasCost((Sc::Tech::Type)tech, techDat->VespeneCost);
+        CM->properties.setTechResearchTime((Sc::Tech::Type)tech, techDat->ResearchTime);
+        CM->properties.setTechEnergyCost((Sc::Tech::Type)tech, techDat->EnergyCost);
     }
 }
 
@@ -282,10 +277,10 @@ void TechSettingsWindow::ClearDefaultTechCosts()
     {
         u8 tech = (u8)selectedTech;
 
-        CM->setTechMineralCost(tech, 0);
-        CM->setTechGasCost(tech, 0);
-        CM->setTechTimeCost(tech, 0);
-        CM->setTechEnergyCost(tech, 0);
+        CM->properties.setTechMineralCost((Sc::Tech::Type)tech, 0);
+        CM->properties.setTechGasCost((Sc::Tech::Type)tech, 0);
+        CM->properties.setTechResearchTime((Sc::Tech::Type)tech, 0);
+        CM->properties.setTechEnergyCost((Sc::Tech::Type)tech, 0);
     }
 }
 
@@ -324,15 +319,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( WinLib::GetYesNo("Are you sure you want to reset all tech settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
-                    Section newTECS = TecsSection::GetDefault(), newTECx = TecxSection::GetDefault(), newPTEC = PtecSection::GetDefault(), newPTEx = PtexSection::GetDefault();
-                    if ( newTECS != nullptr && newTECx != nullptr && newPTEC != nullptr && newPTEx != nullptr )
-                    {
-                        CM->AddOrReplaceSection(newTECS);
-                        CM->AddOrReplaceSection(newTECx);
-                        CM->AddOrReplaceSection(newPTEC);
-                        CM->AddOrReplaceSection(newPTEx);
-                    }
-
+                    CM->properties.setTechsToDefault();
                     CM->notifyChange(false);
                     RefreshWindow();
                 }
@@ -347,13 +334,13 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                     ClearDefaultTechCosts();
                     DisableTechCosts();
-                    CM->setTechUseDefaults((u8)selectedTech, true);
+                    CM->properties.setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, true);
                 }
                 else
                 {
                     SetDefaultTechCosts();
                     EnableTechCosts();
-                    CM->setTechUseDefaults((u8)selectedTech, false);
+                    CM->properties.setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, false);
                 }
 
                 CM->notifyChange(false);
@@ -366,7 +353,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newMineralCost;
                 if ( editMineralCosts.GetEditNum<u16>(newMineralCost) )
                 {
-                    CM->setTechMineralCost((u8)selectedTech, newMineralCost);
+                    CM->properties.setTechMineralCost((Sc::Tech::Type)selectedTech, newMineralCost);
                     CM->notifyChange(false);
                 }
             }
@@ -377,7 +364,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newGasCost;
                 if ( editGasCosts.GetEditNum<u16>(newGasCost) )
                 {
-                    CM->setTechGasCost((u8)selectedTech, newGasCost);
+                    CM->properties.setTechGasCost((Sc::Tech::Type)selectedTech, newGasCost);
                     CM->notifyChange(false);
                 }
             }
@@ -389,9 +376,9 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( editTimeCosts.GetEditNum<u16>(newTimeCost) )
                 {
                     if ( 15 * (u32)newTimeCost > 65535 ) // Overflow
-                        CM->setTechTimeCost((u8)selectedTech, 65535); // Set to max
+                        CM->properties.setTechResearchTime((Sc::Tech::Type)selectedTech, 65535); // Set to max
                     else // Normal
-                        CM->setTechTimeCost((u8)selectedTech, newTimeCost * 15);
+                        CM->properties.setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost * 15);
 
                     CM->notifyChange(false);
                 }
@@ -403,37 +390,36 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newEnergyCost;
                 if ( editEnergyCosts.GetEditNum<u16>(newEnergyCost) )
                 {
-                    CM->setTechEnergyCost((u8)selectedTech, newEnergyCost);
+                    CM->properties.setTechEnergyCost((Sc::Tech::Type)selectedTech, newEnergyCost);
                     CM->notifyChange(false);
                 }
             }
             break;
         case Id::RADIO_DEFAULTDISABLED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
-                CM->setTechDefaultAvailability((u8)selectedTech, false) )
+                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
             {
-                CM->setTechDefaultResearched((u8)selectedTech, false);
+                CM->properties.setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, false);
                 CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
         case Id::RADIO_DEFAULTENABLED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
-                CM->setTechDefaultAvailability((u8)selectedTech, true) )
+                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
             {
-                CM->setTechDefaultResearched((u8)selectedTech, false);
+                CM->properties.setDefaultTechAvailable((Sc::Tech::Type)selectedTech, true);
+                CM->properties.setDefaultTechResearched((Sc::Tech::Type)selectedTech, false);
                 CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
         case Id::RADIO_DEFAULTRESEARCHED:
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
-                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED &&
-                CM->setTechDefaultResearched((u8)selectedTech, true) )
+                SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
             {
-                CM->setTechDefaultAvailability((u8)selectedTech, true);
+                CM->properties.setDefaultTechResearched((Sc::Tech::Type)selectedTech, true);
+                CM->properties.setDefaultTechAvailable((Sc::Tech::Type)selectedTech, true);
                 CM->notifyChange(false);
                 RefreshWindow();
             }
@@ -448,7 +434,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     dropPlayerTechSettings[player].DisableThis();
                 else
                     dropPlayerTechSettings[player].EnableThis();
-                CM->setPlayerUsesDefaultTechSettings((u8)selectedTech, player, useDefault);
+                CM->properties.setPlayerUsesDefaultTechSettings((Sc::Tech::Type)selectedTech, player, useDefault);
                 CM->notifyChange(false);
                 RefreshWindow();
             }
@@ -459,18 +445,18 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 int selection = dropPlayerTechSettings[player].GetSel();
                 if ( selection == 0 ) // Disabled
                 {
-                    CM->setTechAvailableForPlayer((u8)selectedTech, player, false);
-                    CM->setTechResearchedForPlayer((u8)selectedTech, player, false);
+                    CM->properties.setTechAvailable((Sc::Tech::Type)selectedTech, player, false);
+                    CM->properties.setTechResearched((Sc::Tech::Type)selectedTech, player, false);
                 }
                 else if ( selection == 1 ) // Enabled
                 {
-                    CM->setTechAvailableForPlayer((u8)selectedTech, player, true);
-                    CM->setTechResearchedForPlayer((u8)selectedTech, player, false);
+                    CM->properties.setTechAvailable((Sc::Tech::Type)selectedTech, player, true);
+                    CM->properties.setTechResearched((Sc::Tech::Type)selectedTech, player, false);
                 }
                 else if ( selection == 2 ) // Researched
                 {
-                    CM->setTechAvailableForPlayer((u8)selectedTech, player, true);
-                    CM->setTechResearchedForPlayer((u8)selectedTech, player, true);
+                    CM->properties.setTechAvailable((Sc::Tech::Type)selectedTech, player, true);
+                    CM->properties.setTechResearched((Sc::Tech::Type)selectedTech, player, true);
                 }
 
                 CM->notifyChange(false);

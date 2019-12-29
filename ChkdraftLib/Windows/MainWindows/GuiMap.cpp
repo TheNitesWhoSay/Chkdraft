@@ -10,14 +10,39 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap(Clipboard &clipboard) : clipboard(clipboard), selections(*this), graphics(*this, selections),
-             screenLeft(0), screenTop(0),
-             bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-             dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-             snapUnits(true), stackUnits(false),
-             /*MemhDC(NULL),*/ mapId(0),
-             /*MemBitmap(NULL),*/ unsavedChanges(false), changeLock(false), undos(*this),
-             minSecondsBetweenBackups(1800), lastBackupTime(-1)
+GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
+    : MapFile(filePath), clipboard(clipboard), selections(*this), graphics(*this, selections),
+    screenLeft(0), screenTop(0),
+    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
+    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
+    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
+    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+{
+    int layerSel = chkd.mainToolbar.layerBox.GetSel();
+    if ( layerSel != CB_ERR )
+        currLayer = (Layer)layerSel;
+}
+
+GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
+    : MapFile(fileBrowser), clipboard(clipboard), selections(*this), graphics(*this, selections),
+    screenLeft(0), screenTop(0),
+    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
+    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
+    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
+    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+{
+    int layerSel = chkd.mainToolbar.layerBox.GetSel();
+    if ( layerSel != CB_ERR )
+        currLayer = (Layer)layerSel;
+}
+
+GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height)
+    : MapFile(tileset, width, height), clipboard(clipboard), selections(*this), graphics(*this, selections),
+    screenLeft(0), screenTop(0),
+    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
+    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
+    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
+    minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
@@ -72,13 +97,13 @@ bool GuiMap::SaveFile(bool saveAs)
 
 bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 {
-    u16 xSize = Scenario::getWidth();
-    if ( x > xSize || y > Scenario::getHeight() )
+    u16 xSize = (u16)Scenario::layers.getTileWidth();
+    if ( x > xSize || y > (u16)Scenario::layers.getTileHeight() )
         return false;
 
-    undos.AddUndo(TileChange::Make((u16)x, (u16)y, getTile((u16)x, (u16)y)));
+    undos.AddUndo(TileChange::Make((u16)x, (u16)y, layers.getTile((u16)x, (u16)y)));
 
-    setTile(x, y, tileNum);
+    layers.setTile(x, y, tileNum);
 
     RECT rcTile;
     rcTile.left   = x*32-screenLeft;
@@ -290,23 +315,20 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
-    u16 xSize = Scenario::getWidth();
-    u16 currTile;
+    u16 xSize = (u16)Scenario::layers.getTileWidth();
+    u16 currTile = layers.getTile(xClick/32, yClick/32);
     
-    if ( getTile(xClick/32, yClick/32, currTile) )
-    {
-        if ( selections.hasTiles() )
-            selections.removeTiles();
+    if ( selections.hasTiles() )
+        selections.removeTiles();
                             
-        selections.addTile(currTile, u16(xClick/32), u16(yClick/32), TileNeighbor::All);
-        RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
-        if ( chkd.tilePropWindow.getHandle() != NULL )
-            chkd.tilePropWindow.UpdateTile();
-        else
-            chkd.tilePropWindow.CreateThis(chkd.getHandle());
+    selections.addTile(currTile, u16(xClick/32), u16(yClick/32), TileNeighbor::All);
+    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+    if ( chkd.tilePropWindow.getHandle() != NULL )
+        chkd.tilePropWindow.UpdateTile();
+    else
+        chkd.tilePropWindow.CreateThis(chkd.getHandle());
 
-        ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
-    }
+    ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
 }
 
 void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
@@ -330,7 +352,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
-            if ( (screenLeft+rcMap.right)/32 < Scenario::getWidth() )
+            if ( (screenLeft+rcMap.right)/32 < Scenario::layers.getTileWidth() )
                 selections.setEndDrag( ((screenLeft+rcMap.right)/32+1)*32, selections.getEndDrag().y );
             screenLeft = selections.getEndDrag().x - rcMap.right;
         }
@@ -343,7 +365,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
-            if ( (screenTop+rcMap.bottom)/32 < Scenario::getHeight() )
+            if ( (screenTop+rcMap.bottom)/32 < Scenario::layers.getTileHeight() )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+rcMap.bottom)/32+1)*32 );
             screenTop = selections.getEndDrag().y - rcMap.bottom;
         }
@@ -354,16 +376,13 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 
 u8 GuiMap::GetPlayerOwnerStringId(u8 player)
 {
-    u8 owner = 0;
-    if ( getPlayerOwner(player, owner) )
+    Sc::Player::SlotType slotType = players.getSlotType(player);
+    switch ( slotType )
     {
-        switch ( owner )
-        {
-            case 1: case 5: return 2; break; // Computer
-            case 2: case 6: return 3; break; // Human
-            case 3: return 1; break; // Rescuable
-            case 7: return 4; break; // Neutral
-        }
+        case Sc::Player::SlotType::GameComputer: case Sc::Player::SlotType::Computer: return 2; // Computer
+        case Sc::Player::SlotType::GameHuman: case Sc::Player::SlotType::Human: return 3; // Human
+        case Sc::Player::SlotType::RescuePassive: return 1; // Rescuable
+        case Sc::Player::SlotType::Neutral: return 4; // Neutral
     }
     return 0; // Unused
 }
@@ -378,7 +397,7 @@ void GuiMap::refreshScenario()
         chkd.unitWindow.RepopulateList();
     if ( chkd.locationWindow.getHandle() != NULL )
     {
-        if ( CM->numLocations() == 0 )
+        if ( CM->layers.numLocations() == 0 )
             chkd.locationWindow.DestroyThis();
         else
             chkd.locationWindow.RefreshLocationInfo();
@@ -421,39 +440,40 @@ void GuiMap::selectAll()
                         selections.removeTiles();
 
                     u16 tileValue,
-                        width = Scenario::getWidth(), height = Scenario::getHeight(),
+                        width = (u16)Scenario::layers.getTileWidth(),
+                        height = (u16)Scenario::layers.getTileHeight(),
                         x=0, y=0;
 
                     for ( x=0; x<width; x++ ) // Add the top row
                     {
-                        if ( getTile(x, 0, tileValue) )
-                            selections.addTile(tileValue, x, y, TileNeighbor::Top);
+                        tileValue = layers.getTile(x, 0);
+                        selections.addTile(tileValue, x, y, TileNeighbor::Top);
                     }
 
                     for ( y=0; y<height-1; y++ ) // Add the middle rows
                     {
-                        if ( getTile(0, y, tileValue) )
-                            selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
+                        tileValue = layers.getTile(0, y);
+                        selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
 
                         for ( x=1; x<width-1; x++ )
                         {
-                            if ( getTile(x, y, tileValue) )
-                                selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
+                            tileValue = layers.getTile(x, y);
+                            selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
                         }
-                        if ( getTile(width-1, y) )
-                            selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
+                        tileValue = layers.getTile(width-1, y);
+                        selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
                     }
 
-                    if ( getTile(0, height-1) )
-                        selections.addTile(tileValue, 0, height-1, (TileNeighbor)((u8)TileNeighbor::Left|(u8)TileNeighbor::Bottom));
+                    tileValue = layers.getTile(0, height-1);
+                    selections.addTile(tileValue, 0, height-1, (TileNeighbor)((u8)TileNeighbor::Left|(u8)TileNeighbor::Bottom));
 
                     for ( x=1; x<width-1; x++ ) // Add the bottom row
                     {
-                        if ( getTile(x, height-1) )
-                            selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
+                        tileValue = layers.getTile(x, height-1);
+                        selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
                     }
-                    if ( getTile(width-1, height-1) )
-                        selections.addTile(tileValue, width-1, height-1, (TileNeighbor)((u8)TileNeighbor::Right|(u8)TileNeighbor::Bottom));
+                    tileValue = layers.getTile(width-1, height-1);
+                    selections.addTile(tileValue, width-1, height-1, (TileNeighbor)((u8)TileNeighbor::Right|(u8)TileNeighbor::Bottom));
 
                     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
                 }
@@ -461,7 +481,7 @@ void GuiMap::selectAll()
             case Layer::Units:
                 {
                     chkd.unitWindow.SetChangeHighlightOnly(true);
-                    for ( u16 i=0; i<numUnits(); i++ )
+                    for ( u16 i=0; i<layers.numUnits(); i++ )
                     {
                         if ( !selections.unitIsSelected(i) )
                         {
@@ -486,13 +506,13 @@ void GuiMap::deleteSelection()
         {
             case Layer::Terrain:
                 {
-                    u16 xSize = Scenario::getWidth();
+                    u16 xSize = (u16)Scenario::layers.getTileWidth();
 
                     auto &selTiles = selections.getTiles();
                     for ( auto &tile : selTiles )
                     {
-                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, getTile(tile.xc, tile.yc)));
-                        setTile(tile.xc, tile.yc, 0);
+                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, layers.getTile(tile.xc, tile.yc)));
+                        layers.setTile(tile.xc, tile.yc, 0);
                     }
 
                     selections.removeTiles();
@@ -514,7 +534,7 @@ void GuiMap::deleteSelection()
                             
                                 Chk::UnitPtr delUnit = layers.getUnit(index);
                                 deletes->Insert(UnitCreateDel::Make(index, *delUnit));
-                                deleteUnit(index);
+                                layers.deleteUnit(index);
                         }
                         undos.AddUndo(deletes);
                     }
@@ -543,7 +563,7 @@ void GuiMap::deleteSelection()
                         loc->stringId = 0;
                         if ( stringNum > 0 )
                         {
-                            removeUnusedString(stringNum);
+                            Scenario::strings.deleteString(stringNum);
                             refreshScenario();
                         }
 
@@ -623,7 +643,7 @@ void GuiMap::undo()
                 //undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
                 if ( chkd.locationWindow.getHandle() != NULL )
                 {
-                    if ( CM->numLocations() > 0 )
+                    if ( CM->layers.numLocations() > 0 )
                         chkd.locationWindow.RefreshLocationInfo();
                     else
                         chkd.locationWindow.DestroyThis();
@@ -655,7 +675,7 @@ void GuiMap::redo()
             //undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
             if ( chkd.locationWindow.getHandle() != NULL )
             {
-                if ( CM->numLocations() == 0 )
+                if ( CM->layers.numLocations() == 0 )
                     chkd.locationWindow.DestroyThis();
                 else
                     chkd.locationWindow.RefreshLocationInfo();
@@ -778,14 +798,16 @@ void GuiMap::PaintMiniMap(HDC miniMapDc, int miniMapWidth, int miniMapHeight)
         if ( RedrawMiniMap && miniMapBuffer.SetSize(miniMapDc, miniMapWidth, miniMapHeight) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer.GetPaintDc(), Scenario::getWidth(), Scenario::getHeight(), MiniMapScale(Scenario::getWidth(), Scenario::getHeight()), *this);
+            DrawMiniMap(miniMapBuffer.GetPaintDc(), (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
+                MiniMapScale((u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight()), *this);
         }
 
         if ( miniMapBuffer.GetPaintDc() != NULL )
         {
             BitBlt(miniMapDc, 0, 0, miniMapWidth, miniMapHeight, miniMapBuffer.GetPaintDc(), 0, 0, SRCCOPY);
-            DrawMiniMapBox(miniMapDc, screenLeft, screenTop, bitmapWidth, bitmapHeight, Scenario::getWidth(), Scenario::getHeight(),
-                MiniMapScale(Scenario::getWidth(), Scenario::getHeight()));
+            DrawMiniMapBox(miniMapDc, screenLeft, screenTop, bitmapWidth, bitmapHeight,
+                (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
+                MiniMapScale((u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight()));
         }
     }
 }
@@ -806,22 +828,22 @@ void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
 {
     if ( screenLeft < 0 )
         screenLeft = 0;
-    else if ( screenLeft > ((s32)Scenario::getWidth())*32-screenWidth )
+    else if ( screenLeft > ((s32)Scenario::layers.getTileWidth())*32-screenWidth )
     {
-        if ( screenWidth > ((s32)Scenario::getWidth())*32 )
+        if ( screenWidth > ((s32)Scenario::layers.getTileWidth())*32 )
             screenLeft = 0;
         else
-            screenLeft = Scenario::getWidth()*32-screenWidth;
+            screenLeft = s32(Scenario::layers.getTileWidth())*32-screenWidth;
     }
 
     if ( screenTop < 0 )
         screenTop = 0;
-    else if ( screenTop > Scenario::getHeight()*32-screenHeight )
+    else if ( screenTop > Scenario::layers.getTileHeight()*32-screenHeight )
     {
-        if ( screenHeight > Scenario::getHeight()*32 )
+        if ( screenHeight > Scenario::layers.getTileHeight()*32 )
             screenTop = 0;
         else
-            screenTop = Scenario::getHeight()*32-screenHeight;
+            screenTop = s32(Scenario::layers.getTileHeight())*32-screenHeight;
     }
 }
 
@@ -1161,14 +1183,14 @@ void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder)
     if ( scrollX )
     {
         scrollbars.nPos = screenLeft; 
-        scrollbars.nMax = Scenario::getWidth()*32;
+        scrollbars.nMax = (int)Scenario::layers.getPixelWidth();
         scrollbars.nPage = screenWidth;
         SetScrollInfo(getHandle(), SB_HORZ, &scrollbars, true);
     }
     if ( scrollY )
     {
         scrollbars.nPos = screenTop;
-        scrollbars.nMax = Scenario::getHeight()*32;
+        scrollbars.nMax = (int)Scenario::layers.getPixelHeight();
         scrollbars.nPage = screenHeight;
         SetScrollInfo(getHandle(), SB_VERT, &scrollbars, true);
     }
@@ -1675,15 +1697,14 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
     selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
-    u16 width = Scenario::getWidth();
+    u16 width = (u16)Scenario::layers.getTileWidth();
                     
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
         selections.setEndDrag(mapX/32, mapY/32);
                             
-        u16 tileValue = 0;
-        if ( getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y, tileValue) )
-            selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
+        u16 tileValue = layers.getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
+        selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
     }
     else // Add/remove multiple tiles from selection
     {
@@ -1695,18 +1716,17 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             bool multiAdd = selections.getStartDrag().x + 1 < selections.getEndDrag().x ||
                             selections.getStartDrag().y + 1 < selections.getEndDrag().y;
     
-            if ( selections.getEndDrag().x > Scenario::getWidth() )
-                selections.setEndDrag(Scenario::getWidth(), selections.getEndDrag().y);
-            if ( selections.getEndDrag().y > Scenario::getHeight() )
-                selections.setEndDrag(selections.getEndDrag().x, Scenario::getHeight());
+            if ( selections.getEndDrag().x > Scenario::layers.getTileWidth() )
+                selections.setEndDrag((s32)Scenario::layers.getTileWidth(), selections.getEndDrag().y);
+            if ( selections.getEndDrag().y > Scenario::layers.getTileHeight() )
+                selections.setEndDrag(selections.getEndDrag().x, (s32)Scenario::layers.getTileHeight());
     
             for ( int yRow = selections.getStartDrag().y; yRow < selections.getEndDrag().y; yRow++ )
             {
                 for ( int xRow = selections.getStartDrag().x; xRow < selections.getEndDrag().x; xRow++ )
                 {
-                    u16 tileValue = 0;
-                    if ( getTile(xRow, yRow, tileValue) )
-                        selections.addTile(tileValue, xRow, yRow);
+                    u16 tileValue = layers.getTile(xRow, yRow);
+                    selections.addTile(tileValue, xRow, yRow);
                 }
             }
         }
@@ -1730,13 +1750,17 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             AscendingOrder(startY, endY);
             SnapLocationDimensions(startX, startY, endX, endY, LocSnapFlags::SnapAll);
                                     
-            u16 locationIndex;
-            if ( createLocation(startX, startY, endX, endY, locationIndex) )
-            {
-                undos.AddUndo(LocationCreateDel::Make(locationIndex));
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-                refreshScenario();
-            }
+            Chk::LocationPtr newLocation = Chk::LocationPtr(new Chk::Location());
+            newLocation->left = startX;
+            newLocation->top = startY;
+            newLocation->right = endX;
+            newLocation->bottom = endY;
+            newLocation->elevationFlags = Chk::Location::Elevation::All;
+
+            size_t newLocationIndex = layers.addLocation(newLocation);
+            undos.AddUndo(LocationCreateDel::Make((u16)newLocationIndex));
+            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+            refreshScenario();
         }
         else // Move or resize location
         {
@@ -1893,7 +1917,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         chkd.unitWindow.UpdateEnabledState();
     }
         
-    u16 numUnits = this->numUnits();
+    size_t numUnits = layers.numUnits();
     for ( int i=0; i<numUnits; i++ )
     {
         int unitLeft = 0, unitRight  = 0,

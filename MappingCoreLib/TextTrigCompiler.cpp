@@ -34,18 +34,16 @@ bool TextTrigCompiler::CompileTriggers(buffer& text, ScenarioPtr chk, ScData &sc
     {
         CleanText(text);
 
-        buffer TRIG((u32)SectionName::TRIG);
+        std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
         std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, TRIG, compilerError) )
+        if ( ParseTriggers(text, triggers, compilerError) )
         {
             if ( BuildNewStringTable(chk, stringTableError) )
             {
-                if ( chk->AddOrReplaceTrigSection(TRIG) )
-                    return true;
-                else
-                    compilerError << "No text errors, but compilation must abort due to low memory.";
+                chk->triggers.trig->swap(triggers);
+                return true;
             }
             else
                 compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
@@ -71,32 +69,21 @@ bool TextTrigCompiler::CompileTrigger(buffer& text, Chk::Trigger* trigger, Scena
     try
     {
         CleanText(text);
-        buffer TRIG((u32)SectionName::TRIG);
+        std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
         std::stringstream stringTableError;
 
-        if ( ParseTriggers(text, TRIG, compilerError) )
+        if ( ParseTriggers(text, triggers, compilerError) )
         {
             if ( BuildNewStringTable(chk, stringTableError) )
             {
-                if ( !chk->HasTrigSection() )
+                if ( triggers.size() == 0 )
                 {
-                    if ( chk->AddOrReplaceTrigSection(TRIG) )
-                        return true;
-                    else
-                        compilerError << "No text errors, but compilation must abort due to low memory.";
+                    *trigger = *triggers[0];
+                    return true;
                 }
                 else
-                {
-                    Chk::Trigger* trig;
-                    if ( TRIG.getPtr<Chk::Trigger>(trig, 0, sizeof(Chk::Trigger)) )
-                    {
-                        *trigger = *trig;
-                        return true;
-                    }
-                    else
-                        compilerError << "No text errors, but trigger could not be transferred.";
-                }
+                    compilerError << "No text errors, but trigger could not be transferred.";
             }
             else
                 compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
@@ -455,7 +442,7 @@ void TextTrigCompiler::CleanText(buffer &text)
     text.overwrite((const char*)dest.getPtr(0), dest.size());
 }
 
-bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringstream &error)
+bool TextTrigCompiler::ParseTriggers(buffer &text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream &error)
 {
     text.add<u8>(0); // Add a terminating null character
 
@@ -478,12 +465,12 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
     Chk::Condition::VirtualType conditionId;
     Chk::Action::VirtualType actionId;
 
-    Chk::Trigger currTrig = { };
-    Chk::Condition* currCondition = &currTrig.condition(0);
-    Chk::Action* currAction = &currTrig.action(0);
-
     while ( pos < text.size() )
     {
+        std::shared_ptr<Chk::Trigger> currTrig = std::shared_ptr<Chk::Trigger>(new Chk::Trigger());
+        Chk::Condition* currCondition = &currTrig->condition(0);
+        Chk::Action* currAction = &currTrig->action(0);
+
         if ( text.has('\15', pos) ) // Line End
         {
             pos += 2;
@@ -495,7 +482,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
             {
             case 0: //      trigger
                     // or   %NULL
-                if ( !ParsePartZero(text, output, error, pos, line, expecting) )
+                if ( !ParsePartZero(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -504,12 +491,12 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                     // or   %PlayerName:Value)
                     // or   %PlayerName)
                     // or   )
-                if ( !ParsePartOne(text, output, error, pos, line, expecting, playerEnd, lineEnd, currTrig) )
+                if ( !ParsePartOne(text, *currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
                     return false;
                 break;
 
             case 2: //      {
-                if ( !ParsePartTwo(text, output, error, pos, line, expecting) )
+                if ( !ParsePartTwo(text, *currTrig, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -517,7 +504,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                     // or   actions:
                     // or   flags:
                     // or   }
-                if ( !ParsePartThree(text, output, error, pos, line, expecting) )
+                if ( !ParsePartThree(text, *currTrig, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -526,22 +513,22 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                     // or   actions:
                     // or   flags:
                     // or   }
-                if ( !ParsePartFour(text, output, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
-                    flags, argsLeft, numConditions, currCondition, currTrig) )
+                if ( !ParsePartFour(text, *currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
+                    flags, argsLeft, numConditions, currCondition) )
                     return false;
                 break;
 
             case 5: //      );
                     // or   %ConditionArg,
                     // or   %ConditionArg);
-                if ( !ParsePartFive(text, output, error, pos, line, expecting, argsLeft, argEnd, currCondition, conditionId) )
+                if ( !ParsePartFive(text, *currTrig, error, pos, line, expecting, argsLeft, argEnd, currCondition, conditionId) )
                     return false;
                 break;
 
             case 6: //      actions:
                     // or   flags:
                     // or   }
-                if ( !ParsePartSix(text, output, error, pos, line, expecting) )
+                if ( !ParsePartSix(text, *currTrig, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -549,32 +536,32 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                     // or   ;%ActionName(
                     // or   flags:
                     // or   }
-                if ( !ParsePartSeven(text, output, error, pos, line, expecting, flags, actionEnd, lineEnd,
-                    actionId, argsLeft, numActions, currAction, currTrig) )
+                if ( !ParsePartSeven(text, *currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
+                    actionId, argsLeft, numActions, currAction) )
                     return false;
                 break;
 
             case 8: //      );
                     // or   %ActionArg,
                     // or   %ActionArg);
-                if ( !ParsePartEight(text, output, error, pos, line, expecting, argsLeft, argEnd, currAction, actionId) )
+                if ( !ParsePartEight(text, *currTrig, error, pos, line, expecting, argsLeft, argEnd, currAction, actionId) )
                     return false;
                 break;
 
             case 9: //      }
                     // or   flags:,
-                if ( !ParsePartNine(text, output, error, pos, line, expecting) )
+                if ( !ParsePartNine(text, *currTrig, error, pos, line, expecting) )
                     return false;
                 break;
 
             case 10: //     ;
                      // or  %32BitFlags;
-                if ( !ParsePartTen(text, output, error, pos, line, expecting, flagsEnd, currTrig) )
+                if ( !ParsePartTen(text, *currTrig, error, pos, line, expecting, flagsEnd) )
                     return false;
                 break;
 
             case 11: //     }
-                if ( !ParsePartEleven(text, output, error, pos, line, expecting) )
+                if ( !ParsePartEleven(text, *currTrig, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -583,13 +570,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
                 numConditions = 0;
                 numActions = 0;
 
-                if ( !output.add<Chk::Trigger&>(currTrig) )
-                {
-                    error << "Failed to add trigger." << std::endl << std::endl;
-                    return false;
-                }
-
-                std::memset(&currTrig, 0, sizeof(Chk::Trigger));
+                output.push_back(currTrig);
                 expecting = 0;
                 if ( text.has('\0', pos) ) // End of Text
                 {
@@ -604,7 +585,7 @@ bool TextTrigCompiler::ParseTriggers(buffer &text, buffer &output, std::stringst
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartZero(buffer &text, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      trigger
     // or   %NULL
@@ -644,7 +625,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer &text, buffer &output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Chk::Trigger &currTrig)
+inline bool TextTrigCompiler::ParsePartOne(buffer &text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -666,7 +647,7 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::st
 
             playerEnd = std::min(playerEnd, lineEnd);
 
-            if ( ParseExecutingPlayer(text, currTrig, pos, playerEnd) )
+            if ( ParseExecutingPlayer(text, output, pos, playerEnd) )
             {
                 pos = playerEnd;
                 while ( text.has('\15', pos) )
@@ -694,7 +675,7 @@ inline bool TextTrigCompiler::ParsePartOne(buffer &text, buffer &output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartTwo(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      {
     if ( text.has('{', pos) )
@@ -710,7 +691,7 @@ inline bool TextTrigCompiler::ParsePartTwo(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartThree(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      conditions:
     // or   actions:
@@ -768,9 +749,9 @@ inline bool TextTrigCompiler::ParsePartThree(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartFour(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
     s64 &conditionEnd, s64 &lineEnd, Chk::Condition::VirtualType &conditionId, u8 &flags, u32 &argsLeft, u32 &numConditions,
-    Chk::Condition*& currCondition, Chk::Trigger &currTrig)
+    Chk::Condition*& currCondition)
 {
     //      %ConditionName(
     // or   ;%ConditionName(
@@ -799,7 +780,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
                     error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                     return false;
                 }
-                currCondition = &currTrig.condition(numConditions);
+                currCondition = &output.condition(numConditions);
                 currCondition->flags = flags | (u8)Chk::Condition::Flags::Disabled;
                 if ( (s32)conditionId < 0 )
                     currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
@@ -889,7 +870,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
                 error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
                 return false;
             }
-            currCondition = &currTrig.condition(numConditions);
+            currCondition = &output.condition(numConditions);
             currCondition->flags = flags;
             if ( (s32)conditionId < 0 )
                 currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
@@ -929,7 +910,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
+inline bool TextTrigCompiler::ParsePartFive(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
     Chk::Condition*& currCondition, Chk::Condition::VirtualType &conditionId)
 {
     //      );
@@ -1010,7 +991,7 @@ inline bool TextTrigCompiler::ParsePartFive(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartSix(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      actions:
     // or   flags:
@@ -1041,9 +1022,9 @@ inline bool TextTrigCompiler::ParsePartSix(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartSeven(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
     u8 &flags, s64 &actionEnd, s64 &lineEnd, Chk::Action::VirtualType &actionId, u32 &argsLeft, u32 &numActions,
-    Chk::Action*& currAction, Chk::Trigger &currTrig)
+    Chk::Action*& currAction)
 {
     //      %ActionName(
     // or   ;%ActionName(
@@ -1066,7 +1047,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
                     error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                     return false;
                 }
-                currAction = &currTrig.action(numActions);
+                currAction = &output.action(numActions);
                 currAction->flags = flags | (u8)Chk::Action::Flags::Disabled;
                 if ( (s32)actionId < 0 )
                     currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
@@ -1117,7 +1098,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
                 error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
                 return false;
             }
-            currAction = &currTrig.action(numActions);
+            currAction = &output.action(numActions);
             currAction->flags = flags;
             if ( (s32)actionId < 0 )
                 currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
@@ -1142,7 +1123,7 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+inline bool TextTrigCompiler::ParsePartEight(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
     u32 &argsLeft, s64 &argEnd, Chk::Action*& currAction, Chk::Action::VirtualType &actionId)
 {
     //      );
@@ -1224,7 +1205,7 @@ inline bool TextTrigCompiler::ParsePartEight(buffer& text, buffer& output, std::
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartNine(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      }
     // or   flags:,
@@ -1249,8 +1230,8 @@ inline bool TextTrigCompiler::ParsePartNine(buffer& text, buffer& output, std::s
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-    s64 &flagsEnd, Chk::Trigger& currTrig)
+inline bool TextTrigCompiler::ParsePartTen(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+    s64 &flagsEnd)
 {
     //      ;
     // or  %32BitFlags;
@@ -1261,7 +1242,7 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::st
     }
     else if ( text.getNext(';', pos, flagsEnd) )
     {
-        if ( ParseExecutionFlags(text, pos, flagsEnd, currTrig.flags) )
+        if ( ParseExecutionFlags(text, pos, flagsEnd, output.flags) )
         {
             pos = flagsEnd+1;
             expecting ++;
@@ -1280,7 +1261,7 @@ inline bool TextTrigCompiler::ParsePartTen(buffer& text, buffer& output, std::st
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
+inline bool TextTrigCompiler::ParsePartEleven(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting)
 {
     //      }
     if ( text.has('}', pos) )
@@ -3854,58 +3835,50 @@ bool TextTrigCompiler::useNextExtendedString(u32 &index)
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
     LocationTableNode locNode;
-    if ( map->hasStrSection(false) )
+    locationTable.reserve(map->layers.numLocations()+1);
+    locNode.locationId = 0;
+    locNode.locationName = "No Location";
+    locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
+    for ( u32 i=0; i<map->layers.numLocations(); i++ )
     {
-        locationTable.reserve(map->locationCapacity()+1);
-        locNode.locationId = 0;
-        locNode.locationName = "No Location";
-        locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
-        for ( u32 i=0; i<map->locationCapacity(); i++ )
-        {
-            Chk::LocationPtr loc = map->layers.getLocation(i);
-            locNode.locationName = "";
+        Chk::LocationPtr loc = map->layers.getLocation(i);
+        locNode.locationName = "";
 
-            if ( i == 63 )
-            {
-                locNode.locationId = 64;
-                locNode.locationName = "Anywhere";
-                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
-            }
-            else if ( loc->stringId > 0 && map->GetString(locNode.locationName, loc->stringId) )
+        if ( i == 63 )
+        {
+            locNode.locationId = 64;
+            locNode.locationName = "Anywhere";
+            locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
+        }
+        else if ( loc->stringId > 0 )
+        {
+            RawStringPtr locationName = map->strings.getString<RawString>(loc->stringId);
+            if ( locationName != nullptr )
             {
                 locNode.locationId = u8(i+1);
+                locNode.locationName = *locationName;
                 locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
         }
-        locationTable.reserve(locationTable.size());
     }
+    locationTable.reserve(locationTable.size());
     return true;
 }
 
 bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 {
     UnitTableNode unitNode;
-    if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
+    u16 stringId = 0;
+    for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
-        u16 stringId = 0;
-        for ( u16 unitId=0; unitId<228; unitId++ )
-        {
-            if ( map->getUnitStringNum(unitId, stringId) &&
-                stringId > 0 )
-            {
-                unitNode.unitType = (Sc::Unit::Type)unitId;
-                map->GetString(unitNode.unitName, stringId);
-                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
-            }
-
-            RawString regUnitName;
-            map->getUnitName(regUnitName, unitId);
-            if ( regUnitName.compare(unitNode.unitName) != 0 )
-            {
-                unitNode.unitName = regUnitName;
-                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
-            }
-        }
+        unitNode.unitType = (Sc::Unit::Type)unitId;
+        RawStringPtr unitName = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId);
+        if ( unitName != nullptr )
+            unitNode.unitName = *unitName;
+        else
+            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+        
+        unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
     }
     return true;
 }
@@ -3913,16 +3886,17 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 {
     SwitchTableNode switchNode;
-    if ( map->hasSwitchSection() && map->hasStrSection(false) )
+    size_t stringId = 0;
+    for ( size_t switchIndex=0; switchIndex<256; switchIndex++ )
     {
-        u32 stringId = 0;
-        for ( u32 switchId=0; switchId<256; switchId++ )
+        size_t switchNameStringId = map->triggers.getSwitchNameStringId(switchIndex);
+        if ( switchNameStringId != Chk::StringId::NoString )
         {
-            if ( map->getSwitchStrId((u8)switchId, stringId) &&
-                stringId > 0 &&
-                map->GetString(switchNode.switchName, stringId) )
+            RawStringPtr switchName = map->strings.getString<RawString>(switchNameStringId);
+            if ( switchName != nullptr )
             {
-                switchNode.switchId = u8(switchId);
+                switchNode.switchId = u8(switchIndex);
+                switchNode.switchName = *switchName;
                 switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
             }
         }
@@ -3933,17 +3907,14 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
 {
     GroupTableNode groupNode;
-    if ( map->hasForceSection() && map->hasStrSection(false) )
+    for ( u32 i=0; i<4; i++ )
     {
-        for ( u32 i=0; i<4; i++ )
+        ChkdStringPtr forceName = map->strings.getForceName<ChkdString>((Chk::Force)i);
+        if ( forceName != nullptr )
         {
-            u16 stringID = map->getForceStringNum(i);
-            if ( stringID > 0 &&
-                map->GetString(groupNode.groupName, stringID) )
-            {
-                groupNode.groupId = i + 18;
-                groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
-            }
+            groupNode.groupId = i + 18;
+            groupNode.groupName = *forceName;
+            groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
         }
     }
     return true;

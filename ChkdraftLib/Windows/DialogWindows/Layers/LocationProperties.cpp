@@ -127,11 +127,11 @@ void LocationWindow::RefreshLocationInfo()
         editRawFlags.SetText(text);
 
         RefreshLocationElevationFlags();
-        checkUseExtended.SetCheck(CM->isExtendedString(locRef->stringId));
+        checkUseExtended.SetCheck(false);
 
-        ChkdString locName;
-        if ( CM->GetString(locName, locRef->stringId) )
-            editLocName.SetText(locName);
+        ChkdStringPtr locName = CM->strings.getString<ChkdString>(locRef->stringId);
+        if ( locName != nullptr )
+            editLocName.SetText(*locName);
         else
             editLocName.SetText("ERROR");
     }
@@ -287,24 +287,7 @@ void LocationWindow::NotifyHighAirClicked()
 
 void LocationWindow::NotifyUseExtendedStringClicked()
 {
-    Chk::LocationPtr locRef = currentLocationIndex != NO_LOCATION ? CM->layers.getLocation(currentLocationIndex) : nullptr;
-    if ( locRef != nullptr )
-    {
-        ChkdString str;
-        if ( CM->GetString(str, locRef->stringId) )
-        {
-            u32 newStrNum = 0;
-            if ( CM->addString(str, newStrNum, checkUseExtended.isChecked()) )
-            {
-                u32 oldStrNum = locRef->stringId;
-                locRef->stringId = u16(newStrNum);
-                CM->removeUnusedString(oldStrNum);
-                CM->refreshScenario();
-                CM->notifyChange(false);
-                RefreshLocationInfo();
-            }
-        }
-    }
+    Error("TODO: New Extended Strings...");
 }
 
 void LocationWindow::RawFlagsUpdated()
@@ -371,12 +354,9 @@ void LocationWindow::LocationNameFocusLost()
         ChkdString locationName;
         if ( editLocName.GetWinText(locationName) )
         {
-            bool isExtended = checkUseExtended.isChecked();
-            if ( CM->replaceString<u16>(locationName, locRef->stringId, isExtended, true) )
-            {
-                CM->notifyChange(false);
-                CM->refreshScenario();
-            }
+            CM->strings.replaceString<ChkdString>(locRef->stringId, locationName);
+            CM->notifyChange(false);
+            CM->refreshScenario();
         }
     }
 }

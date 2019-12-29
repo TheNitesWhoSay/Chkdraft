@@ -16,7 +16,7 @@ class ForcesWindow : public WinLib::ClassWindow
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
-        void CheckReplaceForceName(int force);
+        void CheckReplaceForceName(Chk::Force force);
 
         bool possibleForceNameUpdate[4];
         u8 playerBeingDragged;

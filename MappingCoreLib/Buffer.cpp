@@ -56,7 +56,7 @@ buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0),
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename StructType>
-BufferPtr buffer::make(StructType & data)
+BufferPtr buffer::make(const StructType & data)
 {
     BufferPtr bufferPtr(new (std::nothrow) buffer());
     if ( bufferPtr != nullptr )
@@ -200,6 +200,15 @@ bool buffer::getPtr(valueType* &dest, s64 location, s64 sizeRequested)
         return true;
     }
     return false;
+}
+
+template <typename valueType>
+valueType* buffer::getPtr()
+{
+    if ( this != nullptr && sizeUsed >= sizeof(valueType) )
+        return (valueType*)&data[0];
+    else
+        return nullptr;
 }
 
 template <typename valueType>

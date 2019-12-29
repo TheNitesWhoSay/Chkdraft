@@ -150,8 +150,8 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
     screenWidth = bitWidth;
     screenHeight = bitHeight;
 
-    mapWidth = map.getWidth();
-    mapHeight = map.getHeight();
+    mapWidth = (u16)map.layers.getTileWidth();
+    mapHeight = (u16)map.layers.getTileHeight();
 
     if ( displayingElevations )
         DrawTileElevations(bitmap);
@@ -183,16 +183,16 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
     u32 maxRowX, maxRowY;
 
     u16 yTile, xTile,
-        tileset = map.getTileset();
+        tileset = map.layers.getTileset();
 
     TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
-    if ( screenHeight > (s32)mapHeight*32 )
+    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
         maxRowY = mapHeight;
     else
         maxRowY = (screenTop+screenHeight)/32+1;
 
-    if ( screenWidth > (s32)mapWidth*32 )
+    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
         maxRowX = mapWidth;
     else
         maxRowX = (screenLeft+screenWidth)/32+1;
@@ -202,7 +202,7 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
         for ( xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
         {
             TileToBits(bitmap, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
-                u16(screenWidth), u16(screenHeight), map.getTile(xTile, yTile));
+                u16(screenWidth), u16(screenHeight), map.layers.getTile(xTile, yTile));
         }
     }
 }
@@ -223,7 +223,7 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
 
     BITMAPINFO bmi = GetBMI(32, 32);
 
-    u16 tileset = map.getTileset();
+    u16 tileset = map.layers.getTileset();
     TileSet* tiles = &chkd.scData.tilesets.set[tileset];
 
     for ( yc=screenTop/32; yc<maxRowY; yc++ )
@@ -231,7 +231,7 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
         for ( xc=screenLeft/32; xc<maxRowX; xc++ )
         {
             TileElevationsToBits(bitmap, screenWidth, screenHeight, tiles,
-                s16(xc*32-screenLeft), s16(yc*32-screenTop), map.getTile(xc, yc), bmi, 0 );
+                s16(xc*32-screenLeft), s16(yc*32-screenTop), map.layers.getTile(xc, yc), bmi, 0 );
         }
     }
 }
@@ -272,7 +272,7 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
     u32 bitMax = screenWidth*screenHeight;
 
-    for ( size_t locNum = 0; locNum < map.locationCapacity(); locNum++ )
+    for ( size_t locNum = 0; locNum < map.layers.numLocations(); locNum++ )
     {
         Chk::LocationPtr loc = map.layers.getLocation(locNum);
         if ( (locNum != 63 || showAnywhere) && loc != nullptr )
@@ -436,11 +436,11 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
     s32 screenRight = screenLeft+screenWidth,
         screenBottom = screenTop+screenHeight;
 
-    u16 tileset = map.getTileset();
+    u16 tileset = map.layers.getTileset();
 
     buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 
-    for ( u16 unitNum = 0; unitNum < map.numUnits(); unitNum++ )
+    for ( u16 unitNum = 0; unitNum < map.layers.numUnits(); unitNum++ )
     {
         Chk::UnitPtr unit = map.layers.getUnit(unitNum);
         if ( (s32)unit->xc + (s32)MaxUnitBounds::Right > screenLeft &&
@@ -452,9 +452,8 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
                 // If within screen y-bounds
             {
                 u16 frame = 0;
-                u8 color = 0;
-                if ( !map.getPlayerColor(unit->owner, color) )
-                    color = unit->owner;
+                Chk::PlayerColor color = (unit->owner < Sc::Player::TotalOwners ?
+                    map.players.getPlayerColor(unit->owner) : (Chk::PlayerColor)unit->owner);
 
                 bool isSelected = selections.unitIsSelected(unitNum);
 
@@ -471,37 +470,33 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
     s32 screenRight = screenLeft + screenWidth,
         screenBottom = screenTop + screenHeight;
 
-    u16 tileset = map.getTileset();
+    u16 tileset = map.layers.getTileset();
 
     buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
-    Chk::Sprite* sprite;
 
-    for ( s32 spriteId = 0; spriteId < map.SpriteSectionCapacity(); spriteId++ )
+    for ( s32 spriteId = 0; spriteId < map.layers.numSprites(); spriteId++ )
     {
-        if ( map.GetSpriteRef(sprite, spriteId) )
+        Chk::SpritePtr sprite = map.layers.getSprite(spriteId);
+        if ( (s32)sprite->xc + (s32)MaxUnitBounds::Right > screenLeft &&
+            (s32)sprite->xc - (s32)MaxUnitBounds::Left < screenRight )
+            // If within screen x-bounds
         {
-            if ( (s32)sprite->xc + (s32)MaxUnitBounds::Right > screenLeft &&
-                (s32)sprite->xc - (s32)MaxUnitBounds::Left < screenRight )
-                // If within screen x-bounds
+            if ( (s32)sprite->yc + (s32)MaxUnitBounds::Down > screenTop &&
+                (s32)sprite->yc - (s32)MaxUnitBounds::Up < screenBottom )
+                // If within screen y-bounds
             {
-                if ( (s32)sprite->yc + (s32)MaxUnitBounds::Down > screenTop &&
-                    (s32)sprite->yc - (s32)MaxUnitBounds::Up < screenBottom )
-                    // If within screen y-bounds
-                {
-                    u16 frame = 0;
-                    bool isSprite = sprite->isDrawnAsSprite();
-                    u8 color = 0;
-                    if ( !map.getPlayerColor(sprite->owner, color) )
-                        color = sprite->owner;
+                u16 frame = 0;
+                bool isSprite = sprite->isDrawnAsSprite();
+                Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalOwners ?
+                    map.players.getPlayerColor(sprite->owner) : (Chk::PlayerColor)sprite->owner);
 
-                    if ( isSprite )
-                        SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                            screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc);
-                    else
-                        UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                            screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc,
-                            frame, false);
-                }
+                if ( isSprite )
+                    SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                        screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc);
+                else
+                    UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                        screenLeft, screenTop, (u16)sprite->type, sprite->xc, sprite->yc,
+                        frame, false);
             }
         }
     }
@@ -518,7 +513,7 @@ void Graphics::DrawLocationNames(HDC hDC)
     SetBkMode( hDC, TRANSPARENT );
     SetTextColor(hDC, RGB(255, 255, 0));
 
-    for ( u32 locId = 0; locId < map.locationCapacity(); locId++ )
+    for ( size_t locId = 0; locId < map.layers.numLocations(); locId++ )
     {
         Chk::LocationPtr loc = map.layers.getLocation(locId);
         if ( locId != 63 && loc != nullptr )
@@ -632,12 +627,8 @@ void Graphics::DrawTileNumbers(HDC hDC)
     {
         for ( xc=screenLeft/32; xc<maxRowX; xc++ )
         {
-            if ( tileNumsFromMTXM && map.getTile(xc, yc, wTileHex) )
-                TileHex = std::to_string(wTileHex);
-            else if ( !tileNumsFromMTXM && map.getTileSectionTile(xc, yc, wTileHex) )
-                TileHex = std::to_string(wTileHex);
-            else
-                TileHex = "DNE";
+            wTileHex = map.layers.getTile(xc, yc, tileNumsFromMTXM ? Chk::Scope::Game : Chk::Scope::Editor);
+            TileHex = std::to_string(wTileHex);
 
             WinLib::drawText(hDC, TileHex, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, nullRect, false, true);
         }
@@ -1363,7 +1354,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
     SelectObject(hDC, pen);
     RECT rect, rcBorder;
 
-    u16 tilesetNum = map.getTileset();
+    u16 tilesetNum = map.layers.getTileset();
     TileSet* tileset = &chkd.scData.tilesets.set[tilesetNum];
 
     BITMAPINFO bmi = GetBMI(32, 32);
@@ -1440,7 +1431,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
         SelectObject(hDC, pen);
     
         RECT rect, rcShade;
-        u16 tileset = map.getTileset();
+        u16 tileset = map.layers.getTileset();
         TileSet* tiles = &chkd.scData.tilesets.set[tileset];
     
         BITMAPINFO bmi = GetBMI(32, 32);
@@ -1507,7 +1498,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
         BITMAPINFO bmi = GetBMI(width, height);
         GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 
-        u16 tileset = map.getTileset();
+        u16 tileset = map.layers.getTileset();
 
         buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
         s32 sScreenLeft = screenLeft;
@@ -1519,8 +1510,8 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto &pasteUnit : units )
             {
-                u8 color = pasteUnit.unit->owner;
-                map.getPlayerColor(pasteUnit.unit->owner, color);
+                Chk::PlayerColor color = (pasteUnit.unit->owner < Sc::Player::TotalOwners ?
+                    map.players.getPlayerColor(pasteUnit.unit->owner) : (Chk::PlayerColor)pasteUnit.unit->owner);
                 if ( cursor.y+ pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
@@ -1702,16 +1693,14 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
             }
     
             mtxmReference = 2*(xSize*yTile+xTile);
-    
-            if ( map.getTile(xTile, yTile, TileValue) )
+
+            TileValue = map.layers.getTile(xTile, yTile);
+            if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
             {
-                if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
-                {
-                    MegaTileReference = GetMegaTileRef(tiles, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-                    MiniTileRef = GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
-                    wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
-                    bitmap[(yc + yOffset) * 128 + xc + xOffset] = tiles->wpe.get<u32>(wpeRef);
-                }
+                MegaTileReference = GetMegaTileRef(tiles, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+                MiniTileRef = GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+                wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
+                bitmap[(yc + yOffset) * 128 + xc + xOffset] = tiles->wpe.get<u32>(wpeRef);
             }
         }
     }
@@ -1722,12 +1711,12 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
                        u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
 {
-    for ( u16 i = 0; i < map.numUnits(); i++ )
+    for ( u16 i = 0; i < map.layers.numUnits(); i++ )
     {
         Chk::UnitPtr unit = map.layers.getUnit(i);
-        u8 color = 0;
-        if ( !map.getPlayerColor(unit->owner, color) )
-            color = unit->owner;
+
+        Chk::PlayerColor color = (unit->owner < Sc::Player::TotalOwners ?
+            map.players.getPlayerColor(unit->owner) : (Chk::PlayerColor)unit->owner);
 
         u32 bitIndex = (
             ((u32)((unit->yc / 32)*scale) + yOffset) * 128
@@ -1738,23 +1727,19 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
             bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
     }
 
-    for ( u16 i = 0; i < map.SpriteSectionCapacity(); i++ )
+    for ( size_t i = 0; i < map.layers.numSprites(); i++ )
     {
-        Chk::Sprite* sprite = nullptr;
-        if ( map.GetSpriteRef(sprite, i) )
+        Chk::SpritePtr sprite = map.layers.getSprite(i);
+        if ( sprite->isDrawnAsSprite() )
         {
-            if ( sprite->isDrawnAsSprite() )
-            {
-                u8 color = 0;
-                if ( !map.getPlayerColor(sprite->owner, color) )
-                    color = sprite->owner;
+            Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalOwners ?
+                map.players.getPlayerColor(sprite->owner) : (Chk::PlayerColor)sprite->owner);
 
-                u32 bitIndex = (((u32)((sprite->yc / 32)*scale) + yOffset) * 128
-                    + (u32)((sprite->xc / 32)*scale) + xOffset);
+            u32 bitIndex = (((u32)((sprite->yc / 32)*scale) + yOffset) * 128
+                + (u32)((sprite->xc / 32)*scale) + xOffset);
 
-                if ( bitIndex < MINI_MAP_MAXBIT )
-                    bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
-            }
+            if ( bitIndex < MINI_MAP_MAXBIT )
+                bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
         }
     }
 }
@@ -1764,7 +1749,7 @@ void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap &map)
     ChkdBitmap graphicBits;
     graphicBits.resize(65536);
 
-    u16 tileset = map.getTileset();
+    u16 tileset = map.layers.getTileset();
 
     BITMAPINFO bmi = GetBMI(128, 128);
 

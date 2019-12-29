@@ -204,12 +204,12 @@ namespace Chk {
     constexpr size_t MaxStrings = u16_max + 1; // Including stringId:0
     constexpr size_t MaxKStrings = MaxStrings;
     
-    enum class StringId : size_t { // size_t
+    enum_t(StringId, size_t, { // size_t
         NoString = 0,
         DefaultFileName = 0,
         DefaultDescription = 0,
         UnusedSound = 0
-    };
+    });
 
     enum class CuwpUsed : u8 { // u8
         No = 0, // CUWP slot is unused
@@ -284,14 +284,15 @@ namespace Chk {
     __declspec(align(1)) class Location
     {
     public:
-        enum class Elevation : u16 {
+        enum_t(Elevation, u16, {
             LowElevation = BIT_0,
             MediumElevation = BIT_1,
             HighElevation = BIT_2,
             LowAir = BIT_3,
             MediumAir = BIT_4,
-            HighAir = BIT_5
-        };
+            HighAir = BIT_5,
+            All = LowElevation | MediumElevation | HighElevation | LowAir | MediumAir | HighAir
+        });
         enum class Field { // Typeless
             Left, Top, Right, Bottom, StringId, ElevationFlags
         };
@@ -308,20 +309,26 @@ namespace Chk {
 
     constexpr u32 TotalForces = 4;
     
-    enum class Force : u8 { // u8
+    enum_t(Force, u8, { // u8
         Force1 = 0,
         Force2 = 1,
         Force3 = 2,
         Force4 = 3
-    };
+    });
 
-    enum class ForceFlags : u8 { // u8
+    enum_t(ForceFlags, u8, { // u8
         RandomizeStartLocation = BIT_0,
         RandomAllies = BIT_1,
         AlliedVictory = BIT_2,
         SharedVision = BIT_3,
+
+        xRandomizeStartLocation = x8BIT_0,
+        xRandomAllies = x8BIT_1,
+        xAlliedVictory = x8BIT_2,
+        xSharedVision = x8BIT_3,
+
         All = (RandomizeStartLocation | RandomAllies | AlliedVictory | SharedVision)
-    };
+    });
     
     constexpr u32 TotalSounds = 512;
     
@@ -835,6 +842,7 @@ namespace Chk {
 
         size_t numUsedConditions();
         size_t numUsedActions();
+        size_t getComment();
         bool stringUsed(size_t stringId);
         bool gameStringUsed(size_t stringId);
         bool commentStringUsed(size_t stringId);
@@ -858,7 +866,7 @@ namespace Chk {
         u8 currentAction; // Used internally by StarCraft, incremented after each action is executed, trigger execution ends when currentAction equals MaxActions or Action::Type::NoAction is hit
     }; // 2400 (0x960) bytes total
 
-    enum class PlayerColor : u8 { // u8
+    enum_t(PlayerColor, u8, { // u8
         Red = 0,
         Blue = 1,
         Teal = 2,
@@ -871,7 +879,7 @@ namespace Chk {
         PaleYellow = 9,
         Tan = 10,
         Azure_NeutralColor = 11
-    };
+    });
 
     constexpr u32 baseFontSize = 8;
     constexpr u32 fontStepSize = 2;
@@ -955,11 +963,11 @@ namespace Chk {
     }; // Size: 1040 (validated)
     
     __declspec(align(1)) struct IOWN {
-        Sc::Player::SlotOwner owner[Sc::Player::Total];
+        Sc::Player::SlotType slotType[Sc::Player::Total];
     }; // Size: 12 (not validated)
     
     __declspec(align(1)) struct OWNR {
-        Sc::Player::SlotOwner owner[Sc::Player::Total];
+        Sc::Player::SlotType slotType[Sc::Player::Total];
     }; // Size: 12 (validated)
     
     __declspec(align(1)) struct ERA {
@@ -1138,6 +1146,7 @@ namespace Chk {
     
     __declspec(align(1)) struct UPGx {
         UseDefault useDefault[Sc::Upgrade::TotalTypes];
+        u8 unused;
         u16 baseMineralCost[Sc::Upgrade::TotalTypes];
         u16 mineralCostFactor[Sc::Upgrade::TotalTypes];
         u16 baseGasCost[Sc::Upgrade::TotalTypes];

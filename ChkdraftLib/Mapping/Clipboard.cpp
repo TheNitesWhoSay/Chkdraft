@@ -278,8 +278,8 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &u
         {
             prevPaste.x = mapClickX/16;
             prevPaste.y = mapClickY/16;
-            u16 xSize = map.getWidth();
-            u16 ySize = map.getHeight();
+            u16 xSize = (u16)map.layers.getTileWidth();
+            u16 ySize = (u16)map.layers.getTileHeight();
 
             auto tileChanges = ReversibleActions::Make();
             auto &tiles = getTiles();
@@ -293,10 +293,10 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &u
                 {
                     if ( yc >= 0 && yc < ySize )
                     {
-                        if ( map.getTile(xc, yc) != tile.value )
+                        if ( map.layers.getTile(xc, yc) != tile.value )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
-                            map.setTile(xc, yc, tile.value);
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.layers.getTile(xc, yc)));
+                            map.layers.setTile(xc, yc, tile.value);
                         }
                     }
                 }
@@ -315,8 +315,8 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undo
     {
         prevPaste.x = mapClickX/16;
         prevPaste.y = mapClickY/16;
-        u16 xSize = map.getWidth();
-        u16 ySize = map.getHeight();
+        u16 xSize = (u16)map.layers.getTileWidth();
+        u16 ySize = (u16)map.layers.getTileHeight();
 
         auto tileChanges = ReversibleActions::Make();
         if ( getTiles().size() == 1 )
@@ -329,7 +329,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undo
             // If within map boundaries
             if ( xc >= 0 && xc < xSize && yc >= 0 && yc < ySize )
             {
-                u16 filledTileValue = map.getTile(xc, yc);
+                u16 filledTileValue = map.layers.getTile(xc, yc);
                 if ( filledTileValue != pasteTileValue )
                 {
                     std::set<points> tilesProcessed;
@@ -343,10 +343,10 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undo
                         tilesProcessed.insert(tile);
                         xc = tile.x;
                         yc = tile.y;
-                        if ( map.getTile(xc, yc) == filledTileValue )
+                        if ( map.layers.getTile(xc, yc) == filledTileValue )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
-                            map.setTile(xc, yc, pasteTileValue);
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.layers.getTile(xc, yc)));
+                            map.layers.setTile(xc, yc, pasteTileValue);
                             const points left = points(xc-1, yc);
                             const points right = points(xc+1, yc);
                             const points up = points(xc, yc-1);
@@ -386,8 +386,8 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &und
                     unitTop    = pasteUnit.unit->yc - chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeUp,
                     unitBottom = pasteUnit.unit->yc + chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeDown;
 
-                u16 numUnits = map.numUnits();
-                for ( u16 i=0; i<numUnits; i++ )
+                size_t numUnits = map.layers.numUnits();
+                for ( size_t i=0; i<numUnits; i++ )
                 {
                     Chk::UnitPtr unit = map.layers.getUnit(i);
                     s32 left   = unit->xc - chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeLeft,
@@ -407,12 +407,12 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &und
             {
                 prevPaste.x = pasteUnit.unit->xc;
                 prevPaste.y = pasteUnit.unit->yc;
-                u16 numUnits = map.numUnits();
+                size_t numUnits = map.layers.numUnits();
                 if ( map.layers.addUnit(Chk::UnitPtr(new Chk::Unit(*pasteUnit.unit))) )
                 {
-                    unitCreates->Insert(UnitCreateDel::Make(numUnits));
+                    unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
                     if ( chkd.unitWindow.getHandle() != nullptr )
-                        chkd.unitWindow.AddUnitItem(numUnits, pasteUnit.unit);
+                        chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
                 }
             }
         }

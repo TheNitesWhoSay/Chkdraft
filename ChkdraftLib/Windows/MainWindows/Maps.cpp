@@ -92,7 +92,7 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers)
+bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
 {
     if ( width == 0 || height == 0 )
     {
@@ -100,30 +100,21 @@ bool Maps::NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terra
         return false;
     }
 
-    std::shared_ptr<GuiMap> newMap = AddEmptyMap();
-
-    if ( newMap->CreateNew(width, height, tileset, terrain, triggers) )
+    std::shared_ptr<GuiMap> newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, tileset, width, height)));
+    char title[256] = { "Untitled" };
+    if ( UntitledNumber > 0 )
+        std::snprintf(title, 256, "Untitled %d", UntitledNumber);
+    
+    if ( newMap->CreateThis(getHandle(), title) )
     {
-        char title[256] = { "Untitled" };
-        if ( UntitledNumber > 0 )
-            std::snprintf(title, 256, "Untitled %d", UntitledNumber);
-
-        if ( newMap->CreateThis(getHandle(), title) )
-        {
-            UntitledNumber++;
-            EnableMapping();
-            Focus(newMap);
-            currentlyActiveMap->Redraw(true);
-            return true;
-        }
-        else
-            Error("Failed to create MDI Child Window!");
+        UntitledNumber++;
+        EnableMapping();
+        Focus(newMap);
+        currentlyActiveMap->Redraw(true);
+        return true;
     }
     else
-    {
-        CHKD_ERR("Failed to create map!\n\nError in %s\n\n%s", LastErrorLoc, LastError);
-        Error(LastError);
-    }
+        Error("Failed to create MDI Child Window!");
 
     RemoveMap(newMap);
     return false;
@@ -131,30 +122,27 @@ bool Maps::NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terra
 
 bool Maps::OpenMap(const std::string &fileName)
 {
-    auto newMap = AddEmptyMap();
+    auto newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, fileName)));
 
-    if ( newMap->LoadMapFile(fileName) )
+    if ( newMap->CreateThis(getHandle(), fileName) )
     {
-        if ( newMap->CreateThis(getHandle(), fileName) )
-        {
-            newMap->SetWinText(fileName);
-            EnableMapping();
-            Focus(newMap);
+        newMap->SetWinText(fileName);
+        EnableMapping();
+        Focus(newMap);
 
-            if ( newMap->isProtected() && newMap->hasPassword() )
-                chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
-            else if ( newMap->isProtected() )
-                mb("Map is protected and will be opened as view only");
+        if ( newMap->isProtected() && newMap->hasPassword() )
+            chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+        else if ( newMap->isProtected() )
+            mb("Map is protected and will be opened as view only");
 
-            SetFocus(chkd.getHandle());
-            currentlyActiveMap->Scroll(true, true, false);
-            currentlyActiveMap->Redraw(true);
-            currentlyActiveMap->refreshScenario();
-            return true;
-        } 
-        else
-            Error("Failed to create MDI Child Window!");
-    }
+        SetFocus(chkd.getHandle());
+        currentlyActiveMap->Scroll(true, true, false);
+        currentlyActiveMap->Redraw(true);
+        currentlyActiveMap->refreshScenario();
+        return true;
+    } 
+    else
+        Error("Failed to create MDI Child Window!");
 
     RemoveMap(newMap);
     return false;
@@ -162,30 +150,26 @@ bool Maps::OpenMap(const std::string &fileName)
 
 bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
-    auto newMap = AddEmptyMap();
-
-    if ( newMap->LoadMapFile(fileBrowser) )
+    auto newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, fileBrowser)));
+    if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
     {
-        if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
-        {
-            newMap->SetWinText(newMap->getFilePath());
-            EnableMapping();
-            Focus(newMap);
+        newMap->SetWinText(newMap->getFilePath());
+        EnableMapping();
+        Focus(newMap);
 
-            if ( newMap->isProtected() && newMap->hasPassword() )
-                chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
-            else if ( newMap->isProtected() )
-                mb("Map is protected and will be opened as view only");
+        if ( newMap->isProtected() && newMap->hasPassword() )
+            chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+        else if ( newMap->isProtected() )
+            mb("Map is protected and will be opened as view only");
 
-            SetFocus(chkd.getHandle());
-            currentlyActiveMap->Scroll(true, true, false);
-            currentlyActiveMap->Redraw(true);
-            currentlyActiveMap->refreshScenario();
-            return true;
-        } 
-        else
-            Error("Failed to create MDI Child Window!");
-    }
+        SetFocus(chkd.getHandle());
+        currentlyActiveMap->Scroll(true, true, false);
+        currentlyActiveMap->Redraw(true);
+        currentlyActiveMap->refreshScenario();
+        return true;
+    } 
+    else
+        Error("Failed to create MDI Child Window!");
 
     RemoveMap(newMap);
     return false;
@@ -312,7 +296,7 @@ void Maps::ChangePlayer(u8 newPlayer)
                 pasteUnit.unit->owner = newPlayer;
         }
 
-        u16 numUnits = currentlyActiveMap->numUnits();
+        size_t numUnits = currentlyActiveMap->layers.numUnits();
         currentlyActiveMap->PlayerChanged(newPlayer);
     }
 
@@ -521,20 +505,15 @@ u16 Maps::NextId()
         lastUsedMapID++;
         return lastUsedMapID;
     }
-    else // Find one that isn't used, ambiguously use 65535 if all are used
+    else // Find one that isn't used, else throw an exception
     {
-        u16 newMapId = 65535; // Use 65535 if all are used
         for ( u32 mapId = 0; mapId < 65536; mapId++ ) // Try every ID, break if you find one
         {
-            bool used = false; // Assume it's not used until you find that it is
             auto it = openMaps.find(mapId);
             if ( it == openMaps.end() ) // mapId is unused
-            {
-                newMapId = mapId;
-                break; // Use the current value of newMapId
-            }
+                return mapId;
         }
-        return newMapId; // Use the unused ID or 65535
+        throw AllMapIdsExausted();
     }
 }
 
@@ -614,19 +593,16 @@ void Maps::DisableMapping()
     }
 }
 
-std::shared_ptr<GuiMap> Maps::AddEmptyMap()
+GuiMapPtr Maps::AddMap(GuiMapPtr map)
 {
-    u16 id = NextId();
-    if ( id < u16_max )
+    if ( map != nullptr )
     {
-        auto it = openMaps.insert(std::pair<u16, std::shared_ptr<GuiMap>>(id, std::shared_ptr<GuiMap>(new GuiMap(clipboard))));
+        u16 id = NextId();
+        auto it = openMaps.insert(std::pair(id, map));
         if ( it != openMaps.end() )
-        {
             it->second->setMapId(id);
-            return it->second;
-        }
     }
-    return nullptr;
+    return map;
 }
 
 bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)

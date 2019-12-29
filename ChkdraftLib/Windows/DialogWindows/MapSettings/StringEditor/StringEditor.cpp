@@ -52,7 +52,7 @@ void StringEditorWindow::RefreshWindow()
         if ( extended )
             textAboutStrings.SetText("");
         else
-            textAboutStrings.SetText(std::string(std::to_string(CM->strBytesUsed()) + " / 65536 Bytes Used"));
+            textAboutStrings.SetText(std::string("TODO / 65536 Bytes Used"));
         
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
@@ -60,19 +60,23 @@ void StringEditorWindow::RefreshWindow()
         int toSelect = -1;
         std::bitset<Chk::MaxStrings> strUsed;
         CM->strings.markUsedStrings(strUsed, Chk::Scope::Either, Chk::Scope::Game);
-        ChkdString str;
-        u32 lastIndex = extended ? CM->kstrSectionCapacity() : (u32)CM->strSectionCapacity();
-        for ( u32 i = 0; i <= lastIndex; i++ )
+
+        size_t lastIndex = CM->strings.getCapacity();
+
+        for ( size_t i = 0; i <= lastIndex; i++ )
         {
-            u32 strId = extended ? 65536 - i : i;
-            if ( strUsed[i] && CM->GetString(str, strId) && str.size() > 0 )
+            if ( strUsed[i] )
             {
-                int newListIndex = listStrings.AddItem(strId);
-                if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
+                ChkdStringPtr str = CM->strings.getString<ChkdString>(i);
+                if ( str != nullptr )
                 {
-                    numVisibleStrings++;
-                    if ( currSelString == strId ) // This string is the currSelString
-                        toSelect = newListIndex; // Mark position for selection
+                    int newListIndex = listStrings.AddItem((u32)i);
+                    if ( newListIndex != -1 ) // Only consider the string if it could be added to the ListBox
+                    {
+                        numVisibleStrings++;
+                        if ( currSelString == i ) // This string is the currSelString
+                            toSelect = newListIndex; // Mark position for selection
+                    }
                 }
             }
         }
@@ -129,23 +133,27 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             int lbIndex;
             if ( listStrings.GetCurSel(lbIndex) )
             {
-                ChkdString str;
-                if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr &&
-                    CM->GetString(str, currSelString) && str.length() > 0 )
+                if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr )
                 {
-                    editString.SetText(str);
+                    ChkdStringPtr str = CM->strings.getString<ChkdString>(currSelString);
+                    if ( str != nullptr )
+                    {
+                        editString.SetText(*str);
 
-                    u32 locs, trigs, briefs, props, forces, wavs, units, switches;
-                    CM->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
-                    addUseItem("Locations", locs);
-                    addUseItem("Triggers", trigs);
-                    addUseItem("Briefing Triggers", briefs);
-                    addUseItem("Map Properties", props);
-                    addUseItem("Forces", forces);
-                    addUseItem("WAVs", wavs);
-                    addUseItem("Units", units);
-                    addUseItem("Switches", switches);
-                    chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+                        /* TODO u32 locs, trigs, briefs, props, forces, wavs, units, switches;
+                        CM->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
+                        addUseItem("Locations", locs);
+                        addUseItem("Triggers", trigs);
+                        addUseItem("Briefing Triggers", briefs);
+                        addUseItem("Map Properties", props);
+                        addUseItem("Forces", forces);
+                        addUseItem("WAVs", wavs);
+                        addUseItem("Units", units);
+                        addUseItem("Switches", switches);*/
+                        chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+                    }
+                    else
+                        chkd.mapSettingsWindow.SetWinText("Map Settings");
                 }
                 else
                     chkd.mapSettingsWindow.SetWinText("Map Settings");
@@ -167,10 +175,9 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case BN_CLICKED:
         if ( LOWORD(wParam) == (WORD)Id::DELETE_STRING &&
             WinLib::GetYesNo("Forcefully deleting a string could cause problems, continue?", "Warning") == WinLib::PromptResult::Yes &&
-            CM != nullptr && currSelString != 0 && CM->stringExists(currSelString)
-            )
+            CM != nullptr && currSelString != 0 && CM->strings.stringStored(currSelString) )
         {
-            CM->forceDeleteString(currSelString);
+            CM->strings.deleteString(currSelString, Chk::Scope::Both, false);
             CM->refreshScenario();
         }
         else if ( LOWORD(wParam) == (WORD)Id::SAVE_TO && CM != nullptr )
@@ -204,10 +211,10 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_MEASUREITEM:
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                ChkdString str;
+                ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)mis->itemData);
 
-                if ( CM->GetString(str, (u32)mis->itemData) && str.size() > 0 &&
-                     GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, str) )
+                if ( str != nullptr &&
+                     GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, *str) )
                 {
                     mis->itemWidth += 5;
                     mis->itemHeight += 2;
@@ -233,8 +240,8 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    ChkdString str;
-                    if ( CM != nullptr && CM->GetString(str, (u32)pdis->itemData) && str.size() > 0 )
+                    ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)pdis->itemData);
+                    if ( CM != nullptr && str != nullptr )
                     {
                         HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                         if ( hBackground != NULL )
@@ -245,7 +252,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                         }
                         SetBkMode(pdis->hDC, TRANSPARENT);
                         DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
-                            RGB(16, 252, 24), str);
+                            RGB(16, 252, 24), *str);
                     }
                     if ( isSelected )
                         DrawFocusRect(pdis->hDC, &pdis->rcItem);
@@ -287,10 +294,10 @@ void StringEditorWindow::saveStrings()
         std::ofstream outFile(filePath, std::ofstream::out);
         if ( outFile.is_open() )
         {
-            ChkdString str;
-            for ( u32 i=0; i<CM->strSectionCapacity(); i++ )
+            for ( u32 i=0; i<CM->strings.getCapacity(); i++ )
             {
-                if ( CM->GetString(str, i) && str.size() > 0 )
+                ChkdStringPtr str = CM->strings.getString<ChkdString>(i);
+                if ( str != nullptr )
                     outFile << i << ": " << str << "\r\n";
             }
             outFile.close();
@@ -307,18 +314,16 @@ void StringEditorWindow::addUseItem(std::string str, u32 amount)
 bool StringEditorWindow::updateString(u32 stringNum)
 {
     ChkdString editStr;
-    if ( CM != nullptr && editString.GetWinText(editStr) && CM->FindDifference(editStr, stringNum) )
+    ChkdStringPtr existingStr = CM->strings.getString<ChkdString>((size_t)stringNum);
+    if ( CM != nullptr && editString.GetWinText(editStr) && existingStr != nullptr && existingStr->compare(editStr) != 0 )
     {
-        if ( CM->editString<u32>(editStr, stringNum, CM->isExtendedString(stringNum), false) )
-        {
-            CM->notifyChange(false);
-            if ( CM->stringUsedWithLocs(currSelString) )
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-            editString.RedrawThis();
-            return true;
-        }
-        else
-            return false;
+        CM->strings.replaceString<ChkdString>((size_t)stringNum, editStr);
+        CM->notifyChange(false);
+        if ( CM->layers.stringUsed(currSelString, Chk::Scope::EditorOverGame) )
+            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+
+        editString.RedrawThis();
+        return true;
     }
     else
         return false;

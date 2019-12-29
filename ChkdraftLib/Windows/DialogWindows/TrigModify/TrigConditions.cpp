@@ -593,10 +593,9 @@ void TrigConditionsWindow::SuggestUnit()
         u16 numUnitStrings = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitStrings; i++ )
         {
-            SingleLineChkdString str;
-            CM->getUnitName(str, i);
-            suggestions.AddString(str);
-            if ( str.compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
+            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i);
+            suggestions.AddString(*str);
+            if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
                 suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));
         }
     }
@@ -608,21 +607,18 @@ void TrigConditionsWindow::SuggestLocation()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No Location"));
-        u16 locationCapacity = (u16)CM->locationCapacity();
-        for ( u16 i = 0; i < locationCapacity; i++ )
+        size_t numLocations = CM->layers.numLocations();
+        for ( size_t i = 0; i < numLocations; i++ )
         {
-            if ( CM->locationIsUsed(i) )
+            Chk::LocationPtr loc = CM->layers.getLocation(i);
+            std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
+            if ( locationName != nullptr )
+                suggestions.AddString(*locationName);
+            else
             {
-                Chk::LocationPtr loc = CM->layers.getLocation(i);
-                std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
-                if ( locationName != nullptr )
-                    suggestions.AddString(*locationName);
-                else
-                {
-                    std::stringstream ssLoc;
-                    ssLoc << "Location " << i;
-                    suggestions.AddString(ssLoc.str());
-                }
+                std::stringstream ssLoc;
+                ssLoc << "Location " << i;
+                suggestions.AddString(ssLoc.str());
             }
         }
     }
@@ -672,9 +668,9 @@ void TrigConditionsWindow::SuggestSwitch()
     {
         for ( u16 i = 0; i < 256; i++ )
         {
-            SingleLineChkdString str;
-            if ( CM->getSwitchName(str, (u8)i) )
-                suggestions.AddString(str);
+            SingleLineChkdStringPtr str = CM->strings.getSwitchName<SingleLineChkdString>(i);
+            if ( str != nullptr )
+                suggestions.AddString(*str);
             else
             {
                 std::stringstream ss;

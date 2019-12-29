@@ -53,32 +53,58 @@ bool WavEditorWindow::CreateThis(HWND hParent, u64 windowId)
 void WavEditorWindow::RefreshWindow()
 {
     wavMap.clear();
-    if ( CM->GetWavs(wavMap, true) )
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        wavMap.insert(std::pair<u32, u16>((u32)i, (u16)CM->triggers.getSoundStringId(i)));
+    for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
     {
-        listMapSounds.SetRedraw(false);
-        listMapSounds.ClearItems();
-        for ( auto pair : wavMap )
+        Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+        for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            u32 wavStringId = pair.first;
-            listMapSounds.AddItem(wavStringId);
+            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            {
+                wavMap.insert(std::pair<u32, u16>((u32)trigger->actions[actionIndex].soundStringId, u16_max));
+            }
         }
-        listMapSounds.SetRedraw(true);
+    }
+    for ( size_t i=0; i<CM->triggers.numBriefingTriggers(); i++ )
+    {
+        Chk::TriggerPtr trigger = CM->triggers.getBriefingTrigger(i);
+        for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+        {
+            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            {
+                wavMap.insert(std::pair<u32, u16>((u32)trigger->actions[actionIndex].soundStringId, u16_max));
+            }
+        }
+    }
 
-        if ( selectedSoundListIndex > 0 && selectedSoundListIndex < listMapSounds.GetNumItems() )
-            listMapSounds.SetCurSel(selectedSoundListIndex);
+    listMapSounds.SetRedraw(false);
+    listMapSounds.ClearItems();
+    for ( auto pair : wavMap )
+    {
+        u32 wavStringId = pair.first;
+        listMapSounds.AddItem(wavStringId);
+    }
+    listMapSounds.SetRedraw(true);
 
-        if ( selectedSoundListIndex == -1 )
-        {
-            buttonDeleteSound.DisableThis();
-            buttonExtractSound.DisableThis();
-            buttonPlaySound.DisableThis();
-        }
-        else
-        {
-            buttonDeleteSound.EnableThis();
-            buttonExtractSound.EnableThis();
-            buttonPlaySound.EnableThis();
-        }
+    if ( selectedSoundListIndex > 0 && selectedSoundListIndex < listMapSounds.GetNumItems() )
+        listMapSounds.SetCurSel(selectedSoundListIndex);
+
+    if ( selectedSoundListIndex == -1 )
+    {
+        buttonDeleteSound.DisableThis();
+        buttonExtractSound.DisableThis();
+        buttonPlaySound.DisableThis();
+    }
+    else
+    {
+        buttonDeleteSound.EnableThis();
+        buttonExtractSound.EnableThis();
+        buttonPlaySound.EnableThis();
     }
 
     UpdateWindowText();
@@ -95,22 +121,22 @@ void WavEditorWindow::UpdateWindowText()
         if ( wavEntry != wavMap.end() )
             wavIndex = wavEntry->second;
 
-        WavStatus wavStatus = CM->GetWavStatus(wavStringId);
+        SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
 
         std::string wavStatusString = "";
-        if ( wavStatus == WavStatus::NoMatch )
+        if ( wavStatus == SoundStatus::NoMatch )
             wavStatusString = ", Status: No Matching Sound File";
-        else if ( wavStatus == WavStatus::NoMatchExtended )
+        else if ( wavStatus == SoundStatus::NoMatchExtended )
             wavStatusString = ", Status: Extended, cannot match";
-        else if ( wavStatus == WavStatus::FileInUse )
+        else if ( wavStatus == SoundStatus::FileInUse )
             wavStatusString = ", Status: Unknown - Map Locked";
-        else if ( wavStatus == WavStatus::Unknown )
+        else if ( wavStatus == SoundStatus::Unknown )
             wavStatusString = ", Status: ???";
-        else if ( wavStatus == WavStatus::CurrentMatch )
+        else if ( wavStatus == SoundStatus::CurrentMatch )
             wavStatusString = ", Status: Matches File In Map";
-        else if ( wavStatus == WavStatus::VirtualFile )
+        else if ( wavStatus == SoundStatus::VirtualFile )
             wavStatusString = ", Status: Virtual File";
-        else if ( wavStatus == WavStatus::PendingMatch )
+        else if ( wavStatus == SoundStatus::PendingMatch )
             wavStatusString = ", Status: Matches Pending Asset";
 
         if ( wavIndex == u16_max )
@@ -151,21 +177,11 @@ void WavEditorWindow::UpdateCustomStringList()
 
 void WavEditorWindow::PlaySoundButtonPressed()
 {
-    u32 wavStringId = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
+    u32 soundStringId = 0;
+    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         buffer wavBuffer("WaBu");
-        RawString wavString;
-        if ( CM->GetWav(wavStringId, wavBuffer) )
-        {
-#ifdef UNICODE
-            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
-#else
-            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
-#endif
-        }
-        else if ( CM->GetString(wavString, wavStringId) && CM->IsInVirtualWavList(wavString) &&
-            chkd.scData.GetScAsset(wavString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+        if ( CM->GetSound(soundStringId, wavBuffer) )
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
@@ -174,7 +190,21 @@ void WavEditorWindow::PlaySoundButtonPressed()
 #endif
         }
         else
-            Error("Failed to get WAV buffer!");
+        {
+            RawStringPtr soundString = CM->strings.getString<RawString>(soundStringId);
+            if ( soundString != nullptr && CM->IsInVirtualSoundList(*soundString) &&
+                chkd.scData.GetScAsset(*soundString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser()),
+                ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+            {
+#ifdef UNICODE
+                PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#else
+                PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+#endif
+            }
+            else
+                Error("Failed to get WAV buffer!");
+        }
     }
     else
         Error("Failed to get string ID of WAV!");
@@ -187,7 +217,7 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
     std::string wavString = "";
     if ( listVirtualSounds.GetCurSelString(wavString) )
     {
-        if ( CM->IsInVirtualWavList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
+        if ( CM->IsInVirtualSoundList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
@@ -253,33 +283,33 @@ void WavEditorWindow::AddFileButtonPressed()
 
     bool addedWav = false;
     std::string filePath = editFileName.GetWinText();
-    if ( useVirtualFile && CM->IsInVirtualWavList(filePath) )
+    if ( useVirtualFile && CM->IsInVirtualSoundList(filePath) )
     {
         if ( useCustomMpqString )
-            addedWav = CM->AddWav(filePath, customMpqPath, wavQuality, true);
+            addedWav = CM->AddSound(filePath, customMpqPath, wavQuality, true);
         else
-            addedWav = CM->AddWav(filePath, wavQuality, true);
+            addedWav = CM->AddSound(filePath, wavQuality, true);
     }
     else if ( !useVirtualFile && FindFile(filePath) )
     {
         if ( useCustomMpqString )
-            addedWav = CM->AddWav(filePath, customMpqPath, wavQuality, false);
+            addedWav = CM->AddSound(filePath, customMpqPath, wavQuality, false);
         else
-            addedWav = CM->AddWav(filePath, wavQuality, false);
+            addedWav = CM->AddSound(filePath, wavQuality, false);
     }
-    else if ( !useVirtualFile && CM->IsInVirtualWavList(filePath) )
+    else if ( !useVirtualFile && CM->IsInVirtualSoundList(filePath) )
     {
         buffer wavContents("WaCo");
         if ( chkd.scData.GetScAsset(filePath, wavContents) )
         {
             if ( useCustomMpqString )
-                addedWav = CM->AddWav(customMpqPath, wavContents, wavQuality);
+                addedWav = CM->AddSound(customMpqPath, wavContents, wavQuality);
             else
             {
                 std::string mpqFileName = GetMpqFileName(filePath);
-                std::string standardWavDir = MapFile::GetStandardWavDir();
+                std::string standardWavDir = MapFile::GetStandardSoundDir();
                 std::string mpqFilePath = MakeMpqFilePath(standardWavDir, mpqFileName);
-                addedWav = CM->AddWav(mpqFilePath, wavContents, wavQuality);
+                addedWav = CM->AddSound(mpqFilePath, wavContents, wavQuality);
             }
         }
         else
@@ -360,8 +390,8 @@ void WavEditorWindow::MapSoundSelectionChanged()
         u32 wavStringId = 0;
         if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
         {
-            WavStatus wavStatus = CM->GetWavStatus(wavStringId);
-            if ( wavStatus == WavStatus::PendingMatch || wavStatus == WavStatus::CurrentMatch || wavStatus == WavStatus::VirtualFile )
+            SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
+            if ( wavStatus == SoundStatus::PendingMatch || wavStatus == SoundStatus::CurrentMatch || wavStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
         }
         buttonPlaySound.EnableThis();
@@ -404,33 +434,69 @@ void WavEditorWindow::DeleteSoundButtonPressed()
     u32 wavStringId = 0;
     if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
     {
-        if ( CM->MapUsesWavString(wavStringId) )
+        bool wavStringIdIsUsed = false;
+        for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
         {
-            WavStatus wavStatus = CM->GetWavStatus(wavStringId);
-            if ( wavStatus == WavStatus::NoMatch || wavStatus == WavStatus::NoMatchExtended )
+            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                    trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                    trigger->actions[actionIndex].soundStringId == wavStringId )
+                {
+                    wavStringIdIsUsed = true;
+                    i = CM->triggers.numTriggers();
+                    break;
+                }
+            }
+        }
+        if ( !wavStringIdIsUsed )
+        {
+            for ( size_t i=0; i<CM->triggers.numBriefingTriggers(); i++ )
+            {
+                Chk::TriggerPtr trigger = CM->triggers.getBriefingTrigger(i);
+                for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+                {
+                    if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                        trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                        trigger->actions[actionIndex].soundStringId == wavStringId )
+                    {
+                        wavStringIdIsUsed = true;
+                        i = CM->triggers.numBriefingTriggers();
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        if ( wavStringIdIsUsed )
+        {
+            SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
+            if ( wavStatus == SoundStatus::NoMatch || wavStatus == SoundStatus::NoMatchExtended )
             {
                 selectedSoundListIndex = -1;
-                CM->RemoveWavByStringId(wavStringId, true);
+                CM->RemoveSoundByStringId(wavStringId, true);
                 CM->notifyChange(false);
                 CM->refreshScenario();
             }
             else
             {
                 std::string warningMessage = "This WAV is currently using in triggers and/or briefing";
-                if ( wavStatus == WavStatus::CurrentMatch )
+                if ( wavStatus == SoundStatus::CurrentMatch )
                     warningMessage += " and is present in the MPQ";
-                else if ( wavStatus == WavStatus::PendingMatch )
+                else if ( wavStatus == SoundStatus::PendingMatch )
                     warningMessage += " and is valid";
-                else if ( wavStatus == WavStatus::FileInUse )
+                else if ( wavStatus == SoundStatus::FileInUse )
                     warningMessage += " and whether it is in the map MPQ is unknown";
-                else if ( wavStatus == WavStatus::VirtualFile )
+                else if ( wavStatus == SoundStatus::VirtualFile )
                     warningMessage += " and is a valid virtual file";
                 warningMessage += ", are you sure you want to remove it?";
 
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundListIndex = -1;
-                    CM->RemoveWavByStringId(wavStringId, true);
+                    CM->RemoveSoundByStringId(wavStringId, true);
                     CM->notifyChange(false);
                     CM->refreshScenario();
                 }
@@ -439,7 +505,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
         else
         {
             selectedSoundListIndex = -1;
-            CM->RemoveWavByStringId(wavStringId, false);
+            CM->RemoveSoundByStringId(wavStringId, false);
             CM->notifyChange(false);
             CM->refreshScenario();
         }
@@ -473,10 +539,8 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
         case WM_MEASUREITEM:
         {
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-            RawString str;
-
-            if ( CM->GetString(str, (u32)mis->itemData) && str.size() > 0 &&
-                GetStringDrawSize(wavListDC, mis->itemWidth, mis->itemHeight, str) )
+            RawStringPtr str = CM->strings.getString<RawString>((size_t)mis->itemData);
+            if ( str != nullptr && GetStringDrawSize(wavListDC, mis->itemWidth, mis->itemHeight, *str) )
             {
                 mis->itemWidth += 5;
                 mis->itemHeight += 2;
@@ -502,8 +566,8 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
-                RawString str;
-                if ( CM != nullptr && CM->GetString(str, (u32)pdis->itemData) && str.size() > 0 )
+                RawStringPtr str = CM->strings.getString<RawString>((size_t)pdis->itemData);
+                if ( CM != nullptr && str != nullptr )
                 {
                     HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                     if ( hBackground != NULL )
@@ -514,7 +578,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
                     }
                     SetBkMode(pdis->hDC, TRANSPARENT);
                     DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
-                        RGB(16, 252, 24), str);
+                        RGB(16, 252, 24), *str);
                 }
                 if ( isSelected )
                     DrawFocusRect(pdis->hDC, &pdis->rcItem);

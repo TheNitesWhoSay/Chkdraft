@@ -6,7 +6,7 @@
 #include <SimpleIcu.h>
 
 std::hash<std::string> MapFile::strHash;
-std::map<size_t, std::string> MapFile::virtualWavTable;
+std::map<size_t, std::string> MapFile::virtualSoundTable;
 u64 MapFile::nextAssetFileId(0);
 
 FileBrowserPtr<SaveType> MapFile::getDefaultOpenMapBrowser()
@@ -19,16 +19,29 @@ FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile() : saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(const std::string & filePath) :
+    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
 {
-    if ( MapFile::virtualWavTable.size() == 0 )
+    LoadMapFile(filePath);
+}
+
+MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) :
+    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+{
+    LoadMapFile(fileBrowser);
+}
+
+MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
+    : Scenario(tileset, width, height), saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+{
+    if ( MapFile::virtualSoundTable.size() == 0 )
     {
         size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
         for ( size_t i=0; i<numVirtualSounds; i++ )
         {
-            std::string wavPath(Sc::Sound::virtualSoundPaths[i]);
-            size_t hash = strHash(wavPath);
-            virtualWavTable.insert(std::pair<size_t, std::string>(hash, wavPath));
+            std::string soundPath(Sc::Sound::virtualSoundPaths[i]);
+            size_t hash = strHash(soundPath);
+            virtualSoundTable.insert(std::pair<size_t, std::string>(hash, soundPath));
         }
     }
 }
@@ -68,11 +81,11 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
         if ( newSaveDetails || !mapFilePath.empty() ) // Map path has been determined
         {
             if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
-                Scenario::ChangeToScOrig();
+                Scenario::versions.changeTo(Chk::Version::StarCraft_Original);
             else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
-                Scenario::ChangeToHybrid();
+                Scenario::versions.changeTo(Chk::Version::StarCraft_Hybrid);
             else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
-                Scenario::ChangeToScExp();
+                Scenario::versions.changeTo(Chk::Version::StarCraft_BroodWar);
 
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
@@ -199,19 +212,12 @@ bool MapFile::OpenMapFile(const std::string &filePath)
                 
                 if ( chk.size() > 0 && Scenario::ParseScenario(chk) )
                 {
-                    if ( HasVerSection() )
-                    {
-                        if ( IsScOrig() )
-                            saveType = SaveType::StarCraftScm; // Vanilla
-                        else if ( IsHybrid() )
-                            saveType = SaveType::HybridScm; // Hybrid
-                        else
-                            saveType = SaveType::ExpansionScx; // Expansion
-                    }
-                    else if ( extension == ".scx" )
+                    if ( Scenario::versions.isOriginal() )
+                        saveType = SaveType::StarCraftScm; // Vanilla
+                    else if ( Scenario::versions.isHybrid() )
+                        saveType = SaveType::HybridScm; // Hybrid
+                    else
                         saveType = SaveType::ExpansionScx; // Expansion
-                    else if ( true ) // Could search for clues to map version here
-                        saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
 
                     return true;
                 }
@@ -229,17 +235,12 @@ bool MapFile::OpenMapFile(const std::string &filePath)
             {
                 if ( Scenario::ParseScenario(chk) )
                 {
-                    if ( HasVerSection() )
-                    {
-                        if ( IsScOrig() )
-                            saveType = SaveType::StarCraftChk; // Vanilla chk
-                        else if ( IsHybrid() )
-                            saveType = SaveType::HybridChk; // Hybrid chk
-                        else
-                            saveType = SaveType::ExpansionChk; // Expansion chk
-                    }
-                    else if ( true ) // Could search for clues to map version here
-                        saveType = SaveType::ExpansionChk; // Otherwise set to expansion to prevent data loss
+                    if ( Scenario::versions.isOriginal() )
+                        saveType = SaveType::StarCraftChk; // Vanilla chk
+                    else if ( Scenario::versions.isHybrid() )
+                        saveType = SaveType::HybridChk; // Hybrid chk
+                    else
+                        saveType = SaveType::ExpansionChk; // Expansion chk
                     
                     return true;
                 }
@@ -308,7 +309,7 @@ void MapFile::SetSaveType(SaveType newSaveType)
     saveType = newSaveType;
 }
 
-std::string MapFile::GetStandardWavDir()
+std::string MapFile::GetStandardSoundDir()
 {
     return "staredit\\wav\\";
 }
@@ -433,194 +434,236 @@ bool MapFile::ExtractMpqAsset(const std::string &assetMpqFilePath, const std::st
     return false;
 }
 
-bool MapFile::GetWav(u16 wavIndex, u32 &outStringId)
+bool MapFile::GetSound(u16 soundIndex, size_t &outStringId)
 {
-    return Scenario::GetWav(wavIndex, outStringId);
+    outStringId = Scenario::triggers.getSoundStringId(soundIndex);
+    return outStringId != Chk::StringId::UnusedSound;
 }
 
-bool MapFile::GetWav(u32 stringId, buffer &outWavData)
+bool MapFile::GetSound(size_t stringId, buffer & outSoundData)
 {
-    RawString wavString;
-    return Scenario::GetString(wavString, stringId) &&
-        GetMpqAsset(wavString, outWavData);
+    RawStringPtr soundString = Scenario::strings.getString<RawString>(stringId);
+    if ( soundString != nullptr )
+        return GetMpqAsset(*soundString, outSoundData);
+    else
+        return false;
 }
 
-bool MapFile::AddWav(u32 stringId)
+bool MapFile::AddSound(size_t stringId)
 {
-    RawString wavString;
-    return Scenario::GetString(wavString, stringId) &&
-        MpqFile::findFile(mapFilePath, wavString) &&
-        Scenario::AddWav(stringId);
+    RawStringPtr soundString = Scenario::strings.getString<RawString>(stringId, Chk::Scope::Game);
+    if ( soundString != nullptr && MpqFile::findFile(mapFilePath, *soundString) )
+    {
+        Scenario::triggers.addSound(stringId);
+        return true;
+    }
+    return false;
 }
 
-bool MapFile::AddWav(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile)
+bool MapFile::AddSound(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
-    std::string mpqWavDirectory = GetStandardWavDir();
-    std::string mpqFilePath = MakeMpqFilePath(mpqWavDirectory, GetSystemFileName(srcFilePath));
-    return AddWav(srcFilePath, mpqFilePath, wavQuality, virtualFile);
+    std::string mpqSoundDirectory = GetStandardSoundDir();
+    std::string mpqFilePath = MakeMpqFilePath(mpqSoundDirectory, GetSystemFileName(srcFilePath));
+    return AddSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 
-bool MapFile::AddWav(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile)
+bool MapFile::AddSound(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
-    bool success = false;
     if ( virtualFile )
     {
-        if ( Scenario::AddWav(RawString(srcFilePath)) )
-            success = true;
-        else
-            CHKD_ERR("Failed to register WAV in scenario file!");
+        size_t soundStringId = Scenario::strings.addString(RawString(srcFilePath), Chk::Scope::Game);
+        if ( soundStringId != Chk::StringId::NoString )
+        {
+            Scenario::triggers.addSound(soundStringId);
+            return true;
+        }
     }
     else if ( AddMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
-        if ( Scenario::AddWav(RawString(destMpqPath)) )
-            success = true;
-        else
+        size_t soundStringId = Scenario::strings.addString(RawString(srcFilePath), Chk::Scope::Game);
+        if ( soundStringId != Chk::StringId::NoString )
         {
-            RemoveMpqAsset(destMpqPath); // Try to remove the wav, ignore errors if any
-            CHKD_ERR("Failed to register WAV in scenario file!");
+            Scenario::triggers.addSound(soundStringId);
+            return true;
         }
+        else
+            RemoveMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
-    return success;
+    return false;
 }
 
-bool MapFile::AddWav(const std::string &destMpqPath, buffer &wavContents, WavQuality wavQuality)
+bool MapFile::AddSound(const std::string &destMpqPath, buffer &soundContents, WavQuality wavQuality)
 {
     bool success = false;
-    if ( AddMpqAsset(destMpqPath, wavContents, wavQuality) )
+    if ( AddMpqAsset(destMpqPath, soundContents, wavQuality) )
     {
-        if ( Scenario::AddWav(RawString(destMpqPath)) )
-            success = true;
-        else
+        size_t soundStringId = Scenario::strings.addString(RawString(destMpqPath), Chk::Scope::Game);
+        if ( soundStringId != Chk::StringId::NoString )
         {
-            RemoveMpqAsset(destMpqPath); // Try to remove the wav, ignore errors if any
-            CHKD_ERR("Failed to register WAV in scenario file!");
+            Scenario::triggers.addSound(soundStringId);
+            return true;
         }
+        else
+            RemoveMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
-    return success;
+    return false;
 }
 
-bool MapFile::RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed)
+bool MapFile::RemoveSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
 {
-    RawString wavString;
-    bool hasString = Scenario::GetWavString(wavIndex, wavString);
-    if ( Scenario::RemoveWavByWavIndex(wavIndex, removeIfUsed) )
+    size_t soundStringId = Scenario::triggers.getSoundStringId(soundIndex);
+    if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        if ( hasString )
-            RemoveMpqAsset(wavString);
+        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
+        Scenario::triggers.setSoundStringId(soundIndex, 0);
+        if ( soundString != nullptr )
+        {
+            Scenario::strings.deleteString(soundStringId);
+            RemoveMpqAsset(*soundString);
+        }
+        return true;
+    }
+    return false;
+}
+
+bool MapFile::RemoveSoundByStringId(size_t soundStringId, bool removeIfUsed)
+{
+    if ( soundStringId != Chk::StringId::UnusedSound )
+    {
+        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
+        Scenario::strings.deleteString(soundStringId);
+        if ( soundString != nullptr )
+            RemoveMpqAsset(*soundString);
 
         return true;
     }
     return false;
 }
 
-bool MapFile::RemoveWavByStringId(u32 wavStringId, bool removeIfUsed)
+SoundStatus MapFile::GetSoundStatus(size_t soundStringId)
 {
-    RawString wavString;
-    bool hasString = Scenario::GetString(wavString, wavStringId);
-    if ( Scenario::RemoveWavByStringId(wavStringId, removeIfUsed) )
-    {
-        if ( hasString )
-            RemoveMpqAsset(wavString);
-
-        return true;
-    }
-    return false;
-}
-
-WavStatus MapFile::GetWavStatus(u32 wavStringId)
-{
-    if ( Scenario::isExtendedString(wavStringId) ) // Extended strings are not used in SC and therefore never match
-        return WavStatus::NoMatch;
+    if ( Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+        !Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+        return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
     {
-        RawString wavString;
-        if ( Scenario::GetString(wavString, wavStringId) )
+        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
+        if ( soundString != nullptr )
         {
             for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
             {
-                if ( modifiedAsset->actionTaken == AssetAction::Add && modifiedAsset->assetMpqPath == wavString )
-                    return WavStatus::PendingMatch;
+                if ( modifiedAsset->actionTaken == AssetAction::Add && soundString->compare(modifiedAsset->assetMpqPath) == 0 )
+                    return SoundStatus::PendingMatch;
             }
 
             HANDLE hMpq = NULL;
             if ( MpqFile::open(mapFilePath, false) )
             {
-                WavStatus wavStatus = WavStatus::NoMatch;
-                if ( MpqFile::findFile(wavString) )
-                    wavStatus = WavStatus::CurrentMatch;
-                else if ( IsInVirtualWavList(wavString) )
-                    wavStatus = WavStatus::VirtualFile;
+                SoundStatus soundStatus = SoundStatus::NoMatch;
+                if ( MpqFile::findFile(*soundString) )
+                    soundStatus = SoundStatus::CurrentMatch;
+                else if ( IsInVirtualSoundList(*soundString) )
+                    soundStatus = SoundStatus::VirtualFile;
                 MpqFile::close();
-                return wavStatus;
+                return soundStatus;
             }
-            else if ( IsInVirtualWavList(wavString) )
-                return WavStatus::VirtualFile;
+            else if ( IsInVirtualSoundList(*soundString) )
+                return SoundStatus::VirtualFile;
             else
-                return WavStatus::FileInUse;
+                return SoundStatus::FileInUse;
         }
     }
-    return WavStatus::Unknown;
+    return SoundStatus::Unknown;
 }
 
-bool MapFile::GetWavStatusMap(std::map<u32/*stringId*/, WavStatus> &outWavStatus, bool includePureStringWavs)
+bool MapFile::GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSoundStatus, bool includePureStringSounds)
 {
-    std::map<u32/*stringId*/, u16/*wavIndex*/> wavMap;
-    if ( Scenario::GetWavs(wavMap, includePureStringWavs) )
+    std::map<size_t/*stringId*/, u16/*soundIndex*/> soundMap;
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        soundMap.insert(std::pair<size_t, u16>(i, (u16)Scenario::triggers.getSoundStringId(i)));
+    for ( size_t i=0; i<Scenario::triggers.numTriggers(); i++ )
     {
-        for ( auto entry : wavMap )
+        Chk::TriggerPtr trigger = Scenario::triggers.getTrigger(i);
+        for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            u32 wavStringId = entry.first;
-            if ( Scenario::isExtendedString(wavStringId) ) // Extended strings are not used in SC and therefore never match
-                outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::NoMatchExtended));
-            else
+            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                RawString wavString;
-                if ( Scenario::GetString(wavString, wavStringId) )
-                {
-                    for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
-                    {
-                        if ( modifiedAsset->actionTaken == AssetAction::Add && modifiedAsset->assetMpqPath == wavString )
-                        {
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::PendingMatch));
-                            continue;
-                        }
-                    }
-
-                    if ( MapFile::open(mapFilePath) )
-                    {
-                        if ( MapFile::findFile(wavString) )
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::CurrentMatch));
-                        else
-                            outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::NoMatch));
-
-                        MapFile::close();
-                    }
-                    else
-                        outWavStatus.insert(std::pair<u32, WavStatus>(wavStringId, WavStatus::FileInUse));
-                }
+                soundMap.insert(std::pair<size_t, u16>((size_t)trigger->actions[actionIndex].soundStringId, u16_max));
             }
         }
-        return true;
     }
-    return false;
+    for ( size_t i=0; i<Scenario::triggers.numBriefingTriggers(); i++ )
+    {
+        Chk::TriggerPtr trigger = Scenario::triggers.getBriefingTrigger(i);
+        for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+        {
+            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            {
+                soundMap.insert(std::pair<size_t, u16>((size_t)trigger->actions[actionIndex].soundStringId, u16_max));
+            }
+        }
+    }
+
+    for ( auto entry : soundMap )
+    {
+        size_t soundStringId = entry.first;
+        
+        if ( Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+            !Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+        { // Extended strings are not used in SC and therefore never match
+            outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatchExtended));
+        }
+        else
+        {
+            RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId);
+            if ( soundString != nullptr )
+            {
+                for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
+                {
+                    if ( modifiedAsset->actionTaken == AssetAction::Add && soundString->compare(modifiedAsset->assetMpqPath) == 0 )
+                    {
+                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::PendingMatch));
+                        continue;
+                    }
+                }
+
+                if ( MapFile::open(mapFilePath) )
+                {
+                    if ( MapFile::findFile(*soundString) )
+                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::CurrentMatch));
+                    else
+                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatch));
+
+                    MapFile::close();
+                }
+                else
+                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::FileInUse));
+            }
+        }
+    }
+    return true;
 }
 
-bool MapFile::IsInVirtualWavList(const std::string &wavMpqPath)
+bool MapFile::IsInVirtualSoundList(const std::string &soundMpqPath)
 {
-    size_t hash = MapFile::strHash(wavMpqPath);
-    size_t numMatching = MapFile::virtualWavTable.count(hash);
+    size_t hash = MapFile::strHash(soundMpqPath);
+    size_t numMatching = MapFile::virtualSoundTable.count(hash);
     if ( numMatching == 1 )
     {
-        std::string &tableWavPath = MapFile::virtualWavTable.find(hash)->second;
-        if ( wavMpqPath.compare(tableWavPath) == 0 )
+        std::string &tableSoundPath = MapFile::virtualSoundTable.find(hash)->second;
+        if ( soundMpqPath.compare(tableSoundPath) == 0 )
             return true;
     }
     else if ( numMatching > 1 )
     {
-        auto range = MapFile::virtualWavTable.equal_range(hash);
+        auto range = MapFile::virtualSoundTable.equal_range(hash);
         for ( auto pair = range.first; pair != range.second; ++ pair)
         {
-            if ( wavMpqPath.compare(pair->second) == 0 )
+            if ( soundMpqPath.compare(pair->second) == 0 )
                 return true;
         }
     }

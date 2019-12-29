@@ -127,7 +127,7 @@ class ChkSection
         
         ChkSection(SectionName sectionName, bool virtualizable = false, bool dataIsVirtual = false);
         template <typename StructType>
-        ChkSection(SectionName sectionName, StructType & data, bool virtualizable = false, bool dataIsVirtual = false);
+        ChkSection(SectionName sectionName, const StructType & data, bool virtualizable = false, bool dataIsVirtual = false);
         virtual ~ChkSection() { }
 
         virtual void Validate(bool hybridOrBroodWar) { } // throws SectionValidationException
@@ -194,7 +194,8 @@ class ChkSection
                 SectionValidationException(); // Disallow ctor
         };
 
-        ChkSection() { } // Disallow ctor
+    private:
+        ChkSection(); // Disallow ctor
 
         // Static data
         static SectionName sectionNames[];
@@ -207,12 +208,13 @@ class ChkSection
     an exact structure but is not validated by StarCraft,
     that is it's virtualizable: it may differ from the exact struct
 */
-template <typename StructType, bool virtualizable>
+template <typename StructType, bool Virtualizable>
 class StructSection : public ChkSection
 {
     public:
-        StructSection(SectionName sectionName) : ChkSection(sectionName) { }
-        StructSection(SectionName sectionName, StructType & data) : ChkSection(sectionName, data) { }
+        StructSection(SectionName sectionName) : ChkSection(sectionName, Virtualizable), data(nullptr) { }
+        StructSection(SectionName sectionName, const StructType & data) : ChkSection(sectionName, data, Virtualizable),
+            data(ChkSection::rawData->getPtr<StructType>()) { }
         virtual ~StructSection() { }
         StructType & asStruct() { return *data; }
 
@@ -251,17 +253,18 @@ class DynamicSection : public ChkSection
 class TypeSection : public StructSection<Chk::TYPE, true>
 {
     public:
-        static Section GetDefault();
-        TypeSection(Chk::TYPE & data);
+        static TypeSectionPtr GetDefault(Chk::Version version = Chk::Version::StarCraft_Hybrid);
+        TypeSection(const Chk::TYPE & data);
 
+        Chk::Type getType();
         void setType(Chk::Type type);
 };
 
 class VerSection : public StructSection<Chk::VER, false>
 {
     public:
-        static Section GetDefault();
-        VerSection(Chk::VER & data);
+        static VerSectionPtr GetDefault();
+        VerSection(const Chk::VER & data);
 
         bool isOriginal();
         bool isHybrid();
@@ -274,8 +277,8 @@ class VerSection : public StructSection<Chk::VER, false>
 class IverSection : public StructSection<Chk::IVER, true>
 {
     public:
-        static Section GetDefault();
-        IverSection(Chk::IVER & data);
+        static IverSectionPtr GetDefault();
+        IverSection(const Chk::IVER & data);
 
         Chk::IVersion getVersion();
         void setVersion(Chk::IVersion version);
@@ -284,8 +287,8 @@ class IverSection : public StructSection<Chk::IVER, true>
 class Ive2Section : public StructSection<Chk::IVE2, true>
 {
     public:
-        static Section GetDefault();
-        Ive2Section(Chk::IVE2 & data);
+        static Ive2SectionPtr GetDefault();
+        Ive2Section(const Chk::IVE2 & data);
 
         Chk::I2Version getVersion();
         void setVersion(Chk::I2Version version);
@@ -294,8 +297,8 @@ class Ive2Section : public StructSection<Chk::IVE2, true>
 class VcodSection : public StructSection<Chk::VCOD, false>
 {
     public:
-        static Section GetDefault();
-        VcodSection(Chk::VCOD & data);
+        static VcodSectionPtr GetDefault();
+        VcodSection(const Chk::VCOD & data);
 
         bool isDefault();
         void setToDefault();
@@ -304,28 +307,28 @@ class VcodSection : public StructSection<Chk::VCOD, false>
 class IownSection : public StructSection<Chk::IOWN, true>
 {
     public:
-        static Section GetDefault();
-        IownSection(Chk::IOWN & data);
+        static IownSectionPtr GetDefault();
+        IownSection(const Chk::IOWN & data);
 
-        Sc::Player::SlotOwner getSlotOwner(size_t slotIndex);
-        void setSlotOwner(size_t slotIndex, Sc::Player::SlotOwner owner);
+        Sc::Player::SlotType getSlotType(size_t slotIndex);
+        void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
 };
 
 class OwnrSection : public StructSection<Chk::OWNR, false>
 {
     public:
-        static Section GetDefault();
-        OwnrSection(Chk::OWNR & data);
+        static OwnrSectionPtr GetDefault();
+        OwnrSection(const Chk::OWNR & data);
         
-        Sc::Player::SlotOwner getSlotOwner(size_t slotIndex);
-        void setSlotOwner(size_t slotIndex, Sc::Player::SlotOwner owner);
+        Sc::Player::SlotType getSlotType(size_t slotIndex);
+        void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
 };
 
 class EraSection : public StructSection<Chk::ERA, false>
 {
     public:
-        static Section GetDefault(Sc::Terrain::Tileset tileset);
-        EraSection(Chk::ERA & data);
+        static EraSectionPtr GetDefault(Sc::Terrain::Tileset tileset);
+        EraSection(const Chk::ERA & data);
 
         Sc::Terrain::Tileset getTileset();
         void setTileset(Sc::Terrain::Tileset tileset);
@@ -334,8 +337,8 @@ class EraSection : public StructSection<Chk::ERA, false>
 class DimSection : public StructSection<Chk::DIM, false>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
-        DimSection(Chk::DIM & data);
+        static DimSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
+        DimSection(const Chk::DIM & data);
 
         size_t getTileWidth();
         size_t getTileHeight();
@@ -349,8 +352,8 @@ class DimSection : public StructSection<Chk::DIM, false>
 class SideSection : public StructSection<Chk::SIDE, false>
 {
     public:
-        static Section GetDefault();
-        SideSection(Chk::SIDE & data);
+        static SideSectionPtr GetDefault();
+        SideSection(const Chk::SIDE & data);
 
         Chk::Race getPlayerRace(size_t playerIndex);
         void setPlayerRace(size_t playerIndex, Chk::Race race);
@@ -359,7 +362,7 @@ class SideSection : public StructSection<Chk::SIDE, false>
 class MtxmSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
+        static MtxmSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MtxmSection();
 
         u16 getTile(size_t tileIndex);
@@ -374,7 +377,7 @@ class MtxmSection : public DynamicSection<false>
 class PuniSection : public StructSection<Chk::PUNI, false>
 {
     public:
-        static Section GetDefault();
+        static PuniSectionPtr GetDefault();
         PuniSection();
 
         bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex);
@@ -388,8 +391,8 @@ class PuniSection : public StructSection<Chk::PUNI, false>
 class UpgrSection : public StructSection<Chk::UPGR, false>
 {
     public:
-        static Section GetDefault();
-        UpgrSection(Chk::UPGR & data);
+        static UpgrSectionPtr GetDefault();
+        UpgrSection(const Chk::UPGR & data);
 
         size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
         size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
@@ -406,8 +409,8 @@ class UpgrSection : public StructSection<Chk::UPGR, false>
 class PtecSection : public StructSection<Chk::PTEC, false>
 {
     public:
-        static Section GetDefault();
-        PtecSection(Chk::PTEC & data);
+        static PtecSectionPtr GetDefault();
+        PtecSection(const Chk::PTEC & data);
 
         bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
         bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
@@ -424,7 +427,7 @@ class PtecSection : public StructSection<Chk::PTEC, false>
 class UnitSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault();
+        static UnitSectionPtr GetDefault();
         UnitSection();
 
         size_t numUnits();
@@ -445,7 +448,7 @@ class UnitSection : public DynamicSection<false>
 class IsomSection : public DynamicSection<true>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
+        static IsomSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         IsomSection();
 
         std::shared_ptr<Chk::IsomEntry> getIsomEntry(size_t isomIndex);
@@ -462,7 +465,7 @@ class IsomSection : public DynamicSection<true>
 class TileSection : public DynamicSection<true>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
+        static TileSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         TileSection();
 
         u16 getTile(size_t tileIndex);
@@ -477,7 +480,7 @@ class TileSection : public DynamicSection<true>
 class Dd2Section : public DynamicSection<true>
 {
     public:
-        static Section GetDefault();
+        static Dd2SectionPtr GetDefault();
         Dd2Section();
 
         size_t numDoodads();
@@ -498,7 +501,7 @@ class Dd2Section : public DynamicSection<true>
 class Thg2Section : public DynamicSection<false>
 {
     public:
-        static Section GetDefault();
+        static Thg2SectionPtr GetDefault();
         Thg2Section();
 
         size_t numSprites();
@@ -519,7 +522,7 @@ class Thg2Section : public DynamicSection<false>
 class MaskSection : public DynamicSection<true>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
+        static MaskSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MaskSection();
 
         u8 getFog(size_t tileIndex);
@@ -534,7 +537,7 @@ class MaskSection : public DynamicSection<true>
 class StrSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault();
+        static StrSectionPtr GetDefault();
         StrSection();
         
         bool isSynced();
@@ -553,8 +556,8 @@ class StrSection : public DynamicSection<false>
 class UprpSection : public StructSection<Chk::UPRP, false>
 {
     public:
-        static Section GetDefault();
-        UprpSection(Chk::UPRP & data);
+        static UprpSectionPtr GetDefault();
+        UprpSection(const Chk::UPRP & data);
 
         Chk::Cuwp getCuwp(size_t cuwpIndex);
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp);
@@ -564,8 +567,8 @@ class UprpSection : public StructSection<Chk::UPRP, false>
 class UpusSection : public StructSection<Chk::UPUS, true>
 {
     public:
-        static Section GetDefault();
-        UpusSection(Chk::UPUS & data);
+        static UpusSectionPtr GetDefault();
+        UpusSection(const Chk::UPUS & data);
 
         bool cuwpUsed(size_t cuwpIndex);
         void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
@@ -575,7 +578,7 @@ class UpusSection : public StructSection<Chk::UPUS, true>
 class MrgnSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault(u16 tileWidth, u16 tileHeigh);
+        static MrgnSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MrgnSection();
 
         size_t numLocations();
@@ -602,7 +605,7 @@ class MrgnSection : public DynamicSection<false>
 class TrigSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault();
+        static TrigSectionPtr GetDefault();
         TrigSection();
 
         size_t numTriggers();
@@ -611,6 +614,8 @@ class TrigSection : public DynamicSection<false>
         void insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger);
         void deleteTrigger(size_t triggerIndex);
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
+        void swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers);
+
         bool stringUsed(size_t stringId);
         bool gameStringUsed(size_t stringId);
         bool commentStringUsed(size_t stringId);
@@ -631,7 +636,7 @@ class TrigSection : public DynamicSection<false>
 class MbrfSection : public DynamicSection<false>
 {
     public:
-        static Section GetDefault();
+        static MbrfSectionPtr GetDefault();
         MbrfSection();
 
         size_t numBriefingTriggers();
@@ -656,8 +661,8 @@ class MbrfSection : public DynamicSection<false>
 class SprpSection : public StructSection<Chk::SPRP, false>
 {
     public:
-        static Section GetDefault();
-        SprpSection(Chk::SPRP & data);
+        static SprpSectionPtr GetDefault(u16 scenarioNameStringId = 1, u16 scenarioDescriptionStringId = 2);
+        SprpSection(const Chk::SPRP & data);
         
         size_t getScenarioNameStringId();
         size_t getScenarioDescriptionStringId();
@@ -672,13 +677,13 @@ class SprpSection : public StructSection<Chk::SPRP, false>
 class ForcSection : public StructSection<Chk::FORC, false>
 {
     public:
-        static Section GetDefault();
-        ForcSection(Chk::FORC & data);
+        static ForcSectionPtr GetDefault();
+        ForcSection(const Chk::FORC & data);
 
-        Chk::Force getPlayerForce(Sc::Player::SlotOwner slotOwner);
+        Chk::Force getPlayerForce(size_t slotIndex);
         size_t getForceStringId(Chk::Force force);
         u8 getForceFlags(Chk::Force force);
-        void setPlayerForce(Sc::Player::SlotOwner slotOwner, Chk::Force force);
+        void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
         bool stringUsed(size_t stringId);
@@ -690,12 +695,14 @@ class ForcSection : public StructSection<Chk::FORC, false>
 class WavSection : public StructSection<Chk::WAV, true>
 {
     public:
-        static Section GetDefault();
-        WavSection(Chk::WAV & data);
+        static WavSectionPtr GetDefault();
+        WavSection(const Chk::WAV & data);
 
+        size_t addSound(size_t stringId);
         bool stringIsSound(size_t stringId);
         size_t getSoundStringId(size_t soundIndex);
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
+
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void remapStringIds(std::map<u32, u32> stringIdRemappings);
@@ -705,8 +712,8 @@ class WavSection : public StructSection<Chk::WAV, true>
 class UnisSection : public StructSection<Chk::UNIS, false>
 {
     public:
-        static Section GetDefault();
-        UnisSection(Chk::UNIS & data);
+        static UnisSectionPtr GetDefault();
+        UnisSection(const Chk::UNIS & data);
 
         bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
         u32 getUnitHitpoints(Sc::Unit::Type unitType);
@@ -739,10 +746,10 @@ class UnisSection : public StructSection<Chk::UNIS, false>
 class UpgsSection : public StructSection<Chk::UPGS, false>
 {
     public:
-        static Section GetDefault();
-        UpgsSection(Chk::UPGS & data);
+        static UpgsSectionPtr GetDefault();
+        UpgsSection(const Chk::UPGS & data);
 
-        bool upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType);
+        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
         u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
         u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType);
         u16 getBaseGasCost(Sc::Upgrade::Type upgradeType);
@@ -750,7 +757,7 @@ class UpgsSection : public StructSection<Chk::UPGS, false>
         u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType);
         u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType);
 
-        void setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault);
+        void setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault);
         void setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost);
         void setMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor);
         void setBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost);
@@ -762,8 +769,8 @@ class UpgsSection : public StructSection<Chk::UPGS, false>
 class TecsSection : public StructSection<Chk::TECS, false>
 {
     public:
-        static Section GetDefault();
-        TecsSection(Chk::TECS & data);
+        static TecsSectionPtr GetDefault();
+        TecsSection(const Chk::TECS & data);
 
         bool techUsesDefaultSettings(Sc::Tech::Type techType);
         u16 getTechMineralCost(Sc::Tech::Type techType);
@@ -781,8 +788,8 @@ class TecsSection : public StructSection<Chk::TECS, false>
 class SwnmSection : public StructSection<Chk::SWNM, true>
 {
     public:
-        static Section GetDefault();
-        SwnmSection(Chk::SWNM & data);
+        static SwnmSectionPtr GetDefault();
+        SwnmSection(const Chk::SWNM & data);
 
         size_t getSwitchNameStringId(size_t switchIndex);
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
@@ -795,18 +802,18 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
 class ColrSection : public StructSection<Chk::COLR, false>
 {
     public:
-        static Section GetDefault();
-        ColrSection(Chk::COLR & data);
+        static ColrSectionPtr GetDefault();
+        ColrSection(const Chk::COLR & data);
 
-        Chk::PlayerColor getPlayerColor(Sc::Player::SlotOwner slotOwner);
-        void setPlayerColor(Sc::Player::SlotOwner slotOwner, Chk::PlayerColor color);
+        Chk::PlayerColor getPlayerColor(size_t slotIndex);
+        void setPlayerColor(size_t slotIndex, Chk::PlayerColor color);
 };
 
 class PupxSection : public StructSection<Chk::PUPx, false>
 {
     public:
-        static Section GetDefault();
-        PupxSection(Chk::PUPx & data);
+        static PupxSectionPtr GetDefault();
+        PupxSection(const Chk::PUPx & data);
 
         size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
         size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
@@ -823,8 +830,8 @@ class PupxSection : public StructSection<Chk::PUPx, false>
 class PtexSection : public StructSection<Chk::PTEx, false>
 {
     public:
-        static Section GetDefault();
-        PtexSection(Chk::PTEx & data);
+        static PtexSectionPtr GetDefault();
+        PtexSection(const Chk::PTEx & data);
 
         bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
         bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
@@ -841,8 +848,8 @@ class PtexSection : public StructSection<Chk::PTEx, false>
 class UnixSection : public StructSection<Chk::UNIx, false>
 {
     public:
-        static Section GetDefault();
-        UnixSection(Chk::UNIx & data);
+        static UnixSectionPtr GetDefault();
+        UnixSection(const Chk::UNIx & data);
 
         bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
         u32 getUnitHitpoints(Sc::Unit::Type unitType);
@@ -875,10 +882,10 @@ class UnixSection : public StructSection<Chk::UNIx, false>
 class UpgxSection : public StructSection<Chk::UPGx, false>
 {
     public:
-        static Section GetDefault();
-        UpgxSection(Chk::UPGx & data);
+        static UpgxSectionPtr GetDefault();
+        UpgxSection(const Chk::UPGx & data);
 
-        bool upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType);
+        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
         u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
         u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType);
         u16 getBaseGasCost(Sc::Upgrade::Type upgradeType);
@@ -886,7 +893,7 @@ class UpgxSection : public StructSection<Chk::UPGx, false>
         u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType);
         u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType);
 
-        void setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault);
+        void setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault);
         void setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost);
         void setMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor);
         void setBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost);
@@ -898,8 +905,8 @@ class UpgxSection : public StructSection<Chk::UPGx, false>
 class TecxSection : public StructSection<Chk::TECx, false>
 {
     public:
-        static Section GetDefault();
-        TecxSection(Chk::TECx & data);
+        static TecxSectionPtr GetDefault();
+        TecxSection(const Chk::TECx & data);
 
         bool techUsesDefaultSettings(Sc::Tech::Type techType);
         u16 getTechMineralCost(Sc::Tech::Type techType);
@@ -917,8 +924,8 @@ class TecxSection : public StructSection<Chk::TECx, false>
 class OstrSection : public StructSection<Chk::OSTR, true>
 {
     public:
-        static Section GetDefault();
-        OstrSection(Chk::OSTR & data);
+        static OstrSectionPtr GetDefault();
+        OstrSection(const Chk::OSTR & data);
 
         u32 getVersion();
 
@@ -949,7 +956,7 @@ class OstrSection : public StructSection<Chk::OSTR, true>
 class KstrSection : public DynamicSection<true>
 {
     public:
-        static Section GetDefault();
+        static KstrSectionPtr GetDefault();
         KstrSection();
         
         bool isSynced();

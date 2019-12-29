@@ -22,14 +22,17 @@ bool GetPreSavePath(std::string &outPreSavePath); // Gets path holding assets to
 
 class SimpleMapBrowser;
 enum class SaveType;
-enum class WavStatus;
+enum class SoundStatus;
 class MapFile;
 using MapFilePtr = std::shared_ptr<MapFile>;
 
 class MapFile : public Scenario, public MpqFile // MapFile is a scenario file and usually an MpqFile
 {
     public:
-        MapFile();
+        MapFile(const std::string & filePath);
+        MapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
+        MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64);
+
         virtual ~MapFile();
 
         virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser());
@@ -39,23 +42,23 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
 
         void SetSaveType(SaveType newSaveType);
 
-        static std::string GetStandardWavDir();
+        static std::string GetStandardSoundDir();
         bool AddMpqAsset(const std::string &assetSystemFilePath, const std::string &assetMpqFilePath, WavQuality wavQuality);
         bool AddMpqAsset(const std::string &assetMpqFilePath, const buffer &asset, WavQuality wavQuality);
         void RemoveMpqAsset(const std::string &assetMpqFilePath);
         bool GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetBuffer);
         bool ExtractMpqAsset(const std::string &assetMpqFilePath, const std::string &systemFilePath);
-        virtual bool GetWav(u16 wavIndex, u32 &outStringId);
-        bool GetWav(u32 stringId, buffer &outWavData);
-        bool AddWav(u32 stringId); // Adds a WAV string to the WAV list
-        bool AddWav(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile);
-        bool AddWav(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile);
-        bool AddWav(const std::string &destMpqPath, buffer &wavContents, WavQuality wavQuality);
-        virtual bool RemoveWavByWavIndex(u16 wavIndex, bool removeIfUsed);
-        virtual bool RemoveWavByStringId(u32 stringId, bool removeIfUsed);
-        WavStatus GetWavStatus(u32 wavStringId);
-        bool GetWavStatusMap(std::map<u32/*stringId*/, WavStatus> &outWavStatus, bool includePureStringWavs);
-        bool IsInVirtualWavList(const std::string &wavMpqPath);
+        virtual bool GetSound(u16 soundIndex, size_t &outStringId);
+        bool GetSound(size_t stringId, buffer &outSoundData);
+        bool AddSound(size_t stringId); // Adds a sound string to the sound list
+        bool AddSound(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile);
+        bool AddSound(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile);
+        bool AddSound(const std::string &destMpqPath, buffer & soundContents, WavQuality wavQuality);
+        virtual bool RemoveSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
+        virtual bool RemoveSoundByStringId(size_t stringId, bool removeIfUsed);
+        SoundStatus GetSoundStatus(size_t soundStringId);
+        bool GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSoundStatus, bool includePureStringSounds);
+        bool IsInVirtualSoundList(const std::string &soundMpqPath);
 
         std::string GetFileName();
         virtual const std::string &getFilePath() const;
@@ -74,12 +77,14 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         std::vector<ModifiedAssetPtr> modifiedAssets; // A record of all MPQ assets changes since the last save
 
         static std::hash<std::string> strHash; // A hasher to help generate tables
-        static std::map<size_t, std::string> virtualWavTable;
+        static std::map<size_t, std::string> virtualSoundTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
         bool OpenMapFile(const std::string &filePath);
         bool OpenTemporaryMpq();
         bool ProcessModifiedAssets(bool updateListfile);
+        
+        MapFile();
 };
 
 /** The types of files a map can be saved as, one
@@ -101,7 +106,7 @@ enum class SaveType
     Unknown // Have this higher than all other SaveTypes
 };
 
-enum class WavStatus
+enum class SoundStatus
 {
     PendingMatch,
     CurrentMatch,

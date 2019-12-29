@@ -56,20 +56,17 @@ void SwitchesWindow::RefreshWindow()
             chkd.trigEditorWindow.SetWinText("Trigger Editor - [Switch " + std::to_string(selectedSwitch + 1) + "]");
 
             EnableEditing();
-            u32 switchStringNum = 0;
-            bool hasName = false;
+            size_t switchNameStringId = CM->triggers.getSwitchNameStringId(selectedSwitch);
+            bool hasName = switchNameStringId != Chk::StringId::NoString;
             bool isExtendedString = false;
-            if ( CM->getSwitchStrId((u8)selectedSwitch, switchStringNum) )
-                hasName = switchStringNum != 0;
 
             checkUseDefaultName.SetCheck(!hasName);
 
             if ( hasName )
             {
-                isExtendedString = CM->isExtendedString(switchStringNum);
-                ChkdString switchName;
-                if ( CM->getSwitchName(switchName, (u8)selectedSwitch) )
-                    editSwitchName.SetText(switchName);
+                ChkdStringPtr switchName = CM->strings.getString<ChkdString>(switchNameStringId);
+                if ( switchName != nullptr )
+                    editSwitchName.SetText(*switchName);
             }
             else
             {
@@ -97,13 +94,12 @@ void SwitchesWindow::RefreshSwitchList()
 
         switchList.SetRedraw(false);
         switchList.EmptySubTree(NULL);
-        u32 numSwitches = CM->NumNameableSwitches();
         HTREEITEM item = NULL;
-        for ( u32 i = 0; i < numSwitches; i++ )
+        for ( size_t i = 0; i < Chk::TotalSwitches; i++ )
         {
-            ChkdString switchName;
-            if ( CM->getSwitchName(switchName, i) )
-                item = switchList.InsertTreeItem(NULL, "Switch " + std::to_string(i + 1) + " - " + switchName, i);
+            ChkdStringPtr switchName = CM->strings.getSwitchName<ChkdString>(i);
+            if ( switchName != nullptr )
+                item = switchList.InsertTreeItem(NULL, "Switch " + std::to_string(i + 1) + " - " + *switchName, i);
             else
                 item = switchList.InsertTreeItem(NULL, "Switch " + std::to_string(i + 1), i);
 
@@ -155,9 +151,11 @@ void SwitchesWindow::ToggleUseDefaultString()
 {
     if ( checkUseDefaultName.isChecked() )
     {
-        if ( CM->switchHasName((u8)selectedSwitch) )
+        size_t switchNameStringId = CM->triggers.getSwitchNameStringId(selectedSwitch);
+        if ( switchNameStringId != Chk::StringId::NoString )
         {
-            CM->removeSwitchName((u8)selectedSwitch);
+            CM->triggers.setSwitchNameStringId(selectedSwitch, switchNameStringId);
+            CM->strings.deleteString(switchNameStringId);
             CM->notifyChange(false);
         }
 
@@ -178,9 +176,7 @@ void SwitchesWindow::ToggleUseDefaultString()
 
 void SwitchesWindow::ToggleUseExtendedString()
 {
-    CM->ToggleUseExtendedSwitchName((u8)selectedSwitch);
-    checkUseExtendedString.SetCheck(CM->SwitchUsesExtendedName((u8)selectedSwitch));
-    CM->notifyChange(false);
+    throw std::exception("TODO: Replace this way of handling strings");
 }
 
 void SwitchesWindow::EditSwitchNameFocusLost()
@@ -191,12 +187,10 @@ void SwitchesWindow::EditSwitchNameFocusLost()
         if ( editText.length() > 0 )
         {
             ChkdString temp(editText);
-            if ( CM->setSwitchName(temp, (u8)selectedSwitch, checkUseExtendedString.isChecked()) )
-            {
-                chkd.mapSettingsWindow.RefreshWindow();
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-                CM->notifyChange(false);
-            }
+            CM->strings.setSwitchName(selectedSwitch, temp);
+            chkd.mapSettingsWindow.RefreshWindow();
+            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            CM->notifyChange(false);
         }
     }
 }

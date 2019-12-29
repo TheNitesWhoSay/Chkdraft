@@ -53,23 +53,22 @@ bool CUWPsWindow::DestroyThis()
 
 void CUWPsWindow::RefreshWindow(bool includeTree)
 {
-    Chk::Cuwp cuwp = {};
     if ( includeTree )
     {
         cuwpTree.EmptySubTree(NULL);
-        int cuwpCapacity = CM->CuwpCapacity();
-        for ( int i = 0; i < cuwpCapacity; i++ )
+        for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
         {
-            if ( CM->IsCuwpUsed(i) )
+            if ( CM->triggers.cuwpUsed(i) )
                 cuwpTree.InsertTreeItem(NULL, "CUWP #" + std::to_string(i), i);
             else
                 cuwpTree.InsertTreeItem(NULL, "(#" + std::to_string(i) + ")", i);
         }
     }
 
-    if ( selectedCuwp != -1 && CM->GetCuwp(selectedCuwp, cuwp) )
+    if ( selectedCuwp != -1 )
     {
-        checkUsed.SetCheck(CM->IsCuwpUsed(selectedCuwp));
+        Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
+        checkUsed.SetCheck(CM->triggers.cuwpUsed(selectedCuwp));
         editHitpointPercent.SetEditNum<u8>(cuwp.hitpointPercent);
         editManaPercent.SetEditNum<u8>(cuwp.energyPercent);
         editShieldPercent.SetEditNum<u8>(cuwp.shieldPercent);
@@ -192,39 +191,33 @@ void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    Chk::Cuwp cuwp = {};
-    if ( CM->GetCuwp(selectedCuwp, cuwp) )
+    Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
+    switch ( (Id)idFrom )
     {
-        switch ( (Id)idFrom )
-        {
-            case Id::CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
-            case Id::CheckBurrowed: cuwp.setBurrowed(checkBurrowed.isChecked()); break;
-            case Id::CheckLifted: cuwp.setInTransit(checkLifted.isChecked()); break;
-            case Id::CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
-            case Id::CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
-        }
-        CM->ReplaceCuwp(cuwp, selectedCuwp);
-        CM->notifyChange(false);
+        case Id::CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
+        case Id::CheckBurrowed: cuwp.setBurrowed(checkBurrowed.isChecked()); break;
+        case Id::CheckLifted: cuwp.setInTransit(checkLifted.isChecked()); break;
+        case Id::CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
+        case Id::CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
     }
+    CM->triggers.setCuwp(selectedCuwp, cuwp);
+    CM->notifyChange(false);
 }
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-    Chk::Cuwp cuwp = {};
-    if ( CM->GetCuwp(selectedCuwp, cuwp) )
+    Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
+    int editNum = 0;
+    switch ( (Id)idFrom )
     {
-        int editNum = 0;
-        switch ( (Id)idFrom )
-        {
-            case Id::EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.hitpointPercent = editNum; break;
-            case Id::EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
-            case Id::EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
-            case Id::EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
-            case Id::EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
-        }
-        CM->ReplaceCuwp(cuwp, selectedCuwp);
-        CM->notifyChange(false);
+        case Id::EditHitpoints: if ( editHitpointPercent.GetEditNum(editNum) ) cuwp.hitpointPercent = editNum; break;
+        case Id::EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
+        case Id::EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
+        case Id::EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
+        case Id::EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
     }
+    CM->triggers.setCuwp(selectedCuwp, cuwp);
+    CM->notifyChange(false);
 }
 
 LRESULT CUWPsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

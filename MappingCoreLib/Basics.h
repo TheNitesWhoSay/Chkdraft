@@ -244,6 +244,7 @@ s32 round(T value);
         ...
     });
 */
+#pragma warning(disable: 26812) // In the context of using enum_t, enum class is definitely not preferred, disable the warning in visual studios
 
 /** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;

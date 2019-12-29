@@ -53,7 +53,7 @@ void TerrainPaletteWindow::DoPaint()
         HDC paintDc = GetPaintDc();
         BITMAPINFO bmi = GetBMI(32, 32);
 
-        TileSet* tileset = &chkd.scData.tilesets.set[CM->getTileset()];
+        TileSet* tileset = &chkd.scData.tilesets.set[CM->layers.getTileset()];
 
         u16 tileValue = u16(tilesetIndexedYC / PIXELS_PER_TILE*TILES_PER_ROW);
         int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;

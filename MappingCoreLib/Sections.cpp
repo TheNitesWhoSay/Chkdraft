@@ -4,7 +4,7 @@
 #include <set>
 
 ChkSection::ChkSection(SectionName sectionName, bool virtualizable, bool isVirtual)
-    : sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual)
+    : rawData(new buffer()), sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual)
 {
     auto foundSectionIndex = sectionIndexes.find(sectionName);
     if ( foundSectionIndex != sectionIndexes.end() )
@@ -12,7 +12,7 @@ ChkSection::ChkSection(SectionName sectionName, bool virtualizable, bool isVirtu
 }
 
 template <typename StructType>
-ChkSection::ChkSection(SectionName sectionName, StructType & data, bool virtualizable, bool isVirtual)
+ChkSection::ChkSection(SectionName sectionName, const StructType & data, bool virtualizable, bool isVirtual)
     : sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual), rawData(buffer::make(data))
 {
     auto foundSectionIndex = sectionIndexes.find(sectionName);
@@ -336,15 +336,22 @@ MaximumOffsetAndCharsExceeded::MaximumOffsetAndCharsExceeded(std::string section
 
 }
 
-Section TypeSection::GetDefault()
+TypeSectionPtr TypeSection::GetDefault(Chk::Version version)
 {
-    Chk::TYPE data = { Chk::Type::RAWB };
-    return Section((ChkSection*)new (std::nothrow) TypeSection(data));
+    if ( version < Chk::Version::StarCraft_BroodWar )
+        return TypeSectionPtr(new (std::nothrow) TypeSection(Chk::TYPE { Chk::Type::RAWS }));
+    else // BroodWar or above
+        return TypeSectionPtr(new (std::nothrow) TypeSection(Chk::TYPE { Chk::Type::RAWB }));
 }
 
-TypeSection::TypeSection(Chk::TYPE & data) : StructSection<Chk::TYPE, true>(SectionName::TYPE, data)
+TypeSection::TypeSection(const Chk::TYPE & data) : StructSection<Chk::TYPE, true>(SectionName::TYPE, data)
 {
 
+}
+
+Chk::Type TypeSection::getType()
+{
+    return data->scenarioType;
 }
 
 void TypeSection::setType(Chk::Type type)
@@ -353,13 +360,14 @@ void TypeSection::setType(Chk::Type type)
     setVirtual(false);
 }
 
-Section VerSection::GetDefault()
+VerSectionPtr VerSection::GetDefault()
 {
-    Chk::VER data = { Chk::Version::StarCraft_Hybrid };
-    return Section((ChkSection*)new (std::nothrow) VerSection(data));
+    return VerSectionPtr(new (std::nothrow) VerSection(Chk::VER {
+        Chk::Version::StarCraft_Hybrid
+    }));
 }
 
-VerSection::VerSection(Chk::VER & data) : StructSection<Chk::VER, false>(SectionName::VER, data)
+VerSection::VerSection(const Chk::VER & data) : StructSection<Chk::VER, false>(SectionName::VER, data)
 {
 
 }
@@ -376,7 +384,7 @@ bool VerSection::isHybrid()
 
 bool VerSection::isExpansion()
 {
-    return data->version >= Chk::Version::StarCraft_Hybrid;
+    return data->version >= Chk::Version::StarCraft_BroodWar;
 }
 
 bool VerSection::isHybridOrAbove()
@@ -394,13 +402,14 @@ void VerSection::setVersion(Chk::Version version)
     data->version = version;
 }
 
-Section IverSection::GetDefault()
+IverSectionPtr IverSection::GetDefault()
 {
-    Chk::IVER data = { Chk::IVersion::Current };
-    return Section((ChkSection*)new (std::nothrow) IverSection(data));
+    return IverSectionPtr(new (std::nothrow) IverSection(Chk::IVER {
+        Chk::IVersion::Current
+    }));
 }
 
-IverSection::IverSection(Chk::IVER & data) : StructSection<Chk::IVER, true>(SectionName::IVER, data)
+IverSection::IverSection(const Chk::IVER & data) : StructSection<Chk::IVER, true>(SectionName::IVER, data)
 {
 
 }
@@ -415,13 +424,14 @@ void IverSection::setVersion(Chk::IVersion version)
     data->version = version;
 }
 
-Section Ive2Section::GetDefault()
+Ive2SectionPtr Ive2Section::GetDefault()
 {
-    Chk::IVE2 data = { Chk::I2Version::StarCraft_1_04 };
-    return Section((ChkSection*)new (std::nothrow) Ive2Section(data));
+    return Ive2SectionPtr(new (std::nothrow) Ive2Section(Chk::IVE2 {
+        Chk::I2Version::StarCraft_1_04
+    }));
 }
 
-Ive2Section::Ive2Section(Chk::IVE2 & data) : StructSection<Chk::IVE2, true>(SectionName::IVE2, data)
+Ive2Section::Ive2Section(const Chk::IVE2 & data) : StructSection<Chk::IVE2, true>(SectionName::IVE2, data)
 {
 
 }
@@ -436,9 +446,9 @@ void Ive2Section::setVersion(Chk::I2Version version)
     data->version = version;
 }
 
-Section VcodSection::GetDefault()
+VcodSectionPtr VcodSection::GetDefault()
 {
-    Chk::VCOD data = {
+    return VcodSectionPtr(new (std::nothrow) VcodSection(Chk::VCOD {
         {
             0x77CA1934, 0x7168DC99, 0xC3BF600A, 0xA775E7A7, 0xA67D291F, 0xBB3AB0D7, 0xED2431CC, 0x0B134C17, 0xB7A22065, 0x6B18BD91, 0xDD5DC38D, 0x37D57AE2,
             0xD46459F6, 0x0F129A63, 0x462E5C43, 0x2AF874E3, 0x06376A08, 0x3BD6F637, 0x1663940E, 0xEC5C6745, 0xB7F77BD7, 0x9ED4FC1A, 0x8C3FFA73, 0x0FE1C02E,
@@ -471,98 +481,92 @@ Section VcodSection::GetDefault()
             Chk::ValidationOpCodes::XOR_Sections_05     , Chk::ValidationOpCodes::XOR_Sections_04       , Chk::ValidationOpCodes::ORs_And_Shifts,
             Chk::ValidationOpCodes::XOR_Sections
         }
-    };
-    return Section((ChkSection*)new (std::nothrow) VcodSection(data));
+    }));
 }
 
-VcodSection::VcodSection(Chk::VCOD & data) : StructSection<Chk::VCOD, false>(SectionName::VCOD, data)
+VcodSection::VcodSection(const Chk::VCOD & data) : StructSection<Chk::VCOD, false>(SectionName::VCOD, data)
 {
 
 }
 
 bool VcodSection::isDefault()
 {
-    Section defaultVcodSection = VcodSection::GetDefault();
-    VcodSection & defaultVcod = (VcodSection &)(*defaultVcodSection);
-    return memcmp(data, defaultVcod.data, sizeof(Chk::VCOD)) == 0;
+    VcodSectionPtr defaultVcod = VcodSection::GetDefault();
+    return memcmp(data, defaultVcod->data, sizeof(Chk::VCOD)) == 0;
 }
 
 void VcodSection::setToDefault()
 {
-    Section defaultVcodSection = VcodSection::GetDefault();
-    VcodSection & defaultVcod = (VcodSection &)(*defaultVcodSection);
-    memcpy(data, defaultVcod.data, sizeof(Chk::VCOD));
+    VcodSectionPtr defaultVcod = VcodSection::GetDefault();
+    memcpy(data, defaultVcod->data, sizeof(Chk::VCOD));
 }
 
-Section IownSection::GetDefault()
+IownSectionPtr IownSection::GetDefault()
 {
-    Chk::IOWN data = {
-        Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen,
-        Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen,
-        Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive
-    };
-    return Section((ChkSection*)new (std::nothrow) IownSection(data));
+    return IownSectionPtr(new (std::nothrow) IownSection(Chk::IOWN {
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    }));
 }
 
-IownSection::IownSection(Chk::IOWN & data) : StructSection<Chk::IOWN, true>(SectionName::IOWN, data)
+IownSection::IownSection(const Chk::IOWN & data) : StructSection<Chk::IOWN, true>(SectionName::IOWN, data)
 {
 
 }
 
-Sc::Player::SlotOwner IownSection::getSlotOwner(size_t slotIndex)
+Sc::Player::SlotType IownSection::getSlotType(size_t slotIndex)
 {
     if ( slotIndex < Sc::Player::Total )
-        return data->owner[slotIndex];
+        return data->slotType[slotIndex];
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the IOWN section!");
 }
 
-void IownSection::setSlotOwner(size_t slotIndex, Sc::Player::SlotOwner owner)
+void IownSection::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType)
 {
     if ( slotIndex < Sc::Player::Total )
-        data->owner[slotIndex] = owner;
+        data->slotType[slotIndex] = slotType;
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the IOWN section!");
 }
 
-Section OwnrSection::GetDefault()
+OwnrSectionPtr OwnrSection::GetDefault()
 {
-    Chk::OWNR data = {
-        Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen,
-        Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen, Sc::Player::SlotOwner::GameOpen,
-        Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive, Sc::Player::SlotOwner::Inactive
-    };
-    return Section((ChkSection*)new (std::nothrow) OwnrSection(data));
+    return OwnrSectionPtr(new (std::nothrow) OwnrSection(Chk::OWNR {
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    }));
 }
 
-OwnrSection::OwnrSection(Chk::OWNR & data) : StructSection<Chk::OWNR, false>(SectionName::OWNR, data)
+OwnrSection::OwnrSection(const Chk::OWNR & data) : StructSection<Chk::OWNR, false>(SectionName::OWNR, data)
 {
 
 }
 
-Sc::Player::SlotOwner OwnrSection::getSlotOwner(size_t slotIndex)
+Sc::Player::SlotType OwnrSection::getSlotType(size_t slotIndex)
 {
     if ( slotIndex < Sc::Player::Total )
-        return data->owner[slotIndex];
+        return data->slotType[slotIndex];
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR section!");
 }
 
-void OwnrSection::setSlotOwner(size_t slotIndex, Sc::Player::SlotOwner owner)
+void OwnrSection::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType)
 {
     if ( slotIndex < Sc::Player::Total )
-        data->owner[slotIndex] = owner;
+        data->slotType[slotIndex] = slotType;
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR section!");
 }
 
-Section EraSection::GetDefault(Sc::Terrain::Tileset tileset)
+EraSectionPtr EraSection::GetDefault(Sc::Terrain::Tileset tileset)
 {
-    Chk::ERA data = { tileset };
-    return Section((ChkSection*)new (std::nothrow) EraSection(data));
+    return EraSectionPtr(new (std::nothrow) EraSection(Chk::ERA { tileset }));
 }
 
-EraSection::EraSection(Chk::ERA & data) : StructSection<Chk::ERA, false>(SectionName::ERA, data)
+EraSection::EraSection(const Chk::ERA & data) : StructSection<Chk::ERA, false>(SectionName::ERA, data)
 {
 
 }
@@ -577,13 +581,12 @@ void EraSection::setTileset(Sc::Terrain::Tileset tileset)
     data->tileset = tileset;
 }
 
-Section DimSection::GetDefault(u16 tileWidth, u16 tileHeight)
+DimSectionPtr DimSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Chk::DIM data = { tileWidth, tileHeight };
-    return Section((ChkSection*)new (std::nothrow) DimSection(data));
+    return DimSectionPtr(new (std::nothrow) DimSection(Chk::DIM { tileWidth, tileHeight }));
 }
 
-DimSection::DimSection(Chk::DIM & data) : StructSection<Chk::DIM, false>(SectionName::DIM, data)
+DimSection::DimSection(const Chk::DIM & data) : StructSection<Chk::DIM, false>(SectionName::DIM, data)
 {
 
 }
@@ -625,17 +628,16 @@ void DimSection::setDimensions(u16 tileWidth, u16 tileHeight)
 }
 
 
-Section SideSection::GetDefault()
+SideSectionPtr SideSection::GetDefault()
 {
-    Chk::SIDE data = {
+    return SideSectionPtr(new (std::nothrow) SideSection(Chk::SIDE {
         Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
         Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
         Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
-    };
-    return Section((ChkSection*)new (std::nothrow) SideSection(data));
+    }));
 }
 
-SideSection::SideSection(Chk::SIDE & data) : StructSection<Chk::SIDE, false>(SectionName::SIDE, data)
+SideSection::SideSection(const Chk::SIDE & data) : StructSection<Chk::SIDE, false>(SectionName::SIDE, data)
 {
 
 }
@@ -657,11 +659,11 @@ void SideSection::setPlayerRace(size_t playerIndex, Chk::Race race)
 }
 
 
-Section MtxmSection::GetDefault(u16 tileWidth, u16 tileHeight)
+MtxmSectionPtr MtxmSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Section newSection((ChkSection*)new (std::nothrow) MtxmSection());
+    MtxmSectionPtr newSection(new (std::nothrow) MtxmSection());
     s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    ((MtxmSection &)(*newSection)).rawData->add<u16>(0, numTiles);
+    newSection->rawData->add<u16>(0, numTiles);
     return newSection;
 }
 
@@ -846,10 +848,10 @@ std::ostream & MtxmSection::writeData(std::ostream &s, u32 sizeInBytes)
 }
 
 
-Section PuniSection::GetDefault()
+PuniSectionPtr PuniSection::GetDefault()
 {
-    Section newSection((ChkSection*)new (std::nothrow) PuniSection());
-    ((PuniSection &)(*newSection)).rawData->add<u8>(1, sizeof(Chk::PUNI));
+    PuniSectionPtr newSection(new (std::nothrow) PuniSection());
+    newSection->rawData->add<u8>(1, sizeof(Chk::PUNI));
     return newSection;
 }
 
@@ -930,7 +932,7 @@ void PuniSection::setPlayerUsesDefault(Sc::Unit::Type unitType, size_t playerInd
 }
 
 
-Section UpgrSection::GetDefault()
+UpgrSectionPtr UpgrSection::GetDefault()
 {
     Chk::UPGR data = {
         {}, // playerMaxUpgradeLevel (all 0)
@@ -944,10 +946,10 @@ Section UpgrSection::GetDefault()
         {}, // playerUpgradeUsesDefault (all Yes/1, set below)
     };
     memset(&data.playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes*Sc::Player::Total);
-    return Section((ChkSection*)new (std::nothrow) UpgrSection(data));
+    return UpgrSectionPtr(new (std::nothrow) UpgrSection(data));
 }
 
-UpgrSection::UpgrSection(Chk::UPGR & data) : StructSection<Chk::UPGR, false>(SectionName::UPGR, data)
+UpgrSection::UpgrSection(const Chk::UPGR & data) : StructSection<Chk::UPGR, false>(SectionName::UPGR, data)
 {
 
 }
@@ -1064,7 +1066,7 @@ void UpgrSection::setPlayerUsesDefault(Sc::Upgrade::Type upgradeType, size_t pla
 }
 
 
-Section PtecSection::GetDefault()
+PtecSectionPtr PtecSection::GetDefault()
 {
     Chk::PTEC data = {
         {}, // techAvailableForPlayer (all No/0)
@@ -1082,10 +1084,10 @@ Section PtecSection::GetDefault()
     };
     memset(&data.techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
     memset(&data.playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes*Sc::Player::Total);
-    return Section((ChkSection*)new (std::nothrow) PtecSection(data));
+    return PtecSectionPtr(new (std::nothrow) PtecSection(data));
 }
 
-PtecSection::PtecSection(Chk::PTEC & data) : StructSection<Chk::PTEC, false>(SectionName::PTEC, data)
+PtecSection::PtecSection(const Chk::PTEC & data) : StructSection<Chk::PTEC, false>(SectionName::PTEC, data)
 {
 
 }
@@ -1201,9 +1203,9 @@ void PtecSection::setPlayerUsesDefault(Sc::Tech::Type techType, size_t playerInd
 }
 
 
-Section UnitSection::GetDefault()
+UnitSectionPtr UnitSection::GetDefault()
 {
-    return Section((ChkSection*)new (std::nothrow) UnitSection());
+    return UnitSectionPtr(new (std::nothrow) UnitSection());
 }
 
 UnitSection::UnitSection() : DynamicSection<false>(SectionName::UNIT)
@@ -1279,11 +1281,11 @@ std::ostream & UnitSection::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section IsomSection::GetDefault(u16 tileWidth, u16 tileHeight)
+IsomSectionPtr IsomSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Section newSection((ChkSection*)new (std::nothrow) IsomSection());
+    IsomSectionPtr newSection(new (std::nothrow) IsomSection());
     s64 numIsomEntries = (s64(tileWidth) / s64(2) + s64(1)) * (s64(tileHeight) + s64(1)) * s64(4);
-    ((IsomSection &)(*newSection)).rawData->add<u16>(0, numIsomEntries);
+    newSection->rawData->add<u16>(0, numIsomEntries);
     return newSection;
 }
 
@@ -1334,11 +1336,12 @@ std::ostream & IsomSection::writeData(std::ostream &s, u32 sizeInBytes)
     }
     return s;
 }
-Section TileSection::GetDefault(u16 tileWidth, u16 tileHeight)
+
+TileSectionPtr TileSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Section newSection((ChkSection*)new (std::nothrow) TileSection());
+    TileSectionPtr newSection(new (std::nothrow) TileSection());
     s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    ((TileSection &)(*newSection)).rawData->add<u16>(0, numTiles);
+    newSection->rawData->add<u16>(0, numTiles);
     return newSection;
 }
 
@@ -1372,9 +1375,9 @@ std::ostream & TileSection::writeData(std::ostream &s, u32 sizeInBytes)
     return rawData->write(s, false);
 }
 
-Section Dd2Section::GetDefault()
+Dd2SectionPtr Dd2Section::GetDefault()
 {
-    return Section((ChkSection*)new (std::nothrow) Dd2Section());
+    return Dd2SectionPtr(new (std::nothrow) Dd2Section());
 }
 
 Dd2Section::Dd2Section() : DynamicSection<true>(SectionName::DD2)
@@ -1454,9 +1457,9 @@ std::ostream & Dd2Section::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section Thg2Section::GetDefault()
+Thg2SectionPtr Thg2Section::GetDefault()
 {
-    return Section((ChkSection*)new (std::nothrow) Thg2Section());
+    return Thg2SectionPtr(new (std::nothrow) Thg2Section());
 }
 
 Thg2Section::Thg2Section() : DynamicSection<false>(SectionName::THG2)
@@ -1532,11 +1535,11 @@ std::ostream & Thg2Section::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section MaskSection::GetDefault(u16 tileWidth, u16 tileHeight)
+MaskSectionPtr MaskSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Section newSection((ChkSection*)new (std::nothrow) MaskSection());
+    MaskSectionPtr newSection(new (std::nothrow) MaskSection());
     s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    ((MaskSection &)(*newSection)).rawData->add<u8>(255, numTiles);
+    newSection->rawData->add<u8>(255, numTiles);
     return newSection;
 }
 
@@ -1696,10 +1699,10 @@ std::ostream & MaskSection::writeData(std::ostream &s, u32 sizeInBytes)
     return rawData->write(s, false);
 }
 
-Section StrSection::GetDefault()
+StrSectionPtr StrSection::GetDefault()
 {
-    Section newSection((ChkSection*)new (std::nothrow) StrSection());
-    BufferPtr rawData = ((StrSection *)newSection.get())->rawData;
+    StrSectionPtr newSection(new (std::nothrow) StrSection());
+    BufferPtr rawData = newSection->rawData;
 
     const std::vector<std::string> defaultStrings = {
         /* StringId: 1 */ "Untitled Scenario",
@@ -1767,13 +1770,12 @@ std::ostream & StrSection::writeData(std::ostream &s, u32 sizeInBytes)
     return synced ? rawData->write(s, false) : s;
 }
 
-Section UprpSection::GetDefault()
+UprpSectionPtr UprpSection::GetDefault()
 {
-    Chk::UPRP data = {};
-    return Section((ChkSection*)new (std::nothrow) UprpSection(data));
+    return UprpSectionPtr(new (std::nothrow) UprpSection(Chk::UPRP {}));
 }
 
-UprpSection::UprpSection(Chk::UPRP & data) : StructSection<Chk::UPRP, false>(SectionName::UPRP, data)
+UprpSection::UprpSection(const Chk::UPRP & data) : StructSection<Chk::UPRP, false>(SectionName::UPRP, data)
 {
 
 }
@@ -1799,13 +1801,12 @@ size_t UprpSection::findCuwp(const Chk::Cuwp &cuwp)
     return Sc::Unit::MaxCuwps;
 }
 
-Section UpusSection::GetDefault()
+UpusSectionPtr UpusSection::GetDefault()
 {
-    Chk::UPUS data = {};
-    return Section((ChkSection*)new (std::nothrow) UpusSection(data));
+    return UpusSectionPtr(new (std::nothrow) UpusSection(Chk::UPUS {}));
 }
 
-UpusSection::UpusSection(Chk::UPUS & data) : StructSection<Chk::UPUS, true>(SectionName::UPUS, data)
+UpusSection::UpusSection(const Chk::UPUS & data) : StructSection<Chk::UPUS, true>(SectionName::UPUS, data)
 {
 
 }
@@ -1834,17 +1835,16 @@ size_t UpusSection::getNextUnusedCuwpIndex()
     return Sc::Unit::MaxCuwps;
 }
 
-Section MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
+MrgnSectionPtr MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
-    Section newSection((ChkSection*)new (std::nothrow) MrgnSection());
-    MrgnSection* mrgnSection = (MrgnSection *)newSection.get();
+    MrgnSectionPtr newSection(new (std::nothrow) MrgnSection());
     Chk::Location unusedLocation;
     Chk::Location anywhereLocation;
     anywhereLocation.right = (s64)tileWidth*(s64)32;
     anywhereLocation.bottom = (s64)tileHeight*(s64)32;
     anywhereLocation.stringId = 3;
-    mrgnSection->rawData->add(unusedLocation, 63);
-    mrgnSection->rawData->add(anywhereLocation, 1);
+    newSection->rawData->add(unusedLocation, 63);
+    newSection->rawData->add(anywhereLocation, 1);
     return newSection;
 }
 
@@ -1996,9 +1996,9 @@ std::ostream & MrgnSection::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section TrigSection::GetDefault()
+TrigSectionPtr TrigSection::GetDefault()
 {
-    return Section((ChkSection*)new (std::nothrow) TrigSection());
+    return TrigSectionPtr(new (std::nothrow) TrigSection());
 }
 
 TrigSection::TrigSection() : DynamicSection<false>(SectionName::TRIG)
@@ -2059,6 +2059,11 @@ void TrigSection::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
             triggers.insert(insertPosition, trigger);
         }
     }
+}
+
+void TrigSection::swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers)
+{
+    this->triggers.swap(triggers);
 }
 
 bool TrigSection::stringUsed(size_t stringId)
@@ -2138,9 +2143,9 @@ std::ostream & TrigSection::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section MbrfSection::GetDefault()
+MbrfSectionPtr MbrfSection::GetDefault()
 {
-    return Section((ChkSection*)new (std::nothrow) MbrfSection());
+    return MbrfSectionPtr(new (std::nothrow) MbrfSection());
 }
 
 MbrfSection::MbrfSection() : DynamicSection<false>(SectionName::MBRF)
@@ -2244,15 +2249,14 @@ std::ostream & MbrfSection::writeData(std::ostream &s, u32 sizeInBytes)
     return s;
 }
 
-Section SprpSection::GetDefault()
+SprpSectionPtr SprpSection::GetDefault(u16 scenarioNameStringId, u16 scenarioDescriptionStringId)
 {
-    constexpr u16 scenarioNameString = 1;
-    constexpr u16 scenarioDescriptionString = 2;
-    Chk::SPRP data = { scenarioNameString, scenarioDescriptionString };
-    return Section((ChkSection*)new (std::nothrow) SprpSection(data));
+    return SprpSectionPtr(new (std::nothrow) SprpSection(Chk::SPRP {
+        scenarioNameStringId, scenarioDescriptionStringId
+    }));
 }
 
-SprpSection::SprpSection(Chk::SPRP & data) : StructSection<Chk::SPRP, false>(SectionName::SPRP, data)
+SprpSection::SprpSection(const Chk::SPRP & data) : StructSection<Chk::SPRP, false>(SectionName::SPRP, data)
 {
 
 }
@@ -2313,35 +2317,34 @@ void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 }
 
 
-Section ForcSection::GetDefault()
+ForcSectionPtr ForcSection::GetDefault()
 {
     constexpr u16 Force1String = 4;
     constexpr u16 Force2String = 5;
     constexpr u16 Force3String = 6;
     constexpr u16 Force4String = 7;
 
-    Chk::FORC data = {
+    return ForcSectionPtr(new (std::nothrow) ForcSection(Chk::FORC {
         { // playerForce
             Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1,
             Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1
         },
         { Force1String, Force2String, Force3String, Force4String }, // forceString
         { (u8)Chk::ForceFlags::All, (u8)Chk::ForceFlags::All, (u8)Chk::ForceFlags::All, (u8)Chk::ForceFlags::All } // flags
-    };
-    return Section((ChkSection*)new (std::nothrow) ForcSection(data));
+    }));
 }
 
-ForcSection::ForcSection(Chk::FORC & data) : StructSection<Chk::FORC, false>(SectionName::FORC, data)
+ForcSection::ForcSection(const Chk::FORC & data) : StructSection<Chk::FORC, false>(SectionName::FORC, data)
 {
 
 }
 
-Chk::Force ForcSection::getPlayerForce(Sc::Player::SlotOwner slotOwner)
+Chk::Force ForcSection::getPlayerForce(size_t slotIndex)
 {
-    if ( (size_t)slotOwner < Sc::Player::TotalSlots )
-        return data->playerForce[(size_t)slotOwner];
+    if ( slotIndex < Sc::Player::TotalSlots )
+        return data->playerForce[slotIndex];
     else
-        throw std::out_of_range(std::string("SlotOwner: ") + std::to_string((u32)slotOwner) + " is out of range for the FORC section!");
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
 }
 
 size_t ForcSection::getForceStringId(Chk::Force force)
@@ -2360,10 +2363,12 @@ u8 ForcSection::getForceFlags(Chk::Force force)
         throw std::out_of_range(std::string("Force: ") + std::to_string((u32)force) + " is out of range for the FORC section!");
 }
 
-void ForcSection::setPlayerForce(Sc::Player::SlotOwner slotOwner, Chk::Force force)
+void ForcSection::setPlayerForce(size_t slotIndex, Chk::Force force)
 {
-    if ( (size_t)slotOwner < Sc::Player::TotalSlots )
-        data->playerForce[(size_t)slotOwner] = force;
+    if ( slotIndex < Sc::Player::TotalSlots )
+        data->playerForce[slotIndex] = force;
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
 }
 
 void ForcSection::setForceStringId(Chk::Force force, u16 forceStringId)
@@ -2421,15 +2426,27 @@ void ForcSection::deleteString(size_t stringId)
     }
 }
 
-Section WavSection::GetDefault()
+WavSectionPtr WavSection::GetDefault()
 {
-    Chk::WAV data = {};
-    return Section((ChkSection*)new (std::nothrow) WavSection(data));
+    return WavSectionPtr(new (std::nothrow) WavSection(Chk::WAV {}));
 }
 
-WavSection::WavSection(Chk::WAV & data) : StructSection<Chk::WAV, true>(SectionName::WAV, data)
+WavSection::WavSection(const Chk::WAV & data) : StructSection<Chk::WAV, true>(SectionName::WAV, data)
 {
 
+}
+
+size_t WavSection::addSound(size_t stringId)
+{
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( data->soundPathStringId[i] == Chk::StringId::UnusedSound )
+        {
+            data->soundPathStringId[i] = (u32)stringId;
+            return i;
+        }
+    }
+    return Chk::TotalSounds;
 }
 
 bool WavSection::stringIsSound(size_t stringId)
@@ -2491,7 +2508,7 @@ void WavSection::deleteString(size_t stringId)
 }
 
 
-Section UnisSection::GetDefault()
+UnisSectionPtr UnisSection::GetDefault()
 {
     Chk::UNIS data = {
         {}, // useDefault (all Yes/1, set below)
@@ -2506,10 +2523,10 @@ Section UnisSection::GetDefault()
         {}, // upgradeDamage (all 0)
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
-    return Section((ChkSection*)new (std::nothrow) UnisSection(data));
+    return UnisSectionPtr(new (std::nothrow) UnisSection(data));
 }
 
-UnisSection::UnisSection(Chk::UNIS & data) : StructSection<Chk::UNIS, false>(SectionName::UNIS, data)
+UnisSection::UnisSection(const Chk::UNIS & data) : StructSection<Chk::UNIS, false>(SectionName::UNIS, data)
 {
 
 }
@@ -2714,7 +2731,7 @@ void UnisSection::deleteString(size_t stringId)
 }
 
 
-Section UpgsSection::GetDefault()
+UpgsSectionPtr UpgsSection::GetDefault()
 {
     Chk::UPGS data = {
         {}, // useDefault (all Yes/1, set below)
@@ -2726,15 +2743,15 @@ Section UpgsSection::GetDefault()
         {} // researchTimeFactor (all 0)
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
-    return Section((ChkSection*)new (std::nothrow) UpgsSection(data));
+    return UpgsSectionPtr(new (std::nothrow) UpgsSection(data));
 }
 
-UpgsSection::UpgsSection(Chk::UPGS & data) : StructSection<Chk::UPGS, false>(SectionName::UPGS, data)
+UpgsSection::UpgsSection(const Chk::UPGS & data) : StructSection<Chk::UPGS, false>(SectionName::UPGS, data)
 {
 
 }
 
-bool UpgsSection::upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType)
+bool UpgsSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
 {
     if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->useDefault[(size_t)upgradeType] != Chk::UseDefault::No;
@@ -2791,7 +2808,7 @@ u16 UpgsSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
 }
 
 
-void UpgsSection::setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault)
+void UpgsSection::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault)
 {
     if ( (size_t)upgradeType < Sc::Upgrade::TotalOriginalTypes )
         data->useDefault[(size_t)upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
@@ -2848,7 +2865,7 @@ void UpgsSection::setResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 resea
 }
 
 
-Section TecsSection::GetDefault()
+TecsSectionPtr TecsSection::GetDefault()
 {
     Chk::TECS data = {
         {}, // useDefault (all Yes/1, set below)
@@ -2858,10 +2875,10 @@ Section TecsSection::GetDefault()
         {} // energyCost (all 0)
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
-    return Section((ChkSection*)new (std::nothrow) TecsSection(data));
+    return TecsSectionPtr(new (std::nothrow) TecsSection(data));
 }
 
-TecsSection::TecsSection(Chk::TECS & data) : StructSection<Chk::TECS, false>(SectionName::TECS, data)
+TecsSection::TecsSection(const Chk::TECS & data) : StructSection<Chk::TECS, false>(SectionName::TECS, data)
 {
 
 }
@@ -2947,13 +2964,12 @@ void TecsSection::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost)
 }
 
 
-Section SwnmSection::GetDefault()
+SwnmSectionPtr SwnmSection::GetDefault()
 {
-    Chk::SWNM data = {};
-    return Section((ChkSection*)new (std::nothrow) SwnmSection(data));
+    return SwnmSectionPtr(new (std::nothrow) SwnmSection(Chk::SWNM {}));
 }
 
-SwnmSection::SwnmSection(Chk::SWNM & data) : StructSection<Chk::SWNM, true>(SectionName::SWNM, data)
+SwnmSection::SwnmSection(const Chk::SWNM & data) : StructSection<Chk::SWNM, true>(SectionName::SWNM, data)
 {
 
 }
@@ -3012,35 +3028,36 @@ void SwnmSection::deleteString(size_t stringId)
 }
 
 
-Section ColrSection::GetDefault()
+ColrSectionPtr ColrSection::GetDefault()
 {
-    Chk::COLR data = {
+    return ColrSectionPtr(new (std::nothrow) ColrSection(Chk::COLR {
         Chk::PlayerColor::Red   , Chk::PlayerColor::Blue , Chk::PlayerColor::Teal , Chk::PlayerColor::Purple,
         Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
-    };
-    return Section((ChkSection*)new (std::nothrow) ColrSection(data));
+    }));
 }
 
-ColrSection::ColrSection(Chk::COLR & data) : StructSection<Chk::COLR, false>(SectionName::COLR, data)
+ColrSection::ColrSection(const Chk::COLR & data) : StructSection<Chk::COLR, false>(SectionName::COLR, data)
 {
 
 }
 
-Chk::PlayerColor ColrSection::getPlayerColor(Sc::Player::SlotOwner slotOwner)
+Chk::PlayerColor ColrSection::getPlayerColor(size_t slotIndex)
 {
-    if ( (size_t)slotOwner < Sc::Player::TotalSlots )
-        return data->playerColor[(size_t)slotOwner];
+    if ( slotIndex < Sc::Player::TotalSlots )
+        return data->playerColor[slotIndex];
     else
-        throw std::out_of_range(std::string("slotOwner: ") + std::to_string((u32)slotOwner) + " is out of range for the COLR section!");
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the COLR section!");
 }
 
-void ColrSection::setPlayerColor(Sc::Player::SlotOwner slotOwner, Chk::PlayerColor color)
+void ColrSection::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
 {
-    if ( (size_t)slotOwner < Sc::Player::TotalSlots )
-        data->playerColor[(size_t)slotOwner] = color;
+    if ( slotIndex < Sc::Player::TotalSlots )
+        data->playerColor[slotIndex] = color;
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the COLR section!");
 }
 
-Section PupxSection::GetDefault()
+PupxSectionPtr PupxSection::GetDefault()
 {
     Chk::PUPx data = {
         {}, // playerMaxUpgradeLevel (all 0)
@@ -3055,10 +3072,10 @@ Section PupxSection::GetDefault()
         {} // playerUpgradeUsesDefault (all Yes/1, set below)
     };
     memset(&data.playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes*Sc::Player::Total);
-    return Section((ChkSection*)new (std::nothrow) PupxSection(data));
+    return PupxSectionPtr(new (std::nothrow) PupxSection(data));
 }
 
-PupxSection::PupxSection(Chk::PUPx & data) : StructSection<Chk::PUPx, false>(SectionName::PUPx, data)
+PupxSection::PupxSection(const Chk::PUPx & data) : StructSection<Chk::PUPx, false>(SectionName::PUPx, data)
 {
 
 }
@@ -3174,7 +3191,7 @@ void PupxSection::setPlayerUsesDefault(Sc::Upgrade::Type upgradeType, size_t pla
 }
 
 
-Section PtexSection::GetDefault()
+PtexSectionPtr PtexSection::GetDefault()
 {
     Chk::PTEx data = {
         {}, // techAvailableForPlayer (all No/0)
@@ -3197,10 +3214,10 @@ Section PtexSection::GetDefault()
     };
     memset(&data.techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
     memset(&data.playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes*Sc::Player::Total);
-    return Section((ChkSection*)new (std::nothrow) PtexSection(data));
+    return PtexSectionPtr(new (std::nothrow) PtexSection(data));
 }
 
-PtexSection::PtexSection(Chk::PTEx & data) : StructSection<Chk::PTEx, false>(SectionName::PTEx, data)
+PtexSection::PtexSection(const Chk::PTEx & data) : StructSection<Chk::PTEx, false>(SectionName::PTEx, data)
 {
 
 }
@@ -3315,7 +3332,7 @@ void PtexSection::setPlayerUsesDefault(Sc::Tech::Type techType, size_t playerInd
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
-Section UnixSection::GetDefault()
+UnixSectionPtr UnixSection::GetDefault()
 {
     Chk::UNIx data = {
         {}, // useDefault (all Yes/1, set below)
@@ -3330,10 +3347,10 @@ Section UnixSection::GetDefault()
         {}, // upgradeDamage (all 0)
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
-    return Section((ChkSection*)new (std::nothrow) UnixSection(data));
+    return UnixSectionPtr(new (std::nothrow) UnixSection(data));
 }
 
-UnixSection::UnixSection(Chk::UNIx & data) : StructSection<Chk::UNIx, false>(SectionName::UNIx, data)
+UnixSection::UnixSection(const Chk::UNIx & data) : StructSection<Chk::UNIx, false>(SectionName::UNIx, data)
 {
 
 }
@@ -3538,7 +3555,7 @@ void UnixSection::deleteString(size_t stringId)
 }
 
 
-Section UpgxSection::GetDefault() // 794
+UpgxSectionPtr UpgxSection::GetDefault() // 794
 {
     Chk::UPGx data = {
         {}, // useDefault (all Yes/1, set below)
@@ -3550,15 +3567,15 @@ Section UpgxSection::GetDefault() // 794
         {} // researchTimeFactor (all 0)
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
-    return Section((ChkSection*)new (std::nothrow) UpgxSection(data));
+    return UpgxSectionPtr(new (std::nothrow) UpgxSection(data));
 }
 
-UpgxSection::UpgxSection(Chk::UPGx & data) : StructSection<Chk::UPGx, false>(SectionName::UPGx, data)
+UpgxSection::UpgxSection(const Chk::UPGx & data) : StructSection<Chk::UPGx, false>(SectionName::UPGx, data)
 {
 
 }
 
-bool UpgxSection::upgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType)
+bool UpgxSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
 {
     if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
         return data->useDefault[(size_t)upgradeType] != Chk::UseDefault::No;
@@ -3615,7 +3632,7 @@ u16 UpgxSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
 }
 
 
-void UpgxSection::setUpgradeUsesDefaultSettings(Sc::Upgrade::Type upgradeType, bool useDefault)
+void UpgxSection::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault)
 {
     if ( (size_t)upgradeType < Sc::Upgrade::TotalTypes )
         data->useDefault[(size_t)upgradeType] = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
@@ -3671,7 +3688,7 @@ void UpgxSection::setResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 resea
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) + " is out of range for the UPGx section!");
 }
 
-Section TecxSection::GetDefault()
+TecxSectionPtr TecxSection::GetDefault()
 {
     Chk::TECx data = {
         {}, // useDefault (all Yes/1, set below)
@@ -3681,10 +3698,10 @@ Section TecxSection::GetDefault()
         {} // energyCost
     };
     memset(&data.useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
-    return Section((ChkSection*)new (std::nothrow) TecxSection(data));
+    return TecxSectionPtr(new (std::nothrow) TecxSection(data));
 }
 
-TecxSection::TecxSection(Chk::TECx & data) : StructSection<Chk::TECx, false>(SectionName::TECx, data)
+TecxSection::TecxSection(const Chk::TECx & data) : StructSection<Chk::TECx, false>(SectionName::TECx, data)
 {
 
 }
@@ -3770,9 +3787,9 @@ void TecxSection::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
-Section OstrSection::GetDefault()
+OstrSectionPtr OstrSection::GetDefault()
 {
-    Chk::OSTR data = {
+    return OstrSectionPtr(new (std::nothrow) OstrSection(Chk::OSTR {
         1, // Version
         0, // scenarioName
         0, // scenarioDescription
@@ -3782,11 +3799,10 @@ Section OstrSection::GetDefault()
         {}, // soundPath (all 0)
         {}, // switchName (all 0)
         {} // locationName (all 0)
-    };
-    return Section((ChkSection*)new (std::nothrow) OstrSection(data));
+    }));
 }
 
-OstrSection::OstrSection(Chk::OSTR & data) : StructSection<Chk::OSTR, true>(SectionName::OSTR, data)
+OstrSection::OstrSection(const Chk::OSTR & data) : StructSection<Chk::OSTR, true>(SectionName::OSTR, data)
 {
 
 }
@@ -4110,11 +4126,10 @@ void OstrSection::deleteString(size_t stringId)
 }
 
 
-Section KstrSection::GetDefault()
+KstrSectionPtr KstrSection::GetDefault()
 {
-    Section newSection((ChkSection*)new (std::nothrow) KstrSection());
-    KstrSection* strSection = (KstrSection *)newSection.get();
-    strSection->synced = false;
+    KstrSectionPtr newSection(new (std::nothrow) KstrSection());
+    newSection->synced = false;
     return newSection;
 }
 

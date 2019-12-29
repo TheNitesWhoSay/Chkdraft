@@ -22,7 +22,7 @@ void UnitCreateDel::Reverse(void *guiMap)
     {
         unit = std::unique_ptr<Chk::Unit>(new Chk::Unit);
         *unit = *((GuiMap*)guiMap)->layers.getUnit(index);
-        ((GuiMap*)guiMap)->deleteUnit(index);
+        ((GuiMap*)guiMap)->layers.deleteUnit(index);
     }
     else // Do create
     {

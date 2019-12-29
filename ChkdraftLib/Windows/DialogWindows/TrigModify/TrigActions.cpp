@@ -506,14 +506,16 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             bool madeChange = false;
             if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
             {
-                u32 newStringNum = 0;
-                if ( CM->stringExists(chkdSuggestText, newStringNum) ||
-                    CM->stringExists(chkdNewText, newStringNum) )
+                size_t newStringId = CM->strings.findString<SingleLineChkdString>(chkdSuggestText);
+                if ( newStringId == Chk::StringId::NoString )
+                    newStringId = CM->strings.findString<SingleLineChkdString>(chkdSuggestText);
+
+                if ( newStringId != Chk::StringId::NoString )
                 {
                     if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = newStringNum;
+                        action.stringId = (u32)newStringId;
                     else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = newStringNum;
+                        action.soundStringId = (u32)newStringId;
 
                     madeChange = true;
                 }
@@ -782,21 +784,18 @@ void TrigActionsWindow::SuggestLocation()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No Location"));
-        u16 locationCapacity = (u16)CM->locationCapacity();
-        for ( u16 i = 0; i < locationCapacity; i++ )
+        size_t numLocations = (u16)CM->layers.numLocations();
+        for ( size_t i = 0; i < numLocations; i++ )
         {
-            if ( CM->locationIsUsed(i) )
+            Chk::LocationPtr loc = CM->layers.getLocation(i);
+            std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
+            if ( locationName != nullptr )
+                suggestions.AddString(*locationName);
+            else
             {
-                Chk::LocationPtr loc = CM->layers.getLocation(i);
-                std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
-                if ( locationName != nullptr )
-                    suggestions.AddString(*locationName);
-                else
-                {
-                    std::stringstream ssLoc;
-                    ssLoc << "Location " << i;
-                    suggestions.AddString(ssLoc.str());
-                }
+                std::stringstream ssLoc;
+                ssLoc << "Location " << i;
+                suggestions.AddString(ssLoc.str());
             }
         }
     }
@@ -809,17 +808,19 @@ void TrigActionsWindow::SuggestString()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No String"));
-        u32 numRegularStrings = (u32)CM->strSectionCapacity();
-        u32 numExtendedStrings = CM->kstrSectionCapacity();
-        for ( u32 i = 1; i <= numRegularStrings; i++ )
+        size_t stringCapacity = CM->strings.getCapacity(Chk::Scope::Game);
+        for ( size_t i = 1; i <= stringCapacity; i++ )
         {
-            if ( CM->GetString(str, i) && str.size() > 0 )
-                suggestions.AddString(str);
+            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(i, Chk::Scope::Game);
+            if ( str != nullptr )
+                suggestions.AddString(*str);
         }
-        for ( u32 i = 65535; i > (65535 - numExtendedStrings); i-- )
+        stringCapacity = CM->strings.getCapacity(Chk::Scope::Editor);
+        for ( size_t i = 1; i <= stringCapacity; i++ )
         {
-            if ( CM->GetString(str, i) && str.size() > 0 )
-                suggestions.AddString(str);
+            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(i, Chk::Scope::Editor);
+            if ( str != nullptr )
+                suggestions.AddString(*str);
         }
     }
     suggestions.Show();
@@ -838,10 +839,9 @@ void TrigActionsWindow::SuggestUnit()
         u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
-            SingleLineChkdString str;
-            CM->getUnitName(str, i);
-            suggestions.AddString(str);
-            if ( str.compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
+            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i);
+            suggestions.AddString(*str);
+            if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
                 suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));
         }
     }
@@ -857,9 +857,9 @@ void TrigActionsWindow::SuggestNumUnits()
 void TrigActionsWindow::SuggestCUWP()
 {
     bool hasCuwps = false;
-    for ( u8 i = 0; i < 64; i++ )
+    for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
-        if ( CM->IsCuwpUsed(i) )
+        if ( CM->triggers.cuwpUsed(i) )
         {
             hasCuwps = true;
             suggestions.AddString(std::to_string((int)i));
@@ -918,16 +918,16 @@ void TrigActionsWindow::SuggestOrder()
 
 void TrigActionsWindow::SuggestWav()
 {
-    for ( u16 i = 0; i < 512; i++ )
+    for ( size_t i = 0; i < 512; i++ )
     {
-        if ( CM->WavHasString(i) )
+        size_t soundStringId = CM->triggers.getSoundStringId(i);
+        if ( soundStringId != Chk::StringId::UnusedSound )
         {
-            ChkdString wavStr;
-            u32 stringId = 0;
-            if ( CM->GetWav(i, stringId) && stringId > 0 && CM->GetString(wavStr, stringId) )
-                suggestions.AddString(wavStr);
+            ChkdStringPtr soundStr = CM->strings.getString<ChkdString>(soundStringId);
+            if ( soundStr != nullptr )
+                suggestions.AddString(*soundStr);
             else
-                suggestions.AddString(std::to_string(stringId));
+                suggestions.AddString(std::to_string(soundStringId));
         }
     }
 }
@@ -975,9 +975,9 @@ void TrigActionsWindow::SuggestSwitch()
     {
         for ( u16 i = 0; i < 256; i++ )
         {
-            SingleLineChkdString str;
-            if ( CM->getSwitchName(str, (u8)i) )
-                suggestions.AddString(str);
+            SingleLineChkdStringPtr str = CM->strings.getSwitchName<SingleLineChkdString>(i);
+            if ( str != nullptr )
+                suggestions.AddString(*str);
             else
             {
                 std::stringstream ss;
@@ -1066,12 +1066,15 @@ void TrigActionsWindow::ButtonEditString()
             for ( u8 i = 0; i < numArgs; i++ )
             {
                 Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
-                u32 stringNum = 0;
-                if ( argType == Chk::Action::ArgType::String && CM->addString(str, stringNum, false) )
+                if ( argType == Chk::Action::ArgType::String )
                 {
-                    action.stringId = stringNum;
-                    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-                    break;
+                    size_t stringId = CM->strings.addString<ChkdString>(str);
+                    if ( stringId != Chk::StringId::NoString )
+                    {
+                        action.stringId = (u32)stringId;
+                        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                        break;
+                    }
                 }
             }
         }
@@ -1108,14 +1111,17 @@ void TrigActionsWindow::ButtonEditWav()
             for ( u8 i = 0; i < numArgs; i++ )
             {
                 Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
-                u32 stringNum = 0;
 
-                if ( argType == Chk::Action::ArgType::Sound && CM->addString(wavStr, stringNum, false) )
+                if ( argType == Chk::Action::ArgType::Sound )
                 {
-                    CM->AddWav(stringNum);
-                    action.soundStringId = stringNum;
-                    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-                    break;
+                    size_t stringId = CM->strings.addString<ChkdString>(wavStr);
+                    if ( stringId != Chk::StringId::NoString )
+                    {
+                        CM->AddSound(stringId);
+                        action.soundStringId = (u32)stringId;
+                        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                        break;
+                    }
                 }
             }
         }
@@ -1136,27 +1142,21 @@ void TrigActionsWindow::DisableUnitPropertiesEdit()
 
 void TrigActionsWindow::ButtonEditUnitProperties()
 {
-    Chk::Cuwp initialCuwp = {};
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     int focusedX = 0, focusedY = 0;
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
         Chk::Action &action = trig->action((u8)focusedY);
         u32 cuwpIndex = action.number;
-        if ( CM->GetCuwp((u8)cuwpIndex, initialCuwp) )
+        Chk::Cuwp initialCuwp = CM->triggers.getCuwp(cuwpIndex);
+        Chk::Cuwp newCuwp = {};
+        if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
-            Chk::Cuwp newCuwp = {};
-            if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
-            {
-                u8 newCuwpIndex = 0;
-                if ( CM->FindCuwp(newCuwp, newCuwpIndex) || CM->AddCuwp(newCuwp, newCuwpIndex) )
-                {
-                    action.number = newCuwpIndex;
-                    CM->notifyChange(false);
-                }
-                else
-                    Error("Unable to add CUWP, all 64 slots may be in use.");
-            }
+            size_t newCuwpIndex = CM->triggers.addCuwp(newCuwp);
+            if ( newCuwpIndex < Sc::Unit::MaxCuwps )
+                action.number = (u32)newCuwpIndex;
+            else
+                Error("Unable to add CUWP, all 64 slots may be in use.");
         }
     }
 }
@@ -1301,9 +1301,9 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
             Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
             if ( argType == Chk::Action::ArgType::String )
             {
-                ChkdString dest;
-                if ( CM->GetString(dest, action.stringId) )
-                    return dest;
+                ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);
+                if ( dest != nullptr )
+                    return *dest;
             }
         }
     }
@@ -1326,9 +1326,9 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
             Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
             if ( argType == Chk::Action::ArgType::Sound )
             {
-                ChkdString dest;
-                if ( CM->GetString(dest, action.soundStringId) )
-                    return dest;
+                ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);
+                if ( dest != nullptr )
+                    return *dest;
             }
         }
     }

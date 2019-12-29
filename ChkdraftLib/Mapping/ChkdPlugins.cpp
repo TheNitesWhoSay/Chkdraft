@@ -34,20 +34,6 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     }
                                 }
                                 break;
-                            case REPLACE_TRIGGERS_BYTES:
-                                {
-                                    buffer trigs((u32)SectionName::TRIG);
-                                    if ( trigs.deserialize(copyData) )
-                                    {
-                                        if ( map->AddOrReplaceTrigSection(trigs) )
-                                        {
-                                            map->refreshScenario();
-                                            map->notifyChange(false);
-                                            return TRUE;
-                                        }
-                                    }
-                                }
-                                break;
                             case REPLACE_TRIGGERS_TEXT:
                                 {
                                     std::unique_ptr<char> inputText = std::unique_ptr<char>(new char[length+1]);

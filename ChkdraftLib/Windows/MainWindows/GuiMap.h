@@ -12,8 +12,9 @@ typedef std::shared_ptr<GuiMap> GuiMapPtr;
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 {
     public:
-
-/* Constructor  */  GuiMap(Clipboard &clipboard);
+/* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
+                    GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64);
 
 /*  Destructor  */  virtual ~GuiMap();
 
@@ -174,6 +175,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     static bool doAutoBackups;
                     double minSecondsBetweenBackups; // The smallest interval between consecutive backups
                     time_t lastBackupTime; // -1 if there are no previous backups
+
+                    GuiMap();
 };
 
 #endif

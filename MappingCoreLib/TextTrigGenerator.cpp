@@ -168,7 +168,7 @@ TextTrigGenerator::~TextTrigGenerator()
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string &trigString)
 {
-    return this != nullptr && map != nullptr && BuildTextTrigs(map, map->GetTrigSection(), trigString);
+    return this != nullptr && map != nullptr && BuildTextTrigs(map, map->triggers.trig, trigString);
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, std::string &trigString)
@@ -833,7 +833,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
 
     buffer output("TeOu");
 
-    u32 numTrigs = map->numTriggers();
+    size_t numTrigs = map->triggers.numTriggers();
     Chk::Condition::VirtualType CID = Chk::Condition::VirtualType::NoCondition;
     Chk::Action::VirtualType AID = Chk::Action::VirtualType::NoAction;
 
@@ -1124,41 +1124,38 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 
     locationTable.push_back(SingleLineChkdString("No Location"));
 
-    if ( map->HasLocationSection() && map->hasStrSection(false) )
+    size_t numLocations = map->layers.numLocations();
+    for ( size_t i=0; i<numLocations; i++ )
     {
-        int numLocations = map->locationCapacity();
-        for ( int i=0; i<numLocations; i++ )
+        Chk::LocationPtr loc = map->layers.getLocation(i);
+        if ( loc != nullptr )
         {
-            Chk::LocationPtr loc = map->layers.getLocation(i);
-            if ( loc != nullptr )
-            {
-                locationName = "";
+            locationName = "";
 
-                if ( i == 63 )
+            if ( i == 63 )
+            {
+                if ( quoteArgs )
+                    locationName = "\"Anywhere\"";
+                else
+                    locationName = "Anywhere";
+
+                locationTable.push_back( locationName );
+            }
+            else if ( loc->stringId > 0 )
+            {
+                std::shared_ptr<EscString> locationName = map->strings.getString<EscString>((size_t)loc->stringId, Chk::Scope::Game);
+                if ( locationName != nullptr )
                 {
                     if ( quoteArgs )
-                        locationName = "\"Anywhere\"";
+                        locationTable.push_back( "\"" + *locationName + "\"" );
                     else
-                        locationName = "Anywhere";
-
-                    locationTable.push_back( locationName );
-                }
-                else if ( loc->stringId > 0 )
-                {
-                    std::shared_ptr<EscString> locationName = map->strings.getString<EscString>((size_t)loc->stringId, Chk::Scope::Game);
-                    if ( locationName != nullptr )
-                    {
-                        if ( quoteArgs )
-                            locationTable.push_back( "\"" + *locationName + "\"" );
-                        else
-                            locationTable.push_back(*locationName);
-                    }
+                        locationTable.push_back(*locationName);
                 }
             }
-
-            if ( locationTable.size() == i+1 )
-                locationTable.push_back(std::to_string(i + 1));
         }
+
+        if ( locationTable.size() == i+1 )
+            locationTable.push_back(std::to_string(i + 1));
     }
     return true;
 }
@@ -1167,32 +1164,28 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
     unitTable.clear();
 
-    SingleLineChkdString unitName;
-    if ( map->hasUnitSettingsSection() && map->hasStrSection(false) )
+    SingleLineChkdStringPtr unitName;
+    for ( int unitID=0; unitID<=232; unitID++ )
     {
-        for ( int unitID=0; unitID<=232; unitID++ )
+        if ( quoteArgs )
         {
-            if ( quoteArgs )
+            if ( useCustomNames && unitID < 228 )
             {
-                if ( useCustomNames && unitID < 228 )
-                {
-                    ChkdString unquotedName;
-                    map->getUnitName(unquotedName, unitID);
-                    unitName = "\"" + unquotedName + "\"";
-                }
-                else
-                    unitName = ChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\"");
+                SingleLineChkdStringPtr unquotedName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID);
+                *unitName = "\"" + *unquotedName + "\"";
             }
             else
-            {
-                if ( useCustomNames && unitID < 228 )
-                    map->getUnitName(unitName, unitID);
-                else
-                    unitName = ChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]);
-            }
-
-            unitTable.push_back( unitName );
+                *unitName = SingleLineChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\"");
         }
+        else
+        {
+            if ( useCustomNames && unitID < 228 )
+                unitName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID);
+            else
+                *unitName = SingleLineChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]);
+        }
+
+        unitTable.push_back(*unitName);
     }
     return true;
 }
@@ -1201,30 +1194,22 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
     switchTable.clear();
 
-    SingleLineChkdString switchName;
-    if ( map->hasSwitchSection() && map->hasStrSection(false) )
+    for ( u32 switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        u32 stringID = 0;
-        for ( u32 switchID=0; switchID<256; switchID++ )
+        RawStringPtr switchName = map->strings.getSwitchName<RawString>(switchIndex);
+        if ( switchName != nullptr )
         {
-            if ( map->getSwitchStrId((u8)switchID, stringID) &&
-                 stringID > 0 &&
-                 map->GetString(switchName, stringID) )
-            {
-                if ( quoteArgs )
-                    switchTable.push_back( "\"" + switchName + "\"" );
-                else
-                    switchTable.push_back(switchName);
-            }
+            if ( quoteArgs )
+                switchTable.push_back( "\"" + *switchName + "\"" );
             else
-            {
-                if ( quoteArgs )
-                    switchName = "\"Switch" + std::to_string(switchID + 1) + "\"";
-                else
-                    switchName = "Switch" + std::to_string(switchID + 1);
-
-                switchTable.push_back( switchName );
-            }
+                switchTable.push_back(*switchName);
+        }
+        else
+        {
+            if ( quoteArgs )
+                switchTable.push_back(RawString("\"Switch" + std::to_string(switchIndex + 1) + "\""));
+            else
+                switchTable.push_back(RawString("Switch" + std::to_string(switchIndex + 1)));
         }
     }
     return true;
@@ -1235,7 +1220,6 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
     groupTable.clear();
 
     SingleLineChkdString groupName;
-    bool hasForcStrings = map->hasForceSection() && map->hasStrSection(false);
 
     const char** legacyLowerGroupNames;
     const char** legacyUpperGroupNames;
@@ -1276,10 +1260,11 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 
     for ( u32 i=0; i<4; i++ )
     {
-        if ( hasForcStrings && map->getForceString(groupName, i) )
+        ChkdStringPtr forceName = map->strings.getForceName<ChkdString>((Chk::Force)i);
+        if ( forceName != nullptr )
         {
             if ( quoteArgs )
-                groupName = "\"" + groupName + "\"";
+                groupName = "\"" + *forceName + "\"";
 
             groupTable.push_back( groupName );
         }
@@ -1312,7 +1297,7 @@ bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
     scriptTable.insert(std::pair<u32, std::string>(0, "No Script"));
 
     Chk::Trigger* trigPtr = nullptr;
-    u32 numTrigs = map->numTriggers();
+    size_t numTrigs = map->triggers.numTriggers();
     for ( u32 i = 0; i < numTrigs; i++ )
     {
         Chk::TriggerPtr trigPtr = map->triggers.getTrigger(i);
@@ -1352,21 +1337,21 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
     stringTable.clear();
     extendedStringTable.clear();
 
-    if ( map->hasStrSection(false) || map->hasStrSection(true) )
-    {
-        std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
-        map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
-        map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
-        SingleLineChkdString str;
+    std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
+    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
+    map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
+    SingleLineChkdStringPtr str;
 
-        size_t numStrings = map->strings.getCapacity(Chk::Scope::Game);
-        for ( size_t i=0; i<numStrings; i++ )
+    size_t numStrings = map->strings.getCapacity(Chk::Scope::Game);
+    for ( size_t i=0; i<numStrings; i++ )
+    {
+        if ( stringUsed[i] )
+            str = map->strings.getString<SingleLineChkdString>(i);
+
+        if ( str != nullptr )
         {
-            if ( stringUsed[i] )
-                map->GetString(str, (u32)i);
-            
             SingleLineChkdString newString;
-            for ( auto &character : str )
+            for ( auto &character : *str )
             {
                 if ( character == '\"' )
                 {
@@ -1382,15 +1367,18 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
             else
                 stringTable.push_back(newString);
         }
+    }
 
-        numStrings = map->strings.getCapacity(Chk::Scope::Editor);
-        for ( size_t i=0; i<numStrings; i++ )
+    numStrings = map->strings.getCapacity(Chk::Scope::Editor);
+    for ( size_t i=0; i<numStrings; i++ )
+    {
+        if ( extendedStringUsed[i] )
+            str = map->strings.getString<SingleLineChkdString>(i);
+        
+        if ( str != nullptr )
         {
-            if ( extendedStringUsed[i] )
-                map->GetString(str, u32(65536-i));
-
             SingleLineChkdString newString;
-            for ( auto &character : str )
+            for ( auto &character : *str )
             {
                 if ( character == '\"' )
                 {
@@ -1406,9 +1394,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
             else
                 extendedStringTable.push_back(newString);
         }
-
-        return true;
     }
-    else
-        return false;
+
+    return true;
 }

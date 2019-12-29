@@ -85,8 +85,7 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
             {
                 for ( u8 player=0; player<8; player++ )
                 {
-                    u8 playersForce;
-                    if ( CM->getPlayerForce(player, playersForce) && playersForce == force )
+                    if ( CM->players.getPlayerForce(player) == force )
                         exec[player] ++;
                 }
             }

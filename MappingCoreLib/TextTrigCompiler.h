@@ -63,26 +63,26 @@ class TextTrigCompiler : public StaticTrigComponentParser
         void ClearCompiler(); // Clears data loaded for a run of the compiler
         void CleanText(buffer& text); // Remove spacing and standardize line endings
 
-        bool ParseTriggers(buffer& text, buffer& output, std::stringstream &error); // Parse trigger, generate a trig section in buffer output
-        inline bool ParsePartZero(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartOne(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd, Chk::Trigger &currTrig);
-        inline bool ParsePartTwo(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartThree(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartFour(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+        bool ParseTriggers(buffer& text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream &error); // Parse trigger, generate a trig section in buffer output
+        inline bool ParsePartZero(buffer& text, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartOne(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, s64 &playerEnd, s64 &lineEnd);
+        inline bool ParsePartTwo(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartThree(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartFour(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
             s64 &conditionEnd, s64 &lineEnd, Chk::Condition::VirtualType &conditionType, u8 &flags, u32 &argsLeft, u32 &numConditions,
-            Chk::Condition*& currCondition, Chk::Trigger &currTrig);
-        inline bool ParsePartFive(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
+            Chk::Condition*& currCondition);
+        inline bool ParsePartFive(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting, u32 &argsLeft, s64 &argEnd,
             Chk::Condition*& currCondition, Chk::Condition::VirtualType &conditionType);
-        inline bool ParsePartSix(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartSeven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+        inline bool ParsePartSix(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartSeven(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
             u8 &flags, s64 &actionEnd, s64 &lineEnd, Chk::Action::VirtualType &actionType, u32 &argsLeft, u32 &numActions,
-            Chk::Action*& currAction, Chk::Trigger &currTrig);
-        inline bool ParsePartEight(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+            Chk::Action*& currAction);
+        inline bool ParsePartEight(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
             u32 &argsLeft, s64 &argEnd, Chk::Action*& currAction, Chk::Action::VirtualType &actionType);
-        inline bool ParsePartNine(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
-        inline bool ParsePartTen(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
-            s64 &flagsEnd, Chk::Trigger& currTrig);
-        inline bool ParsePartEleven(buffer& text, buffer& output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartNine(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
+        inline bool ParsePartTen(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting,
+            s64 &flagsEnd);
+        inline bool ParsePartEleven(buffer& text, Chk::Trigger & output, std::stringstream &error, s64 &pos, u32 &line, u32 &expecting);
 
         bool ParseExecutingPlayer(buffer &text, Chk::Trigger &currTrig, s64 pos, s64 end); // Parse a player that the trigger is executed by
         bool ParseConditionName(buffer &arg, Chk::Condition::VirtualType &conditionType);

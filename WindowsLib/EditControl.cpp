@@ -123,6 +123,7 @@ namespace WinLib {
     template bool EditControl::SetEditNum<u32>(u32 num);
     template bool EditControl::SetEditNum<s32>(s32 num);
     template bool EditControl::SetEditNum<int>(int num);
+    template bool EditControl::SetEditNum<size_t>(size_t num);
 
     template <typename numType>
     bool EditControl::SetEditBinaryNum(numType num)
@@ -147,6 +148,7 @@ namespace WinLib {
     template bool EditControl::SetEditBinaryNum<u32>(u32 num);
     template bool EditControl::SetEditBinaryNum<s32>(s32 num);
     template bool EditControl::SetEditBinaryNum<int>(int num);
+    template bool EditControl::SetEditBinaryNum<size_t>(size_t num);
 
     void EditControl::SetTextLimit(u32 newLimit)
     {

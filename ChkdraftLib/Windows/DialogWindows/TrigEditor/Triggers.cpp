@@ -152,8 +152,9 @@ void TriggersWindow::DoSize()
 
 void TriggersWindow::DeleteSelection()
 {
-    if ( currTrigger != NO_TRIGGER && CM->deleteTrigger(currTrigger) )
+    if ( currTrigger != NO_TRIGGER )
     {
+        CM->triggers.deleteTrigger(currTrigger);
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -169,8 +170,11 @@ void TriggersWindow::DeleteSelection()
 
 void TriggersWindow::CopySelection()
 {
-    if ( currTrigger != NO_TRIGGER && CM->copyTrigger(currTrigger) )
+    if ( currTrigger != NO_TRIGGER )
     {
+        CM->triggers.insertTrigger(currTrigger+1,
+            std::shared_ptr<Chk::Trigger>(new Chk::Trigger(*(CM->triggers.getTrigger(currTrigger)))));
+
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -192,7 +196,8 @@ void TriggersWindow::MoveUp()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        if ( CM->moveTrigger(currTrigger, prevTrigIndex) && MoveUpTrigListItem(sel, prevTrigIndex) )
+        CM->triggers.moveTrigger(currTrigger, prevTrigIndex);
+        if ( MoveUpTrigListItem(sel, prevTrigIndex) )
         {
             SelectTrigListItem(sel-1);
             listTriggers.RedrawThis();
@@ -213,7 +218,8 @@ void TriggersWindow::MoveDown()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        if ( CM->moveTrigger(currTrigger, nextTrigIndex) && MoveDownTrigListItem(sel, nextTrigIndex) )
+        CM->triggers.moveTrigger(currTrigger, nextTrigIndex);
+        if ( MoveDownTrigListItem(sel, nextTrigIndex) )
         {
             SelectTrigListItem(sel+1);
             listTriggers.RedrawThis();
@@ -232,44 +238,36 @@ void TriggersWindow::MoveTrigTo()
          MoveToDialog<u32>::GetIndex(targetTrigIndex, getHandle()) &&
          targetTrigIndex >= 0 &&
          targetTrigIndex != currTrigger &&
-         targetTrigIndex < CM->numTriggers() )
+         targetTrigIndex < CM->triggers.numTriggers() )
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        if ( CM->moveTrigger(currTrigger, targetTrigIndex) )
+        CM->triggers.moveTrigger(currTrigger, targetTrigIndex);
+        int listIndexMovedTo = -1;
+        listTriggers.SetRedraw(false);
+        if ( MoveTrigListItemTo(sel, currTrigger, targetTrigIndex, listIndexMovedTo) )
         {
-            int listIndexMovedTo = -1;
-            listTriggers.SetRedraw(false);
-            if ( MoveTrigListItemTo(sel, currTrigger, targetTrigIndex, listIndexMovedTo) )
-            {
-                SelectTrigListItem(listIndexMovedTo);
-                listTriggers.SetRedraw(true);
-                listTriggers.RedrawThis();
-            }
-            else
-            {
-                currTrigger = targetTrigIndex;
-                RefreshTrigList();
-            }
+            SelectTrigListItem(listIndexMovedTo);
+            listTriggers.SetRedraw(true);
+            listTriggers.RedrawThis();
         }
         else
         {
-            currTrigger = NO_TRIGGER; // It's no longer certain the previous selection exists
-            RefreshTrigList(); // Restore trigger list to a valid state
+            currTrigger = targetTrigIndex;
+            RefreshTrigList();
         }
     }
 }
 
 void TriggersWindow::ButtonNew()
 {
-    Chk::Trigger trigger = { };
+    Chk::TriggerPtr trigger = Chk::TriggerPtr(new Chk::Trigger());
     for ( u8 i=(u8)Sc::Player::Id::Player1; i<=(u8)Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
-            trigger.owners[i] = Chk::Trigger::Owned::Yes;
+            trigger->owners[i] = Chk::Trigger::Owned::Yes;
     }
 
-    bool insertedTrigger = false;
     u32 newTrigId = 0;
     int sel;
     if ( listTriggers.GetCurSel(sel) && sel != numVisibleTrigs-1 )
@@ -277,22 +275,19 @@ void TriggersWindow::ButtonNew()
         if ( listTriggers.GetItemData(sel, newTrigId) )
         {
             newTrigId ++;
-            insertedTrigger = CM->insertTrigger(newTrigId, trigger);
+            CM->triggers.insertTrigger(newTrigId, trigger);
         }
     }
-    else if ( CM->addTrigger(trigger) )
+    else
     {
-        insertedTrigger = true;
-        newTrigId = CM->numTriggers()-1;
+        CM->triggers.addTrigger(trigger);
+        newTrigId = u32(CM->triggers.numTriggers()-1);
     }
 
-    if ( insertedTrigger )
-    {
-        CM->notifyChange(false);
-        currTrigger = newTrigId;
-        RefreshWindow(true);
-        ButtonModify();
-    }
+    CM->notifyChange(false);
+    currTrigger = newTrigId;
+    RefreshWindow(true);
+    ButtonModify();
 }
 
 void TriggersWindow::ButtonModify()
@@ -789,10 +784,10 @@ void TriggersWindow::RefreshGroupList()
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         addedPlayer[i] = false;
 
-    if ( CM != nullptr && CM->HasTrigSection() )
+    if ( CM != nullptr )
     {
-        u32 numTriggers = CM->numTriggers();
-        for ( u32 i=0; i<numTriggers; i++ )
+        size_t numTriggers = CM->triggers.numTriggers();
+        for ( size_t i=0; i<numTriggers; i++ )
         {
             Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
             if ( trigger != nullptr )
@@ -854,15 +849,15 @@ void TriggersWindow::RefreshTrigList()
     numVisibleTrigs = 0;
     int toSelect = -1;
 
-    if ( CM != nullptr && CM->HasTrigSection() )
+    if ( CM != nullptr )
     {
-        u32 numTriggers = CM->numTriggers();
-        for ( u32 i=0; i<numTriggers; i++ )
+        size_t numTriggers = CM->triggers.numTriggers();
+        for ( size_t i=0; i<numTriggers; i++ )
         {
             Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
             if ( trigger != nullptr && ShowTrigger(&(*trigger)) )
             {
-                int newListIndex = listTriggers.AddItem(i);
+                int newListIndex = listTriggers.AddItem((u32)i);
                 if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
                 {
                     numVisibleTrigs ++;
@@ -1105,24 +1100,28 @@ void TriggersWindow::ClearGroups()
 
 bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
-    RawString str;
-    if ( chk->getActiveComment(trigger, str) )
+    size_t commentStringId = trigger->getComment();
+    if ( commentStringId != Chk::StringId::NoString )
     {
-        size_t endOfLine = str.find("\r\n");
-        if ( endOfLine != std::string::npos )
-            str.insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
-        else
-            str.append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
-
-        if ( GetStringDrawSize(hDC, width, height, str) )
+        RawStringPtr str = chk->strings.getString<RawString>(commentStringId);
+        if ( str != nullptr )
         {
-            width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
-            height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+            size_t endOfLine = str->find("\r\n");
+            if ( endOfLine != std::string::npos )
+                str->insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+            else
+                str->append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+
+            if ( GetStringDrawSize(hDC, width, height, *str) )
+            {
+                width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
+                height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+            }
         }
     }
     else
     {
-        str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
+        RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
         HGDIOBJ sel = SelectObject(hDC, defaultFont);
         if ( sel != NULL && sel != HGDI_ERROR )
         {
@@ -1211,24 +1210,28 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, Scenari
         DeleteObject(hBackground);
     }
 
-    RawString str;
     LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
-    if ( chk->getActiveComment(trigger, str) )
+    size_t commentStringId = trigger->getComment();
+    if ( commentStringId != Chk::StringId::NoString )
     {
-        std::string num(std::to_string(triggerNum));
-        size_t endOfLine = str.find("\r\n");
-        if ( endOfLine != std::string::npos )
-            str.insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
-        else
-            str.append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+        RawStringPtr str = chk->strings.getString<RawString>(commentStringId);
+        if ( str != nullptr )
+        {
+            std::string num(std::to_string(triggerNum));
+            size_t endOfLine = str->find("\r\n");
+            if ( endOfLine != std::string::npos )
+                str->insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+            else
+                str->append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
 
-        SetBkMode(hDC, TRANSPARENT);
-        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
-            rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), str);
+            SetBkMode(hDC, TRANSPARENT);
+            DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+                rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), *str);
+        }
     }
     else
     {
-        str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
+        RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
         SetBkMode(hDC, TRANSPARENT);
         DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
             rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), str);

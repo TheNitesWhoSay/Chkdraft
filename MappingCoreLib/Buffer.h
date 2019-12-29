@@ -23,7 +23,7 @@ class buffer
                     buffer(u32 bufferTitleVal);
                     buffer(const buffer &rhs);
                     template <typename StructType>
-                        static BufferPtr make(StructType & data);
+                        static BufferPtr make(const StructType & data);
 
 /*  Destructor  */  virtual ~buffer();
 
@@ -45,6 +45,8 @@ class buffer
                     const void* getPtr(s64 location, s64 sizeRequested) const; // sizeRequested in bytes
                     template <typename valueType>
                         bool getPtr(valueType* &dest, s64 location, s64 sizeRequested); // sizeRequested in bytes
+                    template <typename valueType>
+                    valueType* getPtr();
 
                     // Returns data if the location is < sizeUsed, otherwise returns 0
                     template <typename valueType>

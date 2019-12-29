@@ -3,6 +3,7 @@
 #include "../../CommonFiles/CommonFiles.h"
 #include "GuiMap.h"
 #include <map>
+#include <exception>
 
 class Maps : public WinLib::MdiClient
 {
@@ -21,9 +22,9 @@ class Maps : public WinLib::MdiClient
         GuiMapPtr GetMap(u16 mapId);
         u16 GetMapID(GuiMapPtr guiMap);
 
-        bool NewMap(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers);
+        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height);
         bool OpenMap(const std::string &fileName);
-        bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser()); // Accelerator for OpenMap
+        bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);
         void CloseActive();
@@ -48,7 +49,7 @@ class Maps : public WinLib::MdiClient
         void EnableMapping();
         void DisableMapping();
 
-        GuiMapPtr AddEmptyMap();
+        GuiMapPtr AddMap(GuiMapPtr map);
         bool RemoveMap(GuiMapPtr guiMap);
 
     private:
@@ -65,6 +66,11 @@ class Maps : public WinLib::MdiClient
         HCURSOR nwseCursor;
         HCURSOR nsCursor;
         HCURSOR weCursor;
+};
+
+class AllMapIdsExausted : public std::exception
+{
+    virtual const char* what() { return "All 65535 map ids are in use!"; }
 };
 
 #endif

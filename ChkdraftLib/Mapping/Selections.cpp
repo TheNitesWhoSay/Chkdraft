@@ -147,75 +147,72 @@ void Selections::selectLocation(u16 index)
 
 void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
-    if ( map.HasLocationSection() )
-    {
-        u16 numLocations = map.locationCapacity();
-        u16 firstRecentlySelected = NO_LOCATION;
-        bool madeSelection = false;
+    size_t numLocations = map.layers.numLocations();
+    u16 firstRecentlySelected = NO_LOCATION;
+    bool madeSelection = false;
     
-        for ( u16 i=0; i<numLocations; i++ )
+    for ( u16 i=0; i<numLocations; i++ )
+    {
+        Chk::LocationPtr loc = i != selectedLocation && ( i != 63 || canSelectAnywhere ) ? map.layers.getLocation(i) : nullptr;
+        if ( loc != nullptr )
         {
-            Chk::LocationPtr loc = i != selectedLocation && ( i != 63 || canSelectAnywhere ) ? map.layers.getLocation(i) : nullptr;
-            if ( loc != nullptr )
+            s32 locLeft = std::min(loc->left, loc->right),
+                locRight = std::max(loc->left, loc->right),
+                locTop = std::min(loc->top, loc->bottom),
+                locBottom = std::max(loc->top, loc->bottom);
+
+            if ( clickX >= locLeft && clickX <= locRight &&
+                    clickY >= locTop && clickY <= locBottom    )
             {
-                s32 locLeft = std::min(loc->left, loc->right),
-                    locRight = std::max(loc->left, loc->right),
-                    locTop = std::min(loc->top, loc->bottom),
-                    locBottom = std::max(loc->top, loc->bottom);
-
-                if ( clickX >= locLeft && clickX <= locRight &&
-                     clickY >= locTop && clickY <= locBottom    )
+                bool recentlySelected = false;
+                for ( u8 recentIndex=0; recentIndex<numRecentLocations; recentIndex++ )
                 {
-                    bool recentlySelected = false;
-                    for ( u8 recentIndex=0; recentIndex<numRecentLocations; recentIndex++ )
+                    if ( i == recentLocations[recentIndex] )
                     {
-                        if ( i == recentLocations[recentIndex] )
-                        {
-                            recentlySelected = true;
-                            break;
-                        }
-                    }
-
-                    if ( recentlySelected ) // Location has been recently selected, flag if no earlier location was flagged
-                    {
-                        if ( firstRecentlySelected == NO_LOCATION )
-                            firstRecentlySelected = i;
-                    }
-                    else // Location hasn't been recently selected, select it
-                    {
-                        selectedLocation = i;
-                        if ( numRecentLocations < 255 )
-                        {
-
-                            recentLocations[numRecentLocations] = u8(i);
-                            numRecentLocations ++;
-                        }
-                        else
-                        {
-                            recentLocations[0] = u8(i);
-                            numRecentLocations = 1;
-                        }
-                        madeSelection = true;
+                        recentlySelected = true;
                         break;
                     }
                 }
+
+                if ( recentlySelected ) // Location has been recently selected, flag if no earlier location was flagged
+                {
+                    if ( firstRecentlySelected == NO_LOCATION )
+                        firstRecentlySelected = i;
+                }
+                else // Location hasn't been recently selected, select it
+                {
+                    selectedLocation = i;
+                    if ( numRecentLocations < 255 )
+                    {
+
+                        recentLocations[numRecentLocations] = u8(i);
+                        numRecentLocations ++;
+                    }
+                    else
+                    {
+                        recentLocations[0] = u8(i);
+                        numRecentLocations = 1;
+                    }
+                    madeSelection = true;
+                    break;
+                }
             }
         }
+    }
 
-        if ( !madeSelection )
+    if ( !madeSelection )
+    {
+        if ( firstRecentlySelected != NO_LOCATION )
         {
-            if ( firstRecentlySelected != NO_LOCATION )
-            {
-                selectedLocation = firstRecentlySelected;
-                recentLocations[0] = u8(firstRecentlySelected);
-                numRecentLocations = 1;
-            }
-            else // Reset recent locations
-            {
-                selectedLocation = NO_LOCATION;
-                recentLocations[0] = u8(selectedLocation);
-                numRecentLocations = 1;
-            }
+            selectedLocation = firstRecentlySelected;
+            recentLocations[0] = u8(firstRecentlySelected);
+            numRecentLocations = 1;
+        }
+        else // Reset recent locations
+        {
+            selectedLocation = NO_LOCATION;
+            recentLocations[0] = u8(selectedLocation);
+            numRecentLocations = 1;
         }
     }
 }
