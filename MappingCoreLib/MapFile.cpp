@@ -374,23 +374,23 @@ bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &ass
 
 void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
 {
-    auto recentlyAddedAset = modifiedAssets.end();
+    auto recentlyAddedAsset = modifiedAssets.end();
     for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
     {
         if ( (*asset) != nullptr && (*asset)->assetMpqPath == assetMpqFilePath )
         {
-            recentlyAddedAset = asset;
+            recentlyAddedAsset = asset;
             break;
         }
     }
 
-    if ( recentlyAddedAset != modifiedAssets.end() ) // Asset was added between last save and now, cancel its addition
+    if ( recentlyAddedAsset != modifiedAssets.end() ) // Asset was added between last save and now, cancel its addition
     {
         // Get the temp mpq file path used for this asset
-        const std::string &tempMpqFilePath = (*recentlyAddedAset)->assetTempMpqPath;
+        const std::string tempMpqFilePath = (*recentlyAddedAsset)->assetTempMpqPath;
 
         // Remove the asset from the list of assets to be added to the actual map file
-        modifiedAssets.erase(recentlyAddedAset);
+        modifiedAssets.erase(recentlyAddedAsset);
 
         // Try to remove it from the temporary file for some short-term disk saving; ignore errors, if any
         if ( OpenTemporaryMpq() )
@@ -480,7 +480,7 @@ bool MapFile::AddSound(const std::string &srcFilePath, const std::string &destMp
     }
     else if ( AddMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
-        size_t soundStringId = Scenario::strings.addString(RawString(srcFilePath), Chk::Scope::Game);
+        size_t soundStringId = Scenario::strings.addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::triggers.addSound(soundStringId);
@@ -782,5 +782,12 @@ std::vector<FilterEntry<u32>> getSoundFilters()
     return std::vector<FilterEntry<u32>> {
         FilterEntry<u32>("*.wav", "Waveform Audio(*.wav)"),
         FilterEntry<u32>("*.ogg", "Ogg Audio(*.ogg)")
+    };
+}
+std::vector<FilterEntry<u32>> getSaveSoundFilters()
+{
+    return std::vector<FilterEntry<u32>> {
+        FilterEntry<u32>("*.wav", "Waveform Audio(*.wav)", ".wav"),
+        FilterEntry<u32>("*.ogg", "Ogg Audio(*.ogg)", ".ogg")
     };
 }

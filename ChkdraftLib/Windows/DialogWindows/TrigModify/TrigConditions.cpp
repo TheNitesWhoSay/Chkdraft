@@ -62,7 +62,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
             Chk::Condition& condition = trig->condition(y);
-            if ( (size_t)condition.conditionType < Chk::Condition::NumConditionTypes )
+            if ( condition.conditionType > Chk::Condition::Type::NoCondition && (size_t)condition.conditionType < Chk::Condition::NumConditionTypes )
             {
                 u8 numArgs = u8(conditionArgMaps[(size_t)condition.conditionType].size());
                 if ( numArgs > 8 )
@@ -593,7 +593,7 @@ void TrigConditionsWindow::SuggestUnit()
         u16 numUnitStrings = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitStrings; i++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i);
+            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
             suggestions.AddString(*str);
             if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
                 suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));

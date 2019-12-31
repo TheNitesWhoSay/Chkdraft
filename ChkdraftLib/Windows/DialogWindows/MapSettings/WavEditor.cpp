@@ -25,7 +25,7 @@ enum class Id {
     DROP_CUSTOMMPQPATH
 };
 
-WavEditorWindow::WavEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1)
+WavEditorWindow::WavEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), wavListDC(NULL)
 {
 
 }
@@ -54,7 +54,11 @@ void WavEditorWindow::RefreshWindow()
 {
     wavMap.clear();
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
-        wavMap.insert(std::pair<u32, u16>((u32)i, (u16)CM->triggers.getSoundStringId(i)));
+    {
+        size_t soundStringId = CM->triggers.getSoundStringId(i);
+        if ( soundStringId != Chk::StringId::UnusedSound )
+            wavMap.insert(std::pair<u32, u16>((u32)soundStringId, (u16)i));
+    }
     for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
     {
         Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
@@ -217,7 +221,9 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
     std::string wavString = "";
     if ( listVirtualSounds.GetCurSelString(wavString) )
     {
-        if ( CM->IsInVirtualSoundList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer) )
+        if ( CM->IsInVirtualSoundList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer,
+            DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(),
+            ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
@@ -235,18 +241,35 @@ void WavEditorWindow::ExtractSoundButtonPressed()
     if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
         selectedSoundListIndex = -1;
 
-    RawString wavMpqPath;
-    std::string wavFileName = GetMpqFileName(wavMpqPath);
-    u32 filterIndex = 0;
-    std::string saveFilePath = "";
-    FileBrowserPtr<u32> fileBrowser = getDefaultSoundBrowser();
-    if ( fileBrowser->browseForSavePath(wavMpqPath, filterIndex) )
+    u32 soundStringId = 0;
+    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        if ( !CM->ExtractMpqAsset(wavMpqPath, saveFilePath) )
-            Error("Error Extracting Asset!");
+        RawStringPtr wavMpqPath = CM->strings.getString<RawString>(soundStringId);
+        if ( wavMpqPath != nullptr )
+        {
+            u32 filterIndex = 0;
+            std::string saveFilePath = GetMpqFileName(*wavMpqPath);
+            FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
+            if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
+            {
+                SoundStatus soundStatus = CM->GetSoundStatus(soundStringId);
+                if ( soundStatus == SoundStatus::VirtualFile )
+                {
+                    if ( !chkd.scData.ExtractScAsset(*wavMpqPath, saveFilePath, DatFileBrowserPtr(new ChkdDatFileBrowser()),
+                        ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+                    {
+                        Error("Error Extracting Asset!");
+                    }
+                }
+                else if ( !CM->ExtractMpqAsset(*wavMpqPath, saveFilePath) )
+                    Error("Error Extracting Asset!");
+            }
+            else
+                Error("Error Retrieving File Name.");
+        }
+        else
+            Error("Error retrieving wav string.");
     }
-    else
-        Error("Error Retrieving File Name.");
 }
 
 void WavEditorWindow::BrowseButtonPressed()
@@ -300,7 +323,8 @@ void WavEditorWindow::AddFileButtonPressed()
     else if ( !useVirtualFile && CM->IsInVirtualSoundList(filePath) )
     {
         buffer wavContents("WaCo");
-        if ( chkd.scData.GetScAsset(filePath, wavContents) )
+        if ( chkd.scData.GetScAsset(filePath, wavContents, DatFileBrowserPtr(new ChkdDatFileBrowser()),
+            ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
         {
             if ( useCustomMpqString )
                 addedWav = CM->AddSound(customMpqPath, wavContents, wavQuality);
@@ -699,4 +723,9 @@ void WavEditorWindow::EnableSoundCustomization()
 FileBrowserPtr<u32> WavEditorWindow::getDefaultSoundBrowser()
 {
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getSoundFilters(), "Open Sound", true, false));
+}
+
+FileBrowserPtr<u32> WavEditorWindow::getDefaultSoundSaver()
+{
+    return FileBrowserPtr<u32>(new FileBrowser<u32>(getSaveSoundFilters(), "Save Sound", true, true));
 }

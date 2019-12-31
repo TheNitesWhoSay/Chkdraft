@@ -839,7 +839,7 @@ void TrigActionsWindow::SuggestUnit()
         u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i);
+            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
             suggestions.AddString(*str);
             if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
                 suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));

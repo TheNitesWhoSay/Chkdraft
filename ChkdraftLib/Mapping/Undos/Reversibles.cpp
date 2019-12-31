@@ -1,5 +1,10 @@
 #include "Reversibles.h"
 
+ReversibleActions::ReversibleActions() : reversed(true)
+{
+
+}
+
 Reversible::~Reversible()
 {
 
@@ -64,9 +69,4 @@ int32_t ReversibleActions::Count()
 void ReversibleActions::Insert(std::shared_ptr<Reversible> action)
 {
     actions.push_back(action);
-}
-
-ReversibleActions::ReversibleActions() : reversed(false)
-{
-
 }

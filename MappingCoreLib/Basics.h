@@ -8,6 +8,9 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <map>
+#include "../CommanderLib/Logger.h"
+
+extern Logger logger;
 
 /**
     Basics contains several things...

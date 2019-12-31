@@ -2,6 +2,8 @@
 #include "../MappingCoreLib/MappingCore.h"
 #include <regex>
 
+Logger logger; // An "extern Logger logger" may be declared in some of MappingCore, referencing Main.cpp in Chkdraft, instantiate it here as well
+
 /**
     This file purposefully tests several operations that involve truncating values, using underflows and overflows, the following pragmas disable warnings for these
 */

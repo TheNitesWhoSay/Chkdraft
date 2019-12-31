@@ -833,7 +833,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
 
     buffer output("TeOu");
 
-    size_t numTrigs = map->triggers.numTriggers();
+    size_t numTrigs = trigData->numTriggers();
     Chk::Condition::VirtualType CID = Chk::Condition::VirtualType::NoCondition;
     Chk::Action::VirtualType AID = Chk::Action::VirtualType::NoAction;
 
@@ -1067,7 +1067,7 @@ bool TextTrigGenerator::PrepConditionTable()
     if ( goodConditionTable )
         return true;
 
-    const char* legacyConditionNames[] = { "Always", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command the Most", 
+    const char* legacyConditionNames[] = { "", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command the Most", 
                                            "Commands the Most At", "Most Kills", "Highest Score", "Most Resources", "Switch", "Elapsed Time", 
                                            "Never", "Opponents", "Deaths", "Command the Least", "Command the Least At", "Least Kills", 
                                            "Lowest Score", "Least Resources", "Score", "Always", "Never" };
@@ -1171,18 +1171,18 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
         {
             if ( useCustomNames && unitID < 228 )
             {
-                SingleLineChkdStringPtr unquotedName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID);
-                *unitName = "\"" + *unquotedName + "\"";
+                SingleLineChkdStringPtr unquotedName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID, true);
+                unitName = SingleLineChkdStringPtr(new SingleLineChkdString("\"" + *unquotedName + "\""));
             }
             else
-                *unitName = SingleLineChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\"");
+                unitName = SingleLineChkdStringPtr(new SingleLineChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\""));
         }
         else
         {
             if ( useCustomNames && unitID < 228 )
-                unitName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID);
+                unitName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID, true);
             else
-                *unitName = SingleLineChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]);
+                unitName = SingleLineChkdStringPtr(new SingleLineChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]));
         }
 
         unitTable.push_back(*unitName);

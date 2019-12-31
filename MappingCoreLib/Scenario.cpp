@@ -19,13 +19,37 @@ Scenario::Scenario() :
     versions(), strings(), players(), layers(), properties(), triggers(),
     tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
 {
-
+    versions.layers = &layers;
+    strings.versions = &versions;
+    strings.players = &players;
+    strings.layers = &layers;
+    strings.properties = &properties;
+    strings.triggers = &triggers;
+    players.strings = &strings;
+    layers.strings = &strings;
+    properties.versions = &versions;
+    properties.strings = &strings;
+    triggers.strings = &strings;
+    triggers.layers = &layers;
 }
 
 Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
     versions(true), strings(true), players(true), layers(tileset, width, height), properties(true), triggers(true),
     tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
 {
+    versions.layers = &layers;
+    strings.versions = &versions;
+    strings.players = &players;
+    strings.layers = &layers;
+    strings.properties = &properties;
+    strings.triggers = &triggers;
+    players.strings = &strings;
+    layers.strings = &strings;
+    properties.versions = &versions;
+    properties.strings = &strings;
+    triggers.strings = &strings;
+    triggers.layers = &layers;
+
     allSections.push_back(versions.type);
     allSections.push_back(versions.ver);
 
@@ -503,6 +527,9 @@ Strings::Strings(bool useDefault) :
                 str == nullptr ? ChkSection::getNameString(SectionName::STR) :
                 ChkSection::getNameString(SectionName::SPRP));
         }
+        
+        str->syncFromBuffer(*this);
+        kstr->syncFromBuffer(*this);
     }
 }
 
@@ -1261,7 +1288,7 @@ size_t Strings::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection 
     {
         switch ( useExp )
         {
-            case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType);
+            case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType);
             case Chk::UseExpSection::Yes: return ostr->getExpUnitNameStringId(unitType);
             case Chk::UseExpSection::No: return ostr->getUnitNameStringId(unitType);
             case Chk::UseExpSection::YesIfAvailable: return ostr->getExpUnitNameStringId(unitType) != 0 ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType);
@@ -1411,17 +1438,24 @@ template std::shared_ptr<ChkdString> Strings::getForceName<ChkdString>(Chk::Forc
 template std::shared_ptr<SingleLineChkdString> Strings::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope);
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope)
 {
-    return getString<StringType>(
+    std::shared_ptr<StringType> mapUnitName = getString<StringType>(
         properties->getUnitNameStringId(unitType, useExp),
         properties->useExpansionUnitSettings(useExp) ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType),
         storageScope);
+
+    if ( mapUnitName != nullptr )
+        return mapUnitName;
+    else if ( unitType < Sc::Unit::TotalTypes )
+        return std::shared_ptr<StringType>(new StringType(Sc::Unit::defaultDisplayNames[unitType]));
+    else
+        return std::shared_ptr<StringType>(new StringType("UnitID: " + std::to_string(unitType)));
 }
-template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getUnitName<ChkdString>(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
+template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
+template std::shared_ptr<ChkdString> Strings::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
+template std::shared_ptr<SingleLineChkdString> Strings::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
 
 template <typename StringType>
 std::shared_ptr<StringType> Strings::getSoundPath(size_t soundIndex, Chk::Scope storageScope)
@@ -1527,7 +1561,7 @@ void Strings::setUnitName(Sc::Unit::Type unitType, const StringType &unitName, C
             {
                 switch ( useExp )
                 {
-                    case Chk::UseExpSection::Auto: versions.isHybridOrAbove() ? ostr->setExpUnitNameStringId(unitType, (u32)newStringId) : ostr->setUnitNameStringId(unitType, (u32)newStringId); break;
+                    case Chk::UseExpSection::Auto: versions->isHybridOrAbove() ? ostr->setExpUnitNameStringId(unitType, (u32)newStringId) : ostr->setUnitNameStringId(unitType, (u32)newStringId); break;
                     case Chk::UseExpSection::Yes: ostr->setExpUnitNameStringId(unitType, (u32)newStringId); break;
                     case Chk::UseExpSection::No: ostr->setUnitNameStringId(unitType, (u32)newStringId); break;
                     default: ostr->setUnitNameStringId(unitType, (u32)newStringId); ostr->setExpUnitNameStringId(unitType, (u32)newStringId); break;
@@ -1671,12 +1705,13 @@ void Strings::synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr 
     rawData.takeAllData(newStringSection);
 }
 
-void Strings::synchronzieFromStrBuffer(const buffer &rawData)
+void Strings::synchronizeFromStrBuffer(const buffer &rawData)
 {
     size_t sectionSize = (size_t)rawData.size();
     size_t numStrings = sectionSize > 2 ? (size_t)rawData.get<u16>(0) : (sectionSize == 1 ? (u16)rawData.get<u8>(0) : 0);
     size_t highestStringWithValidOffset = std::min(numStrings, sectionSize/2);
     strings.clear();
+    strings.push_back(nullptr); // Fill the non-existant 0th stringId
 
     size_t stringNum = 1;
     for ( ; stringNum <= highestStringWithValidOffset; ++stringNum ) // Process all strings with valid offsets
@@ -1751,12 +1786,13 @@ void Strings::synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr
     rawData.takeAllData(newStringSection);
 }
 
-void Strings::synchronzieFromKstrBuffer(const buffer &rawData)
+void Strings::synchronizeFromKstrBuffer(const buffer &rawData)
 {
     size_t sectionSize = (size_t)rawData.size();
     size_t numStrings = sectionSize > 4 ? (size_t)rawData.get<u32>(0) : 0;
     size_t highestStringWithValidOffset = std::min(numStrings, (sectionSize-4)/4);
     kStrings.clear();
+    kStrings.push_back(nullptr); // Fill the non-existant 0th stringId
 
     size_t stringNum = 1;
     for ( ; stringNum <= highestStringWithValidOffset; ++stringNum ) // Process all strings with valid offsets
@@ -2595,7 +2631,10 @@ void Layers::insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location>
 
 void Layers::deleteLocation(size_t locationIndex)
 {
+    Chk::LocationPtr location = mrgn->getLocation(locationIndex);
+    size_t deletedLocationNameStringId = location != nullptr ? location->stringId : Chk::StringId::NoString;
     mrgn->deleteLocation(locationIndex);
+    strings->deleteString(deletedLocationNameStringId);
 }
 
 void Layers::moveLocation(size_t locationIndexFrom, size_t locationIndexTo)
@@ -2710,7 +2749,7 @@ bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? true : false;
+        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
         case Chk::UseExpSection::Yes: true;
         case Chk::UseExpSection::No: false;
         case Chk::UseExpSection::NoIfOrigAvailable: return unis != nullptr ? false : true;
@@ -2971,7 +3010,7 @@ bool Properties::useExpansionUpgradeCosts(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? true : false;
+        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
         case Chk::UseExpSection::Yes: true;
         case Chk::UseExpSection::No: false;
         case Chk::UseExpSection::NoIfOrigAvailable: return upgs != nullptr ? false : true;
@@ -3110,7 +3149,7 @@ bool Properties::useExpansionUpgradeLeveling(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? true : false;
+        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
         case Chk::UseExpSection::Yes: true;
         case Chk::UseExpSection::No: false;
         case Chk::UseExpSection::NoIfOrigAvailable: return upgr != nullptr ? false : true;
@@ -3263,7 +3302,7 @@ bool Properties::useExpansionTechCosts(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? true : false;
+        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
         case Chk::UseExpSection::Yes: true;
         case Chk::UseExpSection::No: false;
         case Chk::UseExpSection::NoIfOrigAvailable: return tecs != nullptr ? false : true;
@@ -3366,7 +3405,7 @@ bool Properties::useExpansionTechAvailability(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions.isHybridOrAbove() ? true : false;
+        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
         case Chk::UseExpSection::Yes: true;
         case Chk::UseExpSection::No: false;
         case Chk::UseExpSection::NoIfOrigAvailable: return ptec != nullptr ? false : true;

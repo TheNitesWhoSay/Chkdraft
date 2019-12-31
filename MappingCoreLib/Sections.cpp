@@ -190,24 +190,36 @@ StrProp::StrProp(Chk::StringProperties stringProperties) :
     
 }
 
-ScStr::ScStr(const std::string &str) : allocation(str)
+ScStr::ScStr(const std::string &str) : strProp()
 {
+    for ( const char & c : str )
+        allocation.push_back(c);
 
+    if ( allocation.size() == 0 || allocation.back() != '\0' )
+        allocation.push_back('\0');
+
+    this->str = &allocation[0];
 }
 
-ScStr::ScStr(const std::string &str, const StrProp &strProp) : allocation(str), strProp(strProp)
+ScStr::ScStr(const std::string &str, const StrProp &strProp) : strProp(strProp)
 {
+    for ( const char & c : str )
+        allocation.push_back(c);
 
+    if ( allocation.size() == 0 || allocation.back() != '\0' )
+        allocation.push_back('\0');
+
+    this->str = &allocation[0];
 }
 
 bool ScStr::empty()
 {
-    return parentStr == nullptr ? allocation.empty() : parentStr->empty();
+    return parentStr == nullptr ? allocation.size() <= 1 : parentStr->empty();
 }
 
 size_t ScStr::length()
 {
-    return parentStr == nullptr ? allocation.length() : strlen(str);
+    return parentStr == nullptr ? allocation.size()-1 : strlen(str);
 }
 
 template <typename StringType>
@@ -248,8 +260,8 @@ bool ScStr::adopt(ScStrPtr lhs, ScStrPtr rhs)
 {
     if ( rhs != nullptr && lhs != nullptr && rhs->parentStr == nullptr || lhs->parentStr == nullptr )
     {
-        size_t lhsLength = lhs->parentStr == nullptr ? lhs->allocation.length() : strlen(lhs->str);
-        size_t rhsLength = rhs->parentStr == nullptr ? rhs->allocation.length() : strlen(rhs->str);
+        size_t lhsLength = lhs->parentStr == nullptr ? lhs->allocation.size()-1 : strlen(lhs->str);
+        size_t rhsLength = rhs->parentStr == nullptr ? rhs->allocation.size()-1 : strlen(rhs->str);
         if ( rhsLength > lhsLength ) // The length of rhs is greater
         {
             const char* rhsSubString = &rhs->str[rhsLength-lhsLength];
@@ -1718,6 +1730,7 @@ StrSectionPtr StrSection::GetDefault()
     u16 characterDataStart = 2 + 2*stringCapacity; // Calculate where character data begins (2 bytes for stringCapacity, then 2*stringCapacity for offsets)
     u16 stringStart = characterDataStart + 1; // Move past initial NUL terminator
 
+    rawData->add<u16>(stringCapacity);
     for ( const std::string &string : defaultStrings )
     {
         rawData->add<u16>(stringStart); // Add offset for this string
@@ -1748,15 +1761,15 @@ void StrSection::flagUnsynced()
     synced = false;
 }
 
-void StrSection::syncFromBuffer(StrSynchronizerPtr strSynchronizer)
+void StrSection::syncFromBuffer(StrSynchronizer & strSynchronizer)
 {
     synced = false;
-    strSynchronizer->synchronzieFromStrBuffer(*rawData);
+    strSynchronizer.synchronizeFromStrBuffer(*rawData);
 }
 
-void StrSection::syncToBuffer(StrSynchronizerPtr strSynchronizer)
+void StrSection::syncToBuffer(StrSynchronizer & strSynchronizer)
 {
-    strSynchronizer->synchronizeToStrBuffer(*rawData);
+    strSynchronizer.synchronizeToStrBuffer(*rawData);
     synced = true;
 }
 
@@ -1838,13 +1851,19 @@ size_t UpusSection::getNextUnusedCuwpIndex()
 MrgnSectionPtr MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     MrgnSectionPtr newSection(new (std::nothrow) MrgnSection());
-    Chk::Location unusedLocation;
-    Chk::Location anywhereLocation;
-    anywhereLocation.right = (s64)tileWidth*(s64)32;
-    anywhereLocation.bottom = (s64)tileHeight*(s64)32;
-    anywhereLocation.stringId = 3;
-    newSection->rawData->add(unusedLocation, 63);
-    newSection->rawData->add(anywhereLocation, 1);
+
+    for ( size_t i=0; i<63; i++ )
+        newSection->locations.push_back(Chk::LocationPtr(new Chk::Location()));
+    
+    Chk::LocationPtr anywhere = Chk::LocationPtr(new Chk::Location());
+    anywhere->right = (s32)tileWidth*32;
+    anywhere->bottom = (s32)tileHeight*32;
+    anywhere->stringId = 3;
+    newSection->locations.push_back(Chk::LocationPtr(anywhere));
+
+    for ( size_t i=Chk::LocationId::Anywhere+1; i<Chk::TotalLocations; i++ )
+        newSection->locations.push_back(Chk::LocationPtr(new Chk::Location()));
+
     return newSection;
 }
 
@@ -1897,8 +1916,23 @@ std::shared_ptr<Chk::Location> MrgnSection::getLocation(size_t locationIndex)
 
 size_t MrgnSection::addLocation(std::shared_ptr<Chk::Location> location)
 {
-    locations.push_back(location);
-    return locations.size()-1;
+    for ( size_t i=0; i<locations.size(); i++ )
+    {
+        if ( isBlank(i) )
+        {
+            locations[i] = location;
+            return i;
+        }
+    }
+
+    if ( locations.size() < Chk::TotalLocations )
+    {
+        size_t locationIndex = locations.size();
+        locations.push_back(location);
+        return locationIndex;
+    }
+
+    return Chk::TotalLocations;
 }
 
 void MrgnSection::insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location)
@@ -1908,8 +1942,20 @@ void MrgnSection::insertLocation(size_t locationIndex, std::shared_ptr<Chk::Loca
         auto position = std::next(locations.begin(), locationIndex);
         locations.insert(position, location);
     }
-    else if ( locationIndex == locations.size() )
-        locations.push_back(location);
+    else if ( locationIndex < Chk::TotalLocations )
+    {
+        if ( locationIndex == locations.size() )
+            locations.push_back(location);
+        else
+        {
+            for ( size_t i=locations.size(); i<locationIndex; i++ )
+                locations.push_back(Chk::LocationPtr(new Chk::Location()));
+
+            locations.push_back(location);
+        }
+    }
+    else
+        throw std::out_of_range(std::string("LocationIndex: ") + std::to_string((u32)locationIndex) + " is out of range for the MRGN section!");
 }
 
 void MrgnSection::deleteLocation(size_t locationIndex)
@@ -1917,7 +1963,12 @@ void MrgnSection::deleteLocation(size_t locationIndex)
     if ( locationIndex < locations.size() )
     {
         auto location = std::next(locations.begin(), locationIndex);
-        locations.erase(location);
+        (*location)->stringId = 0;
+        (*location)->left = 0;
+        (*location)->right = 0;
+        (*location)->top = 0;
+        (*location)->bottom = 0;
+        (*location)->elevationFlags = 0;
     }
 }
 
@@ -1938,6 +1989,21 @@ void MrgnSection::moveLocation(size_t locationIndexFrom, size_t locationIndexTo)
             locations.insert(insertPosition, location);
         }
     }
+}
+
+bool MrgnSection::isBlank(size_t locationIndex)
+{
+    if ( locationIndex < locations.size() )
+    {
+        auto & location = *locations[locationIndex];
+        return location.stringId == Chk::StringId::NoString &&
+            location.left == 0 &&
+            location.right == 0 &&
+            location.top == 0 &&
+            location.bottom == 0;
+    }
+    else
+        return true;
 }
 
 bool MrgnSection::stringUsed(size_t stringId)
@@ -4148,15 +4214,15 @@ void KstrSection::flagUnsynced()
     synced = false;
 }
 
-void KstrSection::syncFromBuffer(StrSynchronizerPtr strSynchronizer)
+void KstrSection::syncFromBuffer(StrSynchronizer & strSynchronizer)
 {
     synced = false;
-    strSynchronizer->synchronzieFromStrBuffer(*rawData);
+    strSynchronizer.synchronizeFromKstrBuffer(*rawData);
 }
 
-void KstrSection::syncToBuffer(StrSynchronizerPtr strSynchronizer)
+void KstrSection::syncToBuffer(StrSynchronizer & strSynchronizer)
 {
-    strSynchronizer->synchronizeToStrBuffer(*rawData);
+    strSynchronizer.synchronizeToKstrBuffer(*rawData);
     synced = true;
 }
 

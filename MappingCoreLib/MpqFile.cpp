@@ -213,6 +213,18 @@ bool MpqFile::getFile(const std::string &mpqPath, buffer &fileData)
     return ::getFile(this, mpqPath, fileData);
 }
 
+bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath)
+{
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
+            return SFileExtractFile(hMpq, mpqPath.c_str(), icux::toFilestring(systemFilePath).c_str(), 0);
+    }
+    return false;
+}
+
 bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData)
 {
     if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )

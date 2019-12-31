@@ -121,5 +121,6 @@ extern std::vector<FilterEntry<SaveType>> getOpenMapFilters();
 extern std::vector<FilterEntry<SaveType>> getSaveMapFilters();
 extern std::vector<FilterEntry<u32>> getSaveTextFilters();
 extern std::vector<FilterEntry<u32>> getSoundFilters();
+extern std::vector<FilterEntry<u32>> getSaveSoundFilters();
 
 #endif

@@ -542,8 +542,8 @@ class StrSection : public DynamicSection<false>
         
         bool isSynced();
         void flagUnsynced();
-        void syncFromBuffer(StrSynchronizerPtr strSynchronizer);
-        void syncToBuffer(StrSynchronizerPtr strSynchronizer);
+        void syncFromBuffer(StrSynchronizer & strSynchronizer);
+        void syncToBuffer(StrSynchronizer & strSynchronizer);
 
     protected:
         virtual u32 getSize();
@@ -589,6 +589,8 @@ class MrgnSection : public DynamicSection<false>
         void insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location);
         void deleteLocation(size_t locationIndex);
         void moveLocation(size_t locationIndexFrom, size_t locationIndexTo);
+        bool isBlank(size_t locationIndex);
+
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void remapStringIds(std::map<u32, u32> stringIdRemappings);
@@ -961,8 +963,8 @@ class KstrSection : public DynamicSection<true>
         
         bool isSynced();
         void flagUnsynced();
-        void syncFromBuffer(StrSynchronizerPtr strSynchronizer);
-        void syncToBuffer(StrSynchronizerPtr strSynchronizer);
+        void syncFromBuffer(StrSynchronizer & strSynchronizer);
+        void syncToBuffer(StrSynchronizer & strSynchronizer);
 
     protected:
         virtual u32 getSize();
@@ -1015,8 +1017,8 @@ class ScStr
     private:
         ScStrPtr parentStr; // The larger string inside which this string fits, if null then this is a root string
         ScStrPtr childStr; // The next largest string that fits inside this string
-        std::string allocation; // If parentStr is null, then this is the actual string data and str points to the first character
-                                // else str points to first character of this string within the allocation of the highest-order parent
+        std::vector<char> allocation; // If parentStr is null, then this is the actual string data and str points to the first character
+                                      // else str points to first character of this string within the allocation of the highest-order parent
         StrProp strProp; // Additional color and font details, if this string is extended and gets stored
 
         static void adopt(ScStrPtr parent, ScStrPtr child, size_t parentLength, size_t childLength, const char* parentSubString);
@@ -1158,11 +1160,11 @@ class StrSynchronizer
 
         virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged) = 0;
-        virtual void synchronzieFromStrBuffer(const buffer &rawData) = 0;
+        virtual void synchronizeFromStrBuffer(const buffer &rawData) = 0;
 
         virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged) = 0;
-        virtual void synchronzieFromKstrBuffer(const buffer &rawData) = 0;
+        virtual void synchronizeFromKstrBuffer(const buffer &rawData) = 0;
 
         u32 getRequestedCompressionFlags() const { return requestedCompressionFlags; }
         u32 getAllowedCompressionFlags() const { return allowedCompressionFlags; }

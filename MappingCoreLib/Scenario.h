@@ -49,7 +49,8 @@ class Versions
         void setToDefaultValidation();
 
     private:
-        LayersPtr layers; // For updating location capacity as necessary
+        Layers* layers; // For updating location capacity as necessary
+        friend class Scenario;
 };
 
 class Strings : StrSynchronizer
@@ -135,7 +136,7 @@ class Strings : StrSynchronizer
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         std::shared_ptr<StringType> getForceName(Chk::Force force, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getUnitName(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         std::shared_ptr<StringType> getSoundPath(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
@@ -165,26 +166,28 @@ class Strings : StrSynchronizer
         // Creates a viable internal data buffer for the string section using the methods in requestedCompressionFlags
         // If no configuration among requestedCompressionFlags is viable, additional methods through allowedCompressionFlags are added as neccessary
         // allowedCompressionFlags may be increased as neccessary if elevator.elevate() returns true
+        
         virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged);
-        virtual void synchronzieFromStrBuffer(const buffer &rawData);
+        virtual void synchronizeFromStrBuffer(const buffer &rawData);
 
         virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged);
-        virtual void synchronzieFromKstrBuffer(const buffer &rawData);
+        virtual void synchronizeFromKstrBuffer(const buffer &rawData);
 
     private:
-        Versions versions; // For auto-determining the section for regular or expansion units
-        PlayersPtr players; // For finding force string usage
-        LayersPtr layers; // For finding location string usage
-        PropertiesPtr properties; // For finding unit name string usage
-        TriggersPtr triggers; // For finding trigger and briefing string usage
+        Versions* versions; // For auto-determining the section for regular or expansion units
+        Players* players; // For finding force string usage
+        Layers* layers; // For finding location string usage
+        Properties* properties; // For finding unit name string usage
+        Triggers* triggers; // For finding trigger and briefing string usage
+        friend class Scenario;
 
         static const std::vector<u32> compressionFlagsProgression;
 
         std::deque<ScStrPtr> strings;
         std::deque<ScStrPtr> kStrings;
-        
+
         inline void loadString(std::deque<ScStrPtr> &stringContainer, const buffer &rawData, const u16 &stringOffset, const size_t &sectionSize);
         size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope storageScope = Chk::Scope::Game, bool checkBeyondScopedCapacity = true, size_t firstChecked = 1);
         void resolveParantage();
@@ -230,7 +233,8 @@ class Players
         void deleteString(size_t stringId);
 
     private:
-        StringsPtr strings; // For reading and updating force strings
+        Strings* strings; // For reading and updating force strings
+        friend class Scenario;
 };
 
 class Terrain
@@ -344,7 +348,8 @@ class Layers : public Terrain
         void deleteString(size_t stringId);
 
     private:
-        StringsPtr strings; // For reading and updating location names
+        Strings* strings; // For reading and updating location names
+        friend class Scenario;
 };
 
 class Properties
@@ -457,8 +462,9 @@ class Properties
         void deleteString(size_t stringId);
 
     private:
-        Versions versions; // For auto-determining the section for regular or expansion units
-        StringsPtr strings; // For reading and updating unit names
+        Versions* versions; // For auto-determining the section for regular or expansion units
+        Strings* strings; // For reading and updating unit names
+        friend class Scenario;
 };
 
 class Triggers
@@ -513,8 +519,9 @@ class Triggers
         void deleteString(size_t stringId);
 
     private:
-        StringsPtr strings; // For reading and updating sound paths, next scenario paths, text messages, leader board text, comments, and switch names
-        LayersPtr layers; // For reading locations
+        Strings* strings; // For reading and updating sound paths, next scenario paths, text messages, leader board text, comments, and switch names
+        Layers* layers; // For reading locations
+        friend class Scenario;
 };
 
 class Scenario;

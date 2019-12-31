@@ -65,6 +65,7 @@ public:
 };
 
 bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
+bool ExtractScAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
 
 class CV5Entry
 {
@@ -461,6 +462,12 @@ public:
         FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     bool GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents,
+        DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
+        const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
+        FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
+
+    bool ExtractScAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
         DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
         const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
         const std::string &expectedStarCraftDirectory = GetDefaultScPath(),

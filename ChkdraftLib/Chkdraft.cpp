@@ -9,8 +9,6 @@
 #include <chrono>
 #include <regex>
 
-//extern Logger logger;
-
 enum class Id {
     IDR_MAIN_TOOLBAR = ID_FIRST,
     IDR_MAIN_STATUS,

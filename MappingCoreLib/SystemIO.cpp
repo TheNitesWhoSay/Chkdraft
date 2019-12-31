@@ -8,6 +8,7 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <iostream>
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -113,15 +114,15 @@ std::string MakeExtSystemFilePath(const std::string &systemDirectory, const std:
 
 std::string GetMpqFileSeparator()
 {
-    return "/";
+    return "\\";
 }
 
 std::string GetMpqFileName(const std::string &mpqFilePath)
 {
     const std::string mpqFileSeparator = GetMpqFileSeparator();
     size_t lastSeparator = mpqFilePath.find_last_of(mpqFileSeparator);
-    if ( lastSeparator >= 0 && lastSeparator < mpqFilePath.length() )
-        return mpqFilePath.substr(0, lastSeparator);
+    if ( lastSeparator >= 0 && lastSeparator+1 < mpqFilePath.length() )
+        return mpqFilePath.substr(lastSeparator+1);
 
     return mpqFilePath;
 }
@@ -427,7 +428,7 @@ bool BrowseForSave(std::string &filePath, uint32_t &filterIndex, const std::vect
 #ifdef _WIN32
     OPENFILENAME ofn = {};
     icux::codepoint fileNameBuffer[FILENAME_MAX] = {};
-    if ( !initialDirectory.empty() )
+    if ( !filePath.empty() )
     {
         icux::filestring initFileNameBuf = icux::toFilestring(filePath);
         if ( initFileNameBuf.length() < FILENAME_MAX )

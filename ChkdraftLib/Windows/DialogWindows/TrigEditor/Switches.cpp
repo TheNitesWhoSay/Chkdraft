@@ -189,7 +189,6 @@ void SwitchesWindow::EditSwitchNameFocusLost()
             ChkdString temp(editText);
             CM->strings.setSwitchName(selectedSwitch, temp);
             chkd.mapSettingsWindow.RefreshWindow();
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
             CM->notifyChange(false);
         }
     }

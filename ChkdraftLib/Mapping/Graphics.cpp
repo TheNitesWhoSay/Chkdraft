@@ -452,7 +452,7 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
                 // If within screen y-bounds
             {
                 u16 frame = 0;
-                Chk::PlayerColor color = (unit->owner < Sc::Player::TotalOwners ?
+                Chk::PlayerColor color = (unit->owner < Sc::Player::TotalSlots ?
                     map.players.getPlayerColor(unit->owner) : (Chk::PlayerColor)unit->owner);
 
                 bool isSelected = selections.unitIsSelected(unitNum);
@@ -487,7 +487,7 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
             {
                 u16 frame = 0;
                 bool isSprite = sprite->isDrawnAsSprite();
-                Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalOwners ?
+                Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalSlots ?
                     map.players.getPlayerColor(sprite->owner) : (Chk::PlayerColor)sprite->owner);
 
                 if ( isSprite )
@@ -1493,7 +1493,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
     else if ( layer == Layer::Units )
     {
         ChkdBitmap graphicBits;
-        graphicBits.resize(((u32)width)*((u32)height));
+        graphicBits.resize(((size_t)width)*((size_t)height));
 
         BITMAPINFO bmi = GetBMI(width, height);
         GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
@@ -1510,7 +1510,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto &pasteUnit : units )
             {
-                Chk::PlayerColor color = (pasteUnit.unit->owner < Sc::Player::TotalOwners ?
+                Chk::PlayerColor color = (pasteUnit.unit->owner < Sc::Player::TotalSlots ?
                     map.players.getPlayerColor(pasteUnit.unit->owner) : (Chk::PlayerColor)pasteUnit.unit->owner);
                 if ( cursor.y+ pasteUnit.yc >= 0 )
                 {
@@ -1715,7 +1715,7 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
     {
         Chk::UnitPtr unit = map.layers.getUnit(i);
 
-        Chk::PlayerColor color = (unit->owner < Sc::Player::TotalOwners ?
+        Chk::PlayerColor color = (unit->owner < Sc::Player::TotalSlots ?
             map.players.getPlayerColor(unit->owner) : (Chk::PlayerColor)unit->owner);
 
         u32 bitIndex = (
@@ -1732,7 +1732,7 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
         Chk::SpritePtr sprite = map.layers.getSprite(i);
         if ( sprite->isDrawnAsSprite() )
         {
-            Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalOwners ?
+            Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalSlots ?
                 map.players.getPlayerColor(sprite->owner) : (Chk::PlayerColor)sprite->owner);
 
             u32 bitIndex = (((u32)((sprite->yc / 32)*scale) + yOffset) * 128

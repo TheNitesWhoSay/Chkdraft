@@ -190,7 +190,7 @@ bool UnitPropertiesWindow::AddUnitItem(u16 index, Chk::UnitPtr unit)
     std::strcpy(yc, std::to_string(unit->yc).c_str());
     std::strcpy(cIndex, std::to_string(index).c_str());
 
-    ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitId);
+    ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitId, true);
 
     listUnits.AddRow(4, index);
     listUnits.SetItemText(index, (int)UnitListColumn::Name, *unitName);
@@ -263,7 +263,7 @@ void UnitPropertiesWindow::RepopulateList()
             Chk::UnitPtr unit = CM->layers.getUnit(selectedIndex);
             SetUnitFieldText(unit);
 
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type);
+            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type, true);
             WindowsItem::SetWinText(*unitName);
 
             int row = listUnits.GetItemRow(selections.getHighestIndex());
@@ -486,7 +486,7 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                 EnableUnitEditing();
 
             Chk::UnitPtr unit = CM->layers.getUnit(index);
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type);
+            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type, true);
             WindowsItem::SetWinText(*unitName);
             SetUnitFieldText(unit);
 
@@ -918,7 +918,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
             CM->layers.getUnit(unitIndex)->type = (Sc::Unit::Type)unitID;
             int row = listUnits.GetItemRow(unitIndex);
 
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitID);
+            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
             listUnits.SetItemText(row, (int)UnitListColumn::Name, *unitName);
 
             if ( unitIndex == CM->GetSelections().getFirstUnit() )

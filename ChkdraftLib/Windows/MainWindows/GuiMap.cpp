@@ -529,12 +529,12 @@ void GuiMap::deleteSelection()
                         while ( selections.hasUnits() )
                         {
                             // Get the highest index in the selection
-                                u16 index = selections.getHighestIndex();
-                                selections.removeUnit(index);
+                            u16 index = selections.getHighestIndex();
+                            selections.removeUnit(index);
                             
-                                Chk::UnitPtr delUnit = layers.getUnit(index);
-                                deletes->Insert(UnitCreateDel::Make(index, *delUnit));
-                                layers.deleteUnit(index);
+                            Chk::UnitPtr delUnit = layers.getUnit(index);
+                            deletes->Insert(UnitCreateDel::Make(index, *delUnit));
+                            layers.deleteUnit(index);
                         }
                         undos.AddUndo(deletes);
                     }

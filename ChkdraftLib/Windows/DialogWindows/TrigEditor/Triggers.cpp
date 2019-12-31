@@ -1166,7 +1166,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
                                      "unknown/unused", "Current Player (unused)", "Foes (unused)", "Allies (unused)", "Neutral Players (unused)",
                                      "All players", "Force 1", "Force 2", "Force 3", "Force 4",
                                      "unknown/unused", "unknown/unused", "unknown/unused", "unknown/unused",
-                                     "Non AV Players (unused)", "unknown/unused", "Show All" };
+                                     "Non AV Players (unused)", "Show All" };
 
         DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
             rcItem.right-rcItem.left, RGB(0, 0, 0), groupNames[groupNum]);

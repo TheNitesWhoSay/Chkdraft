@@ -63,6 +63,8 @@ PasteTileNode::~PasteTileNode()
 PasteUnitNode::PasteUnitNode(Chk::UnitPtr unit)
 {
     this->unit = Chk::UnitPtr(new Chk::Unit(*unit));
+    this->xc = unit->xc;
+    this->yc = unit->yc;
 }
 
 PasteUnitNode::~PasteUnitNode()
@@ -153,14 +155,15 @@ void Clipboard::copy(GuiMap &map, Layer layer)
                 if      ( add.yc < edges.top    ) edges.top    = add.yc;
                 else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
 
-                copyUnits.insert(copyUnits.end(), add);
+                copyUnits.push_back(add);
             }
 
             POINT middle; // Determine where the new middle of the paste is
             middle.x = edges.left+(edges.right-edges.left)/2;
             middle.y = edges.top+(edges.bottom-edges.top)/2;
-
-            for ( auto &unit : copyUnits ) // Update the unit's relative position to the cursor
+            
+            // Update units position relative to the cursor
+            for ( auto & unit : copyUnits )
             {
                 unit.xc -= middle.x;
                 unit.yc -= middle.y;
@@ -176,7 +179,7 @@ void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 
 void Clipboard::addQuickUnit(Chk::UnitPtr unit)
 {
-    quickUnits.push_back(Chk::UnitPtr(new Chk::Unit(*unit)));
+    quickUnits.push_back(unit);
 }
 
 void Clipboard::beginPasting(bool isQuickPaste)
@@ -408,12 +411,10 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &und
                 prevPaste.x = pasteUnit.unit->xc;
                 prevPaste.y = pasteUnit.unit->yc;
                 size_t numUnits = map.layers.numUnits();
-                if ( map.layers.addUnit(Chk::UnitPtr(new Chk::Unit(*pasteUnit.unit))) )
-                {
-                    unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
-                    if ( chkd.unitWindow.getHandle() != nullptr )
-                        chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
-                }
+                map.layers.addUnit(Chk::UnitPtr(new Chk::Unit(*pasteUnit.unit)));
+                unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
+                if ( chkd.unitWindow.getHandle() != nullptr )
+                    chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
             }
         }
     }

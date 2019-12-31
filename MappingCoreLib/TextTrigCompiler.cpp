@@ -3872,7 +3872,7 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
     for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        RawStringPtr unitName = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId);
+        RawStringPtr unitName = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true);
         if ( unitName != nullptr )
             unitNode.unitName = *unitName;
         else

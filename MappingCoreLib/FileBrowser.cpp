@@ -153,7 +153,7 @@ bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::stri
     bool rejectedOverwrite = false;
     std::vector<std::pair<std::string, std::string>> filtersAndLabels = getFiltersAndLabels();
     u32 newFilterIndex = filterIndex;
-    std::string newFilePath("");
+    std::string newFilePath(filePath);
     do
     {
         rejectedOverwrite = false;

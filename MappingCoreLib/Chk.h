@@ -273,13 +273,13 @@ namespace Chk {
         u16 unitStateFlags;
     };
 
-    constexpr u32 TotalOriginalLocations = 64;
-    constexpr u32 TotalLocations = 255;
+    constexpr size_t TotalOriginalLocations = 64;
+    constexpr size_t TotalLocations = 255;
 
-    enum class LocationId : u32 { // u32
+    enum_t(LocationId, size_t, { // size_t
         NoLocation = 0,
         Anywhere = 64
-    };
+    });
     
     __declspec(align(1)) class Location
     {

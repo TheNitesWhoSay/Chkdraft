@@ -222,7 +222,7 @@ namespace WinLib {
                                          0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 
             size_t length = editText.length();
-            for ( size_t i=length-1; i>=0; i-- )
+            for ( size_t i=length-1; i<length; i-- )
             {
                 if ( editText[i] == '1' )
                     temp |= u32BitValues[(length-1)-i];
