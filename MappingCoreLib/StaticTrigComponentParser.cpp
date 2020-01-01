@@ -317,10 +317,10 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 &dest, s64 p
     switch ( comparison[0] )
     {
         case 'A':
-            if ( strcmp(&comparison[1], "LWAYSDISPLAY") == 0 ) { dest |= (u8)Chk::Action::Flags::AlwaysDisplay; success = true; }
+            if ( strcmp(&comparison[1], "LWAYSDISPLAY") == 0 ) { dest |= Chk::Action::Flags::AlwaysDisplay; success = true; }
             break;
         case 'D':
-            if ( strcmp(&comparison[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= (u8)Chk::Action::Flags::xAlwaysDisplay; success = true; }
+            if ( strcmp(&comparison[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= Chk::Action::Flags::xAlwaysDisplay; success = true; }
             break;
     }
     return success;

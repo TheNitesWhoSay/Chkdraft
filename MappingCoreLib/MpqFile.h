@@ -20,13 +20,12 @@ enum class AssetAction;
 class ModifiedAsset;
 using ModifiedAssetPtr = std::shared_ptr<ModifiedAsset>;
 
-enum class WavQuality : uint32_t
-{
+enum_t(WavQuality, uint32_t, {
     Low = MPQ_WAVE_QUALITY_LOW,
     Med = MPQ_WAVE_QUALITY_MEDIUM,
     High = MPQ_WAVE_QUALITY_HIGH,
     Uncompressed = std::max(std::max(MPQ_WAVE_QUALITY_LOW, MPQ_WAVE_QUALITY_MEDIUM), MPQ_WAVE_QUALITY_HIGH)+1
-};
+});
 
 class MpqFile;
 using MpqFilePtr = std::shared_ptr<MpqFile>;

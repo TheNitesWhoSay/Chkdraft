@@ -34,7 +34,7 @@ void LocationChange::Reverse(void *guiMap)
 
 int32_t LocationChange::GetType()
 {
-    return (int32_t)UndoTypes::LocationChange;
+    return UndoTypes::LocationChange;
 }
 
 LocationChange::LocationChange(u16 locationIndex, Chk::Location::Field field, u32 data)

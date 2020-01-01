@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include "../../../Mapping/Settings.h"
 
-enum class Id {
+enum_t(Id, u32, {
     TAB_META = 0,
     TAB_PLAYERS,
     TAB_CONDITIONS,
@@ -14,7 +14,7 @@ enum class Id {
     BUTTON_COMPILE,
     BUTTON_COMPILEANDSAVE,
     BUTTON_RELOAD
-};
+});
 
 TrigModifyTextWindow::TrigModifyTextWindow() : trigIndex(0), autoCompile(false)
 {
@@ -90,12 +90,12 @@ void TrigModifyTextWindow::ParentHidden()
 
 void TrigModifyTextWindow::CreateSubWindows(HWND hWnd)
 {
-    editText.CreateThis(hWnd, 0, 0, 100, 100, true, (u64)Id::EDIT_TRIGMODIFYTEXT);
-    checkAutoCompile.CreateThis(hWnd, 0, 0, 85, 20, false, "Auto-compile", (u64)Id::CHECK_AUTOCOMPILE);
+    editText.CreateThis(hWnd, 0, 0, 100, 100, true, Id::EDIT_TRIGMODIFYTEXT);
+    checkAutoCompile.CreateThis(hWnd, 0, 0, 85, 20, false, "Auto-compile", Id::CHECK_AUTOCOMPILE);
     
-    buttonReload.CreateThis(hWnd, 0, 0, 75, 23, "Reset", (u64)Id::BUTTON_RELOAD);
-    buttonCompile.CreateThis(hWnd, 20, 105, 75, 23, "Compile", (u64)Id::BUTTON_COMPILE);
-    buttonCompileAndSave.CreateThis(hWnd, 75, 105, 93, 23, "Compile && Save", (u64)Id::BUTTON_COMPILEANDSAVE);
+    buttonReload.CreateThis(hWnd, 0, 0, 75, 23, "Reset", Id::BUTTON_RELOAD);
+    buttonCompile.CreateThis(hWnd, 20, 105, 75, 23, "Compile", Id::BUTTON_COMPILE);
+    buttonCompileAndSave.CreateThis(hWnd, 75, 105, 93, 23, "Compile && Save", Id::BUTTON_COMPILEANDSAVE);
 }
 
 bool TrigModifyTextWindow::unsavedChanges()
@@ -183,7 +183,7 @@ void TrigModifyTextWindow::OnLeave()
 
 LRESULT TrigModifyTextWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-    switch ( (Id)LOWORD(wParam) )
+    switch ( LOWORD(wParam) )
     {
     case Id::CHECK_AUTOCOMPILE:
         if ( HIWORD(wParam) == BN_CLICKED )

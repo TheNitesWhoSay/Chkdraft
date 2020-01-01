@@ -1,11 +1,11 @@
 #ifndef WINUIENUMERATIONS_H
 #define WINUIENUMERATIONS_H
 #include <Windows.h>
+#include "DataTypes.h"
 
 namespace WinLib {
 
-    enum class LB : u32
-    {
+    enum_t(LB, u32, {
         /** Sent to the parent when an item is double clicked
             The WPARAM specifies the item index that was double clicked
             The LPARAM is the list box's handle */
@@ -38,14 +38,13 @@ namespace WinLib {
         WM_NEWSELTEXT,
 
         LB_LAST
-    };
+    });
 
-    enum class GV : u32
-    {
+    enum_t(GV, u32, {
         /** Sent to the parent to request a specific row be drawn
             The wParam and lParam are the same as in WM_DRAWITEM,
             the return value is ignored */
-        WM_DRAWGRIDVIEWITEM = (u32)LB::LB_LAST,
+        WM_DRAWGRIDVIEWITEM = LB::LB_LAST,
 
         /** Sent to the parent to allow it to draw any touchups
             after all the grid items have been drawn
@@ -123,7 +122,7 @@ namespace WinLib {
         WM_NEWGRIDTEXT,
 
         GV_LAST
-    };
+    });
 
     // First user-message used by a given set of sub-windows
     #define MSG_FIRST (GV_LAST+1)

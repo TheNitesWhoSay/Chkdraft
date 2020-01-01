@@ -3,8 +3,7 @@
 #include <sstream>
 #include <string>
 
-enum class Id
-{
+enum_t(Id, u32, {
     TREE_UNITSETTINGS = ID_FIRST,
     BUTTON_RESETALLUNITDEFAULTS,
     CHECK_USEUNITDEFAULTS,
@@ -41,7 +40,7 @@ enum class Id
     TEXT_P12UNITAVAILABILITY = (TEXT_P1UNITAVAILABILITY + 11),
     DROP_P1UNITAVAILABILITY,
     DROP_P12UNITAVAILABILITY = (DROP_P1UNITAVAILABILITY + 11)
-};
+});
 
 UnitSettingsWindow::UnitSettingsWindow() : selectedUnitType(Sc::Unit::Type::NoUnit), possibleUnitNameUpdate(false), isDisabled(true), refreshing(false)
 {
@@ -213,41 +212,41 @@ void UnitSettingsWindow::RefreshWindow()
 void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
     unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
-    unitTree.CreateThis(hParent, 5, 5, 200, 489, false, (u64)Id::TREE_UNITSETTINGS);
-    buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", (u64)Id::BUTTON_RESETALLUNITDEFAULTS);
-    checkUseUnitDefaults.CreateThis(hParent, 210, 5, 100, 20, false, "Use Unit Defaults", (u64)Id::CHECK_USEUNITDEFAULTS);
-    checkEnabledByDefault.CreateThis(hParent, 403, 5, 120, 20, false, "Enabled by Default", (u64)Id::CHECK_ENABLEDBYDEFAULT);
+    unitTree.CreateThis(hParent, 5, 5, 200, 489, false, Id::TREE_UNITSETTINGS);
+    buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", Id::BUTTON_RESETALLUNITDEFAULTS);
+    checkUseUnitDefaults.CreateThis(hParent, 210, 5, 100, 20, false, "Use Unit Defaults", Id::CHECK_USEUNITDEFAULTS);
+    checkEnabledByDefault.CreateThis(hParent, 403, 5, 120, 20, false, "Enabled by Default", Id::CHECK_ENABLEDBYDEFAULT);
 
-    groupUnitProperties.CreateThis(hParent, 210, 25, 377, 292, "Unit Properties", (u64)Id::GROUP_UNITPROPERTIES);
-    textHitPoints.CreateThis(hParent, 215, 40, 75, 20, "Hit Points", (u64)Id::TEXT_UNITHITPOINTS);
-    editHitPoints.CreateThis(hParent, 303, 40, 63, 20, false, (u64)Id::EDIT_UNITHITPOINTS);
-    editHitPointsByte.CreateThis(hParent, 371, 40, 15, 20, false, (u64)Id::EDIT_UNITHITPOINTSBYTE);
-    textShieldPoints.CreateThis(hParent, 215, 65, 83, 20, "Shield Points", (u64)Id::TEXT_UNITSHIELDPOINTS);
-    editShieldPoints.CreateThis(hParent, 303, 65, 83, 20, false, (u64)Id::EDIT_UNITSHIELDPOINTS);
-    textArmor.CreateThis(hParent, 215, 90, 75, 20, "Armor", (u64)Id::TEXT_UNITARMOR);
-    editArmor.CreateThis(hParent, 303, 90, 83, 20, false, (u64)Id::EDIT_UNITARMOR);
-    textBuildTime.CreateThis(hParent, 411, 40, 75, 20, "Build Time", (u64)Id::TEXT_UNITBUILDTIME);
-    editBuildTime.CreateThis(hParent, 499, 40, 83, 20, false, (u64)Id::EDIT_UNITBUILDTIME);
-    textMineralCost.CreateThis(hParent, 411, 65, 75, 20, "Mineral Cost", (u64)Id::TEXT_UNITMINERALCOST);
-    editMineralCost.CreateThis(hParent, 499, 65, 83, 20, false, (u64)Id::EDIT_UNITMINERALCOST);
-    textGasCost.CreateThis(hParent, 411, 90, 75, 20, "Gas Cost", (u64)Id::TEXT_UNITGASCOST);
-    editGasCost.CreateThis(hParent, 499, 90, 83, 20, false, (u64)Id::EDIT_UNITGASCOST);
+    groupUnitProperties.CreateThis(hParent, 210, 25, 377, 292, "Unit Properties", Id::GROUP_UNITPROPERTIES);
+    textHitPoints.CreateThis(hParent, 215, 40, 75, 20, "Hit Points", Id::TEXT_UNITHITPOINTS);
+    editHitPoints.CreateThis(hParent, 303, 40, 63, 20, false, Id::EDIT_UNITHITPOINTS);
+    editHitPointsByte.CreateThis(hParent, 371, 40, 15, 20, false, Id::EDIT_UNITHITPOINTSBYTE);
+    textShieldPoints.CreateThis(hParent, 215, 65, 83, 20, "Shield Points", Id::TEXT_UNITSHIELDPOINTS);
+    editShieldPoints.CreateThis(hParent, 303, 65, 83, 20, false, Id::EDIT_UNITSHIELDPOINTS);
+    textArmor.CreateThis(hParent, 215, 90, 75, 20, "Armor", Id::TEXT_UNITARMOR);
+    editArmor.CreateThis(hParent, 303, 90, 83, 20, false, Id::EDIT_UNITARMOR);
+    textBuildTime.CreateThis(hParent, 411, 40, 75, 20, "Build Time", Id::TEXT_UNITBUILDTIME);
+    editBuildTime.CreateThis(hParent, 499, 40, 83, 20, false, Id::EDIT_UNITBUILDTIME);
+    textMineralCost.CreateThis(hParent, 411, 65, 75, 20, "Mineral Cost", Id::TEXT_UNITMINERALCOST);
+    editMineralCost.CreateThis(hParent, 499, 65, 83, 20, false, Id::EDIT_UNITMINERALCOST);
+    textGasCost.CreateThis(hParent, 411, 90, 75, 20, "Gas Cost", Id::TEXT_UNITGASCOST);
+    editGasCost.CreateThis(hParent, 499, 90, 83, 20, false, Id::EDIT_UNITGASCOST);
 
-    groupGroundWeapon.CreateThis(hParent, 215, 115, 367, 62, "Ground Weapon [NAME]", (u64)Id::GROUP_GROUNDWEAPON);
-    textGroundDamage.CreateThis(hParent, 220, 135, 75, 20, "Damage", (u64)Id::TEXT_UNITGROUNDDAMAGE);
-    editGroundDamage.CreateThis(hParent, 308, 135, 83, 20, false, (u64)Id::EDIT_UNITGROUNDDAMAGE);
-    textGroundBonus.CreateThis(hParent, 401, 135, 75, 20, "Bonus", (u64)Id::TEXT_UNITGROUNDBONUS);
-    editGroundBonus.CreateThis(hParent, 489, 135, 83, 20, false, (u64)Id::EDIT_UNITGROUNDBONUS);
+    groupGroundWeapon.CreateThis(hParent, 215, 115, 367, 62, "Ground Weapon [NAME]", Id::GROUP_GROUNDWEAPON);
+    textGroundDamage.CreateThis(hParent, 220, 135, 75, 20, "Damage", Id::TEXT_UNITGROUNDDAMAGE);
+    editGroundDamage.CreateThis(hParent, 308, 135, 83, 20, false, Id::EDIT_UNITGROUNDDAMAGE);
+    textGroundBonus.CreateThis(hParent, 401, 135, 75, 20, "Bonus", Id::TEXT_UNITGROUNDBONUS);
+    editGroundBonus.CreateThis(hParent, 489, 135, 83, 20, false, Id::EDIT_UNITGROUNDBONUS);
 
-    groupAirWeapon.CreateThis(hParent, 215, 182, 367, 62, "Air Weapon [NAME]", (u64)Id::GROUP_AIRWEAPON);
-    textAirDamage.CreateThis(hParent, 220, 202, 75, 20, "Damage", (u64)Id::TEXT_UNITAIRDAMAGE);
-    editAirDamage.CreateThis(hParent, 308, 202, 83, 20, false, (u64)Id::EDIT_UNITAIRDAMAGE);
-    textAirBonus.CreateThis(hParent, 401, 202, 75, 20, "Bonus", (u64)Id::TEXT_UNITAIRBONUS);
-    editAirBonus.CreateThis(hParent, 489, 202, 83, 20, false, (u64)Id::EDIT_UNITAIRBONUS);
+    groupAirWeapon.CreateThis(hParent, 215, 182, 367, 62, "Air Weapon [NAME]", Id::GROUP_AIRWEAPON);
+    textAirDamage.CreateThis(hParent, 220, 202, 75, 20, "Damage", Id::TEXT_UNITAIRDAMAGE);
+    editAirDamage.CreateThis(hParent, 308, 202, 83, 20, false, Id::EDIT_UNITAIRDAMAGE);
+    textAirBonus.CreateThis(hParent, 401, 202, 75, 20, "Bonus", Id::TEXT_UNITAIRBONUS);
+    editAirBonus.CreateThis(hParent, 489, 202, 83, 20, false, Id::EDIT_UNITAIRBONUS);
 
-    groupUnitName.CreateThis(hParent, 215, 249, 367, 62, "Unit Name", (u64)Id::GROUP_UNITNAME);
-    checkUseDefaultName.CreateThis(hParent, 220, 269, 75, 20, false, "Use Default", (u64)Id::CHECK_USEDEFAULTUNITNAME);
-    editUnitName.CreateThis(hParent, 342, 269, 234, 20, false, (u64)Id::EDIT_UNITNAME);
+    groupUnitName.CreateThis(hParent, 215, 249, 367, 62, "Unit Name", Id::GROUP_UNITNAME);
+    checkUseDefaultName.CreateThis(hParent, 220, 269, 75, 20, false, "Use Default", Id::CHECK_USEDEFAULTUNITNAME);
+    editUnitName.CreateThis(hParent, 342, 269, 234, 20, false, Id::EDIT_UNITNAME);
 
     for ( int y=0; y<6; y++ )
     {
@@ -260,7 +259,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
             else
                 ssPlayer << "Player " << player+1;
 
-            textPlayerAvailability[player].CreateThis(hParent, 215+188*x, 336+27*y, 75, 20, ssPlayer.str(), (u64)Id::TEXT_P1UNITAVAILABILITY+player);
+            textPlayerAvailability[player].CreateThis(hParent, 215+188*x, 336+27*y, 75, 20, ssPlayer.str(), Id::TEXT_P1UNITAVAILABILITY+player);
         }
     }
 
@@ -273,11 +272,11 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
         {
             int player = y*2+x;
             dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, false,
-                (u64)Id::DROP_P1UNITAVAILABILITY+player, items, defaultFont );
+                Id::DROP_P1UNITAVAILABILITY+player, items, defaultFont );
         }
     }
 
-    groupUnitAvailability.CreateThis(hParent, 210, 321, 372, 198, "Unit Availability", (u64)Id::GROUP_UNITAVAILABILITY);
+    groupUnitAvailability.CreateThis(hParent, 210, 321, 372, 198, "Unit Availability", Id::GROUP_UNITAVAILABILITY);
 
     DisableUnitEditing();
 }
@@ -497,7 +496,7 @@ LRESULT UnitSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
         Sc::Unit::Type unitType = (Sc::Unit::Type)itemData;
-        if ( itemType == TreeTypeUnit && (u16)unitType < Sc::Unit::TotalTypes )
+        if ( itemType == TreeTypeUnit && unitType < Sc::Unit::TotalTypes )
         {
             CheckReplaceUnitName();
             selectedUnitType = unitType;
@@ -518,7 +517,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     if ( refreshing )
         return ClassWindow::Command(hWnd, wParam, lParam);
 
-    switch ( (Id)LOWORD(wParam) )
+    switch ( LOWORD(wParam) )
     {
     case Id::BUTTON_RESETALLUNITDEFAULTS:
         if ( HIWORD(wParam) == BN_CLICKED )
@@ -753,10 +752,10 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         break;
     default:
-        if ( LOWORD(wParam) >= (WORD)Id::DROP_P1UNITAVAILABILITY && LOWORD(wParam) <= (WORD)Id::DROP_P12UNITAVAILABILITY &&
+        if ( LOWORD(wParam) >= Id::DROP_P1UNITAVAILABILITY && LOWORD(wParam) <= Id::DROP_P12UNITAVAILABILITY &&
             HIWORD(wParam) == CBN_SELCHANGE )
         {
-            u32 player = LOWORD(wParam) - (WORD)Id::DROP_P1UNITAVAILABILITY;
+            u32 player = LOWORD(wParam) - Id::DROP_P1UNITAVAILABILITY;
             int sel = dropPlayerAvailability[player].GetSel();
 
             if ( sel == 0 ) // Default

@@ -4,8 +4,7 @@
 #include <exception>
 #include <string>
 
-enum class Id
-{
+enum_t(Id, u32, {
     EditLocationName = IDC_LOCATION_NAME,
     EditLocationLeft = IDC_LOCLEFT,
     EditLocationTop = IDC_LOCTOP,
@@ -25,7 +24,7 @@ enum class Id
     ButtonInvertX = IDC_INVERTX,
     ButtonInvertY = IDC_INVERTY,
     ButtonInvertXY = IDC_INVERTXY,
-};
+});
 
 LocationWindow::LocationWindow() : refreshing(true), preservedStat(0), currentLocationIndex(0)
 {
@@ -41,24 +40,24 @@ bool LocationWindow::CreateThis(HWND hParent)
 {
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent) )
     {
-        editLocName.FindThis(getHandle(), (u32)Id::EditLocationName);
-        editLocLeft.FindThis(getHandle(), (u32)Id::EditLocationLeft);
-        editLocTop.FindThis(getHandle(), (u32)Id::EditLocationTop);
-        editLocRight.FindThis(getHandle(), (u32)Id::EditLocationRight);
-        editLocBottom.FindThis(getHandle(), (u32)Id::EditLocationBottom);
-        editRawFlags.FindThis(getHandle(), (u32)Id::EditRawFlags);
+        editLocName.FindThis(getHandle(), Id::EditLocationName);
+        editLocLeft.FindThis(getHandle(), Id::EditLocationLeft);
+        editLocTop.FindThis(getHandle(), Id::EditLocationTop);
+        editLocRight.FindThis(getHandle(), Id::EditLocationRight);
+        editLocBottom.FindThis(getHandle(), Id::EditLocationBottom);
+        editRawFlags.FindThis(getHandle(), Id::EditRawFlags);
 
-        checkUseExtended.FindThis(getHandle(), (u32)Id::CheckUseExtended);
-        checkLowGround.FindThis(getHandle(), (u32)Id::CheckLowGround);
-        checkMedGround.FindThis(getHandle(), (u32)Id::CheckMedGround);
-        checkHighGround.FindThis(getHandle(), (u32)Id::CheckHighGround);
-        checkLowAir.FindThis(getHandle(), (u32)Id::CheckLowAir);
-        checkMedAir.FindThis(getHandle(), (u32)Id::CheckMedAir);
-        checkHighAir.FindThis(getHandle(), (u32)Id::CheckHighAir);
+        checkUseExtended.FindThis(getHandle(), Id::CheckUseExtended);
+        checkLowGround.FindThis(getHandle(), Id::CheckLowGround);
+        checkMedGround.FindThis(getHandle(), Id::CheckMedGround);
+        checkHighGround.FindThis(getHandle(), Id::CheckHighGround);
+        checkLowAir.FindThis(getHandle(), Id::CheckLowAir);
+        checkMedAir.FindThis(getHandle(), Id::CheckMedAir);
+        checkHighAir.FindThis(getHandle(), Id::CheckHighAir);
 
-        buttonInvertX.FindThis(getHandle(), (u32)Id::ButtonInvertX);
-        buttonInvertY.FindThis(getHandle(), (u32)Id::ButtonInvertY);
-        buttonInvertXY.FindThis(getHandle(), (u32)Id::ButtonInvertXY);
+        buttonInvertX.FindThis(getHandle(), Id::ButtonInvertX);
+        buttonInvertY.FindThis(getHandle(), Id::ButtonInvertY);
+        buttonInvertXY.FindThis(getHandle(), Id::ButtonInvertXY);
 
         RefreshLocationInfo();
 
@@ -88,12 +87,12 @@ void LocationWindow::RefreshLocationElevationFlags()
     Chk::LocationPtr locRef = currentLocationIndex != NO_LOCATION ? CM->layers.getLocation(currentLocationIndex) : nullptr;
     if ( locRef != nullptr )
     {
-        checkLowGround.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::LowElevation) == 0);
-        checkMedGround.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::MediumElevation) == 0);
-        checkHighGround.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::HighElevation) == 0);
-        checkLowAir.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::LowAir) == 0);
-        checkMedAir.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::MediumAir) == 0);
-        checkHighAir.SetCheck(((u16)locRef->elevationFlags & (u16)Chk::Location::Elevation::HighAir) == 0);
+        checkLowGround.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::LowElevation) == 0);
+        checkMedGround.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::MediumElevation) == 0);
+        checkHighGround.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::HighElevation) == 0);
+        checkLowAir.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::LowAir) == 0);
+        checkMedAir.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::MediumAir) == 0);
+        checkHighAir.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::HighAir) == 0);
     }
 
     refreshing = prevRefreshingValue;
@@ -197,9 +196,9 @@ void LocationWindow::NotifyLowGroundClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkLowGround.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::LowElevation);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::LowElevation;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::LowElevation;
+            locRef->elevationFlags |= Chk::Location::Elevation::LowElevation;
 
         RefreshLocationInfo();
     }
@@ -213,9 +212,9 @@ void LocationWindow::NotifyMedGroundClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkMedGround.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::MediumElevation);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::MediumElevation;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::MediumElevation;
+            locRef->elevationFlags |= Chk::Location::Elevation::MediumElevation;
 
         RefreshLocationInfo();
     }
@@ -229,9 +228,9 @@ void LocationWindow::NotifyHighGroundClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkHighGround.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::HighElevation);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::HighElevation;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::HighElevation;
+            locRef->elevationFlags |= Chk::Location::Elevation::HighElevation;
 
         RefreshLocationInfo();
     }
@@ -245,9 +244,9 @@ void LocationWindow::NotifyLowAirClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkLowAir.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::LowAir);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::LowAir;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::LowAir;
+            locRef->elevationFlags |= Chk::Location::Elevation::LowAir;
 
         RefreshLocationInfo();
     }
@@ -261,9 +260,9 @@ void LocationWindow::NotifyMedAirClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkMedAir.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::MediumAir);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::MediumAir;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::MediumAir;
+            locRef->elevationFlags |= Chk::Location::Elevation::MediumAir;
 
         RefreshLocationInfo();
     }
@@ -277,9 +276,9 @@ void LocationWindow::NotifyHighAirClicked()
         CM->AddUndo(LocationChange::Make(currentLocationIndex, Chk::Location::Field::ElevationFlags, locRef->elevationFlags));
 
         if ( checkHighAir.isChecked() )
-            locRef->elevationFlags &= (~(u16)Chk::Location::Elevation::HighAir);
+            locRef->elevationFlags &= ~Chk::Location::Elevation::HighAir;
         else
-            locRef->elevationFlags |= (u16)Chk::Location::Elevation::HighAir;
+            locRef->elevationFlags |= Chk::Location::Elevation::HighAir;
 
         RefreshLocationInfo();
     }
@@ -449,7 +448,7 @@ void LocationWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     if ( refreshing )
         return;
 
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::ButtonOk: DestroyThis(); break;
         case Id::ButtonInvertX: InvertXc(); break;
@@ -470,7 +469,7 @@ void LocationWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
     if ( refreshing )
         return;
 
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::EditRawFlags: RawFlagsUpdated(); break;
         case Id::EditLocationLeft: LocationLeftUpdated(); break;
@@ -488,7 +487,7 @@ void LocationWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
     Chk::LocationPtr locRef = currentLocationIndex != NO_LOCATION ? CM->layers.getLocation(currentLocationIndex) : nullptr;
     if ( locRef != nullptr )
     {
-        switch ( (Id)idFrom )
+        switch ( idFrom )
         {
             case Id::EditLocationName: preservedStat = locRef->stringId; break;
             case Id::EditRawFlags: preservedStat = locRef->elevationFlags; break;
@@ -505,7 +504,7 @@ void LocationWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
     if ( refreshing )
         return;
 
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::EditRawFlags: RawFlagsFocusLost(); break;
         case Id::EditLocationLeft: LocationLeftFocusLost(); break;

@@ -39,7 +39,7 @@ void LocationCreateDel::Reverse(void *guiMap)
 
 int32_t LocationCreateDel::GetType()
 {
-    return (int32_t)UndoTypes::LocationChange;
+    return UndoTypes::LocationChange;
 }
 
 LocationCreateDel::LocationCreateDel(u16 locationIndex, Chk::Location &location, std::string &locationName) // Undo deletion

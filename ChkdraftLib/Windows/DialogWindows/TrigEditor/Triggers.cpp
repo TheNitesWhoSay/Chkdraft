@@ -20,7 +20,7 @@
 
 #define TRIGGER_NUM_PREFACE "\x12\x1A#"
 
-enum class Id {
+enum_t(Id, u32, {
     BUTTON_NEW = ID_FIRST,
     BUTTON_MODIFY,
     BUTTON_DELETE,
@@ -30,7 +30,7 @@ enum class Id {
     BUTTON_MOVETO,
     LIST_GROUPS,
     LIST_TRIGGERS
-};
+});
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
     changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
@@ -262,7 +262,7 @@ void TriggersWindow::MoveTrigTo()
 void TriggersWindow::ButtonNew()
 {
     Chk::TriggerPtr trigger = Chk::TriggerPtr(new Chk::Trigger());
-    for ( u8 i=(u8)Sc::Player::Id::Player1; i<=(u8)Sc::Player::Id::Player8; i++ )
+    for ( u8 i=Sc::Player::Id::Player1; i<=Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
             trigger->owners[i] = Chk::Trigger::Owned::Yes;
@@ -312,7 +312,7 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
 {
     std::stringstream ssCondition;
     Chk::Condition &condition = trigger->condition(conditionNum);
-    Chk::Condition::Type conditionType = (Chk::Condition::Type)condition.conditionType;
+    Chk::Condition::Type conditionType = condition.conditionType;
     if ( condition.isDisabled() )
         ssCondition << "(disabled) ";
 
@@ -320,7 +320,7 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
     {
         case Chk::Condition::Type::Accumulate: // Players, Comparison, Amount, TypeIndex
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C accumulates \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
                 << "\x0C \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
             break;
         case Chk::Condition::Type::Always:
@@ -328,40 +328,40 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
             break;
         case Chk::Condition::Type::Bring: // Players, Comparison, Amount, UnitID, Location
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C brings \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C to \'\x08"
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C to \'\x08"
                 << tt.GetTrigLocation(condition.locationId) << "\x0C\'.";
             break;
         case Chk::Condition::Type::Command: // Players, Comparison, Amount, UnitID
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C commands \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::CommandTheLeast: // UnitID
-            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::CommandTheLeastAt: // UnitID, Location
-            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C at \x08"
+            ssCondition << "Current player commands the least \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C at \x08"
                 << tt.GetTrigLocation(condition.locationId) << "\x0C.";
             break;
         case Chk::Condition::Type::CommandTheMost: // UnitID
-            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::CommandTheMostAt: // UnitID, Location
-            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C at \x08"
+            ssCondition << "Current player commands the most \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C at \x08"
                 << tt.GetTrigLocation(condition.locationId) << "\x0C.";
             break;
         case Chk::Condition::Type::CountdownTimer: // Comparison, Amount
-            ssCondition << "Countdown timer is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+            ssCondition << "Countdown timer is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C game seconds.";
             break;
         case Chk::Condition::Type::Deaths: // Players, Comparison, Amount, UnitID
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C has suffered \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
-                << "\x0C deaths of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+                << "\x0C deaths of \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::ElapsedTime: // Comparison, Amount
-            ssCondition << "Elapsed scenario time is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+            ssCondition << "Elapsed scenario time is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C game seconds.";
             break;
         case Chk::Condition::Type::HighestScore: // TypeIndex
@@ -369,11 +369,11 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
             break;
         case Chk::Condition::Type::Kill: // Players, Comparison, Amount, UnitID
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C kills \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
-                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
+                << tt.GetTrigNumber(condition.amount) << "\x0C \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::LeastKills: // UnitID
-            ssCondition << "Current player has least kills of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+            ssCondition << "Current player has least kills of \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::LeastResources: // TypeIndex
             ssCondition << "Current player has least \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
@@ -382,7 +382,7 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
             ssCondition << "Current player has lowest score \x08" << tt.GetTrigScoreType(condition.typeIndex) << "\x0C.";
             break;
         case Chk::Condition::Type::MostKills: // UnitID
-            ssCondition << "Current player has the most kills of \x08" << tt.GetTrigUnit((u16)condition.unitType) << "\x0C.";
+            ssCondition << "Current player has the most kills of \x08" << tt.GetTrigUnit(condition.unitType) << "\x0C.";
             break;
         case Chk::Condition::Type::MostResources: // TypeIndex
             ssCondition << "Current player has most \x08" << tt.GetTrigResourceType(condition.typeIndex) << "\x0C.";
@@ -398,23 +398,23 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
             break;
         case Chk::Condition::Type::Opponents: // Players, Comparison, Amount
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C has \x08"
-                << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
+                << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08" << tt.GetTrigNumber(condition.amount)
                 << "\x0C opponents remaining in the game.";
             break;
         case Chk::Condition::Type::Score: // Players, TypeIndex, Comparison, Amount
             ssCondition << '\x08' << tt.GetTrigPlayer(condition.player) << "\x0C \x08" << tt.GetTrigScoreType(condition.typeIndex)
-                << "\x0C score is \x08" << tt.GetTrigNumericComparison((u8)condition.comparison) << "\x0C \x08"
+                << "\x0C score is \x08" << tt.GetTrigNumericComparison(condition.comparison) << "\x0C \x08"
                 << tt.GetTrigNumber(condition.amount) << "\x0C.";
             break;
         case Chk::Condition::Type::Switch: // TypeIndex, Comparison
             ssCondition << "\'\x08" << tt.GetTrigSwitch(condition.typeIndex) << "\x0C\' is \x08"
-                << tt.GetTrigSwitchState((u8)condition.comparison) << "\x0C.";
+                << tt.GetTrigSwitchState(condition.comparison) << "\x0C.";
             break;
         default: // Location, Player, Amount, Unit, NumericComparison, Condition, TypeIndex, Flags, Internal
             ssCondition << "Condition: \x08" << condition.locationId << "\x0C, \x08" << condition.player << "\x0C, \x08"
-                << condition.amount << "\x0C, \x08" << (u16)condition.unitType << "\x0C, \x08" << u16((u8)condition.comparison)
+                << condition.amount << "\x0C, \x08" << condition.unitType << "\x0C, \x08" << u16(condition.comparison)
                 << "\x0C, \x08" << u16(condition.conditionType) << "\x0C, \x08" << u16(condition.typeIndex) << "\x0C, \x08"
-                << u16(condition.flags) << "\x0C, \x08" << (u16)condition.maskFlag << '\x0C';
+                << u16(condition.flags) << "\x0C, \x08" << condition.maskFlag << '\x0C';
             break;
     }
     return ssCondition.str();
@@ -684,7 +684,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
             ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
                 << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)
-                << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << (u16)action.maskFlag << "\x0C.";
+                << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << action.maskFlag << "\x0C.";
             break;
     }
     return ssAction.str();
@@ -757,17 +757,17 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger,
 
 void TriggersWindow::CreateSubWindows(HWND hWnd)
 {
-    buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", (u64)Id::BUTTON_NEW);
-    buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", (u64)Id::BUTTON_MODIFY);
-    buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", (u64)Id::BUTTON_DELETE);
-    buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", (u64)Id::BUTTON_COPY);
+    buttonNew.CreateThis(hWnd, 0, 0, 75, 23, "New", Id::BUTTON_NEW);
+    buttonModify.CreateThis(hWnd, 0, 25, 75, 23, "Modify", Id::BUTTON_MODIFY);
+    buttonDelete.CreateThis(hWnd, 0, 50, 75, 23, "Delete", Id::BUTTON_DELETE);
+    buttonCopy.CreateThis(hWnd, 0, 75, 75, 23, "Copy", Id::BUTTON_COPY);
     
-    buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", (u64)Id::BUTTON_MOVEUP);
-    buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", (u64)Id::BUTTON_MOVEDOWN);
-    buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", (u64)Id::BUTTON_MOVETO);
+    buttonMoveUp.CreateThis(hWnd, 0, 100, 75, 23, "Move Up", Id::BUTTON_MOVEUP);
+    buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", Id::BUTTON_MOVEDOWN);
+    buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", Id::BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, (u64)Id::LIST_GROUPS);
-    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, (u64)Id::LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, Id::LIST_GROUPS);
+    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, Id::LIST_TRIGGERS) )
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();
@@ -1243,7 +1243,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( HIWORD(wParam) )
     {
     case LBN_SELCHANGE:
-        if ( (Id)LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
+        if ( LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
         {
             int sel;
             if ( !(listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger)) )
@@ -1251,7 +1251,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             else if ( trigModifyWindow.getHandle() != NULL )
                 trigModifyWindow.RefreshWindow(currTrigger);
         }
-        else if ( (Id)LOWORD(wParam) == Id::LIST_GROUPS )
+        else if ( LOWORD(wParam) == Id::LIST_GROUPS )
         {
             currTrigger = NO_TRIGGER;
             if ( changeGroupHighlightOnly )
@@ -1277,28 +1277,28 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             RefreshTrigList();
         }
     case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
-        if ( (Id)LOWORD(wParam) == Id::LIST_TRIGGERS )
+        if ( LOWORD(wParam) == Id::LIST_TRIGGERS )
         {
 
         }
-        else if ( (Id)LOWORD(wParam) == Id::LIST_GROUPS )
+        else if ( LOWORD(wParam) == Id::LIST_GROUPS )
         {
 
         }
     case BN_CLICKED:
-        if ( (Id)LOWORD(wParam) == Id::BUTTON_NEW )
+        if ( LOWORD(wParam) == Id::BUTTON_NEW )
             ButtonNew();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MODIFY )
+        else if ( LOWORD(wParam) == Id::BUTTON_MODIFY )
             ButtonModify();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_DELETE )
+        else if ( LOWORD(wParam) == Id::BUTTON_DELETE )
             DeleteSelection();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_COPY )
+        else if ( LOWORD(wParam) == Id::BUTTON_COPY )
             CopySelection();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVEUP )
+        else if ( LOWORD(wParam) == Id::BUTTON_MOVEUP )
             MoveUp();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVEDOWN )
+        else if ( LOWORD(wParam) == Id::BUTTON_MOVEDOWN )
             MoveDown();
-        else if ( (Id)LOWORD(wParam) == Id::BUTTON_MOVETO )
+        else if ( LOWORD(wParam) == Id::BUTTON_MOVETO )
             MoveTrigTo();
         break;
     }
@@ -1318,7 +1318,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             break;
 
-        case (UINT)WinLib::LB::WM_DBLCLKITEM:
+        case WinLib::LB::WM_DBLCLKITEM:
             if ( listTriggers == (HWND)lParam )
                 ButtonModify();
             break;
@@ -1327,7 +1327,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             SendMessage(listTriggers.getHandle(), WM_MOUSEWHEEL, wParam, lParam);
             break;
 
-        case (UINT)WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
+        case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
             if ( this != nullptr )
             {
                 textTrigGenerator.LoadScenario(CM);
@@ -1336,7 +1336,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WM_MEASUREITEM:
-            if ( (Id)wParam == Id::LIST_TRIGGERS )
+            if ( wParam == Id::LIST_TRIGGERS )
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 triggerNum = (u32)mis->itemData;
@@ -1347,7 +1347,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 
                 return TRUE;
             }
-            else if ( (Id)wParam == Id::LIST_GROUPS )
+            else if ( wParam == Id::LIST_GROUPS )
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 listIndex = (u32)mis->itemData;
@@ -1358,7 +1358,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case (UINT)WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
             listTriggers.ReleaseDC(trigListDC);
             trigListDC = NULL;
             textTrigGenerator.ClearScenario();
@@ -1374,13 +1374,13 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case (UINT)WinLib::LB::WM_PREDRAWITEMS:
+        case WinLib::LB::WM_PREDRAWITEMS:
             textTrigGenerator.LoadScenario(CM);
             drawingAll = true;
             break;
 
         case WM_DRAWITEM:
-            if ( (Id)wParam == Id::LIST_TRIGGERS )
+            if ( wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
                     textTrigGenerator.LoadScenario(CM);
@@ -1404,7 +1404,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
                 return TRUE;
             }
-            else if ( (Id)wParam == Id::LIST_GROUPS )
+            else if ( wParam == Id::LIST_GROUPS )
             {
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
@@ -1419,7 +1419,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
-        case (UINT)WinLib::LB::WM_POSTDRAWITEMS:
+        case WinLib::LB::WM_POSTDRAWITEMS:
             drawingAll = false;
             textTrigGenerator.ClearScenario();
             break;

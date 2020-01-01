@@ -3,7 +3,7 @@
 #include "../../../Mapping/DatFileBrowsers.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
 
-enum class Id {
+enum_t(Id, u32, {
     TEXT_MAPSOUNDFILES = ID_FIRST,
     BUTTON_STOPSOUNDS,
     BUTTON_DELETESOUND,
@@ -23,7 +23,7 @@ enum class Id {
     CHECK_CUSTOMMPQPATH,
     TEXT_CUSTOMMPQSTRING,
     DROP_CUSTOMMPQPATH
-};
+});
 
 WavEditorWindow::WavEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), wavListDC(NULL)
 {
@@ -556,7 +556,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
             listMapSounds.SetTopIndex(listMapSounds.GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
             break;
 
-        case (UINT)WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
+        case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
             wavListDC = listMapSounds.getDC();
             break;
 
@@ -573,12 +573,12 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
         }
         break;
 
-        case (UINT)WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
             listMapSounds.ReleaseDC(wavListDC);
             wavListDC = NULL;
             break;
 
-        case (UINT)WinLib::LB::WM_PREDRAWITEMS:
+        case WinLib::LB::WM_PREDRAWITEMS:
             break;
 
         case WM_DRAWITEM:
@@ -611,7 +611,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
         }
         break;
 
-        case (UINT)WinLib::LB::WM_POSTDRAWITEMS:
+        case WinLib::LB::WM_POSTDRAWITEMS:
             break;
 
         default:
@@ -623,7 +623,7 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 void WavEditorWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
     case Id::BUTTON_PLAYSOUND: PlaySoundButtonPressed(); break;
     case Id::BUTTON_PLAYVIRTUALSOUND: PlayVirtualSoundButtonPressed(); break;
@@ -639,7 +639,7 @@ void WavEditorWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 
 void WavEditorWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
     case Id::DROP_COMPRESSIONQUALITY: CompressionDropdownChanged(); break;
     case Id::LB_MAPSOUNDS: MapSoundSelectionChanged(); break;
@@ -649,28 +649,28 @@ void WavEditorWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
 
 void WavEditorWindow::CreateSubWindows(HWND hWnd)
 {
-    textMapSoundFiles.CreateThis(hWnd, 5, 5, 100, 20, "Map Sound Files", (u64)Id::TEXT_MAPSOUNDFILES);
-    buttonStopSounds.CreateThis(hWnd, 127, 3, 110, 20, "Stop Sounds", (u64)Id::BUTTON_STOPSOUNDS);
-    buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", (u64)Id::BUTTON_DELETESOUND);
-    buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", (u64)Id::BUTTON_EXTRACTSOUND);
-    buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", (u64)Id::BUTTON_PLAYSOUND);
-    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, (u64)Id::LB_MAPSOUNDS);
+    textMapSoundFiles.CreateThis(hWnd, 5, 5, 100, 20, "Map Sound Files", Id::TEXT_MAPSOUNDFILES);
+    buttonStopSounds.CreateThis(hWnd, 127, 3, 110, 20, "Stop Sounds", Id::BUTTON_STOPSOUNDS);
+    buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", Id::BUTTON_DELETESOUND);
+    buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", Id::BUTTON_EXTRACTSOUND);
+    buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", Id::BUTTON_PLAYSOUND);
+    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, Id::LB_MAPSOUNDS);
 
-    textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", (u64)Id::TEXT_VIRTUALSOUNDS);
-    buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", (u64)Id::BUTTON_PLAYVIRTUALSOUND);
-    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, (u64)Id::LB_VIRTUALSOUNDS);
-    textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", (u64)Id::TEXT_SOUNDFILENAME);
-    editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, (u64)Id::EDIT_SOUNDFILENAME);
-    buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", (u64)Id::BUTTON_BROWSEFORSOUND);
-    textCompressionLevel.CreateThis(hWnd, 5, 459, 100, 20, "Compression Level", (u64)Id::TEXT_COMPRESSIONLEVEL);
+    textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", Id::TEXT_VIRTUALSOUNDS);
+    buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", Id::BUTTON_PLAYVIRTUALSOUND);
+    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, Id::LB_VIRTUALSOUNDS);
+    textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", Id::TEXT_SOUNDFILENAME);
+    editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, Id::EDIT_SOUNDFILENAME);
+    buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", Id::BUTTON_BROWSEFORSOUND);
+    textCompressionLevel.CreateThis(hWnd, 5, 459, 100, 20, "Compression Level", Id::TEXT_COMPRESSIONLEVEL);
     const std::vector<std::string> compressionLevels = { "Uncompressed", "Low Quality", "Medium Quality", "High Quality" };
-    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, (u64)Id::DROP_COMPRESSIONQUALITY, compressionLevels, defaultFont);
+    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, Id::DROP_COMPRESSIONQUALITY, compressionLevels, defaultFont);
     dropCompressionLevel.SetSel(0);
-    checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", (u64)Id::CHECK_VIRTUALFILE);
-    buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", (u64)Id::BUTTON_ADDFILE);
-    textCustomMpqString.CreateThis(hWnd, 5, 484, 100, 20, "Custom MPQ Path", (u64)Id::TEXT_CUSTOMMPQSTRING);
-    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, (u64)Id::DROP_CUSTOMMPQPATH, {}, defaultFont);
-    checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", (u64)Id::CHECK_CUSTOMMPQPATH);
+    checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", Id::CHECK_VIRTUALFILE);
+    buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", Id::BUTTON_ADDFILE);
+    textCustomMpqString.CreateThis(hWnd, 5, 484, 100, 20, "Custom MPQ Path", Id::TEXT_CUSTOMMPQSTRING);
+    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, Id::DROP_CUSTOMMPQPATH, {}, defaultFont);
+    checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", Id::CHECK_CUSTOMMPQPATH);
 
     size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
     for ( size_t i=0; i<numVirtualSounds; i++ )

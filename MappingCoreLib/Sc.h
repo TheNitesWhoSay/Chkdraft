@@ -86,7 +86,7 @@ namespace Sc {
         static constexpr size_t Total = 12;
         static constexpr size_t TotalSlots = 8;
         static constexpr size_t TotalOwners = 27;
-        enum class Id { // Typeless
+        enum_t(Id, size_t, { // size_t
             Player1 = 0,
             Player2 = 1,
             Player3 = 2,
@@ -114,7 +114,7 @@ namespace Sc {
             Unused3 = 24,
             Unused4 = 25,
             NonAlliedVictoryPlayers = 26
-        };
+        });
         enum_t(SlotType, u8, { // u8
             Inactive = 0,
             GameComputer = 1,
@@ -455,15 +455,15 @@ namespace Sc {
         class UnitDatFile
         {
         public:
-            enum class IdRange : size_t {
+            enum_t(IdRange, size_t, {
                 From0To105 = 105,
                 From106To201 = 96
-            };
+            });
 
             u8 graphics[TotalTypes];
             u16 subunit1[TotalTypes];
             u16 subunit2[TotalTypes];
-            u16 infestation[(size_t)IdRange::From106To201]; // Id 106-201 only
+            u16 infestation[IdRange::From106To201]; // Id 106-201 only
             u32 constructionAnimation[TotalTypes];
             u8 unitDirection[TotalTypes];
             u8 shieldEnable[TotalTypes];
@@ -489,17 +489,17 @@ namespace Sc {
             u8 unitSize[TotalTypes];
             u8 armor[TotalTypes];
             u8 rightClickAction[TotalTypes];
-            u16 readySound[(size_t)IdRange::From0To105]; // Id 0-105 only
+            u16 readySound[IdRange::From0To105]; // Id 0-105 only
             u16 whatSoundStart[TotalTypes];
             u16 whatSoundEnd[TotalTypes];
-            u16 pissSoundStart[(size_t)IdRange::From0To105]; // Id 0-105 only
-            u16 pissSoundEnd[(size_t)IdRange::From0To105]; // Id 0-105 only
-            u16 yesSoundStart[(size_t)IdRange::From0To105]; // Id 0-105 only
-            u16 yesSoundEnd[(size_t)IdRange::From0To105]; // Id 0-105 only
+            u16 pissSoundStart[IdRange::From0To105]; // Id 0-105 only
+            u16 pissSoundEnd[IdRange::From0To105]; // Id 0-105 only
+            u16 yesSoundStart[IdRange::From0To105]; // Id 0-105 only
+            u16 yesSoundEnd[IdRange::From0To105]; // Id 0-105 only
             u16 starEditPlacementBoxWidth[TotalTypes];
             u16 starEditPlacementBoxHeight[TotalTypes];
-            u16 addonHorizontal[(size_t)IdRange::From106To201]; // Id 106-201 only
-            u16 addonVertical[(size_t)IdRange::From106To201]; // Id 106-201 only
+            u16 addonHorizontal[IdRange::From106To201]; // Id 106-201 only
+            u16 addonVertical[IdRange::From106To201]; // Id 106-201 only
             u16 unitSizeLeft[TotalTypes];
             u16 unitSizeUp[TotalTypes];
             u16 unitSizeRight[TotalTypes];
@@ -586,16 +586,16 @@ namespace Sc {
         class SpriteDatFile
         {
         public:
-            enum class IdRange : size_t {
+            enum_t(IdRange, size_t, {
                 From130To517 = 387
-            };
+            });
             
             u16 imageFile[TotalSprites];
-            u8 healthBar[(size_t)IdRange::From130To517]; // Id 130-517 only
+            u8 healthBar[IdRange::From130To517]; // Id 130-517 only
             u8 unknown[TotalSprites];
             u8 isVisible[TotalSprites];
-            u8 selectionCircleImage[(size_t)IdRange::From130To517]; // Id 130-517 only
-            u8 selectionCircleOffset[(size_t)IdRange::From130To517]; // Id 130-517 only
+            u8 selectionCircleImage[IdRange::From130To517]; // Id 130-517 only
+            u8 selectionCircleOffset[IdRange::From130To517]; // Id 130-517 only
         };
         class ImageDatFile
         {
@@ -618,7 +618,7 @@ namespace Sc {
         
         class CompressedPixelLine {
         public:
-            enum class Header : u8 {
+            enum_t(Header, u8, {
                 // If (header & IsTransparentLine): place horizontal transparent line of (header & TransparentLineLength) pixels in length
                 IsTransparentLine = BIT_7,
                 TransparentLineLength = x8BIT_7,
@@ -631,7 +631,7 @@ namespace Sc {
                 SpeckledLineLength = x8BIT_7 & x8BIT_6,
                 
                 IsTransparentOrSolidLine = IsTransparentLine | IsSolidLine
-            };
+            });
                 
             /** Units are drawn using three sets of colors:
                 1.) Color at indexes 0-7 on the palette, sometimes remapped to tselect for selection circles, or using shift for hallucintations
@@ -644,11 +644,11 @@ namespace Sc {
             u8 header; // See the Header enum
             u8 paletteIndex[1]; // For transparent lines this array is unused, for solid lines this is paletteIndex[1], for speckled lines this is paletteIndex[header]
             
-            inline bool isTransparentLine() const { return (header & (u8)Header::IsTransparentLine) == (u8)Header::IsTransparentLine; }
-            inline bool isSolidLine() const { return (header & (u8)Header::IsTransparentOrSolidLine) == (u8)Header::IsSolidLine; }
-            inline bool isSpeckled() const { return (header & (u8)Header::IsTransparentOrSolidLine) == 0; }
-            inline u8 transparentLineLength() const { return header & (u8)Header::TransparentLineLength; }
-            inline u8 solidLineLength() const { return header & (u8)Header::SolidLineLength; }
+            inline bool isTransparentLine() const { return (header & Header::IsTransparentLine) == Header::IsTransparentLine; }
+            inline bool isSolidLine() const { return (header & Header::IsTransparentOrSolidLine) == Header::IsSolidLine; }
+            inline bool isSpeckled() const { return (header & Header::IsTransparentOrSolidLine) == 0; }
+            inline u8 transparentLineLength() const { return header & Header::TransparentLineLength; }
+            inline u8 solidLineLength() const { return header & Header::SolidLineLength; }
             inline u8 speckledLineLength() const { return header; }
             inline u8 lineLength() const { return isTransparentLine() ? transparentLineLength() : (isSolidLine() ? solidLineLength() : speckledLineLength()); }
             inline u8 sizeInBytes() const { return isTransparentLine() ? 1 : (isSolidLine() ? 2 : 1+speckledLineLength()); }
@@ -1632,12 +1632,11 @@ namespace Sc {
         class AiEntry
         {
         public:
-            enum class Flags : u32
-            {
+            enum_t(Flags, u32, { // u32
                 UseWithRunAiScriptAtLocation = 0x1,
                 StarEditInvisible = 0x2,
                 BroodWarOnly = 0x4
-            };
+            });
             u32 identifier; // 4-byte text, stored in TRIG section
             u32 filePtr; // File pointer in this file, 0 means it's in BWScript.bin
             u32 statStrIndex; // stat_txt.tbl string index for name
@@ -1900,9 +1899,9 @@ namespace Sc {
 
     class Address {
     public:
-        enum class Patch_1_16_1 : u32 {
+        enum_t(Patch_1_16_1, u32, {
             DeathTable = 0x0058A364
-        };
+        });
     };
 
     class Tbl

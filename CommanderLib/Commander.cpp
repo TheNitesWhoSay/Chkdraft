@@ -433,7 +433,7 @@ ErrorHandlerResult Commander::HandleError(GenericCommandPtr command, KnownError&
     if ( handler != errorHandlers.end() )
         return handler->second->HandleException(command, e);
     else
-        return ErrorHandlerResult(ErrorAction::DiscardCommand, (uint32_t)LogLevel::Error, std::string("Unknown error occured in command: ") + command->toString());
+        return ErrorHandlerResult(ErrorAction::DiscardCommand, LogLevel::Error, std::string("Unknown error occured in command: ") + command->toString());
 }
 
 void begin(Commander* commander)

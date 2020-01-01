@@ -4,12 +4,11 @@
 // Copy -> escape tabs to \t
 // Paste -> parse \t to tabs
 
-enum class Id
-{
+enum_t(Id, u32, {
     CHECK_ENABLED_1 = ID_FIRST,
     CHECK_ENABLED_16 = (CHECK_ENABLED_1 + 15),
     CHECK_ENABLED_64 = (CHECK_ENABLED_16 + 48)
-};
+});
 
 ICndActGridUser::~ICndActGridUser()
 {

@@ -298,13 +298,13 @@ namespace WinLib {
             case WM_SETREDRAW:
                 if ( wParam == TRUE && autoRedraw == false )
                 {
-                    SendMessage(GetParent(hWnd), (UINT)LB::WM_PREMEASUREITEMS, 0, (LPARAM)hWnd);
+                    SendMessage(GetParent(hWnd), LB::WM_PREMEASUREITEMS, 0, (LPARAM)hWnd);
                     while ( !itemsToAdd.empty() )
                     {
                         WindowControl::ControlProc(hWnd, LB_ADDSTRING, 0, (LPARAM)itemsToAdd.front());
                         itemsToAdd.pop();
                     }
-                    SendMessage(GetParent(hWnd), (UINT)LB::WM_POSTMEASUREITEMS, 0, (LPARAM)hWnd);
+                    SendMessage(GetParent(hWnd), LB::WM_POSTMEASUREITEMS, 0, (LPARAM)hWnd);
                     autoRedraw = true;
                 }
                 else if ( wParam == FALSE && autoRedraw == true )
@@ -312,10 +312,10 @@ namespace WinLib {
                 break;
             case WM_PAINT:
                 {
-                    SendMessage(GetParent(hWnd), (UINT)LB::WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
+                    SendMessage(GetParent(hWnd), LB::WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
                     LRESULT result = WindowControl::ControlProc(hWnd, msg, wParam, lParam);
                     // Could replace default drawing with double buffering
-                    SendMessage(GetParent(hWnd), (UINT)LB::WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
+                    SendMessage(GetParent(hWnd), LB::WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
                     return result;
                 }
                 break;
@@ -324,7 +324,7 @@ namespace WinLib {
                 return 0;
                 break;
             case WM_LBUTTONDBLCLK:
-                SendMessage(GetParent(hWnd), (UINT)LB::WM_DBLCLKITEM, 0, (LPARAM)hWnd);
+                SendMessage(GetParent(hWnd), LB::WM_DBLCLKITEM, 0, (LPARAM)hWnd);
                 return 0;
                 break;
             default:

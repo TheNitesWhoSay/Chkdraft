@@ -15,24 +15,13 @@ TEST(LoggerTest, CtorDtorLogLevel)
     std::unique_ptr<Logger> logger = nullptr;
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger()));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(LogLevel::Fatal)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Fatal);
-    EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_TRUE(logger->getAggregator() == nullptr);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger((uint32_t)LogLevel::Error)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Error);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Fatal);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
@@ -44,25 +33,13 @@ TEST(LoggerTest, CtorDtorOsRefLogLevel)
     std::stringstream stringStream;
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, LogLevel::Warn)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Warn);
-    EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_TRUE(logger->getAggregator() == nullptr);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsRefLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::stringstream stringStream;
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, (uint32_t)LogLevel::Info)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Info);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Warn);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
@@ -75,26 +52,13 @@ TEST(LoggerTest, CtorDtorOsRefAggRefLogLevel)
     Logger aggregateLogger;
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, LogLevel::Debug)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Debug);
-    EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsRefAggRefLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::stringstream stringStream;
-    Logger aggregateLogger;
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, (uint32_t)LogLevel::Trace)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Trace);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Debug);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -107,26 +71,13 @@ TEST(LoggerTest, CtorDtorOsRefAggPtrLogLevel)
     std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, LogLevel::Off)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Off);
-    EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
-    EXPECT_EQ(logger->getAggregator(), aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsRefAggPtrLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::stringstream stringStream;
-    std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, (uint32_t)LogLevel::None)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::None);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Off);
     EXPECT_EQ(logger->getOutputStream().get(), &stringStream);
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -138,25 +89,13 @@ TEST(LoggerTest, CtorDtorOsPtrLogLevel)
     std::shared_ptr<std::stringstream> stringStream = std::shared_ptr<std::stringstream>(new std::stringstream());
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, LogLevel::All)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::All);
-    EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_TRUE(logger->getAggregator() == nullptr);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsPtrLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::shared_ptr<std::stringstream> stringStream = std::shared_ptr<std::stringstream>(new std::stringstream());
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, (uint32_t)LogLevel::Default)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::All);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_TRUE(logger->getAggregator() == nullptr);
     EXPECT_NO_THROW(logger = nullptr);
@@ -169,26 +108,13 @@ TEST(LoggerTest, CtorDtorOsPtrAggRefLogLevel)
     Logger aggregateLogger;
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, LogLevel::Fatal)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Fatal);
-    EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsPtrAggRefLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::shared_ptr<std::stringstream> stringStream = std::shared_ptr<std::stringstream>(new std::stringstream());
-    Logger aggregateLogger;
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, (uint32_t)LogLevel::Error)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Error);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Fatal);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -201,26 +127,13 @@ TEST(LoggerTest, CtorDtorOsPtrAggPtrLogLevel)
     std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, LogLevel::Warn)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Warn);
-    EXPECT_EQ(logger->getOutputStream(), stringStream);
-    EXPECT_EQ(logger->getAggregator(), aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorOsPtrAggPtrLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::shared_ptr<std::stringstream> stringStream = std::shared_ptr<std::stringstream>(new std::stringstream());
-    std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(stringStream, aggregateLogger, (uint32_t)LogLevel::Info)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Info);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Warn);
     EXPECT_EQ(logger->getOutputStream(), stringStream);
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -232,25 +145,13 @@ TEST(LoggerTest, CtorDtorAggRefLogLevel)
     Logger aggregateLogger;
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger, LogLevel::Debug)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Debug);
-    EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorAggRefLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    Logger aggregateLogger;
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger, (uint32_t)LogLevel::Trace)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Trace);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Debug);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_EQ(logger->getAggregator().get(), &aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -262,25 +163,13 @@ TEST(LoggerTest, CtorDtorAggPtrLogLevel)
     std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Default);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
 
     EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger, LogLevel::Off)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::Off);
-    EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
-    EXPECT_EQ(logger->getAggregator(), aggregateLogger);
-    EXPECT_NO_THROW(logger = nullptr);
-}
-
-TEST(LoggerTest, CtorDtorAggPtrLogLevelInt)
-{
-    std::unique_ptr<Logger> logger = nullptr;
-    std::shared_ptr<Logger> aggregateLogger = std::shared_ptr<Logger>(new Logger());
-
-    EXPECT_NO_THROW(logger = std::unique_ptr<Logger>(new Logger(aggregateLogger, (uint32_t)LogLevel::None)));
-    EXPECT_EQ(logger->getLogLevel(), (uint32_t)LogLevel::None);
+    EXPECT_EQ(logger->getLogLevel(), LogLevel::Off);
     EXPECT_EQ(logger->getOutputStream(), Logger::getDefaultOutputStream());
     EXPECT_EQ(logger->getAggregator(), aggregateLogger);
     EXPECT_NO_THROW(logger = nullptr);
@@ -289,18 +178,18 @@ TEST(LoggerTest, CtorDtorAggPtrLogLevelInt)
 TEST(LoggerTest, GettersSetters)
 {
     constexpr LogLevel testLogLevel = LogLevel::Fatal;
-    constexpr uint32_t testLogLevelInt = 33;
+    constexpr LogLevel testLogLevelInt = (LogLevel)33;
     std::stringstream stringStream;
     std::shared_ptr<std::stringstream> stringStreamPtr = std::shared_ptr<std::stringstream>(new std::stringstream());
     Logger aggregateLogger;
     ASSERT_NE(testLogLevel, LogLevel::Default);
-    ASSERT_NE(testLogLevelInt, (uint32_t)LogLevel::Default);
+    ASSERT_NE(testLogLevelInt, LogLevel::Default);
 
     Logger logger;
 
-    EXPECT_EQ(logger.getLogLevel(), (uint32_t)LogLevel::Default);
+    EXPECT_EQ(logger.getLogLevel(), LogLevel::Default);
     logger.setLogLevel(testLogLevel);
-    EXPECT_EQ(logger.getLogLevel(), (uint32_t)testLogLevel);
+    EXPECT_EQ(logger.getLogLevel(), testLogLevel);
 
     logger.setLogLevel(testLogLevelInt);
     EXPECT_EQ(logger.getLogLevel(), testLogLevelInt);
@@ -334,13 +223,7 @@ TEST(LoggerTest, GetPrefix)
     EXPECT_TRUE(std::regex_match(logger.getPrefix(LogLevel::Info), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z INFO: ")));
     EXPECT_TRUE(std::regex_match(logger.getPrefix(LogLevel::Debug), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z DEBUG: ")));
     EXPECT_TRUE(std::regex_match(logger.getPrefix(LogLevel::Trace), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z TRACE: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Fatal), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z FATAL: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Error), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z ERROR: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Warn), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z WARN: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Info), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z INFO: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Debug), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z DEBUG: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix((uint32_t)LogLevel::Trace), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z TRACE: ")));
-    EXPECT_TRUE(std::regex_match(logger.getPrefix(33), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: ")));
+    EXPECT_TRUE(std::regex_match(logger.getPrefix((LogLevel)33), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: ")));
 }
 
 TEST(LoggerTest, OutputStreamsBasic)
@@ -351,7 +234,7 @@ TEST(LoggerTest, OutputStreamsBasic)
     logger << "1234";
     EXPECT_EQ("1234", stringStream.str());
 
-    logger.log(33) << "1234";
+    logger.log((LogLevel)33) << "1234";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
 
     logger.fatal() << "1234";
@@ -391,7 +274,7 @@ TEST(LoggerTest, OutputStreamLogLevelsExclusive)
     Logger logger(stringStream, LogLevel::Off);
     logger << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
-    logger.log(33) << "asdf";
+    logger.log((LogLevel)33) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
@@ -406,8 +289,8 @@ TEST(LoggerTest, OutputStreamLogLevelsExclusive)
     logger.trace() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(32);
-    logger.log(33) << "asdf";
+    logger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
@@ -422,7 +305,7 @@ TEST(LoggerTest, OutputStreamLogLevelsExclusive)
     logger.trace() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
     logger.fatal() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     logger.error() << "asdf";
@@ -477,7 +360,7 @@ TEST(LoggerTest, OutputStreamLogLevelsExclusive)
     EXPECT_TRUE(stringStream.str().empty());
 
     logger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1) << "asdf";
+    logger.log(LogLevel(LogLevel::Trace+1)) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
 }
 
@@ -486,9 +369,9 @@ TEST(LoggerTest, OutputStreamLogLevelsInclusive)
     std::stringstream stringStream;
 
     Logger logger(stringStream, LogLevel::All);
-    logger.log(UINT32_MAX) << "1MAX";
+    logger.log((LogLevel)UINT32_MAX) << "1MAX";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX")));
-    logger.log((uint32_t)LogLevel::Trace+1) << "1TRA+";
+    logger.log(LogLevel(LogLevel::Trace+1)) << "1TRA+";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA+")));
     logger.trace() << "1TRACE";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRACE")));
@@ -503,8 +386,8 @@ TEST(LoggerTest, OutputStreamLogLevelsInclusive)
     logger.fatal() << "1FATAL";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL")));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1) << "2TRA+";
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1)) << "2TRA+";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA+")));
     logger.trace() << "2TRACE";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRACE")));
@@ -578,7 +461,7 @@ TEST(LoggerTest, OutputMethodsBasic)
 {
     std::stringstream stringStream;
     Logger logger(stringStream, LogLevel::All);
-    logger.log(33, "1234");
+    logger.log((LogLevel)33, "1234");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
 
     logger.fatal("1234");
@@ -605,7 +488,7 @@ TEST(LoggerTest, OutputMethodsExceptions)
     TestException testException;
     std::stringstream stringStream;
     Logger logger(stringStream, LogLevel::All);
-    logger.log(33, "1234", testException);
+    logger.log((LogLevel)33, "1234", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234\\r?\\n?" + std::string(testExceptionWhatString))));
 
     logger.fatal("1234", testException);
@@ -632,7 +515,7 @@ TEST(LoggerTest, OutputMethodLogLevelsExclusive)
     std::stringstream stringStream;
 
     Logger logger(stringStream, LogLevel::Off);
-    logger.log(33, "asdf");
+    logger.log((LogLevel)33, "asdf");
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal("asdf");
     EXPECT_TRUE(stringStream.str().empty());
@@ -647,8 +530,8 @@ TEST(LoggerTest, OutputMethodLogLevelsExclusive)
     logger.trace("asdf");
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(32);
-    logger.log(33, "asdf");
+    logger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33, "asdf");
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal("asdf");
     EXPECT_TRUE(stringStream.str().empty());
@@ -663,7 +546,7 @@ TEST(LoggerTest, OutputMethodLogLevelsExclusive)
     logger.trace("asdf");
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
     logger.fatal("asdf");
     EXPECT_TRUE(stringStream.str().empty());
     logger.error("asdf");
@@ -718,7 +601,7 @@ TEST(LoggerTest, OutputMethodLogLevelsExclusive)
     EXPECT_TRUE(stringStream.str().empty());
 
     logger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1, "asdf");
+    logger.log(LogLevel(LogLevel::Trace+1), "asdf");
     EXPECT_TRUE(stringStream.str().empty());
 }
 
@@ -727,9 +610,9 @@ TEST(LoggerTest, OutputMethodLogLevelsInclusive)
     std::stringstream stringStream;
 
     Logger logger(stringStream, LogLevel::All);
-    logger.log(UINT32_MAX, "1MAX");
+    logger.log((LogLevel)UINT32_MAX, "1MAX");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX")));
-    logger.log((uint32_t)LogLevel::Trace+1, "1TRA+");
+    logger.log(LogLevel(LogLevel::Trace+1), "1TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA+")));
     logger.trace("1TRACE");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRACE")));
@@ -744,8 +627,8 @@ TEST(LoggerTest, OutputMethodLogLevelsInclusive)
     logger.fatal("1FATAL");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL")));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1, "2TRA+");
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1), "2TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA+")));
     logger.trace("2TRACE");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRACE")));
@@ -821,7 +704,7 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsExclusive)
     std::stringstream stringStream;
 
     Logger logger(stringStream, LogLevel::Off);
-    logger.log(33, "asdf", testException);
+    logger.log((LogLevel)33, "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
@@ -836,8 +719,8 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsExclusive)
     logger.trace("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(32);
-    logger.log(33, "asdf", testException);
+    logger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33, "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     logger.fatal("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
@@ -852,7 +735,7 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsExclusive)
     logger.trace("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
 
-    logger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
     logger.fatal("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     logger.error("asdf", testException);
@@ -907,7 +790,7 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsExclusive)
     EXPECT_TRUE(stringStream.str().empty());
 
     logger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1, "asdf", testException);
+    logger.log(LogLevel(LogLevel::Trace+1), "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
 }
 
@@ -917,9 +800,9 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsInclusive)
     std::stringstream stringStream;
 
     Logger logger(stringStream, LogLevel::All);
-    logger.log(UINT32_MAX, "1MAX", testException);
+    logger.log((LogLevel)UINT32_MAX, "1MAX", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX\\r?\\n?" + std::string(testExceptionWhatString))));
-    logger.log((uint32_t)LogLevel::Trace+1, "1TRA+", testException);
+    logger.log(LogLevel(LogLevel::Trace+1), "1TRA+", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     logger.trace("1TRACE", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRACE\\r?\\n?" + std::string(testExceptionWhatString))));
@@ -934,8 +817,8 @@ TEST(LoggerTest, OutputMethodExceptionsLogLevelsInclusive)
     logger.fatal("1FATAL", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL\\r?\\n?" + std::string(testExceptionWhatString))));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1, "2TRA+", testException);
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1), "2TRA+", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     logger.trace("2TRACE", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRACE\\r?\\n?" + std::string(testExceptionWhatString))));
@@ -1016,7 +899,7 @@ TEST(LoggerTest, OutputStreamsAggregationBasic)
     EXPECT_EQ("1234", stringStream.str());
     EXPECT_EQ("1234", aggregateStringStream.str());
 
-    logger.log(33) << "1234";
+    logger.log((LogLevel)33) << "1234";
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
 
@@ -1069,7 +952,7 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqExclusive)
     logger << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
-    logger.log(33) << "asdf";
+    logger.log((LogLevel)33) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal() << "asdf";
@@ -1091,9 +974,9 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(32);
-    aggregateLogger.setLogLevel(32);
-    logger.log(33) << "asdf";
+    logger.setLogLevel((LogLevel)32);
+    aggregateLogger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal() << "asdf";
@@ -1115,8 +998,8 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(33);
-    aggregateLogger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
+    aggregateLogger.setLogLevel((LogLevel)33);
     logger.fatal() << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
@@ -1198,7 +1081,7 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqExclusive)
 
     logger.setLogLevel(LogLevel::Trace);
     aggregateLogger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1) << "asdf";
+    logger.log(LogLevel(LogLevel::Trace+1)) << "asdf";
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 }
@@ -1210,10 +1093,10 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqInclusive)
     Logger aggregateLogger(aggregateStringStream, LogLevel::All);
     Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger.log(UINT32_MAX, "1MAX");
+    logger.log((LogLevel)UINT32_MAX, "1MAX");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1MAX")));
-    logger.log((uint32_t)LogLevel::Trace+1, "1TRA+");
+    logger.log(LogLevel(LogLevel::Trace+1), "1TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA+")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1TRA+")));
     logger.trace("1TRACE");
@@ -1235,9 +1118,9 @@ TEST(LoggerTest, OutputStreamAggregationLogLevelsEqInclusive)
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1FATAL")));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    aggregateLogger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1, "2TRA+");
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    aggregateLogger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1), "2TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA+")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("2TRA+")));
     logger.trace("2TRACE");
@@ -1625,7 +1508,7 @@ TEST(LoggerTest, OutputMethodsAggregationBasic)
     Logger aggregateLogger(aggregateStringStream, LogLevel::All);
     Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger.log(33, "1234");
+    logger.log((LogLevel)33, "1234");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234")));
 
@@ -1662,7 +1545,7 @@ TEST(LoggerTest, OutputMethodsExceptionsAggregation)
     Logger aggregateLogger(aggregateStringStream, LogLevel::All);
     Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger.log(33, "1234", testException);
+    logger.log((LogLevel)33, "1234", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234\\r?\\n?" + std::string(testExceptionWhatString))));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z LEVEL\\[33\\]: 1234\\r?\\n?" + std::string(testExceptionWhatString))));
 
@@ -1698,7 +1581,7 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqExclusive)
     Logger aggregateLogger(aggregateStringStream, LogLevel::Off);
     Logger logger(stringStream, aggregateLogger, LogLevel::Off);
 
-    logger.log(33, "asdf");
+    logger.log((LogLevel)33, "asdf");
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal("asdf");
@@ -1720,9 +1603,9 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(32);
-    aggregateLogger.setLogLevel(32);
-    logger.log(33, "asdf");
+    logger.setLogLevel((LogLevel)32);
+    aggregateLogger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33, "asdf");
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal("asdf");
@@ -1744,8 +1627,8 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(33);
-    aggregateLogger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
+    aggregateLogger.setLogLevel((LogLevel)33);
     logger.fatal("asdf");
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
@@ -1827,7 +1710,7 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqExclusive)
 
     logger.setLogLevel(LogLevel::Trace);
     aggregateLogger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1, "asdf");
+    logger.log(LogLevel(LogLevel::Trace+1), "asdf");
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 }
@@ -1839,10 +1722,10 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqInclusive)
     Logger aggregateLogger(aggregateStringStream, LogLevel::All);
     Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger.log(UINT32_MAX, "1MAX");
+    logger.log((LogLevel)UINT32_MAX, "1MAX");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1MAX")));
-    logger.log((uint32_t)LogLevel::Trace+1, "1TRA+");
+    logger.log(LogLevel(LogLevel::Trace+1), "1TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA+")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1TRA+")));
     logger.trace("1TRACE");
@@ -1864,9 +1747,9 @@ TEST(LoggerTest, OutputMethodAggregationLogLevelsEqInclusive)
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1FATAL")));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    aggregateLogger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1, "2TRA+");
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    aggregateLogger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1), "2TRA+");
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA+")));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("2TRA+")));
     logger.trace("2TRACE");
@@ -2240,7 +2123,7 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqExclusive)
     Logger aggregateLogger(aggregateStringStream, LogLevel::Off);
     Logger logger(stringStream, aggregateLogger, LogLevel::Off);
 
-    logger.log(33, "asdf", testException);
+    logger.log((LogLevel)33, "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal("asdf", testException);
@@ -2262,9 +2145,9 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(32);
-    aggregateLogger.setLogLevel(32);
-    logger.log(33, "asdf", testException);
+    logger.setLogLevel((LogLevel)32);
+    aggregateLogger.setLogLevel((LogLevel)32);
+    logger.log((LogLevel)33, "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
     logger.fatal("asdf", testException);
@@ -2286,8 +2169,8 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqExclusive)
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 
-    logger.setLogLevel(33);
-    aggregateLogger.setLogLevel(33);
+    logger.setLogLevel((LogLevel)33);
+    aggregateLogger.setLogLevel((LogLevel)33);
     logger.fatal("asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
@@ -2369,7 +2252,7 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqExclusive)
 
     logger.setLogLevel(LogLevel::Trace);
     aggregateLogger.setLogLevel(LogLevel::Trace);
-    logger.log((uint32_t)LogLevel::Trace+1, "asdf", testException);
+    logger.log(LogLevel(LogLevel::Trace+1), "asdf", testException);
     EXPECT_TRUE(stringStream.str().empty());
     EXPECT_TRUE(aggregateStringStream.str().empty());
 }
@@ -2382,10 +2265,10 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqInclusive)
     Logger aggregateLogger(aggregateStringStream, LogLevel::All);
     Logger logger(stringStream, aggregateLogger, LogLevel::All);
 
-    logger.log(UINT32_MAX, "1MAX", testException);
+    logger.log((LogLevel)UINT32_MAX, "1MAX", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1MAX\\r?\\n?" + std::string(testExceptionWhatString))));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1MAX\\r?\\n?" + std::string(testExceptionWhatString))));
-    logger.log((uint32_t)LogLevel::Trace+1, "1TRA+", testException);
+    logger.log(LogLevel(LogLevel::Trace+1), "1TRA+", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     logger.trace("1TRACE", testException);
@@ -2407,9 +2290,9 @@ TEST(LoggerTest, OutputMethodExceptionsAggregationLogLevelsEqInclusive)
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("1FATAL\\r?\\n?" + std::string(testExceptionWhatString))));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("1FATAL\\r?\\n?" + std::string(testExceptionWhatString))));
 
-    logger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    aggregateLogger.setLogLevel((uint32_t)LogLevel::Trace+1);
-    logger.log((uint32_t)LogLevel::Trace+1, "2TRA+", testException);
+    logger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    aggregateLogger.setLogLevel(LogLevel(LogLevel::Trace+1));
+    logger.log(LogLevel(LogLevel::Trace+1), "2TRA+", testException);
     EXPECT_TRUE(std::regex_search(stringStream.str(), std::regex("2TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     EXPECT_TRUE(std::regex_search(aggregateStringStream.str(), std::regex("2TRA\\+\\r?\\n?" + std::string(testExceptionWhatString))));
     logger.trace("2TRACE", testException);

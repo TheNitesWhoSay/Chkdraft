@@ -100,21 +100,27 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
         return false;
     }
 
-    std::shared_ptr<GuiMap> newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, tileset, width, height)));
-    char title[256] = { "Untitled" };
-    if ( UntitledNumber > 0 )
-        std::snprintf(title, 256, "Untitled %d", UntitledNumber);
-    
-    if ( newMap->CreateThis(getHandle(), title) )
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height));
+    if ( newMap != nullptr )
     {
-        UntitledNumber++;
-        EnableMapping();
-        Focus(newMap);
-        currentlyActiveMap->Redraw(true);
-        return true;
+        AddMap(newMap);
+        char title[256] = { "Untitled" };
+        if ( UntitledNumber > 0 )
+            std::snprintf(title, 256, "Untitled %d", UntitledNumber);
+    
+        if ( newMap->CreateThis(getHandle(), title) )
+        {
+            UntitledNumber++;
+            EnableMapping();
+            Focus(newMap);
+            currentlyActiveMap->Redraw(true);
+            return true;
+        }
+        else
+            Error("Failed to create MDI Child Window!");
     }
     else
-        Error("Failed to create MDI Child Window!");
+        Error("Failed to create new map!");
 
     RemoveMap(newMap);
     return false;
@@ -122,27 +128,32 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
 
 bool Maps::OpenMap(const std::string &fileName)
 {
-    auto newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, fileName)));
-
-    if ( newMap->CreateThis(getHandle(), fileName) )
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
+    if ( newMap != nullptr && newMap->isOpen() )
     {
-        newMap->SetWinText(fileName);
-        EnableMapping();
-        Focus(newMap);
+        AddMap(newMap);
+        if ( newMap->CreateThis(getHandle(), fileName) )
+        {
+            newMap->SetWinText(fileName);
+            EnableMapping();
+            Focus(newMap);
 
-        if ( newMap->isProtected() && newMap->hasPassword() )
-            chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
-        else if ( newMap->isProtected() )
-            mb("Map is protected and will be opened as view only");
+            if ( newMap->isProtected() && newMap->hasPassword() )
+                chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+            else if ( newMap->isProtected() )
+                mb("Map is protected and will be opened as view only");
 
-        SetFocus(chkd.getHandle());
-        currentlyActiveMap->Scroll(true, true, false);
-        currentlyActiveMap->Redraw(true);
-        currentlyActiveMap->refreshScenario();
-        return true;
-    } 
+            SetFocus(chkd.getHandle());
+            currentlyActiveMap->Scroll(true, true, false);
+            currentlyActiveMap->Redraw(true);
+            currentlyActiveMap->refreshScenario();
+            return true;
+        } 
+        else
+            Error("Failed to create MDI Child Window!");
+    }
     else
-        Error("Failed to create MDI Child Window!");
+        Error("Failed to open map!");
 
     RemoveMap(newMap);
     return false;
@@ -150,26 +161,31 @@ bool Maps::OpenMap(const std::string &fileName)
 
 bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
-    auto newMap = AddMap(GuiMapPtr(new GuiMap(clipboard, fileBrowser)));
-    if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
+    auto newMap = GuiMapPtr(new GuiMap(clipboard, fileBrowser));
+    if ( newMap != nullptr && newMap->isOpen() )
     {
-        newMap->SetWinText(newMap->getFilePath());
-        EnableMapping();
-        Focus(newMap);
+        AddMap(newMap);
+        if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
+        {
+            newMap->SetWinText(newMap->getFilePath());
+            EnableMapping();
+            Focus(newMap);
 
-        if ( newMap->isProtected() && newMap->hasPassword() )
-            chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
-        else if ( newMap->isProtected() )
-            mb("Map is protected and will be opened as view only");
+            if ( newMap->isProtected() && newMap->hasPassword() )
+                chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+            else if ( newMap->isProtected() )
+                mb("Map is protected and will be opened as view only");
 
-        SetFocus(chkd.getHandle());
-        currentlyActiveMap->Scroll(true, true, false);
-        currentlyActiveMap->Redraw(true);
-        currentlyActiveMap->refreshScenario();
-        return true;
-    } 
-    else
+            SetFocus(chkd.getHandle());
+            currentlyActiveMap->Scroll(true, true, false);
+            currentlyActiveMap->Redraw(true);
+            currentlyActiveMap->refreshScenario();
+            return true;
+        }
         Error("Failed to create MDI Child Window!");
+    }
+    else
+        Error("Failed to open map!");
 
     RemoveMap(newMap);
     return false;
@@ -593,7 +609,7 @@ void Maps::DisableMapping()
     }
 }
 
-GuiMapPtr Maps::AddMap(GuiMapPtr map)
+void Maps::AddMap(GuiMapPtr map)
 {
     if ( map != nullptr )
     {
@@ -602,7 +618,6 @@ GuiMapPtr Maps::AddMap(GuiMapPtr map)
         if ( it != openMaps.end() )
             it->second->setMapId(id);
     }
-    return map;
 }
 
 bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)

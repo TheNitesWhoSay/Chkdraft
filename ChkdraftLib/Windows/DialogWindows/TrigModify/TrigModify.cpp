@@ -2,13 +2,13 @@
 #include "../../../Chkdraft.h"
 #include <string>
 
-enum class Id {
+enum_t(Id, u32, {
     WIN_GENERAL = ID_FIRST,
     WIN_PLAYERS,
     WIN_CONDITIONS,
     WIN_ACTIONS,
     WIN_TRIGMODIFYTEXT
-};
+});
 
 #define NO_TRIGGER (u32(-1))
 
@@ -50,19 +50,19 @@ void TrigModifyWindow::ChangeTab(Tab tab)
 {
     tabs.SetCurSel((u32)tab);
 
-    tabs.HideTab((u32)Id::WIN_GENERAL);
-    tabs.HideTab((u32)Id::WIN_PLAYERS);
-    tabs.HideTab((u32)Id::WIN_CONDITIONS);
-    tabs.HideTab((u32)Id::WIN_ACTIONS);
-    tabs.HideTab((u32)Id::WIN_TRIGMODIFYTEXT);
+    tabs.HideTab(Id::WIN_GENERAL);
+    tabs.HideTab(Id::WIN_PLAYERS);
+    tabs.HideTab(Id::WIN_CONDITIONS);
+    tabs.HideTab(Id::WIN_ACTIONS);
+    tabs.HideTab(Id::WIN_TRIGMODIFYTEXT);
 
     switch ( tab )
     {
-        case Tab::General: tabs.ShowTab((u32)Id::WIN_GENERAL); break;
-        case Tab::Players: tabs.ShowTab((u32)Id::WIN_PLAYERS); break;
-        case Tab::Conditions: tabs.ShowTab((u32)Id::WIN_CONDITIONS); break;
-        case Tab::Actions: tabs.ShowTab((u32)Id::WIN_ACTIONS); break;
-        case Tab::Text: tabs.ShowTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
+        case Tab::General: tabs.ShowTab(Id::WIN_GENERAL); break;
+        case Tab::Players: tabs.ShowTab(Id::WIN_PLAYERS); break;
+        case Tab::Conditions: tabs.ShowTab(Id::WIN_CONDITIONS); break;
+        case Tab::Actions: tabs.ShowTab(Id::WIN_ACTIONS); break;
+        case Tab::Text: tabs.ShowTab(Id::WIN_TRIGMODIFYTEXT); break;
     }
 
     currTab = tab;
@@ -82,11 +82,11 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 
 void TrigModifyWindow::CreateSubWindows(HWND hWnd)
 {
-    generalWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_GENERAL);
-    playersWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_PLAYERS);
-    conditionsWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_CONDITIONS);
-    actionsWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_ACTIONS);
-    trigModifyTextWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_TRIGMODIFYTEXT);
+    generalWindow.CreateThis(tabs.getHandle(), Id::WIN_GENERAL);
+    playersWindow.CreateThis(tabs.getHandle(), Id::WIN_PLAYERS);
+    conditionsWindow.CreateThis(tabs.getHandle(), Id::WIN_CONDITIONS);
+    actionsWindow.CreateThis(tabs.getHandle(), Id::WIN_ACTIONS);
+    trigModifyTextWindow.CreateThis(tabs.getHandle(), Id::WIN_TRIGMODIFYTEXT);
     DoSize();
 }
 
@@ -137,11 +137,11 @@ BOOL TrigModifyWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-            case Tab::General: tabs.ShowTab((u32)Id::WIN_GENERAL); break;
-            case Tab::Players: tabs.ShowTab((u32)Id::WIN_PLAYERS); break;
-            case Tab::Conditions: tabs.ShowTab((u32)Id::WIN_CONDITIONS); break;
-            case Tab::Actions: tabs.ShowTab((u32)Id::WIN_ACTIONS); break;
-            case Tab::Text: tabs.ShowTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
+            case Tab::General: tabs.ShowTab(Id::WIN_GENERAL); break;
+            case Tab::Players: tabs.ShowTab(Id::WIN_PLAYERS); break;
+            case Tab::Conditions: tabs.ShowTab(Id::WIN_CONDITIONS); break;
+            case Tab::Actions: tabs.ShowTab(Id::WIN_ACTIONS); break;
+            case Tab::Text: tabs.ShowTab(Id::WIN_TRIGMODIFYTEXT); break;
         }
         currTab = selectedTab;
     }
@@ -151,11 +151,11 @@ BOOL TrigModifyWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-            case Tab::General: tabs.HideTab((u32)Id::WIN_GENERAL); break;
-            case Tab::Players: tabs.HideTab((u32)Id::WIN_PLAYERS); break;
-            case Tab::Conditions: tabs.HideTab((u32)Id::WIN_CONDITIONS); break;
-            case Tab::Actions: tabs.HideTab((u32)Id::WIN_ACTIONS); break;
-            case Tab::Text: tabs.HideTab((u32)Id::WIN_TRIGMODIFYTEXT); break;
+            case Tab::General: tabs.HideTab(Id::WIN_GENERAL); break;
+            case Tab::Players: tabs.HideTab(Id::WIN_PLAYERS); break;
+            case Tab::Conditions: tabs.HideTab(Id::WIN_CONDITIONS); break;
+            case Tab::Actions: tabs.HideTab(Id::WIN_ACTIONS); break;
+            case Tab::Text: tabs.HideTab(Id::WIN_TRIGMODIFYTEXT); break;
         }
     }
     break;

@@ -49,7 +49,7 @@ class Maps : public WinLib::MdiClient
         void EnableMapping();
         void DisableMapping();
 
-        GuiMapPtr AddMap(GuiMapPtr map);
+        void AddMap(GuiMapPtr map);
         bool RemoveMap(GuiMapPtr guiMap);
 
     private:

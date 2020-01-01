@@ -4,14 +4,16 @@
 #include "../../MappingCoreLib/MappingCore.h"
 class GuiMap;
 
-enum class LocSelFlags : u8 { North = BIT_0, South = BIT_1, East = BIT_2, West = BIT_3,
+enum_t(LocSelFlags, u8, { North = BIT_0, South = BIT_1, East = BIT_2, West = BIT_3,
     NorthWest = North|West, NorthEast = North|East, SouthWest = South|West, SouthEast = South|East,
-    Middle = North | South | East | West, None = 0 };
+    Middle = North | South | East | West, None = 0 });
 
-enum class UnitSortFlags : u16 { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap = x16BIT_14, Unmove = x16BIT_15 };
 
-enum class TileNeighbor : u8 { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom = BIT_3,
-    All = Left | Top | Right | Bottom, xLeft = x8BIT_0, xTop = x8BIT_1, xRight = x8BIT_2, xBottom = x8BIT_3, None = 0 };
+enum_t(UnitSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap = x16BIT_14, Unmove = x16BIT_15 });
+
+
+enum_t(TileNeighbor, u8, { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom = BIT_3,
+    All = Left | Top | Right | Bottom, xLeft = x8BIT_0, xTop = x8BIT_1, xRight = x8BIT_2, xBottom = x8BIT_3, None = 0 });
 
 class TileNode
 {

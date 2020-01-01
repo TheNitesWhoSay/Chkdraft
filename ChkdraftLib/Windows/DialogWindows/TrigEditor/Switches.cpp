@@ -1,13 +1,12 @@
 #include "Switches.h"
 #include "../../../Chkdraft.h"
 
-enum class Id
-{
+enum_t(Id, u32, {
     TreeSwitches = ID_FIRST,
     CheckUseDefaultName,
     CheckUseExtendedString,
     EditSwitchName
-};
+});
 
 SwitchesWindow::SwitchesWindow() : selectedSwitch(-1), refreshing(false), refreshingSwitchList(false)
 {
@@ -138,11 +137,11 @@ void SwitchesWindow::EnableEditing()
 
 void SwitchesWindow::CreateSubWindows(HWND hWnd)
 {
-    switchList.CreateThis(hWnd, 5, 5, 175, 100, false, (u32)Id::TreeSwitches);
-    checkUseDefaultName.CreateThis(hWnd, 200, 5, 110, 20, true, "Use Default Name", (u32)Id::CheckUseDefaultName);
-    checkUseExtendedString.CreateThis(hWnd, 320, 5, 125, 20, false, "Use Extended String", (u32)Id::CheckUseExtendedString);
+    switchList.CreateThis(hWnd, 5, 5, 175, 100, false, Id::TreeSwitches);
+    checkUseDefaultName.CreateThis(hWnd, 200, 5, 110, 20, true, "Use Default Name", Id::CheckUseDefaultName);
+    checkUseExtendedString.CreateThis(hWnd, 320, 5, 125, 20, false, "Use Extended String", Id::CheckUseExtendedString);
     textSwitchName.CreateThis(hWnd, 200, 30, 70, 20, "Switch Name: ", (u32)0);
-    editSwitchName.CreateThis(hWnd, 275, 30, 100, 20, false, (u32)Id::EditSwitchName);
+    editSwitchName.CreateThis(hWnd, 275, 30, 100, 20, false, Id::EditSwitchName);
 
     RefreshWindow();
 }
@@ -196,7 +195,7 @@ void SwitchesWindow::EditSwitchNameFocusLost()
 
 void SwitchesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::CheckUseDefaultName: ToggleUseDefaultString(); break;
         case Id::CheckUseExtendedString: ToggleUseExtendedString(); break;
@@ -220,7 +219,7 @@ void SwitchesWindow::NotifyTreeSelChanged(LPARAM newValue)
 
 void SwitchesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::EditSwitchName:
             EditSwitchNameFocusLost();

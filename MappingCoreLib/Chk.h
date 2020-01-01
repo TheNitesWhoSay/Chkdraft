@@ -22,27 +22,27 @@ namespace Chk {
     using CuwpPtr = std::shared_ptr<Cuwp>; using LocationPtr = std::shared_ptr<Location>; using ConditionPtr = std::shared_ptr<Condition>; using ActionPtr = std::shared_ptr<Action>;
     using TriggerPtr = std::shared_ptr<Trigger>; using StringPropertiesPtr = std::shared_ptr<StringProperties>;
 
-    enum class Type : u32 { // u32
+    enum_t(Type, u32, { // u32
         RAWS = 0x53574152, // 1.04 StarCraft and above ("hybrid")
         RAWB = 0x42574152 // Brood War
-    };
+    });
     
-    enum class Version : u16 { // u16
+    enum_t(Version, u16, { // u16
         StarCraft_Original = 59,
         StarCraft_Hybrid = 63, // 1.04 StarCraft and above ("hybrid")
         StarCraft_BroodWar = 205 // Brood War
-    };
+    });
     
-    enum class IVersion : u16 { // u16
+    enum_t(IVersion, u16, { // u16
         Beta = 9,
         Current = 10
-    };
+    });
     
-    enum class I2Version : u16 { // u16
+    enum_t(I2Version, u16, { // u16
         StarCraft_1_04 = 11 // 1.04 StarCraft and above ("hybrid") or Brood War
-    };
+    });
     
-    enum class ValidationOpCodes : u8 { // u8
+    enum_t(ValidationOpCodes, u8, { // u8
         XOR_Shifted_Sections = 0, // XOR the current hash with total values of OWNR, SIDE*256, FORC*65536
         Add_Shifted_Sections = 1, // Adds to the current hash with the total values of OWNR, SIDE*256, FORC*65536
         Sub_Shifted_Sections = 2, // Subtracts from the current hash with the total values of OWNR, SIDE*256, FORC*65536
@@ -52,12 +52,12 @@ namespace Chk {
         ORs_And_Shifts = 6, // Complex function consisting of ORs and shifts
         ORs_And_Reverse_Shifts = 7, // Same as ORS_AND_SHIFTS with shift direction inverted
         NOOP = 8 // No operation
-    };
+    });
     
     constexpr u32 TotalValidationSeeds = 256;
     constexpr u32 TotalValidationOpCodes = 16;
     
-    enum class Race : u8 { // u8
+    enum_t(Race, u8, { // u8
         Zerg = 0,
         Terran = 1,
         Protoss = 2,
@@ -66,32 +66,30 @@ namespace Chk {
         UserSelectable = 5,
         Random = 6,
         Inactive = 7
-    };
+    });
     
-    enum class Available : u8 { // u8
+    enum_t(Available, u8, { // u8
         No = 0, // Unit/technology is not availble for production/research
         Yes = 1 // Unit/technology is available for production/research
-    };
+    });
     
-    enum class UseDefault : u8 { // u8
+    enum_t(UseDefault, u8, { // u8
         No = 0, // Player does not use defaults for this unit/upgrade/technology or unit/upgrade/technlology does not use default settings
         Yes = 1 // Player uses defaults for this unit/upgrade/technology or unit/upgrade/technology does not use default settings
-    };
+    });
     
-    enum class Researched : u8 { // u8
+    enum_t(Researched, u8, { // u8
         No = 0, // Technology is not researched
         Yes = 1 // Technology is researched
-    };
+    });
     
     __declspec(align(1)) class Unit {
     public:
-        enum class RelationFlag : u16 // u16
-        {
+        enum_t(RelationFlag, u16, { // u16
             NydusLink = BIT_9,
             AddonLink = BIT_10
-        };
-        enum class State : u16 // u16
-        {
+        });
+        enum_t(State, u16, { // u16
             Cloak = BIT_0,
             Burrow = BIT_1,
             InTransit = BIT_2,
@@ -103,9 +101,8 @@ namespace Chk {
             xInTransit = x16BIT_2,
             xHallucinate = x16BIT_3,
             xInvincible = x16BIT_4
-        };
-        enum class ValidField : u16 // u16
-        {
+        });
+        enum_t(ValidField, u16, { // u16
             Owner = BIT_0, 
             Hitpoints = BIT_1,
             Shields = BIT_2,
@@ -119,7 +116,7 @@ namespace Chk {
             xEnergy = x16BIT_3,
             xResources = x16BIT_4,
             xHanger = x16BIT_5
-        };
+        });
         enum class Field { // Typeless
             ClassId, Xc, Yc, Type, RelationFlags, ValidStateFlags, ValidFieldFlags, Owner, HitpointPercent, ShieldPercent, EnergyPercent, ResourceAmount, HangerAmount, StateFlags, Unused, RelationClassId
         };
@@ -152,13 +149,13 @@ namespace Chk {
     __declspec(align(1)) class Doodad
     {
     public:
-        enum class Type : u16 {
-
-        };
-        enum class Enabled : u8 {
+        enum_t(Type, u16, {
+            // TODO: index all doodads
+        });
+        enum_t(Enabled, u8, {
             Enabled = 0, // Doodad is enabled
             Disabled = 1 // Doodad is disabled
-        };
+        });
 
         Type type;
         u16 xc;
@@ -170,13 +167,13 @@ namespace Chk {
     __declspec(align(1)) class Sprite
     {
     public:
-        enum class Type : u16 {
+        enum_t(Type, u16, {
             // TODO: index all sprites
-        };
-        enum class SpriteFlags : u16 {
+        });
+        enum_t(SpriteFlags, u16, {
             DrawAsSprite = BIT_12, // If deselected this is a SpriteUnit
             Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
-        };
+        });
 
         bool isDrawnAsSprite();
 
@@ -188,7 +185,7 @@ namespace Chk {
         u16 flags;
     };
 
-    enum class FogOfWarPlayers : u8 { // u8
+    enum_t(FogOfWarPlayers, u8, { // u8
         Visible = 0,
         Player1 = BIT_0,
         Player2 = BIT_1,
@@ -199,7 +196,7 @@ namespace Chk {
         Player7 = BIT_6,
         Player8 = BIT_7,
         Opaque = u8_max
-    };
+    });
 
     constexpr size_t MaxStrings = u16_max + 1; // Including stringId:0
     constexpr size_t MaxKStrings = MaxStrings;
@@ -211,16 +208,15 @@ namespace Chk {
         UnusedSound = 0
     });
 
-    enum class CuwpUsed : u8 { // u8
+    enum_t(CuwpUsed, u8, { // u8
         No = 0, // CUWP slot is unused
         Yes = 1 // CUWP slot is used
-    };
+    });
 
     __declspec(align(1)) class Cuwp
     {
     public:
-        enum class State : u16 // u16
-        {
+        enum_t(State, u16, { // u16
             Cloak = BIT_0,
             Burrow = BIT_1,
             InTransit = BIT_2,
@@ -232,9 +228,8 @@ namespace Chk {
             xInTransit = x16BIT_2,
             xHallucinated = x16BIT_3,
             xInvincible = x16BIT_4
-        };
-        enum class ValidField : u16 // u16
-        {
+        });
+        enum_t(ValidField, u16, { // u16
             Owner = BIT_0, 
             Hitpoints = BIT_1,
             Shields = BIT_2,
@@ -248,7 +243,7 @@ namespace Chk {
             xEnergy = x16BIT_3,
             xResources = x16BIT_4,
             xHanger = x16BIT_5
-        };
+        });
         
         bool isCloaked();
         bool isBurrowed();
@@ -341,7 +336,7 @@ namespace Chk {
     public:
         static constexpr size_t NumConditionTypes = 24;
         static constexpr size_t MaxArguments = 9;
-        enum class Type : u8 { // u8
+        enum_t(Type, u8, { // u8
             Accumulate = 4,
             Always = 22,
             Bring = 3,
@@ -366,9 +361,8 @@ namespace Chk {
             Opponents = 14,
             Score = 21,
             Switch = 11
-        };
-        enum class VirtualType : s32 { // s32
-
+        });
+        enum_t(VirtualType, s32, { // s32
             Accumulate = 4,
             Always = 22,
             Bring = 3,
@@ -398,16 +392,16 @@ namespace Chk {
             Memory = -2,
 
             Indeterminate = s32_min
-        };
-        enum class ExtendedBaseType : s32 { // s32
+        });
+        enum_t(ExtendedBaseType, s32, { // s32
             Memory = (u8)Type::Deaths, // Deaths
-        };
-        enum class Flags : u8 { // u8
+        });
+        enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger condition is disabled/ignored
             UnitTypeUsed = BIT_4, // If set the unitType field is used
 
             xDisabled = x8BIT_1
-        };
+        });
         enum class ArgType { // Typeless
             NoType = 0,
             Unit = 1,
@@ -438,17 +432,17 @@ namespace Chk {
             MaskFlag = 18,
             NoField = u32_max
         };
-        enum class Amount : u32 { // u32
+        enum_t(Amount, u32, { // u32
             All = 0
-        };
-        enum class Comparison : u8 { // u8
+        });
+        enum_t(Comparison, u8, { // u8
             AtLeast = 0,
             AtMost = 1,
             Set = 2,
             NotSet = 3,
             Exactly = 10
-        };
-        enum class ScoreType : u8 { // u8
+        });
+        enum_t(ScoreType, u8, { // u8
             Total = 0,
             Units = 1,
             Buildings = 2,
@@ -457,11 +451,11 @@ namespace Chk {
             Razings = 5,
             KillsAndRazings = 6,
             Custom = 7
-        };
-        enum class MaskFlag : u16 { // u16
+        });
+        enum_t(MaskFlag, u16, { // u16
             Enabled = 0x4353, // "SC" in little-endian; 'S' = 0x53, 'C' = 0x43
             Disabled = 0
-        };
+        });
         struct Argument {
             ArgType type;
             ArgField field;
@@ -499,7 +493,7 @@ namespace Chk {
         static constexpr size_t NumBriefingActionTypes = 10;
         static constexpr size_t InternalDataBytes = 3;
         static constexpr size_t MaxArguments = 11;
-        enum class Type : u8 { // u8
+        enum_t(Type, u8, { // u8
             CenterView = 10,
             Comment = 47,
             CreateUnit = 44,
@@ -570,8 +564,8 @@ namespace Chk {
             BriefingDisplayTalkingPortrait = 7,
             BriefingTransmission = 8,
             BriefingEnableSkipTutorial = 9
-        };
-        enum class VirtualType : s32 { // s32
+        });
+        enum_t(VirtualType, s32, { // s32
             CenterView = 10,
             Comment = 47,
             CreateUnit = 44,
@@ -646,11 +640,11 @@ namespace Chk {
             BriefingDisplayTalkingPortrait = 7,
             BriefingTransmission = 8,
             BriefingEnableSkipTutorial = 9
-        };
-        enum class ExtendedBaseType : s32 { // s32
+        });
+        enum_t(ExtendedBaseType, s32, { // s32
             SetMemory = (u8)Type::SetDeaths, // SetDeaths
-        };
-        enum class Flags : u8 { // u8
+        });
+        enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger action is disabled/ignored
             AlwaysDisplay = BIT_2, // If set, the text message will display regardless of the users subtitles setting
             UnitPropertiesUsed = BIT_3, // If set the unitProperties field is used
@@ -658,7 +652,7 @@ namespace Chk {
 
             xDisabled = x8BIT_1,
             xAlwaysDisplay = x8BIT_2
-        };
+        });
         enum class ArgType : u32 { // u32
             NoType = 0,
             Location = 1,
@@ -707,23 +701,23 @@ namespace Chk {
             MaskFlag = 30,
             NoField = u32_max
         };
-        enum class Amount : u32 { // u32
+        enum_t(Amount, u32, { // u32
             All = 0
-        };
-        enum class NumUnits : u8 { // u8
+        });
+        enum_t(NumUnits, u8, { // u8
             All = 0
-        };
-        enum class ResourceType : u8 { // u8
+        });
+        enum_t(ResourceType, u8, { // u8
             Ore = 0,
             Gas = 1,
             OreAndGas = 2
-        };
-        enum class AllianceStatus : u16 { // u16
+        });
+        enum_t(AllianceStatus, u16, { // u16
             Enemy = 0,
             Ally = 1,
             AlliedVictory = 2
-        };
-        enum class ValueModifier : u8 { // u8
+        });
+        enum_t(ValueModifier, u8, { // u8
             Enable = 4,
             Enabled = 4,
             Set = 4,
@@ -735,16 +729,16 @@ namespace Chk {
             Add = 8,
             Subtract = 9,
             Randomize = 11
-        };
-        enum class UnitOrders : u8 { // u8
+        });
+        enum_t(UnitOrders, u8, { // u8
             Move = 0,
             Patrol = 1,
             Attack = 2
-        };
-        enum class MaskFlag : u16 { // u16
+        });
+        enum_t(MaskFlag, u16, { // u16
             Enabled = 0x4353, // "SC" in little-endian; 'S' = 0x53, 'C' = 0x43
             Disabled = 0
-        };
+        });
         struct Argument {
             ArgType type;
             ArgField field;
@@ -767,7 +761,7 @@ namespace Chk {
         u8 padding;
         MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
-        bool isDisabled() { return (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled; }
+        bool isDisabled() { return (flags & Flags::Disabled) == Flags::Disabled; }
         void ToggleDisabled();
         static ArgType getClassicArgType(Type actionType, size_t argNum);
         static ArgType getClassicArgType(VirtualType actionType, size_t argNum);
@@ -804,7 +798,7 @@ namespace Chk {
         static constexpr size_t MaxConditions = 16;
         static constexpr size_t MaxActions = 64;
         static constexpr size_t MaxOwners = 27;
-        enum class Flags : u32 {
+        enum_t(Flags, u32, {
             IgnoreConditionsOnce = BIT_0,
             IgnoreDefeatDraw = BIT_1,
             PreserveTrigger = BIT_2,
@@ -812,11 +806,11 @@ namespace Chk {
             IgnoreMiscActions = BIT_4,
             Paused = BIT_5,
             IgnoreWaitSkipOnce = BIT_6
-        };
-        enum class Owned : u8 { // u8
+        });
+        enum_t(Owned, u8, { // u8
             Yes = 1,
             No = 0
-        };
+        });
         Condition & condition(size_t conditionIndex);
         Action & action(size_t actionIndex);
         Owned & owned(size_t ownerIndex);
@@ -884,7 +878,7 @@ namespace Chk {
     constexpr u32 baseFontSize = 8;
     constexpr u32 fontStepSize = 2;
 
-    enum class StrFlags : u8 { // u8
+    enum_t(StrFlags, u8, { // u8
         isUsed = BIT_0,
         hasPriority = BIT_1,
         bold = BIT_2,
@@ -893,9 +887,9 @@ namespace Chk {
         sizePlusFourSteps = BIT_5,
         sizePlusTwoSteps = BIT_6,
         sizePlusOneStep = BIT_7
-    };
+    });
     
-    enum class Scope : u32 { // u32
+    enum_t(Scope, u32, { // u32
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,
@@ -903,10 +897,9 @@ namespace Chk {
         EditorOverGame = BIT_4,
         Both = (Game | Editor),
         Either = Both
-    };
+    });
 
-    enum class UseExpSection
-    {
+    enum class UseExpSection {
         Auto = 0, // Auto-read based on current version, if updating update both
         Yes = 1, // Always use expansion section
         No = 2, // Always use original section
@@ -915,10 +908,10 @@ namespace Chk {
         NoIfOrigAvailable = 5 // Default to original, use expansion if original is unavailable
     };
 
-    enum class KstrVersion : u32 { // u32
+    enum_t(KstrVersion, u32, { // u32
         Deprecated = 1,
         Current = 2
-    };
+    });
 
     __declspec(align(1)) class StringProperties {
     public:

@@ -53,13 +53,13 @@ void Selections::removeTile(u16 xc, u16 yc)
         // If an edge is matched to the tile being removed, un-match the edge
         if ( it->yc == yc ) // Tile is in the same row
         {
-            if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
-            else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
+            if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
+            else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
         }
         else if ( it->xc == xc ) // Tile is in the same column
         {
-            if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
-            else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= (u8)TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
+            if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
+            else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
         }
 
         if ( it->xc == xc && it->yc == yc )
@@ -90,26 +90,26 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
             }
             else if ( selTile.xc == xc - 1 ) // 'track' is just left of 'tile'
             {
-                (u8 &)tile.neighbors &= (u8)TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
-                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
+                (u8 &)tile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
+                (u8 &)selTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
             }
             else if ( selTile.xc == xc + 1 ) // 'track' is just right of 'tile'
             {
-                (u8 &)tile.neighbors &= (u8)TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
-                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
+                (u8 &)tile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
+                (u8 &)selTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
             }
         }
         else if ( selTile.xc == xc ) // Tile is in same column
         {
             if ( selTile.yc == yc - 1 ) // 'track' is just above 'tile'
             {
-                (u8 &)tile.neighbors &= (u8)TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
-                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
+                (u8 &)tile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
+                (u8 &)selTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
             }
             else if ( selTile.yc == yc + 1 ) // 'track' is just below 'tile'
             {
-                (u8 &)tile.neighbors &= (u8)TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
-                (u8 &)selTile.neighbors &= (u8)TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
+                (u8 &)tile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
+                (u8 &)selTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
             }
         }
     }
@@ -253,7 +253,7 @@ void Selections::sendSwap(u16 oldIndex, u16 newIndex)
     for ( u16 &unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
-            unitIndex = oldIndex | (u16)UnitSortFlags::Swapped;
+            unitIndex = oldIndex | UnitSortFlags::Swapped;
         else if ( unitIndex == oldIndex )
             unitIndex = newIndex;
     }
@@ -264,7 +264,7 @@ void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved
     for ( u16 &unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
-            unitIndex = oldIndex | (u16)UnitSortFlags::Moved;
+            unitIndex = oldIndex | UnitSortFlags::Moved;
         else if ( newIndex > unitIndex && oldIndex <= unitIndex ) // The moved unit was somewhere ahead of track and is now behind track
             unitIndex++; // Selected unit index needs to be moved forward
         else if ( newIndex < unitIndex && oldIndex >= unitIndex ) // The moved unit was somewhere behind track and is now ahead of track
@@ -276,8 +276,8 @@ void Selections::finishSwap()
 {
     for ( u16 &unitIndex : selUnits )
     {
-        if ( unitIndex & (u16)UnitSortFlags::Swapped )
-            unitIndex &= (u16)UnitSortFlags::Unswap;
+        if ( unitIndex & UnitSortFlags::Swapped )
+            unitIndex &= UnitSortFlags::Unswap;
     }
 }
 
@@ -285,8 +285,8 @@ void Selections::finishMove()
 {
     for ( u16 &unitIndex : selUnits )
     {
-        if ( unitIndex & (u16)UnitSortFlags::Moved )
-            unitIndex &= (u16)UnitSortFlags::Unmove;
+        if ( unitIndex & UnitSortFlags::Moved )
+            unitIndex &= UnitSortFlags::Unmove;
     }
 }
 

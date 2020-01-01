@@ -4,7 +4,7 @@ std::string Settings::starCraftPath("");
 std::string Settings::starDatPath("");
 std::string Settings::brooDatPath("");
 std::string Settings::patchRtPath("");
-u32 Settings::deathTableStart((u32)Sc::Address::Patch_1_16_1::DeathTable);
+u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
 
 bool ParseLong(const std::string &text, u32& dest, size_t pos, size_t end)

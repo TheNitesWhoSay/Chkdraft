@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 
-enum class Id {
+enum_t(Id, u32, {
     DELETE_STRING = ID_FIRST,
     CHECK_EXTENDEDSTRING,
     SAVE_TO,
@@ -16,7 +16,7 @@ enum class Id {
     PREVIEW_STRING,
     LB_STRINGUSE,
     BUTTON_SWITCH,
-};
+});
 
 StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDC(NULL), fileBrowser(getSaveTextFilters(), "Save Text", false, true)
 {
@@ -95,21 +95,21 @@ void StringEditorWindow::RefreshWindow()
 void StringEditorWindow::CreateSubWindows(HWND hWnd)
 {
     textAboutStrings.CreateThis(hWnd, 5, 5, 150, 20, "String Editor...", 0);
-    buttonSwap.CreateThis(hWnd, 310, 5, 150, 20, "", (u64)Id::BUTTON_SWITCH);
+    buttonSwap.CreateThis(hWnd, 310, 5, 150, 20, "", Id::BUTTON_SWITCH);
 
-    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, (u64)Id::LB_STRINGS);
+    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, Id::LB_STRINGS);
 
-    buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", (u64)Id::DELETE_STRING);
-    checkExtendedString.CreateThis(hWnd, 20, 294, 100, 10, false, "Extended", (u64)Id::CHECK_EXTENDEDSTRING);
+    buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", Id::DELETE_STRING);
+    checkExtendedString.CreateThis(hWnd, 20, 294, 100, 10, false, "Extended", Id::CHECK_EXTENDEDSTRING);
     checkExtendedString.DisableThis();
-    buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", (u64)Id::SAVE_TO);
-    editString.CreateThis(hWnd, 5, 310, 453, 140, true, (u64)Id::EDIT_STRING);
+    buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", Id::SAVE_TO);
+    editString.CreateThis(hWnd, 5, 310, 453, 140, true, Id::EDIT_STRING);
 
     textStringUsage.CreateThis(hWnd, 480, 379, 125, 20, "String Usage:", 0);
-    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, (u64)Id::LB_STRINGUSE);
+    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, Id::LB_STRINGUSE);
 
     stringGuide.CreateThis(hWnd);
-    stringPreviewWindow.CreateThis(hWnd, (u64)Id::PREVIEW_STRING);
+    stringPreviewWindow.CreateThis(hWnd, Id::PREVIEW_STRING);
 }
 
 void StringEditorWindow::SwitchButtonPressed()
@@ -123,7 +123,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( HIWORD(wParam) )
     {
     case LBN_SELCHANGE:
-        if ( LOWORD(wParam) == (WORD)Id::LB_STRINGS ) // Change selection, update info boxes and so fourth
+        if ( LOWORD(wParam) == Id::LB_STRINGS ) // Change selection, update info boxes and so fourth
         {
             if ( currSelString != 0 )
                 updateString(currSelString);
@@ -165,22 +165,22 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         break;
     case LBN_KILLFOCUS: // String list box item may have lost focus, check if string should be updated
-        if ( LOWORD(wParam) == (WORD)Id::LB_STRINGS && currSelString != 0 && updateString(currSelString) )
+        if ( LOWORD(wParam) == Id::LB_STRINGS && currSelString != 0 && updateString(currSelString) )
             CM->refreshScenario();
         break;
     case EN_KILLFOCUS: // String edit box may have lost focus, check if string should be updated
-        if ( LOWORD(wParam) == (WORD)Id::EDIT_STRING && currSelString != 0 && updateString(currSelString) )
+        if ( LOWORD(wParam) == Id::EDIT_STRING && currSelString != 0 && updateString(currSelString) )
             CM->refreshScenario();
         break;
     case BN_CLICKED:
-        if ( LOWORD(wParam) == (WORD)Id::DELETE_STRING &&
+        if ( LOWORD(wParam) == Id::DELETE_STRING &&
             WinLib::GetYesNo("Forcefully deleting a string could cause problems, continue?", "Warning") == WinLib::PromptResult::Yes &&
             CM != nullptr && currSelString != 0 && CM->strings.stringStored(currSelString) )
         {
             CM->strings.deleteString(currSelString, Chk::Scope::Both, false);
             CM->refreshScenario();
         }
-        else if ( LOWORD(wParam) == (WORD)Id::SAVE_TO && CM != nullptr )
+        else if ( LOWORD(wParam) == Id::SAVE_TO && CM != nullptr )
         {
             saveStrings();
         }
@@ -204,7 +204,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             listStrings.SetTopIndex(listStrings.GetTopIndex()-(int((s16(HIWORD(wParam)))/WHEEL_DELTA)));
             break;
 
-        case (UINT)WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
+        case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
             stringListDC = listStrings.getDC();
             break;
 
@@ -223,12 +223,12 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             }
             break;
 
-        case (UINT)WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
             listStrings.ReleaseDC(stringListDC);
             stringListDC = NULL;
             break;
 
-        case (UINT)WinLib::LB::WM_PREDRAWITEMS:
+        case WinLib::LB::WM_PREDRAWITEMS:
             break;
 
         case WM_DRAWITEM:
@@ -261,7 +261,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             }
             break;
 
-        case (UINT)WinLib::LB::WM_POSTDRAWITEMS:
+        case WinLib::LB::WM_POSTDRAWITEMS:
             break;
 
         default:
@@ -273,7 +273,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 void StringEditorWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
         case Id::BUTTON_SWITCH: SwitchButtonPressed(); break;
     }

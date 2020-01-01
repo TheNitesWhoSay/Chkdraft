@@ -3,7 +3,7 @@
 #include "../../../Chkdraft.h"
 #include <string>
 
-enum class Id {
+enum_t(Id, u32, {
     EDIT_MAPTITLE = ID_FIRST,
     EDIT_MAPDESCRIPTION,
     CB_MAPTILESET,
@@ -43,7 +43,7 @@ enum class Id {
     CB_P6COLOR,
     CB_P7COLOR,
     CB_P8COLOR
-};
+});
 
 MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibleDescriptionUpdate(false), refreshing(false)
 {
@@ -81,27 +81,27 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         }
 
         textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
-        editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, (u64)Id::EDIT_MAPTITLE);
+        editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, Id::EDIT_MAPTITLE);
         editMapTitle.SetText(*mapTitle);
 
         textMapDescription.CreateThis(hMapProperties, 5, 60, 100, 20, "Map Description", 0);
-        editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, (u64)Id::EDIT_MAPDESCRIPTION);
+        editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, Id::EDIT_MAPDESCRIPTION);
         editMapDescription.SetText(*mapDescription);
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
 
         textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
-        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, (u64)Id::CB_MAPTILESET, tilesetNames, defaultFont);
+        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames, defaultFont);
         textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
-        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, (u64)Id::CB_NEWMAPTERRAIN, initTerrains[currTileset], defaultFont);
+        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, initTerrains[currTileset], defaultFont);
         textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
-        editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, (u64)Id::EDIT_NEWMAPWIDTH);
+        editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, Id::EDIT_NEWMAPWIDTH);
         editMapWidth.SetText(sCurrWidth);
         textNewMapHeight.CreateThis(hMapProperties, 440, 185, 50, 20, "Height", 0);
-        editMapHeight.CreateThis(hMapProperties, 440, 205, 50, 20, false, (u64)Id::EDIT_NEWMAPHEIGHT);
+        editMapHeight.CreateThis(hMapProperties, 440, 205, 50, 20, false, Id::EDIT_NEWMAPHEIGHT);
         editMapHeight.SetText(sCurrHeight);
-        buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", (u64)Id::BUTTON_APPLY);
+        buttonApply.CreateThis(hMapProperties, 494, 205, 91, 20, "Apply", Id::BUTTON_APPLY);
 
         const char* sPlayers[] = { "Player 1", "Player 2" , "Player 3" , "Player 4",
                                    "Player 5", "Player 6" , "Player 7" , "Player 8",
@@ -119,9 +119,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
 
                 groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
                 textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
-                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, (u64)Id::CB_P1OWNER+player, playerOwners, defaultFont);
+                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners, defaultFont);
                 textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
-                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, (u64)Id::CB_P1RACE+player, playerRaces, defaultFont);
+                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces, defaultFont);
 
                 if ( yBox < 2 )
                 {
@@ -129,7 +129,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
                         color = CM->players.getPlayerColor(player);
 
                     textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, (u64)Id::CB_P1COLOR+player, playerColors, defaultFont);
+                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, playerColors, defaultFont);
                 }
             }
         }
@@ -175,7 +175,7 @@ void MapPropertiesWindow::RefreshWindow()
             Chk::Race race = CM->players.getPlayerRace(player);
             dropPlayerOwner[player].SetSel(displayOwner);
             dropPlayerOwner[player].ClearEditSel();
-            dropPlayerRaces[player].SetSel((int)race);
+            dropPlayerRaces[player].SetSel(race);
             dropPlayerRaces[player].ClearEditSel();
 
             if ( player < 8 )
@@ -191,7 +191,7 @@ void MapPropertiesWindow::RefreshWindow()
 
 LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-    switch ( (Id)LOWORD(wParam) )
+    switch ( LOWORD(wParam) )
     {
     case Id::EDIT_MAPTITLE:
         if ( HIWORD(wParam) == EN_CHANGE && !refreshing )
@@ -211,8 +211,8 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         if ( HIWORD(wParam) == BN_CLICKED )
         {
-            LRESULT newTileset = SendMessage(GetDlgItem(hWnd, (int)Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
-            CM->layers.setTileset((Sc::Terrain::Tileset)newTileset);
+            Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
+            CM->layers.setTileset(newTileset);
             u16 newWidth, newHeight;
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
                 CM->layers.setDimensions(newWidth, newHeight);
@@ -228,7 +228,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case Id::CB_MAPTILESET:
         if ( HIWORD(wParam) == CBN_SELCHANGE )
         {
-            HWND hMapTileset = GetDlgItem(hWnd, (int)Id::CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, (int)Id::CB_NEWMAPTERRAIN);
+            HWND hMapTileset = GetDlgItem(hWnd, Id::CB_MAPTILESET), hMapNewTerrain = GetDlgItem(hWnd, Id::CB_NEWMAPTERRAIN);
             LRESULT currTileset = SendMessage(hMapTileset, CB_GETCURSEL, 0, 0);
             if ( currTileset != CB_ERR && currTileset < (LRESULT)tilesetNames.size())
             {
@@ -248,7 +248,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case Id::CB_P9OWNER: case Id::CB_P10OWNER: case Id::CB_P11OWNER: case Id::CB_P12OWNER:
         if ( HIWORD(wParam) == CBN_SELCHANGE )
         {
-            u32 player = LOWORD(wParam) - (WORD)Id::CB_P1OWNER; // 0 based player
+            u32 player = LOWORD(wParam) - Id::CB_P1OWNER; // 0 based player
             Sc::Player::SlotType newType = Sc::Player::SlotType::Inactive;
             LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
             if ( player >= 0 && player < 12 && sel != CB_ERR )
@@ -275,7 +275,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case Id::CB_P9RACE: case Id::CB_P10RACE: case Id::CB_P11RACE: case Id::CB_P12RACE:
         if ( HIWORD(wParam) == CBN_SELCHANGE )
         {
-            u32 player = LOWORD(wParam) - (WORD)Id::CB_P1RACE; // 0 based player
+            u32 player = LOWORD(wParam) - Id::CB_P1RACE; // 0 based player
             LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
             if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
             {
@@ -291,7 +291,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
         case CBN_SELCHANGE:
         {
-            u32 player = LOWORD(wParam) - (WORD)Id::CB_P1COLOR; // 0 based player
+            u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
             LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
             if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
             {
@@ -303,7 +303,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         break;
         case CBN_EDITCHANGE:
         {
-            u32 player = LOWORD(wParam) - (WORD)Id::CB_P1COLOR; // 0 based player
+            u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
             u8 newColor;
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {

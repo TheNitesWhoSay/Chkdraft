@@ -2,9 +2,9 @@
 #include "../../../Chkdraft.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
 
-enum class Id {
+enum_t(Id, u32, {
     COMBO_TRIGS = ID_FIRST
-};
+});
 
 NewMap::~NewMap()
 {
@@ -82,47 +82,47 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( LOWORD(wParam) == IDC_LIST_TILESET )
             {
                 HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
-                HWND hDefaultTrigs = GetDlgItem(hWnd, (int)Id::COMBO_TRIGS);
+                HWND hDefaultTrigs = GetDlgItem(hWnd, Id::COMBO_TRIGS);
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
                 switch ( itemIndex )
                 {
-                case (u32)Sc::Terrain::Tileset::Badlands: // Badlands
+                case Sc::Terrain::Tileset::Badlands: // Badlands
                     for (auto initTerrain : badlandsInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::SpacePlatform: // Space Platform
+                case Sc::Terrain::Tileset::SpacePlatform: // Space Platform
                     for (auto initTerrain : spaceInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Installation: // Installation
+                case Sc::Terrain::Tileset::Installation: // Installation
                     for (auto initTerrain : installInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Ashworld: // Ash World
+                case Sc::Terrain::Tileset::Ashworld: // Ash World
                     for (auto initTerrain : ashInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Jungle: // Jungle World
+                case Sc::Terrain::Tileset::Jungle: // Jungle World
                     for (auto initTerrain : jungInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Desert: // Desert World
+                case Sc::Terrain::Tileset::Desert: // Desert World
                     for (auto initTerrain : desertInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Arctic: // Ice World
+                case Sc::Terrain::Tileset::Arctic: // Ice World
                     for (auto initTerrain : iceInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
                     break;
-                case (u32)Sc::Terrain::Tileset::Twilight: // Twilight World
+                case Sc::Terrain::Tileset::Twilight: // Twilight World
                     for (auto initTerrain : twilightInitTerrain)
                         SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
                     SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
@@ -157,7 +157,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     "Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
                     "Melee with observers (6 players)", "Melee with observers (7 players)"
                 };
-                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, (u64)Id::COMBO_TRIGS, defaultTriggerTitles, defaultFont);
+                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, Id::COMBO_TRIGS, defaultTriggerTitles, defaultFont);
                 dropDefaultTriggers.SetSel(0);
 
                 editWidth.FindThis(hWnd, IDC_EDIT_WIDTH);

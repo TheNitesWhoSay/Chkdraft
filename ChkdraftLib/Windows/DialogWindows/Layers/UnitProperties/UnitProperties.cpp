@@ -8,8 +8,7 @@
 
 enum class UnitListColumn { Name, Owner, Xc, Yc, Index };
 
-enum class Id
-{
+enum_t(Id, u32, {
     UnitList = ID_FIRST,
     ComboPlayer,
 
@@ -35,7 +34,7 @@ enum class Id
     CheckBurrowed = IDC_CHECK_BURROWED,
     CheckCloaked = IDC_CHECK_CLOAKED,
     CheckLifted = IDC_CHECK_LIFTED,
-};
+});
 
 UnitPropertiesWindow::UnitPropertiesWindow() : columnSortedBy(UnitListColumn::Index), flipSort(false), initilizing(true), changeHighlightOnly(false)
 {
@@ -59,29 +58,29 @@ bool UnitPropertiesWindow::CreateThis(HWND hParent)
 
 bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
-    buttonMoveUp.FindThis(hWnd, (u32)Id::ButtonMoveUp);
-    buttonMoveTop.FindThis(hWnd, (u32)Id::ButtonMoveTop);
-    buttonMoveDown.FindThis(hWnd, (u32)Id::ButtonMoveDown);
-    buttonMoveEnd.FindThis(hWnd, (u32)Id::ButtonMoveEnd);
-    buttonDelete.FindThis(hWnd, (u32)Id::ButtonDelete);
-    buttonMoveTo.FindThis(hWnd, (u32)Id::ButtonMoveTo);
+    buttonMoveUp.FindThis(hWnd, Id::ButtonMoveUp);
+    buttonMoveTop.FindThis(hWnd, Id::ButtonMoveTop);
+    buttonMoveDown.FindThis(hWnd, Id::ButtonMoveDown);
+    buttonMoveEnd.FindThis(hWnd, Id::ButtonMoveEnd);
+    buttonDelete.FindThis(hWnd, Id::ButtonDelete);
+    buttonMoveTo.FindThis(hWnd, Id::ButtonMoveTo);
 
-    editLife.FindThis(hWnd, (u32)Id::EditHp);
-    editMana.FindThis(hWnd, (u32)Id::EditMp);
-    editShield.FindThis(hWnd, (u32)Id::EditShields);
-    editResources.FindThis(hWnd, (u32)Id::EditResources);
-    editHanger.FindThis(hWnd, (u32)Id::EditHanger);
-    editUnitId.FindThis(hWnd, (u32)Id::EditUnitId);
-    editXc.FindThis(hWnd, (u32)Id::EditXc);
-    editYc.FindThis(hWnd, (u32)Id::EditYc);
+    editLife.FindThis(hWnd, Id::EditHp);
+    editMana.FindThis(hWnd, Id::EditMp);
+    editShield.FindThis(hWnd, Id::EditShields);
+    editResources.FindThis(hWnd, Id::EditResources);
+    editHanger.FindThis(hWnd, Id::EditHanger);
+    editUnitId.FindThis(hWnd, Id::EditUnitId);
+    editXc.FindThis(hWnd, Id::EditXc);
+    editYc.FindThis(hWnd, Id::EditYc);
 
-    checkInvincible.FindThis(hWnd, (u32)Id::CheckInvincible);
-    checkHallucinated.FindThis(hWnd, (u32)Id::CheckHallucinated);
-    checkBurrowed.FindThis(hWnd, (u32)Id::CheckBurrowed);
-    checkCloaked.FindThis(hWnd, (u32)Id::CheckCloaked);
-    checkLifted.FindThis(hWnd, (u32)Id::CheckLifted);
+    checkInvincible.FindThis(hWnd, Id::CheckInvincible);
+    checkHallucinated.FindThis(hWnd, Id::CheckHallucinated);
+    checkBurrowed.FindThis(hWnd, Id::CheckBurrowed);
+    checkCloaked.FindThis(hWnd, Id::CheckCloaked);
+    checkLifted.FindThis(hWnd, Id::CheckLifted);
 
-    dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, (u32)Id::ComboPlayer, false);
+    dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, Id::ComboPlayer, false);
 
     initilizing = true;
 
@@ -92,7 +91,7 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
     editHanger.CreateNumberBuddy(0, 8);
     editUnitId.CreateNumberBuddy(0, 65535);
 
-    listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, (u32)Id::UnitList);
+    listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::UnitList);
     listUnits.EnableFullRowSelect();
     listUnits.SetFont(13, 5, "Tahoma", false);
 
@@ -353,11 +352,11 @@ void UnitPropertiesWindow::SetUnitFieldText(Chk::UnitPtr unit)
     editYc.SetText(std::to_string(unit->yc));
 
     
-    checkInvincible.SetCheck((unit->stateFlags&(u16)Chk::Unit::State::Invincible) == (u16)Chk::Unit::State::Invincible);
-    checkHallucinated.SetCheck((unit->stateFlags&(u16)Chk::Unit::State::Hallucinated) == (u16)Chk::Unit::State::Hallucinated);
-    checkBurrowed.SetCheck((unit->stateFlags&(u16)Chk::Unit::State::Burrow) == (u16)Chk::Unit::State::Burrow);
-    checkCloaked.SetCheck((unit->stateFlags&(u16)Chk::Unit::State::Cloak) == (u16)Chk::Unit::State::Cloak);
-    checkLifted.SetCheck((unit->stateFlags&(u16)Chk::Unit::State::InTransit) == (u16)Chk::Unit::State::InTransit);
+    checkInvincible.SetCheck((unit->stateFlags&Chk::Unit::State::Invincible) == Chk::Unit::State::Invincible);
+    checkHallucinated.SetCheck((unit->stateFlags&Chk::Unit::State::Hallucinated) == Chk::Unit::State::Hallucinated);
+    checkBurrowed.SetCheck((unit->stateFlags&Chk::Unit::State::Burrow) == Chk::Unit::State::Burrow);
+    checkCloaked.SetCheck((unit->stateFlags&Chk::Unit::State::Cloak) == Chk::Unit::State::Cloak);
+    checkLifted.SetCheck((unit->stateFlags&Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit);
 
     initilizing = false;
 }
@@ -767,9 +766,9 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
 
         if ( checkInvincible.isChecked() )
-            unit->stateFlags |= (u16)Chk::Unit::State::Invincible;
+            unit->stateFlags |= Chk::Unit::State::Invincible;
         else
-            unit->stateFlags &= (~(u16)Chk::Unit::State::Invincible);
+            unit->stateFlags &= ~Chk::Unit::State::Invincible;
     }
     CM->AddUndo(unitChanges);
 }
@@ -784,9 +783,9 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
 
         if ( checkHallucinated.isChecked() )
-            unit->stateFlags |= (u16)Chk::Unit::State::Hallucinated;
+            unit->stateFlags |= Chk::Unit::State::Hallucinated;
         else
-            unit->stateFlags &= (~(u16)Chk::Unit::State::Hallucinated);
+            unit->stateFlags &= ~Chk::Unit::State::Hallucinated;
     }
     CM->AddUndo(unitChanges);
 }
@@ -801,9 +800,9 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
 
         if ( checkBurrowed.isChecked() )
-            unit->stateFlags |= (u16)Chk::Unit::State::Burrow;
+            unit->stateFlags |= Chk::Unit::State::Burrow;
         else
-            unit->stateFlags &= (~(u16)Chk::Unit::State::Burrow);
+            unit->stateFlags &= ~Chk::Unit::State::Burrow;
     }
     CM->AddUndo(unitChanges);
 }
@@ -818,9 +817,9 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
 
         if ( checkCloaked.isChecked() )
-            unit->stateFlags |= (u16)Chk::Unit::State::Cloak;
+            unit->stateFlags |= Chk::Unit::State::Cloak;
         else
-            unit->stateFlags &= (~(u16)Chk::Unit::State::Cloak);
+            unit->stateFlags &= ~Chk::Unit::State::Cloak;
     }
     CM->AddUndo(unitChanges);
 }
@@ -835,9 +834,9 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
 
         if ( checkLifted.isChecked() )
-            unit->stateFlags |= (u16)Chk::Unit::State::InTransit; // Check lifted state
+            unit->stateFlags |= Chk::Unit::State::InTransit; // Check lifted state
         else
-            unit->stateFlags &= (~(u16)Chk::Unit::State::InTransit); // Uncheck lifted state
+            unit->stateFlags &= ~Chk::Unit::State::InTransit; // Uncheck lifted state
     }
     CM->AddUndo(unitChanges);
 }
@@ -965,7 +964,7 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
 
 void UnitPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
     case Id::ButtonClose: NotifyClosePressed(); break;
     case Id::ButtonMoveTop: NotifyMoveTopPressed(); break;
@@ -987,7 +986,7 @@ void UnitPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
     if ( initilizing )
         return;
 
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
     case Id::EditHp: NotifyHpEditUpdated(); break;
     case Id::EditMp: NotifyMpEditUpdated(); break;
@@ -1002,7 +1001,7 @@ void UnitPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 
 void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 {
-    switch ( (Id)idFrom )
+    switch ( idFrom )
     {
     case Id::EditHp: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::HitpointPercent); break;
     case Id::EditMp: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::EnergyPercent); break;
@@ -1017,11 +1016,9 @@ void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 
 void UnitPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 {
-    Id editId = (Id)idFrom;
-
-    if ( editId == Id::EditHp || editId == Id::EditMp || editId == Id::EditShields ||
-        editId == Id::EditResources || editId == Id::EditHanger || editId == Id::EditUnitId ||
-        editId == Id::EditXc || editId == Id::EditYc )
+    if ( idFrom == Id::EditHp || idFrom == Id::EditMp || idFrom == Id::EditShields ||
+        idFrom == Id::EditResources || idFrom == Id::EditHanger || idFrom == Id::EditUnitId ||
+        idFrom == Id::EditXc || idFrom == Id::EditYc )
     {
         preservedStats.convertToUndo();
     }
@@ -1029,13 +1026,13 @@ void UnitPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 
 void UnitPropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
 {
-    if ( (Id)idFrom == Id::ComboPlayer )
+    if ( idFrom == Id::ComboPlayer )
         ChangeCurrOwner(dropPlayer.GetPlayerBySelNum());
 }
 
 void UnitPropertiesWindow::NotifyComboEditUpdated(int idFrom, HWND hWndFrom)
 {
-    if ( (Id)idFrom == Id::ComboPlayer )
+    if ( idFrom == Id::ComboPlayer )
     {
         u8 newPlayer = 0;
         if ( dropPlayer.GetPlayerNum(newPlayer) )

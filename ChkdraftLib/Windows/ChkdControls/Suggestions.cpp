@@ -220,7 +220,7 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         //case WM_SIZE: DoSize(); break;
-        case (UINT)WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
+        case WinLib::GV::WM_NEWGRIDTEXT: SuggestFirstStartingWith(*(std::string*)lParam); break;
         case WM_KEYDOWN: KeyDown(wParam); break;
         case WM_ERASEBKGND: EraseBackground((HDC)wParam); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;

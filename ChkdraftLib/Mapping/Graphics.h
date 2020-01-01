@@ -37,8 +37,8 @@ class ColorCycler
         {
         public:
             enum class Enabled {
-                No = 0,
-                Yes = 1
+                No,
+                Yes
             };
 
             Enabled enabled;

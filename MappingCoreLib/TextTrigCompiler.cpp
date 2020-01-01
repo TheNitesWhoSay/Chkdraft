@@ -217,8 +217,8 @@ u8 TextTrigCompiler::defaultConditionFlags(Chk::Condition::Type conditionType)
         0, 0, 0, 0, 0,    16, 16, 16, 16, 0,
         0, 0, 0, 0 };
 
-    if ( (size_t)conditionType < sizeof(defaultFlags)/sizeof(const u8) )
-        return defaultFlags[(size_t)conditionType];
+    if ( conditionType < sizeof(defaultFlags) / sizeof(const u8) )
+        return defaultFlags[conditionType];
     else
         return 0;
 }
@@ -232,8 +232,8 @@ u8 TextTrigCompiler::defaultActionFlags(Chk::Action::Type actionType)
         4, 4, 20, 20, 20,     20, 20, 0, 20, 20,
         20, 20, 4, 20, 4,     4, 4, 4, 0, 0 };
 
-    if ( (size_t)actionType < sizeof(defaultFlags) / sizeof(const u8) )
-        return defaultFlags[(size_t)actionType];
+    if ( actionType < sizeof(defaultFlags) / sizeof(const u8) )
+        return defaultFlags[actionType];
     else
         return 0;
 }
@@ -244,8 +244,8 @@ u8 TextTrigCompiler::numConditionArgs(Chk::Condition::VirtualType conditionType)
         1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
         1, 4, 0, 0 };
 
-    if ( (size_t)conditionType < sizeof(conditionNumArgs) / sizeof(const u8) )
-        return conditionNumArgs[(size_t)conditionType];
+    if ( conditionType >= 0 && conditionType < sizeof(conditionNumArgs) / sizeof(const u8) )
+        return conditionNumArgs[conditionType];
     else
         return ExtendedNumConditionArgs(conditionType);
 }
@@ -259,8 +259,8 @@ u8 TextTrigCompiler::numActionArgs(Chk::Action::VirtualType actionType)
         1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
         5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
 
-    if ( (size_t)actionType < sizeof(actionNumArgs) / sizeof(const u8) )
-        return actionNumArgs[(size_t)actionType];
+    if ( actionType >= 0 && actionType < sizeof(actionNumArgs) / sizeof(const u8) )
+        return actionNumArgs[actionType];
     else
         return ExtendedNumActionArgs(actionType);
 }
@@ -781,11 +781,11 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, Chk::Trigger & output,
                     return false;
                 }
                 currCondition = &output.condition(numConditions);
-                currCondition->flags = flags | (u8)Chk::Condition::Flags::Disabled;
+                currCondition->flags = flags | Chk::Condition::Flags::Disabled;
                 if ( (s32)conditionId < 0 )
-                    currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
+                    currCondition->conditionType = ExtendedToRegularCID(conditionId);
                 else
-                    currCondition->conditionType = (Chk::Condition::Type)(u8)conditionId;
+                    currCondition->conditionType = (Chk::Condition::Type)conditionId;
                 numConditions ++;
 
                 pos = conditionEnd;
@@ -873,7 +873,7 @@ inline bool TextTrigCompiler::ParsePartFour(buffer& text, Chk::Trigger & output,
             currCondition = &output.condition(numConditions);
             currCondition->flags = flags;
             if ( (s32)conditionId < 0 )
-                currCondition->conditionType = (Chk::Condition::Type)ExtendedToRegularCID(conditionId);
+                currCondition->conditionType = ExtendedToRegularCID(conditionId);
             else
                 currCondition->conditionType = (Chk::Condition::Type)conditionId;
             numConditions ++;
@@ -1048,11 +1048,11 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, Chk::Trigger & output
                     return false;
                 }
                 currAction = &output.action(numActions);
-                currAction->flags = flags | (u8)Chk::Action::Flags::Disabled;
-                if ( (s32)actionId < 0 )
-                    currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
+                currAction->flags = flags | Chk::Action::Flags::Disabled;
+                if ( actionId < 0 )
+                    currAction->actionType = ExtendedToRegularAID(actionId);
                 else
-                    currAction->actionType = (Chk::Action::Type)(u8)actionId;
+                    currAction->actionType = (Chk::Action::Type)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
@@ -1101,9 +1101,9 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer& text, Chk::Trigger & output
             currAction = &output.action(numActions);
             currAction->flags = flags;
             if ( (s32)actionId < 0 )
-                currAction->actionType = (Chk::Action::Type)(u8)ExtendedToRegularAID(actionId);
+                currAction->actionType = ExtendedToRegularAID(actionId);
             else
-                currAction->actionType = (Chk::Action::Type)(u8)actionId;
+                currAction->actionType = (Chk::Action::Type)actionId;
             numActions ++;
 
             pos = actionEnd+1;
@@ -1437,7 +1437,7 @@ bool TextTrigCompiler::ParseCondition(buffer &text, s64 pos, s64 end, bool disab
 
     ParseConditionName(arg, conditionType);
 
-    flags = defaultConditionFlags((Chk::Condition::Type)conditionType);
+    flags = defaultConditionFlags(ExtendedToRegularCID(conditionType));
     argsLeft = numConditionArgs(conditionType);
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
@@ -1888,7 +1888,7 @@ bool TextTrigCompiler::ParseAction(buffer &text, s64 pos, s64 end, bool diabled,
         break;
     }
 
-    flags = defaultActionFlags((Chk::Action::Type)actionType);
+    flags = defaultActionFlags(ExtendedToRegularAID(actionType));
     argsLeft = numActionArgs(actionType);
 
     return actionType != Chk::Action::VirtualType::NoAction;

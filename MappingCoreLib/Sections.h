@@ -27,7 +27,6 @@
     Any unpacked versions containing the same data as the storage structures is also defined here
 */
 
-enum class SectionName : u32; enum class SectionIndex : u32; enum class LoadBehavior;
 class ChkSection;
 template <typename StructType, bool virtualizable> class StructSection;
 template <bool virtualizable> class DynamicSection;
@@ -62,7 +61,6 @@ typedef std::shared_ptr<OstrSection> OstrSectionPtr; typedef std::shared_ptr<Kst
 class StrProp;
 class ScStr;
 struct zzStringTableNode;
-enum class StrCompressFlag : u32;
 class StrCompressionElevator;
 class StringException;
 class MaximumStringsExceeded;
@@ -77,7 +75,7 @@ using ScStrPtr = std::shared_ptr<ScStr>;
 
 
 
-enum class SectionName : u32 { // The section name values, as they appear in the binary scenario file
+enum_t(SectionName, u32, { // The section name values, as they appear in the binary scenario file
     TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
     VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
     DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
@@ -92,9 +90,9 @@ enum class SectionName : u32 { // The section name values, as they appear in the
     OSTR = 1381258063, KSTR = 1381258059, KTRG = 1196577867, KTGP = 1346851915,
 
     UNKNOWN = u32_max
-};
+});
 
-enum class SectionIndex : u32 { // The index at which a section appears in the default scenario file (plus indexes for extended sections), this is not related to section names
+enum_t(SectionIndex, u32, { // The index at which a section appears in the default scenario file (plus indexes for extended sections), this is not related to section names
     TYPE = 0, VER = 1, IVER = 2, IVE2 = 3,
     VCOD = 4, IOWN = 5, OWNR = 6, ERA = 7,
     DIM = 8, SIDE = 9, MTXM = 10, PUNI = 11,
@@ -110,7 +108,7 @@ enum class SectionIndex : u32 { // The index at which a section appears in the d
     KSTR = 40,
 
     UNKNOWN = u32_max
-};
+});
 
 enum class LoadBehavior
 {
@@ -153,7 +151,7 @@ class ChkSection
 
     public: // Static methods
         static SectionName getName(u32 sectionIndex) { return sectionNames[sectionIndex]; }
-        static SectionName getName(SectionIndex sectionIndex) { return sectionNames[(u32)sectionIndex]; }
+        static SectionName getName(SectionIndex sectionIndex) { return sectionNames[sectionIndex]; }
         static SectionIndex getIndex(SectionName sectionName) { return sectionIndexes.at(sectionName); }
         static LoadBehavior getLoadBehavior(SectionIndex sectionIndex);
         static std::string getNameString(SectionName sectionName);
@@ -378,7 +376,7 @@ class PuniSection : public StructSection<Chk::PUNI, false>
 {
     public:
         static PuniSectionPtr GetDefault();
-        PuniSection();
+        PuniSection(const Chk::PUNI & data);
 
         bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex);
         bool isUnitDefaultBuildable(Sc::Unit::Type unitType);
@@ -1075,7 +1073,7 @@ struct zzStringTableNode {
     - Automatically fail an operation if none of the compression methods affecting that limit, combined in every possible way can make the above equations satisfy.
     - Calculate section configuration viability before physically laying them out in memory
 */
-enum class StrCompressFlag : u32 {
+enum_t(StrCompressFlag, u32, {
     DuplicateStringRecycling = BIT_0,
     LastStringTrick = BIT_1,
     ReverseStacking = BIT_2,
@@ -1095,7 +1093,7 @@ enum class StrCompressFlag : u32 {
     All = AllNonInterlacing | AllInterlacing,
     Unchanged = u32_max,
     Default = DuplicateStringRecycling
-};
+});
 
 class StrCompressionElevator
 {
@@ -1159,11 +1157,11 @@ class StrSynchronizer
             : requestedCompressionFlags(requestedCompressionFlags), allowedCompressionFlags(allowedCompressionFlags) { }
 
         virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
-            u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged) = 0;
+            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
         virtual void synchronizeFromStrBuffer(const buffer &rawData) = 0;
 
         virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
-            u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged) = 0;
+            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
         virtual void synchronizeFromKstrBuffer(const buffer &rawData) = 0;
 
         u32 getRequestedCompressionFlags() const { return requestedCompressionFlags; }

@@ -331,8 +331,8 @@ u8 Chk::Action::defaultFlags[NumActionTypes] = {
 
 Chk::Condition::ArgType Chk::Condition::getClassicArgType(Type conditionType, size_t argNum)
 {
-    if ( (size_t)conditionType < NumConditionTypes && argNum < MaxArguments )
-        return classicArguments[(size_t)conditionType][argNum].type;
+    if ( conditionType < NumConditionTypes && argNum < MaxArguments )
+        return classicArguments[conditionType][argNum].type;
     else
         return Chk::Condition::ArgType::NoType;
 }
@@ -341,8 +341,8 @@ Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionT
 {
     if ( argNum < MaxArguments )
     {
-        if ( (size_t)conditionType < NumConditionTypes )
-            return classicArguments[(size_t)conditionType][argNum].type;
+        if ( conditionType < NumConditionTypes )
+            return classicArguments[conditionType][argNum].type;
 
         auto virtualCondition = virtualConditions.find(conditionType);
         if ( virtualCondition != virtualConditions.end() )
@@ -353,8 +353,8 @@ Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionT
 
 Chk::Action::ArgType Chk::Action::getClassicArgType(Type actionType, size_t argNum)
 {
-    if ( (size_t)actionType < NumActionTypes && argNum < MaxArguments )
-        return classicArguments[(size_t)actionType][argNum].type;
+    if ( actionType < NumActionTypes && argNum < MaxArguments )
+        return classicArguments[actionType][argNum].type;
     else
         return Chk::Action::ArgType::NoType;
 }
@@ -363,8 +363,8 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
 {
     if ( argNum < MaxArguments )
     {
-        if ( (size_t)actionType < NumActionTypes )
-            return classicArguments[(size_t)actionType][argNum].type;
+        if ( actionType < NumActionTypes )
+            return classicArguments[actionType][argNum].type;
 
         auto virtualAction = virtualActions.find(actionType);
         if ( virtualAction != virtualActions.end() )
@@ -375,16 +375,16 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
 
 inline bool Chk::Action::stringUsed(size_t stringId)
 {
-    return (size_t)actionType < NumActionTypes &&
-        ((actionUsesStringArg[(size_t)actionType] && this->stringId == stringId) ||
-         (actionUsesSoundArg[(size_t)actionType] && this->soundStringId == stringId));
+    return actionType < NumActionTypes &&
+        ((actionUsesStringArg[actionType] && this->stringId == stringId) ||
+         (actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
 inline bool Chk::Action::gameStringUsed(size_t stringId)
 {
-    return (size_t)actionType < NumActionTypes &&
-        ((actionUsesGameStringArg[(size_t)actionType] && this->stringId == stringId) ||
-         (actionUsesSoundArg[(size_t)actionType] && this->soundStringId == stringId));
+    return actionType < NumActionTypes &&
+        ((actionUsesGameStringArg[actionType] && this->stringId == stringId) ||
+         (actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
 inline bool Chk::Action::commentStringUsed(size_t stringId)
@@ -394,31 +394,31 @@ inline bool Chk::Action::commentStringUsed(size_t stringId)
 
 inline bool Chk::Action::briefingStringUsed(size_t stringId)
 {
-    return (size_t)actionType < NumBriefingActionTypes &&
-        ((briefingActionUsesStringArg[(size_t)actionType] && this->stringId == stringId) ||
-         (briefingActionUsesSoundArg[(size_t)actionType] && this->soundStringId == stringId));
+    return actionType < NumBriefingActionTypes &&
+        ((briefingActionUsesStringArg[actionType] && this->stringId == stringId) ||
+         (briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
 inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( actionUsesStringArg[(size_t)actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( actionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( actionUsesSoundArg[(size_t)actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
 
 inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( actionUsesGameStringArg[(size_t)actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( actionUsesGameStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( actionUsesSoundArg[(size_t)actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
@@ -431,28 +431,28 @@ inline void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> &st
 
 inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
-    if ( (size_t)actionType < NumBriefingActionTypes )
+    if ( actionType < NumBriefingActionTypes )
     {
-        if ( briefingActionUsesStringArg[(size_t)actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( briefingActionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( briefingActionUsesSoundArg[(size_t)actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( briefingActionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
 
 void Chk::Action::remapStringIds(std::map<u32, u32> stringIdRemappings)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( actionUsesStringArg[(size_t)actionType] )
+        if ( actionUsesStringArg[actionType] )
         {
             auto found = stringIdRemappings.find(stringId);
             if ( found != stringIdRemappings.end() )
                 stringId = found->second;
         }
 
-        if ( actionUsesSoundArg[(size_t)actionType] )
+        if ( actionUsesSoundArg[actionType] )
         {
             auto found = stringIdRemappings.find(soundStringId);
             if ( found != stringIdRemappings.end() )
@@ -463,16 +463,16 @@ void Chk::Action::remapStringIds(std::map<u32, u32> stringIdRemappings)
 
 void Chk::Action::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( briefingActionUsesStringArg[(size_t)actionType] )
+        if ( briefingActionUsesStringArg[actionType] )
         {
             auto found = stringIdRemappings.find(stringId);
             if ( found != stringIdRemappings.end() )
                 stringId = found->second;
         }
 
-        if ( briefingActionUsesSoundArg[(size_t)actionType] )
+        if ( briefingActionUsesSoundArg[actionType] )
         {
             auto found = stringIdRemappings.find(soundStringId);
             if ( found != stringIdRemappings.end() )
@@ -483,24 +483,24 @@ void Chk::Action::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
 
 void Chk::Action::deleteString(size_t stringId)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( actionUsesStringArg[(size_t)actionType] && this->stringId == stringId )
+        if ( actionUsesStringArg[actionType] && this->stringId == stringId )
             this->stringId = 0;
 
-        if ( actionUsesSoundArg[(size_t)actionType] && this->soundStringId == stringId )
+        if ( actionUsesSoundArg[actionType] && this->soundStringId == stringId )
             this->soundStringId = 0;
     }
 }
 
 void Chk::Action::deleteBriefingString(size_t stringId)
 {
-    if ( (size_t)actionType < NumActionTypes )
+    if ( actionType < NumActionTypes )
     {
-        if ( briefingActionUsesStringArg[(size_t)actionType] && this->stringId == stringId )
+        if ( briefingActionUsesStringArg[actionType] && this->stringId == stringId )
             this->stringId = 0;
 
-        if ( briefingActionUsesSoundArg[(size_t)actionType] && this->soundStringId == stringId )
+        if ( briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId )
             this->soundStringId = 0;
     }
 }
@@ -614,7 +614,7 @@ u8 Chk::Action::briefingDefaultFlags[NumBriefingActionTypes] = {
     /** 2 = Play Sound                */ 0,
     /** 3 = Text Message ------------ */ 0,
     /** 4 = Mission Objectives        */ 0,
-    /** 5 = Show Portrait ----------- */ (u8)Chk::Action::Flags::UnitTypeUsed,
+    /** 5 = Show Portrait ----------- */ Chk::Action::Flags::UnitTypeUsed,
     /** 6 = Hide Portrait             */ 0,
     /** 7 = Display Speaking Portrait */ 0,
     /** 8 = Transmission              */ 0,
@@ -651,23 +651,23 @@ Chk::Action & Chk::Trigger::action(size_t actionIndex)
 
 void Chk::Condition::ToggleDisabled()
 {
-    if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )
-        flags &= (u8)Flags::xDisabled;
+    if ( (flags & Flags::Disabled) == Flags::Disabled )
+        flags &= Flags::xDisabled;
     else
-        flags |= (u8)Flags::Disabled;
+        flags |= Flags::Disabled;
 }
 
 bool Chk::Condition::isDisabled()
 {
-    return (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled;
+    return (flags & Flags::Disabled) == Flags::Disabled;
 }
 
 void Chk::Action::ToggleDisabled()
 {
-    if ( (flags & (u8)Flags::Disabled) == (u8)Flags::Disabled )
-        flags &= (u8)Flags::xDisabled;
+    if ( (flags & Flags::Disabled) == Flags::Disabled )
+        flags &= Flags::xDisabled;
     else
-        flags |= (u8)Flags::Disabled;
+        flags |= Flags::Disabled;
 }
 
 Chk::Trigger::Owned & Chk::Trigger::owned(size_t ownerIndex)
@@ -729,93 +729,93 @@ void Chk::Trigger::deleteCondition(size_t conditionIndex, bool alignTop)
 
 bool Chk::Trigger::preserveTriggerFlagged()
 {   
-    return (flags & (u32)Flags::PreserveTrigger) == (u32)Flags::PreserveTrigger;
+    return (flags & Flags::PreserveTrigger) == Flags::PreserveTrigger;
 }
 
 bool Chk::Trigger::disabled()
 {
-    return (flags & (u32)Flags::Disabled) == (u32)Flags::Disabled;
+    return (flags & Flags::Disabled) == Flags::Disabled;
 }
 
 bool Chk::Trigger::ignoreConditionsOnce()
 {
-    return (flags & (u32)Flags::IgnoreConditionsOnce) == (u32)Flags::IgnoreConditionsOnce;
+    return (flags & Flags::IgnoreConditionsOnce) == Flags::IgnoreConditionsOnce;
 }
 
 bool Chk::Trigger::ignoreWaitSkipOnce()
 {
-    return (flags & (u32)Flags::IgnoreWaitSkipOnce) == (u32)Flags::IgnoreWaitSkipOnce;
+    return (flags & Flags::IgnoreWaitSkipOnce) == Flags::IgnoreWaitSkipOnce;
 }
 
 bool Chk::Trigger::ignoreMiscActionsOnce()
 {
-    return (flags & (u32)Flags::IgnoreMiscActions) == (u32)Flags::IgnoreMiscActions;
+    return (flags & Flags::IgnoreMiscActions) == Flags::IgnoreMiscActions;
 }
 
 bool Chk::Trigger::ignoreDefeatDraw()
 {
-    return (flags & (u32)Flags::IgnoreDefeatDraw) == (u32)Flags::IgnoreDefeatDraw;
+    return (flags & Flags::IgnoreDefeatDraw) == Flags::IgnoreDefeatDraw;
 }
 
 bool Chk::Trigger::pauseFlagged()
 {
-    return (flags & (u32)Flags::Paused) == (u32)Flags::Paused;
+    return (flags & Flags::Paused) == Flags::Paused;
 }
 
 void Chk::Trigger::setPreserveTriggerFlagged(bool preserved)
 {
     if ( preserved )
-        flags |= (u32)Flags::PreserveTrigger;
+        flags |= Flags::PreserveTrigger;
     else
-        flags &= ~(u32)Flags::PreserveTrigger;
+        flags &= ~Flags::PreserveTrigger;
 }
 
 void Chk::Trigger::setDisabled(bool disabled)
 {
     if ( disabled )
-        flags |= (u32)Flags::Disabled;
+        flags |= Flags::Disabled;
     else
-        flags &= ~(u32)Flags::Disabled;
+        flags &= ~Flags::Disabled;
 }
 
 void Chk::Trigger::setIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
     if ( ignoreConditionsOnce )
-        flags |= (u32)Flags::IgnoreConditionsOnce;
+        flags |= Flags::IgnoreConditionsOnce;
     else
-        flags &= ~(u32)Flags::IgnoreConditionsOnce;
+        flags &= ~Flags::IgnoreConditionsOnce;
 }
 
 void Chk::Trigger::setIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
     if ( ignoreWaitSkipOnce )
-        flags |= (u32)Flags::IgnoreWaitSkipOnce;
+        flags |= Flags::IgnoreWaitSkipOnce;
     else
-        flags &= ~(u32)Flags::IgnoreWaitSkipOnce;
+        flags &= ~Flags::IgnoreWaitSkipOnce;
 }
 
 void Chk::Trigger::setIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
     if ( ignoreMiscActionsOnce )
-        flags |= (u32)Flags::IgnoreMiscActions;
+        flags |= Flags::IgnoreMiscActions;
     else
-        flags &= ~(u32)Flags::IgnoreMiscActions;
+        flags &= ~Flags::IgnoreMiscActions;
 }
 
 void Chk::Trigger::setIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
     if ( ignoreDefeatDraw )
-        flags |= (u32)Flags::IgnoreDefeatDraw;
+        flags |= Flags::IgnoreDefeatDraw;
     else
-        flags &= ~(u32)Flags::IgnoreDefeatDraw;
+        flags &= ~Flags::IgnoreDefeatDraw;
 }
 
 void Chk::Trigger::setPauseFlagged(bool pauseFlagged)
 {
     if ( pauseFlagged )
-        flags |= (u32)Flags::Paused;
+        flags |= Flags::Paused;
     else
-        flags &= ~(u32)Flags::Paused;
+        flags &= ~Flags::Paused;
 }
 
 size_t Chk::Trigger::numUsedConditions()
@@ -1001,8 +1001,8 @@ Chk::StringProperties::StringProperties()
 Chk::StringProperties::StringProperties(u8 red, u8 green, u8 blue, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics, u32 size)
     : red(red), green(green), blue(blue)
 {
-    u8 flags = (isUsed ? (u8)StrFlags::isUsed : 0) | (hasPriority ? (u8)StrFlags::hasPriority : 0) | (isBold ? (u8)StrFlags::bold : 0) |
-        (isUnderlined ? (u8)StrFlags::underlined : 0) | (isItalics ? (u8)StrFlags::italics : 0);
+    u8 flags = (isUsed ? StrFlags::isUsed : 0) | (hasPriority ? StrFlags::hasPriority : 0) | (isBold ? StrFlags::bold : 0) |
+        (isUnderlined ? StrFlags::underlined : 0) | (isItalics ? StrFlags::italics : 0);
 
     constexpr u32 maxFontSize = baseFontSize + 7*fontStepSize;
     if ( size < baseFontSize || size > maxFontSize )
@@ -1011,17 +1011,17 @@ Chk::StringProperties::StringProperties(u8 red, u8 green, u8 blue, bool isUsed, 
     size -= baseFontSize;
     if ( size > 4*fontStepSize )
     {
-        flags |= (u8)StrFlags::sizePlusFourSteps;
+        flags |= StrFlags::sizePlusFourSteps;
         size -= 4*fontStepSize;
     }
     if ( size > 2*fontStepSize )
     {
-        flags |= (u8)StrFlags::sizePlusTwoSteps;
+        flags |= StrFlags::sizePlusTwoSteps;
         size -= 2*fontStepSize;
     }
     if ( size > fontStepSize )
     {
-        flags |= (u8)StrFlags::sizePlusOneStep;
+        flags |= StrFlags::sizePlusOneStep;
         size -= fontStepSize;
     }
 
@@ -1083,57 +1083,57 @@ std::ostream & Chk::operator<< (std::ostream & out, const Chk::Trigger & trigger
 
 bool Chk::Sprite::isDrawnAsSprite()
 {
-    return (flags & (u16)SpriteFlags::DrawAsSprite) == (u16)SpriteFlags::DrawAsSprite;
+    return (flags & SpriteFlags::DrawAsSprite) == SpriteFlags::DrawAsSprite;
 }
 
 bool Chk::Cuwp::isCloaked()
 {
-    return (unitStateFlags & (u16)State::Cloak) == (u16)State::Cloak;
+    return (unitStateFlags & State::Cloak) == State::Cloak;
 }
 
 bool Chk::Cuwp::isBurrowed()
 {
-    return (unitStateFlags & (u16)State::Burrow) == (u16)State::Burrow;
+    return (unitStateFlags & State::Burrow) == State::Burrow;
 }
 
 bool Chk::Cuwp::isInTransit()
 {
-    return (unitStateFlags & (u16)State::InTransit) == (u16)State::InTransit;
+    return (unitStateFlags & State::InTransit) == State::InTransit;
 }
 
 bool Chk::Cuwp::isHallucinated()
 {
-    return (unitStateFlags & (u16)State::Hallucinated) == (u16)State::Hallucinated;
+    return (unitStateFlags & State::Hallucinated) == State::Hallucinated;
 }
 
 bool Chk::Cuwp::isInvincible()
 {
-    return (unitStateFlags & (u16)State::Invincible) == (u16)State::Invincible;
+    return (unitStateFlags & State::Invincible) == State::Invincible;
 }
 
 void Chk::Cuwp::setCloaked(bool cloaked)
 {
-    unitStateFlags = cloaked ? unitStateFlags | (u16)State::Cloak : unitStateFlags & (u16)State::xCloak;
+    unitStateFlags = cloaked ? unitStateFlags | State::Cloak : unitStateFlags & State::xCloak;
 }
 
 void Chk::Cuwp::setBurrowed(bool burrowed)
 {
-    unitStateFlags = burrowed ? unitStateFlags | (u16)State::Burrow : unitStateFlags & (u16)State::xBurrow;
+    unitStateFlags = burrowed ? unitStateFlags | State::Burrow : unitStateFlags & State::xBurrow;
 }
 
 void Chk::Cuwp::setInTransit(bool inTransit)
 {
-    unitStateFlags = inTransit ? unitStateFlags | (u16)State::InTransit : unitStateFlags & (u16)State::xInTransit;
+    unitStateFlags = inTransit ? unitStateFlags | State::InTransit : unitStateFlags & State::xInTransit;
 }
 
 void Chk::Cuwp::setHallucinated(bool hallucinated)
 {
-    unitStateFlags = hallucinated ? unitStateFlags | (u16)State::Hallucinated : unitStateFlags & (u16)State::xHallucinated;
+    unitStateFlags = hallucinated ? unitStateFlags | State::Hallucinated : unitStateFlags & State::xHallucinated;
 }
 
 void Chk::Cuwp::setInvincible(bool invincible)
 {
-    unitStateFlags = invincible ? unitStateFlags | (u16)State::Invincible : unitStateFlags & (u16)State::xInvincible;
+    unitStateFlags = invincible ? unitStateFlags | State::Invincible : unitStateFlags & State::xInvincible;
 }
 
 Chk::Location::Location() : left(0), top(0), right(0), bottom(0), stringId(0), elevationFlags(0)

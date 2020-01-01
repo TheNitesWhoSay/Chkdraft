@@ -95,8 +95,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
                     bool GetSnapIntervals(u32& x, u32& y, u32& xOffset, u32& yOffset);
 
-                    enum class LocSnapFlags : u32 { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
-                        SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 };
+                    enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
+                        SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 });
                     bool SnapLocationDimensions(u32& x1, u32& y1, u32& x2, u32& y2, LocSnapFlags locSnapFlags);
 
                     void UpdateLocationMenuItems();

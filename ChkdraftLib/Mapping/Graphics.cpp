@@ -6,10 +6,9 @@
 
 DWORD ColorCycler::prevTickCount = 0;
 
-enum class MaxUnitBounds
-{
+enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
-};
+});
 
 const size_t ColorCycler::TilesetRotationSet[Sc::Terrain::MaxTilesets] = {
     0, // badlands uses set 0
@@ -443,12 +442,12 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
     for ( u16 unitNum = 0; unitNum < map.layers.numUnits(); unitNum++ )
     {
         Chk::UnitPtr unit = map.layers.getUnit(unitNum);
-        if ( (s32)unit->xc + (s32)MaxUnitBounds::Right > screenLeft &&
-            (s32)unit->xc - (s32)MaxUnitBounds::Left < screenRight )
+        if ( (s32)unit->xc + MaxUnitBounds::Right > screenLeft &&
+            (s32)unit->xc - MaxUnitBounds::Left < screenRight )
             // If within screen x-bounds
         {
-            if ( (s32)unit->yc + (s32)MaxUnitBounds::Down > screenTop &&
-                (s32)unit->yc - (s32)MaxUnitBounds::Up < screenBottom )
+            if ( (s32)unit->yc + MaxUnitBounds::Down > screenTop &&
+                (s32)unit->yc - MaxUnitBounds::Up < screenBottom )
                 // If within screen y-bounds
             {
                 u16 frame = 0;
@@ -477,12 +476,12 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
     for ( s32 spriteId = 0; spriteId < map.layers.numSprites(); spriteId++ )
     {
         Chk::SpritePtr sprite = map.layers.getSprite(spriteId);
-        if ( (s32)sprite->xc + (s32)MaxUnitBounds::Right > screenLeft &&
-            (s32)sprite->xc - (s32)MaxUnitBounds::Left < screenRight )
+        if ( (s32)sprite->xc + MaxUnitBounds::Right > screenLeft &&
+            (s32)sprite->xc - MaxUnitBounds::Left < screenRight )
             // If within screen x-bounds
         {
-            if ( (s32)sprite->yc + (s32)MaxUnitBounds::Down > screenTop &&
-                (s32)sprite->yc - (s32)MaxUnitBounds::Up < screenBottom )
+            if ( (s32)sprite->yc + MaxUnitBounds::Down > screenTop &&
+                (s32)sprite->yc - MaxUnitBounds::Up < screenBottom )
                 // If within screen y-bounds
             {
                 u16 frame = 0;
@@ -1391,12 +1390,12 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
                 rect.top    = tile.yc*32 - screenTop;
                 rect.bottom = tile.yc*32 - screenTop + 32;
 
-                if ( ((u8)tile.neighbors & (u8)TileNeighbor::Top) == (u8)TileNeighbor::Top )
+                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
                 {
                     MoveToEx(hDC, rect.left , rect.top, NULL);
                     LineTo  (hDC, rect.right, rect.top      );
                 }
-                if ( ((u8)tile.neighbors & (u8)TileNeighbor::Right) == (u8)TileNeighbor::Right )
+                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
                 {
                     if ( rect.right >= width )
                         rect.right --;
@@ -1404,7 +1403,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
                     MoveToEx(hDC, rect.right, rect.top     , NULL);
                     LineTo  (hDC, rect.right, rect.bottom+1      );
                 }
-                if ( ((u8)tile.neighbors & (u8)TileNeighbor::Bottom) == (u8)TileNeighbor::Bottom )
+                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                 {
                     if ( rect.bottom >= height )
                         rect.bottom --;
@@ -1412,7 +1411,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
                     MoveToEx(hDC, rect.left , rect.bottom, NULL);
                     LineTo  (hDC, rect.right, rect.bottom      );
                 }
-                if ( ((u8)tile.neighbors & (u8)TileNeighbor::Left) == (u8)TileNeighbor::Left )
+                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                 {
                     MoveToEx(hDC, rect.left, rect.bottom, NULL);
                     LineTo  (hDC, rect.left, rect.top-1       );
@@ -1460,12 +1459,12 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 
                 if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
                 {
-                    if ( ((u8)tile.neighbors & (u8)TileNeighbor::Top) == (u8)TileNeighbor::Top )
+                    if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
                     {
                         MoveToEx(hDC, rect.left , rect.top, NULL);
                         LineTo  (hDC, rect.right, rect.top      );
                     }
-                    if ( ((u8)tile.neighbors & (u8)TileNeighbor::Right) == (u8)TileNeighbor::Right )
+                    if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
                     {
                         if ( rect.right >= width )
                             rect.right --;
@@ -1473,7 +1472,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
                         MoveToEx(hDC, rect.right, rect.top, NULL);
                         LineTo  (hDC, rect.right, rect.bottom+1 );
                     }
-                    if ( ((u8)tile.neighbors & (u8)TileNeighbor::Bottom) == (u8)TileNeighbor::Bottom )
+                    if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                     {
                         if ( rect.bottom >= height )
                             rect.bottom --;
@@ -1481,7 +1480,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
                         MoveToEx(hDC, rect.left , rect.bottom, NULL);
                         LineTo  (hDC, rect.right, rect.bottom      );
                     }
-                    if ( ((u8)tile.neighbors & (u8)TileNeighbor::Left) == (u8)TileNeighbor::Left )
+                    if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                     {
                         MoveToEx(hDC, rect.left, rect.bottom, NULL);
                         LineTo  (hDC, rect.left, rect.top-1       );
@@ -1555,18 +1554,18 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections
             {
                 if ( locTop > locBottom )
                 {
-                    if ( ((u8)locFlags & (u8)LocSelFlags::North) == (u8)LocSelFlags::North )
-                        locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::North)|(u8)LocSelFlags::South);
-                    else if ( ((u8)locFlags & (u8)LocSelFlags::South) == (u8)LocSelFlags::South )
-                        locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::South)|(u8)LocSelFlags::North);
+                    if ( (locFlags & LocSelFlags::North) == LocSelFlags::North )
+                        locFlags = LocSelFlags(locFlags&(~LocSelFlags::North)|LocSelFlags::South);
+                    else if ( (locFlags & LocSelFlags::South) == LocSelFlags::South )
+                        locFlags = LocSelFlags(locFlags&(~LocSelFlags::South)|LocSelFlags::North);
                 }
 
                 if ( locLeft > locRight )
                 {
-                    if ( ((u8)locFlags & (u8)LocSelFlags::West) == (u8)LocSelFlags::West )
-                        locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::West)|(u8)LocSelFlags::East);
-                    else if ( ((u8)locFlags & (u8)LocSelFlags::East) == (u8)LocSelFlags::East )
-                        locFlags = (LocSelFlags)((u8)locFlags&(~(u8)LocSelFlags::East)|(u8)LocSelFlags::West);
+                    if ( (locFlags & LocSelFlags::West) == LocSelFlags::West )
+                        locFlags = LocSelFlags(locFlags&(~LocSelFlags::West)|LocSelFlags::East);
+                    else if ( (locFlags & LocSelFlags::East) == LocSelFlags::East )
+                        locFlags = LocSelFlags(locFlags&(~LocSelFlags::East)|LocSelFlags::West);
                 }
             }
 

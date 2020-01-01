@@ -3,11 +3,10 @@
 #include "../../../CommonFiles/CommonFiles.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
 
-enum class UndoTypes : int32_t
-{
+enum_t(UndoTypes, int32_t, {
     TileChange = 1,
     UnitChange = 2,
     LocationChange = 3
-};
+});
 
 #endif

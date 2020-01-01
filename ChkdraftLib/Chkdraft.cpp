@@ -9,14 +9,14 @@
 #include <chrono>
 #include <regex>
 
-enum class Id {
+enum_t(Id, u32, {
     IDR_MAIN_TOOLBAR = ID_FIRST,
     IDR_MAIN_STATUS,
     IDR_MAIN_MDI,
     IDR_MAIN_PLOT,
     NextToLastId,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
-};
+});
 
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
@@ -562,11 +562,11 @@ bool Chkdraft::CreateSubWindows()
         int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
         return mainMenu.FindThis(hWnd) &&
-            mainToolbar.CreateThis(hWnd, (u64)Id::IDR_MAIN_TOOLBAR) &&
+            mainToolbar.CreateThis(hWnd, Id::IDR_MAIN_TOOLBAR) &&
             statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
                 WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)Id::IDR_MAIN_STATUS) &&
-            mainPlot.CreateThis(hWnd, (u64)Id::IDR_MAIN_PLOT) &&
-            BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), (UINT)Id::ID_MDI_FIRSTCHILD,
+            mainPlot.CreateThis(hWnd, Id::IDR_MAIN_PLOT) &&
+            BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), Id::ID_MDI_FIRSTCHILD,
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
                 0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI);
     }

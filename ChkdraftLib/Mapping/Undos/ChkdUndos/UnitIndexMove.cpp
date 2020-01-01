@@ -22,7 +22,7 @@ void UnitIndexMove::Reverse(void *guiMap)
 
 int32_t UnitIndexMove::GetType()
 {
-    return (int32_t)UndoTypes::UnitChange;
+    return UndoTypes::UnitChange;
 }
 
 UnitIndexMove::UnitIndexMove(u16 oldIndex, u16 newIndex)
@@ -48,7 +48,7 @@ void UnitIndexMoveBoundary::Reverse(void *guiMap)
 
 int32_t UnitIndexMoveBoundary::GetType()
 {
-    return (int32_t)UndoTypes::UnitChange;
+    return UndoTypes::UnitChange;
 }
 
 UnitIndexMoveBoundary::UnitIndexMoveBoundary()

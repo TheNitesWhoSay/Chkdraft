@@ -10,10 +10,9 @@
 #define BOTTOM_CONDITION_PADDING 0
 #define DEFAULT_COLUMN_WIDTH 50
 
-enum class Id
-{
+enum_t(Id, u32, {
     GRID_CONDITIONS = ID_FIRST
-};
+});
 
 TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), gridConditions(*this, 16),
     suggestions(gridConditions.GetSuggestions()), isPasting(false)
@@ -62,18 +61,18 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
             Chk::Condition& condition = trig->condition(y);
-            if ( condition.conditionType > Chk::Condition::Type::NoCondition && (size_t)condition.conditionType < Chk::Condition::NumConditionTypes )
+            if ( condition.conditionType > Chk::Condition::Type::NoCondition && condition.conditionType < Chk::Condition::NumConditionTypes )
             {
-                u8 numArgs = u8(conditionArgMaps[(size_t)condition.conditionType].size());
+                u8 numArgs = u8(conditionArgMaps[condition.conditionType].size());
                 if ( numArgs > 8 )
                     numArgs = 8;
 
                 gridConditions.item(1, y).SetDisabled(false);
-                gridConditions.item(1, y).SetText(ttg.GetConditionName((u8)condition.conditionType));
+                gridConditions.item(1, y).SetText(ttg.GetConditionName(condition.conditionType));
                 for ( u8 x=0; x<numArgs; x++ )
                 {
                     gridConditions.item(x + 2, y).SetDisabled(false);
-                    gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, x, conditionArgMaps[(size_t)condition.conditionType]));
+                    gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.conditionType]));
                 }
                 for ( u8 x = numArgs; x < 8; x++ )
                 {
@@ -267,14 +266,14 @@ void TrigConditionsWindow::InitializeArgMaps()
 
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
-    gridConditions.CreateThis(hWnd, 2, 40, 100, 100, (u64)Id::GRID_CONDITIONS);
+    gridConditions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_CONDITIONS);
     suggestions.CreateThis(hWnd, 0, 0, 200, 100);
     RefreshWindow(trigIndex);
 }
 
 LRESULT TrigConditionsWindow::MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if ( (Id)wParam == Id::GRID_CONDITIONS )
+    if ( wParam == Id::GRID_CONDITIONS )
     {
         MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
         mis->itemWidth = DEFAULT_COLUMN_WIDTH;
@@ -372,10 +371,10 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     if ( trig != nullptr )
     {
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
-               ttc.ParseConditionArg(rawUpdateText, argNum, conditionArgMaps[(size_t)trig->condition(conditionNum).conditionType],
+               ttc.ParseConditionArg(rawUpdateText, argNum, conditionArgMaps[trig->condition(conditionNum).conditionType],
                 trig->condition(conditionNum), CM, chkd.scData) ) ||
              ( ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
-               ttc.ParseConditionArg(rawSuggestText, argNum, conditionArgMaps[(size_t)trig->condition(conditionNum).conditionType],
+               ttc.ParseConditionArg(rawSuggestText, argNum, conditionArgMaps[trig->condition(conditionNum).conditionType],
                 trig->condition(conditionNum), CM, chkd.scData) ) )
         {
             if ( refreshImmediately )
@@ -537,7 +536,7 @@ void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItem
 
 void TrigConditionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 {
-    if ( (Id)gridId == Id::GRID_CONDITIONS )
+    if ( gridId == Id::GRID_CONDITIONS )
     {
         bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
              drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
@@ -727,9 +726,9 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
         else if ( gridItemX > 1 ) // Condition Arg
         {
             u8 conditionArgNum = (u8)gridItemX - 2;
-            if ( (size_t)condition.conditionType < Chk::Condition::NumConditionTypes && conditionArgMaps[(size_t)condition.conditionType].size() > conditionArgNum )
+            if ( condition.conditionType < Chk::Condition::NumConditionTypes && conditionArgMaps[condition.conditionType].size() > conditionArgNum )
             {
-                u8 textTrigArgNum = conditionArgMaps[(size_t)condition.conditionType][conditionArgNum];
+                u8 textTrigArgNum = conditionArgMaps[condition.conditionType][conditionArgNum];
                 argType = condition.getClassicArgType(condition.conditionType, conditionArgNum);
             }
         }
@@ -788,18 +787,18 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
         case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
-        case (UINT)WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
-        case (UINT)WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
-        case (UINT)WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
-        case (UINT)WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
-        case (UINT)WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
-        case (UINT)WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
-        case (UINT)WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
-        case (UINT)WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
-        case (UINT)WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
+        case WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
+        case WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
+        case WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
+        case WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
+        case WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
+        case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
+        case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
+        case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
+        case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

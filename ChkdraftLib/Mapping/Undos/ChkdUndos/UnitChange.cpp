@@ -54,7 +54,7 @@ void UnitChange::Reverse(void *guiMap)
 
 int32_t UnitChange::GetType()
 {
-    return (int32_t)UndoTypes::UnitChange;
+    return UndoTypes::UnitChange;
 }
 
 UnitChange::UnitChange(u16 unitIndex, Chk::Unit::Field field, u32 data)

@@ -143,9 +143,9 @@ void CollapsableDefines()
         output.addStr(number, std::strlen(number)); }
 
     #define ADD_TEXTTRIG_TEXT_FLAGS(src) {                                                      \
-        if      ( (src&(u8)Chk::Action::Flags::AlwaysDisplay) == 0 )                                 \
+        if      ( (src&Chk::Action::Flags::AlwaysDisplay) == 0 )                                 \
             output.addStr(textFlags[0], std::strlen(textFlags[0]));                             \
-        else if ( (src&(u8)Chk::Action::Flags::AlwaysDisplay) == (u8)Chk::Action::Flags::AlwaysDisplay )  \
+        else if ( (src&Chk::Action::Flags::AlwaysDisplay) == Chk::Action::Flags::AlwaysDisplay )  \
             output.addStr(textFlags[1], std::strlen(textFlags[1])); }
 }
 
@@ -529,7 +529,7 @@ inline void TextTrigGenerator::AddConditionArgument(buffer &output, Chk::Conditi
                 case 2: ADD_TEXTTRIG_NUMBER(condition.amount) break;
                 case 3: ADD_TEXTTRIG_UNIT(condition.unitType) break;
                 case 4: ADD_TEXTTRIG_NUMERIC_COMPARISON(condition.comparison) break;
-                case 5: ADD_TEXTTRIG_NUMBER((u8)condition.conditionType) break;
+                case 5: ADD_TEXTTRIG_NUMBER(condition.conditionType) break;
                 case 6: ADD_TEXTTRIG_NUMBER(condition.typeIndex) break;
                 case 7: ADD_TEXTTRIG_NUMBER(condition.flags) break;
                 case 8: ADD_TEXTTRIG_CND_MASK_FLAG(condition.maskFlag) break;
@@ -816,7 +816,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Chk::Action &ac
                 case 4: ADD_TEXTTRIG_PLAYER(action.group) break;
                 case 5: ADD_TEXTTRIG_NUMBER(action.number) break;
                 case 6: ADD_TEXTTRIG_NUMBER(action.type) break;
-                case 7: ADD_TEXTTRIG_NUMBER((u8)action.actionType) break;
+                case 7: ADD_TEXTTRIG_NUMBER(action.actionType) break;
                 case 8: ADD_TEXTTRIG_NUMBER(action.type2) break;
                 case 9: ADD_TEXTTRIG_NUMBER(action.flags) break;
                 case 10: ADD_TEXTTRIG_NUMBER(action.padding) break;
@@ -894,7 +894,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
 
                 if ( CID != Chk::Condition::VirtualType::NoCondition )
                 {
-                    if ( (condition.flags&(u8)Chk::Condition::Flags::Disabled) == (u8)Chk::Condition::Flags::Disabled )
+                    if ( (condition.flags & Chk::Condition::Flags::Disabled) == Chk::Condition::Flags::Disabled )
                         output.addStr("\n;\t", 3);
                     else
                         output.addStr("\n\t", 2);
@@ -902,8 +902,8 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                     // Add condition name
                     if ( CID == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
                         output.addStr("Memory", 6);
-                    else if ( (s32)CID < (s32)conditionTable.size() )
-                        output.addStr(conditionTable[(s32)CID].c_str(), conditionTable[(s32)CID].size());
+                    else if ( CID < conditionTable.size() )
+                        output.addStr(conditionTable[CID].c_str(), conditionTable[CID].size());
                     else
                         output.addStr("Custom", 6);
 
@@ -914,8 +914,8 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                         CID = Chk::Condition::VirtualType::Memory;
                         numArgs = 3;
                     }
-                    else if ( (s32)CID < sizeof(conditionNumArgs) )
-                        numArgs = conditionNumArgs[(s32)CID];
+                    else if ( CID < sizeof(conditionNumArgs) )
+                        numArgs = conditionNumArgs[CID];
                     else
                         numArgs = 9; // custom
 
@@ -924,7 +924,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                         if ( i > 0 )
                             output.addStr(", ", 2);
 
-                        AddConditionArgument(output, condition, (Chk::Condition::VirtualType)CID, i);
+                        AddConditionArgument(output, condition, CID, i);
                     }
 
                     output.addStr(");", 2);
@@ -940,7 +940,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                 AID = (Chk::Action::VirtualType)action.actionType;
                 if ( AID != Chk::Action::VirtualType::NoAction )
                 {
-                    if ( (action.flags&(u8)Chk::Action::Flags::Disabled) == (u8)Chk::Action::Flags::Disabled )
+                    if ( (action.flags&Chk::Action::Flags::Disabled) == Chk::Action::Flags::Disabled )
                         output.addStr("\n;\t", 3);
                     else
                         output.addStr("\n\t", 2);
@@ -948,8 +948,8 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                     // Add action name
                     if ( AID == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
                         output.addStr("Set Memory", 10);
-                    else if ( (s32)AID < (s32)actionTable.size() )
-                        output.addStr(actionTable[(s32)AID].c_str(), actionTable[(s32)AID].size());
+                    else if ( AID < actionTable.size() )
+                        output.addStr(actionTable[AID].c_str(), actionTable[AID].size());
                     else
                         output.addStr("Custom", 6);
 
@@ -960,8 +960,8 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                         AID = Chk::Action::VirtualType::SetMemory;
                         numArgs = 3;
                     }
-                    else if ( (s32)AID < sizeof(actionNumArgs) )
-                        numArgs = actionNumArgs[(s32)AID];
+                    else if ( AID < sizeof(actionNumArgs) )
+                        numArgs = actionNumArgs[AID];
                     else
                         numArgs = 11; // custom
 
@@ -1003,9 +1003,9 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
 std::string TextTrigGenerator::GetTrigTextFlags(u8 textFlags)
 {
     const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
-    if      ( (textFlags&(u8)Chk::Action::Flags::AlwaysDisplay) == 0 )
+    if      ( (textFlags&Chk::Action::Flags::AlwaysDisplay) == 0 )
         return std::string(cTextFlags[0]);
-    else if ( (textFlags&(u8)Chk::Action::Flags::AlwaysDisplay) == (u8)Chk::Action::Flags::AlwaysDisplay )
+    else if ( (textFlags&Chk::Action::Flags::AlwaysDisplay) == Chk::Action::Flags::AlwaysDisplay )
         return std::string(cTextFlags[1]);
     else
         return std::to_string(textFlags);
@@ -1306,7 +1306,7 @@ bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
             for ( u8 actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
             {
                 Chk::Action &action = trigPtr->action(actionNum);
-                Chk::Action::Type actionId = (Chk::Action::Type)action.actionType;
+                Chk::Action::Type actionId = action.actionType;
                 bool isScriptAction = (actionId == Chk::Action::Type::RunAiScript || actionId == Chk::Action::Type::RunAiScriptAtLocation);
                 if ( isScriptAction && action.number != 0 )
                 {

@@ -34,7 +34,7 @@ void UnitCreateDel::Reverse(void *guiMap)
 
 int32_t UnitCreateDel::GetType()
 {
-    return (int32_t)UndoTypes::UnitChange;
+    return UndoTypes::UnitChange;
 }
 
 UnitCreateDel::UnitCreateDel(u16 index, Chk::Unit &unit) // Undo deletion

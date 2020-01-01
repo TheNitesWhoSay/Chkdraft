@@ -20,7 +20,7 @@ void TileChange::Reverse(void *guiMap)
 
 int32_t TileChange::GetType()
 {
-    return (int32_t)UndoTypes::TileChange;
+    return UndoTypes::TileChange;
 }
 
 TileChange::TileChange(u16 xc, u16 yc, u16 tileValue) : xc(xc), yc(yc), tileValue(tileValue)

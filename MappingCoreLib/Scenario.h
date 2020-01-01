@@ -37,7 +37,8 @@ class Versions
         VcodSectionPtr vcod; // Validation
 
         Versions(bool useDefault = false);
-
+        
+        Chk::Version getVersion();
         bool is(Chk::Version version);
         bool isOriginal();
         bool isHybrid();
@@ -63,11 +64,11 @@ class Strings : StrSynchronizer
 
         Strings(bool useDefault = false);
 
-        enum class RescopeFlag : u32 {
+        enum_t(RescopeFlag, u32, {
             RescopeSwitchNames = BIT_0,
             RescopeComments = BIT_1,
             Rescope
-        };
+        });
 
         enum class StringUserType : u8 {
             None = 0,
@@ -168,11 +169,11 @@ class Strings : StrSynchronizer
         // allowedCompressionFlags may be increased as neccessary if elevator.elevate() returns true
         
         virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
-            u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged);
+            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
         virtual void synchronizeFromStrBuffer(const buffer &rawData);
 
         virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
-            u32 requestedCompressionFlags = (u32)StrCompressFlag::Unchanged, u32 allowedCompressionFlags = (u32)StrCompressFlag::Unchanged);
+            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
         virtual void synchronizeFromKstrBuffer(const buffer &rawData);
 
     private:
@@ -280,8 +281,7 @@ class Layers : public Terrain
         Layers();
         Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height);
 
-        enum class SizeValidationFlag : u16
-        {
+        enum_t(SizeValidationFlag, u16, {
             UpdateAnywhere = BIT_0,
             UpdateAnywhereIfAlreadyStandard = BIT_1,
             UpdateOutOfBoundsLocations = BIT_2, // Not standard, locations larger than the map are useful
@@ -291,11 +291,11 @@ class Layers : public Terrain
             UpdateOutOfBoundsSprites = BIT_6,
             RemoveOutOfBoundsSprites = BIT_7,
             Default = UpdateAnywhereIfAlreadyStandard | RemoveOutOfBoundsDoodads | UpdateOutOfBoundsUnits | UpdateOutOfBoundsSprites
-        };
+        });
 
-        virtual void setTileWidth(u16 tileWidth, u16 sizeValidationFlags = (u16)SizeValidationFlag::Default, s32 leftEdge = 0);
-        virtual void setTileHeight(u16 tileHeight, u16 sizeValidationFlags = (u16)SizeValidationFlag::Default, s32 topEdge = 0);
-        virtual void setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlags = (u16)SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
+        virtual void setTileWidth(u16 tileWidth, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0);
+        virtual void setTileHeight(u16 tileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 topEdge = 0);
+        virtual void setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
         void validateSizes(u16 sizeValidationFlags);
 
         u8 getFog(size_t tileXc, size_t tileYc);

@@ -47,13 +47,7 @@
     <ClInclude Include="Basics.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Header Files\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="sha256.h">
-      <Filter>Header Files\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="ScData.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
     <ClInclude Include="StaticTrigComponentParser.h">
@@ -95,6 +89,12 @@
     <ClInclude Include="Chk.h">
       <Filter>Header Files\StarCraft\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ScData.h">
+      <Filter>Header Files\StarCraft\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp">
@@ -104,9 +104,6 @@
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="sha256.cpp">
-      <Filter>Source Files\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="ScData.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="StaticTrigComponentParser.cpp">
@@ -146,6 +143,9 @@
       <Filter>Source Files\StarCraft\%2a</Filter>
     </ClCompile>
     <ClCompile Include="Chk.cpp">
+      <Filter>Source Files\StarCraft\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="ScData.cpp">
       <Filter>Source Files\StarCraft\%2a</Filter>
     </ClCompile>
   </ItemGroup>

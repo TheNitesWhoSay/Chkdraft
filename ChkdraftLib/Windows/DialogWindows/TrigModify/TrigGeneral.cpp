@@ -1,7 +1,7 @@
 #include "TrigGeneral.h"
 #include "../../../Chkdraft.h"
 
-enum class Id {
+enum_t(Id, u32, {
     GROUP_COMMENT = ID_FIRST,
     GROUP_NOTES,
     GROUP_FLAGS,
@@ -26,7 +26,7 @@ enum class Id {
     EDIT_RAW_FLAGS,
 
     BUTTON_ADVANCED
-};
+});
 
 TrigGeneralWindow::TrigGeneralWindow() : trigIndex(0), refreshing(true), advancedMode(false)
 {
@@ -143,31 +143,31 @@ void TrigGeneralWindow::DoSize()
 
 void TrigGeneralWindow::CreateSubWindows(HWND hWnd)
 {
-    groupComment.CreateThis(hWnd, 5, 5, 75, 20, "Comment: ", (u64)Id::GROUP_COMMENT);
-    editComment.CreateThis(hWnd, 85, 5, 100, 40, true, (u64)Id::EDIT_COMMENT);
-    checkExtendedCommentString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", (u64)Id::CHECK_EXTENDED_COMMENT_STRING);
-    checkExtendedCommentAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", (u64)Id::CHECK_EXTENDED_COMMENT_ACTION);
-    buttonDeleteComment.CreateThis(hWnd, 5, 5, 75, 23, "Delete", (u64)Id::BUTTON_DELETE_COMMENT);
+    groupComment.CreateThis(hWnd, 5, 5, 75, 20, "Comment: ", Id::GROUP_COMMENT);
+    editComment.CreateThis(hWnd, 85, 5, 100, 40, true, Id::EDIT_COMMENT);
+    checkExtendedCommentString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", Id::CHECK_EXTENDED_COMMENT_STRING);
+    checkExtendedCommentAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", Id::CHECK_EXTENDED_COMMENT_ACTION);
+    buttonDeleteComment.CreateThis(hWnd, 5, 5, 75, 23, "Delete", Id::BUTTON_DELETE_COMMENT);
 
-    groupNotes.CreateThis(hWnd, 5, 50, 75, 20, "Notes: ", (u64)Id::GROUP_NOTES);
-    editNotes.CreateThis(hWnd, 85, 50, 100, 80, true, (u64)Id::EDIT_NOTES);
-    checkExtendedNotesString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", (u64)Id::CHECK_EXTENDED_NOTES_STRING);
-    checkExtendedNotesAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", (u64)Id::CHECK_EXTENDED_NOTES_ACTION);
-    buttonDeleteNotes.CreateThis(hWnd, 5, 5, 75, 23, "Delete", (u64)Id::BUTTON_DELETE_NOTES);
+    groupNotes.CreateThis(hWnd, 5, 50, 75, 20, "Notes: ", Id::GROUP_NOTES);
+    editNotes.CreateThis(hWnd, 85, 50, 100, 80, true, Id::EDIT_NOTES);
+    checkExtendedNotesString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", Id::CHECK_EXTENDED_NOTES_STRING);
+    checkExtendedNotesAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", Id::CHECK_EXTENDED_NOTES_ACTION);
+    buttonDeleteNotes.CreateThis(hWnd, 5, 5, 75, 23, "Delete", Id::BUTTON_DELETE_NOTES);
 
-    groupExecutionFlags.CreateThis(hWnd, 5, 100, 75, 20, "Execution Flags: ", (u64)Id::GROUP_FLAGS);
-    checkPreservedFlag.CreateThis(hWnd, 5, 5, 150, 20, false, "Preserve Trigger", (u64)Id::CHECK_PRESERVE_TRIGGER);
-    checkDisabled.CreateThis(hWnd, 5, 5, 150, 20, false, "Disabled", (u64)Id::CHECK_DISABLED);
-    checkIgnoreConditionsOnce.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Conditions Once", (u64)Id::CHECK_IGNORE_CONDITIONS_ONCE);
-    checkIgnoreWaitSkipOnce.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Wait Skip Once", (u64)Id::CHECK_IGNORE_WAITSKIP_ONCE);
-    checkIgnoreManyActions.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Misc Actions Once", (u64)Id::CHECK_IGNORE_MISCACTIONS_ONCE);
-    checkIgnoreDefeatDraw.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Defeat/Draw", (u64)Id::CHECK_IGNORE_DEFEAT_DRAW);
-    checkFlagPaused.CreateThis(hWnd, 5, 5, 150, 20, false, "Flag Paused", (u64)Id::CHECK_IS_PAUSED);
+    groupExecutionFlags.CreateThis(hWnd, 5, 100, 75, 20, "Execution Flags: ", Id::GROUP_FLAGS);
+    checkPreservedFlag.CreateThis(hWnd, 5, 5, 150, 20, false, "Preserve Trigger", Id::CHECK_PRESERVE_TRIGGER);
+    checkDisabled.CreateThis(hWnd, 5, 5, 150, 20, false, "Disabled", Id::CHECK_DISABLED);
+    checkIgnoreConditionsOnce.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Conditions Once", Id::CHECK_IGNORE_CONDITIONS_ONCE);
+    checkIgnoreWaitSkipOnce.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Wait Skip Once", Id::CHECK_IGNORE_WAITSKIP_ONCE);
+    checkIgnoreManyActions.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Misc Actions Once", Id::CHECK_IGNORE_MISCACTIONS_ONCE);
+    checkIgnoreDefeatDraw.CreateThis(hWnd, 5, 5, 150, 20, false, "Ignore Defeat/Draw", Id::CHECK_IGNORE_DEFEAT_DRAW);
+    checkFlagPaused.CreateThis(hWnd, 5, 5, 150, 20, false, "Flag Paused", Id::CHECK_IS_PAUSED);
 
-    textRawFlags.CreateThis(hWnd, 5, 5, 150, 13, "Raw Flags:", (u64)Id::TEXT_RAW_FLAGS);
-    editRawFlags.CreateThis(hWnd, 5, 5, 200, 20, false, (u64)Id::EDIT_RAW_FLAGS);
+    textRawFlags.CreateThis(hWnd, 5, 5, 150, 13, "Raw Flags:", Id::TEXT_RAW_FLAGS);
+    editRawFlags.CreateThis(hWnd, 5, 5, 200, 20, false, Id::EDIT_RAW_FLAGS);
 
-    buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", (u64)Id::BUTTON_ADVANCED);
+    buttonAdvanced.CreateThis(hWnd, 12, 310, 75, 20, "Advanced", Id::BUTTON_ADVANCED);
 
     checkIgnoreWaitSkipOnce.Hide();
     checkIgnoreManyActions.Hide();
@@ -331,7 +331,7 @@ LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     if ( !refreshing )
     {
-        switch ( (Id)LOWORD(wParam) )
+        switch ( LOWORD(wParam) )
         {
             case Id::EDIT_RAW_FLAGS:
                 if ( HIWORD(wParam) == EN_KILLFOCUS )
@@ -341,7 +341,7 @@ LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         switch ( HIWORD(wParam) )
         {
             case BN_CLICKED:
-                switch ( (Id)LOWORD(wParam) )
+                switch ( LOWORD(wParam) )
                 {
                     case Id::BUTTON_ADVANCED:               ToggleAdvancedMode();                                           break;
                     case Id::CHECK_PRESERVE_TRIGGER:        SetPreserveTrigger(checkPreservedFlag.isChecked());             break;

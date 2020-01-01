@@ -2,14 +2,14 @@
 #include "../../../Chkdraft.h"
 #include "../../../../WindowsLib/WindowsUi.h"
 
-enum class Id {
+enum_t(Id, u32, {
     WIN_NETTABTAB = ID_FIRST,
     WIN_TRIGGERS,
     WIN_TEMPLATES,
     WIN_COUNTERS,
     WIN_CUWPS,
     WIN_SWITCHES
-};
+});
 
 TrigEditorWindow::TrigEditorWindow() : currTab(Tab::Triggers)
 {
@@ -48,19 +48,19 @@ void TrigEditorWindow::ChangeTab(Tab tab)
 {
     tabs.SetCurSel((u32)tab);
 
-    tabs.HideTab((u64)Id::WIN_TRIGGERS);
-    tabs.HideTab((u64)Id::WIN_TEMPLATES);
-    tabs.HideTab((u64)Id::WIN_COUNTERS);
-    tabs.HideTab((u64)Id::WIN_CUWPS);
-    tabs.HideTab((u64)Id::WIN_SWITCHES);
+    tabs.HideTab(Id::WIN_TRIGGERS);
+    tabs.HideTab(Id::WIN_TEMPLATES);
+    tabs.HideTab(Id::WIN_COUNTERS);
+    tabs.HideTab(Id::WIN_CUWPS);
+    tabs.HideTab(Id::WIN_SWITCHES);
 
     switch ( tab )
     {
-        case Tab::Triggers  : tabs.ShowTab((u64)Id::WIN_TRIGGERS ); break;
-        case Tab::Templates : tabs.ShowTab((u64)Id::WIN_TEMPLATES); break;
-        case Tab::Counters  : tabs.ShowTab((u64)Id::WIN_COUNTERS ); break;
-        case Tab::Cuwps     : tabs.ShowTab((u64)Id::WIN_CUWPS    ); break;
-        case Tab::Switches  : tabs.ShowTab((u64)Id::WIN_SWITCHES ); break;
+        case Tab::Triggers  : tabs.ShowTab(Id::WIN_TRIGGERS ); break;
+        case Tab::Templates : tabs.ShowTab(Id::WIN_TEMPLATES); break;
+        case Tab::Counters  : tabs.ShowTab(Id::WIN_COUNTERS ); break;
+        case Tab::Cuwps     : tabs.ShowTab(Id::WIN_CUWPS    ); break;
+        case Tab::Switches  : tabs.ShowTab(Id::WIN_SWITCHES ); break;
     }
 
     currTab = tab;
@@ -82,11 +82,11 @@ void TrigEditorWindow::CreateSubWindows(HWND hWnd)
     for ( size_t i=0; i<tabLabels.size(); i++ )
         tabs.InsertTab((u32)i, tabLabels[i]);
 
-    triggersWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_TRIGGERS);
-    templatesWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_TEMPLATES);
-    countersWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_COUNTERS);
-    cuwpsWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_CUWPS);
-    switchesWindow.CreateThis(tabs.getHandle(), (u64)Id::WIN_SWITCHES);
+    triggersWindow.CreateThis(tabs.getHandle(), Id::WIN_TRIGGERS);
+    templatesWindow.CreateThis(tabs.getHandle(), Id::WIN_TEMPLATES);
+    countersWindow.CreateThis(tabs.getHandle(), Id::WIN_COUNTERS);
+    cuwpsWindow.CreateThis(tabs.getHandle(), Id::WIN_CUWPS);
+    switchesWindow.CreateThis(tabs.getHandle(), Id::WIN_SWITCHES);
     DoSize();
 }
 
@@ -119,11 +119,11 @@ BOOL TrigEditorWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case Tab::Triggers: tabs.ShowTab((u64)Id::WIN_TRIGGERS); break;
-        case Tab::Templates: tabs.ShowTab((u64)Id::WIN_TEMPLATES); break;
-        case Tab::Counters: tabs.ShowTab((u64)Id::WIN_COUNTERS); break;
-        case Tab::Cuwps: tabs.ShowTab((u64)Id::WIN_CUWPS); break;
-        case Tab::Switches: tabs.ShowTab((u64)Id::WIN_SWITCHES); break;
+        case Tab::Triggers: tabs.ShowTab(Id::WIN_TRIGGERS); break;
+        case Tab::Templates: tabs.ShowTab(Id::WIN_TEMPLATES); break;
+        case Tab::Counters: tabs.ShowTab(Id::WIN_COUNTERS); break;
+        case Tab::Cuwps: tabs.ShowTab(Id::WIN_CUWPS); break;
+        case Tab::Switches: tabs.ShowTab(Id::WIN_SWITCHES); break;
         }
         currTab = selectedTab;
     }
@@ -134,11 +134,11 @@ BOOL TrigEditorWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case Tab::Triggers: tabs.HideTab((u64)Id::WIN_TRIGGERS); break;
-        case Tab::Templates: tabs.HideTab((u64)Id::WIN_TEMPLATES); break;
-        case Tab::Counters: tabs.HideTab((u64)Id::WIN_COUNTERS); break;
-        case Tab::Cuwps: tabs.HideTab((u64)Id::WIN_CUWPS); break;
-        case Tab::Switches: tabs.HideTab((u64)Id::WIN_SWITCHES); break;
+        case Tab::Triggers: tabs.HideTab(Id::WIN_TRIGGERS); break;
+        case Tab::Templates: tabs.HideTab(Id::WIN_TEMPLATES); break;
+        case Tab::Counters: tabs.HideTab(Id::WIN_COUNTERS); break;
+        case Tab::Cuwps: tabs.HideTab(Id::WIN_CUWPS); break;
+        case Tab::Switches: tabs.HideTab(Id::WIN_SWITCHES); break;
         }
     }
     break;

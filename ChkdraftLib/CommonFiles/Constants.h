@@ -1,6 +1,25 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#ifndef enum_t
+/**
+    enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope
+    e.g. MyClass::MyEnum::Value cannot be accessed via MyClass::Value (as it could with regular enums) and potentially cause redefinition errors
+    while avoiding the property of enum classes that removes the one-to-one relationship with the underlying type (which forces excessive type-casting)
+
+    Usage:
+    enum_t(name, type, {
+        enumerator = constexpr,
+        enumerator = constexpr,
+        ...
+    });
+*/
+#pragma warning(disable: 26812) // In the context of using enum_t, enum class is definitely not preferred, disable the warning in visual studios
+
+/** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
+#define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
+#endif
+
 #include <Windows.h>
 
 #include <cstdint>
@@ -119,13 +138,5 @@ constexpr DWORD TreeTypeTech = (0x80000000);
 
 
 #define CHKDE_FIRST WINUI_LAST
-
-enum class CG : u32 {
-    /** Sent to the parent when a condition has been enabled
-        WPARAM: LOWORD = conditionNumber
-                HIWORD = 0 if enabled, nonzero (typically 1)
-                if disabled*/
-    WM_CONDITIONENABLED = 0
-};
 
 #endif

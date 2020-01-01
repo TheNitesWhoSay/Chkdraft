@@ -8,13 +8,12 @@
 #define BOTTOM_ACTION_PADDING 0
 #define DEFAULT_COLUMN_WIDTH 50
 
-enum class Id
-{
+enum_t(Id, u32, {
     GRID_ACTIONS = ID_FIRST,
     BUTTON_UNITPROPERTIES,
     BUTTON_EDITSTRING,
     BUTTON_EDITWAV
-};
+});
 
 TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
     suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
@@ -68,15 +67,15 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
             Chk::Action& action = trig->action(y);
             if ( action.actionType > Chk::Action::Type::NoAction && action.actionType <= Chk::Action::Type::LastAction )
             {
-                u8 numArgs = u8(actionArgMaps[(size_t)action.actionType].size());
+                u8 numArgs = u8(actionArgMaps[action.actionType].size());
                 if ( numArgs > 8 )
                     numArgs = 8;
 
-                gridActions.item(1, y).SetText(ttg.GetActionName((u8)action.actionType));
+                gridActions.item(1, y).SetText(ttg.GetActionName(action.actionType));
                 for ( u8 x = 0; x<numArgs; x++ )
                 {
                     gridActions.item(x + 2, y).SetDisabled(false);
-                    gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, x, actionArgMaps[(size_t)action.actionType]));
+                    gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, x, actionArgMaps[action.actionType]));
                 }
                 for ( u8 x = numArgs; x < 8; x++ )
                 {
@@ -381,20 +380,20 @@ void TrigActionsWindow::InitializeScriptTable()
 
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
-    gridActions.CreateThis(hWnd, 2, 40, 100, 100, (u64)Id::GRID_ACTIONS);
+    gridActions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_ACTIONS);
     suggestions.CreateThis(hWnd, 0, 0, 262, 100);
-    buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", (u64)Id::BUTTON_EDITSTRING);
+    buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
-    buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", (u64)Id::BUTTON_EDITWAV);
+    buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", Id::BUTTON_EDITWAV);
     buttonEditWav.Hide();
-    buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", (u64)Id::BUTTON_UNITPROPERTIES);
+    buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", Id::BUTTON_UNITPROPERTIES);
     buttonUnitProperties.Hide();
     RefreshWindow(trigIndex);
 }
 
 LRESULT TrigActionsWindow::MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == (WPARAM)Id::GRID_ACTIONS )
+    if ( wParam == Id::GRID_ACTIONS )
     {
         MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
         mis->itemWidth = DEFAULT_COLUMN_WIDTH;
@@ -496,9 +495,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     if ( trig != nullptr )
     {
         Chk::Action &action = trig->action(actionNum);
-        if ( (size_t)action.actionType < Chk::Action::NumActionTypes && argNum < actionArgMaps[(size_t)action.actionType].size() )
+        if ( action.actionType < Chk::Action::NumActionTypes && argNum < actionArgMaps[action.actionType].size() )
         {
-            u8 textTrigArgNum = actionArgMaps[(size_t)action.actionType][argNum];
+            u8 textTrigArgNum = actionArgMaps[action.actionType][argNum];
             Chk::Action::ArgType argType = action.getClassicArgType(action.actionType, textTrigArgNum);
             SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
             SingleLineChkdString chkdNewText = ChkdString(newText);
@@ -546,7 +545,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 }
                 else
                 {
-                    std::vector<u8> &argMap = actionArgMaps[(size_t)trig->action(actionNum).actionType];
+                    std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).actionType];
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
                         ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
                         (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
@@ -561,7 +560,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             }
             else
             {
-                std::vector<u8> &argMap = actionArgMaps[(size_t)trig->action(actionNum).actionType];
+                std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).actionType];
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
                     ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
                     (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
@@ -730,7 +729,7 @@ void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, 
 
 void TrigActionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 {
-    if ( gridId == (UINT)Id::GRID_ACTIONS )
+    if ( gridId == Id::GRID_ACTIONS )
     {
         bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
             drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
@@ -1061,8 +1060,8 @@ void TrigActionsWindow::ButtonEditString()
             Chk::Action &action = trig->action((u8)focusedY);
             Chk::Action::Type actionType = action.actionType;
 
-            std::vector<u8> &argMap = actionArgMaps[(size_t)actionType];
-            u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
+            std::vector<u8> &argMap = actionArgMaps[actionType];
+            u8 numArgs = (u8)actionArgMaps[actionType].size();
             for ( u8 i = 0; i < numArgs; i++ )
             {
                 Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
@@ -1173,9 +1172,9 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
         else if ( gridItemX > 1 ) // Action Arg
         {
             u8 actionArgNum = (u8)gridItemX - 2;
-            if ( (size_t)action.actionType < Chk::Action::NumActionTypes && actionArgMaps[(size_t)action.actionType].size() > actionArgNum )
+            if ( action.actionType < Chk::Action::NumActionTypes && actionArgMaps[action.actionType].size() > actionArgNum )
             {
-                u8 textTrigArgNum = actionArgMaps[(size_t)action.actionType][actionArgNum];
+                u8 textTrigArgNum = actionArgMaps[action.actionType][actionArgNum];
                 argType = action.getClassicArgType(action.actionType, textTrigArgNum);
             }
         }
@@ -1231,12 +1230,12 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
     {
         Chk::Action &action = trig->action((u8)gridItemY);
         Chk::Action::Type actionType = action.actionType;
-        if ( (size_t)actionType < Chk::Action::NumActionTypes )
+        if ( actionType < Chk::Action::NumActionTypes )
         {
             bool includesString = false, includesWav = false;
             bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
-            std::vector<u8> &argMap = actionArgMaps[(size_t)actionType];
-            u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
+            std::vector<u8> &argMap = actionArgMaps[actionType];
+            u8 numArgs = (u8)actionArgMaps[actionType].size();
             for ( u8 i = 0; i < numArgs; i++ )
             {
                 Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
@@ -1294,8 +1293,8 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
         Chk::Action &action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
 
-        std::vector<u8> &argMap = actionArgMaps[(size_t)actionType];
-        u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
+        std::vector<u8> &argMap = actionArgMaps[actionType];
+        u8 numArgs = (u8)actionArgMaps[actionType].size();
         for ( u8 i = 0; i < numArgs; i++ )
         {
             Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
@@ -1319,8 +1318,8 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
         Chk::Action &action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
 
-        std::vector<u8> &argMap = actionArgMaps[(size_t)actionType];
-        u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
+        std::vector<u8> &argMap = actionArgMaps[actionType];
+        u8 numArgs = (u8)actionArgMaps[actionType].size();
         for ( u8 i = 0; i < numArgs; i++ )
         {
             Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
@@ -1356,7 +1355,7 @@ LRESULT TrigActionsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( HIWORD(wParam) )
     {
         case BN_CLICKED:
-            switch ( (Id)LOWORD(wParam) )
+            switch ( LOWORD(wParam) )
             {
                 case Id::BUTTON_EDITSTRING: ButtonEditString(); break;
                 case Id::BUTTON_EDITWAV: ButtonEditWav(); break;
@@ -1376,19 +1375,19 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
         case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
-        case (UINT)WinLib::GV::WM_GRIDSELCHANGED: NewSelection(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
-        case (UINT)WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
-        case (UINT)WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
-        case (UINT)WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
-        case (UINT)WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
-        case (UINT)WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
-        case (UINT)WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
-        case (UINT)WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
-        case (UINT)WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
-        case (UINT)WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
+        case WinLib::GV::WM_GRIDSELCHANGED: NewSelection(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::LB::WM_NEWSELTEXT: NewSuggestion(*(std::string*)lParam); break;
+        case WinLib::GV::WM_GETGRIDITEMWIDTH: return GetGridItemWidth(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::LB::WM_PREDRAWITEMS: PreDrawItems(); break;
+        case WinLib::GV::WM_DRAWGRIDVIEWITEM: DrawGridViewRow((UINT)wParam, (PDRAWITEMSTRUCT)lParam); break;
+        case WinLib::GV::WM_DRAWTOUCHUPS: DrawTouchups((HDC)wParam); break;
+        case WinLib::LB::WM_POSTDRAWITEMS: PostDrawItems(); break;
+        case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
+        case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
+        case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
+        case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
+        case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

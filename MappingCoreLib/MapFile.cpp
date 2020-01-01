@@ -87,6 +87,8 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
             else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
                 Scenario::versions.changeTo(Chk::Version::StarCraft_BroodWar);
 
+            logger.info() << "version: " << versions.getVersion() << std::endl;
+
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
                 if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location

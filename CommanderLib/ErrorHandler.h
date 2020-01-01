@@ -17,10 +17,10 @@ class ErrorHandlerResult
 {
     public:
         ErrorAction primaryAction;
-        uint32_t logLevel;
+        LogLevel logLevel;
         std::string logString;
 
-        ErrorHandlerResult(ErrorAction primaryAction, uint32_t logLevel, std::string logString)
+        ErrorHandlerResult(ErrorAction primaryAction, LogLevel logLevel, std::string logString)
             : primaryAction(primaryAction), logLevel(logLevel), logString(logString) {}
         virtual ~ErrorHandlerResult();
 };

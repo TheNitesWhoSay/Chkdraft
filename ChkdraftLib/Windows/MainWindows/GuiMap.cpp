@@ -465,7 +465,7 @@ void GuiMap::selectAll()
                     }
 
                     tileValue = layers.getTile(0, height-1);
-                    selections.addTile(tileValue, 0, height-1, (TileNeighbor)((u8)TileNeighbor::Left|(u8)TileNeighbor::Bottom));
+                    selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
 
                     for ( x=1; x<width-1; x++ ) // Add the bottom row
                     {
@@ -473,7 +473,7 @@ void GuiMap::selectAll()
                         selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
                     }
                     tileValue = layers.getTile(width-1, height-1);
-                    selections.addTile(tileValue, width-1, height-1, (TileNeighbor)((u8)TileNeighbor::Right|(u8)TileNeighbor::Bottom));
+                    selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
 
                     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
                 }
@@ -628,18 +628,18 @@ void GuiMap::undo()
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doUndo((int32_t)UndoTypes::TileChange, this);
+            undos.doUndo(UndoTypes::TileChange, this);
             //undoStacks.doUndo(UNDO_TERRAIN, scenario(), selections());
             break;
         case Layer::Units:
-            undos.doUndo((int32_t)UndoTypes::UnitChange, this);
+            undos.doUndo(UndoTypes::UnitChange, this);
             //undoStacks.doUndo(UNDO_UNIT, scenario(), selections());
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
             break;
         case Layer::Locations:
             {
-                undos.doUndo((int32_t)UndoTypes::LocationChange, this);
+                undos.doUndo(UndoTypes::LocationChange, this);
                 //undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
                 if ( chkd.locationWindow.getHandle() != NULL )
                 {
@@ -661,17 +661,17 @@ void GuiMap::redo()
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doRedo((int32_t)UndoTypes::TileChange, this);
+            undos.doRedo(UndoTypes::TileChange, this);
             //undoStacks.doRedo(UNDO_TERRAIN, scenario(), selections());
             break;
         case Layer::Units:
-            undos.doRedo((int32_t)UndoTypes::UnitChange, this);
+            undos.doRedo(UndoTypes::UnitChange, this);
             //undoStacks.doRedo(UNDO_UNIT, scenario(), selections());
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
             break;
         case Layer::Locations:
-            undos.doRedo((int32_t)UndoTypes::LocationChange, this);
+            undos.doRedo(UndoTypes::LocationChange, this);
             //undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
             if ( chkd.locationWindow.getHandle() != NULL )
             {
@@ -1039,13 +1039,13 @@ bool GuiMap::SnapLocationDimensions(u32& x1, u32& y1, u32& x2, u32& y2, LocSnapF
         intervalNum = (double(y2-startSnapY))/lengthY;
         u32 yEndIntervalNum = (u32)round(intervalNum);
 
-        if ( ((u32)locSnapFlags & (u32)LocSnapFlags::SnapX1) == (u32)LocSnapFlags::SnapX1 )
+        if ( (locSnapFlags & LocSnapFlags::SnapX1) == LocSnapFlags::SnapX1 )
             x1 = xStartIntervalNum*lengthX + startSnapX;
-        if ( ((u32)locSnapFlags & (u32)LocSnapFlags::SnapY1) == (u32)LocSnapFlags::SnapY1 )
+        if ( (locSnapFlags & LocSnapFlags::SnapY1) == LocSnapFlags::SnapY1 )
             y1 = yStartIntervalNum*lengthY + startSnapY;
-        if ( ((u32)locSnapFlags & (u32)LocSnapFlags::SnapX2) == (u32)LocSnapFlags::SnapX2 )
+        if ( (locSnapFlags & LocSnapFlags::SnapX2) == LocSnapFlags::SnapX2 )
             x2 = xEndIntervalNum*lengthX + startSnapX;
-        if ( ((u32)locSnapFlags & (u32)LocSnapFlags::SnapY2) == (u32)LocSnapFlags::SnapY2 )
+        if ( (locSnapFlags & LocSnapFlags::SnapY2) == LocSnapFlags::SnapY2 )
             y2 = yEndIntervalNum*lengthY + startSnapY;
 
         return locSnapFlags != LocSnapFlags::None;
@@ -1482,7 +1482,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                     else if ( currLayer == Layer::Locations )
                     {
                         u32 x1 = mapClickX, y1 = mapClickY;
-                        if ( SnapLocationDimensions(x1, y1, x1, y1, (LocSnapFlags)((u32)LocSnapFlags::SnapX1|(u32)LocSnapFlags::SnapY1)) )
+                        if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
                             selections.setDrags(x1, y1);
                         selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
                     }
@@ -1534,7 +1534,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                 else if ( currLayer == Layer::Locations )
                 {
                     u32 x2 = mapHoverX, y2 = mapHoverY;
-                    if ( SnapLocationDimensions(x2, y2, x2, y2, (LocSnapFlags)((u32)LocSnapFlags::SnapX2|(u32)LocSnapFlags::SnapY2)) )
+                    if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
                         selections.setEndDrag(x2, y2);
                 }
                 else if ( currLayer == Layer::Units )
@@ -1575,7 +1575,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     else if ( currLayer == Layer::Locations )
                     {
                         u32 x2 = mapHoverX, y2 = mapHoverY;
-                        if ( SnapLocationDimensions(x2, y2, x2, y2, (LocSnapFlags)((u32)LocSnapFlags::SnapX2|(u32)LocSnapFlags::SnapY2)) )
+                        if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
                             selections.setEndDrag(x2, y2);
                     }
                     else if ( currLayer == Layer::Units )
@@ -1816,7 +1816,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 }
                 else // Resize location
                 {
-                    if ( ((u8)selFlags & (u8)LocSelFlags::North) == (u8)LocSelFlags::North )
+                    if ( (selFlags & LocSelFlags::North) == LocSelFlags::North )
                     {
                         if ( loc->top <= loc->bottom ) // Standard yc
                         {
@@ -1832,7 +1832,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                         }
                                     
                     }
-                    else if ( ((u8)selFlags & (u8)LocSelFlags::South) == (u8)LocSelFlags::South )
+                    else if ( (selFlags & LocSelFlags::South) == LocSelFlags::South )
                     {
                         if ( loc->top <= loc->bottom ) // Standard yc
                         {
@@ -1848,7 +1848,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                         }
                     }
     
-                    if ( ((u8)selFlags & (u8)LocSelFlags::West) == (u8)LocSelFlags::West )
+                    if ( (selFlags & LocSelFlags::West) == LocSelFlags::West )
                     {
                         if ( loc->left <= loc->right ) // Standard xc
                         {
@@ -1863,7 +1863,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                             SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX2);
                         }
                     }
-                    else if ( ((u8)selFlags & (u8)LocSelFlags::East) == (u8)LocSelFlags::East )
+                    else if ( (selFlags & LocSelFlags::East) == LocSelFlags::East )
                     {
                         if ( loc->left <= loc->right ) // Standard xc
                         {

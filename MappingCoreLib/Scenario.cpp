@@ -450,6 +450,11 @@ Versions::Versions(bool useDefault)
     }
 }
 
+Chk::Version Versions::getVersion()
+{
+    return ver->getVersion();
+}
+
 bool Versions::is(Chk::Version version)
 {
     return ver->getVersion() == version;
@@ -513,7 +518,7 @@ void Versions::setToDefaultValidation()
 
 
 Strings::Strings(bool useDefault) :
-    StrSynchronizer((u32)StrCompressFlag::DuplicateStringRecycling, (u32)StrCompressFlag::AllNonInterlacing)
+    StrSynchronizer(StrCompressFlag::DuplicateStringRecycling, StrCompressFlag::AllNonInterlacing)
 {
     if ( useDefault )
     {
@@ -571,16 +576,16 @@ bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope stor
 
 bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
 {
-    return ((u32)storageScope & (u32)Chk::Scope::Game) == (u32)Chk::Scope::Game && stringId < strings.size() && strings[stringId] != nullptr ||
-        ((u32)storageScope & (u32)Chk::Scope::Editor) == (u32)Chk::Scope::Editor && stringId < kStrings.size() && kStrings[stringId] != nullptr; 
+    return (storageScope & Chk::Scope::Game) == Chk::Scope::Game && stringId < strings.size() && strings[stringId] != nullptr ||
+        (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && stringId < kStrings.size() && kStrings[stringId] != nullptr; 
 }
 
 void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
     {
-        bool markGameStrings = ((u32)usageScope & (u32)Chk::Scope::Game) == (u32)Chk::Scope::Game;
-        bool markEditorStrings = ((u32)usageScope & (u32)Chk::Scope::Editor) == (u32)Chk::Scope::Editor;
+        bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
+        bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
 
         if ( markGameStrings )
         {
@@ -972,7 +977,7 @@ void Strings::deleteUnusedStrings(Chk::Scope storageScope)
 
 void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool deleteOnlyIfUnused)
 {
-    if ( ((u32)storageScope & (u32)Chk::Scope::Game) == (u32)Chk::Scope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
         if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Game) )
         {
@@ -987,7 +992,7 @@ void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool delete
         }
     }
     
-    if ( ((u32)storageScope & (u32)Chk::Scope::Editor) == (u32)Chk::Scope::Editor )
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
     {
         if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, true) )
         {
@@ -1550,7 +1555,7 @@ template void Strings::setForceName<SingleLineChkdString>(Chk::Force force, cons
 template <typename StringType>
 void Strings::setUnitName(Sc::Unit::Type unitType, const StringType &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && (size_t)unitType < Sc::Unit::TotalTypes )
+    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && unitType < Sc::Unit::TotalTypes )
     {
         size_t newStringId = addString<StringType>(unitName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
@@ -1815,55 +1820,55 @@ void Strings::synchronizeFromKstrBuffer(const buffer &rawData)
 }
 
 const std::vector<u32> Strings::compressionFlagsProgression = {
-    (u32)StrCompressFlag::None,
-    (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::LastStringTrick | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::ReverseStacking,
-    (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick | (u32)StrCompressFlag::DuplicateStringRecycling,
-    (u32)StrCompressFlag::SubStringRecycling,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::ReverseStacking,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking,
-    (u32)StrCompressFlag::SubStringRecycling | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::ReverseStacking | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::OffsetInterlacing,
-    (u32)StrCompressFlag::OffsetInterlacing | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::OffsetInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::OffsetInterlacing | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::OrderShuffledInterlacing,
-    (u32)StrCompressFlag::OrderShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SpareShuffledInterlacing,
-    (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing,
-    (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SubShuffledInterlacing,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::SizeBytesRecycling | (u32)StrCompressFlag::LastStringTrick,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing,
-    (u32)StrCompressFlag::SubShuffledInterlacing | (u32)StrCompressFlag::SpareShuffledInterlacing | (u32)StrCompressFlag::OrderShuffledInterlacing
-        | (u32)StrCompressFlag::SizeBytesRecycling
+    StrCompressFlag::None,
+    StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::LastStringTrick,
+    StrCompressFlag::LastStringTrick | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::ReverseStacking,
+    StrCompressFlag::ReverseStacking | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick | StrCompressFlag::DuplicateStringRecycling,
+    StrCompressFlag::SubStringRecycling,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::ReverseStacking,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking,
+    StrCompressFlag::SubStringRecycling | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::ReverseStacking | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::OffsetInterlacing,
+    StrCompressFlag::OffsetInterlacing | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::OffsetInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::OffsetInterlacing | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::OrderShuffledInterlacing,
+    StrCompressFlag::OrderShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SpareShuffledInterlacing,
+    StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing,
+    StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SubShuffledInterlacing,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::SizeBytesRecycling,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::SizeBytesRecycling | StrCompressFlag::LastStringTrick,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing,
+    StrCompressFlag::SubShuffledInterlacing | StrCompressFlag::SpareShuffledInterlacing | StrCompressFlag::OrderShuffledInterlacing
+        | StrCompressFlag::SizeBytesRecycling
 };
 
 void Strings::loadString(std::deque<ScStrPtr> &stringContainer, const buffer &rawData, const u16 &stringOffset, const size_t &sectionSize)
@@ -1887,7 +1892,7 @@ void Strings::loadString(std::deque<ScStrPtr> &stringContainer, const buffer &ra
 
 size_t Strings::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope storageScope, bool checkBeyondScopedCapacity, size_t firstChecked)
 {
-    if ( ((u32)storageScope & (u32)Chk::Scope::Game) == (u32)Chk::Scope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
         size_t limit = checkBeyondScopedCapacity ? Chk::MaxStrings : getCapacity(Chk::Scope::Game);
         for ( size_t i=firstChecked; i<limit; i++ )
@@ -1896,7 +1901,7 @@ size_t Strings::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed
                 return i;
         }
     }
-    if ( ((u32)storageScope & (u32)Chk::Scope::Editor) == (u32)Chk::Scope::Editor )
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
     {
         size_t limit = checkBeyondScopedCapacity ? Chk::MaxStrings : getCapacity(Chk::Scope::Editor);
         for ( size_t i=firstChecked; i<limit; i++ )
@@ -2050,11 +2055,11 @@ void Strings::replaceStringId(size_t oldStringId, size_t newStringId)
             for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
                 Chk::Action & action = trigger->actions[actionIndex];
-                if ( (size_t)action.actionType < Chk::Action::NumActionTypes )
+                if ( action.actionType < Chk::Action::NumActionTypes )
                 {
-                    if ( Chk::Action::actionUsesStringArg[(size_t)action.actionType] && (size_t)action.stringId == oldStringId )
+                    if ( Chk::Action::actionUsesStringArg[action.actionType] && action.stringId == oldStringId )
                         action.stringId = (u32)newStringId;
-                    if ( Chk::Action::actionUsesSoundArg[(size_t)action.actionType] && (size_t)action.soundStringId == oldStringId )
+                    if ( Chk::Action::actionUsesSoundArg[action.actionType] && action.soundStringId == oldStringId )
                         action.soundStringId = (u32)newStringId;
                 }
             }
@@ -2066,11 +2071,11 @@ void Strings::replaceStringId(size_t oldStringId, size_t newStringId)
             for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
                 Chk::Action & action = briefingTrigger->actions[actionIndex];
-                if ( (size_t)action.actionType < Chk::Action::NumActionTypes )
+                if ( action.actionType < Chk::Action::NumActionTypes )
                 {
-                    if ( Chk::Action::briefingActionUsesStringArg[(size_t)action.actionType] && (size_t)action.stringId == oldStringId )
+                    if ( Chk::Action::briefingActionUsesStringArg[action.actionType] && (size_t)action.stringId == oldStringId )
                         action.stringId = (u32)newStringId;
-                    if ( Chk::Action::briefingActionUsesSoundArg[(size_t)action.actionType] && (size_t)action.soundStringId == oldStringId )
+                    if ( Chk::Action::briefingActionUsesSoundArg[action.actionType] && (size_t)action.soundStringId == oldStringId )
                         action.soundStringId = (u32)newStringId;
                 }
             }
@@ -2390,25 +2395,25 @@ void Layers::setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlag
 
 void Layers::validateSizes(u16 sizeValidationFlags)
 {
-    bool updateAnywhereIfAlreadyStandard = (sizeValidationFlags & (u16)SizeValidationFlag::UpdateAnywhereIfAlreadyStandard) == (u16)SizeValidationFlag::UpdateAnywhereIfAlreadyStandard;
-    bool updateAnywhere = (sizeValidationFlags & (u16)SizeValidationFlag::UpdateAnywhere) == (u16)SizeValidationFlag::UpdateAnywhere;
+    bool updateAnywhereIfAlreadyStandard = (sizeValidationFlags & SizeValidationFlag::UpdateAnywhereIfAlreadyStandard) == SizeValidationFlag::UpdateAnywhereIfAlreadyStandard;
+    bool updateAnywhere = (sizeValidationFlags & SizeValidationFlag::UpdateAnywhere) == SizeValidationFlag::UpdateAnywhere;
     if ( (!updateAnywhereIfAlreadyStandard && updateAnywhere) || (updateAnywhereIfAlreadyStandard && anywhereIsStandardDimensions()) )
         matchAnywhereToDimensions();
 
-    if ( (sizeValidationFlags & (u16)SizeValidationFlag::UpdateOutOfBoundsLocations) == (u16)SizeValidationFlag::UpdateOutOfBoundsLocations )
+    if ( (sizeValidationFlags & SizeValidationFlag::UpdateOutOfBoundsLocations) == SizeValidationFlag::UpdateOutOfBoundsLocations )
         downsizeOutOfBoundsLocations();
 
-    if ( (sizeValidationFlags & (u16)SizeValidationFlag::RemoveOutOfBoundsDoodads) == (u16)SizeValidationFlag::RemoveOutOfBoundsDoodads )
+    if ( (sizeValidationFlags & SizeValidationFlag::RemoveOutOfBoundsDoodads) == SizeValidationFlag::RemoveOutOfBoundsDoodads )
         removeOutOfBoundsDoodads();
 
-    if ( (sizeValidationFlags & (u16)SizeValidationFlag::UpdateOutOfBoundsUnits) == (u16)SizeValidationFlag::UpdateOutOfBoundsUnits )
+    if ( (sizeValidationFlags & SizeValidationFlag::UpdateOutOfBoundsUnits) == SizeValidationFlag::UpdateOutOfBoundsUnits )
         updateOutOfBoundsUnits();
-    else if ( (sizeValidationFlags & (u16)SizeValidationFlag::RemoveOutOfBoundsUnits) == (u16)SizeValidationFlag::RemoveOutOfBoundsUnits )
+    else if ( (sizeValidationFlags & SizeValidationFlag::RemoveOutOfBoundsUnits) == SizeValidationFlag::RemoveOutOfBoundsUnits )
         removeOutOfBoundsUnits();
 
-    if ( (sizeValidationFlags & (u16)SizeValidationFlag::UpdateOutOfBoundsSprites) == (u16)SizeValidationFlag::UpdateOutOfBoundsSprites )
+    if ( (sizeValidationFlags & SizeValidationFlag::UpdateOutOfBoundsSprites) == SizeValidationFlag::UpdateOutOfBoundsSprites )
         updateOutOfBoundsSprites();
-    else if ( (sizeValidationFlags & (u16)SizeValidationFlag::RemoveOutOfBoundsSprites) == (u16)SizeValidationFlag::RemoveOutOfBoundsSprites )
+    else if ( (sizeValidationFlags & SizeValidationFlag::RemoveOutOfBoundsSprites) == SizeValidationFlag::RemoveOutOfBoundsSprites )
         removeOutOfBoundsSprites();
 }
 
@@ -2667,13 +2672,13 @@ void Layers::downsizeOutOfBoundsLocations()
 
 bool Layers::anywhereIsStandardDimensions()
 {
-    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation((size_t)Chk::LocationId::Anywhere);
+    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation(Chk::LocationId::Anywhere);
     return anywhere != nullptr && anywhere->left == 0 && anywhere->top == 0 && anywhere->right == dim->getPixelWidth() && anywhere->bottom == dim->getPixelHeight();
 }
 
 void Layers::matchAnywhereToDimensions()
 {
-    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation((size_t)Chk::LocationId::Anywhere);
+    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation(Chk::LocationId::Anywhere);
     if ( anywhere != nullptr )
     {
         anywhere->left = 0;

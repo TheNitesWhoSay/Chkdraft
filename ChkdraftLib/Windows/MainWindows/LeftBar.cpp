@@ -1,12 +1,11 @@
 #include "LeftBar.h"
 #include "../../Chkdraft.h"
 
-enum class Id
-{
+enum_t(Id, u32, {
     IDR_MAIN_TREE,
     IDR_LEFT_BAR,
     IDR_MINIMAP
-};
+});
 
 LeftBar::~LeftBar()
 {
@@ -166,9 +165,9 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_CREATE:
             {
-                miniMap.CreateThis(hWnd, (u64)Id::IDR_MINIMAP);
+                miniMap.CreateThis(hWnd, Id::IDR_MINIMAP);
 
-                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, (u64)Id::IDR_MAIN_TREE) )
+                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, Id::IDR_MAIN_TREE) )
                 {
                     SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
