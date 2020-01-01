@@ -341,7 +341,7 @@ Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionT
 {
     if ( argNum < MaxArguments )
     {
-        if ( conditionType < NumConditionTypes )
+        if ( (size_t)conditionType < NumConditionTypes )
             return classicArguments[conditionType][argNum].type;
 
         auto virtualCondition = virtualConditions.find(conditionType);
@@ -363,7 +363,7 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
 {
     if ( argNum < MaxArguments )
     {
-        if ( actionType < NumActionTypes )
+        if ( (size_t)actionType < NumActionTypes )
             return classicArguments[actionType][argNum].type;
 
         auto virtualAction = virtualActions.find(actionType);

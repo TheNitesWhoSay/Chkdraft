@@ -748,7 +748,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 
         CM->layers.deleteUnit(index);
 
-        for ( int i = index + 1; i <= CM->layers.numUnits(); i++ )
+        for ( size_t i = index + 1; i <= CM->layers.numUnits(); i++ )
             ChangeIndex(hUnitList, i, i - 1);
     }
     CM->AddUndo(unitDeletes);

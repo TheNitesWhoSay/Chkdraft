@@ -473,7 +473,7 @@ void Graphics::DrawSprites(ChkdBitmap& bitmap)
 
     buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 
-    for ( s32 spriteId = 0; spriteId < map.layers.numSprites(); spriteId++ )
+    for ( size_t spriteId = 0; spriteId < map.layers.numSprites(); spriteId++ )
     {
         Chk::SpritePtr sprite = map.layers.getSprite(spriteId);
         if ( (s32)sprite->xc + MaxUnitBounds::Right > screenLeft &&

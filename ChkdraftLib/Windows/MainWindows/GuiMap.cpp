@@ -352,7 +352,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
-            if ( (screenLeft+rcMap.right)/32 < Scenario::layers.getTileWidth() )
+            if ( size_t((screenLeft+rcMap.right)/32) < Scenario::layers.getTileWidth() )
                 selections.setEndDrag( ((screenLeft+rcMap.right)/32+1)*32, selections.getEndDrag().y );
             screenLeft = selections.getEndDrag().x - rcMap.right;
         }
@@ -365,7 +365,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
-            if ( (screenTop+rcMap.bottom)/32 < Scenario::layers.getTileHeight() )
+            if ( size_t((screenTop+rcMap.bottom)/32) < Scenario::layers.getTileHeight() )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+rcMap.bottom)/32+1)*32 );
             screenTop = selections.getEndDrag().y - rcMap.bottom;
         }
@@ -830,7 +830,7 @@ void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
         screenLeft = 0;
     else if ( screenLeft > ((s32)Scenario::layers.getTileWidth())*32-screenWidth )
     {
-        if ( screenWidth > ((s32)Scenario::layers.getTileWidth())*32 )
+        if ( screenWidth > s32(Scenario::layers.getTileWidth())*32 )
             screenLeft = 0;
         else
             screenLeft = s32(Scenario::layers.getTileWidth())*32-screenWidth;
@@ -838,9 +838,9 @@ void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
 
     if ( screenTop < 0 )
         screenTop = 0;
-    else if ( screenTop > Scenario::layers.getTileHeight()*32-screenHeight )
+    else if ( screenTop > s32(Scenario::layers.getTileHeight())*32-screenHeight )
     {
-        if ( screenHeight > Scenario::layers.getTileHeight()*32 )
+        if ( screenHeight > s32(Scenario::layers.getTileHeight())*32 )
             screenTop = 0;
         else
             screenTop = s32(Scenario::layers.getTileHeight())*32-screenHeight;
@@ -1716,9 +1716,9 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             bool multiAdd = selections.getStartDrag().x + 1 < selections.getEndDrag().x ||
                             selections.getStartDrag().y + 1 < selections.getEndDrag().y;
     
-            if ( selections.getEndDrag().x > Scenario::layers.getTileWidth() )
+            if ( selections.getEndDrag().x > LONG(Scenario::layers.getTileWidth()) )
                 selections.setEndDrag((s32)Scenario::layers.getTileWidth(), selections.getEndDrag().y);
-            if ( selections.getEndDrag().y > Scenario::layers.getTileHeight() )
+            if ( selections.getEndDrag().y > LONG(Scenario::layers.getTileHeight()) )
                 selections.setEndDrag(selections.getEndDrag().x, (s32)Scenario::layers.getTileHeight());
     
             for ( int yRow = selections.getStartDrag().y; yRow < selections.getEndDrag().y; yRow++ )
@@ -1918,7 +1918,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     }
         
     size_t numUnits = layers.numUnits();
-    for ( int i=0; i<numUnits; i++ )
+    for ( size_t i=0; i<numUnits; i++ )
     {
         int unitLeft = 0, unitRight  = 0,
             unitTop  = 0, unitBottom = 0;
@@ -1943,19 +1943,19 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         if ( selections.getStartDrag().x <= unitRight  && selections.getEndDrag().x >= unitLeft
             && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
         {
-            bool wasSelected = selections.unitIsSelected(i);
+            bool wasSelected = selections.unitIsSelected((u16)i);
             if ( wasSelected )
-                selections.removeUnit(i);
+                selections.removeUnit((u16)i);
             else
-                selections.addUnit(i);
+                selections.addUnit((u16)i);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
             {
                 chkd.unitWindow.SetChangeHighlightOnly(true);
                 if ( wasSelected )
-                    chkd.unitWindow.DeselectIndex(i);
+                    chkd.unitWindow.DeselectIndex((u16)i);
                 else
-                    chkd.unitWindow.FocusAndSelectIndex(i);
+                    chkd.unitWindow.FocusAndSelectIndex((u16)i);
                 
                 chkd.unitWindow.SetChangeHighlightOnly(false);
             }

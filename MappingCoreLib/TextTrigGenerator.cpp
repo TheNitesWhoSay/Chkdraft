@@ -902,7 +902,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                     // Add condition name
                     if ( CID == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
                         output.addStr("Memory", 6);
-                    else if ( CID < conditionTable.size() )
+                    else if ( CID >= 0 && (size_t)CID < conditionTable.size() )
                         output.addStr(conditionTable[CID].c_str(), conditionTable[CID].size());
                     else
                         output.addStr("Custom", 6);
@@ -948,7 +948,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                     // Add action name
                     if ( AID == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
                         output.addStr("Set Memory", 10);
-                    else if ( AID < actionTable.size() )
+                    else if ( AID >= 0 && (size_t)AID < actionTable.size() )
                         output.addStr(actionTable[AID].c_str(), actionTable[AID].size());
                     else
                         output.addStr("Custom", 6);
