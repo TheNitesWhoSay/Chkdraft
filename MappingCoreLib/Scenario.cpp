@@ -53,7 +53,7 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
     allSections.push_back(versions.type);
     allSections.push_back(versions.ver);
 
-    if ( !versions.isExpansion() )
+    if ( !versions.isHybridOrAbove() )
         allSections.push_back(versions.iver);
 
     allSections.push_back(versions.ive2);
@@ -298,28 +298,12 @@ bool Scenario::ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::v
     return true; // sectionSize == 0
 }
 
-bool Scenario::ToSingleBuffer(buffer& chk)
+bool Scenario::ToSingleBuffer(std::stringstream & buf)
 {
-/*    chk.flush();
-    if ( chk.setTitle("CHK ") )
-    {
-        for ( auto &section : allSections )
-        {
-            if ( !( chk.add<u32>(section->titleVal()) &&
-                chk.add<u32>((u32)section->size()) &&
-                ( section->size() == 0 || chk.addStr((const char*)section->getPtr(0), section->size()) ) ) )
-            {
-                return false;
-            }
-        }
+    for ( auto & section : allSections )
+        section->write((std::ostream &)buf);
 
-        if ( tailLength > 0 && tailLength < 8 )
-            chk.addStr((const char*)tailData, tailLength);
-
-        return true;
-    }
-    else*/
-        return false;
+    return true;
 }
 
 std::shared_ptr<void> Scenario::Serialize()
@@ -416,16 +400,10 @@ bool Scenario::Login(std::string &password)
     return false;
 }
 
-void Scenario::WriteFile(FILE* pFile)
+void Scenario::WriteFile(std::ostream & os)
 {
-/*    if ( !isProtected() )
-    {
-        for ( auto &section : allSections )
-            section->write(pFile, true);
-
-        if ( tailLength > 0 && tailLength < 8 )
-            fwrite(tailData, tailLength, 1, pFile);
-    }*/
+    for ( auto & section : allSections )
+        section->write(os);
 }
 
 
@@ -1669,7 +1647,7 @@ void Strings::synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr 
         void[] stringData; // Character data, first comes initial NUL character... then all strings, in order, each NUL terminated
     */
 
-    size_t numStrings = strings.size();
+    size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0;
     if ( numStrings > Chk::MaxStrings )
         throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, Chk::MaxStrings);
 
@@ -1693,9 +1671,10 @@ void Strings::synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr 
     buffer characterData;
     u16 characterDataStart = 2 + (u16)totalOffsetSpace;
     newStringSection.add<u16>((u16)numStrings); // Add numStrings
-    characterData.add<s8>(0); // Add initial NUL character=
-    for ( auto string : strings )
+    characterData.add<s8>(0); // Add initial NUL character
+    for ( size_t i=1; i<strings.size(); i++ )
     {
+        auto string = strings[i];
         size_t stringLength = string != nullptr ? string->length() : 0;
         if ( stringLength == 0 )
             newStringSection.add<u16>(characterDataStart); // Point this string to initial NUL character

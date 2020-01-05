@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <SimpleIcu.h>
+#include <sstream>
 
 std::hash<std::string> MapFile::strHash;
 std::map<size_t, std::string> MapFile::virtualSoundTable;
@@ -71,14 +72,12 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
         CHKD_ERR("Cannot save protected maps!");
     else
     {
-        bool newSaveDetails = false;
-        SaveType newSaveType = SaveType::Unknown;
-        std::string newMapFilePath;
         bool overwriting = true;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-            newSaveDetails = getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser);
+            getSaveDetails(saveType, mapFilePath, overwriting, fileBrowser);
 
-        if ( newSaveDetails || !mapFilePath.empty() ) // Map path has been determined
+        logger.info() << "Saving to: " << mapFilePath << std::endl;
+        if ( !mapFilePath.empty() ) // Map path has been determined
         {
             if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
                 Scenario::versions.changeTo(Chk::Version::StarCraft_Original);
@@ -87,13 +86,13 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
             else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
                 Scenario::versions.changeTo(Chk::Version::StarCraft_BroodWar);
 
-            logger.info() << "version: " << versions.getVersion() << std::endl;
+            Scenario::strings.str->syncToBuffer(Scenario::strings);
 
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
                 if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
                 {
-                    buffer chk;
+                    std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     if ( Scenario::ToSingleBuffer(chk) )
                     {
                         if ( MpqFile::open(mapFilePath) )
@@ -119,17 +118,15 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
             {
                 if ( RemoveFile(mapFilePath) ) // Remove any existing files of the same name
                 {
-                    #ifdef WINDOWS_UTF16
-                        std::FILE* pFile = _wfopen(icux::toFilestring(mapFilePath).c_str(), icux::toFilestring("wb").c_str());
-                    #else
-                        std::FILE* pFile = std::fopen(mapFilePath.c_str(), "wb");
-                    #endif
-
-                    if ( pFile != nullptr )
+                    std::ofstream outFile(icux::toFilestring(mapFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
+                    if ( outFile.is_open() )
                     {
-                        Scenario::WriteFile(pFile);
-                        std::fclose(pFile);
-                        return true;
+                        Scenario::WriteFile(outFile);
+                        bool success = outFile.good();
+                        if ( !success )
+                            logger.error("Failed to write scenario file!");
+
+                        return success;
                     }
                 }
                 CHKD_ERR("Failed to create the new map file!");
@@ -705,8 +702,11 @@ bool MapFile::getSaveDetails(inout_param SaveType &saveType, output_param std::s
             {
                 if ( newSaveType == SaveType::StarCraftScm || newSaveType == SaveType::HybridScm )
                     newSaveFilePath += ".scm";
-                else if ( newSaveType == SaveType::ExpansionScx || newSaveType == SaveType::AllMaps )
+                else if ( newSaveType == SaveType::ExpansionScx || newSaveType == SaveType::AllMaps || newSaveType == SaveType::AllFiles )
+                {
                     newSaveFilePath += ".scx";
+                    newSaveType = SaveType::ExpansionScx;
+                }
                 else if ( newSaveType == SaveType::StarCraftChk || newSaveType == SaveType::HybridChk || newSaveType == SaveType::ExpansionChk )
                     newSaveFilePath += ".chk";
                 else

@@ -88,8 +88,8 @@ public:
 
 struct TileSet
 {
-    buffer cv5;
-    buffer vf4;
+    buffer cv5; // CV5Entry
+    buffer vf4; // 
     buffer vr4;
     buffer vx4;
     buffer wpe;
@@ -410,24 +410,24 @@ private:
     buffer stat_txtTbl;
 };
 
-    class AiScripts
-    {
-    public:
-        AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
-        virtual ~AiScripts();
-        bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
-        bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
-        int GetNumAiScripts();
-        bool GetAiIdentifier(int aiNum, u32 &outAiId);
-        bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
-        bool GetAiName(int aiNum, std::string &outAiName);
-        bool GetAiName(u32 aiId, std::string &outAiName);
-        bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
+class AiScripts
+{
+public:
+    AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
+    virtual ~AiScripts();
+    bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
+    int GetNumAiScripts();
+    bool GetAiIdentifier(int aiNum, u32 &outAiId);
+    bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
+    bool GetAiName(int aiNum, std::string &outAiName);
+    bool GetAiName(u32 aiId, std::string &outAiName);
+    bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
 
-    private:
-        buffer aiScriptBin;
-        TblFiles &tblFiles;
-    };
+private:
+    buffer aiScriptBin;
+    TblFiles &tblFiles;
+};
 
 class ScData
 {
@@ -485,8 +485,7 @@ bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
 
 #define GetMegaTileRef(tiles, cv5Reference) tiles->cv5.get<u16>(cv5Reference)*32
 
-#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) \
-(tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64 \
+#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64
 
 extern std::vector<FilterEntry<u32>> getStarDatFilter();
 extern std::vector<FilterEntry<u32>> getBrooDatFilter();

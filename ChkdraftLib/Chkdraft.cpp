@@ -260,7 +260,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch ( wParam )
                 {
-                    case VK_SPACE: CM->LockCursor(); return; break;
+                    case VK_SPACE: if ( CM != nullptr ) CM->LockCursor(); return; break;
                     case VK_DELETE: CM->deleteSelection(); return; break;
                     case VK_ESCAPE: maps.endPaste(); return; break;
                     case VK_RETURN: CM->ReturnKeyPress(); return; break;

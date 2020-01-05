@@ -44,7 +44,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
 #error Other compiler!
 #endif 
 #else
-void IgnoreErr(const char* file, unsigned int line, const char* msg, ...); // Ignores an error message
+void IgnoreErr(const std::string &file, unsigned int line, const std::string msg, ...); // Ignores an error message
 #if defined(_MSC_VER)
 #define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
 #define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)

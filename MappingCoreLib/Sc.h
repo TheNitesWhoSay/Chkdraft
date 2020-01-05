@@ -43,7 +43,8 @@ namespace Sc {
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
         public:
-            Descriptor(Priority priority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true) {}
+            Descriptor(Priority priority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true)
+                : datFilePriority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory) {}
 
             Priority getPriority() const { return datFilePriority; }
             const std::string &getFileName() const { return fileName; }
@@ -78,7 +79,6 @@ namespace Sc {
             static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
         };
         using BrowserPtr = std::shared_ptr<Browser>;
-
     };
 
     class Player {
@@ -377,9 +377,8 @@ namespace Sc {
         static const std::vector<std::string> defaultDisplayNames;
         static const std::vector<std::string> legacyTextTrigDisplayNames;
 
-        class UnitDatEntry
+        struct DatEntry
         {
-        public:
             u8 graphics;
             u16 subunit1;
             u16 subunit2;
@@ -401,7 +400,7 @@ namespace Sc {
             u8 maxGroundHits;
             u8 airWeapon;
             u8 maxAirHits;
-            u8 aIInternal;
+            u8 aiInternal;
             u32 specialAbilityFlags;
             u8 targetAcquisitionRange;
             u8 sightRange;
@@ -440,9 +439,8 @@ namespace Sc {
             u8 broodWarUnitFlag;
             u16 starEditAvailabilityFlags;
         };
-        class FlingyDatEntry
+        struct FlingyDatEntry
         {
-        public:
             u16 sprite;
             u32 topSpeed;
             u16 acceleration;
@@ -452,9 +450,8 @@ namespace Sc {
             u8 moveControl;
         };
 
-        class UnitDatFile
+        struct DatFile
         {
-        public:
             enum_t(IdRange, size_t, {
                 From0To105 = 105,
                 From106To201 = 96
@@ -520,9 +517,8 @@ namespace Sc {
             u8 broodWarUnitFlag[TotalTypes];
             u16 starEditAvailabilityFlags[TotalTypes];
         };
-        class FlingyDatFile
+        struct FlingyDatFile
         {
-        public:
             u16 sprite[TotalFlingies];
             u32 topSpeed[TotalFlingies];
             u16 acceleration[TotalFlingies];
@@ -531,15 +527,22 @@ namespace Sc {
             u8 unused[TotalFlingies];
             u8 moveControl[TotalFlingies];
         };
+
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        const DatEntry & getUnitDat(Type unitType);
+        const FlingyDatEntry & getFlingyDat(Type unitType);
+
+    private:
+        std::vector<DatEntry> unitData;
+        std::vector<FlingyDatEntry> flingyData;
     };
 
-    class Sprites
+    class Sprite
     {
     public:
         static constexpr size_t TotalSprites = 517;
-        class SpriteDatEntry
+        struct DatEntry
         {
-        public:
             u16 imageFile;
             u8 healthBar; // Id 130-517 only
             u8 unknown;
@@ -547,9 +550,8 @@ namespace Sc {
             u8 selectionCircleImage; // Id 130-517 only
             u8 selectionCircleOffset; // Id 130-517 only
         };
-        class ImageDatEntry
+        struct ImageDatEntry
         {
-        public:
             u32 grpFile;
             u8 graphicTurns;
             u8 clickable;
@@ -567,25 +569,16 @@ namespace Sc {
         };
         class Grp
         {
-        private:
-            buffer imageDat;
-
         public:
-            virtual ~Grp();
-            bool loadGrp(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
-            u16 numFrames() { return imageDat.get<u16>(0); }
-            u16 GrpWidth() { return imageDat.get<u16>(2); }
-            u16 GrpHeight() { return imageDat.get<u16>(4); }
-            u8 xOffset(u32 frame) { return imageDat.get<u8>(0x6+frame*8); }
-            u8 yOffset(u32 frame) { return imageDat.get<u8>(0x7+frame*8); }
-            u8 frameWidth(u32 frame) { return imageDat.get<u8>(0x8+frame*8); }
-            u8 frameHeight(u32 frame) { return imageDat.get<u8>(0x9+frame*8); }
-            u8* data(u32 frame, u32 line);
+            virtual ~Grp() {}
+            bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
+
+        private:
+            buffer grpData;
         };
         
-        class SpriteDatFile
+        struct DatFile
         {
-        public:
             enum_t(IdRange, size_t, {
                 From130To517 = 387
             });
@@ -597,9 +590,8 @@ namespace Sc {
             u8 selectionCircleImage[IdRange::From130To517]; // Id 130-517 only
             u8 selectionCircleOffset[IdRange::From130To517]; // Id 130-517 only
         };
-        class ImageDatFile
+        struct ImageDatFile
         {
-        public:
             u32 grpFile[999];
             u8 graphicTurns[999];
             u8 clickable[999];
@@ -616,8 +608,7 @@ namespace Sc {
             u32 liftOffOverlay[999];
         };
         
-        class CompressedPixelLine {
-        public:
+        struct PixelLine {
             enum_t(Header, u8, {
                 // If (header & IsTransparentLine): place horizontal transparent line of (header & TransparentLineLength) pixels in length
                 IsTransparentLine = BIT_7,
@@ -653,194 +644,45 @@ namespace Sc {
             inline u8 lineLength() const { return isTransparentLine() ? transparentLineLength() : (isSolidLine() ? solidLineLength() : speckledLineLength()); }
             inline u8 sizeInBytes() const { return isTransparentLine() ? 1 : (isSolidLine() ? 2 : 1+speckledLineLength()); }
         };
-        class CompressedPixelRow {
-        public:
-            CompressedPixelLine adjacentHorizontalLines[1]; // One pixel row is made up of an indeterminate number of adjacent horizontal lines, these lines continue until you've placed the pixel at frameWidth-1
+        struct PixelRow {
+            PixelLine adjacentHorizontalLines[1]; // One pixel row is made up of an indeterminate number of adjacent horizontal lines, these lines continue until you've placed the pixel at frameWidth-1
 
             inline u8 totalLines(u8 frameWidth, u16 maxRowLength) const {
                 u8 totalLines = 0;
                 u32 offsetWithinRow = 0;
-                const CompressedPixelLine* compressedPixelLine = &adjacentHorizontalLines[0];
+                const PixelLine* pixelLine = &adjacentHorizontalLines[0];
                 for ( u16 x=0; x<frameWidth && offsetWithinRow < (u32)maxRowLength; totalLines++ )
                 {
-                    offsetWithinRow += compressedPixelLine->sizeInBytes();
-                    compressedPixelLine = (const CompressedPixelLine*)((u8*)adjacentHorizontalLines)[offsetWithinRow];
+                    offsetWithinRow += pixelLine->sizeInBytes();
+                    pixelLine = (const PixelLine*)((u8*)adjacentHorizontalLines)[offsetWithinRow];
                 }
                 return totalLines;
             }
         };
-        class CompressedGrpFrame {
-        public:
+        struct GrpFrame {
             u16 rowOffsets[1]; // u16 lineOffsets[frameHeight] // One frame is made up of frameHeight pixel rows
-            // CompressedPixelRow rows[frameHeight] // One frame is made up of frameHeight pixel rows
+            // PixelRow rows[frameHeight] // One frame is made up of frameHeight pixel rows
         };
-        class CompressedGrpFrameHeader {
-        public:
+        struct GrpFrameHeader {
             u8 xOffset;
             u8 yOffset;
             u8 frameWidth;
             u8 frameHeight;
             u32 frameOffset;
         };
-        class CompressedGrpFile {
-        public:
+        struct GrpFile {
             u16 numFrames;
             u16 grpWidth;
             u16 grpHeight;
-            CompressedGrpFrameHeader frameHeaders[1]; // CompressedGrpFrameHeader frameHeaders[numFrames]
-            // CompressedGrpFrame frames[numFrames];
+            GrpFrameHeader frameHeaders[1]; // GrpFrameHeader frameHeaders[numFrames]
+            // GrpFrame frames[numFrames];
         };
 
-        class GrpPixelLine {
-        public:
-            GrpPixelLine() {}
-            GrpPixelLine(u8 xOffset, u8 bytesRemaining, const CompressedPixelLine &cpl) :
-                xOffset(xOffset), isSingleColor(cpl.isSolidLine()), isSpeckled(cpl.isSpeckled()),
-                lineWidth(cpl.isTransparentLine() ? cpl.transparentLineLength() : (isSingleColor ? cpl.solidLineLength() : cpl.speckledLineLength())),
-                paletteIndex((cpl.isTransparentLine() || lineWidth == 0) ? nullptr : copyPaletteIndexes(lineWidth, cpl.paletteIndex, bytesRemaining)) {}
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const Grp & getGrp(size_t grpIndex);
 
-            u8 xOffset;
-            u8 lineWidth;
-            bool isSingleColor;
-            bool isSpeckled;
-            std::unique_ptr<const u8[]> paletteIndex; // nullptr if isTransparent, length 1 if isSingleColor, length lineWidth otherwise
-
-        private:
-            static const u8* copyPaletteIndexes(u8 lineWidth, const u8* paletteIndexes, u8 bytesRemaining)
-            {
-                if ( lineWidth > bytesRemaining ) // The read from paletteIndexes would overflow, copy as much as possible and pad with zeroes
-                {
-                    u8* paletteIndexesCopy = new u8[lineWidth](); // Initialize zero filled
-                    memcpy(paletteIndexesCopy, paletteIndexes, bytesRemaining);
-                    return paletteIndexesCopy;
-                }
-                else // Line is fully present/no overflow
-                {
-                    u8* paletteIndexesCopy = new u8[lineWidth];
-                    memcpy(paletteIndexesCopy, paletteIndexes, lineWidth);
-                    return paletteIndexesCopy;
-                }
-            }
-        };
-        class GrpPixelRow {
-        public:
-            GrpPixelRow() {}
-            GrpPixelRow(u8 frameWidth, const CompressedPixelRow &compressedPixelRow, u64 bytesRemaining) :
-                totalLines(compressedPixelRow.totalLines(frameWidth, bytesRemaining > (u64)u16_max ? u16_max : (u16)bytesRemaining)),
-                adjacentHorizontalPixelLines(totalLines == 0 ? nullptr : loadLines(totalLines, compressedPixelRow, bytesRemaining > (u64)u16_max ? u16_max : (u16)bytesRemaining)) {}
-
-            u8 totalLines;
-            std::unique_ptr<const GrpPixelLine[/*totalLines*/]> adjacentHorizontalPixelLines;
-
-        private:
-            static const GrpPixelLine* loadLines(u8 totalLines, const CompressedPixelRow &compressedPixelRow, u64 bytesRemaining)
-            {
-                GrpPixelLine* pixelLines = new GrpPixelLine[totalLines];
-                u8 xOffset = 0;
-                const CompressedPixelLine & compressedPixelLine = compressedPixelRow.adjacentHorizontalLines[0];
-                for ( u8 line = 0; line < totalLines; line++ )
-                {
-                    if ( bytesRemaining < (u32)u8_max )
-                        pixelLines[line] = GrpPixelLine(xOffset, (u8)bytesRemaining, compressedPixelLine);
-                    else
-                        pixelLines[line] = GrpPixelLine(xOffset, u8_max, compressedPixelLine);
-
-                    bytesRemaining -= (u64)compressedPixelLine.sizeInBytes();
-                    xOffset += pixelLines[line].lineWidth;
-                }
-                return pixelLines;
-            }
-        };
-        class GrpFrame {
-        public:
-            GrpFrame() {}
-            GrpFrame(const CompressedGrpFrameHeader & cgfHeader, const CompressedGrpFrame & cgf, u32 frameOffset, u64 grpSize) :
-                xOffset(cgfHeader.xOffset), yOffset(cgfHeader.yOffset), frameWidth(cgfHeader.frameWidth), frameHeight(cgfHeader.frameHeight), rows(nullptr)
-            {
-                if ( frameWidth == 0 )
-                    frameHeight = 0;
-                else if ( frameHeight == 0 )
-                    frameWidth = 0;
-
-                if ( frameOffset+2 >= grpSize ) // No valid row offsets, zero out the dimensions
-                {
-                    frameWidth = 0;
-                    frameHeight = 0;
-                }
-                else if ( (u64)frameOffset+2*(u64)frameHeight >= grpSize ) // Not enough row offsets for the given height
-                    frameHeight = u8((grpSize-(u64)frameOffset)/(u64)2);
-                
-                for ( u8 row=0; row<frameHeight; row++ ) // Validate once, modify height to exclude any invalid rows
-                {
-                    u16 rowOffset = cgf.rowOffsets[row];
-                    if ( (u64)frameOffset + (u64)rowOffset >= grpSize ) // No lines readable for this row, reduce frameHeight to disclude it and any rows after
-                    {
-                        if ( row == 0 )
-                        {
-                            frameWidth = 0;
-                            frameHeight = 0;
-                        }
-                        else // row > 0
-                            frameHeight = row;
-                    }
-                }
-
-                if ( frameWidth != 0 && frameHeight != 0 )
-                {
-                    GrpPixelRow* pixelRows = new GrpPixelRow[frameHeight];
-                    for ( u8 row=0; row<frameHeight; row++ )
-                    {
-                        u16 rowOffset = cgf.rowOffsets[row];
-                        u64 bytesRemaining = grpSize - (u64)frameOffset - (u64)rowOffset;
-                        const CompressedPixelRow & compressedPixelRow = (const CompressedPixelRow &)((u8*)&cgf)[rowOffset];
-                        pixelRows[row] = GrpPixelRow(frameWidth, compressedPixelRow, bytesRemaining);
-                    }
-                    rows = std::unique_ptr<GrpPixelRow[]>(pixelRows);
-                }
-            }
-
-            u8 xOffset;
-            u8 yOffset;
-            u8 frameWidth;
-            u8 frameHeight;
-            std::unique_ptr<const GrpPixelRow[/*frameHeight*/]> rows;
-        };
-        class GrpFile {
-        public:
-            GrpFile(const CompressedGrpFile & cgf, u64 grpSize) : numFrames(cgf.numFrames), grpWidth(cgf.grpWidth), grpHeight(cgf.grpHeight)
-            {
-                constexpr u64 GrpFileHeaderSize = sizeof(u16)+sizeof(u16)+sizeof(u16);
-                if ( grpSize > GrpFileHeaderSize )
-                {
-                    numFrames = cgf.numFrames;
-                    grpWidth = cgf.grpWidth;
-                    grpHeight = cgf.grpHeight;
-                }
-
-                if ( grpWidth == 0 )
-                    grpHeight = 0;
-                else if ( grpHeight == 0 )
-                    grpWidth = 0;
-
-                if ( grpSize < GrpFileHeaderSize + numFrames*sizeof(CompressedGrpFrameHeader) ) // Too many frames specified, reduce to only valid frames
-                    numFrames = (u16)((grpSize - GrpFileHeaderSize) / sizeof(CompressedGrpFrameHeader));
-
-                GrpFrame* grpFrames = new GrpFrame[numFrames];
-                for ( u16 frame=0; frame<numFrames; frame++ )
-                {
-                    const CompressedGrpFrameHeader & compressedGrpFrameHeader = cgf.frameHeaders[frame];
-                    u32 frameOffset = compressedGrpFrameHeader.frameOffset;
-                    const CompressedGrpFrame & compressedGrpFrame = (CompressedGrpFrame &)((u8*)&cgf)[frameOffset];
-                    grpFrames[frame] = GrpFrame(compressedGrpFrameHeader, compressedGrpFrame, frameOffset, grpSize);
-                }
-                frames = std::unique_ptr<GrpFrame[]>(grpFrames);
-            }
-
-            u16 numFrames;
-            u16 grpWidth;
-            u16 grpHeight;
-            std::unique_ptr<const GrpFrame[/*numFrames*/]> frames;
-        };
+    private:
+        std::vector<Grp> grps;
     };
 
     class Upgrade {
@@ -913,9 +755,8 @@ namespace Sc {
 
         static const std::vector<std::string> names;
 
-        class UpgradeDatEntry
+        struct DatEntry
         {
-        public:
             u16 mineralCost;
             u16 mineralFactor;
             u16 vespeneCost;
@@ -931,9 +772,8 @@ namespace Sc {
         };
         
         template <bool expansion>
-        class UpgradeDatFile_Orig
+        struct DatFile
         {
-        public:
             u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
             u16 mineralFactor[expansion ? TotalTypes : TotalOriginalTypes];
             u16 vespeneCost[expansion ? TotalTypes : TotalOriginalTypes];
@@ -946,6 +786,12 @@ namespace Sc {
             u8 race[expansion ? TotalTypes : TotalOriginalTypes];
             u8 maxRepeats[expansion ? TotalTypes : TotalOriginalTypes];
         };
+
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const DatEntry & getDat(Type upgradeType);
+
+    private:
+        std::vector<DatEntry> upgrades;
     };
 
     class Tech {
@@ -1001,9 +847,8 @@ namespace Sc {
 
         static const std::vector<std::string> names;
 
-        class TechDatEntry
+        struct DatEntry
         {
-        public:
             u16 mineralCost;
             u16 vespeneCost;
             u16 researchTime;
@@ -1017,9 +862,8 @@ namespace Sc {
         };
         
         template <bool expansion>
-        class TechDatFile
+        struct DatFile
         {
-        public:
             u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
             u16 vespeneCost[expansion ? TotalTypes : TotalOriginalTypes];
             u16 researchTime[expansion ? TotalTypes : TotalOriginalTypes];
@@ -1030,10 +874,18 @@ namespace Sc {
             u8 race[expansion ? TotalTypes : TotalOriginalTypes];
             u8 unused[expansion ? TotalTypes : TotalOriginalTypes];
         };
+
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const DatEntry & getDat(Type techType);
+
+    private:
+        std::vector<DatEntry> techs;
     };
 
     class Ai {
     public:
+        const static std::string aiScriptBinPath;
+
         enum class ScriptId : u32 { // u32
             Ter3 = 863135060,
             Ter5 = 896689492,
@@ -1629,9 +1481,8 @@ namespace Sc {
         static const std::unordered_map<Sc::Ai::ScriptId, std::string> scriptNames;
         static const std::unordered_map<Sc::Ai::ScriptId, std::string> scriptIdStr;
 
-        class AiEntry
+        struct Entry
         {
-        public:
             enum_t(Flags, u32, { // u32
                 UseWithRunAiScriptAtLocation = 0x1,
                 StarEditInvisible = 0x2,
@@ -1642,12 +1493,20 @@ namespace Sc {
             u32 statStrIndex; // stat_txt.tbl string index for name
             u32 flags;
         };
+
+        virtual ~Ai();
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const Entry & getEntry(size_t aiIndex);
+
+    private:
+        std::vector<Entry> entries;
     };
 
     class Terrain {
     public:
-        static constexpr size_t MaxTilesets = 8;
+        static constexpr size_t NumTilesets = 8;
         static constexpr size_t PixelsPerTile = 32;
+        static const std::vector<std::string> TilesetNames;
 
         enum_t(Tileset, u16, { // u16
             Badlands = 0,
@@ -1659,20 +1518,14 @@ namespace Sc {
             Arctic = 6,
             Twilight = 7
         });
-
-        class Tiles
-        {
-        public:
-            buffer cv5;
-            buffer vf4;
-            buffer vr4;
-            buffer vx4;
-            buffer wpe;
+        
+        enum class TileElevation {
+            Low,
+            Mid,
+            High
         };
 
-        class Cv5Entry
-        {
-        public:
+        struct TileGroup {
             u16 index;
             u8 buildability;
             u8 groundHeight;
@@ -1681,20 +1534,138 @@ namespace Sc {
             u16 rightEdge;
             u16 bottomEdge;
             u16 unknown1;
-            u16 unknown2;
+            u16 unknown2; // Unknown: edge piece has rows above it (1 = Basic edge piece, 2 = Right edge piece, 3 = Left edge piece)
             u16 unknown3;
-            u16 unknown4;
+            u16 unknown4; // Unknown: edge piece has rows below it (1 = Basic edge piece, 2 = Right edge piece, 3 = Left edge piece)
+            u16 megaTileIndex[16]; // To VF4/VX4
+        };
+        struct Doodad {
+            u16 index; // Always 1 for doodads?
+            u8 buildability;
+            u8 flags; // 0x10 = sprite overlay, 0x20 = unit overlay, 0x40 = overlay flipped
+            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
+            u16 unknown1;
+            u16 doodadName; // stat_txt.tbl id
+            u16 unknown2;
+            u16 ddDataIndex; // dddata.bin index
+            u16 doodadWidth; // In tiles
+            u16 doodadHeight; // In tiles
+            u16 unknown3;
             u16 megaTileRef[16]; // To VF4/VX4
+        };
+        struct TileFlags {
+            struct MiniTileFlags {
+                enum_t(Flags, u16, {
+                    Walkable = BIT_0,
+                    MidElevation = BIT_1,
+                    HighElevation = BIT_2,
+                    BlocksView = BIT_3,
+                    Ramp = BIT_4
+                });
 
-            virtual ~Cv5Entry();
+                Flags flags;
+                
+                inline bool isWalkable() { return (flags & Flags::Walkable) == Flags::Walkable; }
+                inline bool blocksView() { return (flags & Flags::BlocksView) == Flags::BlocksView; }
+                inline bool isRamp() { return (flags & Flags::Ramp) == Flags::Ramp; }
+                inline TileElevation getElevation() {
+                    if ( (flags & Flags::HighElevation) == Flags::HighElevation )
+                        return TileElevation::High;
+                    else if ( (flags & Flags::MidElevation) == Flags::MidElevation )
+                        return TileElevation::Mid;
+                    else
+                        return TileElevation::Low;
+                }
+            };
+
+            MiniTileFlags miniTileFlags[4][4];
+        };
+        struct TileGraphics {
+            struct MiniTileGraphics {
+                enum_t(Graphics, u16, {
+                    Flipped = BIT_0,
+                    Vr4Index = u16_max & x16BIT_0
+                });
+
+                Graphics graphics;
+
+                inline bool isFlipped() { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
+                inline u16 vr4Index() { return graphics & Graphics::Vr4Index; }
+            };
+
+            MiniTileGraphics miniTileGraphics[4][4];
+        };
+        struct MiniTilePixels {
+            u8 wpeIndex[8][8];
+        };
+        struct WpeColor {
+            u8 red;
+            u8 green;
+            u8 blue;
+            u8 null;
+        };
+        
+        struct Cv5Dat {
+            static constexpr size_t MaxTileGroups = 1024;
+
+            TileGroup tileGroups[MaxTileGroups];
+            Doodad doodads[1];
+
+            static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
+            static inline size_t doodadsSize(size_t cv5FileSize) { return cv5FileSize > MaxTileGroups*sizeof(TileGroup) ? cv5FileSize/sizeof(Doodad)-MaxTileGroups : 0; }
+        };
+        struct Vf4Dat {
+            TileFlags tileFlags[1];
+
+            static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
+        };
+        struct Vx4Dat {
+            TileGraphics tileGraphics[1];
+
+            static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileGraphics); }
+        };
+        struct Vr4Dat {
+            MiniTilePixels miniTilePixels[1];
+
+            static inline size_t size(size_t fileSize) { return fileSize/sizeof(MiniTilePixels); }
+        };
+        struct WpeDat {
+            static constexpr size_t NumColors = 256;
+
+            WpeColor color[NumColors];
+        };
+        
+        struct SystemColor {
+#ifdef _WIN32
+            u8 blue;
+            u8 green;
+            u8 red;
+            u8 null;
+#else
+            u8 red;
+            u8 green;
+            u8 blue;
+            u8 null;
+#endif
+        };
+        
+        struct Tiles
+        {
+            std::vector<TileGroup> tileGroups;
+            std::vector<Doodad> doodads;
+            std::vector<TileFlags> tileFlags;
+            std::vector<TileGraphics> tileGraphics;
+            std::vector<MiniTilePixels> miniTilePixels;
+            SystemColor systemColorPalette[256];
+
+            inline const TileGroup & getTileGroup(u16 tileIndex) {  }
         };
 
-        inline static bool getCv5Loc(const Tiles &tiles, u16 tileValue, u32 &cv5Loc) { cv5Loc = ((tileValue>>4)*26+(tileValue&0xF)+0xA)*2; return cv5Loc < tiles.cv5.size(); }
-        inline static u32 getMegaTileLoc(const Tiles &tiles, u32 cv5Reference) { return tiles.cv5.get<u16>(cv5Reference)*32; }
-        inline static u32 getMiniTileLoc(const Tiles &tiles, u32 megaTileLoc, u16 xMiniTile, u16 yMiniTile) { return (tiles.vx4.get<u16>(megaTileLoc+2*(4*(u32)yMiniTile+(u32)xMiniTile)) >> 1)*64; }
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const TileGroup & getCv5(Tileset tilset, u16 tileValue);
 
     private:
-
+        Tiles tilesets[NumTilesets];
     };
 
     class Weapon {
@@ -1834,9 +1805,8 @@ namespace Sc {
             Id129 = 129
         });
         
-        class WeaponDatEntry
+        struct DatEntry
         {
-        public:
             u16 label;
             u32 graphics;
             u8 unused;
@@ -1862,9 +1832,8 @@ namespace Sc {
             u16 targetErrorMessage;
             u16 icon;
         };
-        class WeaponDatFile
+        struct DatFile
         {
-        public:
             u16 label[130];
             u32 graphics[130];
             u8 unused[130];
@@ -1890,6 +1859,9 @@ namespace Sc {
             u16 targetErrorMessage[130];
             u16 icon[130];
         };
+
+    private:
+        std::vector<DatEntry> weapons;
     };
 
     class Sound {
@@ -1904,14 +1876,19 @@ namespace Sc {
         });
     };
 
-    class Tbl
-    {
-    
-    };
-
-    class PcxFile
+    class TblFile
     {
     public:
+        virtual ~TblFile();
+        bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
+        const std::string & getString(size_t stringIndex);
+
+    private:
+        std::vector<std::string> strings;
+    };
+
+    struct PcxFile
+    {
         u8 manufacturer;
         u8 verInfo;
         u8 encoding;
@@ -1933,7 +1910,6 @@ namespace Sc {
         u8 data[1];
     };
 
-    
     /**
         The Sc::Data class provides access to StarCraft data that is not statically defined in MappingCore,
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
@@ -1943,14 +1919,16 @@ namespace Sc {
         DataFile datFile;
         Player player;
         Unit unit;
-        Sprites sprite;
+        Sprite sprite;
         Upgrade upgrade;
         Tech tech;
         Ai ai;
         Terrain terrain;
         Weapon weapon;
+        TblFile statTxt;
 
-        static bool getAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
+        static bool GetAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
+        static bool ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
     };
 }
 

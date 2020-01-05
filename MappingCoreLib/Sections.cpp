@@ -23,7 +23,8 @@ ChkSection::ChkSection(SectionName sectionName, const StructType & data, bool vi
 std::ostream & ChkSection::write(std::ostream &s)
 {
     u32 size = getSize();
-    s << (u32)sectionName << size;
+    s.write((const char*)&sectionName, sizeof(sectionName));
+    s.write((const char*)&size, sizeof(size));
     return writeData(s, size);
 }
 
@@ -1302,8 +1303,10 @@ std::ostream & UnitSection::writeData(std::ostream &s, u32 sizeInBytes)
 IsomSectionPtr IsomSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     IsomSectionPtr newSection(new (std::nothrow) IsomSection());
-    s64 numIsomEntries = (s64(tileWidth) / s64(2) + s64(1)) * (s64(tileHeight) + s64(1)) * s64(4);
-    newSection->rawData->add<u16>(0, numIsomEntries);
+    s64 numIsomEntries = (s64(tileWidth) / s64(2) + s64(1)) * (s64(tileHeight) + s64(1));
+    for ( s64 i=0; i<numIsomEntries; ++i )
+        newSection->isomEntries.push_back(Chk::IsomEntryPtr(new Chk::IsomEntry()));
+
     return newSection;
 }
 
@@ -2205,7 +2208,7 @@ u32 TrigSection::getSize()
 
 std::ostream & TrigSection::writeData(std::ostream &s, u32 sizeInBytes)
 {
-    size_t actualDataSize = sizeof(Chk::Location) * triggers.size();
+    size_t actualDataSize = sizeof(Chk::Trigger) * triggers.size();
     if ( actualDataSize != (size_t)sizeInBytes )
         throw new SectionSerializationSizeMismatch(SectionName::TRIG, sizeInBytes, actualDataSize);
 

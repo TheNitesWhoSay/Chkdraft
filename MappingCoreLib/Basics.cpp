@@ -2,7 +2,7 @@
 #include <cmath>
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
-void IgnoreErr(const char* file, unsigned int line, const char* msg, ...)
+void IgnoreErr(const std::string &file, unsigned int line, const std::string msg, ...)
 {
 
 }

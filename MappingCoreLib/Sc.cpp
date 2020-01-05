@@ -1302,6 +1302,100 @@ const std::vector<std::string> Sc::Tech::names = {
     "Unused Tech (43)",
 };
 
+const std::string Sc::Ai::aiScriptBinPath = MakeExtMpqFilePath(MakeMpqFilePath("scripts", "AISCRIPT"), "BIN");
+
+Sc::Ai::~Ai()
+{
+
+}
+
+bool Sc::Ai::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    buffer rawData;
+    if ( Sc::Data::GetAsset(orderedSourceFiles, aiScriptBinPath, rawData) )
+    {
+        u32 aiEntriesOffset = rawData.get<u32>(0);
+        u32 numAiEntries = u32((rawData.size() - (s64)aiEntriesOffset) / sizeof(Entry));
+        for ( u32 i=0; i<numAiEntries; i++ )
+            entries.push_back(rawData.get<Entry>(aiEntriesOffset+i*sizeof(Entry)));
+
+        return true;
+    }
+    return false;
+}
+
+const Sc::Ai::Entry & Sc::Ai::getEntry(size_t aiIndex)
+{
+    if ( aiIndex < entries.size() )
+        return entries[aiIndex];
+    else
+        throw std::out_of_range("AiIndex " + std::to_string(aiIndex) + " is out of range for the AISCRIPT.BIN file containing " + std::to_string(entries.size()) + " entries");
+}
+
+const std::vector<std::string> Sc::Terrain::TilesetNames = {
+    "badlands",
+    "platform",
+    "install",
+    "ashworld",
+    "jungle",
+    "Desert",
+    "Ice",
+    "Twilight"
+};
+
+/*void Sc::Terrain::Tiles::FixPalette()
+{
+#ifdef _WIN32
+    // In the .wpe files the palette format is RR | GG | BB | 00
+    // On windows the palette format is ...... BB | GG | RR | 00
+    // Swap bytes zero and two to make the palette windows compatible
+    s64 numColors = wpe.size() / 4;
+    for ( s64 i = 0; i < numColors; i++ )
+        wpe.swap<u8>(i * 4, i * 4 + 2);
+#endif
+}*/
+
+bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    bool success = true;
+    for ( size_t i=0; i<NumTilesets; i++ )
+    {
+        constexpr const char tilesetMpqDirectory[] = "tileset";
+        const std::string mpqFilePath = MakeMpqFilePath(tilesetMpqDirectory, TilesetNames[i]);
+        const std::string cv5FilePath = MakeExtMpqFilePath(mpqFilePath, "cv5");
+        const std::string vf4FilePath = MakeExtMpqFilePath(mpqFilePath, "vf4");
+        const std::string vr4FilePath = MakeExtMpqFilePath(mpqFilePath, "vr4");
+        const std::string vx4FilePath = MakeExtMpqFilePath(mpqFilePath, "vx4");
+        const std::string wpeFilePath = MakeExtMpqFilePath(mpqFilePath, "wpe");
+
+        /*if ( Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath, tilesets[i].cv5) &&
+            Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath, tilesets[i].vf4) &&
+            Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath, tilesets[i].vr4) &&
+            Sc::Data::GetAsset(orderedSourceFiles, vx4FilePath, tilesets[i].vx4) &&
+            Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath, tilesets[i].wpe) )
+        {
+            tilesets->FixPalette();
+        }
+        else
+        {
+            success = false;
+            logger.error() << "The " << TilesetNames[i] << " tileset was not loaded correctly!" << std::endl;
+        }*/
+    }
+    return success;
+}
+
+bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName)
+{
+    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, grpData) )
+        return true;
+    else
+    {
+        logger.error() << "Failed to load GRP " << mpqFileName << std::endl;
+        return false;
+    }
+}
+
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\Drone\\ZDrErr00.WAV",
     "sound\\Misc\\Buzz.wav (1)",
@@ -2447,3 +2541,54 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Artanis\\PAtYes02.wav",
     "sound\\Protoss\\Artanis\\PAtYes03.wav"
 };
+
+Sc::TblFile::~TblFile() {}
+
+bool Sc::TblFile::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName)
+{
+    strings.clear();
+
+    buffer rawData;
+    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, rawData) )
+    {
+        u16 numStrings = rawData.get<u16>(0);
+        for ( u16 i=1; i<numStrings && i>0; i++ )
+        {
+            s64 stringOffset = (s64)rawData.get<u16>(2*i);
+            s64 stringEnd = 0;
+            if ( !rawData.getNext('\0', (s64)stringOffset, stringEnd) )
+                rawData.add<char>('\0');
+            
+            strings.push_back(std::string((const char*)rawData.getPtr(stringOffset)));
+        }
+    }
+}
+
+const std::string & Sc::TblFile::getString(size_t stringIndex)
+{
+    if ( stringIndex < strings.size() )
+        return strings[stringIndex];
+    else
+        throw std::out_of_range("StringIndex " + std::to_string(stringIndex) + " overflows tbl file of size " + std::to_string(strings.size()));
+}
+
+bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents)
+{
+    for ( auto mpqFile : orderedSourceFiles )
+    {
+        if ( mpqFile != nullptr && mpqFile->getFile(assetMpqPath, outAssetContents) )
+            return true;
+    }
+    logger.error() << "Failed to get StarCraft asset: " << assetMpqPath << std::endl;
+    return false;
+}
+
+bool Sc::Data::ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath)
+{
+    for ( auto mpqFile : orderedSourceFiles )
+    {
+        if ( mpqFile != nullptr && mpqFile->findFile(assetMpqPath) )
+            return mpqFile->extractFile(assetMpqPath, systemFilePath);
+    }
+    return false;
+}

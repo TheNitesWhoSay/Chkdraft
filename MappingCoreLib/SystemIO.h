@@ -42,6 +42,7 @@ std::string MakeExtSystemFilePath(const std::string &systemDirectory, const std:
 std::string GetMpqFileSeparator(); // Gets the file separator used inside MPQ files (always \)
 std::string GetMpqFileName(const std::string &mpqFilePath); // Extracts the file name from a MPQ file path
 std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &fileName); // Creates a mpq file path ensuring the appropriate separator is used
+std::string MakeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
 
 bool FindFile(const std::string &filePath);
 bool PatientFindFile(const std::string &filePath, int numWaitTimes, int* waitTimes);

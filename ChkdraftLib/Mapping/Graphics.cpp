@@ -10,7 +10,7 @@ enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
 });
 
-const size_t ColorCycler::TilesetRotationSet[Sc::Terrain::MaxTilesets] = {
+const size_t ColorCycler::TilesetRotationSet[Sc::Terrain::NumTilesets] = {
     0, // badlands uses set 0
     1, // platform uses set 1
     1, // installation uses set 1
@@ -777,7 +777,7 @@ void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileS
 
     if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
     {
-        MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
         for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
         {
@@ -938,134 +938,58 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
 }
 
 void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
-               Sc::Sprites::CompressedGrpFile &compressedGrpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
-{
-    if ( frame < compressedGrpFile.numFrames )
-    {
-        const Sc::Sprites::CompressedGrpFrameHeader compressedGrpFrameHeader = compressedGrpFile.frameHeaders[frame];
-        
-        s32 xOffset = grpXc-xStart-compressedGrpFile.grpWidth/2+compressedGrpFrameHeader.xOffset,
-            yOffset = grpYc-yStart-compressedGrpFile.grpHeight/2+compressedGrpFrameHeader.yOffset;
-
-        s16 row = 0;
-        if ( yOffset < 0 ) // Only draw visible rows by starting at row: |yOffset|, if yOffset is negative
-            row = (s16)(-yOffset);
-
-        u8 frameWidth = compressedGrpFrameHeader.frameWidth;
-        s16 frameHeight = compressedGrpFrameHeader.frameHeight;
-        if ( yOffset+frameHeight >= bitHeight ) // Only draw visible rows by limiting row < bitHeight-yOffset if yOffset+frameHeight >= bitHeight
-            frameHeight = bitHeight - yOffset;
-        
-        u32 frameOffset = compressedGrpFrameHeader.frameOffset;
-        const Sc::Sprites::CompressedGrpFrame & compressedGrpFrame = (const Sc::Sprites::CompressedGrpFrame &)((u8*)&compressedGrpFile)[frameOffset];
-        if ( flipped )
-        {
-            for ( ; row < frameHeight; row++ )
-            {
-                u16 rowOffset = compressedGrpFrame.rowOffsets[row];
-                const Sc::Sprites::CompressedPixelRow* compressedGrpPixelRow = (const Sc::Sprites::CompressedPixelRow*)((u8*)&compressedGrpFile)[frameOffset+(u32)rowOffset];
-                const Sc::Sprites::CompressedPixelLine* compressedPixelLine = (const Sc::Sprites::CompressedPixelLine*)&compressedGrpPixelRow->adjacentHorizontalLines[0];
-                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset + frameWidth - 1; // Start from the right-most pixel of this row of the frame
-                u32 compressedPixelLineOffset = 0;
-                for ( u8 xc=0; xc<frameWidth; xc++ )
-                {
-                    compressedPixelLineOffset ++; // Forward 1 byte for the header all line types share
-
-                    if ( compressedPixelLine->isTransparentLine() )
-                    {
-                        currPixel -= compressedPixelLine->transparentLineLength();
-                        compressedPixelLine ++; // Forward 1 byte for the header to get to the next compressedPixelLine
-                    }
-                    else if ( compressedPixelLine->isSolidLine() )
-                    {
-                        u8 lineLength = compressedPixelLine->solidLineLength();
-                        currPixel -= lineLength;
-                        std::fill_n(currPixel+1, lineLength, palette[compressedPixelLine->paletteIndex[0]]); // Place single color across the entire line
-                        compressedPixelLine += 2; // Forward 1 byte for the header and 1 for the solid line color to get to the next compressedPixelLine
-                    }
-                    else if ( compressedPixelLine->isSpeckled() )
-                    {
-                        u8 lineLength = compressedPixelLine->speckledLineLength();
-                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
-                            *currPixel = palette[compressedPixelLine->paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
-                        compressedPixelLine += 1+lineLength; // Forward 1 byte for the header and lineLength for the colors to get to the next compressedPixelLine
-                    }
-                }
-            }
-        }
-        else // !flipped
-        {
-            for ( ; row < frameHeight; row++ )
-            {
-                u16 rowOffset = compressedGrpFrame.rowOffsets[row];
-                const Sc::Sprites::CompressedPixelRow* compressedGrpPixelRow = (const Sc::Sprites::CompressedPixelRow*)((u8*)&compressedGrpFile)[frameOffset+(u32)rowOffset];
-                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset; // Start from the left-most pixel of this row of the frame
-                u32 compressedPixelLineOffset = 0;
-                for ( u8 xc=0; xc<frameWidth; xc++ )
-                {
-                    const Sc::Sprites::CompressedPixelLine & compressedPixelLine = (const Sc::Sprites::CompressedPixelLine &)((u8*)compressedGrpPixelRow)[compressedPixelLineOffset];
-                    compressedPixelLineOffset ++; // Forward 1 byte for the header all line types share
-
-                    if ( compressedPixelLine.isTransparentLine() )
-                        currPixel += compressedPixelLine.transparentLineLength();
-                    else if ( compressedPixelLine.isSolidLine() )
-                    {
-                        u8 lineLength = compressedPixelLine.solidLineLength();
-                        currPixel += lineLength;
-                        std::fill_n(currPixel+1, lineLength, palette[compressedPixelLine.paletteIndex[0]]); // Place single color across the entire line
-                        compressedPixelLineOffset ++; // Forward 1 byte for the solid line color
-                    }
-                    else if ( compressedPixelLine.isSpeckled() )
-                    {
-                        u8 lineLength = compressedPixelLine.speckledLineLength();
-                        compressedPixelLineOffset += lineLength; // Forward lineLength pixels for the palette index array
-                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                            *currPixel = palette[compressedPixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
-                    }
-                }
-            }
-        }
-    }
-}
-
-void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
-               Sc::Sprites::GrpFile &grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
+               Sc::Sprite::GrpFile &grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
 {
     if ( frame < grpFile.numFrames )
     {
-        const Sc::Sprites::GrpFrame & grpFrame = grpFile.frames[frame];
+        const Sc::Sprite::GrpFrameHeader grpFrameHeader = grpFile.frameHeaders[frame];
         
-        s32 xOffset = grpXc-xStart-grpFile.grpWidth/2+grpFrame.xOffset,
-            yOffset = grpYc-yStart-grpFile.grpHeight/2+grpFrame.yOffset;
+        s32 xOffset = grpXc-xStart-grpFile.grpWidth/2+grpFrameHeader.xOffset,
+            yOffset = grpYc-yStart-grpFile.grpHeight/2+grpFrameHeader.yOffset;
 
         s16 row = 0;
         if ( yOffset < 0 ) // Only draw visible rows by starting at row: |yOffset|, if yOffset is negative
             row = (s16)(-yOffset);
 
-        u8 frameWidth = grpFrame.frameWidth;
-        s16 frameHeight = grpFrame.frameHeight;
+        u8 frameWidth = grpFrameHeader.frameWidth;
+        s16 frameHeight = grpFrameHeader.frameHeight;
         if ( yOffset+frameHeight >= bitHeight ) // Only draw visible rows by limiting row < bitHeight-yOffset if yOffset+frameHeight >= bitHeight
             frameHeight = bitHeight - yOffset;
         
+        u32 frameOffset = grpFrameHeader.frameOffset;
+        const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
         if ( flipped )
         {
             for ( ; row < frameHeight; row++ )
             {
-                const Sc::Sprites::GrpPixelRow & grpPixelRow = grpFrame.rows[row];
+                u16 rowOffset = grpFrame.rowOffsets[row];
+                const Sc::Sprite::PixelRow* grpPixelRow = (const Sc::Sprite::PixelRow*)((u8*)&grpFile)[frameOffset+(u32)rowOffset];
+                const Sc::Sprite::PixelLine* pixelLine = (const Sc::Sprite::PixelLine*)&grpPixelRow->adjacentHorizontalLines[0];
                 auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset + frameWidth - 1; // Start from the right-most pixel of this row of the frame
-                for ( u8 line=0; line<grpPixelRow.totalLines; line++ )
+                u32 pixelLineOffset = 0;
+                for ( u8 xc=0; xc<frameWidth; xc++ )
                 {
-                    const Sc::Sprites::GrpPixelLine & grpPixelLine = grpPixelRow.adjacentHorizontalPixelLines[line];
-                    auto nextLineStartPixel = currPixel - grpPixelLine.lineWidth; // Since we're flipped, next horizontal line will start backward grpPixelLine.lineWidth pixels
+                    pixelLineOffset ++; // Forward 1 byte for the header all line types share
 
-                    if ( grpPixelLine.isSingleColor )
-                        std::fill_n(nextLineStartPixel+1, grpPixelLine.lineWidth, palette[grpPixelLine.paletteIndex[0]]); // Place single color across the entire line
-                    else if ( grpPixelLine.isSpeckled )
+                    if ( pixelLine->isTransparentLine() )
                     {
-                        for ( u8 linePixel=0; linePixel<grpPixelLine.lineWidth; linePixel++, --currPixel ) // For every pixel in the line
-                            *currPixel = palette[grpPixelLine.paletteIndex[linePixel]]; // Place color specified in the array at current pixel
+                        currPixel -= pixelLine->transparentLineLength();
+                        pixelLine ++; // Forward 1 byte for the header to get to the next pixelLine
                     }
-                    currPixel = nextLineStartPixel; // Move to the start of the next line
+                    else if ( pixelLine->isSolidLine() )
+                    {
+                        u8 lineLength = pixelLine->solidLineLength();
+                        currPixel -= lineLength;
+                        std::fill_n(currPixel+1, lineLength, palette[pixelLine->paletteIndex[0]]); // Place single color across the entire line
+                        pixelLine += 2; // Forward 1 byte for the header and 1 for the solid line color to get to the next pixelLine
+                    }
+                    else if ( pixelLine->isSpeckled() )
+                    {
+                        u8 lineLength = pixelLine->speckledLineLength();
+                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
+                            *currPixel = palette[pixelLine->paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        pixelLine += 1+lineLength; // Forward 1 byte for the header and lineLength for the colors to get to the next pixelLine
+                    }
                 }
             }
         }
@@ -1073,21 +997,31 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitH
         {
             for ( ; row < frameHeight; row++ )
             {
-                const Sc::Sprites::GrpPixelRow & grpPixelRow = grpFrame.rows[row];
+                u16 rowOffset = grpFrame.rowOffsets[row];
+                const Sc::Sprite::PixelRow* grpPixelRow = (const Sc::Sprite::PixelRow*)((u8*)&grpFile)[frameOffset+(u32)rowOffset];
                 auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset; // Start from the left-most pixel of this row of the frame
-                for ( u8 line=0; line<grpPixelRow.totalLines; line++ )
+                u32 pixelLineOffset = 0;
+                for ( u8 xc=0; xc<frameWidth; xc++ )
                 {
-                    const Sc::Sprites::GrpPixelLine & grpPixelLine = grpPixelRow.adjacentHorizontalPixelLines[line];
-                    auto nextLineStartPixel = currPixel + grpPixelLine.lineWidth; // Next horizontal line will start forward grpPixelLine.lineWidth pixels
+                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)grpPixelRow)[pixelLineOffset];
+                    pixelLineOffset ++; // Forward 1 byte for the header all line types share
 
-                    if ( grpPixelLine.isSingleColor )
-                        std::fill_n(currPixel, grpPixelLine.lineWidth, palette[grpPixelLine.paletteIndex[0]]); // Place single color across the entire line
-                    else if ( grpPixelLine.isSpeckled )
+                    if ( pixelLine.isTransparentLine() )
+                        currPixel += pixelLine.transparentLineLength();
+                    else if ( pixelLine.isSolidLine() )
                     {
-                        for ( u8 linePixel=0; linePixel<grpPixelLine.lineWidth; linePixel++, ++currPixel ) // For every pixel in the line
-                            *currPixel = palette[grpPixelLine.paletteIndex[linePixel]]; // Place color specified in the array at current pixel
+                        u8 lineLength = pixelLine.solidLineLength();
+                        currPixel += lineLength;
+                        std::fill_n(currPixel+1, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                        pixelLineOffset ++; // Forward 1 byte for the solid line color
                     }
-                    currPixel = nextLineStartPixel; // Move to the start of the next line
+                    else if ( pixelLine.isSpeckled() )
+                    {
+                        u8 lineLength = pixelLine.speckledLineLength();
+                        pixelLineOffset += lineLength; // Forward lineLength pixels for the palette index array
+                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                            *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                    }
                 }
             }
         }
@@ -1138,7 +1072,7 @@ void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 
 
     if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
     {
-        MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
         
         for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 MiniTile rows
         {
@@ -1155,8 +1089,8 @@ void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 
                     xMiniOffset = xStart + xMiniTile*8; // Calculate the MiniTile's x-contribution once rather than 64 times
                     negative =  1;
                 }
-
-                MiniTileRef = GetMiniTileRef(tiles, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+                
+                MiniTileRef = (tiles->vx4.get<u16>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
 
                 for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
                 {
@@ -1198,7 +1132,7 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
 
     if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
     {
-        MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
         u8 miniFlags = 0;
         if ( tiles->vf4.get<u8>(miniFlags, MegaTileRef+2*(4*miniTileY+miniTileX)) )
@@ -1242,7 +1176,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
 
     if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
     {
-        MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
         for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
         {
@@ -1300,7 +1234,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
     {
         ChkdBitmap graphicBits;
         graphicBits.resize(1024);
-        MegaTileRef = GetMegaTileRef(tiles, cv5Ref); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
         for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
         {
@@ -1318,7 +1252,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
                     negative =  1;
                 }
 
-                MiniTileRef = GetMiniTileRef(tiles, MegaTileRef, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+                MiniTileRef = (tiles->vx4.get<u16>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
 
                 for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
                 {
@@ -1696,8 +1630,8 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
             TileValue = map.layers.getTile(xTile, yTile);
             if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
             {
-                MegaTileReference = GetMegaTileRef(tiles, cv5Reference); // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-                MiniTileRef = GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile); // Get VR4 start point for the given minitile
+                MegaTileReference = tiles->cv5.get<u16>(cv5Reference)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
+                MiniTileRef = (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
                 wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
                 bitmap[(yc + yOffset) * 128 + xc + xOffset] = tiles->wpe.get<u32>(wpeRef);
             }

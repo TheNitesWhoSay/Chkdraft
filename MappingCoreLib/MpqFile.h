@@ -7,6 +7,7 @@
 #include "../StormLib/src/StormLib.h"
 #include <algorithm>
 #include <memory>
+#include <sstream>
 
 /**
     An MPQ file is nothing more than an archive format (like .zip) specialized for StarCraft
@@ -93,6 +94,14 @@ public:
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
     // Cannot be used unless the MPQ is already open
     virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath);
+
+    // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool addFile(const std::string &mpqPath, std::stringstream &fileData);
+
+    // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool addFile(const std::string &mpqPath, std::stringstream &fileData, WavQuality wavQuality);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open

@@ -217,7 +217,7 @@ valueType buffer::get(s64 location) const
     if ( this != nullptr && location >= 0 && location+s64(sizeof(valueType)) <= sizeUsed )
         return (valueType &)data[location];
 
-    return 0;
+    return {};
 }
 /* End templates */ #else
 

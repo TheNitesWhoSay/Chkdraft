@@ -57,7 +57,7 @@ class ColorCycler
 
         static DWORD prevTickCount; // Value from GetTickCount() -- updated every time GetTickCount increases (~16 ms)
 
-        static const size_t TilesetRotationSet[Sc::Terrain::MaxTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
+        static const size_t TilesetRotationSet[Sc::Terrain::NumTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
         static Rotator NoRotators[MaxRotatersPerSet]; // An empty rotator set
         static Rotator RotatorSets[TotalRotatorSets][MaxRotatersPerSet]; // All rotator sets
 };

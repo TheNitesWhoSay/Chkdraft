@@ -1,6 +1,8 @@
 #include "MpqFile.h"
 #include "SystemIO.h"
 #include <SimpleIcu.h>
+#include <iterator>
+#include <vector>
 
 MpqFile::MpqFile(bool deleteOnClose, bool updateListFile) : ArchiveFile(deleteOnClose), updateListFile(updateListFile), madeChanges(false), filePath(""), hMpq(NULL)
 {
@@ -223,6 +225,37 @@ bool MpqFile::extractFile(const std::string & mpqPath, const std::string & syste
             return SFileExtractFile(hMpq, mpqPath.c_str(), icux::toFilestring(systemFilePath).c_str(), 0);
     }
     return false;
+}
+
+bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData)
+{
+    fileData.unsetf(std::ios_base::skipws);
+    auto start = std::istream_iterator<u8>(fileData);
+    std::vector<u8> fileBytes(start, std::istream_iterator<u8>());
+    if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileBytes[0], (DWORD)fileBytes.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
+    {
+        addedMpqAssetPaths.push_back(mpqPath);
+        return true;
+    }
+    return false;
+}
+
+bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData, WavQuality wavQuality)
+{
+    auto start = std::istream_iterator<u8>(fileData);
+    std::vector<u8> fileBytes(start, std::istream_iterator<u8>());
+    bool addedFile = false;
+    if ( isOpen() )
+    {
+        if ( wavQuality == WavQuality::Uncompressed )
+            addedFile = SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileBytes[0], (DWORD)fileBytes.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
+        else
+            addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileBytes[0], (DWORD)fileBytes.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
+
+        if ( addedFile )
+            addedMpqAssetPaths.push_back(mpqPath);
+    }
+    return addedFile;
 }
 
 bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData)

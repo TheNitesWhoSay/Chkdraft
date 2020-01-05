@@ -137,21 +137,45 @@ std::string MakeMpqFilePath(const std::string &mpqDirectory, const std::string &
         return mpqDirectory + mpqFileSeparator + fileName;
 }
 
+std::string MakeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension)
+{
+    const std::string mpqExtensionSeparator = ".";
+    const bool extensionIncludesSeparator = extension.find_first_of(mpqExtensionSeparator) == 0;
+    if ( extensionIncludesSeparator )
+        return mpqFilePath + extension;
+    else
+        return mpqFilePath + mpqExtensionSeparator + extension;
+}
+
 bool FindFile(const std::string &filePath)
 {
     icux::filestring fFilePath = icux::toFilestring(filePath);
     if ( !filePath.empty() )
     {
 #ifdef WINDOWS_UTF16
-        FILE* file = _wfopen(fFilePath.c_str(), L"r");
+        FILE* file = NULL;
+        errno_t result = _wfopen_s(&file, fFilePath.c_str(), L"r");
+        if ( file != NULL )
+            fclose(file);
+        
+        return result == 0 || result == EEXIST || result == EACCES;
+#else
+#ifdef WINDOWS_MULTIBYTE
+        FILE* file = NULL;
+        errno_t result = fopen_s(&file, fFilePath.c_str(), "r");
+        if ( file != NULL )
+            fclose(file);
+
+        return result == 0 || result == EEXIST || result == EACCES;
 #else
         FILE* file = fopen(fFilePath.c_str(), "r");
-#endif
         if ( file != nullptr )
         {
             std::fclose(file);
             return true;
         }
+#endif
+#endif
     }
     return false;
 }

@@ -266,6 +266,7 @@ namespace Chk {
         u32 resourceAmount;
         u16 hangerAmount;
         u16 unitStateFlags;
+        u32 unknown;
     };
 
     constexpr size_t TotalOriginalLocations = 64;
@@ -484,7 +485,7 @@ namespace Chk {
         static Argument textArguments[NumConditionTypes][MaxArguments];
         static u8 defaultFlags[NumConditionTypes];
         static std::unordered_map<VirtualType, VirtualCondition> virtualConditions;
-    };
+    }; // 20 (0x14) bytes
 
     __declspec(align(1)) class Action
     {

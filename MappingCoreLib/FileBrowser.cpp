@@ -28,7 +28,7 @@ bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string &filePath,
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
     if ( virtualizableBrowseForOpenPath(filePath, u32FilterIndex) )
     {
-        filterIndex = static_cast<FilterId>(u32FilterIndex);
+        filterIndex = static_cast<FilterId>(filters[u32FilterIndex-1].filterId);
         return true;
     }
     return false;
@@ -40,7 +40,7 @@ bool FileBrowser<FilterId>::browseForSavePath(inout_param std::string &filePath,
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
     if ( virtualizableBrowseForSavePath(filePath, u32FilterIndex) )
     {
-        filterIndex = static_cast<FilterId>(u32FilterIndex);
+        filterIndex = static_cast<FilterId>(filters[u32FilterIndex-1].filterId);
         return true;
     }
     return false;

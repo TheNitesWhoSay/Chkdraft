@@ -219,12 +219,12 @@ class StructSection : public ChkSection
     protected:
         virtual u32 getSize() {
             if ( isVirtual() ) {
-                if ( rawData->size() <= u32_max ) return (u32)rawData->size();
+                if ( rawData->size() <= MaxChkSectionSize ) return (u32)rawData->size();
                 else throw MaxSectionSizeExceeded(getName(), std::to_string(rawData->size()));
             } else return sizeof(StructType);
         }
         virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes) {
-            if ( isVirtual() ) { rawData->write(s, false); } else { s.write(reinterpret_cast<const char*>(&data), sizeof(StructType)); } return s; }
+            if ( isVirtual() ) { rawData->write(s, false); } else { s.write(reinterpret_cast<const char*>(data), sizeof(StructType)); } return s; }
 
         StructType* data;
 };

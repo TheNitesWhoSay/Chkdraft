@@ -54,7 +54,7 @@ class Versions
         friend class Scenario;
 };
 
-class Strings : StrSynchronizer
+class Strings : public StrSynchronizer
 {
     public:
         SprpSectionPtr sprp; // Scenario name and description
@@ -555,7 +555,7 @@ class Scenario
 
 /*   File IO    */  bool ParseScenario(buffer &chk); // Parses supplied scenario file data
                     //bool CreateNew(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers);
-                    void WriteFile(FILE* pFile); // Writes all sections to the supplied file
+                    void WriteFile(std::ostream & os); // Writes all sections to the supplied file
                     std::shared_ptr<void> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                                      includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
                     bool Deserialize(const void* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
@@ -573,7 +573,7 @@ class Scenario
 
     protected:
 
-        bool ToSingleBuffer(buffer &chk); // Writes the chk to a buffer
+        bool ToSingleBuffer(std::stringstream & buf); // Writes the chk to a buffer
         bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
 
 
