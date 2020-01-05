@@ -242,6 +242,7 @@ bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData)
 
 bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData, WavQuality wavQuality)
 {
+    fileData.unsetf(std::ios_base::skipws);
     auto start = std::istream_iterator<u8>(fileData);
     std::vector<u8> fileBytes(start, std::istream_iterator<u8>());
     bool addedFile = false;

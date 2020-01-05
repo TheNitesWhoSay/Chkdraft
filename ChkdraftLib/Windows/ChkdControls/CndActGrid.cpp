@@ -36,7 +36,7 @@ bool CndActGrid::CreateThis(HWND hParent, int x, int y, int width, int height, u
     GridViewControl::Show();
 
     for ( int y = 0; y<numUsedRows; y++ )
-        GridViewControl::AddRow(9, (y + 1) * 100);
+        GridViewControl::AddRow(9, (LPARAM(y) + 1) * 100);
 
     for ( int y = 0; y < numUsedRows; y++ )
     {

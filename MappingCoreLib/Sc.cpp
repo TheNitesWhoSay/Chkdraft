@@ -2551,8 +2551,8 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const 
     buffer rawData;
     if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, rawData) )
     {
-        u16 numStrings = rawData.get<u16>(0);
-        for ( u16 i=1; i<numStrings && i>0; i++ )
+        s64 numStrings = (s64)rawData.get<u16>(0);
+        for ( s64 i=1; i<numStrings && i>0; i++ )
         {
             s64 stringOffset = (s64)rawData.get<u16>(2*i);
             s64 stringEnd = 0;

@@ -8,7 +8,7 @@ namespace WinLib {
 
     std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
-    WindowsItem::WindowsItem() : windowsItemHandle(NULL), tooltipHandle(NULL), paintWidth(0), paintHeight(0),
+    WindowsItem::WindowsItem() : hFont(NULL), paintFont(NULL), windowsItemHandle(NULL), tooltipHandle(NULL), paintWidth(0), paintHeight(0),
         paintDc(NULL), paintFinalDc(NULL), paintMemBitmap(NULL), paintStatus(PaintStatus::NotPainting)
     {
         paintRect.left = 0;
@@ -281,7 +281,7 @@ namespace WinLib {
             if ( ::GetWindowText(getHandle(), titleText.get(), titleLength) )
             {
                 titleText.get()[titleLength - 1] = '\0';
-                text = icux::toUtf8(icux::uistring(titleText.get(), titleLength-1));
+                text = icux::toUtf8(icux::uistring(titleText.get(), size_t(titleLength)-1));
                 return true;
             }
         }

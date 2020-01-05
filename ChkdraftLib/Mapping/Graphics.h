@@ -67,7 +67,7 @@ class Graphics
     public:
 
         Graphics(GuiMap &map, Selections &selections) : map(map), selections(selections),
-            displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true) { }
+            displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0) { }
         virtual ~Graphics();
 
         void DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, HDC hDC, bool showAnywhere);

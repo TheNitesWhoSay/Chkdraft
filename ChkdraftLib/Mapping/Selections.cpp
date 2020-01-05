@@ -6,8 +6,9 @@ TileNode::~TileNode()
 
 }
 
-Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0)
+Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
 {
+    memset((void*)&recentLocations[0], 0, sizeof(recentLocations)/sizeof(u8));
     startDrag.x = -1;
     startDrag.y = -1;
     endDrag.x = -1;

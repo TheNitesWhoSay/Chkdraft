@@ -133,9 +133,9 @@ class ChkSection
         SectionName getName() { return sectionName; }
         template<typename t> t getNameValue() { return (t)sectionName; }
         std::ostream & write(std::ostream &s); // Writes the section name as a u32, then the result of getSize as a u32, then calls writeData
+        virtual u32 getSize(); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over u32_max
 
     protected:
-        virtual u32 getSize(); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over u32_max
         virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes) { return s; } // Writes exactly sizeInBytes bytes to the output stream, by default this is the buffer data
         bool isVirtual() { return dataIsVirtual; }
         virtual void setVirtual(bool isVirtual) { // If the client calls code that normalizes the size (any change), flag virtual as false

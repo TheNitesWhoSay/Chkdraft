@@ -463,7 +463,7 @@ void Chk::Action::remapStringIds(std::map<u32, u32> stringIdRemappings)
 
 void Chk::Action::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
 {
-    if ( actionType < NumActionTypes )
+    if ( actionType < NumBriefingActionTypes )
     {
         if ( briefingActionUsesStringArg[actionType] )
         {
@@ -495,7 +495,7 @@ void Chk::Action::deleteString(size_t stringId)
 
 void Chk::Action::deleteBriefingString(size_t stringId)
 {
-    if ( actionType < NumActionTypes )
+    if ( actionType < NumBriefingActionTypes )
     {
         if ( briefingActionUsesStringArg[actionType] && this->stringId == stringId )
             this->stringId = 0;

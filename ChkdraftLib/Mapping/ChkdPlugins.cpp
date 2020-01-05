@@ -26,7 +26,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         {
                             case UPDATE_CHK_FILE:
                                 {
-                                    if ( map->Deserialize(copyData) )
+                                    if ( map->Deserialize((Chk::SerializedChk*)copyData) )
                                     {
                                         map->refreshScenario();
                                         map->notifyChange(false);
@@ -36,7 +36,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                 break;
                             case REPLACE_TRIGGERS_TEXT:
                                 {
-                                    std::unique_ptr<char> inputText = std::unique_ptr<char>(new char[length+1]);
+                                    std::unique_ptr<char> inputText = std::unique_ptr<char>(new char[size_t(length)+1]);
                                     std::memcpy(inputText.get(), copyData, length);
                                     if ( inputText.get()[length-2] != '\0' ) // Ensure NUL-terminated
                                         inputText.get()[length-1] = '\0';
@@ -79,14 +79,11 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     u16 mapID = chkd.maps.GetMapID(map);
                     COPYDATASTRUCT copyData;
                     copyData.dwData = (ULONG_PTR)MAKELONG(COPY_CHK_FILE, mapID);
-                    std::shared_ptr<void> chkFile = map->Serialize();
-                    if ( chkFile != nullptr )
-                    {
-                        copyData.lpData = chkFile.get();
-                        copyData.cbData = ((u32*)chkFile.get())[1]+8;
-                        SendMessage((HWND)wParam, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&copyData);
-                        return mapID;
-                    }
+                    std::vector<u8> chkFile = map->Serialize();
+                    copyData.lpData = PVOID(&chkFile[0]);
+                    copyData.cbData = DWORD(chkFile.size() - sizeof(Chk::ChkHeader));
+                    SendMessage((HWND)wParam, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&copyData);
+                    return mapID;
                 }
             }
             break;

@@ -440,7 +440,7 @@ namespace WinLib {
             topBounds.left = LVIR_BOUNDS;
             bottomBounds.left = LVIR_BOUNDS;
             if ( SendMessage(getHandle(), LVM_GETITEMRECT, 0, (LPARAM)&topBounds) == TRUE &&
-                 SendMessage(getHandle(), LVM_GETITEMRECT, numRows-1, (LPARAM)&bottomBounds) == TRUE )
+                 SendMessage(getHandle(), LVM_GETITEMRECT, WPARAM(numRows)-1, (LPARAM)&bottomBounds) == TRUE )
             {
                 outsideLeft = x < topBounds.left;
                 outsideTop = y < topBounds.top;

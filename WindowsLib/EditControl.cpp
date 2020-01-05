@@ -5,7 +5,7 @@
 
 namespace WinLib {
 
-    EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(false)
+    EditControl::EditControl() : isMultiLine(false), forwardArrowKeys(false), stopFowardingOnClick(false), autoExpand(false), hBuddy(NULL)
     {
 
     }
@@ -133,7 +133,7 @@ namespace WinLib {
         u8 numBits = (sizeof(numType)*8);
         _itoa_s(temp, newText, 36, 2);
         size_t length = std::strlen(newText);
-        if ( length > 0 && length < numBits )
+        if ( length > 0 && length < numBits && numBits < 36 )
         {
             std::memmove(&newText[numBits-length], newText, length);
             std::memset(newText, '0', numBits-length);
@@ -196,7 +196,7 @@ namespace WinLib {
                                          0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
             size_t length = editText.length();
-            for ( size_t i=length-1; i>=0; i-- )
+            for ( size_t i=length-1; i<length; i-- )
             {
                 if ( editText[i] == '1' )
                     temp |= u16BitValues[(length-1)-i];
@@ -245,8 +245,8 @@ namespace WinLib {
             strChunk[8] = '\0';
 
             size_t strLength = text.length();
-            if ( strLength > destLength*2 ) // Don't read past the number of requested bytes
-                strLength = destLength*2;
+            if ( strLength > size_t(destLength)*2 ) // Don't read past the number of requested bytes
+                strLength = size_t(destLength)*2;
 
             size_t numChunks = strLength/8;
             size_t strRemainder = strLength%8;
@@ -318,7 +318,7 @@ namespace WinLib {
 
     bool EditControl::SetHexByteString(u8* bytes, u32 numBytes)
     {
-        std::unique_ptr<char> byteStringAlloc = std::unique_ptr<char>(new char[numBytes*2+1]);
+        std::unique_ptr<char> byteStringAlloc = std::unique_ptr<char>(new char[size_t(numBytes)*2+1]);
         char* byteString = byteStringAlloc.get();
 
         for ( u32 i=0; i<numBytes; i++ )

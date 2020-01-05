@@ -1755,7 +1755,7 @@ StrSectionPtr StrSection::GetDefault()
     return newSection;
 }
 
-StrSection::StrSection() : DynamicSection<false>(SectionName::STR)
+StrSection::StrSection() : DynamicSection<false>(SectionName::STR), synced(false)
 {
 
 }
@@ -4208,7 +4208,7 @@ KstrSectionPtr KstrSection::GetDefault()
     return newSection;
 }
 
-KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR)
+KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR), synced(false)
 {
 
 }

@@ -16,7 +16,7 @@
 
 namespace Chk {
 #pragma pack(push, 1)
-    
+
     class Unit; class IsomEntry; class Doodad; class Sprite; class Cuwp; class Location; class Condition; class Action; class Trigger; class StringProperties;
     using UnitPtr = std::shared_ptr<Unit>; using IsomEntryPtr = std::shared_ptr<IsomEntry>; using DoodadPtr = std::shared_ptr<Doodad>; using SpritePtr = std::shared_ptr<Sprite>;
     using CuwpPtr = std::shared_ptr<Cuwp>; using LocationPtr = std::shared_ptr<Location>; using ConditionPtr = std::shared_ptr<Condition>; using ActionPtr = std::shared_ptr<Action>;
@@ -1177,6 +1177,18 @@ namespace Chk {
         // void[] stringData; // List of strings, each null terminated, starting with one NUL character
     }; // Size: 8+8*numStrings+stringDataSize (not validated)
 
+    constexpr u32 CHK = 541804611; // "CHK " = 43|48|4B|20
+    using Size = u32;
+
+    __declspec(align(1)) struct ChkHeader {
+        u32 name; // Set to CHK
+        Size sizeInBytes;
+    };
+
+    __declspec(align(1)) struct SerializedChk {
+        ChkHeader header;
+        u8 data[1]; // u8 data[sizeInBytes]
+    };
     
     std::ostream & operator<< (std::ostream & out, const Unit & unit);
     std::ostream & operator<< (std::ostream & out, const IsomEntry & isomEntry);

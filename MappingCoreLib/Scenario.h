@@ -535,50 +535,44 @@ enum class ChkVersion : u32;
 class Scenario
 {
     public:
-/*   Sections   */  Versions versions; // All version and validation related information
-                    Strings strings; // All string related information: map title and description, strings used by other sections
-                    Players players; // All player related information: slot owners, races, player colors, forces
-                    Layers layers; // All layers (stuff with coordinates): terrain, units, fog of war, sprites, doodads, locations
-                    Properties properties; // All property sheets: unit settings, unit availability, upgrade costs, upgrade leveling, technology costs, technology leveling
-                    Triggers triggers; // All scenario triggers and mission briefing triggers and their metadata: CUWPs, switches, and sounds
+        Versions versions; // All version and validation related information
+        Strings strings; // All string related information: map title and description, strings used by other sections
+        Players players; // All player related information: slot owners, races, player colors, forces
+        Layers layers; // All layers (stuff with coordinates): terrain, units, fog of war, sprites, doodads, locations
+        Properties properties; // All property sheets: unit settings, unit availability, upgrade costs, upgrade leveling, technology costs, technology leveling
+        Triggers triggers; // All scenario triggers and mission briefing triggers and their metadata: CUWPs, switches, and sounds
+        
+        Scenario(); // Construct empty map
+        Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
+        
+        virtual ~Scenario();
+        
+        bool isProtected(); // Checks if map is protected
+        bool hasPassword(); // Checks if the map has a password
+        bool isPassword(std::string &password); // Checks if this is the password the map has
+        bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
+        bool Login(std::string &password); // Attempts to login to the map
+        
+        bool ParseScenario(buffer &chk); // Parses supplied scenario file data
+        void Write(std::ostream & os); // Writes all sections to the supplied file
+        std::vector<u8> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
+                                         includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
+        bool Deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
+                                                    
+        /** Makes whatever changes are required for saving in the given ChkVersion
+            and writes the scenario to outputStream
+            
+            Returns true upon success, returns false and rolls back any changes made during save on failure */
+        bool Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver = nullptr);
+        bool PrepareSaveSectionChanges(ChkVersion chkVersion, std::unordered_map<Section, Section> &sectionsToReplace,
+            std::vector<Section> sectionsToAdd, std::vector<SectionName> sectionsToRemove, ScenarioSaverPtr scenarioSaver = nullptr) { return false; }
 
-/* Constructors */  Scenario();
-                    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64);
-
-/* Destructors  */  virtual ~Scenario();
-
-/*   Security   */  bool isProtected(); // Checks if map is protected
-                    bool hasPassword(); // Checks if the map has a password
-                    bool isPassword(std::string &password); // Checks if this is the password the map has
-                    bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the 
-                    bool Login(std::string &password); // Attempts to login to the map
-
-/*   File IO    */  bool ParseScenario(buffer &chk); // Parses supplied scenario file data
-                    //bool CreateNew(u16 width, u16 height, Sc::Terrain::Tileset tileset, u32 terrain, u32 triggers);
-                    void WriteFile(std::ostream & os); // Writes all sections to the supplied file
-                    std::shared_ptr<void> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
-                                                     includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
-                    bool Deserialize(const void* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
-                    
-                    /** Makes whatever changes are required for saving in the given ChkVersion
-                        and writes the scenario to outputStream
-                        
-                        Returns true upon success, returns false and rolls back any changes made during save on failure */
-                    bool Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver = nullptr);
-                    bool PrepareSaveSectionChanges(ChkVersion chkVersion, std::unordered_map<Section, Section> &sectionsToReplace,
-                        std::vector<Section> sectionsToAdd, std::vector<SectionName> sectionsToRemove, ScenarioSaverPtr scenarioSaver = nullptr) { return false; }
-
-/*   Defaults   */  static ScenarioSaverPtr getDefaultScenarioSaver() { return nullptr; }
-
+        static ScenarioSaverPtr getDefaultScenarioSaver() { return nullptr; }
 
     protected:
-
-        bool ToSingleBuffer(std::stringstream & buf); // Writes the chk to a buffer
         bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
 
-
     private:
-
         std::vector<Section> allSections; // Holds all the sections of a map
         std::array<u8, 7> tailData; // The 0-7 bytes just before the Scenario file ends, after the last valid section
         u8 tailLength; // 0 for no tail data, must be less than 8

@@ -93,7 +93,8 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                 if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
                 {
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                    if ( Scenario::ToSingleBuffer(chk) )
+                    Scenario::Write(chk);
+                    if ( chk.good() )
                     {
                         if ( MpqFile::open(mapFilePath) )
                         {
@@ -121,7 +122,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                     std::ofstream outFile(icux::toFilestring(mapFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
                     if ( outFile.is_open() )
                     {
-                        Scenario::WriteFile(outFile);
+                        Scenario::Write(outFile);
                         bool success = outFile.good();
                         if ( !success )
                             logger.error("Failed to write scenario file!");
@@ -171,7 +172,8 @@ bool MapFile::OpenTemporaryMpq()
         }
         else // Use the C library to find an appropriate temporary location
         {
-            assetFilePath = std::string(tmpnam(NULL));
+            char* temporaryFilePath = tmpnam(nullptr);
+            assetFilePath = std::string(temporaryFilePath != NULL ? temporaryFilePath : "");
         }
     }
 

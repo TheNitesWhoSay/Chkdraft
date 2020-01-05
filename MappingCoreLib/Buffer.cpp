@@ -11,13 +11,13 @@ extern Logger logger;
 
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
-buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
+buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     for ( int i=0; i<5; i++ ) // NUL fill title
         bufTitle[0] = '\0';
 }
 
-buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
+buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     int numChars = std::min((int)bufferTitle.length(), 4);
     for ( int i=0; i<numChars; i++ )
@@ -26,13 +26,13 @@ buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), siz
         bufTitle[i] = '\0';
 }
 
-buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
+buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     (u32&)bufTitle = bufferTitleVal;
     bufTitle[4] = '\0';
 }
 
-buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false)
+buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     for ( int i = 0; i < 5; i++ )
         this->bufTitle[i] = rhs.bufTitle[i];

@@ -81,43 +81,43 @@
     <Filter Include="Header Files\Windows\Dialog Windows\Map Settings\String Editor">
       <UniqueIdentifier>{cd2283a1-3388-4d52-b415-29c23845e5bc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows">
+    <Filter Include="Source Files\Windows">
       <UniqueIdentifier>{71263354-ab1a-4709-b93e-abbf9628d4dc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Chkd Controls">
+    <Filter Include="Source Files\Windows\Chkd Controls">
       <UniqueIdentifier>{43bf88ef-2d35-457f-a41e-7eea8b587b14}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows">
+    <Filter Include="Source Files\Windows\Dialog Windows">
       <UniqueIdentifier>{f48bba59-b495-4e4c-b115-fbd791012a71}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Layers">
+    <Filter Include="Source Files\Windows\Dialog Windows\Layers">
       <UniqueIdentifier>{124ce131-8600-43be-aa9f-4ddff84a6b10}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Layers\Unit Properties">
+    <Filter Include="Source Files\Windows\Dialog Windows\Layers\Unit Properties">
       <UniqueIdentifier>{7aca954a-cf5a-4c2a-82ce-60009a926d98}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Map Protection">
+    <Filter Include="Source Files\Windows\Dialog Windows\Map Protection">
       <UniqueIdentifier>{72ac7f7e-310e-474f-adb0-f1837d8495ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Map Settings">
+    <Filter Include="Source Files\Windows\Dialog Windows\Map Settings">
       <UniqueIdentifier>{e22b2b3a-6afa-4ad8-80c1-f488cd99363c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Map Settings\String Editor">
+    <Filter Include="Source Files\Windows\Dialog Windows\Map Settings\String Editor">
       <UniqueIdentifier>{d0edfa17-2b12-4952-b5dd-8f29093a0be4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\New Map">
+    <Filter Include="Source Files\Windows\Dialog Windows\New Map">
       <UniqueIdentifier>{748adca8-39dd-4322-87d3-5e1230c262d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Trig Editor">
+    <Filter Include="Source Files\Windows\Dialog Windows\Trig Editor">
       <UniqueIdentifier>{248646f2-e8f3-44b0-ba0c-97241f4470f6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Text Trig">
+    <Filter Include="Source Files\Windows\Dialog Windows\Text Trig">
       <UniqueIdentifier>{f100bf06-9cff-4460-93f7-88af365cbece}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Dialog Windows\Trig Modify">
+    <Filter Include="Source Files\Windows\Dialog Windows\Trig Modify">
       <UniqueIdentifier>{bd92ef28-7bd7-4903-88b6-85011011dc97}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Mapping\Windows\Main Windows">
+    <Filter Include="Source Files\Windows\Main Windows">
       <UniqueIdentifier>{a8e75d41-7652-4243-8e98-b22db6afb347}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -404,154 +404,154 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\ChkdStringInput.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\CndActGrid.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\CuwpInput.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\LocationTree.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\MainTree.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\MoveTo.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\PeerListBox.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\PlayerDropdown.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\Suggestions.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\UpgradeTree.cpp">
-      <Filter>Source Files\Mapping\Windows\Chkd Controls</Filter>
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\Layers\UnitProperties\UnitProperties.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Layers\Unit Properties</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\Layers\UnitProperties\PreservedUnitStats.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Layers\Unit Properties</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Unit Properties</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\Layers\LocationProperties.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Layers</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\Layers\TerrainPalette.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Layers</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\Layers\TileProperties.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Layers</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Layers</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapProtection\ChangePassword.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Protection</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapProtection\EnterPassword.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Protection</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Protection</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\StringEditor\StringEditor.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings\String Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\String Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\StringEditor\StringGuide.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings\String Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\String Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\StringEditor\StringPreview.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings\String Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings\String Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\Forces.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\MapProperties.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\MapSettings.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\TechSettings.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\UnitSettings.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\WavEditor.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Map Settings</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\New Map</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\New Map</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TextTrig\LIT.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Text Trig</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TextTrig\TextTrig.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Text Trig</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Counters.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\CUWPs.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Switches.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Templates.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\TrigEditor.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Triggers.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Editor</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Editor</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigActions.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigConditions.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigGeneral.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigModify.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigModifyText.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigPlayers.cpp">
-      <Filter>Source Files\Mapping\Windows\Dialog Windows\Trig Modify</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\Trig Modify</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\GuiMap.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\LeftBar.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\MainPlot.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\MainToolbar.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\Maps.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\MiniMap.cpp">
-      <Filter>Source Files\Mapping\Windows\Main Windows</Filter>
+      <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\DatFileBrowsers.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>

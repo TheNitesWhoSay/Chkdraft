@@ -22,11 +22,12 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
     va_list args;
 #ifdef WINDOWS_UTF16
     const icux::uistring sysMsg = icux::toUistring(msg);
-    const icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
-    const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
+    icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
+    icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
     va_start(args, msg);
     _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
     _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s | Line: %u", icux::toUistring(file).c_str(), line);
+    sysLastError[sysMsg.length()] = '\0';
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else
@@ -43,11 +44,12 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
     va_list args;
 #ifdef WINDOWS_UTF16
     const icux::uistring sysMsg = icux::toUistring(msg);
-    const icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
-    const icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
+    icux::codepoint sysLastError[MAX_ERROR_LENGTH] = L"";
+    icux::codepoint sysLastErrorLoc[MAX_ERROR_LENGTH] = L"";
     va_start(args, msg);
     _vsnwprintf((wchar_t*)sysLastError, MAX_ERROR_LENGTH, sysMsg.c_str(), args);
     _snwprintf((wchar_t*)sysLastErrorLoc, MAX_ERROR_LENGTH, L"File: %s | Line: %u", icux::toUistring(file).c_str(), line);
+    sysLastError[sysMsg.length()] = '\0';
     strcpy(LastError, icux::toUtf8(sysLastError).c_str());
     strcpy(LastErrorLoc, icux::toUtf8(sysLastErrorLoc).c_str());
 #else

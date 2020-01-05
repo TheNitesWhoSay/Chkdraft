@@ -7,7 +7,7 @@ ErrorHandlerResult::~ErrorHandlerResult()
 
 }
 
-KnownError::KnownError(u32 id)
+KnownError::KnownError(u32 id) : errorId(id)
 {
     
 }

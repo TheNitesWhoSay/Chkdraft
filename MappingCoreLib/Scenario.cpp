@@ -101,95 +101,78 @@ Scenario::~Scenario()
 
 bool Scenario::isProtected()
 {
-//    return mapIsProtected;
+    return mapIsProtected;
+}
+
+bool Scenario::hasPassword()
+{
+    return tailLength == 7;
+}
+
+bool Scenario::isPassword(std::string &password)
+{
+    if ( hasPassword() )
+    {
+        SHA256 sha256;
+        std::string hashStr = sha256(password);
+        if ( hashStr.length() >= 7 )
+        {
+            u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
+            u8* hashBytes = (u8*)&eightHashBytes;
+
+            for ( u8 i = 0; i < tailLength; i++ )
+            {
+                if ( tailData[i] != hashBytes[i] )
+                    return false;
+            }
+            return true;
+        }
+        else
+            return false;
+    }
+    else // No password
+        return true;
+}
+
+bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
+{
+    if ( isPassword(oldPass) )
+    {
+        if ( newPass == "" )
+        {
+            for ( u8 i = 0; i < tailLength; i++ )
+                tailData[i] = 0;
+
+            tailLength = 0;
+            return true;
+        }
+        else
+        {
+            SHA256 sha256;
+            std::string hashStr = sha256(newPass);
+            if ( hashStr.length() >= 7 )
+            {
+                u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+                u8* hashBytes = (u8*)&eightHashBytes;
+
+                tailLength = 7;
+                for ( u8 i = 0; i < tailLength; i++ )
+                    tailData[i] = hashBytes[i];
+
+                return true;
+            }
+        }
+    }
     return false;
 }
 
-bool Scenario::Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver)
+bool Scenario::Login(std::string &password)
 {
-/*    if ( isProtected() )
-        return false;
-
-    Strubgs
-    if ( chkVersion == ChkVersion::Unchanged )
+    if ( isPassword(password) )
     {
-        for ( auto &section : allSections )
-            section->write(outputStream);
-
-        if ( tailLength > 0 && tailLength < 8 )
-            outputStream.write(tailData.data, tailLength);
+        mapIsProtected = false;
+        return true;
     }
-    else // chkVersion changed, update all potentially affected sections
-    {
-        Section newMrgn(new ChkSection(ChkSection::SectionName::MRGN));
-        Section newType(new ChkSection(ChkSection::SectionName::TYPE));
-        Section newVer(new ChkSection(ChkSection::SectionName::VER));
-        Section newIver(new ChkSection(ChkSection::SectionName::IVER));
-        Section newIve2(new ChkSection(ChkSection::SectionName::IVE2));
-
-        bool removeIver = false;
-        if ( !PrepareSaveSectionChanges(chkVersion, newMrgn, newType, newVer, newIver, newIve2, removeIver, scenarioSaver) )
-            return false;
-
-        std::unordered_set<ChkSection::SectionName> skipSections;
-        std::unordered_map<Section, Section> sectionsToReplace;
-        std::vector<Section> sectionsToAdd;
-        std::vector<ChkSection::SectionName> sectionsToRemove;
-        for ( auto section = allSections.rbegin(); section != allSections.rend(); ++section )
-        {
-            ChkSection::SectionName sectionName = (ChkSection::SectionName)(*section)->titleVal();
-            if ( foundSectionNames.find(sectionName) == foundSectionNames.end() )
-            {
-                foundSectionNames.insert(sectionName);
-                switch ( sectionName )
-                {
-                case ChkSection::SectionName::MRGN:
-                    replacedSections.insert(std::pair<Section, Section>(*section, newMrgn)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::TYPE: replacedSections.insert(std::pair<Section, Section>(*section, newType)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::VER:
-                    replacedSections.insert(std::pair<Section, Section>(*section, newVer)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::IVE2:
-                    if ( IVE2->exists() )
-                        replacedSections.insert(std::pair<Section, Section>(*section, newIve2));
-                    break;
-                case ChkSection::SectionName::IVER:
-                    if ( !removeIver && IVER->exists() )
-                        replacedSections.insert(std::pair<Section, Section>(*section, newIver));
-                    break;
-                }
-            }
-        }
-
-        size_t numSectionsToAdd = (MRGN->exists() ? 0 : 1) + (TYPE->exists() ? 0 : 1) + (VER->exists() ? 0 : 1) + (IVE2->exists() ? 0 : 1) +
-            (removeIver || IVER->exists() ? 0 : 1);
-
-        allSections.reserve(allSections.size() + numSectionsToAdd);
-
-        bool wroteMRGN = false, wroteTYPE = false, wroteVER = false, wroteIVER = false, wroteIVE2 = false;
-        for ( auto &section : allSections )
-        {
-            ChkSection::SectionName sectionName = (ChkSection::SectionName)section->titleVal;
-            switch ( sectionName )
-            {
-            case ChkSection::SectionName::MRGN:
-            case ChkSection::SectionName::TYPE:
-            case ChkSection::SectionName::VER:
-            case ChkSection::SectionName::IVER:
-            case ChkSection::SectionName::IVE2:
-                if ( section == lastSectionInstances.find(sectionName)->second )
-
-                    break;
-            default:
-                section->write(outputStream, true);
-                break;
-            }
-        }
-
-        if ( tailLength > 0 && tailLength < 8 )
-            outputStream.write((const char*)tailData, tailLength);
-
-        // Save succeeded, now update the scenario with the saveSections
-    }*/
     return false;
 }
 
@@ -298,116 +281,130 @@ bool Scenario::ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::v
     return true; // sectionSize == 0
 }
 
-bool Scenario::ToSingleBuffer(std::stringstream & buf)
-{
-    for ( auto & section : allSections )
-        section->write((std::ostream &)buf);
-
-    return true;
-}
-
-std::shared_ptr<void> Scenario::Serialize()
-{
-/*    buffer chk("CHK ");
-    if ( ToSingleBuffer(chk) )
-        return chk.serialize();
-    else*/
-        return nullptr;
-}
-
-bool Scenario::Deserialize(const void* data)
-{
-/*    buffer chk;
-    if ( chk.deserialize(data) )
-    {
-        Flush();
-        if ( ParseScenario(chk) )
-            return true;
-    }
-    return false;*/
-    return false;
-}
-
-bool Scenario::hasPassword()
-{
-//    return tailLength == 7;
-    return false;
-}
-
-bool Scenario::isPassword(std::string &password)
-{
-/*    if ( hasPassword() )
-    {
-        SHA256 sha256;
-        std::string hashStr = sha256(password);
-        if ( hashStr.length() >= 7 )
-        {
-            u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
-            u8* hashBytes = (u8*)&eightHashBytes;
-
-            for ( u8 i = 0; i < tailLength; i++ )
-            {
-                if ( tailData[i] != hashBytes[i] )
-                    return false;
-            }
-            return true;
-        }
-    }
-    else // No password
-        return true;
-        */
-    return false;
-}
-
-bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
-{
-/*    if ( isPassword(oldPass) )
-    {
-        if ( newPass == "" )
-        {
-            for ( u8 i = 0; i < tailLength; i++ )
-                tailData[i] = 0;
-            tailLength = 0;
-            return true;
-        }
-        else
-        {
-            SHA256 sha256;
-            std::string hashStr = sha256(newPass);
-            if ( hashStr.length() >= 7 )
-            {
-                u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
-                u8* hashBytes = (u8*)&eightHashBytes;
-
-                tailLength = 7;
-                for ( u8 i = 0; i < tailLength; i++ )
-                    tailData[i] = hashBytes[i];
-
-                return true;
-            }
-        }
-    }*/
-    return false;
-}
-
-bool Scenario::Login(std::string &password)
-{
-    if ( isPassword(password) )
-    {
-        mapIsProtected = false;
-        return true;
-    }
-    return false;
-}
-
-void Scenario::WriteFile(std::ostream & os)
+void Scenario::Write(std::ostream & os)
 {
     for ( auto & section : allSections )
         section->write(os);
 }
 
+std::vector<u8> Scenario::Serialize()
+{
+    Chk::Size size = 0;
+    std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+    chk.write((const char*)&Chk::CHK, sizeof(Chk::CHK)); // Header
+    chk.write((const char*)&size, sizeof(size)); // Size
 
-Versions::Versions(bool useDefault)
+    Write(chk);
+    chk.unsetf(std::ios_base::skipws);
+    auto start = std::istream_iterator<u8>(chk);
+    std::vector<u8> chkBytes(start, std::istream_iterator<u8>());
+
+    (Chk::Size &)chkBytes[sizeof(Chk::CHK)] = Chk::Size(chkBytes.size() - sizeof(Chk::CHK) - sizeof(size));
+
+    return chkBytes;
+}
+
+bool Scenario::Deserialize(Chk::SerializedChk* data)
+{
+    if ( data->header.name == Chk::CHK )
+    {
+        // Chk::Size size = data->header.sizeInBytes; // Unused
+        // void* scenarioData = &data->data[0];
+        // return ParseScenario(scenarioData, size);
+    }
+    return false;
+}
+
+bool Scenario::Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver)
+{
+/*    if ( isProtected() )
+        return false;
+
+    Strubgs
+    if ( chkVersion == ChkVersion::Unchanged )
+    {
+        for ( auto &section : allSections )
+            section->write(outputStream);
+
+        if ( tailLength > 0 && tailLength < 8 )
+            outputStream.write(tailData.data, tailLength);
+    }
+    else // chkVersion changed, update all potentially affected sections
+    {
+        Section newMrgn(new ChkSection(ChkSection::SectionName::MRGN));
+        Section newType(new ChkSection(ChkSection::SectionName::TYPE));
+        Section newVer(new ChkSection(ChkSection::SectionName::VER));
+        Section newIver(new ChkSection(ChkSection::SectionName::IVER));
+        Section newIve2(new ChkSection(ChkSection::SectionName::IVE2));
+
+        bool removeIver = false;
+        if ( !PrepareSaveSectionChanges(chkVersion, newMrgn, newType, newVer, newIver, newIve2, removeIver, scenarioSaver) )
+            return false;
+
+        std::unordered_set<ChkSection::SectionName> skipSections;
+        std::unordered_map<Section, Section> sectionsToReplace;
+        std::vector<Section> sectionsToAdd;
+        std::vector<ChkSection::SectionName> sectionsToRemove;
+        for ( auto section = allSections.rbegin(); section != allSections.rend(); ++section )
+        {
+            ChkSection::SectionName sectionName = (ChkSection::SectionName)(*section)->titleVal();
+            if ( foundSectionNames.find(sectionName) == foundSectionNames.end() )
+            {
+                foundSectionNames.insert(sectionName);
+                switch ( sectionName )
+                {
+                case ChkSection::SectionName::MRGN:
+                    replacedSections.insert(std::pair<Section, Section>(*section, newMrgn)); foundSectionNames.insert(sectionName); break;
+                case ChkSection::SectionName::TYPE: replacedSections.insert(std::pair<Section, Section>(*section, newType)); foundSectionNames.insert(sectionName); break;
+                case ChkSection::SectionName::VER:
+                    replacedSections.insert(std::pair<Section, Section>(*section, newVer)); foundSectionNames.insert(sectionName); break;
+                case ChkSection::SectionName::IVE2:
+                    if ( IVE2->exists() )
+                        replacedSections.insert(std::pair<Section, Section>(*section, newIve2));
+                    break;
+                case ChkSection::SectionName::IVER:
+                    if ( !removeIver && IVER->exists() )
+                        replacedSections.insert(std::pair<Section, Section>(*section, newIver));
+                    break;
+                }
+            }
+        }
+
+        size_t numSectionsToAdd = (MRGN->exists() ? 0 : 1) + (TYPE->exists() ? 0 : 1) + (VER->exists() ? 0 : 1) + (IVE2->exists() ? 0 : 1) +
+            (removeIver || IVER->exists() ? 0 : 1);
+
+        allSections.reserve(allSections.size() + numSectionsToAdd);
+
+        bool wroteMRGN = false, wroteTYPE = false, wroteVER = false, wroteIVER = false, wroteIVE2 = false;
+        for ( auto &section : allSections )
+        {
+            ChkSection::SectionName sectionName = (ChkSection::SectionName)section->titleVal;
+            switch ( sectionName )
+            {
+            case ChkSection::SectionName::MRGN:
+            case ChkSection::SectionName::TYPE:
+            case ChkSection::SectionName::VER:
+            case ChkSection::SectionName::IVER:
+            case ChkSection::SectionName::IVE2:
+                if ( section == lastSectionInstances.find(sectionName)->second )
+
+                    break;
+            default:
+                section->write(outputStream, true);
+                break;
+            }
+        }
+
+        if ( tailLength > 0 && tailLength < 8 )
+            outputStream.write((const char*)tailData, tailLength);
+
+        // Save succeeded, now update the scenario with the saveSections
+    }*/
+    return false;
+}
+
+
+Versions::Versions(bool useDefault) : layers(nullptr)
 {
     if ( useDefault )
     {
@@ -495,7 +492,7 @@ void Versions::setToDefaultValidation()
 }
 
 
-Strings::Strings(bool useDefault) :
+Strings::Strings(bool useDefault) : versions(nullptr), players(nullptr), layers(nullptr), properties(nullptr), triggers(nullptr),
     StrSynchronizer(StrCompressFlag::DuplicateStringRecycling, StrCompressFlag::AllNonInterlacing)
 {
     if ( useDefault )
@@ -2094,7 +2091,8 @@ template std::shared_ptr<EscString> Strings::convert<EscString>(ScStrPtr string)
 template std::shared_ptr<ChkdString> Strings::convert<ChkdString>(ScStrPtr string);
 template std::shared_ptr<SingleLineChkdString> Strings::convert<SingleLineChkdString>(ScStrPtr string);
 
-Players::Players(bool useDefault)
+
+Players::Players(bool useDefault) : strings(nullptr)
 {
     if ( useDefault )
     {
@@ -2206,6 +2204,7 @@ void Players::deleteString(size_t stringId)
 {
     forc->deleteString(stringId);
 }
+
 
 Terrain::Terrain()
 {
@@ -2331,12 +2330,13 @@ std::shared_ptr<Chk::IsomEntry> Terrain::getIsomEntry(size_t isomIndex)
     return isom->getIsomEntry(isomIndex);
 }
 
-Layers::Layers() : Terrain()
+
+Layers::Layers() : Terrain(), strings(nullptr)
 {
 
 }
 
-Layers::Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height) : Terrain(tileset, width, height)
+Layers::Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height) : Terrain(tileset, width, height), strings(nullptr)
 {
     mask = MaskSection::GetDefault(width, height); // Fog of war
     thg2 = Thg2Section::GetDefault(); // Sprites
@@ -2695,7 +2695,8 @@ void Layers::deleteString(size_t stringId)
     mrgn->deleteString(stringId);
 }
 
-Properties::Properties(bool useDefault)
+
+Properties::Properties(bool useDefault) : versions(nullptr), strings(nullptr)
 {
     if ( useDefault )
     {
@@ -3555,7 +3556,8 @@ void Properties::deleteString(size_t stringId)
     unix->deleteString(stringId);
 }
 
-Triggers::Triggers(bool useDefault)
+
+Triggers::Triggers(bool useDefault) : strings(nullptr), layers(nullptr)
 {
     if ( useDefault )
     {

@@ -61,7 +61,6 @@ void Commander::Do(GenericCommandPtr command)
         synchronousExecution.wait(synchronousLock, [this] {
             return numSynchronousCommands == 0;
         });
-        synchronousLock.unlock();
     }
 }
 
@@ -456,7 +455,6 @@ void Commander::Run()
             hasCommands.wait(hasCommandsLock, [this] {
                 return hasCommandsToExecute;
             });
-            hasCommandsLock.unlock();
             commandLocker.lock();
         }
         if ( todoBuffer.size() > 0 ) // Check if there's any commands to execute
