@@ -86,8 +86,6 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
             else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
                 Scenario::versions.changeTo(Chk::Version::StarCraft_BroodWar);
 
-            Scenario::strings.str->syncToBuffer(Scenario::strings);
-
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
                 if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
@@ -96,7 +94,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                     Scenario::Write(chk);
                     if ( chk.good() )
                     {
-                        if ( MpqFile::open(mapFilePath) )
+                        if ( MpqFile::open(mapFilePath, false, true) )
                         {
                             if ( !MpqFile::addFile("staredit\\scenario.chk", chk) )
                                 CHKD_ERR("Failed to add scenario file!");
@@ -142,7 +140,7 @@ bool MapFile::OpenTemporaryMpq()
     if ( temporaryMpq.isOpen() )
         return true;
     else if ( !temporaryMpqPath.empty() )
-        return temporaryMpq.open(temporaryMpqPath, false);
+        return temporaryMpq.open(temporaryMpqPath, false, true);
 
     std::string assetFileDirectory("");
     std::string assetFilePath("");
@@ -200,18 +198,20 @@ bool MapFile::OpenMapFile(const std::string &filePath)
     std::string extension = GetSystemFileExtension(filePath);
     if ( !extension.empty() )
     {
-        buffer chk("oMAP");
         if ( extension == ".scm" || extension == ".scx" )
         {
-            if ( MpqFile::open(filePath, false) )
+            if ( MpqFile::open(filePath, true, false) )
             {
                 this->mapFilePath = MpqFile::getFilePath();
-                if ( !MpqFile::getFile("staredit\\scenario.chk", chk) )
+                std::vector<u8> chkData;
+                if ( !MpqFile::getFile("staredit\\scenario.chk", chkData) )
                     CHKD_ERR("Failed to get scenario file from MPQ.");
                 
                 MpqFile::close();
-                
-                if ( chk.size() > 0 && Scenario::ParseScenario(chk) )
+
+                std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+                std::copy(chkData.begin(), chkData.end(), std::ostream_iterator<u8>(chk));
+                if ( Scenario::ParseScenario(chk) )
                 {
                     if ( Scenario::versions.isOriginal() )
                         saveType = SaveType::StarCraftScm; // Vanilla
@@ -232,24 +232,20 @@ bool MapFile::OpenMapFile(const std::string &filePath)
         }
         else if ( extension == ".chk" )
         {
-            if ( FileToBuffer(filePath, chk) )
+            std::ifstream chk(filePath);
+            if ( Scenario::ParseScenario(chk) )
             {
-                if ( Scenario::ParseScenario(chk) )
-                {
-                    if ( Scenario::versions.isOriginal() )
-                        saveType = SaveType::StarCraftChk; // Vanilla chk
-                    else if ( Scenario::versions.isHybrid() )
-                        saveType = SaveType::HybridChk; // Hybrid chk
-                    else
-                        saveType = SaveType::ExpansionChk; // Expansion chk
-                    
-                    return true;
-                }
+                if ( Scenario::versions.isOriginal() )
+                    saveType = SaveType::StarCraftChk; // Vanilla chk
+                else if ( Scenario::versions.isHybrid() )
+                    saveType = SaveType::HybridChk; // Hybrid chk
                 else
-                    CHKD_ERR("Parsing Failed!");
+                    saveType = SaveType::ExpansionChk; // Expansion chk
+                    
+                return true;
             }
             else
-                CHKD_ERR("Error Reading CHK File");
+                CHKD_ERR("Parsing Failed!");
         }
         else
             CHKD_ERR("Unrecognized Extension!");
@@ -351,7 +347,7 @@ bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &ass
     {
         ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
         const std::string &tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
-        if ( temporaryMpq.open(temporaryMpqPath) )
+        if ( temporaryMpq.open(temporaryMpqPath, false, true) )
         {
             if ( temporaryMpq.addFile(modifiedAssetPtr->assetTempMpqPath, asset) )
             {
@@ -413,7 +409,7 @@ bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetB
             return OpenTemporaryMpq() && temporaryMpq.getFile(asset->assetTempMpqPath, outAssetBuffer);
     }
 
-    if ( MpqFile::open(mapFilePath) )
+    if ( MpqFile::open(mapFilePath, true, false) )
     {
         success = MpqFile::getFile(assetMpqFilePath, outAssetBuffer);
         MpqFile::close();
@@ -558,7 +554,7 @@ SoundStatus MapFile::GetSoundStatus(size_t soundStringId)
             }
 
             HANDLE hMpq = NULL;
-            if ( MpqFile::open(mapFilePath, false) )
+            if ( MpqFile::open(mapFilePath, true, false) )
             {
                 SoundStatus soundStatus = SoundStatus::NoMatch;
                 if ( MpqFile::findFile(*soundString) )
@@ -632,7 +628,7 @@ bool MapFile::GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSo
                     }
                 }
 
-                if ( MapFile::open(mapFilePath) )
+                if ( MapFile::open(mapFilePath, true, false) )
                 {
                     if ( MapFile::findFile(*soundString) )
                         outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::CurrentMatch));
@@ -755,10 +751,10 @@ bool MapFile::getSaveDetails(inout_param SaveType &saveType, output_param std::s
 std::vector<FilterEntry<SaveType>> getOpenMapFilters()
 {
     return std::vector<FilterEntry<SaveType>> {
-        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps"),
         FilterEntry<SaveType>(SaveType::AllScm, "*.scm", "StarCraft Maps"),
         FilterEntry<SaveType>(SaveType::AllScx, "*.scx", "BroodWar Maps"),
-        FilterEntry<SaveType>(SaveType::AllChk, "*.chk", "Raw Scenario Files")
+        FilterEntry<SaveType>(SaveType::AllChk, "*.chk", "Raw Scenario Files"),
+        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps")
     };
 }
 std::vector<FilterEntry<SaveType>> getSaveMapFilters()

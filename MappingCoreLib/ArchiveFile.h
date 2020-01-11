@@ -44,7 +44,7 @@ public:
     // If createIfNotFound is specified and no file can be found at filePath, the archive will be automatically created
     // If this archive is already open with the given filePath, no operation occurs and the method returns true
     // If this archive is already open with a filePath not matching the given filePath, it is closed before attempting to open the new archive
-    virtual bool open(const std::string &filePath, bool createIfNotFound = true) = 0;
+    virtual bool open(const std::string &filePath, bool readOnly = true, bool createIfNotFound = true) = 0;
 
     // Attempts to open an archive at filePath, if filePath is empty or no file can be found at filePath, and a fileBrowser is provided, attempts to resolve the path using fileBrowser->browseForFilePath("", 0)
     // If this archive is already open with the given filePath or the filePath browsed, no operation occurs and the method returns true
@@ -99,8 +99,6 @@ public:
 
 protected:
     void setDeleteOnClose(bool deleteOnClose);
-    virtual bool virtualizableOpen(const std::string &filePath, const FileBrowserPtr<u32> fileBrowser) = 0;
-    virtual bool virtualizableOpen(const FileBrowserPtr<u32> fileBrowser) = 0;
 
 private:
     bool deleteOnClose;

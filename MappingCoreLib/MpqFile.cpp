@@ -62,7 +62,7 @@ bool MpqFile::create(const std::string &filePath)
     return false;
 }
 
-bool MpqFile::open(const std::string &filePath, bool createIfNotFound)
+bool MpqFile::open(const std::string &filePath, bool readOnly, bool createIfNotFound)
 {
     if ( isOpen(filePath) )
         return true;
@@ -70,7 +70,7 @@ bool MpqFile::open(const std::string &filePath, bool createIfNotFound)
     close();
     if ( createIfNotFound && !FindFile(filePath) )
         return create(filePath);
-    else if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, 0, &hMpq) )
+    else if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, (readOnly ? MPQ_OPEN_READ_ONLY : 0), &hMpq) )
     {
         this->filePath = filePath;
         return true;
@@ -215,6 +215,24 @@ bool MpqFile::getFile(const std::string &mpqPath, buffer &fileData)
     return ::getFile(this, mpqPath, fileData);
 }
 
+bool MpqFile::getFile(const std::string &mpqPath, std::vector<u8> & fileData)
+{
+    bool success = false;
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
+        {
+            size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
+            fileData.assign(fileSize, u8(0));
+            success = SFileReadFile(openFile, (LPVOID)&fileData[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
+            SFileCloseFile(openFile);
+        }
+    }
+    return success;
+}
+
 bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath)
 {
     if ( isOpen() )
@@ -342,25 +360,6 @@ bool MpqFile::remove()
         return true;
     }
     return false;
-}
-
-bool MpqFile::virtualizableOpen(const std::string &filePath, const FileBrowserPtr<u32> fileBrowser)
-{
-    u32 filterIndex = 0;
-    std::string browseFilePath = "";
-    if ( !filePath.empty() && FindFile(filePath) )
-        return open(filePath);
-    else if ( fileBrowser != nullptr && fileBrowser->virtualizableBrowseForOpenPath(browseFilePath, filterIndex) )
-        return open(browseFilePath, false);
-    else
-        return false;
-}
-
-bool MpqFile::virtualizableOpen(const FileBrowserPtr<u32> fileBrowser)
-{
-    u32 filterIndex = 0;
-    std::string browseFilePath = "";
-    return fileBrowser != nullptr && fileBrowser->virtualizableBrowseForSavePath(browseFilePath, filterIndex) && open(browseFilePath);
 }
 
 u64 ModifiedAsset::nextAssetId(0);

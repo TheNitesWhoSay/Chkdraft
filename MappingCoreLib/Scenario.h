@@ -52,6 +52,9 @@ class Versions
     private:
         Layers* layers; // For updating location capacity as necessary
         friend class Scenario;
+
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Strings : public StrSynchronizer
@@ -86,10 +89,10 @@ class Strings : public StrSynchronizer
 
         size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game);
 
-        bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false);
         bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
-        void markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false);
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame); // Gets the string at stringId with formatting based on StringType
@@ -160,21 +163,20 @@ class Strings : public StrSynchronizer
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setLocationName(size_t locationIndex, const StringType &locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
-        // Checks whether there's any viable configuration for the STR section given the current allowedCompressionFlags
-        // allowedCompressionFlags may be increased as necessary if elevator.elevate() returns true
-        bool checkFit(StrCompressionElevatorPtr compressionElevator = StrCompressionElevatorPtr());
-
         // Creates a viable internal data buffer for the string section using the methods in requestedCompressionFlags
         // If no configuration among requestedCompressionFlags is viable, additional methods through allowedCompressionFlags are added as neccessary
         // allowedCompressionFlags may be increased as neccessary if elevator.elevate() returns true
         
-        virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
+        virtual void syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
+            StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
-        virtual void synchronizeFromStrBuffer(const buffer &rawData);
 
-        virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
+        virtual void syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
+            StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
-        virtual void synchronizeFromKstrBuffer(const buffer &rawData);
+
+    protected:
+        virtual void remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope);
 
     private:
         Versions* versions; // For auto-determining the section for regular or expansion units
@@ -186,20 +188,8 @@ class Strings : public StrSynchronizer
 
         static const std::vector<u32> compressionFlagsProgression;
 
-        std::deque<ScStrPtr> strings;
-        std::deque<ScStrPtr> kStrings;
-
-        inline void loadString(std::deque<ScStrPtr> &stringContainer, const buffer &rawData, const u16 &stringOffset, const size_t &sectionSize);
-        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope storageScope = Chk::Scope::Game, bool checkBeyondScopedCapacity = true, size_t firstChecked = 1);
-        void resolveParantage();
-        void resolveParantage(ScStrPtr string);
-        bool defragmentStr(bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
-        bool defragmentKstr(bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
-        void replaceStringId(size_t oldStringId, size_t newStringId);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope);
-        
-        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> convert(ScStrPtr string);
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Players
@@ -236,6 +226,9 @@ class Players
     private:
         Strings* strings; // For reading and updating force strings
         friend class Scenario;
+        
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Terrain
@@ -266,7 +259,14 @@ class Terrain
 		void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Both);
 		inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Both);
         
-        std::shared_ptr<Chk::IsomEntry> getIsomEntry(size_t isomIndex);
+        Chk::IsomEntry & getIsomEntry(size_t isomIndex);
+
+    protected:
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
+
+    private:
+        friend class Scenario;
 };
 
 class Layers : public Terrain
@@ -350,6 +350,9 @@ class Layers : public Terrain
     private:
         Strings* strings; // For reading and updating location names
         friend class Scenario;
+        
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Properties
@@ -465,6 +468,9 @@ class Properties
         Versions* versions; // For auto-determining the section for regular or expansion units
         Strings* strings; // For reading and updating unit names
         friend class Scenario;
+        
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Triggers
@@ -522,6 +528,9 @@ class Triggers
         Strings* strings; // For reading and updating sound paths, next scenario paths, text messages, leader board text, comments, and switch names
         Layers* layers; // For reading locations
         friend class Scenario;
+        
+        void set(std::unordered_map<SectionName, Section> & sections);
+        void clear();
 };
 
 class Scenario;
@@ -532,7 +541,7 @@ using ScenarioSaverPtr = std::shared_ptr<ScenarioSaver>;
 
 enum class ChkVersion : u32;
 
-class Scenario
+class Scenario : ScenarioSaver
 {
     public:
         Versions versions; // All version and validation related information
@@ -552,8 +561,8 @@ class Scenario
         bool isPassword(std::string &password); // Checks if this is the password the map has
         bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
         bool Login(std::string &password); // Attempts to login to the map
-        
-        bool ParseScenario(buffer &chk); // Parses supplied scenario file data
+
+        bool ParseScenario(std::istream & is); // Parses supplied scenario file data
         void Write(std::ostream & os); // Writes all sections to the supplied file
         std::vector<u8> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                          includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
@@ -567,10 +576,13 @@ class Scenario
         bool PrepareSaveSectionChanges(ChkVersion chkVersion, std::unordered_map<Section, Section> &sectionsToReplace,
             std::vector<Section> sectionsToAdd, std::vector<SectionName> sectionsToRemove, ScenarioSaverPtr scenarioSaver = nullptr) { return false; }
 
-        static ScenarioSaverPtr getDefaultScenarioSaver() { return nullptr; }
+        virtual bool confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str);
+        virtual StrSynchronizerPtr getStrSynchronizer();
 
     protected:
+        bool ParsingFailed(const std::string & error);
         bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
+        void Clear();
 
     private:
         std::vector<Section> allSections; // Holds all the sections of a map
@@ -589,12 +601,6 @@ public:
 private:
     std::string sectionName;
     ScenarioAllocationFailure();
-};
-
-class ScenarioSaver
-{
-    public:
-        virtual bool confirmRemoveLocations(Scenario &chk) = 0;
 };
 
 enum class ChkVersion : u32

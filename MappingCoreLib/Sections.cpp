@@ -2,44 +2,24 @@
 #include <unordered_map>
 #include <algorithm>
 #include <set>
+#include <memory>
 
 ChkSection::ChkSection(SectionName sectionName, bool virtualizable, bool isVirtual)
-    : rawData(new buffer()), sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual)
+    : sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual)
 {
     auto foundSectionIndex = sectionIndexes.find(sectionName);
     if ( foundSectionIndex != sectionIndexes.end() )
         sectionIndex = foundSectionIndex->second;
 }
 
-template <typename StructType>
-ChkSection::ChkSection(SectionName sectionName, const StructType & data, bool virtualizable, bool isVirtual)
-    : sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual), rawData(buffer::make(data))
+ChkSection::~ChkSection()
 {
-    auto foundSectionIndex = sectionIndexes.find(sectionName);
-    if ( foundSectionIndex != sectionIndexes.end() )
-        sectionIndex = foundSectionIndex->second;
+
 }
 
-std::ostream & ChkSection::write(std::ostream &s)
+LoadBehavior ChkSection::getLoadBehavior(SectionName sectionName)
 {
-    u32 size = getSize();
-    s.write((const char*)&sectionName, sizeof(sectionName));
-    s.write((const char*)&size, sizeof(size));
-    return writeData(s, size);
-}
-
-u32 ChkSection::getSize()
-{
-    s64 bufferSize = rawData->size();
-    if ( bufferSize > (s64)ChkSection::MaxChkSectionSize )
-        throw MaxSectionSizeExceeded(sectionName, std::to_string(bufferSize));
-    else
-        return (u32)rawData->size();
-}
-
-LoadBehavior ChkSection::getLoadBehavior(SectionIndex sectionIndex)
-{
-    auto nonStandardLoadBehavior = nonStandardLoadBehaviors.find(sectionIndex);
+    auto nonStandardLoadBehavior = nonStandardLoadBehaviors.find(sectionName);
     if ( nonStandardLoadBehavior != nonStandardLoadBehaviors.end() )
         return nonStandardLoadBehavior->second;
     else
@@ -53,6 +33,104 @@ std::string ChkSection::getNameString(SectionName sectionName)
         return foundSectionNameString->second;
     else
         return sectionNameStrings.find(SectionName::UNKNOWN)->second;
+}
+
+Section Allocate(const SectionName & sectionName)
+{
+    switch ( sectionName )
+    {
+        case SectionName::TYPE: return std::static_pointer_cast<ChkSection>(TypeSectionPtr(new TypeSection()));
+        case SectionName::VER: return std::static_pointer_cast<ChkSection>(VerSectionPtr(new VerSection()));
+        case SectionName::IVER: return std::static_pointer_cast<ChkSection>(IverSectionPtr(new IverSection()));
+        case SectionName::IVE2: return std::static_pointer_cast<ChkSection>(Ive2SectionPtr(new Ive2Section()));
+
+        case SectionName::VCOD: return std::static_pointer_cast<ChkSection>(VcodSectionPtr(new VcodSection()));
+        case SectionName::IOWN: return std::static_pointer_cast<ChkSection>(IownSectionPtr(new IownSection()));
+        case SectionName::OWNR: return std::static_pointer_cast<ChkSection>(OwnrSectionPtr(new OwnrSection()));
+        case SectionName::ERA: return std::static_pointer_cast<ChkSection>(EraSectionPtr(new EraSection()));
+
+        case SectionName::DIM: return std::static_pointer_cast<ChkSection>(DimSectionPtr(new DimSection()));
+        case SectionName::SIDE: return std::static_pointer_cast<ChkSection>(SideSectionPtr(new SideSection()));
+        case SectionName::MTXM: return std::static_pointer_cast<ChkSection>(MtxmSectionPtr(new MtxmSection()));
+        case SectionName::PUNI: return std::static_pointer_cast<ChkSection>(PuniSectionPtr(new PuniSection()));
+
+        case SectionName::UPGR: return std::static_pointer_cast<ChkSection>(UpgrSectionPtr(new UpgrSection()));
+        case SectionName::PTEC: return std::static_pointer_cast<ChkSection>(PtecSectionPtr(new PtecSection()));
+        case SectionName::UNIT: return std::static_pointer_cast<ChkSection>(UnitSectionPtr(new UnitSection()));
+        case SectionName::ISOM: return std::static_pointer_cast<ChkSection>(IsomSectionPtr(new IsomSection()));
+
+        case SectionName::TILE: return std::static_pointer_cast<ChkSection>(TileSectionPtr(new TileSection()));
+        case SectionName::DD2: return std::static_pointer_cast<ChkSection>(Dd2SectionPtr(new Dd2Section()));
+        case SectionName::THG2: return std::static_pointer_cast<ChkSection>(Thg2SectionPtr(new Thg2Section()));
+        case SectionName::MASK: return std::static_pointer_cast<ChkSection>(MaskSectionPtr(new MaskSection()));
+
+        case SectionName::STR: return std::static_pointer_cast<ChkSection>(StrSectionPtr(new StrSection()));
+        case SectionName::UPRP: return std::static_pointer_cast<ChkSection>(UprpSectionPtr(new UprpSection()));
+        case SectionName::UPUS: return std::static_pointer_cast<ChkSection>(UpusSectionPtr(new UpusSection()));
+        case SectionName::MRGN: return std::static_pointer_cast<ChkSection>(MrgnSectionPtr(new MrgnSection()));
+
+        case SectionName::TRIG: return std::static_pointer_cast<ChkSection>(TrigSectionPtr(new TrigSection()));
+        case SectionName::MBRF: return std::static_pointer_cast<ChkSection>(MbrfSectionPtr(new MbrfSection()));
+        case SectionName::SPRP: return std::static_pointer_cast<ChkSection>(SprpSectionPtr(new SprpSection()));
+        case SectionName::FORC: return std::static_pointer_cast<ChkSection>(ForcSectionPtr(new ForcSection()));
+
+        case SectionName::WAV: return std::static_pointer_cast<ChkSection>(WavSectionPtr(new WavSection()));
+        case SectionName::UNIS: return std::static_pointer_cast<ChkSection>(UnisSectionPtr(new UnisSection()));
+        case SectionName::UPGS: return std::static_pointer_cast<ChkSection>(UpgsSectionPtr(new UpgsSection()));
+        case SectionName::TECS: return std::static_pointer_cast<ChkSection>(TecsSectionPtr(new TecsSection()));
+
+        case SectionName::SWNM: return std::static_pointer_cast<ChkSection>(SwnmSectionPtr(new SwnmSection()));
+        case SectionName::COLR: return std::static_pointer_cast<ChkSection>(ColrSectionPtr(new ColrSection()));
+        case SectionName::PUPx: return std::static_pointer_cast<ChkSection>(PupxSectionPtr(new PupxSection()));
+        case SectionName::PTEx: return std::static_pointer_cast<ChkSection>(PtexSectionPtr(new PtexSection()));
+
+        case SectionName::UNIx: return std::static_pointer_cast<ChkSection>(UnixSectionPtr(new UnixSection()));
+        case SectionName::UPGx: return std::static_pointer_cast<ChkSection>(UpgxSectionPtr(new UpgxSection()));
+        case SectionName::TECx: return std::static_pointer_cast<ChkSection>(TecxSectionPtr(new TecxSection()));
+
+        case SectionName::OSTR: return std::static_pointer_cast<ChkSection>(OstrSectionPtr(new OstrSection()));
+        case SectionName::KSTR: return std::static_pointer_cast<ChkSection>(KstrSectionPtr(new KstrSection()));
+        
+        case SectionName::UNKNOWN:
+        default: return DataSectionPtr(new DataSection(sectionName));
+    }
+}
+
+Section ChkSection::read(std::multimap<SectionName, Section> & parsedSections, const Chk::SectionHeader & sectionHeader, std::istream & is, output_param Chk::SectionSize & sizeRead)
+{
+    const SectionName & sectionName = sectionHeader.name;
+    const Chk::SectionSize sectionSizeInBytes = sectionHeader.sizeInBytes;
+    LoadBehavior loadBehavior = ChkSection::getLoadBehavior(sectionName);
+    Section section = nullptr;
+    bool overrideOrAppend = false;
+
+    if ( sectionSizeInBytes < 0 )
+        throw NegativeSectionSize(sectionName);
+
+    if ( loadBehavior == LoadBehavior::Standard )
+        section = Allocate(sectionName);
+    else // if ( loadBehavior == LoadBehavior::Override || loadBehavior == LoadBehavior::Append )
+    {
+        auto sectionInstances = parsedSections.equal_range(sectionName);
+        if ( sectionInstances.first != parsedSections.end() && sectionInstances.first->first == sectionName )
+        {
+            section = sectionInstances.first->second;
+            overrideOrAppend = true;
+        }
+        else
+            section = Allocate(sectionName);
+    }
+
+    sizeRead = (Chk::SectionSize)section->read(sectionHeader, is, overrideOrAppend);
+    return section;
+}
+
+void ChkSection::writeWithHeader(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
+    Chk::SectionSize size = getSize(scenarioSaver);
+    os.write((const char*)&sectionName, sizeof(sectionName));
+    os.write((const char*)&size, sizeof(size));
+    write(os, scenarioSaver);
 }
 
 ChkSection::MaxSectionSizeExceeded::MaxSectionSizeExceeded(SectionName sectionName, std::string sectionSize) :
@@ -74,7 +152,13 @@ ChkSection::SectionValidationException::SectionValidationException(SectionName s
 
 }
 
-SectionName ChkSection::sectionNames[] = {
+ChkSection::NegativeSectionSize::NegativeSectionSize(SectionName sectionName) :
+    std::out_of_range("Cannot read a section with a negative size into a " + ChkSection::getNameString(sectionName) + " section instance!")
+{
+
+}
+
+std::vector<SectionName> ChkSection::sectionNames = {
     SectionName::TYPE, SectionName::VER, SectionName::IVER, SectionName::IVE2,
     SectionName::VCOD, SectionName::IOWN, SectionName::OWNR, SectionName::ERA,
     SectionName::DIM, SectionName::SIDE, SectionName::MTXM, SectionName::PUNI,
@@ -164,13 +248,13 @@ std::unordered_map<SectionName, SectionIndex> ChkSection::sectionIndexes = {
     std::pair<SectionName, SectionIndex>(SectionName::UNKNOWN, SectionIndex::UNKNOWN)
 };
 
-std::unordered_map<SectionIndex, LoadBehavior> ChkSection::nonStandardLoadBehaviors = {
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::MTXM, LoadBehavior::Override),
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::UNIT, LoadBehavior::Append),
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::THG2, LoadBehavior::Append),
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::STR, LoadBehavior::Override),
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::TRIG, LoadBehavior::Append),
-    std::pair<SectionIndex, LoadBehavior>(SectionIndex::MBRF, LoadBehavior::Append)
+std::unordered_map<SectionName, LoadBehavior> ChkSection::nonStandardLoadBehaviors = {
+    std::pair<SectionName, LoadBehavior>(SectionName::MTXM, LoadBehavior::Override),
+    std::pair<SectionName, LoadBehavior>(SectionName::UNIT, LoadBehavior::Append),
+    std::pair<SectionName, LoadBehavior>(SectionName::THG2, LoadBehavior::Append),
+    std::pair<SectionName, LoadBehavior>(SectionName::STR, LoadBehavior::Override),
+    std::pair<SectionName, LoadBehavior>(SectionName::TRIG, LoadBehavior::Append),
+    std::pair<SectionName, LoadBehavior>(SectionName::MBRF, LoadBehavior::Append)
 };
 
 StrProp::StrProp() : red(0), green(0), blue(0), isUsed(false), hasPriority(false), isBold(false), isUnderlined(false), isItalics(false), size(Chk::baseFontSize)
@@ -236,16 +320,16 @@ template int ScStr::compare<ChkdString>(const ChkdString &str);
 template int ScStr::compare<SingleLineChkdString>(const SingleLineChkdString &str);
 
 template <typename StringType>
-StringType ScStr::toString()
+std::shared_ptr<StringType> ScStr::toString()
 {
-    StringType destStr;
-    ConvertStr<RawString, StringType>(str, destStr);
+    std::shared_ptr<StringType> destStr = std::shared_ptr<StringType>(new StringType());
+    ConvertStr<RawString, StringType>(str, *destStr);
     return destStr;
 }
-template RawString ScStr::toString<RawString>();
-template EscString ScStr::toString<EscString>();
-template ChkdString ScStr::toString<ChkdString>();
-template SingleLineChkdString ScStr::toString<SingleLineChkdString>();
+template std::shared_ptr<RawString> ScStr::toString<RawString>();
+template std::shared_ptr<EscString> ScStr::toString<EscString>();
+template std::shared_ptr<ChkdString> ScStr::toString<ChkdString>();
+template std::shared_ptr<SingleLineChkdString> ScStr::toString<SingleLineChkdString>();
 
 ScStrPtr ScStr::getParentStr()
 {
@@ -315,6 +399,12 @@ void ScStr::adopt(ScStrPtr parent, ScStrPtr child, size_t parentLength, size_t c
     }
 }
 
+StrSerializationFailure::StrSerializationFailure()
+    : StringException("Unknown error serializing STR section!")
+{
+
+}
+
 MaximumStringsExceeded::MaximumStringsExceeded(std::string sectionName, size_t numStrings, size_t maxStrings)
     : StringException("Error with " + sectionName + " section: " + std::to_string(numStrings)
         + " strings given, but the " + sectionName + " section can have " + std::to_string(maxStrings) + " strings max.")
@@ -362,6 +452,16 @@ TypeSection::TypeSection(const Chk::TYPE & data) : StructSection<Chk::TYPE, true
 
 }
 
+TypeSection::TypeSection() : StructSection<Chk::TYPE, true>(SectionName::TYPE)
+{
+
+}
+
+TypeSection::~TypeSection()
+{
+
+}
+
 Chk::Type TypeSection::getType()
 {
     return data->scenarioType;
@@ -381,6 +481,16 @@ VerSectionPtr VerSection::GetDefault()
 }
 
 VerSection::VerSection(const Chk::VER & data) : StructSection<Chk::VER, false>(SectionName::VER, data)
+{
+
+}
+
+VerSection::VerSection() : StructSection<Chk::VER, false>(SectionName::VER)
+{
+
+}
+
+VerSection::~VerSection()
 {
 
 }
@@ -427,6 +537,16 @@ IverSection::IverSection(const Chk::IVER & data) : StructSection<Chk::IVER, true
 
 }
 
+IverSection::IverSection() : StructSection<Chk::IVER, true>(SectionName::IVER)
+{
+
+}
+
+IverSection::~IverSection()
+{
+
+}
+
 Chk::IVersion IverSection::getVersion()
 {
     return data->version;
@@ -445,6 +565,16 @@ Ive2SectionPtr Ive2Section::GetDefault()
 }
 
 Ive2Section::Ive2Section(const Chk::IVE2 & data) : StructSection<Chk::IVE2, true>(SectionName::IVE2, data)
+{
+
+}
+
+Ive2Section::Ive2Section() : StructSection<Chk::IVE2, true>(SectionName::IVE2)
+{
+
+}
+
+Ive2Section::~Ive2Section()
 {
 
 }
@@ -502,6 +632,16 @@ VcodSection::VcodSection(const Chk::VCOD & data) : StructSection<Chk::VCOD, fals
 
 }
 
+VcodSection::VcodSection() : StructSection<Chk::VCOD, false>(SectionName::VCOD)
+{
+
+}
+
+VcodSection::~VcodSection()
+{
+
+}
+
 bool VcodSection::isDefault()
 {
     VcodSectionPtr defaultVcod = VcodSection::GetDefault();
@@ -524,6 +664,16 @@ IownSectionPtr IownSection::GetDefault()
 }
 
 IownSection::IownSection(const Chk::IOWN & data) : StructSection<Chk::IOWN, true>(SectionName::IOWN, data)
+{
+
+}
+
+IownSection::IownSection() : StructSection<Chk::IOWN, true>(SectionName::IOWN)
+{
+
+}
+
+IownSection::~IownSection()
 {
 
 }
@@ -558,6 +708,16 @@ OwnrSection::OwnrSection(const Chk::OWNR & data) : StructSection<Chk::OWNR, fals
 
 }
 
+OwnrSection::OwnrSection() : StructSection<Chk::OWNR, false>(SectionName::OWNR)
+{
+
+}
+
+OwnrSection::~OwnrSection()
+{
+
+}
+
 Sc::Player::SlotType OwnrSection::getSlotType(size_t slotIndex)
 {
     if ( slotIndex < Sc::Player::Total )
@@ -584,6 +744,16 @@ EraSection::EraSection(const Chk::ERA & data) : StructSection<Chk::ERA, false>(S
 
 }
 
+EraSection::EraSection() : StructSection<Chk::ERA, false>(SectionName::ERA)
+{
+
+}
+
+EraSection::~EraSection()
+{
+
+}
+
 Sc::Terrain::Tileset EraSection::getTileset()
 {
     return data->tileset;
@@ -600,6 +770,16 @@ DimSectionPtr DimSection::GetDefault(u16 tileWidth, u16 tileHeight)
 }
 
 DimSection::DimSection(const Chk::DIM & data) : StructSection<Chk::DIM, false>(SectionName::DIM, data)
+{
+
+}
+
+DimSection::DimSection() : StructSection<Chk::DIM, false>(SectionName::DIM)
+{
+
+}
+
+DimSection::~DimSection()
 {
 
 }
@@ -655,6 +835,16 @@ SideSection::SideSection(const Chk::SIDE & data) : StructSection<Chk::SIDE, fals
 
 }
 
+SideSection::SideSection() : StructSection<Chk::SIDE, false>(SectionName::SIDE)
+{
+
+}
+
+SideSection::~SideSection()
+{
+
+}
+
 Chk::Race SideSection::getPlayerRace(size_t playerIndex)
 {
     if ( playerIndex < Sc::Player::Total )
@@ -675,8 +865,7 @@ void SideSection::setPlayerRace(size_t playerIndex, Chk::Race race)
 MtxmSectionPtr MtxmSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     MtxmSectionPtr newSection(new (std::nothrow) MtxmSection());
-    s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    newSection->rawData->add<u16>(0, numTiles);
+    newSection->tiles.assign(size_t(tileWidth)*size_t(tileHeight), u16(0));
     return newSection;
 }
 
@@ -685,23 +874,28 @@ MtxmSection::MtxmSection() : DynamicSection<false>(SectionName::MTXM)
 
 }
 
+MtxmSection::~MtxmSection()
+{
+
+}
+
 u16 MtxmSection::getTile(size_t tileIndex)
 {
-    if ( (s64)tileIndex < rawData->size() / 2 )
-        return rawData->get<u16>(tileIndex * 2);
+    if ( tileIndex < tiles.size() )
+        return tiles[tileIndex];
     else
         throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
 }
 
 void MtxmSection::setTile(size_t tileIndex, u16 tileValue)
 {
-    if ( (s64)tileIndex < rawData->size() / 2 )
-        rawData->replace(tileIndex * 2, tileValue);
+    if ( tileIndex < tiles.size() )
+        tiles[tileIndex] = tileValue;
     else
         throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
 }
 
-void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+void setMtxmOrTileDimensions(std::vector<u16> tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
     s64 oldLeft = 0, oldTop = 0, oldRight = oldTileWidth, oldBottom = oldTileHeight,
         newLeft = leftEdge, newTop = topEdge, newRight = (s64)leftEdge+(s64)newTileWidth, newBottom = (s64)topEdge+(s64)newTileHeight,
@@ -712,16 +906,15 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
     {
         s64 numRowsRemoved = oldBottom - newBottom;
         s64 numTilesRemoved = numRowsRemoved*currTileWidth;
-        s64 numBytesRemoved = 2*numTilesRemoved;
-        if ( numBytesRemoved >= rawData->size() )
+        if ( numTilesRemoved >= (s64)tiles.size() )
         {
-            rawData->trimTo(0);
+            tiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            rawData->del(rawData->size() - numBytesRemoved, numBytesRemoved);
+            tiles.erase(tiles.begin()+(tiles.size()-numTilesRemoved), tiles.end());
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -730,16 +923,15 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
     {
         s64 numRowsRemoved = newTop - oldTop;
         s64 numTilesRemoved = numRowsRemoved*currTileWidth;
-        s64 numBytesRemoved = 2*numTilesRemoved;
-        if ( numBytesRemoved >= rawData->size() )
+        if ( numTilesRemoved >= (s64)tiles.size() )
         {
-            rawData->trimTo(0);
+            tiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            rawData->del(0, numBytesRemoved);
+            tiles.erase(tiles.begin(), tiles.begin()+numTilesRemoved);
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -749,20 +941,19 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
         s64 numColumnsRemoved = oldRight - newRight;
         if ( numColumnsRemoved >= currTileWidth )
         {
-            rawData->trimTo(0);
+            tiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            s64 numBytesPerRow = 2*currTileWidth;
-            s64 numBytesRemovedPerRow = 2*numColumnsRemoved;
-            s64 rowDataRemovalOffset = numBytesPerRow - numBytesRemovedPerRow;
-            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            size_t firstRemovedColumn = currTileWidth - numColumnsRemoved;
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
             {
-                s64 rowOffset = row*numBytesPerRow;
-                s64 dataRemovalOffset = rowOffset+rowDataRemovalOffset;
-                rawData->del(dataRemovalOffset, numBytesRemovedPerRow);
+                size_t rowOffset = row*currTileWidth;
+                size_t removedColumnsOffset = rowOffset+firstRemovedColumn;
+                auto start = tiles.begin()+removedColumnsOffset;
+                tiles.erase(start, start+numColumnsRemoved);
             }
             currTileWidth -= numColumnsRemoved;
         }
@@ -773,43 +964,36 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
         s64 numColumnsRemoved = newLeft - oldLeft;
         if ( numColumnsRemoved >= currTileHeight )
         {
-            rawData->trimTo(0);
+            tiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            s64 numBytesPerRow = 2*currTileWidth;
-            s64 numBytesRemovedPerRow = 2*numColumnsRemoved;
-            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
             {
-                s64 rowOffset = row*numBytesPerRow;
-                rawData->del(rowOffset, numBytesRemovedPerRow);
+                size_t rowOffset = row*currTileWidth;
+                auto start = tiles.begin()+rowOffset;
+                tiles.erase(start, start+numColumnsRemoved);
             }
             currTileWidth -= numColumnsRemoved;
         }
     }
 
     if ( currTileWidth == 0 || currTileHeight == 0 )
-    {
-        s64 numTilesToAdd = currTileWidth*currTileHeight;
-        s64 bytesToAdd = 2*numTilesToAdd;
-        rawData->trimTo(bytesToAdd);
-    }
+        tiles.clear();
     else // currTileWidth > 0 && currTileHeight > 0
     {
         // Add tiles as necessary in order: right, left, top, bottom
 
         if ( newRight > oldRight ) // Columns need to be added to the right
         {
-            s64 numBytesPerRow = 2*currTileWidth;
             s64 numColumnsAdded = newRight - oldRight;
-            s64 numBytesAddedPerRow = 2*numColumnsAdded;
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
-                s64 rowOffset = row*numBytesPerRow;
-                s64 dataAdditionOffset = rowOffset + numBytesPerRow;
-                rawData->insert<u8>(dataAdditionOffset, 0, numBytesAddedPerRow);
+                s64 rowOffset = row*currTileWidth;
+                s64 start = rowOffset + numColumnsAdded;
+                tiles.insert(tiles.begin() + start, numColumnsAdded, u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -817,11 +1001,10 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
         if ( newLeft < oldLeft ) // Columns need to be added to the left
         {
             s64 numColumnsAdded = oldLeft - newLeft;
-            s64 numBytesAddedPerRow = 2*numColumnsAdded;
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
-                s64 rowOffset = row*numBytesAddedPerRow;
-                rawData->insert<u8>(rowOffset, 0, numBytesAddedPerRow);
+                s64 rowOffset = row*numColumnsAdded;
+                tiles.insert(tiles.begin() + rowOffset, numColumnsAdded, u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -829,35 +1012,57 @@ void setMtxmOrTileDimensions(BufferPtr rawData, u16 newTileWidth, u16 newTileHei
         if ( newTop < oldTop ) // Rows need to be added to the top
         {
             s64 numRowsAdded = oldTop - newTop;
-            s64 numBytesAdded = 2*numRowsAdded;
-            rawData->insert<u8>(0, 0, numBytesAdded);
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            tiles.insert(tiles.begin(), numTilesAdded, u16(0));
             currTileHeight += numRowsAdded;
         }
 
         if ( newBottom > oldBottom ) // Rows need to be added to the bottom
         {
             s64 numRowsAdded = newBottom - oldBottom;
-            s64 numBytesAdded = 2*numRowsAdded;
-            rawData->add<u8>(0, numBytesAdded);
-            currTileHeight += numRowsAdded;
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            tiles.insert(tiles.end(), numTilesAdded, u16(0));
         }
     }
 }
 
 void MtxmSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
-    setMtxmOrTileDimensions(rawData, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
+    setMtxmOrTileDimensions(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
 }
 
-u32 MtxmSection::getSize()
+Chk::SectionSize MtxmSection::getSize(ScenarioSaver &)
 {
-    return ChkSection::getSize();
+    return Chk::SectionSize(sizeof(u16) * tiles.size());
 }
 
-std::ostream & MtxmSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize MtxmSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding)
 {
-    rawData->write(s, false);
-    return s;
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumTiles = readSize/sizeof(u16) + readSize%sizeof(u16);
+        if ( readNumTiles > tiles.size() ) // Need to expand section
+            tiles.insert(tiles.end(), readNumTiles-tiles.size(), u16(0));
+        else if ( !overriding && readNumTiles < tiles.size()  ) // Need to shrink section
+            tiles.erase(tiles.begin()+readNumTiles, tiles.end());
+    
+        std::memset(&tiles[0], 0, readSize); // Zero out the bytes about to be read
+        is.read((char*)&tiles[0], std::streamsize(sectionHeader.sizeInBytes));
+        return is.gcount();
+    }
+    else if ( !overriding )
+        tiles.clear();
+
+    return 0;
+}
+
+void MtxmSection::write(std::ostream & os, ScenarioSaver &)
+{
+    os.write((const char*)&tiles[0], std::streamsize(sizeof(u16)*tiles.size()));
 }
 
 
@@ -875,6 +1080,16 @@ PuniSectionPtr PuniSection::GetDefault()
 }
 
 PuniSection::PuniSection(const Chk::PUNI & data) : StructSection<Chk::PUNI, false>(SectionName::PUNI, data)
+{
+
+}
+
+PuniSection::PuniSection() : StructSection<Chk::PUNI, false>(SectionName::PUNI)
+{
+
+}
+
+PuniSection::~PuniSection()
 {
 
 }
@@ -969,6 +1184,16 @@ UpgrSectionPtr UpgrSection::GetDefault()
 }
 
 UpgrSection::UpgrSection(const Chk::UPGR & data) : StructSection<Chk::UPGR, false>(SectionName::UPGR, data)
+{
+
+}
+
+UpgrSection::UpgrSection() : StructSection<Chk::UPGR, false>(SectionName::UPGR)
+{
+
+}
+
+UpgrSection::~UpgrSection()
 {
 
 }
@@ -1111,6 +1336,16 @@ PtecSection::PtecSection(const Chk::PTEC & data) : StructSection<Chk::PTEC, fals
 
 }
 
+PtecSection::PtecSection() : StructSection<Chk::PTEC, false>(SectionName::PTEC)
+{
+
+}
+
+PtecSection::~PtecSection()
+{
+
+}
+
 bool PtecSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
@@ -1232,6 +1467,11 @@ UnitSection::UnitSection() : DynamicSection<false>(SectionName::UNIT)
 
 }
 
+UnitSection::~UnitSection()
+{
+
+}
+
 size_t UnitSection::numUnits()
 {
     return units.size();
@@ -1287,26 +1527,55 @@ void UnitSection::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
     }
 }
 
-u32 UnitSection::getSize()
+Chk::SectionSize UnitSection::getSize(ScenarioSaver &)
 {
-    return u32(units.size() * sizeof(Chk::Unit));
+    return Chk::SectionSize(sizeof(Chk::Unit) * units.size());
 }
 
-std::ostream & UnitSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize UnitSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
+{
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumUnits = readSize/sizeof(Chk::Unit) + readSize%sizeof(Chk::Unit);
+        std::vector<Chk::Unit> unitBuffer(readNumUnits);
+        is.read((char*)&unitBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        if ( append )
+        {
+            for ( auto & unit : unitBuffer )
+                units.push_back(Chk::UnitPtr(new Chk::Unit(unit)));
+        }
+        else
+        {
+            units.clear();
+            for ( auto & unit : unitBuffer )
+                units.push_back(Chk::UnitPtr(new Chk::Unit(unit)));
+        }
+        return is.gcount();
+    }
+    else if ( !append )
+        units.clear();
+
+    return 0;
+}
+
+void UnitSection::write(std::ostream & os, ScenarioSaver &)
 {
     for ( auto unit : units )
-        s << (*unit);
-
-    return s;
+        os.write((const char*)unit.get(), std::streamsize(sizeof(Chk::Unit)));
 }
+
 
 IsomSectionPtr IsomSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     IsomSectionPtr newSection(new (std::nothrow) IsomSection());
-    s64 numIsomEntries = (s64(tileWidth) / s64(2) + s64(1)) * (s64(tileHeight) + s64(1));
-    for ( s64 i=0; i<numIsomEntries; ++i )
-        newSection->isomEntries.push_back(Chk::IsomEntryPtr(new Chk::IsomEntry()));
-
+    size_t numIsomEntries = (size_t(tileWidth) / size_t(2) + size_t(1)) * (size_t(tileHeight) + size_t(1));
+    Chk::IsomEntry blank = {};
+    newSection->isomEntries.assign(numIsomEntries, blank);
     return newSection;
 }
 
@@ -1315,13 +1584,17 @@ IsomSection::IsomSection() : DynamicSection<true>(SectionName::ISOM)
 
 }
 
-std::shared_ptr<Chk::IsomEntry> IsomSection::getIsomEntry(size_t isomIndex)
+IsomSection::~IsomSection()
 {
-    size_t dataLocation = isomIndex * sizeof(Chk::IsomEntry);
-    if ( s64(dataLocation + sizeof(Chk::IsomEntry)) <= rawData->size() )
+
+}
+
+Chk::IsomEntry & IsomSection::getIsomEntry(size_t isomIndex)
+{
+    if ( isomIndex < isomEntries.size() )
         return isomEntries[isomIndex];
     else
-        return nullptr;
+        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
 }
 
 void IsomSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
@@ -1331,7 +1604,7 @@ void IsomSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
     if ( oldNumIndices < newNumIndices )
     {
         for ( size_t i=oldNumIndices; i<newNumIndices; i++ )
-            isomEntries.push_back(std::shared_ptr<Chk::IsomEntry>(new Chk::IsomEntry()));
+            isomEntries.push_back(Chk::IsomEntry());
     }
     else if ( oldNumIndices > newNumIndices )
     {
@@ -1341,28 +1614,40 @@ void IsomSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
     }
 }
 
-u32 IsomSection::getSize()
+Chk::SectionSize IsomSection::getSize(ScenarioSaver &)
 {
-    return isVirtual() ? ChkSection::getSize() : u32(isomEntries.size() * sizeof(Chk::IsomEntry));
+    return Chk::SectionSize(sizeof(Chk::IsomEntry)*isomEntries.size());
 }
 
-std::ostream & IsomSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize IsomSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool)
 {
-    if ( isVirtual() )
-        rawData->write(s, false);
-    else
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
     {
-        for ( auto isomEntry : isomEntries )
-            s << (*isomEntry);
+        size_t readNumIsomEntries = readSize/sizeof(Chk::IsomEntry) + readSize%sizeof(Chk::IsomEntry);
+        Chk::IsomEntry blank = {};
+        isomEntries.assign(readNumIsomEntries, blank);
+        is.read((char*)&isomEntries[0], std::streamsize(sectionHeader.sizeInBytes));
+        return is.gcount();
     }
-    return s;
+    else
+        isomEntries.clear();
+
+    return 0;
+}
+
+void IsomSection::write(std::ostream & os, ScenarioSaver &)
+{
+    os.write((const char*)&isomEntries[0], std::streamsize(sizeof(Chk::IsomEntry)*isomEntries.size()));
 }
 
 TileSectionPtr TileSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     TileSectionPtr newSection(new (std::nothrow) TileSection());
-    s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    newSection->rawData->add<u16>(0, numTiles);
+    newSection->tiles.assign(size_t(tileWidth)*size_t(tileHeight), u16(0));
     return newSection;
 }
 
@@ -1371,29 +1656,64 @@ TileSection::TileSection() : DynamicSection<true>(SectionName::TILE)
 
 }
 
+TileSection::~TileSection()
+{
+
+}
+
 u16 TileSection::getTile(size_t tileIndex)
 {
-    return rawData->get<u16>((s64)tileIndex*(s64)2);
+    if ( tileIndex < tiles.size() )
+        return tiles[tileIndex];
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
 }
 
 void TileSection::setTile(size_t tileIndex, u16 tileValue)
 {
-    rawData->replace<u16>((s64)tileIndex*(s64)2, tileValue);
+    if ( tileIndex < tiles.size() )
+        tiles[tileIndex] = tileValue;
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
 }
 
 void TileSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
-    setMtxmOrTileDimensions(rawData, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
+    setMtxmOrTileDimensions(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
 }
 
-u32 TileSection::getSize()
+Chk::SectionSize TileSection::getSize(ScenarioSaver &)
 {
-    return ChkSection::getSize();
+    return Chk::SectionSize(sizeof(u16) * tiles.size());
 }
 
-std::ostream & TileSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize TileSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding)
 {
-    return rawData->write(s, false);
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumTiles = readSize/sizeof(u16) + readSize%sizeof(u16);
+        if ( readNumTiles > tiles.size() ) // Need to expand section
+            tiles.insert(tiles.end(), readNumTiles-tiles.size(), u16(0));
+        else if ( !overriding && readNumTiles < tiles.size()  ) // Need to shrink section
+            tiles.erase(tiles.begin()+readNumTiles, tiles.end());
+    
+        std::memset(&tiles[0], 0, readSize); // Zero out the bytes about to be read
+        is.read((char*)&tiles[0], std::streamsize(sectionHeader.sizeInBytes));
+        return is.gcount();
+    }
+    else
+        tiles.clear();
+
+    return 0;
+}
+
+void TileSection::write(std::ostream & os, ScenarioSaver &)
+{
+    os.write((const char*)&tiles[0], std::streamsize(sizeof(u16)*tiles.size()));
 }
 
 Dd2SectionPtr Dd2Section::GetDefault()
@@ -1402,6 +1722,11 @@ Dd2SectionPtr Dd2Section::GetDefault()
 }
 
 Dd2Section::Dd2Section() : DynamicSection<true>(SectionName::DD2)
+{
+
+}
+
+Dd2Section::~Dd2Section()
 {
 
 }
@@ -1461,21 +1786,39 @@ void Dd2Section::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
     }
 }
 
-u32 Dd2Section::getSize()
+Chk::SectionSize Dd2Section::getSize(ScenarioSaver &)
 {
-    return u32(doodads.size() * sizeof(Chk::Doodad));
+    return Chk::SectionSize(sizeof(Chk::Doodad) * doodads.size());
 }
 
-std::ostream & Dd2Section::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize Dd2Section::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
 {
-    if ( isVirtual() )
-        rawData->write(s, false);
-    else
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
     {
-        for ( auto doodad : doodads )
-            s << (*doodad);
+        size_t numReadDoodads = readSize/sizeof(Chk::Doodad) + readSize%sizeof(Chk::Doodad);
+        std::vector<Chk::Doodad> doodadBuffer(numReadDoodads);
+        is.read((char*)&doodadBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        doodads.clear();
+        for ( auto & doodad : doodadBuffer )
+            doodads.push_back(Chk::DoodadPtr(new Chk::Doodad(doodad)));
+    
+        return is.gcount();
     }
-    return s;
+    else
+        doodads.clear();
+
+    return 0;
+}
+
+void Dd2Section::write(std::ostream & os, ScenarioSaver &)
+{
+    for ( auto doodad : doodads )
+        os.write((const char*)doodad.get(), std::streamsize(sizeof(Chk::Doodad)));
 }
 
 Thg2SectionPtr Thg2Section::GetDefault()
@@ -1484,6 +1827,11 @@ Thg2SectionPtr Thg2Section::GetDefault()
 }
 
 Thg2Section::Thg2Section() : DynamicSection<false>(SectionName::THG2)
+{
+
+}
+
+Thg2Section::~Thg2Section()
 {
 
 }
@@ -1543,24 +1891,52 @@ void Thg2Section::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
     }
 }
 
-u32 Thg2Section::getSize()
+Chk::SectionSize Thg2Section::getSize(ScenarioSaver &)
 {
-    return u32(sprites.size() * sizeof(Chk::Sprite));
+    return Chk::SectionSize(sizeof(Chk::Sprite) * sprites.size());
 }
 
-std::ostream & Thg2Section::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize Thg2Section::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
+{
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t numReadSprites = readSize/sizeof(Chk::Sprite) + readSize%sizeof(Chk::Sprite);
+        std::vector<Chk::Sprite> spriteBuffer(numReadSprites);
+        is.read((char*)&spriteBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        if ( append )
+        {
+            for ( Chk::Sprite & sprite : spriteBuffer )
+                sprites.push_back(Chk::SpritePtr(new Chk::Sprite(sprite)));
+        }
+        else
+        {
+            sprites.clear();
+            for ( Chk::Sprite & sprite : spriteBuffer )
+                sprites.push_back(Chk::SpritePtr(new Chk::Sprite(sprite)));
+        }
+        return is.gcount();
+    }
+    else if ( !append )
+        sprites.clear();
+
+    return 0;
+}
+
+void Thg2Section::write(std::ostream & os, ScenarioSaver &)
 {
     for ( auto sprite : sprites )
-        s << (*sprite);
-
-    return s;
+        os.write((const char*)sprite.get(), std::streamsize(sizeof(Chk::Sprite)));
 }
 
 MaskSectionPtr MaskSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     MaskSectionPtr newSection(new (std::nothrow) MaskSection());
-    s64 numTiles = (s64)tileWidth*(s64)tileHeight;
-    newSection->rawData->add<u8>(255, numTiles);
+    newSection->fogTiles.assign(size_t(tileWidth)*size_t(tileHeight), u8(0));
     return newSection;
 }
 
@@ -1569,14 +1945,25 @@ MaskSection::MaskSection() : DynamicSection<true>(SectionName::MASK)
 
 }
 
+MaskSection::~MaskSection()
+{
+
+}
+
 u8 MaskSection::getFog(size_t tileIndex)
 {
-    return rawData->get<u8>((s64)tileIndex);
+    if ( tileIndex < fogTiles.size() )
+        return fogTiles[tileIndex];
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MASK section!");
 }
 
 void MaskSection::setFog(size_t tileIndex, u8 fogOfWarPlayers)
 {
-    rawData->replace<u16>((s64)tileIndex, fogOfWarPlayers);
+    if ( tileIndex < fogTiles.size() )
+        fogTiles[tileIndex] = fogOfWarPlayers;
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MASK section!");
 }
 
 void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
@@ -1590,15 +1977,15 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
     {
         s64 numRowsRemoved = oldBottom - newBottom;
         s64 numTilesRemoved = numRowsRemoved*currTileWidth;
-        if ( numTilesRemoved >= rawData->size() )
+        if ( numTilesRemoved >= (s64)fogTiles.size() )
         {
-            rawData->trimTo(0);
+            fogTiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            rawData->del(rawData->size() - numTilesRemoved, numTilesRemoved);
+            fogTiles.erase(fogTiles.begin()+(fogTiles.size()-numTilesRemoved), fogTiles.end());
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -1607,15 +1994,15 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
     {
         s64 numRowsRemoved = newTop - oldTop;
         s64 numTilesRemoved = numRowsRemoved*currTileWidth;
-        if ( numTilesRemoved >= rawData->size() )
+        if ( numTilesRemoved >= (s64)fogTiles.size() )
         {
-            rawData->trimTo(0);
+            fogTiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            rawData->del(0, numTilesRemoved);
+            fogTiles.erase(fogTiles.begin(), fogTiles.begin()+numTilesRemoved);
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -1625,18 +2012,19 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
         s64 numColumnsRemoved = oldRight - newRight;
         if ( numColumnsRemoved >= currTileWidth )
         {
-            rawData->trimTo(0);
+            fogTiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            s64 rowDataRemovalOffset = currTileWidth - numColumnsRemoved;
-            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            size_t firstRemovedColumn = currTileWidth - numColumnsRemoved;
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
             {
-                s64 rowOffset = row*currTileWidth;
-                s64 dataRemovalOffset = rowOffset+rowDataRemovalOffset;
-                rawData->del(dataRemovalOffset, numColumnsRemoved);
+                size_t rowOffset = row*currTileWidth;
+                size_t removedColumnsOffset = rowOffset+firstRemovedColumn;
+                auto start = fogTiles.begin()+removedColumnsOffset;
+                fogTiles.erase(start, start+numColumnsRemoved);
             }
             currTileWidth -= numColumnsRemoved;
         }
@@ -1647,26 +2035,24 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
         s64 numColumnsRemoved = newLeft - oldLeft;
         if ( numColumnsRemoved >= currTileHeight )
         {
-            rawData->trimTo(0);
+            fogTiles.clear();
             currTileWidth = 0;
             currTileHeight = 0;
         }
         else
         {
-            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
             {
-                s64 rowOffset = row*currTileWidth;
-                rawData->del(rowOffset, numColumnsRemoved);
+                size_t rowOffset = row*currTileWidth;
+                auto start = fogTiles.begin()+rowOffset;
+                fogTiles.erase(start, start+numColumnsRemoved);
             }
             currTileWidth -= numColumnsRemoved;
         }
     }
 
     if ( currTileWidth == 0 || currTileHeight == 0 )
-    {
-        s64 numTilesToAdd = currTileWidth*currTileHeight;
-        rawData->trimTo(numTilesToAdd);
-    }
+        fogTiles.clear();
     else // currTileWidth > 0 && currTileHeight > 0
     {
         // Add tiles as necessary in order: right, left, top, bottom
@@ -1677,8 +2063,8 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
                 s64 rowOffset = row*currTileWidth;
-                s64 dataAdditionOffset = rowOffset + currTileWidth;
-                rawData->insert<u8>(dataAdditionOffset, 0, numColumnsAdded);
+                s64 start = rowOffset + numColumnsAdded;
+                fogTiles.insert(fogTiles.begin() + start, numColumnsAdded, u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -1689,7 +2075,7 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
                 s64 rowOffset = row*numColumnsAdded;
-                rawData->insert<u8>(rowOffset, 0, numColumnsAdded);
+                fogTiles.insert(fogTiles.begin() + rowOffset, numColumnsAdded, u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -1697,33 +2083,57 @@ void MaskSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTile
         if ( newTop < oldTop ) // Rows need to be added to the top
         {
             s64 numRowsAdded = oldTop - newTop;
-            rawData->insert<u8>(0, 0, numRowsAdded);
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            fogTiles.insert(fogTiles.begin(), numTilesAdded, u16(0));
             currTileHeight += numRowsAdded;
         }
 
         if ( newBottom > oldBottom ) // Rows need to be added to the bottom
         {
             s64 numRowsAdded = newBottom - oldBottom;
-            rawData->add<u8>(0, numRowsAdded);
-            currTileHeight += numRowsAdded;
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            fogTiles.insert(fogTiles.end(), numTilesAdded, u16(0));
         }
     }
 }
 
-u32 MaskSection::getSize()
+Chk::SectionSize MaskSection::getSize(ScenarioSaver &)
 {
-    return ChkSection::getSize();
+    return Chk::SectionSize(sizeof(u8) * fogTiles.size());
 }
 
-std::ostream & MaskSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize MaskSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding)
 {
-    return rawData->write(s, false);
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumTiles = readSize/sizeof(u8) + readSize%sizeof(u8);
+        if ( readNumTiles > fogTiles.size() ) // Need to expand section
+            fogTiles.insert(fogTiles.end(), readNumTiles-fogTiles.size(), u8(0));
+        else if ( !overriding && readNumTiles < fogTiles.size()  ) // Need to shrink section
+            fogTiles.erase(fogTiles.begin()+readNumTiles, fogTiles.end());
+    
+        std::memset(&fogTiles[0], 0, readSize); // Zero out the bytes about to be read
+        is.read((char*)&fogTiles[0], std::streamsize(sectionHeader.sizeInBytes));
+        return is.gcount();
+    }
+    else
+        fogTiles.clear();
+
+    return 0;
+}
+
+void MaskSection::write(std::ostream & os, ScenarioSaver &)
+{
+    os.write((const char*)&fogTiles[0], std::streamsize(fogTiles.size()));
 }
 
 StrSectionPtr StrSection::GetDefault()
 {
     StrSectionPtr newSection(new (std::nothrow) StrSection());
-    BufferPtr rawData = newSection->rawData;
 
     const std::vector<std::string> defaultStrings = {
         /* StringId: 1 */ "Untitled Scenario",
@@ -1735,61 +2145,470 @@ StrSectionPtr StrSection::GetDefault()
         /* StringId: 7 */ "Force 4"
     };
 
-    u16 stringCapacity = 1024;
-    u16 characterDataStart = 2 + 2*stringCapacity; // Calculate where character data begins (2 bytes for stringCapacity, then 2*stringCapacity for offsets)
-    u16 stringStart = characterDataStart + 1; // Move past initial NUL terminator
-
-    rawData->add<u16>(stringCapacity);
-    for ( const std::string &string : defaultStrings )
-    {
-        rawData->add<u16>(stringStart); // Add offset for this string
-        stringStart += u16(string.size() + 1); // Advance the length of the string plus 1 for the NUL terminator
-    }
-    u16 numBlankStrings = stringCapacity - (u16)defaultStrings.size(); // Find the amount of strings that will have unused offsets
-    rawData->add<u16>(characterDataStart, numBlankStrings); // Add all the offsets for the unused strings, pointing to the initial NUL terminator
-
-    rawData->add<char>('\0'); // Add the initial NUL terminator
-    for ( const std::string &string : defaultStrings )
-        rawData->addStr(string.c_str(), string.size()+1); // Add the string plus the NUL terminator
+    newSection->strings.clear();
+    newSection->strings.push_back(nullptr); // Fill the non-existant 0th stringId
+    for ( const std::string & defaultString : defaultStrings )
+        newSection->strings.push_back(ScStrPtr(new ScStr(defaultString)));
 
     return newSection;
 }
 
-StrSection::StrSection() : DynamicSection<false>(SectionName::STR), synced(false)
+StrSection::StrSection() : DynamicSection<false>(SectionName::STR)
+{
+    
+}
+
+StrSection::~StrSection()
 {
 
 }
 
-bool StrSection::isSynced()
+size_t StrSection::getCapacity()
 {
-    return synced;
+    return strings.size();
 }
 
-void StrSection::flagUnsynced()
+bool StrSection::stringStored(size_t stringId)
 {
-    synced = false;
+    return stringId < strings.size() && strings[stringId] != nullptr;
 }
 
-void StrSection::syncFromBuffer(StrSynchronizer & strSynchronizer)
+void StrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
-    synced = false;
-    strSynchronizer.synchronizeFromStrBuffer(*rawData);
+    size_t limit = std::min((size_t)Chk::MaxStrings, strings.size());
+    size_t stringId = 1;
+    for ( ; stringId < limit; ++stringId )
+    {
+        if ( stringIdUsed[stringId] && strings[stringId] == nullptr )
+            stringIdUsed[stringId] = false;
+    }
+    for ( ; stringId < Chk::MaxStrings; stringId++ )
+    {
+        if ( stringIdUsed[stringId] )
+            stringIdUsed[stringId] = false;
+    }
 }
 
-void StrSection::syncToBuffer(StrSynchronizer & strSynchronizer)
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+std::shared_ptr<StringType> StrSection::getString(size_t stringId)
 {
-    strSynchronizer.synchronizeToStrBuffer(*rawData);
-    synced = true;
+    return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->toString<StringType>() : nullptr;
+}
+template std::shared_ptr<RawString> StrSection::getString<RawString>(size_t stringId);
+template std::shared_ptr<EscString> StrSection::getString<EscString>(size_t stringId);
+template std::shared_ptr<ChkdString> StrSection::getString<ChkdString>(size_t stringId);
+template std::shared_ptr<SingleLineChkdString> StrSection::getString<SingleLineChkdString>(size_t stringId);
+
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+size_t StrSection::findString(const StringType &str)
+{
+    for ( size_t stringId=1; stringId<strings.size(); stringId++ )
+    {
+        if ( strings[stringId] != nullptr && strings[stringId]->compare<StringType>(str) == 0 )
+            return stringId;
+    }
+    return Chk::StringId::NoString;
+}
+template size_t StrSection::findString<RawString>(const RawString &str);
+template size_t StrSection::findString<EscString>(const EscString &str);
+template size_t StrSection::findString<ChkdString>(const ChkdString &str);
+template size_t StrSection::findString<SingleLineChkdString>(const SingleLineChkdString &str);
+
+bool StrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
+{
+    if ( stringCapacity > Chk::MaxStrings )
+        throw MaximumStringsExceeded();
+
+    std::bitset<Chk::MaxStrings> stringIdUsed;
+    strSynchronizer.markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+    size_t numValidUsedStrings = 0;
+    size_t highestValidUsedStringId = 0;
+    for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
+    {
+        if ( stringIdUsed[stringId] )
+        {
+            numValidUsedStrings ++;
+            highestValidUsedStringId = stringId;
+        }
+    }
+
+    if ( numValidUsedStrings > stringCapacity )
+        throw InsufficientStringCapacity(ChkSection::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+    else if ( highestValidUsedStringId > stringCapacity )
+    {
+        if ( autoDefragment && numValidUsedStrings <= stringCapacity )
+            defragment(strSynchronizer, false);
+        else
+            throw InsufficientStringCapacity(ChkSection::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+    }
+        
+    while ( strings.size() < stringCapacity )
+        strings.push_back(nullptr);
+
+    while ( strings.size() > stringCapacity )
+        strings.pop_back();
+
+    return true;
 }
 
-u32 StrSection::getSize()
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+size_t StrSection::addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
-    return synced ? (u32)this->rawData->size() : 0;
+    RawString rawString;
+    ConvertStr<StringType, RawString>(str, rawString);
+
+    size_t stringId = findString<StringType>(str);
+    if ( stringId != (size_t)Chk::StringId::NoString )
+        return stringId; // String already exists, return the id
+
+    std::bitset<Chk::MaxStrings> stringIdUsed;
+    strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+    size_t nextUnusedStringId = getNextUnusedStringId(stringIdUsed, true);
+        
+    if ( nextUnusedStringId >= strings.size() )
+        setCapacity(nextUnusedStringId, strSynchronizer, autoDefragment);
+    else if ( nextUnusedStringId == 0 )
+        throw MaximumStringsExceeded();
+
+    strings[nextUnusedStringId] = ScStrPtr(new ScStr(rawString));
+    return nextUnusedStringId;
+}
+template size_t StrSection::addString<RawString>(const RawString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<EscString>(const EscString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<ChkdString>(const ChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<SingleLineChkdString>(const SingleLineChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+void StrSection::replaceString(size_t stringId, const StringType &str)
+{
+    RawString rawString;
+    ConvertStr<StringType, RawString>(str, rawString);
+
+    if ( stringId < strings.size() )
+        strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));
+}
+template void StrSection::replaceString<RawString>(size_t stringId, const RawString &str);
+template void StrSection::replaceString<EscString>(size_t stringId, const EscString &str);
+template void StrSection::replaceString<ChkdString>(size_t stringId, const ChkdString &str);
+template void StrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString &str);
+
+void StrSection::deleteUnusedStrings(StrSynchronizer & strSynchronizer)
+{
+    std::bitset<65536> stringIdUsed;
+    strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+    for ( size_t i=0; i<strings.size(); i++ )
+    {
+        if ( !stringIdUsed[i] && strings[i] != nullptr )
+            strings[i] = nullptr;
+    }
 }
 
-std::ostream & StrSection::writeData(std::ostream &s, u32 sizeInBytes)
+bool StrSection::deleteString(size_t stringId, bool deleteOnlyIfUnused, StrSynchronizerPtr strSynchronizer)
 {
-    return synced ? rawData->write(s, false) : s;
+    if ( !deleteOnlyIfUnused || (strSynchronizer != nullptr && !strSynchronizer->stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, false)) )
+    {
+        if ( stringId < strings.size() )
+        {
+            strings[stringId] = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
+void StrSection::moveString(size_t stringIdFrom, size_t stringIdTo, StrSynchronizer & strSynchronizer)
+{
+    size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
+    size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
+    if ( stringIdMin > 0 && stringIdMax <= strings.size() && stringIdFrom != stringIdTo )
+    {
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Game);
+        ScStrPtr selected = strings[stringIdFrom];
+        stringIdUsed[stringIdFrom] = false;
+        std::map<u32, u32> stringIdRemappings;
+        if ( stringIdTo < stringIdFrom ) // Move to a lower stringId, if there are strings in the way, cascade towards stringIdFrom
+        {
+            while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+            {
+                for ( size_t stringId = stringIdTo+1; stringId <= stringIdFrom; stringId ++ ) // Find the lowest available stringId past the block
+                {
+                    if ( !stringIdUsed[stringId] ) // Move the highest stringId remaining in the block to the next available stringId
+                    {
+                        ScStrPtr highestString = strings[stringId-1];
+                        strings[stringId-1] = nullptr;
+                        stringIdUsed[stringId-1] = false;
+                        strings[stringId] = highestString;
+                        stringIdUsed[stringId] = true;
+                        stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId-1), (u32)stringId));
+                        break;
+                    }
+                }
+            }
+            stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+        }
+        else if ( stringIdTo > stringIdFrom ) // Move to a higher stringId, if there are strings in the way, cascade towards stringIdTo
+        {
+            while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+            {
+                for ( size_t stringId = stringIdTo-1; stringId >= stringIdFrom; stringId -- ) // Find the highest available stringId past the block
+                {
+                    if ( !stringIdUsed[stringId] ) // Move the lowest stringId in the block to the available stringId
+                    {
+                        ScStrPtr lowestString = strings[stringId+1];
+                        strings[stringId+1] = nullptr;
+                        stringIdUsed[stringId+1] = false;
+                        strings[stringId] = lowestString;
+                        stringIdUsed[stringId] = true;
+                        stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId+1), (u32)stringId));
+                        break;
+                    }
+                }
+            }
+        }
+        strings[stringIdTo] = selected;
+        stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+        strSynchronizer.remapStringIds(stringIdRemappings, Chk::Scope::Game);
+    }
+}
+
+bool StrSection::checkFit(StrSynchronizer & strSynchronizer, StrCompressionElevatorPtr compressionElevator)
+{
+    if ( strings.size() > Chk::MaxStrings )
+        return false;
+
+    try {
+        strSynchronizer.syncStringsToBytes(strings, stringBytes, compressionElevator);
+        return true;
+    } catch ( std::exception & ) {
+        return false;
+    }
+}
+
+bool StrSection::defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage)
+{
+    size_t nextCandidateStringId = 0;
+    size_t numStrings = strings.size();
+    std::map<u32, u32> stringIdRemappings;
+    for ( size_t i=0; i<numStrings; i++ )
+    {
+        if ( strings[i] == nullptr )
+        {
+            for ( size_t j = std::max(i+1, nextCandidateStringId); j < numStrings; j++ )
+            {
+                if ( strings[j] != nullptr )
+                {
+                    strings[i] = strings[j];
+                    stringIdRemappings.insert(std::pair<u32, u32>((u32)j, (u32)i));
+                    break;
+                }
+            }
+        }
+    }
+
+    if ( !stringIdRemappings.empty() )
+    {
+        strSynchronizer.remapStringIds(stringIdRemappings, Chk::Scope::Game);
+        return true;
+    }
+    return false;
+}
+
+Chk::SectionSize StrSection::getSize(ScenarioSaver & scenarioSaver)
+{
+    if ( syncStringsToBytes(scenarioSaver) )
+    {
+        if ( stringBytes.size() <= ChkSection::MaxChkSectionSize )
+            return Chk::SectionSize(stringBytes.size());
+        else
+            throw MaxSectionSizeExceeded(SectionName::STR, std::to_string(stringBytes.size()));
+    }
+    else
+        throw StrSerializationFailure();
+}
+
+std::streamsize StrSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding)
+{
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        if ( readSize > stringBytes.size() ) // Need to expand section
+            stringBytes.insert(stringBytes.end(), readSize-stringBytes.size(), u8(0));
+        else if ( !overriding && readSize < stringBytes.size()  ) // Need to shrink section
+            stringBytes.erase(stringBytes.begin()+readSize, stringBytes.end());
+    
+        std::memset(&stringBytes[0], 0, readSize); // Zero out the bytes about to be read
+        is.read((char*)&stringBytes[0], std::streamsize(sectionHeader.sizeInBytes));
+        syncBytesToStrings();
+        return is.gcount();
+    }
+    else if ( !overriding )
+    {
+        stringBytes.clear();
+        strings.clear();
+    }
+    return 0;
+}
+
+void StrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
+    if ( syncStringsToBytes(scenarioSaver) )
+        os.write((const char*)&stringBytes[0], (std::streamsize)stringBytes.size());
+}
+
+size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+{
+    size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
+    for ( size_t i=firstChecked; i<limit; i++ )
+    {
+        if ( !stringIdUsed[i] )
+            return i;
+    }
+    return 0;
+}
+
+void StrSection::resolveParantage()
+{
+    for ( auto string = strings.begin(); string != strings.end(); ++string )
+    {
+        auto otherString = string;
+        ++otherString;
+        for ( ; otherString != strings.end(); ++otherString )
+            ScStr::adopt(*string, *otherString);
+    }
+}
+
+void StrSection::resolveParantage(ScStrPtr string)
+{
+    if ( string != nullptr )
+    {
+        string->disown();
+        for ( auto it = strings.begin(); it != strings.end(); ++it )
+        {
+            ScStrPtr otherString = *it;
+            if ( otherString != nullptr && otherString != string )
+                ScStr::adopt(string, otherString);
+        }
+    }
+}
+
+bool StrSection::stringsMatchBytes()
+{
+    if ( stringBytes.size() == 0 )
+        return false;
+
+    size_t numBytes = stringBytes.size();
+    u16 rawNumStrings = numBytes > 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
+    if ( size_t(rawNumStrings) != strings.size()-1 )
+        return false; // Size mismatch
+
+    for ( size_t stringId = 1; stringId<strings.size(); ++stringId )
+    {
+        ScStrPtr scStr = strings[stringId];
+        if ( scStr != nullptr )
+        {
+            size_t offsetPos = sizeof(u16)*stringId;
+            if ( offsetPos+1 < numBytes )
+            {
+                u16 stringOffset = (u16 &)stringBytes[offsetPos];
+                if ( size_t(stringOffset)+scStr->length() > numBytes || std::memcmp(scStr->str, &stringBytes[stringOffset], scStr->length()) != 0 )
+                    return false; // String out of bounds or not equal
+            }
+            else // String offset out of bounds
+                return false;
+        }
+    }
+    return true;
+}
+
+bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
+{
+    auto strSynchronizer = scenarioSaver.getStrSynchronizer();
+    if ( strSynchronizer != nullptr )
+        strSynchronizer->syncStringsToBytes(strings, stringBytes);
+    else
+    {
+        constexpr size_t maxStrings = (size_t(u16_max) - sizeof(u16))/sizeof(u16);
+        size_t numStrings = strings.size()-1; // Exclude string at index 0
+        if ( numStrings > maxStrings )
+            throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
+        
+        size_t sizeAndOffsetSpaceAndNulSpace = sizeof(u16) + sizeof(u16)*numStrings + 1;
+        size_t sectionSize = sizeAndOffsetSpaceAndNulSpace;
+        for ( size_t i=1; i<numStrings; i++ )
+        {
+            if ( strings[i] != nullptr )
+                sectionSize += strings[i]->length();
+        }
+
+        constexpr size_t maxStandardSize = u16_max;
+        if ( sectionSize > maxStandardSize )
+            throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-sizeAndOffsetSpaceAndNulSpace, maxStandardSize);
+
+        stringBytes.assign(sizeof(u16)+sizeof(u16)*numStrings, u8(0));
+        u16 initialNulOffset = u16(stringBytes.size());
+        stringBytes.push_back(u8('\0')); // Add initial NUL character
+        for ( size_t i=1; i<numStrings; i++ )
+        {
+            if ( strings[i] == nullptr )
+                (u16 &)stringBytes[sizeof(u16)*i] = initialNulOffset;
+            else
+            {
+                (u16 &)stringBytes[sizeof(u16)*i] = u16(stringBytes.size());
+                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length());
+            }
+        }
+    }
+    return true;
+}
+
+void StrSection::syncBytesToStrings()
+{
+    size_t numBytes = stringBytes.size();
+    u16 rawNumStrings = numBytes > 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u16));
+    strings.clear();
+    strings.push_back(nullptr); // Fill the non-existant 0th stringId
+
+    size_t stringId = 1;
+    for ( ; stringId < highestStringWithValidOffset; ++stringId )
+    {
+        size_t offsetPos = sizeof(u16)*stringId;
+        size_t stringOffset = size_t((u16 &)stringBytes[offsetPos]);
+        loadString(stringOffset, numBytes);
+    }
+    if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
+    {
+        if ( numBytes % 2 > 0 ) // Can read one byte of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t((u16)stringBytes[numBytes-1]);
+            loadString(stringOffset, numBytes);
+        }
+        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
+            strings.push_back(nullptr);
+    }
+}
+
+void StrSection::loadString(const size_t & stringOffset, const size_t & sectionSize)
+{
+    if ( stringOffset < sectionSize )
+    {
+        auto nextNull = std::find(stringBytes.begin()+stringOffset, stringBytes.end(), u8('\0'));
+        if ( nextNull != stringBytes.end() )
+        {
+            auto nullIndex = std::distance(stringBytes.begin(), nextNull);
+            if ( size_t(nullIndex) > stringOffset ) // Regular string
+                strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
+        }
+        else if ( sectionSize > stringOffset ) // String ends where section ends
+            strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
+        else // Character data would be out of bounds
+            strings.push_back(nullptr);
+    }
 }
 
 UprpSectionPtr UprpSection::GetDefault()
@@ -1798,6 +2617,16 @@ UprpSectionPtr UprpSection::GetDefault()
 }
 
 UprpSection::UprpSection(const Chk::UPRP & data) : StructSection<Chk::UPRP, false>(SectionName::UPRP, data)
+{
+
+}
+
+UprpSection::UprpSection() : StructSection<Chk::UPRP, false>(SectionName::UPRP)
+{
+
+}
+
+UprpSection::~UprpSection()
 {
 
 }
@@ -1829,6 +2658,16 @@ UpusSectionPtr UpusSection::GetDefault()
 }
 
 UpusSection::UpusSection(const Chk::UPUS & data) : StructSection<Chk::UPUS, true>(SectionName::UPUS, data)
+{
+
+}
+
+UpusSection::UpusSection() : StructSection<Chk::UPUS, true>(SectionName::UPUS)
+{
+
+}
+
+UpusSection::~UpusSection()
 {
 
 }
@@ -1877,6 +2716,11 @@ MrgnSectionPtr MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
 }
 
 MrgnSection::MrgnSection() : DynamicSection<false>(SectionName::MRGN)
+{
+
+}
+
+MrgnSection::~MrgnSection()
 {
 
 }
@@ -2054,21 +2898,46 @@ void MrgnSection::deleteString(size_t stringId)
     }
 }
 
-u32 MrgnSection::getSize()
+Chk::SectionSize MrgnSection::getSize(ScenarioSaver & scenarioSaver)
 {
-    return u32(sizeof(Chk::Location) * locations.size());
+    return Chk::SectionSize(sizeof(Chk::Location) * locations.size());
 }
 
-std::ostream & MrgnSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize MrgnSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
 {
-    size_t actualDataSize = sizeof(Chk::Location) * locations.size();
-    if ( actualDataSize != (size_t)sizeInBytes )
-        throw new SectionSerializationSizeMismatch(SectionName::MRGN, sizeInBytes, actualDataSize);
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
 
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumLocations = readSize/sizeof(Chk::Location) + readSize%sizeof(Chk::Location);
+        std::vector<Chk::Location> locationBuffer(readNumLocations);
+        is.read((char*)&locationBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        if ( append )
+        {
+            for ( auto & location : locationBuffer )
+                locations.push_back(Chk::LocationPtr(new Chk::Location(location)));
+        }
+        else
+        {
+            locations.clear();
+            for ( auto & location : locationBuffer )
+                locations.push_back(Chk::LocationPtr(new Chk::Location(location)));
+        }
+        return is.gcount();
+    }
+    else if ( !append )
+        locations.clear();
+
+    return 0;
+}
+
+void MrgnSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
     for ( auto location : locations )
-        s << (*location);
-
-    return s;
+        os.write((const char*)location.get(), std::streamsize(sizeof(Chk::Location)));
 }
 
 TrigSectionPtr TrigSection::GetDefault()
@@ -2077,6 +2946,11 @@ TrigSectionPtr TrigSection::GetDefault()
 }
 
 TrigSection::TrigSection() : DynamicSection<false>(SectionName::TRIG)
+{
+
+}
+
+TrigSection::~TrigSection()
 {
 
 }
@@ -2201,21 +3075,46 @@ void TrigSection::deleteString(size_t stringId)
         trigger->deleteString(stringId);
 }
 
-u32 TrigSection::getSize()
+Chk::SectionSize TrigSection::getSize(ScenarioSaver &)
 {
-    return u32(sizeof(Chk::Trigger) * triggers.size());
+    return Chk::SectionSize(sizeof(Chk::Trigger) * triggers.size());
 }
 
-std::ostream & TrigSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize TrigSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
 {
-    size_t actualDataSize = sizeof(Chk::Trigger) * triggers.size();
-    if ( actualDataSize != (size_t)sizeInBytes )
-        throw new SectionSerializationSizeMismatch(SectionName::TRIG, sizeInBytes, actualDataSize);
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
 
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumTriggers = readSize/sizeof(Chk::Trigger) + readSize%sizeof(Chk::Trigger);
+        std::vector<Chk::Trigger> triggerBuffer(readNumTriggers);
+        is.read((char*)&triggerBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        if ( append )
+        {
+            for ( Chk::Trigger & trigger : triggerBuffer )
+                triggers.push_back(Chk::TriggerPtr(new Chk::Trigger(trigger)));
+        }
+        else
+        {
+            triggers.clear();
+            for ( Chk::Trigger & trigger : triggerBuffer )
+                triggers.push_back(Chk::TriggerPtr(new Chk::Trigger(trigger)));
+        }
+        return is.gcount();
+    }
+    else if ( !append )
+        triggers.clear();
+
+    return 0;
+}
+
+void TrigSection::write(std::ostream & os, ScenarioSaver &)
+{
     for ( auto trigger : triggers )
-        s << (*trigger);
-
-    return s;
+        os.write((const char*)trigger.get(), std::streamsize(sizeof(Chk::Trigger)));
 }
 
 MbrfSectionPtr MbrfSection::GetDefault()
@@ -2224,6 +3123,11 @@ MbrfSectionPtr MbrfSection::GetDefault()
 }
 
 MbrfSection::MbrfSection() : DynamicSection<false>(SectionName::MBRF)
+{
+
+}
+
+MbrfSection::~MbrfSection()
 {
 
 }
@@ -2311,17 +3215,46 @@ void MbrfSection::deleteString(size_t stringId)
         briefingTrigger->deleteString(stringId);
 }
 
-u32 MbrfSection::getSize()
+Chk::SectionSize MbrfSection::getSize(ScenarioSaver &)
 {
-    return u32(sizeof(Chk::Trigger) * briefingTriggers.size());
+    return Chk::SectionSize(sizeof(Chk::Trigger) * briefingTriggers.size());
 }
 
-std::ostream & MbrfSection::writeData(std::ostream &s, u32 sizeInBytes)
+std::streamsize MbrfSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
 {
-    for ( auto briefingTrigger : briefingTriggers )
-        s << (*briefingTrigger);
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
 
-    return s;
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumTriggers = readSize/sizeof(Chk::Trigger) + readSize%sizeof(Chk::Trigger);
+        std::vector<Chk::Trigger> triggerBuffer(readNumTriggers);
+        is.read((char*)&triggerBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+
+        if ( append )
+        {
+            for ( Chk::Trigger & briefingTrigger : triggerBuffer )
+                briefingTriggers.push_back(Chk::TriggerPtr(new Chk::Trigger(briefingTrigger)));
+        }
+        else
+        {
+            briefingTriggers.clear();
+            for ( Chk::Trigger & briefingTrigger : triggerBuffer )
+                briefingTriggers.push_back(Chk::TriggerPtr(new Chk::Trigger(briefingTrigger)));
+        }
+        return is.gcount();
+    }
+    else if ( !append )
+        briefingTriggers.clear();
+
+    return 0;
+}
+
+void MbrfSection::write(std::ostream & os, ScenarioSaver &)
+{
+    for ( auto trigger : briefingTriggers )
+        os.write((const char*)trigger.get(), std::streamsize(sizeof(Chk::Trigger)));
 }
 
 SprpSectionPtr SprpSection::GetDefault(u16 scenarioNameStringId, u16 scenarioDescriptionStringId)
@@ -2332,6 +3265,16 @@ SprpSectionPtr SprpSection::GetDefault(u16 scenarioNameStringId, u16 scenarioDes
 }
 
 SprpSection::SprpSection(const Chk::SPRP & data) : StructSection<Chk::SPRP, false>(SectionName::SPRP, data)
+{
+
+}
+
+SprpSection::SprpSection() : StructSection<Chk::SPRP, false>(SectionName::SPRP)
+{
+
+}
+
+SprpSection::~SprpSection()
 {
 
 }
@@ -2410,6 +3353,16 @@ ForcSectionPtr ForcSection::GetDefault()
 }
 
 ForcSection::ForcSection(const Chk::FORC & data) : StructSection<Chk::FORC, false>(SectionName::FORC, data)
+{
+
+}
+
+ForcSection::ForcSection() : StructSection<Chk::FORC, false>(SectionName::FORC)
+{
+
+}
+
+ForcSection::~ForcSection()
 {
 
 }
@@ -2511,6 +3464,16 @@ WavSection::WavSection(const Chk::WAV & data) : StructSection<Chk::WAV, true>(Se
 
 }
 
+WavSection::WavSection() : StructSection<Chk::WAV, true>(SectionName::WAV)
+{
+
+}
+
+WavSection::~WavSection()
+{
+
+}
+
 size_t WavSection::addSound(size_t stringId)
 {
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
@@ -2602,6 +3565,16 @@ UnisSectionPtr UnisSection::GetDefault()
 }
 
 UnisSection::UnisSection(const Chk::UNIS & data) : StructSection<Chk::UNIS, false>(SectionName::UNIS, data)
+{
+
+}
+
+UnisSection::UnisSection() : StructSection<Chk::UNIS, false>(SectionName::UNIS)
+{
+
+}
+
+UnisSection::~UnisSection()
 {
 
 }
@@ -2826,6 +3799,16 @@ UpgsSection::UpgsSection(const Chk::UPGS & data) : StructSection<Chk::UPGS, fals
 
 }
 
+UpgsSection::UpgsSection() : StructSection<Chk::UPGS, false>(SectionName::UPGS)
+{
+
+}
+
+UpgsSection::~UpgsSection()
+{
+
+}
+
 bool UpgsSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
@@ -2958,6 +3941,16 @@ TecsSection::TecsSection(const Chk::TECS & data) : StructSection<Chk::TECS, fals
 
 }
 
+TecsSection::TecsSection() : StructSection<Chk::TECS, false>(SectionName::TECS)
+{
+
+}
+
+TecsSection::~TecsSection()
+{
+
+}
+
 bool TecsSection::techUsesDefaultSettings(Sc::Tech::Type techType)
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
@@ -3049,6 +4042,16 @@ SwnmSection::SwnmSection(const Chk::SWNM & data) : StructSection<Chk::SWNM, true
 
 }
 
+SwnmSection::SwnmSection() : StructSection<Chk::SWNM, true>(SectionName::SWNM)
+{
+
+}
+
+SwnmSection::~SwnmSection()
+{
+
+}
+
 size_t SwnmSection::getSwitchNameStringId(size_t switchIndex)
 {
     if ( switchIndex < Chk::TotalSwitches )
@@ -3116,6 +4119,16 @@ ColrSection::ColrSection(const Chk::COLR & data) : StructSection<Chk::COLR, fals
 
 }
 
+ColrSection::ColrSection() : StructSection<Chk::COLR, false>(SectionName::COLR)
+{
+
+}
+
+ColrSection::~ColrSection()
+{
+
+}
+
 Chk::PlayerColor ColrSection::getPlayerColor(size_t slotIndex)
 {
     if ( slotIndex < Sc::Player::TotalSlots )
@@ -3151,6 +4164,16 @@ PupxSectionPtr PupxSection::GetDefault()
 }
 
 PupxSection::PupxSection(const Chk::PUPx & data) : StructSection<Chk::PUPx, false>(SectionName::PUPx, data)
+{
+
+}
+
+PupxSection::PupxSection() : StructSection<Chk::PUPx, false>(SectionName::PUPx)
+{
+
+}
+
+PupxSection::~PupxSection()
 {
 
 }
@@ -3297,6 +4320,16 @@ PtexSection::PtexSection(const Chk::PTEx & data) : StructSection<Chk::PTEx, fals
 
 }
 
+PtexSection::PtexSection() : StructSection<Chk::PTEx, false>(SectionName::PTEx)
+{
+
+}
+
+PtexSection::~PtexSection()
+{
+
+}
+
 bool PtexSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
@@ -3426,6 +4459,16 @@ UnixSectionPtr UnixSection::GetDefault()
 }
 
 UnixSection::UnixSection(const Chk::UNIx & data) : StructSection<Chk::UNIx, false>(SectionName::UNIx, data)
+{
+
+}
+
+UnixSection::UnixSection() : StructSection<Chk::UNIx, false>(SectionName::UNIx)
+{
+
+}
+
+UnixSection::~UnixSection()
 {
 
 }
@@ -3650,6 +4693,16 @@ UpgxSection::UpgxSection(const Chk::UPGx & data) : StructSection<Chk::UPGx, fals
 
 }
 
+UpgxSection::UpgxSection() : StructSection<Chk::UPGx, false>(SectionName::UPGx)
+{
+
+}
+
+UpgxSection::~UpgxSection()
+{
+
+}
+
 bool UpgxSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
@@ -3781,6 +4834,16 @@ TecxSection::TecxSection(const Chk::TECx & data) : StructSection<Chk::TECx, fals
 
 }
 
+TecxSection::TecxSection() : StructSection<Chk::TECx, false>(SectionName::TECx)
+{
+
+}
+
+TecxSection::~TecxSection()
+{
+
+}
+
 bool TecxSection::techUsesDefaultSettings(Sc::Tech::Type techType)
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
@@ -3878,6 +4941,16 @@ OstrSectionPtr OstrSection::GetDefault()
 }
 
 OstrSection::OstrSection(const Chk::OSTR & data) : StructSection<Chk::OSTR, true>(SectionName::OSTR, data)
+{
+
+}
+
+OstrSection::OstrSection() : StructSection<Chk::OSTR, true>(SectionName::OSTR)
+{
+
+}
+
+OstrSection::~OstrSection()
 {
 
 }
@@ -4200,47 +5273,490 @@ void OstrSection::deleteString(size_t stringId)
     }
 }
 
-
 KstrSectionPtr KstrSection::GetDefault()
 {
     KstrSectionPtr newSection(new (std::nothrow) KstrSection());
-    newSection->synced = false;
     return newSection;
 }
 
-KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR), synced(false)
+KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR)
 {
 
 }
 
-bool KstrSection::isSynced()
+KstrSection::~KstrSection()
 {
-    return synced;
+
 }
 
-void KstrSection::flagUnsynced()
+size_t KstrSection::getCapacity()
 {
-    synced = false;
+    return strings.size();
 }
 
-void KstrSection::syncFromBuffer(StrSynchronizer & strSynchronizer)
+bool KstrSection::stringStored(size_t stringId)
 {
-    synced = false;
-    strSynchronizer.synchronizeFromKstrBuffer(*rawData);
+    return stringId < strings.size() && strings[stringId] != nullptr;
 }
 
-void KstrSection::syncToBuffer(StrSynchronizer & strSynchronizer)
+void KstrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
-    strSynchronizer.synchronizeToKstrBuffer(*rawData);
-    synced = true;
+    size_t limit = std::min((size_t)Chk::MaxKStrings, strings.size());
+    size_t stringId = 1;
+    for ( ; stringId < limit; ++stringId )
+    {
+        if ( stringIdUsed[stringId] && strings[stringId] == nullptr )
+            stringIdUsed[stringId] = false;
+    }
+    for ( ; stringId < Chk::MaxStrings; stringId++ )
+    {
+        if ( stringIdUsed[stringId] )
+            stringIdUsed[stringId] = false;
+    }
 }
 
-u32 KstrSection::getSize()
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+std::shared_ptr<StringType> KstrSection::getString(size_t stringId)
 {
-    return synced ? (u32)this->rawData->size() : 0;
+    return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->toString<StringType>() : nullptr;
+}
+template std::shared_ptr<RawString> KstrSection::getString<RawString>(size_t stringId);
+template std::shared_ptr<EscString> KstrSection::getString<EscString>(size_t stringId);
+template std::shared_ptr<ChkdString> KstrSection::getString<ChkdString>(size_t stringId);
+template std::shared_ptr<SingleLineChkdString> KstrSection::getString<SingleLineChkdString>(size_t stringId);
+
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+size_t KstrSection::findString(const StringType &str)
+{
+    for ( size_t stringId=1; stringId<strings.size(); stringId++ )
+    {
+        if ( strings[stringId] != nullptr && strings[stringId]->compare<StringType>(str) == 0 )
+            return stringId;
+    }
+    return Chk::StringId::NoString;
+}
+template size_t KstrSection::findString<RawString>(const RawString &str);
+template size_t KstrSection::findString<EscString>(const EscString &str);
+template size_t KstrSection::findString<ChkdString>(const ChkdString &str);
+template size_t KstrSection::findString<SingleLineChkdString>(const SingleLineChkdString &str);
+
+bool KstrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
+{
+    if ( stringCapacity > Chk::MaxKStrings )
+        throw MaximumStringsExceeded();
+
+    std::bitset<Chk::MaxStrings> stringIdUsed;
+    strSynchronizer.markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
+    size_t numValidUsedStrings = 0;
+    size_t highestValidUsedStringId = 0;
+    for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
+    {
+        if ( stringIdUsed[stringId] )
+        {
+            numValidUsedStrings ++;
+            highestValidUsedStringId = stringId;
+        }
+    }
+
+    if ( numValidUsedStrings > stringCapacity )
+        throw InsufficientStringCapacity(ChkSection::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+    else if ( highestValidUsedStringId > stringCapacity )
+    {
+        if ( autoDefragment && numValidUsedStrings <= stringCapacity )
+            defragment(strSynchronizer, false);
+        else
+            throw InsufficientStringCapacity(ChkSection::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+    }
+        
+    while ( strings.size() < stringCapacity )
+        strings.push_back(nullptr);
+
+    while ( strings.size() > stringCapacity )
+        strings.pop_back();
+
+    return true;
+}
+        
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+size_t KstrSection::addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment)
+{
+    RawString rawString;
+    ConvertStr<StringType, RawString>(str, rawString);
+
+    size_t stringId = findString<StringType>(str);
+    if ( stringId != (size_t)Chk::StringId::NoString )
+        return stringId; // String already exists, return the id
+
+    std::bitset<Chk::MaxStrings> stringIdUsed;
+    strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
+    size_t nextUnusedStringId = getNextUnusedStringId(stringIdUsed, true);
+        
+    if ( nextUnusedStringId >= strings.size() )
+        setCapacity(nextUnusedStringId, strSynchronizer, autoDefragment);
+    else if ( nextUnusedStringId == 0 )
+        throw MaximumStringsExceeded();
+
+    strings[nextUnusedStringId] = ScStrPtr(new ScStr(rawString));
+    return nextUnusedStringId;
+}
+template size_t KstrSection::addString<RawString>(const RawString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<EscString>(const EscString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<ChkdString>(const ChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<SingleLineChkdString>(const SingleLineChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+
+template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+void KstrSection::replaceString(size_t stringId, const StringType &str)
+{
+    RawString rawString;
+    ConvertStr<StringType, RawString>(str, rawString);
+
+    if ( stringId < strings.size() )
+        strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));
+}
+template void KstrSection::replaceString<RawString>(size_t stringId, const RawString &str);
+template void KstrSection::replaceString<EscString>(size_t stringId, const EscString &str);
+template void KstrSection::replaceString<ChkdString>(size_t stringId, const ChkdString &str);
+template void KstrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString &str);
+
+void KstrSection::deleteUnusedStrings(StrSynchronizer & strSynchronizer)
+{
+    std::bitset<65536> stringIdUsed;
+    strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
+    for ( size_t i=0; i<strings.size(); i++ )
+    {
+        if ( !stringIdUsed[i] && strings[i] != nullptr )
+            strings[i] = nullptr;
+    }
 }
 
-std::ostream & KstrSection::writeData(std::ostream &s, u32 sizeInBytes)
+bool KstrSection::deleteString(size_t stringId, bool deleteOnlyIfUnused, StrSynchronizerPtr strSynchronizer)
 {
-    return synced ? rawData->write(s, false) : s;
+    if ( !deleteOnlyIfUnused || (strSynchronizer != nullptr && !strSynchronizer->stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, false)) )
+    {
+        if ( stringId < strings.size() )
+        {
+            strings[stringId] = nullptr;
+            return true;
+        }
+    }
+    return false;
 }
+
+void KstrSection::moveString(size_t stringIdFrom, size_t stringIdTo, StrSynchronizer & strSynchronizer)
+{
+    size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
+    size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
+    if ( stringIdMin > 0 && stringIdMax <= strings.size() && stringIdFrom != stringIdTo )
+    {
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        strSynchronizer.markUsedStrings(stringIdUsed, Chk::Scope::Editor);
+        ScStrPtr selected = strings[stringIdFrom];
+        stringIdUsed[stringIdFrom] = false;
+        std::map<u32, u32> stringIdRemappings;
+        if ( stringIdTo < stringIdFrom ) // Move to a lower stringId, if there are strings in the way, cascade towards stringIdFrom
+        {
+            while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+            {
+                for ( size_t stringId = stringIdTo+1; stringId <= stringIdFrom; stringId ++ ) // Find the lowest available stringId past the block
+                {
+                    if ( !stringIdUsed[stringId] ) // Move the highest stringId remaining in the block to the next available stringId
+                    {
+                        ScStrPtr highestString = strings[stringId-1];
+                        strings[stringId-1] = nullptr;
+                        stringIdUsed[stringId-1] = false;
+                        strings[stringId] = highestString;
+                        stringIdUsed[stringId] = true;
+                        stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId-1), (u32)stringId));
+                        break;
+                    }
+                }
+            }
+            stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+        }
+        else if ( stringIdTo > stringIdFrom ) // Move to a higher stringId, if there are strings in the way, cascade towards stringIdTo
+        {
+            while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+            {
+                for ( size_t stringId = stringIdTo-1; stringId >= stringIdFrom; stringId -- ) // Find the highest available stringId past the block
+                {
+                    if ( !stringIdUsed[stringId] ) // Move the lowest stringId in the block to the available stringId
+                    {
+                        ScStrPtr lowestString = strings[stringId+1];
+                        strings[stringId+1] = nullptr;
+                        stringIdUsed[stringId+1] = false;
+                        strings[stringId] = lowestString;
+                        stringIdUsed[stringId] = true;
+                        stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId+1), (u32)stringId));
+                        break;
+                    }
+                }
+            }
+        }
+        strings[stringIdTo] = selected;
+        stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+        strSynchronizer.remapStringIds(stringIdRemappings, Chk::Scope::Editor);
+    }
+}
+
+bool KstrSection::checkFit(StrSynchronizer & strSynchronizer, StrCompressionElevatorPtr compressionElevator)
+{
+    if ( strings.size() > Chk::MaxStrings )
+        return false;
+
+    try {
+        strSynchronizer.syncStringsToBytes(strings, stringBytes, compressionElevator);
+        return true;
+    } catch ( std::exception & ) {
+        return false;
+    }
+}
+
+bool KstrSection::defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage)
+{
+    size_t nextCandidateStringId = 0;
+    size_t numStrings = strings.size();
+    std::map<u32, u32> stringIdRemappings;
+    for ( size_t i=0; i<numStrings; i++ )
+    {
+        if ( strings[i] == nullptr )
+        {
+            for ( size_t j = std::max(i+1, nextCandidateStringId); j < numStrings; j++ )
+            {
+                if ( strings[j] != nullptr )
+                {
+                    strings[i] = strings[j];
+                    stringIdRemappings.insert(std::pair<u32, u32>((u32)j, (u32)i));
+                    break;
+                }
+            }
+        }
+    }
+
+    if ( !stringIdRemappings.empty() )
+    {
+        strSynchronizer.remapStringIds(stringIdRemappings, Chk::Scope::Editor);
+        return true;
+    }
+    return false;
+}
+
+Chk::SectionSize KstrSection::getSize(ScenarioSaver & scenarioSaver)
+{
+    if ( syncStringsToBytes(scenarioSaver) )
+    {
+        if ( stringBytes.size() <= ChkSection::MaxChkSectionSize )
+            return Chk::SectionSize(stringBytes.size());
+        else
+            throw MaxSectionSizeExceeded(SectionName::KSTR, std::to_string(stringBytes.size()));
+    }
+    else
+        throw StrSerializationFailure();
+}
+
+std::streamsize KstrSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool)
+{   
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        stringBytes.assign(readSize, u8(0));
+        is.read((char*)&stringBytes[0], std::streamsize(sectionHeader.sizeInBytes));
+        syncBytesToStrings();
+        return is.gcount();
+    }
+    else
+    {
+        stringBytes.clear();
+        strings.clear();
+    }
+    return 0;
+}
+
+void KstrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
+    if ( syncStringsToBytes(scenarioSaver) )
+        os.write((const char*)&stringBytes[0], (std::streamsize)stringBytes.size());
+}
+
+size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+{
+    size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
+    for ( size_t i=firstChecked; i<limit; i++ )
+    {
+        if ( !stringIdUsed[i] )
+            return i;
+    }
+    return 0;
+}
+
+bool KstrSection::stringsMatchBytes()
+{
+    if ( stringBytes.size() == 0 )
+        return false;
+
+    size_t numBytes = stringBytes.size();
+    u32 rawNumStrings = 0;
+    if ( numBytes >= 4 )
+        rawNumStrings = (u32 &)stringBytes[0];
+    else if ( numBytes == 3 )
+    {
+        u8 paddedTriplet[4] = { stringBytes[0], stringBytes[1], stringBytes[2], u8(0) };
+        rawNumStrings = (u32 &)paddedTriplet[0];
+    }
+    else if ( numBytes == 2 )
+        rawNumStrings = u32((u16 &)stringBytes[0]);
+    else if ( numBytes == 1 )
+        rawNumStrings = u32(stringBytes[0]);
+
+    if ( size_t(rawNumStrings) != strings.size()-1 )
+        return false; // Size mismatch
+
+    for ( size_t stringId = 1; stringId<strings.size(); ++stringId )
+    {
+        ScStrPtr scStr = strings[stringId];
+        if ( scStr != nullptr )
+        {
+            size_t offsetPos = sizeof(u32)*stringId;
+            if ( offsetPos+1 < numBytes )
+            {
+                u32 stringOffset = (u32 &)stringBytes[offsetPos];
+                if ( size_t(stringOffset)+scStr->length() > numBytes || std::memcmp(scStr->str, &stringBytes[stringOffset], scStr->length()) != 0 )
+                    return false; // String out of bounds or not equal
+            }
+            else // String offset out of bounds
+                return false;
+        }
+    }
+    return true;
+}
+
+bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
+{
+    auto strSynchronizer = scenarioSaver.getStrSynchronizer();
+    if ( strSynchronizer != nullptr )
+        strSynchronizer->syncKstringsToBytes(strings, stringBytes);
+    else
+    {
+        constexpr size_t maxStrings = (size_t(u32_max) - 2*sizeof(u32))/sizeof(u32);
+        size_t numStrings = strings.size()-1; // Exclude string at index 0
+        if ( numStrings > maxStrings )
+            throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
+        
+        size_t versionAndSizeAndOffsetAndNulSpace = 2*sizeof(u32) + sizeof(u32)*numStrings + 1;
+        size_t sectionSize = versionAndSizeAndOffsetAndNulSpace;
+        for ( size_t i=1; i<numStrings; i++ )
+        {
+            if ( strings[i] != nullptr )
+                sectionSize += strings[i]->length();
+        }
+
+        constexpr size_t maxStandardSize = u32_max;
+        if ( sectionSize > maxStandardSize )
+            throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-versionAndSizeAndOffsetAndNulSpace, maxStandardSize);
+
+        stringBytes.assign(sizeof(u32)+sizeof(u32)*numStrings, u8(0));
+        u32 initialNulOffset = u32(stringBytes.size());
+        stringBytes.push_back(u8('\0')); // Add initial NUL character
+        for ( size_t i=1; i<numStrings; i++ )
+        {
+            if ( strings[i] == nullptr )
+                (u32 &)stringBytes[sizeof(u32)*i] = initialNulOffset;
+            else
+            {
+                (u32 &)stringBytes[sizeof(u32)*i] = u32(stringBytes.size());
+                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length());
+            }
+        }
+    }
+    return true;
+}
+
+void KstrSection::syncBytesToStrings()
+{
+    size_t numBytes = stringBytes.size();
+    u32 rawNumStrings = 0;
+    if ( numBytes >= 4 )
+        rawNumStrings = (u32 &)stringBytes[0];
+    else if ( numBytes == 3 )
+    {
+        u8 paddedTriplet[4] = { stringBytes[0], stringBytes[1], stringBytes[2], u8(0) };
+        rawNumStrings = (u32 &)paddedTriplet[0];
+    }
+    else if ( numBytes == 2 )
+        rawNumStrings = u32((u16 &)stringBytes[0]);
+    else if ( numBytes == 1 )
+        rawNumStrings = u32(stringBytes[0]);
+
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u32) >= 4 ? numBytes/sizeof(u32)-4 : 0);
+    strings.clear();
+    strings.push_back(nullptr); // Fill the non-existant 0th stringId
+
+    size_t stringId = 1;
+    for ( ; stringId < highestStringWithValidOffset; ++stringId )
+    {
+        size_t offsetPos = sizeof(u32)*stringId;
+        size_t stringOffset = size_t((u32 &)stringBytes[offsetPos]);
+        loadString(stringOffset, numBytes);
+    }
+    if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
+    {
+        if ( numBytes % 4 == 3 ) // Can read three bytes of an offset
+        {
+            stringId ++;
+            u8 paddedTriplet[4] = { stringBytes[numBytes-3], stringBytes[numBytes-2], stringBytes[numBytes-1], u8(0) };
+            size_t stringOffset = size_t((u32 &)paddedTriplet[0]);
+            loadString(stringOffset, numBytes);
+        }
+        else if ( numBytes % 4 == 2 ) // Can read two bytes of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t((u16 &)stringBytes[numBytes]);
+            loadString(stringOffset, numBytes);
+        }
+        else if ( numBytes % 4 == 1 ) // Can read one byte of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t(stringBytes[sizeof(u32)*highestStringWithValidOffset]);
+            loadString(stringOffset, numBytes);
+        }
+        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
+            strings.push_back(nullptr);
+    }
+}
+
+void KstrSection::loadString(const size_t & stringOffset, const size_t & sectionSize)
+{
+    if ( stringOffset < sectionSize )
+    {
+        auto nextNull = std::find(stringBytes.begin()+stringOffset, stringBytes.end(), u8('\0'));
+        if ( nextNull != stringBytes.end() )
+        {
+            auto nullIndex = std::distance(stringBytes.begin(), nextNull);
+            if ( size_t(nullIndex) > stringOffset ) // Regular string
+                strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
+        }
+        else if ( sectionSize > stringOffset ) // String ends where section ends
+            strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
+        else // Character data would be out of bounds
+            strings.push_back(nullptr);
+    }
+}
+
+ScenarioSaver & ScenarioSaver::GetDefault()
+{
+    return defaultScenarioSaver;
+}
+
+bool ScenarioSaver::confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str)
+{
+    return true; // Override to customize behavior
+}
+
+StrSynchronizerPtr ScenarioSaver::getStrSynchronizer()
+{
+    return nullptr; // Override to provide a custom StrSynchronizer
+}
+
+ScenarioSaver ScenarioSaver::defaultScenarioSaver;

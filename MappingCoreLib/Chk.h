@@ -17,7 +17,7 @@
 namespace Chk {
 #pragma pack(push, 1)
 
-    class Unit; class IsomEntry; class Doodad; class Sprite; class Cuwp; class Location; class Condition; class Action; class Trigger; class StringProperties;
+    struct Unit; struct IsomEntry; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
     using UnitPtr = std::shared_ptr<Unit>; using IsomEntryPtr = std::shared_ptr<IsomEntry>; using DoodadPtr = std::shared_ptr<Doodad>; using SpritePtr = std::shared_ptr<Sprite>;
     using CuwpPtr = std::shared_ptr<Cuwp>; using LocationPtr = std::shared_ptr<Location>; using ConditionPtr = std::shared_ptr<Condition>; using ActionPtr = std::shared_ptr<Action>;
     using TriggerPtr = std::shared_ptr<Trigger>; using StringPropertiesPtr = std::shared_ptr<StringProperties>;
@@ -83,8 +83,7 @@ namespace Chk {
         Yes = 1 // Technology is researched
     });
     
-    __declspec(align(1)) class Unit {
-    public:
+    __declspec(align(1)) struct Unit {
         enum_t(RelationFlag, u16, { // u16
             NydusLink = BIT_9,
             AddonLink = BIT_10
@@ -139,16 +138,15 @@ namespace Chk {
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
     }; // 36 (0x24) bytes
 
-    __declspec(align(1)) class IsomEntry { // 8 bytes
+    __declspec(align(1)) struct IsomEntry { // 8 bytes
         u16 left;
         u16 top;
         u16 right;
         u16 bottom;
     };
     
-    __declspec(align(1)) class Doodad
+    __declspec(align(1)) struct Doodad
     {
-    public:
         enum_t(Type, u16, {
             // TODO: index all doodads
         });
@@ -164,9 +162,8 @@ namespace Chk {
         Enabled enabled; 
     };
 
-    __declspec(align(1)) class Sprite
+    __declspec(align(1)) struct Sprite
     {
-    public:
         enum_t(Type, u16, {
             // TODO: index all sprites
         });
@@ -213,9 +210,8 @@ namespace Chk {
         Yes = 1 // CUWP slot is used
     });
 
-    __declspec(align(1)) class Cuwp
+    __declspec(align(1)) struct Cuwp
     {
-    public:
         enum_t(State, u16, { // u16
             Cloak = BIT_0,
             Burrow = BIT_1,
@@ -277,9 +273,8 @@ namespace Chk {
         Anywhere = 64
     });
     
-    __declspec(align(1)) class Location
+    __declspec(align(1)) struct Location
     {
-    public:
         enum_t(Elevation, u16, {
             LowElevation = BIT_0,
             MediumElevation = BIT_1,
@@ -332,9 +327,8 @@ namespace Chk {
 
     constexpr u32 MaximumTriggers = 894785; // 894784 real triggers at 2400 bytes each could fit in MaxChkSectionSize: s32_max, maybe last couple bytes would be padded adding a partial trigger
 
-    __declspec(align(1)) class Condition
+    __declspec(align(1)) struct Condition
     {
-    public:
         static constexpr size_t NumConditionTypes = 24;
         static constexpr size_t MaxArguments = 9;
         enum_t(Type, u8, { // u8
@@ -487,9 +481,8 @@ namespace Chk {
         static std::unordered_map<VirtualType, VirtualCondition> virtualConditions;
     }; // 20 (0x14) bytes
 
-    __declspec(align(1)) class Action
+    __declspec(align(1)) struct Action
     {
-    public:
         static constexpr size_t NumActionTypes = 60;
         static constexpr size_t NumBriefingActionTypes = 10;
         static constexpr size_t InternalDataBytes = 3;
@@ -793,9 +786,8 @@ namespace Chk {
         static bool briefingActionUsesSoundArg[NumBriefingActionTypes];
     }; // 32 (0x20) bytes
 
-    __declspec(align(1)) class Trigger
+    __declspec(align(1)) struct Trigger
     {
-    public:
         static constexpr size_t MaxConditions = 16;
         static constexpr size_t MaxActions = 64;
         static constexpr size_t MaxOwners = 27;
@@ -914,8 +906,7 @@ namespace Chk {
         Current = 2
     });
 
-    __declspec(align(1)) class StringProperties {
-    public:
+    __declspec(align(1)) struct StringProperties {
         u8 red;
         u8 green;
         u8 blue;
@@ -1176,11 +1167,35 @@ namespace Chk {
         // StringProperties[numStrings] stringProperties; // String properties
         // void[] stringData; // List of strings, each null terminated, starting with one NUL character
     }; // Size: 8+8*numStrings+stringDataSize (not validated)
+    
+    enum_t(SectionName, u32, { // The section name values, as they appear in the binary scenario file
+        TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
+        VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
+        DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
+        UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
+        TILE = 1162627412, DD2 = 540165188, THG2 = 843532372, MASK = 1263747405,
+        STR = 542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
+        TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
+        WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
+        SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
+        UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
+
+        OSTR = 1381258063, KSTR = 1381258059, KTRG = 1196577867, KTGP = 1346851915,
+
+        UNKNOWN = u32_max
+    });
+    
+    using SectionSize = s32;
+
+    __declspec(align(1)) struct SectionHeader {
+        SectionName name;
+        SectionSize sizeInBytes;
+    };
 
     constexpr u32 CHK = 541804611; // "CHK " = 43|48|4B|20
     using Size = u32;
 
-    __declspec(align(1)) struct ChkHeader {
+    __declspec(align(1)) struct ChkHeader { // Not used by a Scenario.chk file, used by serializations
         u32 name; // Set to CHK
         Size sizeInBytes;
     };

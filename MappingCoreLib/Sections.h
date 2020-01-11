@@ -1,6 +1,5 @@
 #ifndef SECTIONS_H
 #define SECTIONS_H
-#include "Buffer.h"
 #include "EscapeStrings.h"
 #include "Chk.h"
 #include <memory>
@@ -8,6 +7,7 @@
 #include <deque>
 #include <bitset>
 #include <vector>
+using Chk::SectionName;
 
 /*
     This file defines sections which encapsulate the storage structures defined in the Chk (see Chk.h)
@@ -20,9 +20,8 @@
           such structures need specialized behavior (see "StructSection" and "DynamicSection", and the virtualizable property)
     
     Data notes:
-        - All sections are backed by a buffer "rawData", though most dynamic sections will create their own storage and only sync from/to the buffer upon request
         - All struct sections have a structure pointer "data" for their respective Chk structure, this points to the same data in "rawData" which is guarenteed to be at least the size of the default Chk structure
-        - APIs are added at this level to read and manipulate each sections individual data (though the structure pointers and buffers are also usable), as well as to generate the default version of a section
+        - APIs are added at this level to read and manipulate each sections individual data (though the structure pointers are also usable), as well as to generate the default version of a section
 
     Any unpacked versions containing the same data as the storage structures is also defined here
 */
@@ -68,29 +67,12 @@ class InsufficientStringCapacity;
 class MaximumCharactersExceeded;
 class MaximumOffsetAndCharsExceeded;
 class StrSynchronizer;
+class ScenarioSaver;
+class StrSerializationFailure;
 using StrCompressionElevatorPtr = std::shared_ptr<StrCompressionElevator>;
 using StrSynchronizerPtr = std::shared_ptr<StrSynchronizer>;
+using ScenarioSaverPtr = std::shared_ptr<ScenarioSaver>;
 using ScStrPtr = std::shared_ptr<ScStr>;
-
-
-
-
-enum_t(SectionName, u32, { // The section name values, as they appear in the binary scenario file
-    TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
-    VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,
-    DIM = 541935940, SIDE = 1162103123, MTXM = 1297634381, PUNI = 1229870416,
-    UPGR = 1380405333, PTEC = 1128617040, UNIT = 1414090325, ISOM = 1297044297,
-    TILE = 1162627412, DD2 = 540165188, THG2 = 843532372, MASK = 1263747405,
-    STR = 542266451, UPRP = 1347571797, UPUS = 1398100053, MRGN = 1313296973,
-    TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
-    WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
-    SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
-    UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
-
-    OSTR = 1381258063, KSTR = 1381258059, KTRG = 1196577867, KTGP = 1346851915,
-
-    UNKNOWN = u32_max
-});
 
 enum_t(SectionIndex, u32, { // The index at which a section appears in the default scenario file (plus indexes for extended sections), this is not related to section names
     TYPE = 0, VER = 1, IVER = 2, IVE2 = 3,
@@ -117,31 +99,43 @@ enum class LoadBehavior
     Append // Subsequent instances of the section will be appended to the first instance
 };
 
+class ScenarioSaver
+{
+    public:
+        static ScenarioSaver & GetDefault();
+        virtual bool confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str);
+        virtual StrSynchronizerPtr getStrSynchronizer();
+
+    private:
+        static ScenarioSaver defaultScenarioSaver;
+};
+
 class ChkSection
 {
     public:
         static constexpr u32 TotalKnownChkSections = 40;
-        static constexpr u32 MaxChkSectionSize = s32_max;
-        
+        static constexpr Chk::SectionSize MaxChkSectionSize = s32_max;
+
         ChkSection(SectionName sectionName, bool virtualizable = false, bool dataIsVirtual = false);
-        template <typename StructType>
-        ChkSection(SectionName sectionName, const StructType & data, bool virtualizable = false, bool dataIsVirtual = false);
-        virtual ~ChkSection() { }
+        virtual ~ChkSection();
 
         virtual void Validate(bool hybridOrBroodWar) { } // throws SectionValidationException
         SectionIndex getIndex() { return sectionIndex; }
         SectionName getName() { return sectionName; }
         template<typename t> t getNameValue() { return (t)sectionName; }
-        std::ostream & write(std::ostream &s); // Writes the section name as a u32, then the result of getSize as a u32, then calls writeData
-        virtual u32 getSize(); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over u32_max
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) = 0; // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+
+        static Section read(std::multimap<SectionName, Section> & parsedSections, const Chk::SectionHeader & sectionHeader, std::istream & is, output_param Chk::SectionSize & sizeRead);
+        virtual void writeWithHeader(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault());
+
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overrideOrAppend = false) = 0; // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) = 0; // Writes exactly sizeInBytes bytes to the output stream
 
     protected:
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes) { return s; } // Writes exactly sizeInBytes bytes to the output stream, by default this is the buffer data
+
         bool isVirtual() { return dataIsVirtual; }
         virtual void setVirtual(bool isVirtual) { // If the client calls code that normalizes the size (any change), flag virtual as false
             this->dataIsVirtual = virtualizable ? isVirtual : false; }
-
-        std::shared_ptr<buffer> rawData;
 
     private:
         SectionIndex sectionIndex;
@@ -153,7 +147,7 @@ class ChkSection
         static SectionName getName(u32 sectionIndex) { return sectionNames[sectionIndex]; }
         static SectionName getName(SectionIndex sectionIndex) { return sectionNames[sectionIndex]; }
         static SectionIndex getIndex(SectionName sectionName) { return sectionIndexes.at(sectionName); }
-        static LoadBehavior getLoadBehavior(SectionIndex sectionIndex);
+        static LoadBehavior getLoadBehavior(SectionName sectionName);
         static std::string getNameString(SectionName sectionName);
 
         class MaxSectionSizeExceeded : public std::exception
@@ -192,15 +186,49 @@ class ChkSection
                 SectionValidationException(); // Disallow ctor
         };
 
+        class NegativeSectionSize : public std::out_of_range
+        {
+            public:
+                NegativeSectionSize(SectionName sectionName);
+                virtual ~NegativeSectionSize() { }
+
+            private:
+                NegativeSectionSize(); // Disallow ctor
+        };
+
+        static const std::vector<SectionName> & getNames() { return sectionNames; }
+
     private:
         ChkSection(); // Disallow ctor
 
         // Static data
-        static SectionName sectionNames[];
+        static std::vector<SectionName> sectionNames;
         static std::unordered_map<SectionName, std::string> sectionNameStrings;
         static std::unordered_map<SectionName, SectionIndex> sectionIndexes;
-        static std::unordered_map<SectionIndex, LoadBehavior> nonStandardLoadBehaviors;
+        static std::unordered_map<SectionName, LoadBehavior> nonStandardLoadBehaviors;
 };
+
+/** A chk section that's just a chunk of unformatted data, can hold unknown sections
+    or known sections that the client code has chosen not to have formatted */
+class DataSection : public ChkSection
+{
+    public:
+        std::vector<u8> data;
+
+        DataSection(SectionName sectionName) : ChkSection(sectionName, true) {}
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) { return Chk::SectionSize(data.size()); }
+
+    protected:
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overrideOrAppend = false) {
+            data.assign((size_t)sectionHeader.sizeInBytes, u8(0));
+            is.read((char*)&data[0], (std::streamsize)sectionHeader.sizeInBytes);
+            return (Chk::SectionSize)is.gcount();
+        }
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) {
+            os.write((const char*)&data[0], (std::streamsize)data.size());
+        }
+};
+using DataSectionPtr = std::shared_ptr<DataSection>;
 
 /** Any chk section that either must fit in an exact structure, or is
     an exact structure but is not validated by StarCraft,
@@ -210,23 +238,41 @@ template <typename StructType, bool Virtualizable>
 class StructSection : public ChkSection
 {
     public:
-        StructSection(SectionName sectionName) : ChkSection(sectionName, Virtualizable), data(nullptr) { }
-        StructSection(SectionName sectionName, const StructType & data) : ChkSection(sectionName, data, Virtualizable),
-            data(ChkSection::rawData->getPtr<StructType>()) { }
-        virtual ~StructSection() { }
-        StructType & asStruct() { return *data; }
+        StructSection(SectionName sectionName) : ChkSection(sectionName, Virtualizable), writeSize(sizeof(StructType)), data(nullptr) {
+            rawData.assign(sizeof(StructType), u8(0));
+            writeSize = sizeof(StructType);
+            data = (StructType*)&rawData[0];
+        }
+        StructSection(SectionName sectionName, const StructType & structData) : ChkSection(sectionName, Virtualizable), writeSize(sizeof(StructType)), data(nullptr) {
+            rawData.assign(sizeof(StructType), u8(0));
+            (StructType &)rawData[0] = structData;
+            data = (StructType*)&rawData[0];
+        }
+        virtual ~StructSection() {}
+        inline StructType & get() { return (StructType &)rawData[0]; }
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) { return writeSize; }
 
     protected:
-        virtual u32 getSize() {
-            if ( isVirtual() ) {
-                if ( rawData->size() <= MaxChkSectionSize ) return (u32)rawData->size();
-                else throw MaxSectionSizeExceeded(getName(), std::to_string(rawData->size()));
-            } else return sizeof(StructType);
-        }
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes) {
-            if ( isVirtual() ) { rawData->write(s, false); } else { s.write(reinterpret_cast<const char*>(data), sizeof(StructType)); } return s; }
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overrideOrAppend = false) {
+            if ( sectionHeader.sizeInBytes < 0 )
+                throw std::invalid_argument("Cannot read a StructSection with a size less than zero");
+            else if ( size_t(sectionHeader.sizeInBytes) < sizeof(StructType) )
+                rawData.assign(sizeof(StructType), u8(0));
+            else
+                rawData.assign(size_t(sectionHeader.sizeInBytes), u8(0));
 
+            is.read((char*)&rawData[0], (std::streamsize)sectionHeader.sizeInBytes);
+            return (Chk::SectionSize)is.gcount();
+        }
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) {
+            os.write((const char*)&rawData[0], (std::streamsize)writeSize);
+        }
+        
         StructType* data;
+
+    private:
+        std::vector<u8> rawData; // Size range: [sizeof(StructType), MaxChkSectionSize]
+        Chk::SectionSize writeSize; // Used to specify sizes smaller than , range: [0, data.size()]
 };
 
 /** Any chk section that is of variable length or doesn't conform to
@@ -237,13 +283,12 @@ class DynamicSection : public ChkSection
 {
     public:
         DynamicSection(SectionName sectionName) : ChkSection(sectionName) { }
-        virtual ~DynamicSection() { }
+        virtual ~DynamicSection() {}
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) = 0; // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
 
     protected:
-         // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over u32_max
-        virtual u32 getSize() = 0;
-        // Writes exactly sizeInBytes bytes to the output stream, if virtual this is the buffer data, else this must be overridden by the individual section class
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes) = 0;
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overrideOrAppend = false) = 0; // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) = 0; // Writes exactly sizeInBytes bytes to the output stream
 };
 
 
@@ -253,6 +298,8 @@ class TypeSection : public StructSection<Chk::TYPE, true>
     public:
         static TypeSectionPtr GetDefault(Chk::Version version = Chk::Version::StarCraft_Hybrid);
         TypeSection(const Chk::TYPE & data);
+        TypeSection();
+        virtual ~TypeSection();
 
         Chk::Type getType();
         void setType(Chk::Type type);
@@ -263,6 +310,8 @@ class VerSection : public StructSection<Chk::VER, false>
     public:
         static VerSectionPtr GetDefault();
         VerSection(const Chk::VER & data);
+        VerSection();
+        virtual ~VerSection();
 
         bool isOriginal();
         bool isHybrid();
@@ -277,6 +326,8 @@ class IverSection : public StructSection<Chk::IVER, true>
     public:
         static IverSectionPtr GetDefault();
         IverSection(const Chk::IVER & data);
+        IverSection();
+        virtual ~IverSection();
 
         Chk::IVersion getVersion();
         void setVersion(Chk::IVersion version);
@@ -287,6 +338,8 @@ class Ive2Section : public StructSection<Chk::IVE2, true>
     public:
         static Ive2SectionPtr GetDefault();
         Ive2Section(const Chk::IVE2 & data);
+        Ive2Section();
+        virtual ~Ive2Section();
 
         Chk::I2Version getVersion();
         void setVersion(Chk::I2Version version);
@@ -297,6 +350,8 @@ class VcodSection : public StructSection<Chk::VCOD, false>
     public:
         static VcodSectionPtr GetDefault();
         VcodSection(const Chk::VCOD & data);
+        VcodSection();
+        virtual ~VcodSection();
 
         bool isDefault();
         void setToDefault();
@@ -307,6 +362,8 @@ class IownSection : public StructSection<Chk::IOWN, true>
     public:
         static IownSectionPtr GetDefault();
         IownSection(const Chk::IOWN & data);
+        IownSection();
+        virtual ~IownSection();
 
         Sc::Player::SlotType getSlotType(size_t slotIndex);
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
@@ -317,6 +374,8 @@ class OwnrSection : public StructSection<Chk::OWNR, false>
     public:
         static OwnrSectionPtr GetDefault();
         OwnrSection(const Chk::OWNR & data);
+        OwnrSection();
+        virtual ~OwnrSection();
         
         Sc::Player::SlotType getSlotType(size_t slotIndex);
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
@@ -327,6 +386,8 @@ class EraSection : public StructSection<Chk::ERA, false>
     public:
         static EraSectionPtr GetDefault(Sc::Terrain::Tileset tileset);
         EraSection(const Chk::ERA & data);
+        EraSection();
+        virtual ~EraSection();
 
         Sc::Terrain::Tileset getTileset();
         void setTileset(Sc::Terrain::Tileset tileset);
@@ -337,6 +398,8 @@ class DimSection : public StructSection<Chk::DIM, false>
     public:
         static DimSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         DimSection(const Chk::DIM & data);
+        DimSection();
+        virtual ~DimSection();
 
         size_t getTileWidth();
         size_t getTileHeight();
@@ -352,6 +415,8 @@ class SideSection : public StructSection<Chk::SIDE, false>
     public:
         static SideSectionPtr GetDefault();
         SideSection(const Chk::SIDE & data);
+        SideSection();
+        virtual ~SideSection();
 
         Chk::Race getPlayerRace(size_t playerIndex);
         void setPlayerRace(size_t playerIndex, Chk::Race race);
@@ -362,14 +427,19 @@ class MtxmSection : public DynamicSection<false>
     public:
         static MtxmSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MtxmSection();
+        virtual ~MtxmSection();
 
         u16 getTile(size_t tileIndex);
         void setTile(size_t tileIndex, u16 tileValue);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+    private:
+        std::vector<u16> tiles;
 };
 
 class PuniSection : public StructSection<Chk::PUNI, false>
@@ -377,6 +447,8 @@ class PuniSection : public StructSection<Chk::PUNI, false>
     public:
         static PuniSectionPtr GetDefault();
         PuniSection(const Chk::PUNI & data);
+        PuniSection();
+        virtual ~PuniSection();
 
         bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex);
         bool isUnitDefaultBuildable(Sc::Unit::Type unitType);
@@ -391,6 +463,8 @@ class UpgrSection : public StructSection<Chk::UPGR, false>
     public:
         static UpgrSectionPtr GetDefault();
         UpgrSection(const Chk::UPGR & data);
+        UpgrSection();
+        virtual ~UpgrSection();
 
         size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
         size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
@@ -409,6 +483,8 @@ class PtecSection : public StructSection<Chk::PTEC, false>
     public:
         static PtecSectionPtr GetDefault();
         PtecSection(const Chk::PTEC & data);
+        PtecSection();
+        virtual ~PtecSection();
 
         bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
         bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
@@ -427,6 +503,7 @@ class UnitSection : public DynamicSection<false>
     public:
         static UnitSectionPtr GetDefault();
         UnitSection();
+        virtual ~UnitSection();
 
         size_t numUnits();
         std::shared_ptr<Chk::Unit> getUnit(size_t unitIndex);
@@ -436,8 +513,9 @@ class UnitSection : public DynamicSection<false>
         void moveUnit(size_t unitIndexFrom, size_t unitIndexTo);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::deque<std::shared_ptr<Chk::Unit>> units;
@@ -448,16 +526,18 @@ class IsomSection : public DynamicSection<true>
     public:
         static IsomSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         IsomSection();
+        virtual ~IsomSection();
 
-        std::shared_ptr<Chk::IsomEntry> getIsomEntry(size_t isomIndex);
+        Chk::IsomEntry & getIsomEntry(size_t isomIndex);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        std::vector<std::shared_ptr<Chk::IsomEntry>> isomEntries;
+        std::vector<Chk::IsomEntry> isomEntries;
 };
 
 class TileSection : public DynamicSection<true>
@@ -465,14 +545,19 @@ class TileSection : public DynamicSection<true>
     public:
         static TileSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         TileSection();
+        virtual ~TileSection();
 
         u16 getTile(size_t tileIndex);
         void setTile(size_t tileIndex, u16 tileValue);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+    private:
+        std::vector<u16> tiles;
 };
 
 class Dd2Section : public DynamicSection<true>
@@ -480,6 +565,7 @@ class Dd2Section : public DynamicSection<true>
     public:
         static Dd2SectionPtr GetDefault();
         Dd2Section();
+        virtual ~Dd2Section();
 
         size_t numDoodads();
         std::shared_ptr<Chk::Doodad> getDoodad(size_t doodadIndex);
@@ -489,8 +575,9 @@ class Dd2Section : public DynamicSection<true>
         void moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::deque<std::shared_ptr<Chk::Doodad>> doodads;
@@ -501,6 +588,7 @@ class Thg2Section : public DynamicSection<false>
     public:
         static Thg2SectionPtr GetDefault();
         Thg2Section();
+        virtual ~Thg2Section();
 
         size_t numSprites();
         std::shared_ptr<Chk::Sprite> getSprite(size_t spriteIndex);
@@ -510,8 +598,9 @@ class Thg2Section : public DynamicSection<false>
         void moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::deque<std::shared_ptr<Chk::Sprite>> sprites;
@@ -522,14 +611,19 @@ class MaskSection : public DynamicSection<true>
     public:
         static MaskSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MaskSection();
+        virtual ~MaskSection();
 
         u8 getFog(size_t tileIndex);
         void setFog(size_t tileIndex, u8 fogOfWarPlayers);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+    private:
+        std::vector<u8> fogTiles;
 };
 
 class StrSection : public DynamicSection<false>
@@ -537,18 +631,52 @@ class StrSection : public DynamicSection<false>
     public:
         static StrSectionPtr GetDefault();
         StrSection();
+        virtual ~StrSection();
+
+        size_t getCapacity();
+
+        bool stringStored(size_t stringId);
+        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        size_t findString(const StringType &str);
+
+        bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
-        bool isSynced();
-        void flagUnsynced();
-        void syncFromBuffer(StrSynchronizer & strSynchronizer);
-        void syncToBuffer(StrSynchronizer & strSynchronizer);
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        size_t addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        void replaceString(size_t stringId, const StringType &str);
+
+        void deleteUnusedStrings(StrSynchronizer & strSynchronizer);
+        bool deleteString(size_t stringId, bool deleteOnlyIfUnused = true, StrSynchronizerPtr strSynchronizer = nullptr); // strSynchronizer required for deletion if deleteOnlyIfUnused is set
+        void moveString(size_t stringIdFrom, size_t stringIdTo, StrSynchronizer & strSynchronizer);
+
+        bool checkFit(StrSynchronizer & strSynchronizer, StrCompressionElevatorPtr compressionElevator = StrCompressionElevatorPtr()); // Checks whether the strings 
+        
+        bool defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        bool synced; // If false, then the list of strings would need to be written to the buffer (using syncToBuffer) for the two to be in sync
+        std::deque<ScStrPtr> strings;
+        std::vector<u8> stringBytes;
+        
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
+        void resolveParantage();
+        void resolveParantage(ScStrPtr string);
+
+        bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
+        bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
+        void syncBytesToStrings(); // Universal string reader method
+        void loadString(const size_t & stringOffset, const size_t & sectionSize);
 };
 
 class UprpSection : public StructSection<Chk::UPRP, false>
@@ -556,6 +684,8 @@ class UprpSection : public StructSection<Chk::UPRP, false>
     public:
         static UprpSectionPtr GetDefault();
         UprpSection(const Chk::UPRP & data);
+        UprpSection();
+        virtual ~UprpSection();
 
         Chk::Cuwp getCuwp(size_t cuwpIndex);
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp);
@@ -567,6 +697,8 @@ class UpusSection : public StructSection<Chk::UPUS, true>
     public:
         static UpusSectionPtr GetDefault();
         UpusSection(const Chk::UPUS & data);
+        UpusSection();
+        virtual ~UpusSection();
 
         bool cuwpUsed(size_t cuwpIndex);
         void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
@@ -578,6 +710,7 @@ class MrgnSection : public DynamicSection<false>
     public:
         static MrgnSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         MrgnSection();
+        virtual ~MrgnSection();
 
         size_t numLocations();
         void sizeToScOriginal();
@@ -595,8 +728,9 @@ class MrgnSection : public DynamicSection<false>
         void deleteString(size_t stringId);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::vector<std::shared_ptr<Chk::Location>> locations;
@@ -607,6 +741,7 @@ class TrigSection : public DynamicSection<false>
     public:
         static TrigSectionPtr GetDefault();
         TrigSection();
+        virtual ~TrigSection();
 
         size_t numTriggers();
         std::shared_ptr<Chk::Trigger> getTrigger(size_t triggerIndex);
@@ -626,8 +761,9 @@ class TrigSection : public DynamicSection<false>
         void deleteString(size_t stringId);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::deque<std::shared_ptr<Chk::Trigger>> triggers;
@@ -638,6 +774,7 @@ class MbrfSection : public DynamicSection<false>
     public:
         static MbrfSectionPtr GetDefault();
         MbrfSection();
+        virtual ~MbrfSection();
 
         size_t numBriefingTriggers();
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
@@ -651,8 +788,9 @@ class MbrfSection : public DynamicSection<false>
         void deleteString(size_t stringId);
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
         std::deque<std::shared_ptr<Chk::Trigger>> briefingTriggers;
@@ -663,6 +801,8 @@ class SprpSection : public StructSection<Chk::SPRP, false>
     public:
         static SprpSectionPtr GetDefault(u16 scenarioNameStringId = 1, u16 scenarioDescriptionStringId = 2);
         SprpSection(const Chk::SPRP & data);
+        SprpSection();
+        virtual ~SprpSection();
         
         size_t getScenarioNameStringId();
         size_t getScenarioDescriptionStringId();
@@ -679,6 +819,8 @@ class ForcSection : public StructSection<Chk::FORC, false>
     public:
         static ForcSectionPtr GetDefault();
         ForcSection(const Chk::FORC & data);
+        ForcSection();
+        virtual ~ForcSection();
 
         Chk::Force getPlayerForce(size_t slotIndex);
         size_t getForceStringId(Chk::Force force);
@@ -697,6 +839,8 @@ class WavSection : public StructSection<Chk::WAV, true>
     public:
         static WavSectionPtr GetDefault();
         WavSection(const Chk::WAV & data);
+        WavSection();
+        virtual ~WavSection();
 
         size_t addSound(size_t stringId);
         bool stringIsSound(size_t stringId);
@@ -714,6 +858,8 @@ class UnisSection : public StructSection<Chk::UNIS, false>
     public:
         static UnisSectionPtr GetDefault();
         UnisSection(const Chk::UNIS & data);
+        UnisSection();
+        virtual ~UnisSection();
 
         bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
         u32 getUnitHitpoints(Sc::Unit::Type unitType);
@@ -748,6 +894,8 @@ class UpgsSection : public StructSection<Chk::UPGS, false>
     public:
         static UpgsSectionPtr GetDefault();
         UpgsSection(const Chk::UPGS & data);
+        UpgsSection();
+        virtual ~UpgsSection();
 
         bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
         u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
@@ -771,6 +919,8 @@ class TecsSection : public StructSection<Chk::TECS, false>
     public:
         static TecsSectionPtr GetDefault();
         TecsSection(const Chk::TECS & data);
+        TecsSection();
+        virtual ~TecsSection();
 
         bool techUsesDefaultSettings(Sc::Tech::Type techType);
         u16 getTechMineralCost(Sc::Tech::Type techType);
@@ -790,6 +940,8 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
     public:
         static SwnmSectionPtr GetDefault();
         SwnmSection(const Chk::SWNM & data);
+        SwnmSection();
+        virtual ~SwnmSection();
 
         size_t getSwitchNameStringId(size_t switchIndex);
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
@@ -804,6 +956,8 @@ class ColrSection : public StructSection<Chk::COLR, false>
     public:
         static ColrSectionPtr GetDefault();
         ColrSection(const Chk::COLR & data);
+        ColrSection();
+        virtual ~ColrSection();
 
         Chk::PlayerColor getPlayerColor(size_t slotIndex);
         void setPlayerColor(size_t slotIndex, Chk::PlayerColor color);
@@ -814,6 +968,8 @@ class PupxSection : public StructSection<Chk::PUPx, false>
     public:
         static PupxSectionPtr GetDefault();
         PupxSection(const Chk::PUPx & data);
+        PupxSection();
+        virtual ~PupxSection();
 
         size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
         size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
@@ -832,6 +988,8 @@ class PtexSection : public StructSection<Chk::PTEx, false>
     public:
         static PtexSectionPtr GetDefault();
         PtexSection(const Chk::PTEx & data);
+        PtexSection();
+        virtual ~PtexSection();
 
         bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
         bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
@@ -850,6 +1008,8 @@ class UnixSection : public StructSection<Chk::UNIx, false>
     public:
         static UnixSectionPtr GetDefault();
         UnixSection(const Chk::UNIx & data);
+        UnixSection();
+        virtual ~UnixSection();
 
         bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
         u32 getUnitHitpoints(Sc::Unit::Type unitType);
@@ -884,6 +1044,8 @@ class UpgxSection : public StructSection<Chk::UPGx, false>
     public:
         static UpgxSectionPtr GetDefault();
         UpgxSection(const Chk::UPGx & data);
+        UpgxSection();
+        virtual ~UpgxSection();
 
         bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
         u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
@@ -907,6 +1069,8 @@ class TecxSection : public StructSection<Chk::TECx, false>
     public:
         static TecxSectionPtr GetDefault();
         TecxSection(const Chk::TECx & data);
+        TecxSection();
+        virtual ~TecxSection();
 
         bool techUsesDefaultSettings(Sc::Tech::Type techType);
         u16 getTechMineralCost(Sc::Tech::Type techType);
@@ -926,6 +1090,8 @@ class OstrSection : public StructSection<Chk::OSTR, true>
     public:
         static OstrSectionPtr GetDefault();
         OstrSection(const Chk::OSTR & data);
+        OstrSection();
+        virtual ~OstrSection();
 
         u32 getVersion();
 
@@ -958,21 +1124,50 @@ class KstrSection : public DynamicSection<true>
     public:
         static KstrSectionPtr GetDefault();
         KstrSection();
+        virtual ~KstrSection();
+
+        size_t getCapacity();
+
+        bool stringStored(size_t stringId);
+        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        size_t findString(const StringType &str);
+
+        bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
-        bool isSynced();
-        void flagUnsynced();
-        void syncFromBuffer(StrSynchronizer & strSynchronizer);
-        void syncToBuffer(StrSynchronizer & strSynchronizer);
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        size_t addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
+
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
+        void replaceString(size_t stringId, const StringType &str);
+
+        void deleteUnusedStrings(StrSynchronizer & strSynchronizer);
+        bool deleteString(size_t stringId, bool deleteOnlyIfUnused = true, StrSynchronizerPtr strSynchronizer = nullptr); // strSynchronizer required for deletion if deleteOnlyIfUnused is set
+        void moveString(size_t stringIdFrom, size_t stringIdTo, StrSynchronizer & strSynchronizer);
+
+        bool checkFit(StrSynchronizer & strSynchronizer, StrCompressionElevatorPtr compressionElevator = StrCompressionElevatorPtr()); // Checks whether the strings 
+        
+        bool defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
 
     protected:
-        virtual u32 getSize();
-        virtual std::ostream & writeData(std::ostream &s, u32 sizeInBytes);
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        bool synced; // If false, then the list of strings would need to be written to the buffer (using syncToBuffer) for the two to be in sync
+        std::deque<ScStrPtr> strings;
+        std::vector<u8> stringBytes;
+        
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
+        bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
+        bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
+        void syncBytesToStrings(); // Universal string reader method
+        void loadString(const size_t & stringOffset, const size_t & sectionSize);
 };
-
-
 
 class StrProp {
     public:
@@ -1005,7 +1200,7 @@ class ScStr
         int compare(const StringType &str);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        StringType toString();
+        std::shared_ptr<StringType> toString();
 
         ScStrPtr getParentStr();
         ScStrPtr getChildStr();
@@ -1113,6 +1308,15 @@ class StringException : std::exception
         StringException(); // Disallow ctor
 };
 
+class StrSerializationFailure : public StringException
+{
+    public:
+        StrSerializationFailure();
+        virtual ~StrSerializationFailure() { }
+        virtual const char* what() const throw() { return error.c_str(); }
+        const std::string error;
+};
+
 class MaximumStringsExceeded : public StringException
 {
     public:
@@ -1151,18 +1355,22 @@ class MaximumOffsetAndCharsExceeded : StringException
 class StrSynchronizer
 {
     public:
-        class SyncException;
-
         StrSynchronizer(u32 requestedCompressionFlags, u32 allowedCompressionFlags)
             : requestedCompressionFlags(requestedCompressionFlags), allowedCompressionFlags(allowedCompressionFlags) { }
 
-        virtual void synchronizeToStrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
-            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
-        virtual void synchronizeFromStrBuffer(const buffer &rawData) = 0;
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false) = 0;
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
 
-        virtual void synchronizeToKstrBuffer(buffer &rawData, StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
+        virtual void syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
+            StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
-        virtual void synchronizeFromKstrBuffer(const buffer &rawData) = 0;
+
+        virtual void syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
+            StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
+            u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
+        
+        virtual void remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope) = 0;
 
         u32 getRequestedCompressionFlags() const { return requestedCompressionFlags; }
         u32 getAllowedCompressionFlags() const { return allowedCompressionFlags; }

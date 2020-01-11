@@ -114,7 +114,7 @@ MpqFilePtr Sc::DataFile::Browser::openDataFile(const std::string &dataFilePath, 
     MpqFilePtr mpqFile = MpqFilePtr(new MpqFile());
     do
     {
-        if ( mpqFile->open(dataFilePath) )
+        if ( mpqFile->open(dataFilePath, true, false) )
             return mpqFile;
     }
     while ( dataFileDescriptor.getBrowser() != nullptr &&
@@ -2561,7 +2561,9 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const 
             
             strings.push_back(std::string((const char*)rawData.getPtr(stringOffset)));
         }
+        return true;
     }
+    return false;
 }
 
 const std::string & Sc::TblFile::getString(size_t stringIndex)

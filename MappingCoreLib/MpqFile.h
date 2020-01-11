@@ -65,7 +65,7 @@ public:
     // If createIfNotFound is specified and no file can be found at filePath, the MPQ will be automatically created
     // If this MPQ is already open with the given filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath, it is closed before attempting to open the new MPQ
-    virtual bool open(const std::string &filePath, bool createIfNotFound = true);
+    virtual bool open(const std::string &filePath, bool readOnly = true, bool createIfNotFound = true);
 
     virtual void setUpdatingListFile(bool updateListFile);
 
@@ -90,6 +90,10 @@ public:
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual bool getFile(const std::string &mpqPath, buffer &fileData);
+
+    // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool getFile(const std::string &mpqPath, std::vector<u8> & fileData);
 
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
     // Cannot be used unless the MPQ is already open
@@ -126,10 +130,6 @@ public:
     // Attempts to remove a file at mpqPath within this MPQ
     // Cannot be used unless the MPQ is already open
     virtual bool removeFile(const std::string &mpqPath);
-
-protected:
-    virtual bool virtualizableOpen(const std::string &filePath, const FileBrowserPtr<u32> fileBrowser);
-    virtual bool virtualizableOpen(const FileBrowserPtr<u32> fileBrowser);
 
 private:
     bool updateListFile;

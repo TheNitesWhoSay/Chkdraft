@@ -1015,7 +1015,7 @@ MpqFilePtr DatFileBrowser::openDatFile(const std::string &datFilePath, const Dat
     MpqFilePtr mpqFile = MpqFilePtr(new MpqFile());
     do
     {
-        if ( mpqFile->open(datFilePath) )
+        if ( mpqFile->open(datFilePath, true, false) )
             return mpqFile;
     }
     while ( datFileDescriptor.getBrowser() != nullptr &&
