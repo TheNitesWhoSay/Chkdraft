@@ -2153,7 +2153,7 @@ StrSectionPtr StrSection::GetDefault()
     return newSection;
 }
 
-StrSection::StrSection() : DynamicSection<false>(SectionName::STR)
+StrSection::StrSection() : DynamicSection<false>(SectionName::STR), bytePaddedTo(4), initialTailDataOffset(0)
 {
     
 }
@@ -2414,12 +2414,47 @@ bool StrSection::defragment(StrSynchronizer & strSynchronizer, bool matchCapacit
     return false;
 }
 
+std::vector<u8> & StrSection::getTailData()
+{
+    return tailData;
+}
+
+size_t StrSection::getTailDataOffset(StrSynchronizer & strSynchronizer)
+{
+    strSynchronizer.syncStringsToBytes(strings, stringBytes);
+    return stringBytes.size();
+}
+
+size_t StrSection::getInitialTailDataOffset()
+{
+    return initialTailDataOffset;
+}
+
+size_t StrSection::getBytePaddedTo()
+{
+    return bytePaddedTo;
+}
+        
+void StrSection::setBytePaddedTo(size_t bytePaddedTo)
+{
+    this->bytePaddedTo = bytePaddedTo;
+}
+
 Chk::SectionSize StrSection::getSize(ScenarioSaver & scenarioSaver)
 {
     if ( syncStringsToBytes(scenarioSaver) )
     {
-        if ( stringBytes.size() <= ChkSection::MaxChkSectionSize )
-            return Chk::SectionSize(stringBytes.size());
+        size_t totalSize = stringBytes.size();
+        if ( tailData.size() > 0 )
+        {
+            if ( (bytePaddedTo == 2 || bytePaddedTo == 4) && totalSize%bytePaddedTo != 0 )
+                totalSize += bytePaddedTo - totalSize%bytePaddedTo;
+
+            totalSize += tailData.size();
+        }
+
+        if ( totalSize <= ChkSection::MaxChkSectionSize )
+            return totalSize;
         else
             throw MaxSectionSizeExceeded(SectionName::STR, std::to_string(stringBytes.size()));
     }
@@ -2435,6 +2470,15 @@ std::streamsize StrSection::read(const Chk::SectionHeader & sectionHeader, std::
     size_t readSize = size_t(sectionHeader.sizeInBytes);
     if ( readSize > 0 )
     {
+        if ( overriding && tailData.size() > 0 ) // Need to dump tail data back into stringBytes before reading the overriding data
+        {
+            // After reading the override there may be different tail data/offsets or no tail data at all
+            stringBytes.insert(stringBytes.end(), tailData.begin(), tailData.end());
+            tailData.clear();
+            initialTailDataOffset = 0;
+            bytePaddedTo = 4;
+        }
+
         if ( readSize > stringBytes.size() ) // Need to expand section
             stringBytes.insert(stringBytes.end(), readSize-stringBytes.size(), u8(0));
         else if ( !overriding && readSize < stringBytes.size()  ) // Need to shrink section
@@ -2449,6 +2493,9 @@ std::streamsize StrSection::read(const Chk::SectionHeader & sectionHeader, std::
     {
         stringBytes.clear();
         strings.clear();
+        tailData.clear();
+        initialTailDataOffset = 0;
+        bytePaddedTo = 4;
     }
     return 0;
 }
@@ -2456,7 +2503,24 @@ std::streamsize StrSection::read(const Chk::SectionHeader & sectionHeader, std::
 void StrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
     if ( syncStringsToBytes(scenarioSaver) )
-        os.write((const char*)&stringBytes[0], (std::streamsize)stringBytes.size());
+    {
+        size_t stringBytesSize = stringBytes.size();
+        os.write((const char*)&stringBytes[0], (std::streamsize)stringBytesSize);
+        if ( tailData.size() > 0 )
+        {
+            if ( bytePaddedTo == 2 || bytePaddedTo == 4 )
+            {
+                const char padding[] = { '\0', '\0', '\0', '\0' };
+                if ( stringBytesSize%bytePaddedTo != 0 )
+                {
+                    logger.info() << "Writing " << (bytePaddedTo-stringBytesSize%bytePaddedTo) << " bytes of padding after the regular STR section data" << std::endl;
+                    os.write(padding, std::streamsize(bytePaddedTo-stringBytesSize%bytePaddedTo));
+                }
+            }
+            logger.info() << "Writing " << tailData.size() << " bytes of data after the regular STR section data" << std::endl;
+            os.write((const char*)&tailData[0], (std::streamsize)tailData.size());
+        }
+    }
 }
 
 size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
@@ -2574,11 +2638,15 @@ void StrSection::syncBytesToStrings()
     strings.push_back(nullptr); // Fill the non-existant 0th stringId
 
     size_t stringId = 1;
+    size_t sectionLastCharacter = 0;
     for ( ; stringId <= highestStringWithValidOffset; ++stringId )
     {
         size_t offsetPos = sizeof(u16)*stringId;
         size_t stringOffset = size_t((u16 &)stringBytes[offsetPos]);
-        loadString(stringOffset, numBytes);
+        size_t lastCharacter = loadString(stringOffset, numBytes);
+
+        if ( lastCharacter > sectionLastCharacter )
+            sectionLastCharacter = lastCharacter;
     }
     if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
     {
@@ -2591,9 +2659,29 @@ void StrSection::syncBytesToStrings()
         for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
             strings.push_back(nullptr);
     }
+
+    size_t offsetsEnd = sizeof(u16) + sizeof(u16)*rawNumStrings;
+    size_t charactersEnd = sectionLastCharacter+1;
+    size_t regularStrSectionEnd = std::max(offsetsEnd, charactersEnd);
+    if ( regularStrSectionEnd < numBytes ) // Tail data exists starting at regularStrSectionEnd
+    {
+        bytePaddedTo = 0;
+        initialTailDataOffset = regularStrSectionEnd;
+        auto tailStart = std::next(stringBytes.begin(), regularStrSectionEnd);
+        auto tailEnd = stringBytes.end();
+        tailData.assign(tailStart, tailEnd);
+        stringBytes.erase(tailStart, tailEnd);
+        logger.info() << "Read " << tailData.size() << " bytes of tailData after the STR section" << std::endl;
+    }
+    else // No tail data exists
+    {
+        bytePaddedTo = 4;
+        initialTailDataOffset = 0;
+        tailData.clear();
+    }
 }
 
-void StrSection::loadString(const size_t & stringOffset, const size_t & sectionSize)
+size_t StrSection::loadString(const size_t & stringOffset, const size_t & sectionSize)
 {
     if ( stringOffset < sectionSize )
     {
@@ -2602,13 +2690,20 @@ void StrSection::loadString(const size_t & stringOffset, const size_t & sectionS
         {
             auto nullIndex = std::distance(stringBytes.begin(), nextNull);
             if ( size_t(nullIndex) > stringOffset ) // Regular string
+            {
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
+                return nullIndex;
+            }
         }
         else if ( sectionSize > stringOffset ) // String ends where section ends
+        {
             strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
+            return sectionSize-1;
+        }
         else // Character data would be out of bounds
             strings.push_back(nullptr);
     }
+    return 0;
 }
 
 UprpSectionPtr UprpSection::GetDefault()

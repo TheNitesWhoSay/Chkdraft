@@ -1191,6 +1191,31 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
     return 0;
 }
 
+std::vector<u8> & Strings::getTailData()
+{
+    return str->getTailData();
+}
+
+size_t Strings::getTailDataOffset()
+{
+    return str->getTailDataOffset(*this);
+}
+
+size_t Strings::getInitialTailDataOffset()
+{
+    return str->getInitialTailDataOffset();
+}
+
+size_t Strings::getBytePaddedTo()
+{
+    return str->getBytePaddedTo();
+}
+
+void Strings::setBytePaddedTo(size_t bytePaddedTo)
+{
+    str->setBytePaddedTo(bytePaddedTo);
+}
+
 size_t Strings::getScenarioNameStringId(Chk::Scope storageScope)
 {
     return storageScope == Chk::Scope::Editor ? ostr->getScenarioNameStringId() : sprp->getScenarioNameStringId();

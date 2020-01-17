@@ -661,6 +661,12 @@ class StrSection : public DynamicSection<false>
         
         bool defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
 
+        std::vector<u8> & getTailData(); 
+        size_t getTailDataOffset(StrSynchronizer & strSynchronizer); // Gets the offset tail data would be at within the STR section were it written right now
+        size_t getInitialTailDataOffset(); // Gets the offset tail data was at when it was initially read in
+        size_t getBytePaddedTo(); // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none for tail data read in)
+        void setBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
+
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overriding = false); // Reads up to sizeExpected bytes from the input stream
@@ -669,6 +675,10 @@ class StrSection : public DynamicSection<false>
     private:
         std::deque<ScStrPtr> strings;
         std::vector<u8> stringBytes;
+
+        size_t bytePaddedTo; // If 2, or 4, it's padded to the nearest 2 or 4 byte boundary; no other value has any effect; 4 by default, 0 if "read" is called and any tailData is found
+        size_t initialTailDataOffset; // The offset at which strTailData started when the STR section was read, "0" if "read" is never called or there was no tailData
+        std::vector<u8> tailData; // Any data that comes after the regular STR section data, and after any padding
         
         size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
         void resolveParantage();
@@ -677,7 +687,7 @@ class StrSection : public DynamicSection<false>
         bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
-        void loadString(const size_t & stringOffset, const size_t & sectionSize);
+        size_t loadString(const size_t & stringOffset, const size_t & sectionSize); // Returns position of last character in the string (usually position of NUL terminator) if loaded, 0 otherwise
 };
 
 class UprpSection : public StructSection<Chk::UPRP, false>

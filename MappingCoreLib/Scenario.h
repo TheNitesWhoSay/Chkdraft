@@ -115,6 +115,12 @@ class Strings : public StrSynchronizer
         void moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope = Chk::Scope::Game);
         size_t rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo = Chk::Scope::Editor, bool autoDefragment = true);
 
+        std::vector<u8> & getTailData(); // Gets the data appended after the STR section
+        size_t getTailDataOffset(); // Gets the offset tail data would be at within the STR section were it written right now
+        size_t getInitialTailDataOffset(); // Gets the offset tail data was at when it was initially read in
+        size_t getBytePaddedTo(); // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none if existing tailData was read in)
+        void setBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
+
         size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game);
         size_t getScenarioDescriptionStringId(Chk::Scope storageScope = Chk::Scope::Game);
         size_t getForceNameStringId(Chk::Force force, Chk::Scope storageScope = Chk::Scope::Game);
