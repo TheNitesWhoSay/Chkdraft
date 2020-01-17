@@ -37,6 +37,7 @@ Scenario::Scenario() :
     strings.triggers = &triggers;
     players.strings = &strings;
     layers.strings = &strings;
+    layers.triggers = &triggers;
     properties.versions = &versions;
     properties.strings = &strings;
     triggers.strings = &strings;
@@ -55,12 +56,15 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
     strings.triggers = &triggers;
     players.strings = &strings;
     layers.strings = &strings;
+    layers.triggers = &triggers;
     properties.versions = &versions;
     properties.strings = &strings;
     triggers.strings = &strings;
     triggers.layers = &layers;
 
-    allSections.push_back(versions.type);
+    if ( versions.isHybridOrAbove() )
+        allSections.push_back(versions.type);
+    
     allSections.push_back(versions.ver);
 
     if ( !versions.isHybridOrAbove() )
@@ -322,6 +326,35 @@ StrSynchronizerPtr Scenario::getStrSynchronizer()
     return StrSynchronizerPtr(&strings, [](StrSynchronizer*){});
 }
 
+void Scenario::addSection(Section section)
+{
+    for ( auto & existing : allSections )
+    {
+        if ( section == existing )
+            return;
+    }
+    allSections.push_back(section);
+}
+
+void Scenario::removeSection(const SectionName & sectionName)
+{
+    bool foundSection = false;
+    do
+    {
+        foundSection = false;
+        for ( auto it = allSections.begin(); it != allSections.end(); ++it )
+        {
+            if ( (*it)->getName() == sectionName )
+            {
+                allSections.erase(it);
+                foundSection = true;
+                break;
+            }
+        }
+    }
+    while ( foundSection );
+}
+
 bool Scenario::ParsingFailed(const std::string & error)
 {
     logger.error(error);
@@ -396,6 +429,53 @@ bool Scenario::Deserialize(Chk::SerializedChk* data)
         // Chk::Size size = data->header.sizeInBytes; // Unused
         // void* scenarioData = &data->data[0];
         // return ParseScenario(scenarioData, size);
+    }
+    return false;
+}
+
+bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
+{
+    if ( versions.changeTo(version, lockAnywhere, autoDefragmentLocations) )
+    {
+        if ( version < Chk::Version::StarCraft_BroodWar ) // Original or Hybrid: No COLR, include all original properties
+        {
+            if ( version < Chk::Version::StarCraft_Hybrid ) // Original: No TYPE, IVE2, or expansion properties
+            {
+                removeSection(SectionName::TYPE);
+                removeSection(SectionName::PUPx);
+                removeSection(SectionName::PTEx);
+                removeSection(SectionName::UNIx);
+                removeSection(SectionName::TECx);
+            }
+            removeSection(SectionName::COLR);
+            addSection(versions.iver);
+            addSection(properties.upgr);
+            addSection(properties.ptec);
+            addSection(properties.unis);
+            addSection(properties.upgs);
+            addSection(properties.tecs);
+        }
+        else // if ( version >= Chk::Version::StarCraft_BroodWar ) // Broodwar: No IVER or original properties, include COLR
+        {
+            removeSection(SectionName::IVER);
+            removeSection(SectionName::UPGR);
+            removeSection(SectionName::PTEC);
+            removeSection(SectionName::UNIS);
+            removeSection(SectionName::UPGS);
+            removeSection(SectionName::TECS);
+            addSection(players.colr);
+        }
+        
+        if ( version >= Chk::Version::StarCraft_Hybrid ) // Hybrid or BroodWar: Include type, ive2, and all expansion properties
+        {
+            addSection(versions.type);
+            addSection(properties.pupx);
+            addSection(properties.ptex);
+            addSection(properties.unix);
+            addSection(properties.upgx);
+            addSection(properties.tecx);
+        }
+        return true;
     }
     return false;
 }
@@ -540,30 +620,38 @@ bool Versions::isHybridOrAbove()
     return ver->isHybridOrAbove();
 }
 
-void Versions::changeTo(Chk::Version version)
+bool Versions::changeTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
 {
     Chk::Version oldVersion = ver->getVersion();
     ver->setVersion(version);
     if ( version < Chk::Version::StarCraft_Hybrid )
     {
-        type->setType(Chk::Type::RAWS);
-        iver->setVersion(Chk::IVersion::Current);
-        layers->sizeLocationsToScOriginal();
+        if ( layers->trimLocationsToOriginal(lockAnywhere, autoDefragmentLocations) )
+        {
+            type->setType(Chk::Type::RAWS);
+            iver->setVersion(Chk::IVersion::Current);
+        }
+        else
+        {
+            logger.error("Cannot save as original with over 64 locations in use!");
+            return false;
+        }
     }
     else if ( version < Chk::Version::StarCraft_BroodWar )
     {
         type->setType(Chk::Type::RAWS);
         iver->setVersion(Chk::IVersion::Current);
         ive2->setVersion(Chk::I2Version::StarCraft_1_04);
-        layers->sizeLocationsToScHybridOrExpansion();
+        layers->expandToScHybridOrExpansion();
     }
     else // version >= Chk::Version::StarCraft_Broodwar
     {
         type->setType(Chk::Type::RAWB);
         iver->setVersion(Chk::IVersion::Current);
         ive2->setVersion(Chk::I2Version::StarCraft_1_04);
-        layers->sizeLocationsToScHybridOrExpansion();
+        layers->expandToScHybridOrExpansion();
     }
+    return true;
 }
 
 bool Versions::hasDefaultValidation()
@@ -811,9 +899,9 @@ template <typename StringType>
 size_t Strings::addString(const StringType &str, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game )
-        this->str->addString<StringType>(str, *this, autoDefragment);
+        return this->str->addString<StringType>(str, *this, autoDefragment);
     else if ( storageScope == Chk::Scope::Editor )
-        kstr->addString<StringType>(str, *this, autoDefragment);
+        return kstr->addString<StringType>(str, *this, autoDefragment);
 
     return (size_t)Chk::StringId::NoString;
 }
@@ -1011,7 +1099,7 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
                 }
             }
             size_t numLocations = layers->numLocations();
-            for ( size_t i=0; i<numLocations; i++ )
+            for ( size_t i=1; i<=numLocations; i++ )
             {
                 if ( stringId == layers->getLocation(i)->stringId )
                 {
@@ -1084,7 +1172,7 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
                 }
             }
             size_t numLocations = layers->numLocations();
-            for ( size_t i=0; i<numLocations; i++ )
+            for ( size_t i=1; i<=numLocations; i++ )
             {
                 if ( stringId == ostr->getLocationNameStringId(i) )
                 {
@@ -1146,13 +1234,13 @@ size_t Strings::getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScop
     return storageScope == Chk::Scope::Editor ? ostr->getSwitchNameStringId(switchIndex) : triggers->getSwitchNameStringId(switchIndex);
 }
 
-size_t Strings::getLocationNameStringId(size_t locationIndex, Chk::Scope storageScope)
+size_t Strings::getLocationNameStringId(size_t locationId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        return ostr->getLocationNameStringId(locationIndex);
+        return ostr->getLocationNameStringId(locationId);
     else
     {
-        Chk::LocationPtr location = layers->getLocation(locationIndex);
+        Chk::LocationPtr location = layers->getLocation(locationId);
         return location != nullptr ? location->stringId : 0;
     }
 }
@@ -1215,13 +1303,13 @@ void Strings::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringI
         triggers->setSwitchNameStringId(switchIndex, (u32)switchNameStringId);
 }
 
-void Strings::setLocationNameStringId(size_t locationIndex, size_t locationNameStringId, Chk::Scope storageScope)
+void Strings::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        ostr->setLocationNameStringId(locationIndex, (u32)locationNameStringId);
+        ostr->setLocationNameStringId(locationId, (u32)locationNameStringId);
     else
     {
-        auto location = layers->getLocation(locationIndex);
+        auto location = layers->getLocation(locationId);
         if ( location != nullptr )
             location->stringId = (u16)locationNameStringId;
     }
@@ -1316,14 +1404,14 @@ template std::shared_ptr<ChkdString> Strings::getSwitchName<ChkdString>(size_t s
 template std::shared_ptr<SingleLineChkdString> Strings::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::Scope storageScope);
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getLocationName(size_t locationIndex, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getLocationName(size_t locationId, Chk::Scope storageScope)
 {
-    return getString<StringType>((locationIndex < layers->numLocations() ? layers->getLocation(locationIndex)->stringId : 0), ostr->getLocationNameStringId(locationIndex), storageScope);
+    return getString<StringType>((locationId > 0 && locationId <= layers->numLocations() ? layers->getLocation(locationId)->stringId : 0), ostr->getLocationNameStringId(locationId), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getLocationName<RawString>(size_t locationIndex, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getLocationName<EscString>(size_t locationIndex, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t locationIndex, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationIndex, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope);
+template std::shared_ptr<EscString> Strings::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope);
+template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t locationId, Chk::Scope storageScope);
+template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope);
 
 template <typename StringType>
 void Strings::setScenarioName(const StringType &scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
@@ -1454,24 +1542,24 @@ template void Strings::setSwitchName<ChkdString>(size_t switchIndex, const ChkdS
 template void Strings::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString &switchName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setLocationName(size_t locationIndex, const StringType &locationName, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setLocationName(size_t locationId, const StringType &locationName, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && locationIndex < layers->numLocations() )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && locationId > 0 && locationId <= layers->numLocations() )
     {
         size_t newStringId = addString<StringType>(locationName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                layers->getLocation(locationIndex)->stringId = (u16)newStringId;
+                layers->getLocation(locationId)->stringId = (u16)newStringId;
             else if ( storageScope == Chk::Scope::Editor )
-                ostr->setLocationNameStringId(locationIndex, (u32)newStringId);
+                ostr->setLocationNameStringId(locationId, (u32)newStringId);
         }
     }
 }
-template void Strings::setLocationName<RawString>(size_t locationIndex, const RawString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<EscString>(size_t locationIndex, const EscString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<ChkdString>(size_t locationIndex, const ChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<SingleLineChkdString>(size_t locationIndex, const SingleLineChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<RawString>(size_t locationId, const RawString &locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<EscString>(size_t locationId, const EscString &locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<ChkdString>(size_t locationId, const ChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
 
 void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
     StrCompressionElevatorPtr compressionElevator, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
@@ -1614,7 +1702,7 @@ const std::vector<u32> Strings::compressionFlagsProgression = {
         | StrCompressFlag::SizeBytesRecycling
 };
 
-void Strings::remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope)
+void Strings::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -1753,7 +1841,7 @@ void Players::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     forc->markUsedStrings(stringIdUsed);
 }
 
-void Players::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Players::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     forc->remapStringIds(stringIdRemappings);
 }
@@ -2199,19 +2287,9 @@ size_t Layers::numLocations()
     return mrgn->numLocations();
 }
 
-void Layers::sizeLocationsToScOriginal()
+std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationId)
 {
-    mrgn->sizeToScOriginal();
-}
-
-void Layers::sizeLocationsToScHybridOrExpansion()
-{
-    mrgn->sizeToScHybridOrExpansion();
-}
-
-std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationIndex)
-{
-    return mrgn->getLocation(locationIndex);
+    return mrgn->getLocation(locationId);
 }
 
 size_t Layers::addLocation(std::shared_ptr<Chk::Location> location)
@@ -2219,22 +2297,25 @@ size_t Layers::addLocation(std::shared_ptr<Chk::Location> location)
     return mrgn->addLocation(location);
 }
 
-void Layers::insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location)
+void Layers::replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location)
 {
-    return mrgn->insertLocation(locationIndex, location);
+    mrgn->replaceLocation(locationId, location);
 }
 
-void Layers::deleteLocation(size_t locationIndex)
+void Layers::deleteLocation(size_t locationId, bool deleteOnlyIfUnused)
 {
-    Chk::LocationPtr location = mrgn->getLocation(locationIndex);
-    size_t deletedLocationNameStringId = location != nullptr ? location->stringId : Chk::StringId::NoString;
-    mrgn->deleteLocation(locationIndex);
-    strings->deleteString(deletedLocationNameStringId);
+    if ( !deleteOnlyIfUnused || !triggers->locationUsed(locationId) )
+        mrgn->deleteLocation(locationId);
 }
 
-void Layers::moveLocation(size_t locationIndexFrom, size_t locationIndexTo)
+bool Layers::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere)
 {
-    mrgn->moveLocation(locationIndexFrom, locationIndexTo);
+    return mrgn->moveLocation(locationIdFrom, locationIdTo, lockAnywhere);
+}
+
+bool Layers::isBlank(size_t locationId)
+{
+    return mrgn->isBlank(locationId);
 }
 
 void Layers::downsizeOutOfBoundsLocations()
@@ -2242,7 +2323,7 @@ void Layers::downsizeOutOfBoundsLocations()
     size_t pixelWidth = dim->getPixelWidth();
     size_t pixelHeight = dim->getPixelHeight();
     size_t numLocations = mrgn->numLocations();
-    for ( size_t i=0; i<numLocations; i++ )
+    for ( size_t i=1; i<=numLocations; i++ )
     {
         std::shared_ptr<Chk::Location> location = mrgn->getLocation(i);
 
@@ -2258,6 +2339,21 @@ void Layers::downsizeOutOfBoundsLocations()
         if ( location->bottom >= pixelHeight )
             location->bottom = u32(pixelHeight-1);
     }
+}
+
+bool Layers::locationsFitOriginal(bool lockAnywhere, bool autoDefragment)
+{
+    return mrgn->locationsFitOriginal(*triggers, lockAnywhere, autoDefragment);
+}
+
+bool Layers::trimLocationsToOriginal(bool lockAnywhere, bool autoDefragment)
+{
+    return mrgn->trimToOriginal(*triggers, lockAnywhere, autoDefragment);
+}
+
+void Layers::expandToScHybridOrExpansion()
+{
+    mrgn->expandToScHybridOrExpansion();
 }
 
 bool Layers::anywhereIsStandardDimensions()
@@ -2296,7 +2392,7 @@ void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     mrgn->markUsedStrings(stringIdUsed);
 }
 
-void Layers::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Layers::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     mrgn->remapStringIds(stringIdRemappings);
 }
@@ -3187,7 +3283,7 @@ void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     unix->markUsedStrings(stringIdUsed);
 }
 
-void Properties::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Properties::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     unis->remapStringIds(stringIdRemappings);
     unix->remapStringIds(stringIdRemappings);
@@ -3259,7 +3355,7 @@ void Properties::clear()
 }
 
 
-Triggers::Triggers(bool useDefault) : strings(nullptr), layers(nullptr)
+Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), layers(nullptr)
 {
     if ( useDefault )
     {
@@ -3428,6 +3524,11 @@ void Triggers::setSoundStringId(size_t soundIndex, size_t soundStringId)
     wav->setSoundStringId(soundIndex, soundStringId);
 }
 
+bool Triggers::locationUsed(size_t locationId)
+{
+    return trig->locationUsed(locationId);
+}
+
 bool Triggers::stringUsed(size_t stringId)
 {
     return wav->stringUsed(stringId) || swnm->stringUsed(stringId) || trig->stringUsed(stringId) || mbrf->stringUsed(stringId);
@@ -3441,6 +3542,11 @@ bool Triggers::gameStringUsed(size_t stringId)
 bool Triggers::editorStringUsed(size_t stringId)
 {
     return wav->stringUsed(stringId) || swnm->stringUsed(stringId) || trig->commentStringUsed(stringId);
+}
+
+void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    trig->markUsedLocations(locationIdUsed);
 }
 
 void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
@@ -3464,12 +3570,22 @@ void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     trig->markUsedCommentStrings(stringIdUsed);
 }
 
-void Triggers::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Triggers::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
+{
+    trig->remapLocationIds(locationIdRemappings);
+}
+
+void Triggers::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     wav->remapStringIds(stringIdRemappings);
     swnm->remapStringIds(stringIdRemappings);
     trig->remapStringIds(stringIdRemappings);
     mbrf->remapStringIds(stringIdRemappings);
+}
+
+void Triggers::deleteLocation(size_t locationId)
+{
+    trig->deleteLocation(locationId);
 }
 
 void Triggers::deleteString(size_t stringId)

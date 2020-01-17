@@ -56,7 +56,6 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
             for ( int x=0; x<2; x++ )
             {
                 int force = x+y*2;
-                ChkdString forceName = "";
 
                 u8 forceFlags = CM->players.getForceFlags((Chk::Force)force);
                 bool allied = forceFlags & Chk::ForceFlags::RandomAllies;
@@ -66,7 +65,8 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
 
                 groupForce[force].CreateThis(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force], 0);
                 editForceName[force].CreateThis(hForces, 20+293*x, 70+239*y, 268, 20, false, Id::EDIT_F1NAME+force);
-                editForceName[force].SetText(*CM->strings.getForceName<ChkdString>((Chk::Force)force));
+                auto forceName = CM->strings.getForceName<ChkdString>((Chk::Force)force);
+                editForceName[force].SetText(forceName != nullptr && !forceName->empty() ? forceName->c_str() : "");
                 dragForces[force].CreateThis(hForces, 20+293*x, 95+239*y, 268, 121, Id::LB_F1PLAYERS+force);
                 checkAllied[force].CreateThis(hForces, 15+293*x, 232+239*y, 100, 20, allied, "Allied", Id::CHECK_F1ALLIED+force);
                 checkSharedVision[force].CreateThis(hForces, 15+293*x, 252+239*y, 100, 20, vision, "Share Vision", Id::CHECK_F1VISION+force);
@@ -103,7 +103,8 @@ void ForcesWindow::RefreshWindow()
             bool random = forceFlags & Chk::ForceFlags::RandomizeStartLocation;
             bool av = forceFlags & Chk::ForceFlags::AlliedVictory;
 
-            editForceName[force].SetWinText(*CM->strings.getForceName<ChkdString>((Chk::Force)force));
+            auto forceName = CM->strings.getForceName<ChkdString>((Chk::Force)force);
+            editForceName[force].SetWinText(forceName != nullptr && !forceName->empty() ? forceName->c_str() : "");
             if ( allied ) SendMessage(GetDlgItem(hWnd, Id::CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , 0);
             else          SendMessage(GetDlgItem(hWnd, Id::CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, 0);
             if ( vision ) SendMessage(GetDlgItem(hWnd, Id::CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , 0);

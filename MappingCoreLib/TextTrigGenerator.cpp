@@ -1125,14 +1125,14 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
     locationTable.push_back(SingleLineChkdString("No Location"));
 
     size_t numLocations = map->layers.numLocations();
-    for ( size_t i=0; i<numLocations; i++ )
+    for ( size_t i=1; i<=numLocations; i++ )
     {
         Chk::LocationPtr loc = map->layers.getLocation(i);
         if ( loc != nullptr )
         {
             locationName = "";
 
-            if ( i == 63 )
+            if ( i == Chk::LocationId::Anywhere )
             {
                 if ( quoteArgs )
                     locationName = "\"Anywhere\"";

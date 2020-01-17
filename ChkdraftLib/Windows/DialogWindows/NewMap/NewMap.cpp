@@ -28,7 +28,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         editWidth.GetEditNum<int>(width);
         editHeight.GetEditNum<int>(height);
         listInitialTileset.GetCurSel(tileset);
-        listInitialTerrain.GetCurSel(tileset);
+        listInitialTerrain.GetCurSel(terrain);
         triggers = dropDefaultTriggers.GetSel();
 
         if ( width>0 && height>0 )

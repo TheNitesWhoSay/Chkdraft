@@ -6,14 +6,14 @@ LocationMove::~LocationMove()
 
 }
 
-std::shared_ptr<LocationMove> LocationMove::Make(u16 locationIndex, s32 xChange, s32 yChange)
+std::shared_ptr<LocationMove> LocationMove::Make(u16 locationId, s32 xChange, s32 yChange)
 {
-    return std::shared_ptr<LocationMove>(new LocationMove(locationIndex, xChange, yChange));
+    return std::shared_ptr<LocationMove>(new LocationMove(locationId, xChange, yChange));
 }
 
 void LocationMove::Reverse(void *guiMap)
 {
-    auto loc = ((GuiMap*)guiMap)->layers.getLocation(locationIndex);
+    auto loc = ((GuiMap*)guiMap)->layers.getLocation(locationId);
     loc->left += xChange;
     loc->right += xChange;
     loc->top += yChange;
@@ -27,8 +27,8 @@ int32_t LocationMove::GetType()
     return UndoTypes::LocationChange;
 }
 
-LocationMove::LocationMove(u16 locationIndex, s32 xChange, s32 yChange)
-    : locationIndex(locationIndex), xChange(xChange), yChange(yChange)
+LocationMove::LocationMove(u16 locationId, s32 xChange, s32 yChange)
+    : locationId(locationId), xChange(xChange), yChange(yChange)
 {
 
 }

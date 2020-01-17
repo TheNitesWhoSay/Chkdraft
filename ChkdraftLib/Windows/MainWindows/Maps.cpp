@@ -162,7 +162,7 @@ bool Maps::OpenMap(const std::string &fileName)
 bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
     auto newMap = GuiMapPtr(new GuiMap(clipboard, fileBrowser));
-    if ( newMap != nullptr )
+    if ( newMap != nullptr && !newMap->getFilePath().empty() )
     {
         AddMap(newMap);
         if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )

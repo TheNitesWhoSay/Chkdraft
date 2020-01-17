@@ -50,7 +50,7 @@ class LocationWindow : public WinLib::ClassDialog
     private:
         bool refreshing;
         u32 preservedStat;
-        u16 currentLocationIndex;
+        u16 currentLocationId;
 
         WinLib::EditControl editLocName, editLocLeft, editLocTop, editLocRight, editLocBottom, editRawFlags;
         WinLib::CheckBoxControl checkUseExtended, checkLowGround, checkMedGround, checkHighGround, checkLowAir, checkMedAir, checkHighAir;

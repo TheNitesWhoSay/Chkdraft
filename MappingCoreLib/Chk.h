@@ -289,6 +289,8 @@ namespace Chk {
         };
 
         Location();
+
+        bool isBlank();
         
         u32 left;
         u32 top;
@@ -472,6 +474,10 @@ namespace Chk {
 
         void ToggleDisabled();
         bool isDisabled();
+        inline bool locationUsed(size_t locationId);
+        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void deleteLocation(size_t locationId);
         static ArgType getClassicArgType(Type conditionType, size_t argNum);
         static ArgType getClassicArgType(VirtualType conditionType, size_t argNum);
 
@@ -479,6 +485,7 @@ namespace Chk {
         static Argument textArguments[NumConditionTypes][MaxArguments];
         static u8 defaultFlags[NumConditionTypes];
         static std::unordered_map<VirtualType, VirtualCondition> virtualConditions;
+        static bool conditionUsesLocationArg[NumConditionTypes];
     }; // 20 (0x14) bytes
 
     __declspec(align(1)) struct Action
@@ -759,16 +766,20 @@ namespace Chk {
         void ToggleDisabled();
         static ArgType getClassicArgType(Type actionType, size_t argNum);
         static ArgType getClassicArgType(VirtualType actionType, size_t argNum);
+        inline bool locationUsed(size_t locationId);
         inline bool stringUsed(size_t stringId);
         inline bool gameStringUsed(size_t stringId);
         inline bool commentStringUsed(size_t stringId);
         inline bool briefingStringUsed(size_t stringId);
+        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         inline void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
-        void remapBriefingStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
         void deleteBriefingString(size_t stringId);
 
@@ -776,6 +787,8 @@ namespace Chk {
         static Argument textArguments[NumActionTypes][MaxArguments];
         static u8 defaultFlags[NumActionTypes];
         static std::unordered_map<VirtualType, VirtualAction> virtualActions;
+        static bool actionUsesLocationArg[NumActionTypes];
+        static bool actionUsesSecondaryLocationArg[NumActionTypes];
         static bool actionUsesStringArg[NumActionTypes];
         static bool actionUsesGameStringArg[NumActionTypes]; // The only editor-specific string in trigger actions is "comment"
         static bool actionUsesSoundArg[NumActionTypes];
@@ -830,16 +843,20 @@ namespace Chk {
         size_t numUsedConditions();
         size_t numUsedActions();
         size_t getComment();
+        bool locationUsed(size_t locationId);
         bool stringUsed(size_t stringId);
         bool gameStringUsed(size_t stringId);
         bool commentStringUsed(size_t stringId);
         bool briefingStringUsed(size_t stringId);
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
-        void remapBriefingStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
         void deleteBriefingString(size_t stringId);
 
@@ -1157,7 +1174,7 @@ namespace Chk {
         u32 expUnitName[Sc::Unit::TotalTypes];
         u32 soundPath[Chk::TotalSounds];
         u32 switchName[Chk::TotalSwitches];
-        u32 locationName[Chk::TotalLocations];
+        u32 locationName[Chk::TotalLocations+1];
     };
 
     __declspec(align(1)) struct KSTR {

@@ -174,9 +174,9 @@ void GuiMap::setDragging(bool bDragging)
     dragging = bDragging;
 }
 
-void GuiMap::viewLocation(u16 index)
+void GuiMap::viewLocation(u16 locationId)
 {
-    Chk::LocationPtr location = layers.getLocation(index);
+    Chk::LocationPtr location = layers.getLocation(locationId);
     RECT rect;
     if ( location != nullptr && GetClientRect(getHandle(), &rect) != 0 )
     {
@@ -984,7 +984,7 @@ void GuiMap::ToggleLockAnywhere()
 {
     lockAnywhere = !lockAnywhere;
     UpdateLocationMenuItems();
-    if ( selections.getSelectedLocation() == 63 )
+    if ( selections.getSelectedLocation() == Chk::LocationId::Anywhere )
         selections.selectLocation(NO_LOCATION);
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
     Redraw(false);
@@ -1757,8 +1757,9 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             newLocation->bottom = endY;
             newLocation->elevationFlags = Chk::Location::Elevation::All;
 
-            size_t newLocationIndex = layers.addLocation(newLocation);
-            undos.AddUndo(LocationCreateDel::Make((u16)newLocationIndex));
+            size_t newLocationId = layers.addLocation(newLocation);
+            strings.setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
             refreshScenario();
         }

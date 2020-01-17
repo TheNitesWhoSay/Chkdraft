@@ -98,6 +98,33 @@ u8 Chk::Condition::defaultFlags[NumConditionTypes] = {
     /** 23 = Never -------------- */ 0
 };
 
+bool Chk::Condition::conditionUsesLocationArg[NumConditionTypes] = {
+    /**  0 = No Condition         */ false,
+    /**  1 = Countdown Timer ---- */ false,
+    /**  2 = Command              */ false,
+    /**  3 = Bring -------------- */ true ,
+    /**  4 = Accumulate           */ false,
+    /**  5 = Kill --------------- */ false,
+    /**  6 = Command The Most     */ false,
+    /**  7 = Command The Most At  */ true ,
+    /**  8 = Most Kills           */ false,
+    /**  9 = Highest Score ------ */ false,
+    /** 10 = Most Resources       */ false,
+    /** 11 = Switch ------------- */ false,
+    /** 12 = Elapsed Time         */ false,
+    /** 13 = Is Briefing -------- */ false,
+    /** 14 = Opponents            */ false,
+    /** 15 = Deaths ------------- */ false,
+    /** 16 = Command The Least    */ false,
+    /** 17 = Command The Least At */ true ,
+    /** 18 = Least Kills          */ false,
+    /** 19 = Lowest Score ------- */ false,
+    /** 20 = Least Resources      */ false,
+    /** 21 = Score -------------- */ false,
+    /** 22 = Always               */ false,
+    /** 23 = Never -------------- */ false
+};
+
 std::unordered_map<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition> Chk::Condition::virtualConditions = {
     std::pair<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition>(
         Chk::Condition::VirtualType::Custom, { Chk::Condition::VirtualType::Indeterminate, {
@@ -373,6 +400,13 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
     return Chk::Action::ArgType::NoType;
 }
 
+inline bool Chk::Action::locationUsed(size_t locationId)
+{
+    return actionType < NumActionTypes &&
+        ((actionUsesLocationArg[actionType] && this->locationId == locationId) ||
+         (actionUsesSecondaryLocationArg[actionType] && this->number == locationId));
+}
+
 inline bool Chk::Action::stringUsed(size_t stringId)
 {
     return actionType < NumActionTypes &&
@@ -397,6 +431,18 @@ inline bool Chk::Action::briefingStringUsed(size_t stringId)
     return actionType < NumBriefingActionTypes &&
         ((briefingActionUsesStringArg[actionType] && this->stringId == stringId) ||
          (briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId));
+}
+
+inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    if ( actionType < NumActionTypes )
+    {
+        if ( actionUsesLocationArg[actionType] && locationId != Chk::LocationId::NoLocation && locationId <= Chk::TotalLocations )
+            locationIdUsed[locationId] = true;
+
+        if ( actionUsesSecondaryLocationArg[actionType] && number != Chk::LocationId::NoLocation && number <= Chk::TotalLocations )
+            locationIdUsed[number] = true;
+    }
 }
 
 inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
@@ -441,7 +487,27 @@ inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &s
     }
 }
 
-void Chk::Action::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Chk::Action::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
+{
+    if ( actionType < NumActionTypes )
+    {
+        if ( actionUsesLocationArg[actionType] )
+        {
+            auto found = locationIdRemappings.find(locationId);
+            if ( found != locationIdRemappings.end() )
+                locationId = found->second;
+        }
+
+        if ( actionUsesSecondaryLocationArg[actionType] )
+        {
+            auto found = locationIdRemappings.find(locationId);
+            if ( found != locationIdRemappings.end() )
+                locationId = found->second;
+        }
+    }
+}
+
+void Chk::Action::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     if ( actionType < NumActionTypes )
     {
@@ -461,7 +527,7 @@ void Chk::Action::remapStringIds(std::map<u32, u32> stringIdRemappings)
     }
 }
 
-void Chk::Action::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
+void Chk::Action::remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     if ( actionType < NumBriefingActionTypes )
     {
@@ -478,6 +544,18 @@ void Chk::Action::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
             if ( found != stringIdRemappings.end() )
                 soundStringId = found->second;
         }
+    }
+}
+
+void Chk::Action::deleteLocation(size_t locationId)
+{
+    if ( actionType < NumActionTypes )
+    {
+        if ( actionUsesLocationArg[actionType] && this->locationId == locationId )
+            this->locationId = Chk::LocationId::NoLocation;
+
+        if ( actionUsesSecondaryLocationArg[actionType] && this->number == locationId )
+            this->number = Chk::LocationId::NoLocation;
     }
 }
 
@@ -511,6 +589,52 @@ std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Ac
              locationArg, textFlagsArg, soundArg, durationArg, playerArg, numberArg, actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::SetMemory, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg } } )
+};
+
+bool Chk::Action::actionUsesLocationArg[NumActionTypes] = {
+    /**  0 = No Action                              */ false, /**  1 = Victory                                */ false, /**  2 = Defeat                                 */ false,
+    /**  3 = Preserve Trigger --------------------- */ false, /**  4 = Wait --------------------------------- */ false, /**  5 = Pause Game --------------------------- */ false,
+    /**  6 = Unpause Game                           */ false, /**  7 = Transmission                           */ true , /**  8 = Play Sound                             */ false,
+    /**  9 = Display Text Message ----------------- */ false, /** 10 = Center View -------------------------- */ true , /** 11 = Create Unit with Properties ---------- */ true ,
+    /** 12 = Set Mission Objectives                 */ false, /** 13 = Set Switch                             */ false, /** 14 = Set Countdown Timer                    */ false,
+    /** 15 = Run AI Script ------------------------ */ false, /** 16 = Run AI Script At Location ------------ */ true , /** 17 = Leader Board (Control) --------------- */ false,
+    /** 18 = Leader Board (Control At Location)     */ true , /** 19 = Leader Board (Resources)               */ false, /** 20 = Leader Board (Kills)                   */ false,
+    /** 21 = Leader Board (Points) ---------------- */ false, /** 22 = Kill Unit ---------------------------- */ false, /** 23 = Kill Unit At Location ---------------- */ true ,
+    /** 24 = Remove Unit                            */ false, /** 25 = Remove Unit At Location                */ true , /** 26 = Set Resources                          */ false,
+    /** 27 = Set Score ---------------------------- */ false, /** 28 = Minimap Ping ------------------------- */ true , /** 29 = Talking Portrait --------------------- */ false,
+    /** 30 = Mute Unit Speech                       */ false, /** 31 = Unmute Unit Speech                     */ false, /** 32 = Leaderboard Computer Players           */ false,
+    /** 33 = Leaderboard Goal (Control) ----------- */ false, /** 34 = Leaderboard Goal (Control At Location) */ true , /** 35 = Leaderboard Goal (Resources) --------- */ false,
+    /** 36 = Leaderboard Goal (Kills)               */ false, /** 37 = Leaderboard Goal (Points)              */ false, /** 38 = Move Location                          */ true ,
+    /** 39 = Move Unit ---------------------------- */ true , /** 40 = Leaderboard (Greed) ------------------ */ false, /** 41 = Set Next Scenario -------------------- */ false,
+    /** 42 = Set Doodad State                       */ true , /** 43 = Set Invincibility                      */ true , /** 44 = Create Unit                            */ true ,
+    /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ true , /** 47 = Comment ------------------------------ */ false,
+    /** 48 = Give Units to Player                   */ true , /** 49 = Modify Unit Hit Points                 */ true , /** 50 = Modify Unit Energy                     */ true ,
+    /** 51 = Modify Unit Shield points ------------ */ true , /** 52 = Modify Unit Resource Amount ---------- */ true , /** 53 = Modify Unit Hanger Count ------------- */ true ,
+    /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
+    /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
+};
+
+bool Chk::Action::actionUsesSecondaryLocationArg[NumActionTypes] = {
+    /**  0 = No Action                              */ false, /**  1 = Victory                                */ false, /**  2 = Defeat                                 */ false,
+    /**  3 = Preserve Trigger --------------------- */ false, /**  4 = Wait --------------------------------- */ false, /**  5 = Pause Game --------------------------- */ false,
+    /**  6 = Unpause Game                           */ false, /**  7 = Transmission                           */ false, /**  8 = Play Sound                             */ false,
+    /**  9 = Display Text Message ----------------- */ false, /** 10 = Center View -------------------------- */ false, /** 11 = Create Unit with Properties ---------- */ false,
+    /** 12 = Set Mission Objectives                 */ false, /** 13 = Set Switch                             */ false, /** 14 = Set Countdown Timer                    */ false,
+    /** 15 = Run AI Script ------------------------ */ false, /** 16 = Run AI Script At Location ------------ */ false, /** 17 = Leader Board (Control) --------------- */ false,
+    /** 18 = Leader Board (Control At Location)     */ false, /** 19 = Leader Board (Resources)               */ false, /** 20 = Leader Board (Kills)                   */ false,
+    /** 21 = Leader Board (Points) ---------------- */ false, /** 22 = Kill Unit ---------------------------- */ false, /** 23 = Kill Unit At Location ---------------- */ false,
+    /** 24 = Remove Unit                            */ false, /** 25 = Remove Unit At Location                */ false, /** 26 = Set Resources                          */ false,
+    /** 27 = Set Score ---------------------------- */ false, /** 28 = Minimap Ping ------------------------- */ false, /** 29 = Talking Portrait --------------------- */ false,
+    /** 30 = Mute Unit Speech                       */ false, /** 31 = Unmute Unit Speech                     */ false, /** 32 = Leaderboard Computer Players           */ false,
+    /** 33 = Leaderboard Goal (Control) ----------- */ false, /** 34 = Leaderboard Goal (Control At Location) */ false, /** 35 = Leaderboard Goal (Resources) --------- */ false,
+    /** 36 = Leaderboard Goal (Kills)               */ false, /** 37 = Leaderboard Goal (Points)              */ false, /** 38 = Move Location                          */ true ,
+    /** 39 = Move Unit ---------------------------- */ true , /** 40 = Leaderboard (Greed) ------------------ */ false, /** 41 = Set Next Scenario -------------------- */ false,
+    /** 42 = Set Doodad State                       */ false, /** 43 = Set Invincibility                      */ false, /** 44 = Create Unit                            */ false,
+    /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ true , /** 47 = Comment ------------------------------ */ false,
+    /** 48 = Give Units to Player                   */ false, /** 49 = Modify Unit Hit Points                 */ false, /** 50 = Modify Unit Energy                     */ false,
+    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hanger Count ------------- */ false,
+    /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
+    /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
 
 bool Chk::Action::actionUsesStringArg[NumActionTypes] = {
@@ -660,6 +784,36 @@ void Chk::Condition::ToggleDisabled()
 bool Chk::Condition::isDisabled()
 {
     return (flags & Flags::Disabled) == Flags::Disabled;
+}
+
+inline bool Chk::Condition::locationUsed(size_t locationId)
+{
+    return conditionType < NumConditionTypes && conditionUsesLocationArg[conditionType] && this->locationId == locationId;
+}
+
+inline void Chk::Condition::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    if ( conditionType < NumConditionTypes && conditionUsesLocationArg[conditionType] && locationId != Chk::LocationId::NoLocation && locationId <= Chk::TotalLocations )
+        locationIdUsed[locationId] = true;
+}
+
+void Chk::Condition::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
+{
+    if ( conditionType < NumConditionTypes )
+    {
+        if ( conditionUsesLocationArg[conditionType] )
+        {
+            auto found = locationIdRemappings.find(locationId);
+            if ( found != locationIdRemappings.end() )
+                locationId = found->second;
+        }
+    }
+}
+
+void Chk::Condition::deleteLocation(size_t locationId)
+{
+    if ( conditionType < NumConditionTypes && conditionUsesLocationArg[conditionType] && this->locationId == locationId )
+        this->locationId = Chk::LocationId::NoLocation;
 }
 
 void Chk::Action::ToggleDisabled()
@@ -850,6 +1004,21 @@ size_t Chk::Trigger::numUsedActions()
     return total;
 }
 
+bool Chk::Trigger::locationUsed(size_t locationId)
+{
+    for ( size_t i=0; i<MaxConditions; i++ )
+    {
+        if ( conditions[i].locationUsed(locationId) )
+            return true;
+    }
+    for ( size_t i=0; i<MaxActions; i++ )
+    {
+        if ( actions[i].locationUsed(locationId) )
+            return true;
+    }
+    return false;
+}
+
 bool Chk::Trigger::stringUsed(size_t stringId)
 {
     for ( size_t i=0; i<MaxActions; i++ )
@@ -890,6 +1059,15 @@ bool Chk::Trigger::briefingStringUsed(size_t stringId)
     return false;
 }
 
+void Chk::Trigger::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    for ( size_t i=0; i<MaxConditions; i++ )
+        conditions[i].markUsedLocations(locationIdUsed);
+
+    for ( size_t i=0; i<MaxActions; i++ )
+        actions[i].markUsedLocations(locationIdUsed);
+}
+
 void Chk::Trigger::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
     for ( size_t i=0; i<MaxActions; i++ )
@@ -914,16 +1092,34 @@ void Chk::Trigger::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringI
         actions[i].markUsedBriefingStrings(stringIdUsed);
 }
 
-void Chk::Trigger::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void Chk::Trigger::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
+{
+    for ( size_t i=0; i<MaxConditions; i++ )
+        conditions[i].remapLocationIds(locationIdRemappings);
+
+    for ( size_t i=0; i<MaxActions; i++ )
+        actions[i].remapLocationIds(locationIdRemappings);
+}
+
+void Chk::Trigger::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].remapStringIds(stringIdRemappings);
 }
 
-void Chk::Trigger::remapBriefingStringIds(std::map<u32, u32> stringIdRemappings)
+void Chk::Trigger::remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].remapBriefingStringIds(stringIdRemappings);
+}
+
+void Chk::Trigger::deleteLocation(size_t locationId)
+{
+    for ( size_t i=0; i<MaxConditions; i++ )
+        conditions[i].deleteLocation(locationId);
+
+    for ( size_t i=0; i<MaxActions; i++ )
+        actions[i].deleteLocation(locationId);
 }
 
 void Chk::Trigger::deleteString(size_t stringId)
@@ -1139,4 +1335,9 @@ void Chk::Cuwp::setInvincible(bool invincible)
 Chk::Location::Location() : left(0), top(0), right(0), bottom(0), stringId(0), elevationFlags(0)
 {
 
+}
+
+bool Chk::Location::isBlank()
+{
+    return left == 0 && top == 0 && right == 0 && bottom == 0 && stringId == 0 && elevationFlags == 0;
 }

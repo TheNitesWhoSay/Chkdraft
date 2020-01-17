@@ -95,7 +95,7 @@ class Selections
 
         u16 selectedLocation;
         u8 numRecentLocations;
-        u8 recentLocations[255];
+        u8 recentLocations[Chk::TotalLocations];
         LocSelFlags locSelFlags;
         u8 locationFlags;
 

@@ -152,18 +152,18 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
     u16 firstRecentlySelected = NO_LOCATION;
     bool madeSelection = false;
     
-    for ( u16 i=0; i<numLocations; i++ )
+    for ( u16 i=1; i<=numLocations; i++ )
     {
-        Chk::LocationPtr loc = i != selectedLocation && ( i != 63 || canSelectAnywhere ) ? map.layers.getLocation(i) : nullptr;
-        if ( loc != nullptr )
+        auto location = i != selectedLocation && (i != Chk::LocationId::Anywhere || canSelectAnywhere) ? map.layers.getLocation(i) : nullptr;
+        if ( location != nullptr )
         {
-            s32 locLeft = std::min(loc->left, loc->right),
-                locRight = std::max(loc->left, loc->right),
-                locTop = std::min(loc->top, loc->bottom),
-                locBottom = std::max(loc->top, loc->bottom);
+            s32 locLeft = std::min(location->left, location->right),
+                locRight = std::max(location->left, location->right),
+                locTop = std::min(location->top, location->bottom),
+                locBottom = std::max(location->top, location->bottom);
 
             if ( clickX >= locLeft && clickX <= locRight &&
-                    clickY >= locTop && clickY <= locBottom    )
+                 clickY >= locTop && clickY <= locBottom )
             {
                 bool recentlySelected = false;
                 for ( u8 recentIndex=0; recentIndex<numRecentLocations; recentIndex++ )
@@ -183,7 +183,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
                 else // Location hasn't been recently selected, select it
                 {
                     selectedLocation = i;
-                    if ( numRecentLocations < 255 )
+                    if ( numRecentLocations < Chk::TotalLocations )
                     {
 
                         recentLocations[numRecentLocations] = u8(i);

@@ -3839,14 +3839,14 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
     locNode.locationId = 0;
     locNode.locationName = "No Location";
     locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
-    for ( u32 i=0; i<map->layers.numLocations(); i++ )
+    for ( u32 i=1; i<=map->layers.numLocations(); i++ )
     {
         Chk::LocationPtr loc = map->layers.getLocation(i);
         locNode.locationName = "";
 
-        if ( i == 63 )
+        if ( i == Chk::LocationId::Anywhere )
         {
-            locNode.locationId = 64;
+            locNode.locationId = Chk::LocationId::Anywhere;
             locNode.locationName = "Anywhere";
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }

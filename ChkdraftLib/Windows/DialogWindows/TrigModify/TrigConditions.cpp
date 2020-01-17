@@ -607,7 +607,7 @@ void TrigConditionsWindow::SuggestLocation()
     {
         suggestions.AddString(std::string("No Location"));
         size_t numLocations = CM->layers.numLocations();
-        for ( size_t i = 0; i < numLocations; i++ )
+        for ( size_t i = 1; i <= numLocations; i++ )
         {
             Chk::LocationPtr loc = CM->layers.getLocation(i);
             std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;

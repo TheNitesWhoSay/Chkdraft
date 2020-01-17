@@ -271,29 +271,29 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
 {
     u32 bitMax = screenWidth*screenHeight;
 
-    for ( size_t locNum = 0; locNum < map.layers.numLocations(); locNum++ )
+    for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        Chk::LocationPtr loc = map.layers.getLocation(locNum);
-        if ( (locNum != 63 || showAnywhere) && loc != nullptr )
+        auto location = map.layers.getLocation(locationId);
+        if ( (locationId != Chk::LocationId::Anywhere || showAnywhere) && location != nullptr )
         {
             
-            s32 leftMost = std::min(loc->left, loc->right);
+            s32 leftMost = std::min(location->left, location->right);
             if ( leftMost < screenLeft+screenWidth )
             {
-                s32 rightMost = std::max(loc->left, loc->right);
+                s32 rightMost = std::max(location->left, location->right);
                 if ( rightMost >= screenLeft )
                 {
-                    s32 topMost = std::min(loc->top, loc->bottom);
+                    s32 topMost = std::min(location->top, location->bottom);
                     if ( topMost < screenTop+screenHeight )
                     {
-                        s32 bottomMost = std::max(loc->top, loc->bottom);
+                        s32 bottomMost = std::max(location->top, location->bottom);
                         if ( bottomMost >= screenTop )
                         {
                             bool leftMostOnScreen = true,
                                 rightMostOnScreen = true,
                                 topMostOnScreen = true,
                                 bottomMostOnScreen = true,
-                                inverted = (loc->left > loc->right || loc->top > loc->bottom);
+                                inverted = (location->left > location->right || location->top > location->bottom);
 
                             if ( leftMost < screenLeft )
                             {
@@ -512,24 +512,24 @@ void Graphics::DrawLocationNames(HDC hDC)
     SetBkMode( hDC, TRANSPARENT );
     SetTextColor(hDC, RGB(255, 255, 0));
 
-    for ( size_t locId = 0; locId < map.layers.numLocations(); locId++ )
+    for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        Chk::LocationPtr loc = map.layers.getLocation(locId);
-        if ( locId != 63 && loc != nullptr )
+        auto location = map.layers.getLocation(locationId);
+        if ( locationId != Chk::LocationId::Anywhere && location != nullptr )
         {
-            s32 leftMost = std::min(loc->left, loc->right);
+            s32 leftMost = std::min(location->left, location->right);
             if ( leftMost < screenRight )
             {
-                s32 rightMost = std::max(loc->left, loc->right);
+                s32 rightMost = std::max(location->left, location->right);
                 if ( rightMost > screenLeft )
                 {
-                    s32 topMost = std::min(loc->top, loc->bottom);
+                    s32 topMost = std::min(location->top, location->bottom);
                     if ( topMost < screenBottom )
                     {
-                        s32 bottomMost = std::max(loc->top, loc->bottom);
+                        s32 bottomMost = std::max(location->top, location->bottom);
                         if ( bottomMost > screenTop )
                         {
-                            std::shared_ptr<ChkdString> str = map.strings.getLocationName<ChkdString>(locId, Chk::Scope::EditorOverGame);
+                            std::shared_ptr<ChkdString> str = map.strings.getLocationName<ChkdString>(locationId, Chk::Scope::EditorOverGame);
                             if ( str != nullptr )
                             {
                                 leftMost = leftMost - screenLeft + 2;

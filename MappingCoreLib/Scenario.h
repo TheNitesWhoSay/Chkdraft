@@ -44,7 +44,7 @@ class Versions
         bool isHybrid();
         bool isExpansion();
         bool isHybridOrAbove();
-        void changeTo(Chk::Version version);
+        bool changeTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
         bool hasDefaultValidation();
         void setToDefaultValidation();
@@ -121,7 +121,7 @@ class Strings : public StrSynchronizer
         size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game);
         size_t getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::Game);
         size_t getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getLocationNameStringId(size_t locationIndex, Chk::Scope storageScope = Chk::Scope::Game);
+        size_t getLocationNameStringId(size_t locationId, Chk::Scope storageScope = Chk::Scope::Game);
 
         void setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
         void setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope = Chk::Scope::Game);
@@ -129,7 +129,7 @@ class Strings : public StrSynchronizer
         void setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game);
         void setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::Scope storageScope = Chk::Scope::Game);
         void setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
-        void setLocationNameStringId(size_t locationIndex, size_t locationNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
+        void setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
@@ -146,7 +146,7 @@ class Strings : public StrSynchronizer
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         std::shared_ptr<StringType> getSwitchName(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getLocationName(size_t locationIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setScenarioName(const StringType &scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
@@ -161,7 +161,7 @@ class Strings : public StrSynchronizer
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setSwitchName(size_t switchIndex, const StringType &switchName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setLocationName(size_t locationIndex, const StringType &locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setLocationName(size_t locationId, const StringType &locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
         // Creates a viable internal data buffer for the string section using the methods in requestedCompressionFlags
         // If no configuration among requestedCompressionFlags is viable, additional methods through allowedCompressionFlags are added as neccessary
@@ -176,7 +176,7 @@ class Strings : public StrSynchronizer
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
 
     protected:
-        virtual void remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope);
+        virtual void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
 
     private:
         Versions* versions; // For auto-determining the section for regular or expansion units
@@ -220,7 +220,7 @@ class Players
         void setForceFlags(Chk::Force force, u8 forceFlags);
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
     private:
@@ -330,25 +330,29 @@ class Layers : public Terrain
         void removeOutOfBoundsUnits();
         
         size_t numLocations();
-        void sizeLocationsToScOriginal();
-        void sizeLocationsToScHybridOrExpansion();
-        std::shared_ptr<Chk::Location> getLocation(size_t locationIndex);
+        std::shared_ptr<Chk::Location> getLocation(size_t locationId);
         size_t addLocation(std::shared_ptr<Chk::Location> location);
-        void insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location);
-        void deleteLocation(size_t locationIndex);
-        void moveLocation(size_t locationIndexFrom, size_t locationIndexTo);
+        void replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location);
+        void deleteLocation(size_t locationId, bool deleteOnlyIfUnused = true);
+        bool moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere = true);
+        bool isBlank(size_t locationId);
         void downsizeOutOfBoundsLocations();
+
+        bool locationsFitOriginal(bool lockAnywhere = true, bool autoDefragment = true); // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
+        bool trimLocationsToOriginal(bool lockAnywhere = true, bool autoDefragment = true); // If possible, trims locations to indexes < Chk::TotalOriginalLocations
+        void expandToScHybridOrExpansion();
         
         bool anywhereIsStandardDimensions();
         void matchAnywhereToDimensions();
 
         bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
     private:
         Strings* strings; // For reading and updating location names
+        Triggers* triggers; // For reading and updating locationIds
         friend class Scenario;
         
         void set(std::unordered_map<SectionName, Section> & sections);
@@ -461,7 +465,7 @@ class Properties
 
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
     private:
@@ -473,7 +477,7 @@ class Properties
         void clear();
 };
 
-class Triggers
+class Triggers : public LocationSynchronizer
 {
     public:
         UprpSectionPtr uprp; // CUWP - Create unit with properties properties
@@ -515,13 +519,17 @@ class Triggers
         size_t getSoundStringId(size_t soundIndex);
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
+        bool locationUsed(size_t locationId);
         bool stringUsed(size_t stringId);
         bool gameStringUsed(size_t stringId);
         bool editorStringUsed(size_t stringId);
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedEditorStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
 
     private:
@@ -567,6 +575,8 @@ class Scenario : ScenarioSaver
         std::vector<u8> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                          includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
         bool Deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
+        
+        bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
                                                     
         /** Makes whatever changes are required for saving in the given ChkVersion
             and writes the scenario to outputStream
@@ -580,6 +590,9 @@ class Scenario : ScenarioSaver
         virtual StrSynchronizerPtr getStrSynchronizer();
 
     protected:
+        void addSection(Section section);
+        void removeSection(const SectionName & sectionName);
+
         bool ParsingFailed(const std::string & error);
         bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
         void Clear();

@@ -66,6 +66,7 @@ class MaximumStringsExceeded;
 class InsufficientStringCapacity;
 class MaximumCharactersExceeded;
 class MaximumOffsetAndCharsExceeded;
+class LocationSynchronizer;
 class StrSynchronizer;
 class ScenarioSaver;
 class StrSerializationFailure;
@@ -103,7 +104,7 @@ class ScenarioSaver
 {
     public:
         static ScenarioSaver & GetDefault();
-        virtual bool confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str);
+        virtual bool removeExtendedLocations();
         virtual StrSynchronizerPtr getStrSynchronizer();
 
     private:
@@ -713,18 +714,21 @@ class MrgnSection : public DynamicSection<false>
         virtual ~MrgnSection();
 
         size_t numLocations();
-        void sizeToScOriginal();
-        void sizeToScHybridOrExpansion();
-        std::shared_ptr<Chk::Location> getLocation(size_t locationIndex);
+        std::shared_ptr<Chk::Location> getLocation(size_t locationId);
         size_t addLocation(std::shared_ptr<Chk::Location> location);
-        void insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location);
-        void deleteLocation(size_t locationIndex);
-        void moveLocation(size_t locationIndexFrom, size_t locationIndexTo);
-        bool isBlank(size_t locationIndex);
+        void replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location);
+        void deleteLocation(size_t locationId);
+        bool moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere = true);
+        bool isBlank(size_t locationId);
+        void expandToScHybridOrExpansion();
+        
+        bool locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true); // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
+        bool trimToOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true); // If possible, trims locations to indexes < Chk::TotalOriginalLocations
 
         bool stringUsed(size_t stringId);
+        void markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
     protected:
@@ -733,7 +737,7 @@ class MrgnSection : public DynamicSection<false>
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        std::vector<std::shared_ptr<Chk::Location>> locations;
+        std::deque<std::shared_ptr<Chk::Location>> locations;
 };
 
 class TrigSection : public DynamicSection<false>
@@ -751,13 +755,17 @@ class TrigSection : public DynamicSection<false>
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
         void swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers);
 
+        bool locationUsed(size_t locationId);
         bool stringUsed(size_t stringId);
         bool gameStringUsed(size_t stringId);
         bool commentStringUsed(size_t stringId);
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
         void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
 
     protected:
@@ -784,7 +792,7 @@ class MbrfSection : public DynamicSection<false>
         void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
     protected:
@@ -810,7 +818,7 @@ class SprpSection : public StructSection<Chk::SPRP, false>
         void setScenarioDescriptionStringId(u16 scenarioDescriptionStringId);
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -830,7 +838,7 @@ class ForcSection : public StructSection<Chk::FORC, false>
         void setForceFlags(Chk::Force force, u8 forceFlags);
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -849,7 +857,7 @@ class WavSection : public StructSection<Chk::WAV, true>
 
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -885,7 +893,7 @@ class UnisSection : public StructSection<Chk::UNIS, false>
 
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -947,7 +955,7 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -1035,7 +1043,7 @@ class UnixSection : public StructSection<Chk::UNIx, false>
 
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -1102,7 +1110,7 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         u32 getExpUnitNameStringId(Sc::Unit::Type unitType);
         u32 getSoundPathStringId(size_t soundIndex);
         u32 getSwitchNameStringId(size_t switchIndex);
-        u32 getLocationNameStringId(size_t locationIndex);
+        u32 getLocationNameStringId(size_t locationId);
 
         void setScenarioNameStringId(u32 scenarioNameStringId);
         void setScenarioDescriptionStringId(u32 scenarioDescriptionStringId);
@@ -1111,11 +1119,11 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         void setExpUnitNameStringId(Sc::Unit::Type unitType, u32 expUnitNameStringId);
         void setSoundPathStringId(size_t soundIndex, u32 soundPathStringId);
         void setSwitchNameStringId(size_t switchIndex, u32 switchNameStringId);
-        void setLocationNameStringId(size_t locationIndex, u32 locationNameStringId);
+        void setLocationNameStringId(size_t locationId, u32 locationNameStringId);
 
         bool stringUsed(size_t stringId);
         void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void remapStringIds(std::map<u32, u32> stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
 
@@ -1352,6 +1360,15 @@ class MaximumOffsetAndCharsExceeded : StringException
         MaximumOffsetAndCharsExceeded(); // Disallow ctor
 };
 
+class LocationSynchronizer
+{
+    public:
+        virtual bool locationUsed(size_t locationId) = 0;
+        virtual void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) = 0;
+
+        virtual void remapLocationIds(const std::map<u32, u32> & locationIdRemappings) = 0;
+};
+
 class StrSynchronizer
 {
     public:
@@ -1370,7 +1387,7 @@ class StrSynchronizer
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged) = 0;
         
-        virtual void remapStringIds(std::map<u32, u32> stringIdRemappings, Chk::Scope storageScope) = 0;
+        virtual void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope) = 0;
 
         u32 getRequestedCompressionFlags() const { return requestedCompressionFlags; }
         u32 getAllowedCompressionFlags() const { return allowedCompressionFlags; }

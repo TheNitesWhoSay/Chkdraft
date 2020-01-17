@@ -2242,7 +2242,7 @@ bool StrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchro
             throw InsufficientStringCapacity(ChkSection::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
     }
         
-    while ( strings.size() < stringCapacity )
+    while ( strings.size() <= stringCapacity )
         strings.push_back(nullptr);
 
     while ( strings.size() > stringCapacity )
@@ -2266,7 +2266,7 @@ size_t StrSection::addString(const StringType &str, StrSynchronizer & strSynchro
     size_t nextUnusedStringId = getNextUnusedStringId(stringIdUsed, true);
         
     if ( nextUnusedStringId >= strings.size() )
-        setCapacity(nextUnusedStringId, strSynchronizer, autoDefragment);
+        setCapacity(nextUnusedStringId+1, strSynchronizer, autoDefragment);
     else if ( nextUnusedStringId == 0 )
         throw MaximumStringsExceeded();
 
@@ -2551,7 +2551,7 @@ bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
         stringBytes.assign(sizeof(u16)+sizeof(u16)*numStrings, u8(0));
         u16 initialNulOffset = u16(stringBytes.size());
         stringBytes.push_back(u8('\0')); // Add initial NUL character
-        for ( size_t i=1; i<numStrings; i++ )
+        for ( size_t i=1; i<=numStrings; i++ )
         {
             if ( strings[i] == nullptr )
                 (u16 &)stringBytes[sizeof(u16)*i] = initialNulOffset;
@@ -2569,12 +2569,12 @@ void StrSection::syncBytesToStrings()
 {
     size_t numBytes = stringBytes.size();
     u16 rawNumStrings = numBytes > 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
-    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u16));
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u16)-1);
     strings.clear();
     strings.push_back(nullptr); // Fill the non-existant 0th stringId
 
     size_t stringId = 1;
-    for ( ; stringId < highestStringWithValidOffset; ++stringId )
+    for ( ; stringId <= highestStringWithValidOffset; ++stringId )
     {
         size_t offsetPos = sizeof(u16)*stringId;
         size_t stringOffset = size_t((u16 &)stringBytes[offsetPos]);
@@ -2700,7 +2700,9 @@ MrgnSectionPtr MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
 {
     MrgnSectionPtr newSection(new (std::nothrow) MrgnSection());
 
-    for ( size_t i=0; i<63; i++ )
+    newSection->locations.push_back(nullptr); // Index 0 is unused
+
+    for ( size_t i=1; i<Chk::LocationId::Anywhere; i++ )
         newSection->locations.push_back(Chk::LocationPtr(new Chk::Location()));
     
     Chk::LocationPtr anywhere = Chk::LocationPtr(new Chk::Location());
@@ -2709,7 +2711,7 @@ MrgnSectionPtr MrgnSection::GetDefault(u16 tileWidth, u16 tileHeight)
     anywhere->stringId = 3;
     newSection->locations.push_back(Chk::LocationPtr(anywhere));
 
-    for ( size_t i=Chk::LocationId::Anywhere+1; i<Chk::TotalLocations; i++ )
+    for ( size_t i=Chk::LocationId::Anywhere+1; i<=Chk::TotalLocations; i++ )
         newSection->locations.push_back(Chk::LocationPtr(new Chk::Location()));
 
     return newSection;
@@ -2727,49 +2729,17 @@ MrgnSection::~MrgnSection()
 
 size_t MrgnSection::numLocations()
 {
-    return locations.size();
+    return locations.size() > 0 ? locations.size()-1 : 0;
 }
 
-void MrgnSection::sizeToScOriginal()
+std::shared_ptr<Chk::Location> MrgnSection::getLocation(size_t locationId)
 {
-    size_t numLocations = locations.size();
-    if ( numLocations > Chk::TotalOriginalLocations )
-    {
-        auto firstErased = locations.begin();
-        std::advance(firstErased, Chk::TotalOriginalLocations);
-        locations.erase(firstErased, locations.end());
-    }
-    else if ( numLocations < Chk::TotalOriginalLocations )
-    {
-        for ( size_t i=numLocations; i<Chk::TotalOriginalLocations; i++ )
-            locations.push_back(std::shared_ptr<Chk::Location>(new Chk::Location()));
-    }
-}
-
-void MrgnSection::sizeToScHybridOrExpansion()
-{
-    size_t numLocations = locations.size();
-    if ( numLocations > Chk::TotalLocations )
-    {
-        auto firstErased = locations.begin();
-        std::advance(firstErased, Chk::TotalLocations);
-        locations.erase(firstErased, locations.end());
-    }
-    else if ( numLocations < Chk::TotalLocations )
-    {
-        for ( size_t i=numLocations; i<Chk::TotalLocations; i++ )
-            locations.push_back(std::shared_ptr<Chk::Location>(new Chk::Location()));
-    }
-}
-
-std::shared_ptr<Chk::Location> MrgnSection::getLocation(size_t locationIndex)
-{
-    return locations[locationIndex];
+    return locations[locationId];
 }
 
 size_t MrgnSection::addLocation(std::shared_ptr<Chk::Location> location)
 {
-    for ( size_t i=0; i<locations.size(); i++ )
+    for ( size_t i=1; i<locations.size(); i++ )
     {
         if ( isBlank(i) )
         {
@@ -2777,45 +2747,25 @@ size_t MrgnSection::addLocation(std::shared_ptr<Chk::Location> location)
             return i;
         }
     }
-
-    if ( locations.size() < Chk::TotalLocations )
-    {
-        size_t locationIndex = locations.size();
-        locations.push_back(location);
-        return locationIndex;
-    }
-
-    return Chk::TotalLocations;
+    return Chk::LocationId::NoLocation;
 }
 
-void MrgnSection::insertLocation(size_t locationIndex, std::shared_ptr<Chk::Location> location)
+void MrgnSection::replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location)
 {
-    if ( locationIndex < locations.size() )
+    if ( locationId > 0 && locationId < locations.size() )
     {
-        auto position = std::next(locations.begin(), locationIndex);
-        locations.insert(position, location);
-    }
-    else if ( locationIndex < Chk::TotalLocations )
-    {
-        if ( locationIndex == locations.size() )
-            locations.push_back(location);
-        else
-        {
-            for ( size_t i=locations.size(); i<locationIndex; i++ )
-                locations.push_back(Chk::LocationPtr(new Chk::Location()));
-
-            locations.push_back(location);
-        }
+        if ( isBlank(locationId) )
+            locations[locationId] = location;
     }
     else
-        throw std::out_of_range(std::string("LocationIndex: ") + std::to_string((u32)locationIndex) + " is out of range for the MRGN section!");
+        throw std::out_of_range(std::string("LocationId: ") + std::to_string((u32)locationId) + " is out of range for the MRGN section!");
 }
 
-void MrgnSection::deleteLocation(size_t locationIndex)
+void MrgnSection::deleteLocation(size_t locationId)
 {
-    if ( locationIndex < locations.size() )
+    if ( locationId > 0 && locationId < locations.size() )
     {
-        auto location = std::next(locations.begin(), locationIndex);
+        auto location = std::next(locations.begin(), locationId);
         (*location)->stringId = 0;
         (*location)->left = 0;
         (*location)->right = 0;
@@ -2825,64 +2775,77 @@ void MrgnSection::deleteLocation(size_t locationIndex)
     }
 }
 
-void MrgnSection::moveLocation(size_t locationIndexFrom, size_t locationIndexTo)
+bool MrgnSection::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere)
 {
-    size_t locationIndexMin = std::min(locationIndexFrom, locationIndexTo);
-    size_t locationIndexMax = std::max(locationIndexFrom, locationIndexTo);
-    if ( locationIndexMax < locations.size() && locationIndexFrom != locationIndexTo )
+    size_t locationIdMin = std::min(locationIdFrom, locationIdTo);
+    size_t locationIdMax = std::max(locationIdFrom, locationIdTo);
+    if ( locationIdFrom > 0 && locationIdTo > 0 && locationIdMax < locations.size() && locationIdFrom != locationIdTo &&
+         (!lockAnywhere || (locationIdMin != Chk::LocationId::Anywhere && locationIdMax != Chk::LocationId::Anywhere)) )
     {
-        if ( locationIndexMax-locationIndexMin == 1 && locationIndexMax < locations.size() ) // Move up or down by 1 using swap
-            locations[locationIndexMin].swap(locations[locationIndexMax]);
+        if ( locationIdMax-locationIdMin == 1 && locationIdMax < locations.size() ) // Move up or down by 1 using swap
+            locations[locationIdMin].swap(locations[locationIdMax]);
         else // Move up or down by more than one, remove from present location, insert in the list at destination
         {
-            auto location = locations[locationIndexFrom];
-            auto toErase = std::next(locations.begin(), locationIndexFrom);
+            auto location = locations[locationIdFrom];
+            auto toErase = std::next(locations.begin(), locationIdFrom);
             locations.erase(toErase);
-            auto insertPosition = std::next(locations.begin(), locationIndexTo-1);
+            auto insertPosition = std::next(locations.begin(), locationIdTo-1);
             locations.insert(insertPosition, location);
+
+            if ( lockAnywhere && locationIdMin < Chk::LocationId::Anywhere && locationIdMax > Chk::LocationId::Anywhere )
+                std::swap(*std::next(locations.begin(), Chk::LocationId::Anywhere-1), *std::next(locations.begin(), Chk::LocationId::Anywhere));
         }
     }
 }
 
-bool MrgnSection::isBlank(size_t locationIndex)
+bool MrgnSection::isBlank(size_t locationId)
 {
-    if ( locationIndex < locations.size() )
+    if ( locationId > 0 && locationId < locations.size() )
     {
-        auto & location = *locations[locationIndex];
-        return location.stringId == Chk::StringId::NoString &&
-            location.left == 0 &&
-            location.right == 0 &&
-            location.top == 0 &&
-            location.bottom == 0;
+        auto & location = locations[locationId];
+        return location == nullptr || location->isBlank();
     }
-    else
-        return true;
+    return false;
 }
 
 bool MrgnSection::stringUsed(size_t stringId)
 {
     u16 u16StringId = (u16)stringId;
-    for ( auto location : locations )
+    for ( size_t i=1; i<locations.size(); i++ )
     {
-        if ( location->stringId == u16StringId )
+        auto location = locations[i];
+        if ( location != nullptr && location->stringId == u16StringId )
             return true;
     }
     return false;
 }
 
+void MrgnSection::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    size_t limit = std::min(Chk::TotalLocations, locations.size());
+    for ( size_t i=1; i<limit; i++ )
+    {
+        auto & location = locations[i];
+        if ( location != nullptr && !location->isBlank() )
+            locationIdUsed[i] = true;
+    }
+}
+
 void MrgnSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
-    for ( auto location : locations )
+    for ( size_t i=1; i<locations.size(); i++ )
     {
+        auto & location = locations[i];
         if ( location->stringId > 0 )
             stringIdUsed[location->stringId] = true;
     }
 }
 
-void MrgnSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void MrgnSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
-    for ( auto location : locations )
+    for ( size_t i=1; i<locations.size(); i++ )
     {
+        auto & location = locations[i];
         auto found = stringIdRemappings.find(location->stringId);
         if ( found != stringIdRemappings.end() )
             location->stringId = found->second;
@@ -2891,16 +2854,84 @@ void MrgnSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
 
 void MrgnSection::deleteString(size_t stringId)
 {
-    for ( auto location : locations )
+    for ( size_t i=1; i<locations.size(); i++ )
     {
+        auto & location = locations[i];
         if ( location->stringId == stringId )
             location->stringId = 0;
     }
 }
 
+bool MrgnSection::locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere, bool autoDefragment)
+{
+    std::bitset<Chk::TotalLocations+1> locationIdUsed;
+    locationSynchronizer.markUsedLocations(locationIdUsed);
+    markNonZeroLocations(locationIdUsed);
+
+    size_t countUsedOrCreated = 0;
+    for ( size_t i=1; i<=Chk::TotalLocations; i++ )
+    {
+        if ( locationIdUsed[i] || (i == Chk::LocationId::Anywhere && lockAnywhere) )
+            countUsedOrCreated++;
+    }
+
+    return countUsedOrCreated <= Chk::TotalOriginalLocations;
+}
+
+bool MrgnSection::trimToOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere, bool autoDefragment)
+{
+    if ( locations.size() > Chk::TotalOriginalLocations )
+    {
+        std::bitset<Chk::TotalLocations+1> locationIdUsed;
+        locationSynchronizer.markUsedLocations(locationIdUsed);
+        markNonZeroLocations(locationIdUsed);
+
+        size_t countUsedOrCreated = 0;
+        for ( size_t i=1; i<=Chk::TotalLocations; i++ )
+        {
+            if ( locationIdUsed[i] || (i == Chk::LocationId::Anywhere && lockAnywhere) )
+                countUsedOrCreated++;
+        }
+
+        if ( countUsedOrCreated <= Chk::TotalOriginalLocations )
+        {
+            std::map<u32, u32> locationIdRemappings;
+            for ( size_t firstUnused=1; firstUnused<=Chk::TotalLocations; firstUnused++ )
+            {
+                if ( !locationIdUsed[firstUnused] && (firstUnused != Chk::LocationId::Anywhere || !lockAnywhere) )
+                {
+                    for ( size_t i=firstUnused+1; i<=Chk::TotalLocations; i++ )
+                    {
+                        if ( locationIdUsed[i] && (i != Chk::LocationId::Anywhere || !lockAnywhere) )
+                        {
+                            locations[firstUnused] = locations[i];
+                            locationIdUsed[firstUnused] = true;
+                            locations[i] = Chk::LocationPtr(new Chk::Location());
+                            locationIdUsed[i] = false;
+                            locationIdRemappings.insert(std::pair<u32, u32>(u32(i), u32(firstUnused)));
+                            break;
+                        }
+                    }
+                }
+            }
+            locations.erase(locations.begin()+Chk::TotalOriginalLocations+1, locations.end());
+            locationSynchronizer.remapLocationIds(locationIdRemappings);
+            return true;
+        }
+    }
+    return false;
+}
+
+void MrgnSection::expandToScHybridOrExpansion()
+{
+    size_t numLocations = locations.size();
+    for ( size_t i=numLocations; i<=Chk::TotalLocations; i++ )
+        locations.push_back(std::shared_ptr<Chk::Location>(new Chk::Location()));
+}
+
 Chk::SectionSize MrgnSection::getSize(ScenarioSaver & scenarioSaver)
 {
-    return Chk::SectionSize(sizeof(Chk::Location) * locations.size());
+    return Chk::SectionSize(sizeof(Chk::Location) * (locations.size()-1));
 }
 
 std::streamsize MrgnSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
@@ -2922,22 +2953,22 @@ std::streamsize MrgnSection::read(const Chk::SectionHeader & sectionHeader, std:
         }
         else
         {
-            locations.clear();
+            locations.assign(1, nullptr);
             for ( auto & location : locationBuffer )
                 locations.push_back(Chk::LocationPtr(new Chk::Location(location)));
         }
         return is.gcount();
     }
     else if ( !append )
-        locations.clear();
+        locations.assign(1, nullptr);
 
     return 0;
 }
 
 void MrgnSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
-    for ( auto location : locations )
-        os.write((const char*)location.get(), std::streamsize(sizeof(Chk::Location)));
+    for ( size_t i=1; i<locations.size(); i++ )
+        os.write((const char*)locations[i].get(), std::streamsize(sizeof(Chk::Location)));
 }
 
 TrigSectionPtr TrigSection::GetDefault()
@@ -3015,6 +3046,16 @@ void TrigSection::swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers)
     this->triggers.swap(triggers);
 }
 
+bool TrigSection::locationUsed(size_t locationId)
+{
+    for ( auto trigger : triggers )
+    {
+        if ( trigger->locationUsed(locationId) )
+            return true;
+    }
+    return false;
+}
+
 bool TrigSection::stringUsed(size_t stringId)
 {
     for ( auto trigger : triggers )
@@ -3045,6 +3086,12 @@ bool TrigSection::commentStringUsed(size_t stringId)
     return false;
 }
 
+void TrigSection::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+{
+    for ( auto trigger : triggers )
+        trigger->markUsedLocations(locationIdUsed);
+}
+
 void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
 {
     for ( auto trigger : triggers )
@@ -3063,10 +3110,22 @@ void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdU
         trigger->markUsedCommentStrings(stringIdUsed);
 }
 
-void TrigSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void TrigSection::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
+{
+    for ( auto trigger : triggers )
+        trigger->remapLocationIds(locationIdRemappings);
+}
+
+void TrigSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( auto trigger : triggers )
         trigger->remapStringIds(stringIdRemappings);
+}
+
+void TrigSection::deleteLocation(size_t locationId)
+{
+    for ( auto trigger : triggers )
+        trigger->deleteLocation(locationId);
 }
 
 void TrigSection::deleteString(size_t stringId)
@@ -3203,7 +3262,7 @@ void MbrfSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
         briefingTrigger->markUsedStrings(stringIdUsed);
 }
 
-void MbrfSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void MbrfSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( auto briefingTrigger : briefingTriggers )
         briefingTrigger->remapBriefingStringIds(stringIdRemappings);
@@ -3313,7 +3372,7 @@ void SprpSection::deleteString(size_t stringId)
         data->scenarioDescriptionStringId = 0;
 }
 
-void SprpSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void SprpSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     auto scenarioNameRemapping = stringIdRemappings.find(data->scenarioNameStringId);
     auto scenarioDescriptionRemapping = stringIdRemappings.find(data->scenarioDescriptionStringId);
@@ -3425,7 +3484,7 @@ void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void ForcSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void ForcSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     auto forceOneRemapping = stringIdRemappings.find(data->forceString[0]);
     auto forceTwoRemapping = stringIdRemappings.find(data->forceString[1]);
@@ -3526,7 +3585,7 @@ void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void WavSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void WavSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
@@ -3759,7 +3818,7 @@ void UnisSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void UnisSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void UnisSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -4086,7 +4145,7 @@ void SwnmSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void SwnmSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void SwnmSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<Chk::TotalSwitches; i++ )
     {
@@ -4653,7 +4712,7 @@ void UnixSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void UnixSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void UnixSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -5010,12 +5069,12 @@ u32 OstrSection::getSwitchNameStringId(size_t switchIndex)
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getLocationNameStringId(size_t locationIndex)
+u32 OstrSection::getLocationNameStringId(size_t locationId)
 {
-    if ( locationIndex < Chk::TotalLocations )
-        return data->locationName[locationIndex];
+    if ( locationId > 0 && locationId <= Chk::TotalLocations )
+        return data->locationName[locationId-1];
     else
-        throw std::out_of_range(std::string("locationIndex: ") + std::to_string((u32)locationIndex) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("locationId: ") + std::to_string((u32)locationId) + " is out of range for the OSTR section!");
 }
 
 void OstrSection::setScenarioNameStringId(u32 scenarioNameStringId)
@@ -5068,12 +5127,12 @@ void OstrSection::setSwitchNameStringId(size_t switchIndex, u32 switchNameString
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the OSTR section!");
 }
 
-void OstrSection::setLocationNameStringId(size_t locationIndex, u32 locationNameStringId)
+void OstrSection::setLocationNameStringId(size_t locationId, u32 locationNameStringId)
 {
-    if ( locationIndex < Chk::TotalLocations )
-        data->locationName[locationIndex] = locationNameStringId;
+    if ( locationId > 0 && locationId <= Chk::TotalLocations )
+        data->locationName[locationId-1] = locationNameStringId;
     else
-        throw std::out_of_range(std::string("locationIndex: ") + std::to_string((u32)locationIndex) + " is out of range for the OSTR section!");
+        throw std::out_of_range(std::string("locationId: ") + std::to_string((u32)locationId) + " is out of range for the OSTR section!");
 }
 
 bool OstrSection::stringUsed(size_t stringId)
@@ -5165,7 +5224,7 @@ void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     }
 }
 
-void OstrSection::remapStringIds(std::map<u32, u32> stringIdRemappings)
+void OstrSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
     auto scenarioNameRemapping = stringIdRemappings.find(data->scenarioName);
     auto scenarioDescriptionRemapping= stringIdRemappings.find(data->scenarioDescription);
@@ -5659,7 +5718,7 @@ bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
         stringBytes.assign(sizeof(u32)+sizeof(u32)*numStrings, u8(0));
         u32 initialNulOffset = u32(stringBytes.size());
         stringBytes.push_back(u8('\0')); // Add initial NUL character
-        for ( size_t i=1; i<numStrings; i++ )
+        for ( size_t i=1; i<=numStrings; i++ )
         {
             if ( strings[i] == nullptr )
                 (u32 &)stringBytes[sizeof(u32)*i] = initialNulOffset;
@@ -5749,9 +5808,9 @@ ScenarioSaver & ScenarioSaver::GetDefault()
     return defaultScenarioSaver;
 }
 
-bool ScenarioSaver::confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str)
+bool ScenarioSaver::removeExtendedLocations()
 {
-    return true; // Override to customize behavior
+    return false; // Override to customize behavior
 }
 
 StrSynchronizerPtr ScenarioSaver::getStrSynchronizer()

@@ -35,7 +35,8 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
 
         virtual ~MapFile();
 
-        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser());
+        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
+            bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
         bool LoadMapFile(const std::string &filePath);
         bool LoadMapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());

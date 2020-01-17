@@ -33,7 +33,7 @@ MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) :
 }
 
 MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : Scenario(tileset, width, height), saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+    : Scenario(tileset, width, height), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
 {
     if ( MapFile::virtualSoundTable.size() == 0 )
     {
@@ -64,27 +64,37 @@ bool MapFile::LoadMapFile(FileBrowserPtr<SaveType> fileBrowser)
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && OpenMapFile(browseFilePath);
 }
 
-bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser)
+bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
 {
     std::string prevFilePath(mapFilePath);
+    if ( saveAs && prevFilePath.empty() )
+        saveAs = false; // This is a new map or a map without a path, use regular save operation
 
     if ( isProtected() )
         CHKD_ERR("Cannot save protected maps!");
     else
     {
         bool overwriting = true;
+
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
             getSaveDetails(saveType, mapFilePath, overwriting, fileBrowser);
 
-        logger.info() << "Saving to: " << mapFilePath << std::endl;
         if ( !mapFilePath.empty() ) // Map path has been determined
         {
+            logger.info() << "Saving to: " << mapFilePath << " with saveType: " << (int)saveType << std::endl;
+            bool versionCorrect = true;
             if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
-                Scenario::versions.changeTo(Chk::Version::StarCraft_Original);
+                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
             else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
-                Scenario::versions.changeTo(Chk::Version::StarCraft_Hybrid);
+                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
             else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
-                Scenario::versions.changeTo(Chk::Version::StarCraft_BroodWar);
+                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
+
+            if ( !versionCorrect )
+            {
+                logger.error("Failed to update version, save failed!");
+                return false;
+            }
 
             if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
             {
