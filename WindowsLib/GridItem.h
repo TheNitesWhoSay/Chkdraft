@@ -9,14 +9,14 @@ namespace WinLib {
         public:
             GridControlItem();
             virtual ~GridControlItem();
-            void SetText(const std::string &text);
+            void SetText(const std::string & text);
             void SetText(int text);
             void SetData(u32 data);
             void SetSelected(bool selected);
             void SetDisabled(bool disabled);
             void Clear();
 
-            bool getText(output_param std::string &text);
+            bool getText(output_param std::string & text);
             size_t getTextLength();
             int getTextNum();
             u32 getData();

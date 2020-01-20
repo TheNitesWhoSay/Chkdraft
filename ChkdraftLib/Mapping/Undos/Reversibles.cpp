@@ -44,7 +44,7 @@ void ReversibleActions::Reverse(void *obj)
     }
     else
     {
-        for ( auto &action : actions )
+        for ( auto & action : actions )
             action->Reverse(obj);
     }
     reversed = !reversed;
@@ -52,7 +52,7 @@ void ReversibleActions::Reverse(void *obj)
 
 int32_t ReversibleActions::GetType()
 {
-    for ( auto &action : actions )
+    for ( auto & action : actions )
     {
         int32_t type = action->GetType();
         if ( type != 0 )

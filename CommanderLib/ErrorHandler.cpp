@@ -12,7 +12,7 @@ KnownError::KnownError(u32 id) : errorId(id)
     
 }
 
-KnownError::KnownError(const KnownError& other) : std::exception(other.what())
+KnownError::KnownError(const KnownError & other) : std::exception(other.what())
 {
     this->errorId = other.errorId;
 }

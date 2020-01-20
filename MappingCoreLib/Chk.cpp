@@ -445,7 +445,7 @@ inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & 
     }
 }
 
-inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( actionType < NumActionTypes )
     {
@@ -457,7 +457,7 @@ inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdU
     }
 }
 
-inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( actionType < NumActionTypes )
     {
@@ -469,13 +469,13 @@ inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> &strin
     }
 }
 
-inline void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+inline void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( actionType == Type::Comment && stringId > 0 && stringId < Chk::MaxStrings )
         stringIdUsed[stringId] = true;
 }
 
-inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( actionType < NumBriefingActionTypes )
     {
@@ -832,7 +832,7 @@ Chk::Trigger::Owned & Chk::Trigger::owned(size_t ownerIndex)
         throw std::out_of_range("ownerIndex " + std::to_string(ownerIndex) + " exceeds max " + std::to_string(MaxOwners-1));
 }
 
-Chk::Trigger& Chk::Trigger::operator=(const Trigger &trigger)
+Chk::Trigger & Chk::Trigger::operator=(const Trigger & trigger)
 {
     if ( this != &trigger )
         memcpy(this, &trigger, sizeof(Trigger));
@@ -1068,25 +1068,25 @@ void Chk::Trigger::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locati
         actions[i].markUsedLocations(locationIdUsed);
 }
 
-void Chk::Trigger::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Chk::Trigger::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].markUsedStrings(stringIdUsed);
 }
 
-void Chk::Trigger::markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Chk::Trigger::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].markUsedGameStrings(stringIdUsed);
 }
 
-void Chk::Trigger::markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Chk::Trigger::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].markUsedCommentStrings(stringIdUsed);
 }
 
-void Chk::Trigger::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Chk::Trigger::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<MaxActions; i++ )
         actions[i].markUsedBriefingStrings(stringIdUsed);

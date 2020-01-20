@@ -13,7 +13,7 @@ namespace WinLib {
 
             virtual ~ClassDialog();
 
-            bool SetDialogItemText(int nIDDlgItem, const std::string &text);
+            bool SetDialogItemText(int nIDDlgItem, const std::string & text);
 
 
         protected:

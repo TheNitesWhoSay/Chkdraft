@@ -29,11 +29,11 @@ extern Logger logger;
 void Debug();
 void DebugIf(bool condition);
 void NoDebug();
-void mb(const std::string &text); // Basic message box message
-void mb(int i, const std::string &text);
-void Error(const std::string &ErrorMessage); // Basic error message box
-extern void PrintError(const std::string &file, unsigned int line, const std::string msg, ...); // Prints to LastError and LastErrorLoc
-void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...);
+void mb(const std::string & text); // Basic message box message
+void mb(int i, const std::string & text);
+void Error(const std::string & ErrorMessage); // Basic error message box
+extern void PrintError(const std::string & file, unsigned int line, const std::string msg, ...); // Prints to LastError and LastErrorLoc
+void ShoutError(const std::string & file, unsigned int line, const std::string msg, ...);
 #if defined(_MSC_VER) && !defined(__clang__)
 #define CHKD_ERR(msg, ...) PrintError(__FILE__, __LINE__, msg, __VA_ARGS__) // Prints a detailed error
 #define CHKD_SHOUT(msg, ...) ShoutError(__FILE__, __LINE__, msg, __VA_ARGS__) // Shouts an error message
@@ -44,7 +44,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
 #error Other compiler!
 #endif 
 #else
-void IgnoreErr(const std::string &file, unsigned int line, const std::string msg, ...); // Ignores an error message
+void IgnoreErr(const std::string & file, unsigned int line, const std::string msg, ...); // Ignores an error message
 #if defined(_MSC_VER)
 #define CHKD_ERR(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
 #define CHKD_SHOUT(msg, ...) IgnoreErr(__FILE__, __LINE__, msg, __VA_ARGS__)
@@ -208,22 +208,22 @@ class NotImplemented : public std::logic_error
 {
     public:
         NotImplemented() : std::logic_error("Function not yet implemented") { };
-        NotImplemented(const std::string &str) : std::logic_error(str) { };
+        NotImplemented(const std::string & str) : std::logic_error(str) { };
 };
 
 
 #define foreachin(item, range) for ( auto item = range.first; item != range.second; ++ item)
 
 template <typename valueType>
-void AscendingOrder(valueType &low, valueType &high);
+void AscendingOrder(valueType & low, valueType & high);
 
-u32 SmallestOf(u32 &first, u32 &second);
+u32 SmallestOf(u32 & first, u32 & second);
 
-s32 SmallestOf(s32 &first, s32 &second);
+s32 SmallestOf(s32 & first, s32 & second);
 
-u32 SmallestOf(u32 &first, u32 &second, u32 &third);
+u32 SmallestOf(u32 & first, u32 & second, u32 & third);
 
-s32 SmallestOf(s32 &first, s32 &second, s32 &third);
+s32 SmallestOf(s32 & first, s32 & second, s32 & third);
 
 void LongToBytes(s32 value, u8* bytes);
 

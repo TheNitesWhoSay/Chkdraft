@@ -31,15 +31,15 @@ using DatFileBrowserPtr = std::shared_ptr<DatFileBrowser>;
 class DatFileDescriptor
 {
 public:
-    DatFileDescriptor(DatFilePriority datFilePriority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
+    DatFileDescriptor(DatFilePriority datFilePriority, const std::string & fileName, const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
 
     DatFilePriority getDatFilePriority() const;
-    const std::string &getFileName() const;
-    const std::string &getExpectedFilePath() const;
+    const std::string & getFileName() const;
+    const std::string & getExpectedFilePath() const;
     FileBrowserPtr<u32> getBrowser() const;
     bool getExpectedInScDirectory() const;
 
-    void setExpectedFilePath(const std::string &expectedFilePath);
+    void setExpectedFilePath(const std::string & expectedFilePath);
 
 private:
     DatFilePriority datFilePriority;
@@ -53,18 +53,18 @@ class DatFileBrowser
 {
 public:
     virtual std::vector<MpqFilePtr> openScDatFiles(
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles,
-        const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles,
+        const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
         FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-    virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
+    virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
 
-    virtual MpqFilePtr openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor);
+    virtual MpqFilePtr openDatFile(const std::string & datFilePath, const DatFileDescriptor & datFileDescriptor);
 
     static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
 };
 
-bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
+bool GetScAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents);
 bool ExtractScAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
 
 class CV5Entry
@@ -100,10 +100,10 @@ class Tiles
 public:
     TileSet set[8];
     virtual ~Tiles();
-    bool LoadSets(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadSets(const std::vector<MpqFilePtr> & orderedSourceFiles);
 
 private:
-    bool LoadSet(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &tilesetName, u8 num);
+    bool LoadSet(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName, u8 num);
 };
 
 struct UPGRADEDAT
@@ -273,7 +273,7 @@ private:
 
 public:
     virtual ~GRP();
-    bool LoadGrp(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
+    bool LoadGrp(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
     u16 numFrames() { return imageDat.get<u16>(0); }
     u16 GrpWidth() { return imageDat.get<u16>(2); }
     u16 GrpHeight() { return imageDat.get<u16>(4); }
@@ -292,7 +292,7 @@ class Upgrades
 public:
     Upgrades();
     virtual ~Upgrades();
-    bool LoadUpgrades(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadUpgrades(const std::vector<MpqFilePtr> & orderedSourceFiles);
     UPGRADEDAT* UpgradeDat(u8 id);
 
 private:
@@ -304,7 +304,7 @@ class Techs
 public:
     Techs();
     virtual ~Techs();
-    bool LoadTechs(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadTechs(const std::vector<MpqFilePtr> & orderedSourceFiles);
     TECHDAT* TechDat(u8 id);
 
 private:
@@ -316,7 +316,7 @@ class Units
 public:
     Units();
     virtual ~Units();
-    bool LoadUnits(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadUnits(const std::vector<MpqFilePtr> & orderedSourceFiles);
     UNITDAT* UnitDat(u16 id);
 
 private:
@@ -328,7 +328,7 @@ class Weapons
 public:
     Weapons();
     virtual ~Weapons();
-    bool LoadWeapons(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadWeapons(const std::vector<MpqFilePtr> & orderedSourceFiles);
     WEAPONDAT* WeaponDat(u32 weaponId);
 
 private:
@@ -340,7 +340,7 @@ class Sprites
 public:
     Sprites();
     virtual ~Sprites();
-    bool LoadSprites(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles);
     FLINGYDAT* FlingyDat(u32 id);
     SPRITEDAT* SpriteDat(u32 id);
     IMAGEDAT* ImageDat(u32 id);
@@ -357,7 +357,7 @@ class PCX
 public:
     buffer pcxDat;
     virtual ~PCX();
-    bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &fileName);
+    bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & fileName);
 
     class PcxFile
     {
@@ -400,11 +400,11 @@ class TblFiles
 public:
     TblFiles() {}
     virtual ~TblFiles();
-    bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
-    bool GetStatTblString(u16 stringNum, std::string &outString);
+    bool Load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+    bool GetStatTblString(u16 stringNum, std::string & outString);
 
 protected:
-    bool GetTblString(buffer &buf, u16 stringNum, std::string &outString);
+    bool GetTblString(buffer & buf, u16 stringNum, std::string & outString);
 
 private:
     buffer stat_txtTbl;
@@ -413,20 +413,20 @@ private:
 class AiScripts
 {
 public:
-    AiScripts(TblFiles &tblFiles) : tblFiles(tblFiles) {}
+    AiScripts(TblFiles & tblFiles) : tblFiles(tblFiles) {}
     virtual ~AiScripts();
-    bool Load(const std::vector<MpqFilePtr> &orderedSourceFiles);
-    bool GetAiEntry(int aiNum, AIEntry &outAiEntry);
+    bool Load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+    bool GetAiEntry(int aiNum, AIEntry & outAiEntry);
     int GetNumAiScripts();
-    bool GetAiIdentifier(int aiNum, u32 &outAiId);
-    bool GetAiIdentifier(const std::string &inAiName, u32 &outAiId);
-    bool GetAiName(int aiNum, std::string &outAiName);
-    bool GetAiName(u32 aiId, std::string &outAiName);
-    bool GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName);
+    bool GetAiIdentifier(int aiNum, u32 & outAiId);
+    bool GetAiIdentifier(const std::string & inAiName, u32 & outAiId);
+    bool GetAiName(int aiNum, std::string & outAiName);
+    bool GetAiName(u32 aiId, std::string & outAiName);
+    bool GetAiIdAndName(int aiNum, u32 & outId, std::string & outAiName);
 
 private:
     buffer aiScriptBin;
-    TblFiles &tblFiles;
+    TblFiles & tblFiles;
 };
 
 class ScData
@@ -457,31 +457,31 @@ public:
     IMAGEDAT*  ImageDat (u32 id) { return sprites.ImageDat (id); }
 
     bool Load(DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
-        const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles = ScData::getDefaultDatFiles(),
+        const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
         FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
-    bool GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents,
+    bool GetScAsset(const std::string & assetMpqPath, buffer & outAssetContents,
         DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
-        const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles = ScData::getDefaultDatFiles(),
+        const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
         FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     bool ExtractScAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
         DatFileBrowserPtr datFileBrowser = DatFileBrowserPtr(new DatFileBrowser()),
-        const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles = ScData::getDefaultDatFiles(),
-        const std::string &expectedStarCraftDirectory = GetDefaultScPath(),
+        const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles = ScData::getDefaultDatFiles(),
+        const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
         FileBrowserPtr<u32> starCraftBrowser = DatFileBrowser::getDefaultStarCraftBrowser());
 
     static std::unordered_map<DatFilePriority, DatFileDescriptor> getDefaultDatFiles();
 
 private:
 
-    bool LoadGrps(const std::vector<MpqFilePtr> &orderedSourceFiles);
+    bool LoadGrps(const std::vector<MpqFilePtr> & orderedSourceFiles);
 
 };
 
-bool GetCV5References(TileSet* tiles, u32 &cv5Reference, u16 TileValue);
+bool GetCV5References(TileSet* tiles, u32 & cv5Reference, u16 TileValue);
 
 #define GetMegaTileRef(tiles, cv5Reference) tiles->cv5.get<u16>(cv5Reference)*32
 

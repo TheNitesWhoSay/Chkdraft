@@ -7,12 +7,12 @@ class CuwpInputDialog : public WinLib::ClassDialog
 {
     public:
         virtual ~CuwpInputDialog();
-        static bool GetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent);
+        static bool GetCuwp(Chk::Cuwp & cuwp, const Chk::Cuwp & initialCuwp, HWND hParent);
 
     protected:
         CuwpInputDialog();
         void ClearStoredCuwps();
-        bool InternalGetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent);
+        bool InternalGetCuwp(Chk::Cuwp & cuwp, const Chk::Cuwp & initialCuwp, HWND hParent);
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

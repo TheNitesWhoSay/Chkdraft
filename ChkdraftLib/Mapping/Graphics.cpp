@@ -85,7 +85,7 @@ inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
     return pixel;
 }
 
-inline void BoundedAdjustPx(u32 &pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
+inline void BoundedAdjustPx(u32 & pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
 {
     u8 result = ((u8*)&pixel)[0] + (u8)blueOffset;
     if ( blueOffset > 0 )
@@ -141,7 +141,7 @@ Graphics::~Graphics()
 
 }
 
-void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap& bitmap, HDC hDC, bool showAnywhere)
+void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, HDC hDC, bool showAnywhere)
 {
     this->screenLeft = screenLeft;
     this->screenTop = screenTop;
@@ -177,7 +177,7 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
         DrawTileNumbers(hDC);
 }
 
-void Graphics::DrawTerrain(ChkdBitmap& bitmap)
+void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
     u32 maxRowX, maxRowY;
 
@@ -206,7 +206,7 @@ void Graphics::DrawTerrain(ChkdBitmap& bitmap)
     }
 }
 
-void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
+void Graphics::DrawTileElevations(ChkdBitmap & bitmap)
 {
     u32 maxRowX, maxRowY, xc, yc;
 
@@ -235,7 +235,7 @@ void Graphics::DrawTileElevations(ChkdBitmap& bitmap)
     }
 }
 
-void Graphics::DrawGrid(ChkdBitmap& bitmap)
+void Graphics::DrawGrid(ChkdBitmap & bitmap)
 {
     u16 gridXSize = 0,
         gridYSize = 0,
@@ -252,7 +252,7 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
             for ( x = gridXSize-(screenLeft%gridXSize); x < screenWidth; x += gridXSize ) // Draw vertical lines
             {
                 for ( y = 0; y < screenHeight; y++ )
-                    bitmap[y*screenWidth + x] = (u32&)currGrid.red;
+                    bitmap[y*screenWidth + x] = (u32 &)currGrid.red;
             }
         }
             
@@ -261,13 +261,13 @@ void Graphics::DrawGrid(ChkdBitmap& bitmap)
             for ( y = gridYSize-(screenTop%gridYSize); y < screenHeight; y += gridYSize )
             {
                 for ( x = 0; x < screenWidth; x++ )
-                    bitmap[y*screenWidth + x] = (u32&)currGrid.red;
+                    bitmap[y*screenWidth + x] = (u32 &)currGrid.red;
             }
         }
     }
 }
 
-void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
+void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 {
     u32 bitMax = screenWidth*screenHeight;
 
@@ -430,7 +430,7 @@ void Graphics::DrawLocations(ChkdBitmap& bitmap, bool showAnywhere)
     }
 }
 
-void Graphics::DrawUnits(ChkdBitmap& bitmap)
+void Graphics::DrawUnits(ChkdBitmap & bitmap)
 {
     s32 screenRight = screenLeft+screenWidth,
         screenBottom = screenTop+screenHeight;
@@ -464,7 +464,7 @@ void Graphics::DrawUnits(ChkdBitmap& bitmap)
     }
 }
 
-void Graphics::DrawSprites(ChkdBitmap& bitmap)
+void Graphics::DrawSprites(ChkdBitmap & bitmap)
 {
     s32 screenRight = screenLeft + screenWidth,
         screenBottom = screenTop + screenHeight;
@@ -672,7 +672,7 @@ bool Graphics::DisplayingElevations()
     return displayingElevations;
 }
 
-/*bool Graphics::GetGrid(u32 gridNum, GRID &outGrid)
+/*bool Graphics::GetGrid(u32 gridNum, GRID & outGrid)
 {
     if ( gridNum >= 0 && gridNum < 2 )
         outGrid = grids[gridNum];
@@ -682,7 +682,7 @@ bool Graphics::DisplayingElevations()
     return gridNum >= 0 && gridNum < 2;
 }*/
 
-bool Graphics::GetGridSize(u32 gridNum, u16 &outWidth, u16 &outHeight)
+bool Graphics::GetGridSize(u32 gridNum, u16 & outWidth, u16 & outHeight)
 {
     if ( gridNum >= 0 && gridNum < 2 )
     {
@@ -697,7 +697,7 @@ bool Graphics::GetGridSize(u32 gridNum, u16 &outWidth, u16 &outHeight)
     return gridNum >= 0 && gridNum < 2;
 }
 
-bool Graphics::GetGridOffset(u32 gridNum, u16 &outX, u16 &outY)
+bool Graphics::GetGridOffset(u32 gridNum, u16 & outX, u16 & outY)
 {
     if ( gridNum >= 0 && gridNum < 2 )
     {
@@ -712,7 +712,7 @@ bool Graphics::GetGridOffset(u32 gridNum, u16 &outX, u16 &outY)
     return gridNum >= 0 && gridNum < 2;
 }
 
-bool Graphics::GetGridColor(u32 gridNum, u8 &red, u8 &green, u8 &blue)
+bool Graphics::GetGridColor(u32 gridNum, u8 & red, u8 & green, u8 & blue)
 {
     if ( gridNum >= 0 && gridNum < 2 )
     {
@@ -767,8 +767,8 @@ BITMAPINFO GetBMI(s32 width, s32 height)
     return bmi;
 }
 
-void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
-                           s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO &bmi, u8 miniTileSeparation )
+void TileElevationsToBits(ChkdBitmap & bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
+                           s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation )
 {
     u32 bitMax = bitWidth*bitHeight*3,
         cv5Ref, MegaTileRef; // Pointers and index's to tile components
@@ -847,7 +847,7 @@ void TileElevationsToBits(ChkdBitmap& bitmap, s32 bitWidth, s32 bitHeight, TileS
     }
 }
 
-void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s32 &yStart,
+void GrpToBits(ChkdBitmap & bitmap, u16 & bitWidth, u16 & bitHeight, s32 & xStart, s32 & yStart,
                 GRP* grp, u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped )
 {
     if ( grp == nullptr )
@@ -937,8 +937,8 @@ void GrpToBits(ChkdBitmap& bitmap, u16 &bitWidth, u16 &bitHeight, s32 &xStart, s
     }
 }
 
-void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
-               Sc::Sprite::GrpFile &grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
+void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
+               Sc::Sprite::GrpFile & grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
 {
     if ( frame < grpFile.numFrames )
     {
@@ -1028,8 +1028,8 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette &palette, u16 bitWidth, u16 bitH
     }
 }
 
-void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
-                 s32 &xStart, s32 &yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
+void UnitToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
     GRP* curr = nullptr;
     u16 drawnUnitId = unitID < 228 ? unitID : 0; // Extended units use ID:0's graphics (for now)
@@ -1048,14 +1048,14 @@ void UnitToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16
     GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
 }
 
-void SpriteToBits(ChkdBitmap& bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
-                   s32 &xStart, s32 &yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
+void SpriteToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+                   s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
 {
     GRP* curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1];
     GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
 }
 
-void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 TileValue)
+void TileToBits(ChkdBitmap & bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 TileValue)
 {
     u32 cv5Ref, MegaTileRef, MiniTileRef, // Pointers and index's of tile components
         yMiniOffset, xMiniOffset, // Processing optimizers
@@ -1123,7 +1123,7 @@ void TileToBits(ChkdBitmap& bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 
     }
 }
 
-void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, u8 miniTileX, u8 miniTileY, BITMAPINFO &bmi)
+void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, u8 miniTileX, u8 miniTileY, BITMAPINFO & bmi)
 {
     u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
 
@@ -1165,7 +1165,7 @@ void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u1
     SetDIBitsToDevice(hDC, xOffset, yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO &bmi)
+void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi)
 {
     u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
 
@@ -1218,7 +1218,7 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
     SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue, BITMAPINFO &bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
+void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
 {
     u32 cv5Ref, MegaTileRef, MiniTileRef; // Pointers and index's to tile components
 
@@ -1270,7 +1270,7 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 &TileValue,
 }
 
 void DrawTools(HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-    Selections &selections, bool pasting, Clipboard &clipboard, GuiMap &map)
+    Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
     if ( map.getLayer() == Layer::Terrain && selections.hasTiles() ) // Draw selected tiles
         DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, map);
@@ -1281,7 +1281,7 @@ void DrawTools(HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u
         DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
 }
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections& selections, GuiMap &map)
+void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
     SelectObject(hDC, pen);
@@ -1296,8 +1296,8 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    std::vector<TileNode> &tiles = selections.getTiles();
-    for ( auto &tile : tiles )
+    std::vector<TileNode> & tiles = selections.getTiles();
+    for ( auto & tile : tiles )
     {
         if ( tile.xc > rcBorder.left &&
              tile.xc < rcBorder.right &&
@@ -1356,7 +1356,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
 }
 
 void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-                        Selections &selections, Clipboard &clipboard, GuiMap &map, Layer layer )
+                        Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer )
 {
     if ( layer == Layer::Terrain )
     {
@@ -1377,8 +1377,8 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
         center.x = selections.getEndDrag().x + 16;
         center.y = selections.getEndDrag().y + 16;
     
-        std::vector<PasteTileNode> &pasteTiles = clipboard.getTiles();
-        for ( auto &tile : pasteTiles )
+        std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
+        for ( auto & tile : pasteTiles )
         {
             rect.left   = ( tile.xc + center.x      )/32*32 - screenLeft;
             rect.top    = ( tile.yc + center.y      )/32*32 - screenTop;
@@ -1441,7 +1441,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
         if ( cursor.x != -1 && cursor.y != -1 )
         {
             std::vector<PasteUnitNode> units = clipboard.getUnits();
-            for ( auto &pasteUnit : units )
+            for ( auto & pasteUnit : units )
             {
                 Chk::PlayerColor color = (pasteUnit.unit->owner < Sc::Player::TotalSlots ?
                     map.players.getPlayerColor(pasteUnit.unit->owner) : (Chk::PlayerColor)pasteUnit.unit->owner);
@@ -1458,7 +1458,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
     }
 }
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections, GuiMap &map)
+void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     POINT start = selections.getStartDrag();
     POINT end = selections.getEndDrag();
@@ -1521,7 +1521,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections &selections
     }
 }
 
-void DrawSelectingFrame(HDC hDC, Selections &selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
+void DrawSelectingFrame(HDC hDC, Selections & selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
 {
     if ( !selections.selectionAreaIsNull() )
     {
@@ -1588,8 +1588,8 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
     DeleteObject(brush);
 }
 
-void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
+void DrawMiniMapTiles(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
+                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap & map )
 {
     // minimap colors are equivilant to pixel 7, 6 of the minitile given by (MiniMapCoord%scale)
     u32 screenWidth  = bitWidth,
@@ -1641,8 +1641,8 @@ void DrawMiniMapTiles(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
 
 #define MINI_MAP_MAXBIT 65536 // Maximum graphicBits position
 
-void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap &map )
+void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
+                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap & map )
 {
     for ( u16 i = 0; i < map.layers.numUnits(); i++ )
     {
@@ -1677,7 +1677,7 @@ void DrawMiniMapUnits(ChkdBitmap& bitmap, u16 bitWidth, u16 bitHeight, u16 xSize
     }
 }
 
-void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap &map)
+void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap & map)
 {
     ChkdBitmap graphicBits;
     graphicBits.resize(65536);
@@ -1861,7 +1861,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
     }
 }
 
-bool GetStringDrawSize(HDC hDC, UINT &width, UINT &height, std::string str)
+bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, std::string str)
 {
     // This method is very time sensative and should be optimized as much as possible
     width = 0;

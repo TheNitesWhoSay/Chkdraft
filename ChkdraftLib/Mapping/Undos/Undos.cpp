@@ -6,7 +6,7 @@ IObserveUndos::~IObserveUndos()
 
 }
 
-Undos::Undos(IObserveUndos &observer) : observer(observer)
+Undos::Undos(IObserveUndos & observer) : observer(observer)
 {
     
 }

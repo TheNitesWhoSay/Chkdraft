@@ -20,7 +20,7 @@ namespace WinLib {
     }
 
     bool ClassWindow::RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-        u64 menuResourceId, const std::string &lpszClassName, HICON hIconSm, bool isMDIChild)
+        u64 menuResourceId, const std::string & lpszClassName, HICON hIconSm, bool isMDIChild)
     {
         if ( isMDIChild )
         {
@@ -34,7 +34,7 @@ namespace WinLib {
         }
     }
 
-    bool ClassWindow::CreateClassWindow( DWORD dwExStyle, const std::string &lpWindowName, DWORD dwStyle,
+    bool ClassWindow::CreateClassWindow( DWORD dwExStyle, const std::string & lpWindowName, DWORD dwStyle,
                                          int x, int y, int nWidth, int nHeight,
                                          HWND hWndParent, HMENU hMenu )
     {
@@ -67,7 +67,7 @@ namespace WinLib {
         WindowClassName().clear();
     }
 
-    bool ClassWindow::CreateMdiChild( const std::string &windowName, DWORD dwStyle,
+    bool ClassWindow::CreateMdiChild( const std::string & windowName, DWORD dwStyle,
                                       int x, int y, int nWidth, int nHeight,
                                       HWND hParent )
     {
@@ -91,7 +91,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ClassWindow::BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
+    bool ClassWindow::BecomeMDIFrame(MdiClient & client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
         int X, int Y, int nWidth, int nHeight, HMENU hMenu)
     {
         WindowType prev = windowType;
@@ -171,7 +171,7 @@ namespace WinLib {
 
     }
 
-    void ClassWindow::HandleDroppedFile(const std::string &dropFilePath)
+    void ClassWindow::HandleDroppedFile(const std::string & dropFilePath)
     {
     
     }

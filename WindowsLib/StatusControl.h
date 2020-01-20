@@ -10,7 +10,7 @@ namespace WinLib {
             virtual ~StatusControl();
             bool CreateThis(int numStatusWidths, int* statusWidths, DWORD dwExStyle, DWORD dwStyle, HWND hWndParent, HMENU hMenu);
             void AutoSize();
-            void SetText(int index, const std::string &newText);
+            void SetText(int index, const std::string & newText);
 
         private:
 

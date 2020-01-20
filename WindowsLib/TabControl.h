@@ -14,7 +14,7 @@ namespace WinLib {
             u32 GetCurSel();
             bool SetCurSel(u32 tabId);
 
-            bool InsertTab(u32 tabId, const std::string &label);
+            bool InsertTab(u32 tabId, const std::string & label);
         
             void ShowTab(u32 windowId);
             void HideTab(u32 windowId);

@@ -32,7 +32,7 @@ namespace WinLib {
     class PaintFont
     {
         public:
-            static PaintFontPtr createFont(int height, int width, const std::string &fontName);
+            static PaintFontPtr createFont(int height, int width, const std::string & fontName);
             HFONT getFont();
 
             virtual ~PaintFont();
@@ -44,10 +44,10 @@ namespace WinLib {
             PaintFont();
     };
 
-    bool getTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height);
-    bool getTabTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height);
-    bool drawText(HDC hdc, const std::string &text, int x, int y, RECT &rect, bool clipped, bool opaque);
-    bool drawTabbedText(HDC hdc, const std::string &text, int x, int y);
+    bool getTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height);
+    bool getTabTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height);
+    bool drawText(HDC hdc, const std::string & text, int x, int y, RECT & rect, bool clipped, bool opaque);
+    bool drawTabbedText(HDC hdc, const std::string & text, int x, int y);
 
 }
 

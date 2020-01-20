@@ -26,7 +26,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListViewControl::AddColumn(int insertAt, const std::string &title, int width, int alignmentFlags)
+    bool ListViewControl::AddColumn(int insertAt, const std::string & title, int width, int alignmentFlags)
     {
         icux::uistring sysTitle = icux::toUistring(title);
 
@@ -72,7 +72,7 @@ namespace WinLib {
         ListView_DeleteItem(getHandle(), rowNum);
     }
 
-    void ListViewControl::SetItemText(int row, int column, const std::string &text)
+    void ListViewControl::SetItemText(int row, int column, const std::string & text)
     {
         icux::uistring sysText = icux::toUistring(text);
 
@@ -168,7 +168,7 @@ namespace WinLib {
         return (int)SendMessage(header, HDM_GETITEMCOUNT, 0, 0);
     }
 
-    bool ListViewControl::GetItemAt(int xCoord, int yCoord, int &itemRow, int &itemColumn)
+    bool ListViewControl::GetItemAt(int xCoord, int yCoord, int & itemRow, int & itemColumn)
     {
         LVHITTESTINFO lvHitTestInfo = { };
         lvHitTestInfo.pt.x = (LONG)xCoord;
@@ -187,7 +187,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListViewControl::GetRowAt(int yCoord, int &itemRow)
+    bool ListViewControl::GetRowAt(int yCoord, int & itemRow)
     {
         int xCoord = 0;
         RECT topBounds = { };
@@ -207,7 +207,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListViewControl::GetColumnAt(int xCoord, int &itemColumn)
+    bool ListViewControl::GetColumnAt(int xCoord, int & itemColumn)
     {
         int yCoord = 0;
         RECT topBounds = { };
@@ -227,7 +227,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListViewControl::GetItemRect(int x, int y, RECT& rect)
+    bool ListViewControl::GetItemRect(int x, int y, RECT & rect)
     {
         if ( x == 0 ) // Work around Microsoft's error
         {

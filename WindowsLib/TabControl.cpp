@@ -23,7 +23,7 @@ namespace WinLib {
         return SendMessage(getHandle(), TCM_SETCURSEL, (WPARAM)tabId, 0) != -1;
     }
 
-    bool TabControl::InsertTab(u32 tabId, const std::string &label)
+    bool TabControl::InsertTab(u32 tabId, const std::string & label)
     {
         icux::uistring sysLabel = icux::toUistring(label);
 

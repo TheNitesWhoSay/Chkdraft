@@ -12,13 +12,13 @@ class Suggestions : public WinLib::ClassWindow
         bool CreateThis(HWND hParent, int x, int y, int width, int height);
         void ClearStrings();
 
-        void AddStrings(const std::vector<std::string> &strings);
-        void AddString(const std::string &string); // Adds a string to the stored list but does not yet display it
+        void AddStrings(const std::vector<std::string> & strings);
+        void AddString(const std::string & string); // Adds a string to the stored list but does not yet display it
         void SetStrings(); // Sets all the strings in the stored list to the display
-        void SetStrings(const std::vector<std::string> &strings);
+        void SetStrings(const std::vector<std::string> & strings);
         void Show();
         void Hide();
-        void SuggestNear(const std::string &str);
+        void SuggestNear(const std::string & str);
         void ArrowUp();
         void ArrowDown();
         std::string Take();
@@ -26,7 +26,7 @@ class Suggestions : public WinLib::ClassWindow
     protected:
         void DoSize();
         void EraseBackground(HDC hDC);
-        void SuggestFirstStartingWith(const std::string &str);
+        void SuggestFirstStartingWith(const std::string & str);
 
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);

@@ -9,11 +9,11 @@ class MoveToDialog : public WinLib::ClassDialog
 {
     public:
         virtual ~MoveToDialog();
-        static bool GetIndex(indexType &index, HWND hParent);
+        static bool GetIndex(indexType & index, HWND hParent);
 
     protected:
         MoveToDialog();
-        bool InternalGetMoveTo(indexType &index, HWND hParent);
+        bool InternalGetMoveTo(indexType & index, HWND hParent);
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

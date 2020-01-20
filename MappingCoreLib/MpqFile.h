@@ -47,25 +47,25 @@ public:
     virtual bool isOpen() const;
 
     // Checks whether an MPQ with the given filePath is open
-    virtual bool isOpen(const std::string &filePath) const;
+    virtual bool isOpen(const std::string & filePath) const;
 
     // Checks whether the listfile will be opened upon save
     virtual bool isUpdatingListFile() const;
 
     // Checks whether an openable MPQ exists at filePath
-    virtual bool isValid(const std::string &filePath) const;
+    virtual bool isValid(const std::string & filePath) const;
 
     // Creates and opens an MPQ at the given filePath
     // If this MPQ is already open with the given filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath, it is closed before attempting to create the new MPQ
     // If a file already exists at filePath it is replaced with the new MPQ
-    virtual bool create(const std::string &filePath);
+    virtual bool create(const std::string & filePath);
 
     // Attempts to open an MPQ at filePath
     // If createIfNotFound is specified and no file can be found at filePath, the MPQ will be automatically created
     // If this MPQ is already open with the given filePath, no operation occurs and the method returns true
     // If this MPQ is already open with a filePath not matching the given filePath, it is closed before attempting to open the new MPQ
-    virtual bool open(const std::string &filePath, bool readOnly = true, bool createIfNotFound = true);
+    virtual bool open(const std::string & filePath, bool readOnly = true, bool createIfNotFound = true);
 
     virtual void setUpdatingListFile(bool updateListFile);
 
@@ -80,20 +80,20 @@ public:
 
     // Checks whether an file exists within the MPQ at the given mpqPath
     // Cannot be used unless the MPQ is already open
-    virtual bool findFile(const std::string &mpqPath) const;
+    virtual bool findFile(const std::string & mpqPath) const;
 
     // Checks whether an file exists within the MPQ at the given mpqPath
     // If an MPQ is already open with a filePath matching the provided filePath, the already opened MPQ is searched
     // Else attempts to find and search an MPQ at filePath
-    virtual bool findFile(const std::string &filePath, const std::string &mpqPath) const;
+    virtual bool findFile(const std::string & filePath, const std::string & mpqPath) const;
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool getFile(const std::string &mpqPath, buffer &fileData);
+    virtual bool getFile(const std::string & mpqPath, buffer & fileData);
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool getFile(const std::string &mpqPath, std::vector<u8> & fileData);
+    virtual bool getFile(const std::string & mpqPath, std::vector<u8> & fileData);
 
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
     // Cannot be used unless the MPQ is already open
@@ -101,35 +101,35 @@ public:
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, std::stringstream &fileData);
+    virtual bool addFile(const std::string & mpqPath, std::stringstream & fileData);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, std::stringstream &fileData, WavQuality wavQuality);
+    virtual bool addFile(const std::string & mpqPath, std::stringstream & fileData, WavQuality wavQuality);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, const buffer &fileData);
+    virtual bool addFile(const std::string & mpqPath, const buffer & fileData);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, const buffer &fileData, WavQuality wavQuality);
+    virtual bool addFile(const std::string & mpqPath, const buffer & fileData, WavQuality wavQuality);
 
     // Attempts to add the file at filePath to this MPQ at mpqPath
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, const std::string &filePath);
+    virtual bool addFile(const std::string & mpqPath, const std::string & filePath);
 
     // Attempts to add the file at filePath to this MPQ at mpqPath
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string &mpqPath, const std::string &filePath, WavQuality wavQuality);
+    virtual bool addFile(const std::string & mpqPath, const std::string & filePath, WavQuality wavQuality);
 
     // Attempts to rename the file in this MPQ at mpqPath to newMpqPath
     // Cannot be used unless the MPQ is already open
-    virtual bool renameFile(const std::string &mpqPath, const std::string &newMpqPath);
+    virtual bool renameFile(const std::string & mpqPath, const std::string & newMpqPath);
 
     // Attempts to remove a file at mpqPath within this MPQ
     // Cannot be used unless the MPQ is already open
-    virtual bool removeFile(const std::string &mpqPath);
+    virtual bool removeFile(const std::string & mpqPath);
 
 private:
     bool updateListFile;
@@ -138,7 +138,7 @@ private:
     std::string filePath;
     HANDLE hMpq;
 
-    friend bool getFile(void* source, const std::string &mpqPath, buffer &fileData);
+    friend bool getFile(void* source, const std::string & mpqPath, buffer & fileData);
 
     // Removes this MPQ from the disk, only valid if the MPQ has already been closed but filePath is still set
     bool remove();
@@ -157,7 +157,7 @@ public:
     WavQuality wavQualitySelected;
     AssetAction actionTaken;
 
-    ModifiedAsset(const std::string &assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
+    ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
     virtual ~ModifiedAsset();
 
 private:

@@ -33,7 +33,7 @@ namespace WinLib {
     /*    Setup     */  /** Attemps to create and encapsulate a control
                             ControlProc is used if redirectProc is set
                             The rest of the variables are used the same as in CreateWindowEx */
-                        bool CreateControl( DWORD dwExStyle, const icux::uistring &lpClassName, const std::string &lpWindowName, DWORD dwStyle,
+                        bool CreateControl( DWORD dwExStyle, const icux::uistring & lpClassName, const std::string & lpWindowName, DWORD dwStyle,
                                             int x, int y, int nWidth, int nHeight,
                                             HWND hWndParent, HMENU hMenu, bool redirectProc );
 

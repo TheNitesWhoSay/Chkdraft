@@ -624,7 +624,7 @@ bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
         (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
 }
 
-void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
+void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -655,7 +655,7 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::S
     }
 }
 
-void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
+void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
 {
     markUsedStrings(stringIdUsed, usageScope);
     switch ( storageScope )
@@ -731,7 +731,7 @@ template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t strin
 template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t stringId, Chk::Scope storageScope);
 
 template <typename StringType>
-size_t Strings::findString(const StringType &str, Chk::Scope storageScope)
+size_t Strings::findString(const StringType & str, Chk::Scope storageScope)
 {
     switch ( storageScope )
     {
@@ -751,10 +751,10 @@ size_t Strings::findString(const StringType &str, Chk::Scope storageScope)
     }
     return (size_t)Chk::StringId::NoString;
 }
-template size_t Strings::findString<RawString>(const RawString &str, Chk::Scope storageScope);
-template size_t Strings::findString<EscString>(const EscString &str, Chk::Scope storageScope);
-template size_t Strings::findString<ChkdString>(const ChkdString &str, Chk::Scope storageScope);
-template size_t Strings::findString<SingleLineChkdString>(const SingleLineChkdString &str, Chk::Scope storageScope);
+template size_t Strings::findString<RawString>(const RawString & str, Chk::Scope storageScope);
+template size_t Strings::findString<EscString>(const EscString & str, Chk::Scope storageScope);
+template size_t Strings::findString<ChkdString>(const ChkdString & str, Chk::Scope storageScope);
+template size_t Strings::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope);
 
 void Strings::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool autoDefragment)
 {
@@ -765,7 +765,7 @@ void Strings::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool a
 }
 
 template <typename StringType>
-size_t Strings::addString(const StringType &str, Chk::Scope storageScope, bool autoDefragment)
+size_t Strings::addString(const StringType & str, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game )
         return this->str->addString<StringType>(str, *this, autoDefragment);
@@ -774,10 +774,10 @@ size_t Strings::addString(const StringType &str, Chk::Scope storageScope, bool a
 
     return (size_t)Chk::StringId::NoString;
 }
-template size_t Strings::addString<RawString>(const RawString &str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<EscString>(const EscString &str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<ChkdString>(const ChkdString &str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<SingleLineChkdString>(const SingleLineChkdString &str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Strings::addString<RawString>(const RawString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Strings::addString<EscString>(const EscString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Strings::addString<ChkdString>(const ChkdString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Strings::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope, bool autoDefragment);
 
 bool Strings::addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk::Scope storageScope, bool autoDefragment)
 {
@@ -787,7 +787,7 @@ bool Strings::addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk:
     {
         std::bitset<Chk::MaxStrings> stringIdUsed;
         markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
-        for ( const zzStringTableNode &stringToAdd : stringsToAdd )
+        for ( const zzStringTableNode & stringToAdd : stringsToAdd )
         {
             if ( stringToAdd.stringId > 0 || stringToAdd.stringId > Chk::MaxStrings || stringIdUsed[stringToAdd.stringId] ) // Check if stringId invalid or stringId already in use
                 return false;
@@ -819,7 +819,7 @@ bool Strings::addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk:
     {
         std::bitset<Chk::MaxStrings> stringIdUsed;
         markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
-        for ( const zzStringTableNode &stringToAdd : stringsToAdd )
+        for ( const zzStringTableNode & stringToAdd : stringsToAdd )
         {
             if ( stringToAdd.stringId == 0 || stringToAdd.stringId > Chk::MaxStrings || stringIdUsed[stringToAdd.stringId] ) // Check if stringId invalid or stringId already in use
                 return false;
@@ -851,17 +851,17 @@ bool Strings::addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk:
 }
 
 template <typename StringType>
-void Strings::replaceString(size_t stringId, const StringType &str, Chk::Scope storageScope)
+void Strings::replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
         this->str->replaceString<StringType>(stringId, str);
     else if ( storageScope == Chk::Scope::Editor )
         kstr->replaceString<StringType>(stringId, str);
 }
-template void Strings::replaceString<RawString>(size_t stringId, const RawString &str, Chk::Scope storageScope);
-template void Strings::replaceString<EscString>(size_t stringId, const EscString &str, Chk::Scope storageScope);
-template void Strings::replaceString<ChkdString>(size_t stringId, const ChkdString &str, Chk::Scope storageScope);
-template void Strings::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString &str, Chk::Scope storageScope);
+template void Strings::replaceString<RawString>(size_t stringId, const RawString & str, Chk::Scope storageScope);
+template void Strings::replaceString<EscString>(size_t stringId, const EscString & str, Chk::Scope storageScope);
+template void Strings::replaceString<ChkdString>(size_t stringId, const ChkdString & str, Chk::Scope storageScope);
+template void Strings::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str, Chk::Scope storageScope);
 
 void Strings::deleteUnusedStrings(Chk::Scope storageScope)
 {
@@ -1308,7 +1308,7 @@ template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t
 template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope);
 
 template <typename StringType>
-void Strings::setScenarioName(const StringType &scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
     {
@@ -1322,13 +1322,13 @@ void Strings::setScenarioName(const StringType &scenarioNameString, Chk::Scope s
         }
     }
 }
-template void Strings::setScenarioName<RawString>(const RawString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<EscString>(const EscString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<ChkdString>(const ChkdString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<SingleLineChkdString>(const SingleLineChkdString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioName<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioName<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioName<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioName<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setScenarioDescription(const StringType &scenarioDescription, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setScenarioDescription(const StringType & scenarioDescription, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
     {
@@ -1342,13 +1342,13 @@ void Strings::setScenarioDescription(const StringType &scenarioDescription, Chk:
         }
     }
 }
-template void Strings::setScenarioDescription<RawString>(const RawString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<EscString>(const EscString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<ChkdString>(const ChkdString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString &scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioDescription<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioDescription<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioDescription<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setForceName(Chk::Force force, const StringType &forceName, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setForceName(Chk::Force force, const StringType & forceName, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && (u32)force < Chk::TotalForces )
     {
@@ -1362,13 +1362,13 @@ void Strings::setForceName(Chk::Force force, const StringType &forceName, Chk::S
         }
     }
 }
-template void Strings::setForceName<RawString>(Chk::Force force, const RawString &forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<EscString>(Chk::Force force, const EscString &forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<ChkdString>(Chk::Force force, const ChkdString &forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString &forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setForceName<RawString>(Chk::Force force, const RawString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setForceName<EscString>(Chk::Force force, const EscString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setForceName<ChkdString>(Chk::Force force, const ChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setUnitName(Sc::Unit::Type unitType, const StringType &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setUnitName(Sc::Unit::Type unitType, const StringType & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && unitType < Sc::Unit::TotalTypes )
     {
@@ -1390,13 +1390,13 @@ void Strings::setUnitName(Sc::Unit::Type unitType, const StringType &unitName, C
         }
     }
 }
-template void Strings::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString &unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setSoundPath(size_t soundIndex, const StringType &soundPath, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && soundIndex < Chk::TotalSounds )
     {
@@ -1410,13 +1410,13 @@ void Strings::setSoundPath(size_t soundIndex, const StringType &soundPath, Chk::
         }
     }
 }
-template void Strings::setSoundPath<RawString>(size_t soundIndex, const RawString &soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<EscString>(size_t soundIndex, const EscString &soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString &soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString &soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSoundPath<RawString>(size_t soundIndex, const RawString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSoundPath<EscString>(size_t soundIndex, const EscString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setSwitchName(size_t switchIndex, const StringType &switchName, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && switchIndex < Chk::TotalSwitches )
     {
@@ -1430,13 +1430,13 @@ void Strings::setSwitchName(size_t switchIndex, const StringType &switchName, Ch
         }
     }
 }
-template void Strings::setSwitchName<RawString>(size_t switchIndex, const RawString &switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<EscString>(size_t switchIndex, const EscString &switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString &switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString &switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSwitchName<RawString>(size_t switchIndex, const RawString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSwitchName<EscString>(size_t switchIndex, const EscString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setLocationName(size_t locationId, const StringType &locationName, Chk::Scope storageScope, bool autoDefragment)
+void Strings::setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && locationId > 0 && locationId <= layers->numLocations() )
     {
@@ -1450,10 +1450,10 @@ void Strings::setLocationName(size_t locationId, const StringType &locationName,
         }
     }
 }
-template void Strings::setLocationName<RawString>(size_t locationId, const RawString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<EscString>(size_t locationId, const EscString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<ChkdString>(size_t locationId, const ChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString &locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<RawString>(size_t locationId, const RawString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<EscString>(size_t locationId, const EscString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Strings::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
 
 void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
     StrCompressionElevatorPtr compressionElevator, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
@@ -1730,7 +1730,7 @@ bool Players::stringUsed(size_t stringId)
     return forc->stringUsed(stringId);
 }
 
-void Players::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     forc->markUsedStrings(stringIdUsed);
 }
@@ -2281,7 +2281,7 @@ bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope)
     }
 }
 
-void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     mrgn->markUsedStrings(stringIdUsed);
 }
@@ -3171,7 +3171,7 @@ bool Properties::stringUsed(size_t stringId)
     return unis->stringUsed(stringId) || unix->stringUsed(stringId);
 }
 
-void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     unis->markUsedStrings(stringIdUsed);
     unix->markUsedStrings(stringIdUsed);
@@ -3277,12 +3277,12 @@ Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex)
     return uprp->getCuwp(cuwpIndex);
 }
 
-void Triggers::setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp)
+void Triggers::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
 {
     return uprp->setCuwp(cuwpIndex, cuwp);
 }
 
-size_t Triggers::addCuwp(const Chk::Cuwp &cuwp, bool fixUsageBeforeAdding)
+size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding)
 {
     size_t found = uprp->findCuwp(cuwp);
     if ( found < Sc::Unit::MaxCuwps )
@@ -3443,7 +3443,7 @@ void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationId
     trig->markUsedLocations(locationIdUsed);
 }
 
-void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     wav->markUsedStrings(stringIdUsed);
     swnm->markUsedStrings(stringIdUsed);
@@ -3451,13 +3451,13 @@ void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
     mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     trig->markUsedGameStrings(stringIdUsed);
     mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     wav->markUsedStrings(stringIdUsed);
     swnm->markUsedStrings(stringIdUsed);

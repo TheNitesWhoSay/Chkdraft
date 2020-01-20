@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-bool alphabetize(const std::string &first, const std::string &second)
+bool alphabetize(const std::string & first, const std::string & second)
 {
     // true = first before second, false = second before first
     size_t firstLen = first.length(),
@@ -23,7 +23,7 @@ bool alphabetize(const std::string &first, const std::string &second)
     return firstLen < secondLen;
 }
 
-bool firstStartsWithSecond(const std::string &first, const std::string &second)
+bool firstStartsWithSecond(const std::string & first, const std::string & second)
 {
     size_t firstLen = first.length();
     size_t secondLen = second.length();
@@ -73,13 +73,13 @@ void Suggestions::ClearStrings()
     listSuggestions.ClearItems();
 }
 
-void Suggestions::AddStrings(const std::vector<std::string> &strings)
+void Suggestions::AddStrings(const std::vector<std::string> & strings)
 {
     for (auto string : strings)
         strList.push_back(string);
 }
 
-void Suggestions::AddString(const std::string &string)
+void Suggestions::AddString(const std::string & string)
 {
     strList.push_back(string);
 }
@@ -90,11 +90,11 @@ void Suggestions::SetStrings()
     listSuggestions.ClearItems();
 
     strList.sort(alphabetize);
-    for ( auto &str : strList )
+    for ( auto & str : strList )
         listSuggestions.AddString(str);
 }
 
-void Suggestions::SetStrings(const std::vector<std::string> &strings)
+void Suggestions::SetStrings(const std::vector<std::string> & strings)
 {
     strList.clear();
     for ( auto str : strings )
@@ -116,7 +116,7 @@ void Suggestions::Hide()
     ShowWindow(getHandle(), SW_HIDE);
 }
 
-void Suggestions::SuggestNear(const std::string &str)
+void Suggestions::SuggestNear(const std::string & str)
 {
     SuggestFirstStartingWith(str);
 }
@@ -160,10 +160,10 @@ void Suggestions::EraseBackground(HDC hDC)
     }*/
 }
 
-void Suggestions::SuggestFirstStartingWith(const std::string &str)
+void Suggestions::SuggestFirstStartingWith(const std::string & str)
 {
     int i = 0;
-    for ( auto &check : strList )
+    for ( auto & check : strList )
     {
         if ( firstStartsWithSecond(check, str) ) // *it begins with str
         {

@@ -30,14 +30,14 @@ class Selections
 {
     public:
 
-        Selections(GuiMap &map);
+        Selections(GuiMap & map);
         virtual ~Selections();
 
         void setStartDrag(s32 x, s32 y);
         void setEndDrag(s32 x, s32 y);
         void setDrags(s32 x, s32 y);
-        POINT& getStartDrag() { return startDrag; }
-        POINT& getEndDrag() { return endDrag; }
+        POINT & getStartDrag() { return startDrag; }
+        POINT & getEndDrag() { return endDrag; }
         void setMoved() { moved = true; }
         void resetMoved() { moved = false; }
         bool hasMoved() { return moved; }
@@ -46,7 +46,7 @@ class Selections
 
         void addTile(u16 value, u16 xc, u16 yc);
         void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);
-        void removeTile(TileNode* &tile);
+        void removeTile(TileNode* & tile);
         void removeTile(u16 xc, u16 yc);
         void removeTiles();
 
@@ -71,9 +71,9 @@ class Selections
         u16 numUnits();
         u16 numUnitsUnder(u16 index);
 
-        std::vector<TileNode> &getTiles();
+        std::vector<TileNode> & getTiles();
         TileNode getFirstTile();
-        std::vector<u16> &getUnits();
+        std::vector<u16> & getUnits();
         u16 getFirstUnit();
         u16 getLastUnit();
         u16 getHighestIndex();
@@ -85,7 +85,7 @@ class Selections
 
     private:
 
-        GuiMap &map; // Reference to the map who has the selections described in this class
+        GuiMap & map; // Reference to the map who has the selections described in this class
 
         POINT startDrag;
         POINT endDrag;

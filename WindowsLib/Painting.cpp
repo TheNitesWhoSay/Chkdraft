@@ -69,7 +69,7 @@ namespace WinLib {
     }
 
 
-    PaintFontPtr PaintFont::createFont(int height, int width, const std::string &fontName)
+    PaintFontPtr PaintFont::createFont(int height, int width, const std::string & fontName)
     {
         PaintFontPtr paintFont = PaintFontPtr(new PaintFont());
         paintFont->hFont = CreateFont(height, width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toFilestring(fontName).c_str());
@@ -95,7 +95,7 @@ namespace WinLib {
     
     }
 
-    bool getTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height)
+    bool getTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height)
     {
         if ( text.length() > 0 )
         {
@@ -116,7 +116,7 @@ namespace WinLib {
         return false;
     }
 
-    bool getTabTextExtent(HDC hdc, const std::string &text, s32 &width, s32 &height)
+    bool getTabTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height)
     {
         if ( text.length() > 0 )
         {
@@ -137,7 +137,7 @@ namespace WinLib {
         return false;
     }
 
-    bool drawText(HDC hdc, const std::string &text, int x, int y, RECT &rect, bool clipped, bool opaque)
+    bool drawText(HDC hdc, const std::string & text, int x, int y, RECT & rect, bool clipped, bool opaque)
     {
         icux::uistring sysText = icux::toUistring(text);
 
@@ -150,7 +150,7 @@ namespace WinLib {
         return ExtTextOut(hdc, x, y, (clipped ? ETO_CLIPPED : 0), &rect, sysText.c_str(), (UINT)sysText.length(), 0) != 0;
     }
 
-    bool drawTabbedText(HDC hdc, const std::string &text, int x, int y)
+    bool drawTabbedText(HDC hdc, const std::string & text, int x, int y)
     {
         icux::uistring sysText = icux::toUistring(text);
         return TabbedTextOut(hdc, x, y, sysText.c_str(), (int)sysText.size(), 0, NULL, 0) != 0;

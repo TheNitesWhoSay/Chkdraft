@@ -91,7 +91,7 @@ BOOL LitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-bool LitWindow::GetLitPaths(std::string &litDirectory, std::string &litPath)
+bool LitWindow::GetLitPaths(std::string & litDirectory, std::string & litPath)
 {
     std::string chkdPath = WinLib::GetCurrentExePath();
     if ( chkdPath.length() > 0 )
@@ -108,7 +108,7 @@ bool LitWindow::GetLitPaths(std::string &litDirectory, std::string &litPath)
     return false;
 }
 
-bool LitWindow::GetInputPaths(std::string &luaDirectory, std::string &luaName)
+bool LitWindow::GetInputPaths(std::string & luaDirectory, std::string & luaName)
 {
     std::string luaPath;
     if ( editPath.GetWinText(luaPath) )
@@ -129,8 +129,8 @@ bool LitWindow::GetInputPaths(std::string &luaDirectory, std::string &luaName)
     return false;
 }
 
-bool LitWindow::WriteLitBat(std::string &luaDirectory, std::string &luaName, std::string &litDirectory, std::string &litBatPath,
-    std::string &textOutPath, std::string &trigOutName)
+bool LitWindow::WriteLitBat(std::string & luaDirectory, std::string & luaName, std::string & litDirectory, std::string & litBatPath,
+    std::string & textOutPath, std::string & trigOutName)
 {
     litBatPath = litDirectory + "chkd-LIT_LIT.bat";
     RemoveFile(litBatPath);

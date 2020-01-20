@@ -6,7 +6,7 @@ extern Logger logger;
 
 std::string ExampleCommand::text;
 
-ExampleCommand::ExampleCommand(const std::string &addition) : GenericCommand(true, (u32)CommandClass::ExampleCommand, (u32)UndoRedoType::Example), addition(addition)
+ExampleCommand::ExampleCommand(const std::string & addition) : GenericCommand(true, (u32)CommandClass::ExampleCommand, (u32)UndoRedoType::Example), addition(addition)
 {
 
 }
@@ -16,7 +16,7 @@ ExampleCommand::~ExampleCommand()
 
 }
 
-ExampleCommandPtr ExampleCommand::C(const std::string &addition)
+ExampleCommandPtr ExampleCommand::C(const std::string & addition)
 {
     return std::shared_ptr<ExampleCommand>(new ExampleCommand(addition));
 }

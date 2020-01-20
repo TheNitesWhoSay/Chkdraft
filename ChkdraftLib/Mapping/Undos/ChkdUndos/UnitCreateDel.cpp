@@ -11,7 +11,7 @@ std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index)
     return std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index));
 }
 
-std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index, Chk::Unit &unit)
+std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index, Chk::Unit & unit)
 {
     return std::shared_ptr<UnitCreateDel>(new UnitCreateDel(index, unit));
 }
@@ -37,7 +37,7 @@ int32_t UnitCreateDel::GetType()
     return UndoTypes::UnitChange;
 }
 
-UnitCreateDel::UnitCreateDel(u16 index, Chk::Unit &unit) // Undo deletion
+UnitCreateDel::UnitCreateDel(u16 index, Chk::Unit & unit) // Undo deletion
     : index(index), unit(nullptr)
 {
     this->unit = std::unique_ptr<Chk::Unit>(new Chk::Unit);

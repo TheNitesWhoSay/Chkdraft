@@ -32,7 +32,7 @@ class KnownError : public std::exception
 {
     public:
         KnownError(u32 errorId);
-        KnownError(const KnownError& other);
+        KnownError(const KnownError & other);
         virtual ~KnownError();
         u32 getErrorId();
         static std::atomic<u32> GetNextErrorId();
@@ -52,7 +52,7 @@ typedef std::shared_ptr<ErrorHandler> ErrorHandlerPtr;
 class ErrorHandler
 {
     public:
-        virtual ErrorHandlerResult HandleException(GenericCommandPtr command, KnownError& e) = 0;
+        virtual ErrorHandlerResult HandleException(GenericCommandPtr command, KnownError & e) = 0;
         virtual ~ErrorHandler();
 };
 

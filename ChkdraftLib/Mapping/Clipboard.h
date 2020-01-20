@@ -6,9 +6,9 @@
 #include "Undos/Undos.h"
 class GuiMap;
 
-void StringToWindowsClipboard(const std::string &str);
+void StringToWindowsClipboard(const std::string & str);
 
-bool WindowsClipboardToString(std::string &str);
+bool WindowsClipboardToString(std::string & str);
 
 class PasteTileNode
 {
@@ -46,7 +46,7 @@ class Clipboard
 
         bool hasTiles();
         bool hasUnits() { return copyUnits.size() > 0; }
-        void copy(GuiMap &map, Layer layer);
+        void copy(GuiMap & map, Layer layer);
         
         void addQuickTile(u16 index, s32 xc, s32 yc);
         bool hasQuickTiles() { return quickTiles.size() > 0; }
@@ -57,12 +57,12 @@ class Clipboard
         void beginPasting(bool isQuickPaste);
         void endPasting();
 
-        void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
+        void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
 
         void toggleFillSimilarTiles();
 
-        std::vector<PasteTileNode> &getTiles();
-        std::vector<PasteUnitNode> &getUnits();
+        std::vector<PasteTileNode> & getTiles();
+        std::vector<PasteUnitNode> & getUnits();
         bool isPasting() { return pasting; }
         bool isQuickPasting() { return pasting && quickPaste; }
         bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
@@ -70,9 +70,9 @@ class Clipboard
 
     protected:
 
-        void pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos);
-        void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos);
-        void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack);
+        void pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
 
 
     private:

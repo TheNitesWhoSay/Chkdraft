@@ -7,7 +7,7 @@ StaticTrigComponentParser::~StaticTrigComponentParser()
 
 }
 
-bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Condition::Comparison & dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -50,7 +50,7 @@ bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Conditio
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Comparison &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Comparison & dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -95,7 +95,7 @@ bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Com
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 & dest, s64 pos, s64 end)
     // All
 {
     s64 size = end-pos;
@@ -134,7 +134,7 @@ bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 &dest, s64
         return false;
 }
 
-bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 & dest, s64 pos, s64 end)
     // Ally, Enemy, Allied Victory
 {
     s64 size = end-pos;
@@ -178,7 +178,7 @@ bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 &dest, s64 p
     return success;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseResourceType(char* text, u8 & dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -224,7 +224,7 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u8 &dest, s64 pos,
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseScoreType(char* text, u8 & dest, s64 pos, s64 end)
 {
     s64 size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
@@ -283,7 +283,7 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u8 &dest, s64 pos, s6
     return success;
 }
 
-bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 & dest, s64 pos, s64 end)
     // Always Display, Don't Always Display
 {
     s64 size = end-pos;
@@ -326,7 +326,7 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 &dest, s64 p
     return success;
 }
 
-bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 & dest, s64 pos, s64 end)
     // Add, subtract, set to
 {
     s64 size = end-pos;
@@ -372,7 +372,7 @@ bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 &dest, s64 p
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 & dest, s64 pos, s64 end)
     // Set, clear, toggle, randomize
 {
     s64 size = end-pos;
@@ -421,7 +421,7 @@ bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 &dest, s64 pos, s6
     return success;
 }
 
-bool StaticTrigComponentParser::ParseStateMod(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseStateMod(char* text, u8 & dest, s64 pos, s64 end)
     // Disable, Disabled, Enable, Enabled, Toggle
 {
     s64 size = end-pos;
@@ -469,7 +469,7 @@ bool StaticTrigComponentParser::ParseStateMod(char* text, u8 &dest, s64 pos, s64
     return success;
 }
 
-bool StaticTrigComponentParser::ParseOrder(char* text, u8 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseOrder(char* text, u8 & dest, s64 pos, s64 end)
     // Attack, move, patrol
 {
     s64 size = end-pos;
@@ -515,7 +515,7 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 &dest, s64 pos, s64 en
     return success;
 }
 
-bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, s64 pos, s64 end, u32 deathTableOffset)
+bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32 & dest, s64 pos, s64 end, u32 deathTableOffset)
 {
     u32 temp = 0;
     if ( ParseLong(text, temp, pos, end) )
@@ -526,7 +526,7 @@ bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32& dest, s64 po
     return false;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(char* text, u16 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseResourceType(char* text, u16 & dest, s64 pos, s64 end)
 {
     u8 temp = 0;
     bool success = ParseResourceType(text, temp, pos, end);
@@ -534,7 +534,7 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u16 &dest, s64 pos
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(char* text, u16 &dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseScoreType(char* text, u16 & dest, s64 pos, s64 end)
 {
     u8 temp = 0;
     bool success = ParseScoreType(text, temp, pos, end);
@@ -542,7 +542,7 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u16 &dest, s64 pos, s
     return success;
 }
 
-bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32& dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32 & dest, s64 pos, s64 end)
 {
     s64 size = end - pos;
     if ( size < 33 )
@@ -579,7 +579,7 @@ bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32& dest, s64 pos, 
     return false;
 }
 
-bool StaticTrigComponentParser::ParseLong(char* text, u32& dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseLong(char* text, u32 & dest, s64 pos, s64 end)
 {
     s64 size = end - pos;
     if ( size < 12 )
@@ -637,7 +637,7 @@ bool StaticTrigComponentParser::ParseTriplet(char* text, u8* dest, s64 pos, s64 
     return false;
 }
 
-bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseShort(char* text, u16 & dest, s64 pos, s64 end)
 {
     s64 size = end - pos;
     if ( size < 7 )
@@ -669,7 +669,7 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16& dest, s64 pos, s64 e
     return false;
 }
 
-bool StaticTrigComponentParser::ParseByte(char* text, u8& dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseByte(char* text, u8 & dest, s64 pos, s64 end)
 {
     s64 size = end - pos;
     if ( size < 5 )

@@ -508,8 +508,8 @@ void GuiMap::deleteSelection()
                 {
                     u16 xSize = (u16)Scenario::layers.getTileWidth();
 
-                    auto &selTiles = selections.getTiles();
-                    for ( auto &tile : selTiles )
+                    auto & selTiles = selections.getTiles();
+                    for ( auto & tile : selTiles )
                     {
                         undos.AddUndo(TileChange::Make(tile.xc, tile.yc, layers.getTile(tile.xc, tile.yc)));
                         layers.setTile(tile.xc, tile.yc, 0);
@@ -593,7 +593,7 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 void GuiMap::PlayerChanged(u8 newPlayer)
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = selections.getUnits();
+    auto & selUnits = selections.getUnits();
     for ( u16 unitIndex : selUnits )
     {
         Chk::UnitPtr unit = layers.getUnit(unitIndex);
@@ -608,7 +608,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     Redraw(true);
 }
 
-Selections &GuiMap::GetSelections()
+Selections & GuiMap::GetSelections()
 {
     return selections;
 }
@@ -910,7 +910,7 @@ bool GuiMap::DisplayingTileNums()
     return graphics.DisplayingTileNums();
 }
 
-bool GuiMap::snapUnitCoordinate(s32& x, s32& y)
+bool GuiMap::snapUnitCoordinate(s32 & x, s32 & y)
 {
     if ( snapUnits )
     {
@@ -995,7 +995,7 @@ bool GuiMap::LockAnywhere()
     return lockAnywhere;
 }
 
-bool GuiMap::GetSnapIntervals(u32& x, u32& y, u32& xOffset, u32& yOffset)
+bool GuiMap::GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset)
 {
     if ( snapLocations )
     {
@@ -1025,7 +1025,7 @@ bool GuiMap::GetSnapIntervals(u32& x, u32& y, u32& xOffset, u32& yOffset)
     return false;
 }
 
-bool GuiMap::SnapLocationDimensions(u32& x1, u32& y1, u32& x2, u32& y2, LocSnapFlags locSnapFlags)
+bool GuiMap::SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags)
 {
     u32 lengthX, lengthY, startSnapX, startSnapY;
     if ( GetSnapIntervals(lengthX, lengthY, startSnapX, startSnapY) )
@@ -1265,7 +1265,7 @@ void GuiMap::updateMenu()
     UpdateUnitMenuItems();
 }
 
-bool GuiMap::CreateThis(HWND hClient, const std::string &title)
+bool GuiMap::CreateThis(HWND hClient, const std::string & title)
 {
     if ( !WindowClassIsRegistered("MdiChild") )
     {
@@ -1908,7 +1908,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
             chkd.unitWindow.SetChangeHighlightOnly(true);
-            auto &selUnits = selections.getUnits();
+            auto & selUnits = selections.getUnits();
             for ( u16 unitIndex : selUnits )
                 chkd.unitWindow.DeselectIndex(unitIndex);
             
@@ -1941,7 +1941,7 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             unitBottom = unit->yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
         }
     
-        if ( selections.getStartDrag().x <= unitRight  && selections.getEndDrag().x >= unitLeft
+        if ( selections.getStartDrag().x <= unitRight && selections.getEndDrag().x >= unitLeft
             && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
         {
             bool wasSelected = selections.unitIsSelected((u16)i);
@@ -1974,7 +1974,7 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
         return 0;
 }
 
-bool GuiMap::GetBackupPath(time_t currTime, std::string &outFilePath)
+bool GuiMap::GetBackupPath(time_t currTime, std::string & outFilePath)
 {
     std::string moduleDirectory;
     if ( GetModuleDirectory(moduleDirectory) )
@@ -1998,7 +1998,7 @@ bool GuiMap::GetBackupPath(time_t currTime, std::string &outFilePath)
     return false;
 }
 
-bool GuiMap::TryBackup(bool &outCopyFailed)
+bool GuiMap::TryBackup(bool & outCopyFailed)
 {
     outCopyFailed = false;
     if ( doAutoBackups && MapFile::getFilePath().length() > 0 )

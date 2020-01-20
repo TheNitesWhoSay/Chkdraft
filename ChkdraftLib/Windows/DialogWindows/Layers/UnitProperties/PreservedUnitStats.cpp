@@ -18,12 +18,12 @@ void PreservedUnitStats::Clear()
     preservedValues.clear();
 }
 
-void PreservedUnitStats::AddStats(Selections &sel, Chk::Unit::Field statField)
+void PreservedUnitStats::AddStats(Selections & sel, Chk::Unit::Field statField)
 {
     Clear();
     field = statField;
-    auto &unitIndexes = sel.getUnits();
-    for ( u16 &unitIndex : unitIndexes )
+    auto & unitIndexes = sel.getUnits();
+    for ( u16 & unitIndex : unitIndexes )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         switch ( field )
@@ -55,9 +55,9 @@ void PreservedUnitStats::convertToUndo()
         // For each selected unit, add the corresponding undo from values
         u32 i = 0;
 
-        Selections &selections = CM->GetSelections();
+        Selections & selections = CM->GetSelections();
         auto unitChanges = ReversibleActions::Make();
-        auto &selectedUnitIndexes = selections.getUnits();
+        auto & selectedUnitIndexes = selections.getUnits();
         for ( u16 unitIndex : selectedUnitIndexes )
         {
             unitChanges->Insert(UnitChange::Make(unitIndex, field, preservedValues[i]));

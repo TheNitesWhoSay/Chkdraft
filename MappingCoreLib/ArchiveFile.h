@@ -29,28 +29,28 @@ public:
     virtual bool isOpen() const = 0;
 
     // Checks whether an archive with the given filePath is open
-    virtual bool isOpen(const std::string &filePath) const = 0;
+    virtual bool isOpen(const std::string & filePath) const = 0;
 
     // Checks whether an openable archive exists at filePath
-    virtual bool isValid(const std::string &filePath) const = 0;
+    virtual bool isValid(const std::string & filePath) const = 0;
 
     // Creates and opens an archive at the given filePath
     // If this archive is already open with the given filePath, no operation occurs and the method returns true
     // If this archive is already open with a filePath not matching the given filePath, it is closed before attempting to create the new archive
     // If a file already exists at filePath it is replaced with the new archive
-    virtual bool create(const std::string &filePath) = 0;
+    virtual bool create(const std::string & filePath) = 0;
 
     // Attempts to open an archive at filePath
     // If createIfNotFound is specified and no file can be found at filePath, the archive will be automatically created
     // If this archive is already open with the given filePath, no operation occurs and the method returns true
     // If this archive is already open with a filePath not matching the given filePath, it is closed before attempting to open the new archive
-    virtual bool open(const std::string &filePath, bool readOnly = true, bool createIfNotFound = true) = 0;
+    virtual bool open(const std::string & filePath, bool readOnly = true, bool createIfNotFound = true) = 0;
 
     // Attempts to open an archive at filePath, if filePath is empty or no file can be found at filePath, and a fileBrowser is provided, attempts to resolve the path using fileBrowser->browseForFilePath("", 0)
     // If this archive is already open with the given filePath or the filePath browsed, no operation occurs and the method returns true
     // If this archive is already open with a filePath not matching the given filePath or the filePath browsed, it is closed before attempting to open the new archive
     template <typename FilterId>
-    bool open(const std::string &filePath, const FileBrowserPtr<FilterId> fileBrowser) { return virtualizableOpen(filePath, fileBrowser); }
+    bool open(const std::string & filePath, const FileBrowserPtr<FilterId> fileBrowser) { return virtualizableOpen(filePath, fileBrowser); }
 
     // Attempts to open an archive if a fileBrowser is provided and fileBrowser->browseForFilePath("", 0) succeeds in finding a path
     // If this archive is already open with the browsed filePath, no operation occurs and the method returns true
@@ -70,32 +70,32 @@ public:
 
     // Checks whether an file exists within the archive at the given archivedFilePath
     // Cannot be used unless the archive is already open
-    virtual bool findFile(const std::string &archivedFilePath) const = 0;
+    virtual bool findFile(const std::string & archivedFilePath) const = 0;
 
     // Checks whether an file exists within the archive at the given archivedFilePath
     // If an archive is already open with a filePath matching the provided filePath, the already opened archive is searched
     // Else attempts to find and search an archive at filePath
-    virtual bool findFile(const std::string &filePath, const std::string &archivedFilePath) const = 0;
+    virtual bool findFile(const std::string & filePath, const std::string & archivedFilePath) const = 0;
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool getFile(const std::string &archivedFilePath, buffer &fileData) = 0;
+    virtual bool getFile(const std::string & archivedFilePath, buffer & fileData) = 0;
 
     // Attempts to add a file to this archive at archivedFilePath with the data from the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool addFile(const std::string &archivedFilePath, const buffer &fileData) = 0;
+    virtual bool addFile(const std::string & archivedFilePath, const buffer & fileData) = 0;
 
     // Attempts to add the file at filePath to this archive at archivedFilePath
     // Cannot be used unless the archive is already open
-    virtual bool addFile(const std::string &archivedFilePath, const std::string &filePath) = 0;
+    virtual bool addFile(const std::string & archivedFilePath, const std::string & filePath) = 0;
 
     // Attempts to rename the file in this archive at archivedFilePath to newArchivedFilePath
     // Cannot be used unless the archive is already open
-    virtual bool renameFile(const std::string &archivedFilePath, const std::string &newArchivedFilePath) = 0;
+    virtual bool renameFile(const std::string & archivedFilePath, const std::string & newArchivedFilePath) = 0;
 
     // Attempts to remove a file at archivedFilePath within this archive
     // Cannot be used unless the archive is already open
-    virtual bool removeFile(const std::string &archivedFilePath) = 0;
+    virtual bool removeFile(const std::string & archivedFilePath) = 0;
 
 protected:
     void setDeleteOnClose(bool deleteOnClose);

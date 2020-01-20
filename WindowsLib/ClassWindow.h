@@ -30,11 +30,11 @@ namespace WinLib {
                             If the class has been registered before, this returns false
                             Do not register different classes with the same name */
                         bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-                            u64 menuResourceId, const std::string &lpszClassName, HICON hIconSm, bool isMDIChild);
+                            u64 menuResourceId, const std::string & lpszClassName, HICON hIconSm, bool isMDIChild);
 
                         /** Attemps to create a window
                             The variables are used the same as in CreateWindowEx */
-                        bool CreateClassWindow( DWORD dwExStyle, const std::string &lpWindowName, DWORD dwStyle,
+                        bool CreateClassWindow( DWORD dwExStyle, const std::string & lpWindowName, DWORD dwStyle,
                                                 int x, int y, int nWidth, int nHeight,
                                                 HWND hWndParent, HMENU hMenu );
 
@@ -42,14 +42,14 @@ namespace WinLib {
 
                         /** Attempts to create a window as an MDI child
                             The variables are used the same as in CreateMDIWindow */
-                        bool CreateMdiChild( const std::string &windowName, DWORD dwStyle,
+                        bool CreateMdiChild( const std::string & windowName, DWORD dwStyle,
                                              int x, int y, int nWidth, int nHeight,
                                              HWND hParent );
 
                         /** This method attempts to turn the current window into a MDI frame
                             by creating a client window (out of MdiClient) and changing message
                             handling so DefFrameProc is called for the new client window */
-                        bool BecomeMDIFrame(MdiClient &client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
+                        bool BecomeMDIFrame(MdiClient & client, HANDLE hWindowMenu, UINT idFirstChild, DWORD dwStyle,
                             int X, int Y, int nWidth, int nHeight, HMENU hMenu);
 
     /*  Overridden  */  /** This method is called when WM_NOTIFY is sent to the
@@ -70,7 +70,7 @@ namespace WinLib {
                         virtual void NotifyWindowHidden(); // Sent when the window is hidden
                         virtual void NotifyWindowShown(); // Sent when the window is shown
 
-                        virtual void HandleDroppedFile(const std::string &dropFilePath);
+                        virtual void HandleDroppedFile(const std::string & dropFilePath);
 
                         /** This method is called when WM_COMMAND is sent to the
                             window, override this to respond to commands */

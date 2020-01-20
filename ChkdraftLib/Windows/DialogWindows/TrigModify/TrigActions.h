@@ -50,27 +50,27 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         std::vector<u8> actionArgMaps[60];
         std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
-        Suggestions &suggestions;
+        Suggestions & suggestions;
 
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        void ChangeActionType(Chk::Action &action, Chk::Action::Type newType);
-        bool TransformAction(Chk::Action &action, Chk::Action::Type newType, bool refreshImmediately);
+        void ChangeActionType(Chk::Action & action, Chk::Action::Type newType);
+        bool TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately);
         void RefreshActionAreas();
-        void ClearArgument(Chk::Action &action, u8 argNum, bool refreshImmediately);
-        void UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately);
-        void UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText, bool refreshImmediately);
-        BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str);
+        void ClearArgument(Chk::Action & action, u8 argNum, bool refreshImmediately);
+        void UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately);
+        void UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately);
+        BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string & str);
         BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
         void DrawSelectedAction();
         int GetGridItemWidth(int gridItemX, int gridItemY);
         void CheckEnabledClicked(int actionNum);
 
         void PreDrawItems();
-        void SysColorRect(HDC hDC, RECT &rect, DWORD color);
-        void DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int width, int xStart);
-        void DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xStart);
-        void DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart);
+        void SysColorRect(HDC hDC, RECT & rect, DWORD color);
+        void DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart);
+        void DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart);
+        void DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart);
         void DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis);
         void DrawTouchups(HDC hDC);
         void PostDrawItems();
@@ -117,7 +117,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 
         void GridEditStart(u16 gridItemX, u16 gridItemY);
         void NewSelection(u16 gridItemX, u16 gridItemY);
-        void NewSuggestion(std::string &str);
+        void NewSuggestion(std::string & str);
 
         ChkdString GetCurrentActionsString();
         ChkdString GetCurrentActionsWav();

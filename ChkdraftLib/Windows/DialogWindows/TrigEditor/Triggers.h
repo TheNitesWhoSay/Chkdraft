@@ -28,9 +28,9 @@ class TriggersWindow : public WinLib::ClassWindow
         void ButtonNew();
         void ButtonModify();
 
-        std::string GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator& tt);
-        std::string GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator& tt);
-        std::string GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator& tt);
+        std::string GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator & tt);
+        std::string GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator & tt);
+        std::string GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator & tt);
 
     protected:
         bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger
@@ -59,9 +59,9 @@ class TriggersWindow : public WinLib::ClassWindow
             targetTrigIndex, listIndexMovedTo is determined by the trigIndexes and does not
             need to be set prior to calling this function.
             returns true and sets listIndexMovedTo if successful */
-        bool MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &listIndexMovedTo);
+        bool MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & listIndexMovedTo);
 
-        bool FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &targetListIndex);
+        bool FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & targetListIndex);
 
     protected:
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
@@ -84,9 +84,9 @@ class TriggersWindow : public WinLib::ClassWindow
 
         bool ShowTrigger(Chk::Trigger* trigger); // Checks if trigger should currently be shown
         void ClearGroups();
-        bool GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger);
-        void DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupNum);
-        void DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger);
+        bool GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger);
+        void DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum);
+        void DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger);
         void PrepDoubleBuffer(HWND hWnd, HDC hDC);
 };
 

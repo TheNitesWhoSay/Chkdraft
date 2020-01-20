@@ -308,10 +308,10 @@ void TriggersWindow::ButtonModify()
     }
 }
 
-std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
 {
     std::stringstream ssCondition;
-    Chk::Condition &condition = trigger->condition(conditionNum);
+    Chk::Condition & condition = trigger->condition(conditionNum);
     Chk::Condition::Type conditionType = condition.conditionType;
     if ( condition.isDisabled() )
         ssCondition << "(disabled) ";
@@ -420,10 +420,10 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
     return ssCondition.str();
 }
 
-std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
 {
     std::stringstream ssAction;
-    Chk::Action&action = trigger->action(actionNum);
+    Chk::Action & action = trigger->action(actionNum);
     Chk::Action::Type actionType = action.actionType;
     if ( action.isDisabled() )
         ssAction << "(disabled) ";
@@ -690,7 +690,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
     return ssAction.str();
 }
 
-std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator& tt)
+std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
 {
     bool more = false;
     std::stringstream ssTrigger;
@@ -964,7 +964,7 @@ bool TriggersWindow::MoveDownTrigListItem(int listIndex, u32 nextTrigIndex)
            listTriggers.SetItemHeight(listIndex, nextItemHeight);
 }
 
-bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &listIndexMovedTo)
+bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & listIndexMovedTo)
 {
     listIndexMovedTo = -1;
     int targetListIndex = -1;
@@ -1032,7 +1032,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
     return false;
 }
 
-bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int &targetListIndex)
+bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & targetListIndex)
 {
     u32 listItemData;
     if ( targetTrigIndex < currTrigIndex )
@@ -1098,7 +1098,7 @@ void TriggersWindow::ClearGroups()
         groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
+bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
     size_t commentStringId = trigger->getComment();
     if ( commentStringId != Chk::StringId::NoString )
@@ -1143,7 +1143,7 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT &width, UINT &height, Scen
     return false;
 }
 
-void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupNum)
+void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum)
 {
     HBRUSH hBackground = NULL;
     if ( isSelected )
@@ -1180,7 +1180,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT &rcItem, bool isSelected, u8 groupN
     }
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT &rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
+void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
     HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
     if ( hBackground != NULL )

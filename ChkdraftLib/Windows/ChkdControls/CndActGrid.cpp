@@ -15,7 +15,7 @@ ICndActGridUser::~ICndActGridUser()
 
 }
 
-CndActGrid::CndActGrid(ICndActGridUser& user, int numUsedRows) : user(user), hasUpDownedThisEdit(false),
+CndActGrid::CndActGrid(ICndActGridUser & user, int numUsedRows) : user(user), hasUpDownedThisEdit(false),
     startedByClick(false), ignoreChange(false), numUsedRows(numUsedRows)
 {
     
@@ -98,7 +98,7 @@ bool CndActGrid::allowSel(int xStart, int xEnd, int yStart, int yEnd)
     return xStart != 0 || xEnd != 0;
 }
 
-void CndActGrid::adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd)
+void CndActGrid::adjustSel(int & xStart, int & xEnd, int & yStart, int & yEnd)
 {
     if ( xStart == 0 )
         xStart = 1;
@@ -110,7 +110,7 @@ void CndActGrid::CellClicked(int x, int y)
         user.CndActEnableToggled(y);
 }
 
-size_t CndActGrid::FindArgEnd(std::string &str, size_t argStart, ArgumentEnd &outEndsBy)
+size_t CndActGrid::FindArgEnd(std::string & str, size_t argStart, ArgumentEnd & outEndsBy)
 {
     size_t nextCr = str.find('\r', argStart);
     size_t nextLf = str.find('\n', argStart);
@@ -134,7 +134,7 @@ size_t CndActGrid::FindArgEnd(std::string &str, size_t argStart, ArgumentEnd &ou
     return argEnd;
 }
 
-void CndActGrid::EscapeString(std::string &str)
+void CndActGrid::EscapeString(std::string & str)
 {
     size_t length = str.length();
     for ( size_t i = 0; i < length; i++ )
@@ -149,7 +149,7 @@ void CndActGrid::EscapeString(std::string &str)
     }
 }
 
-bool CndActGrid::BuildSelectionString(std::string &str)
+bool CndActGrid::BuildSelectionString(std::string & str)
 {
     int numRows = GridViewControl::NumRows();
     int numColumns = GridViewControl::NumColumns();
@@ -202,7 +202,7 @@ bool CndActGrid::CreateSubWindows(HWND hWnd)
     return true;
 }
 
-void CndActGrid::StartEditing(int xClick, int yClick, const std::string &initChar)
+void CndActGrid::StartEditing(int xClick, int yClick, const std::string & initChar)
 {
     if ( initChar.empty() ) // Started via click
     {
@@ -238,7 +238,7 @@ void CndActGrid::KeyDown(WPARAM wParam)
     GridViewControl::KeyDown(wParam);
 }
 
-void CndActGrid::EditTextChanged(const std::string &str)
+void CndActGrid::EditTextChanged(const std::string & str)
 {
     ignoreChange = true;
     suggestions.SuggestNear(str);

@@ -8,13 +8,13 @@ class UnitCreateDel : public ReversibleAction
     public:
         virtual ~UnitCreateDel();
         static std::shared_ptr<UnitCreateDel> Make(u16 index); // Undo Creation
-        static std::shared_ptr<UnitCreateDel> Make(u16 index, Chk::Unit &unit); // Undo Deletion
+        static std::shared_ptr<UnitCreateDel> Make(u16 index, Chk::Unit & unit); // Undo Deletion
         virtual void Reverse(void *guiMap);
         virtual int32_t GetType();
     
     protected:
         UnitCreateDel(u16 index); // Undo Creation
-        UnitCreateDel(u16 index, Chk::Unit &unit); // Undo Deletion
+        UnitCreateDel(u16 index, Chk::Unit & unit); // Undo Deletion
 
     private:
         u16 index;

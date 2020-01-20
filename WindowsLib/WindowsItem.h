@@ -25,15 +25,15 @@ namespace WinLib {
 
             int GetWinTextLen();
             std::string GetWinText();
-            bool GetWinText(output_param std::string &text);
-            bool getWindowRect(output_param RECT &rect);
+            bool GetWinText(output_param std::string & text);
+            bool getWindowRect(output_param RECT & rect);
             int Width();
             int Height();
             int Left();
             int Top();
             int Right();
             int Bottom();
-            bool getClientRect(RECT &rect);
+            bool getClientRect(RECT & rect);
             LONG cliWidth();
             LONG cliHeight();
             HDC getDC(); // Gets the current device context
@@ -43,7 +43,7 @@ namespace WinLib {
             void SetWinLong(int index, LONG newLong);
 
             void SetFont(HFONT font, bool redrawImmediately);
-            void SetFont(int height, int width, const std::string &fontString, bool redrawImmediately);
+            void SetFont(int height, int width, const std::string & fontString, bool redrawImmediately);
             void ReplaceChildFonts(HFONT hFont);
             void LockCursor(); // Prevents cursor from leaving this window
             void UnlockCursor(); // Globally unlocks the cursor
@@ -60,8 +60,8 @@ namespace WinLib {
             void Hide();
             void SetSmallIcon(HANDLE hIcon);
             void SetMedIcon(HANDLE hIcon);
-            bool SetWinText(const std::string &newText);
-            bool AddTooltip(const std::string &text);
+            bool SetWinText(const std::string & newText);
+            bool AddTooltip(const std::string & text);
 
             bool ReleaseDC(HDC hDC);
             void FocusThis();
@@ -79,11 +79,11 @@ namespace WinLib {
             If the class has been registered before this returns false
             Do not register different classes with the same name */
             bool RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-                u64 menuResourceId, const std::string &lpszClassName, HICON hIconSm, WNDPROC wndProc);
+                u64 menuResourceId, const std::string & lpszClassName, HICON hIconSm, WNDPROC wndProc);
 
             /** Returns whether the window class given by lpszClassName is registered,
             if it is, then this class name will be set to create the window with */
-            bool WindowClassIsRegistered(const std::string &lpszClassName);
+            bool WindowClassIsRegistered(const std::string & lpszClassName);
 
             /** This method is used to compare list view items for windows sort functions
                 ForwardCompareLvItems must be set as the function and the class pointer as LPARAM */
@@ -93,20 +93,20 @@ namespace WinLib {
                 This should be passed as the proc to window's built in sort items functions */
             static int CALLBACK ForwardCompareLvItems(LPARAM index1, LPARAM index2, LPARAM lParam);
 
-            std::string &WindowClassName();
+            std::string & WindowClassName();
 
             HDC StartSimplePaint();
             HDC StartBufferedPaint();
             HDC GetPaintDc();
-            void SetPaintFont(int height, int width, const std::string &fontString);
-            void PaintText(const std::string &str, int x, int y, bool clipped, bool opaque, const rect &rc);
+            void SetPaintFont(int height, int width, const std::string & fontString);
+            void PaintText(const std::string & str, int x, int y, bool clipped, bool opaque, const rect & rc);
             void EndPaint();
 
             int PaintWidth();
             int PaintHeight();
 
             void FillPaintArea(HBRUSH hBrush);
-            void FrameRect(HBRUSH hBrush, RECT &rect);
+            void FrameRect(HBRUSH hBrush, RECT & rect);
 
         private:
             HWND windowsItemHandle; // Handle to the window this class encapsulates

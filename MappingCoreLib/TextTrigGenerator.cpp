@@ -166,12 +166,12 @@ TextTrigGenerator::~TextTrigGenerator()
 
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string & trigString)
 {
     return this != nullptr && map != nullptr && BuildTextTrigs(map, map->triggers.trig, trigString);
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, std::string &trigString)
+bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, u32 trigId, std::string & trigString)
 {
     if ( this != nullptr && map != nullptr )
     {
@@ -211,7 +211,7 @@ std::string TextTrigGenerator::GetConditionName(u8 CID)
         return std::to_string((int)CID);
 }
 
-std::string TextTrigGenerator::GetConditionArgument(Chk::Condition& condition, u8 stdTextTrigArgNum)
+std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, u8 stdTextTrigArgNum)
 {
     buffer output("TEXC");
     AddConditionArgument(output, condition, (Chk::Condition::VirtualType)condition.conditionType, stdTextTrigArgNum);
@@ -221,7 +221,7 @@ std::string TextTrigGenerator::GetConditionArgument(Chk::Condition& condition, u
         return "";
 }
 
-std::string TextTrigGenerator::GetConditionArgument(Chk::Condition& condition, u8 argNum, std::vector<u8> &argMap)
+std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, u8 argNum, std::vector<u8> & argMap)
 {
     if ( argNum < argMap.size() )
     {
@@ -242,7 +242,7 @@ std::string TextTrigGenerator::GetActionName(u8 AID)
         return std::to_string((int)AID);
 }
 
-std::string TextTrigGenerator::GetActionArgument(Chk::Action& action, u8 stdTextTrigArgNum)
+std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, u8 stdTextTrigArgNum)
 {
     buffer output("TEXA");
     AddActionArgument(output, action, (Chk::Action::VirtualType)action.actionType, stdTextTrigArgNum);
@@ -252,7 +252,7 @@ std::string TextTrigGenerator::GetActionArgument(Chk::Action& action, u8 stdText
         return "";
 }
 
-std::string TextTrigGenerator::GetActionArgument(Chk::Action& action, u8 argNum, std::vector<u8> &argMap)
+std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, u8 argNum, std::vector<u8> & argMap)
 {
     if ( argNum < argMap.size() )
     {
@@ -407,7 +407,7 @@ std::string TextTrigGenerator::GetTrigScript(u32 scriptNum)
         return std::string("No Script");
 
     char script[5];
-    (u32&)script[0] = scriptNum;
+    (u32 &)script[0] = scriptNum;
     script[4] = '\0';
 
     bool hasNonNumericCharacter =
@@ -435,7 +435,7 @@ std::string TextTrigGenerator::GetTrigNumber(u32 number)
     return std::to_string(number);
 }
 
-inline void TextTrigGenerator::AddConditionArgument(buffer &output, Chk::Condition& condition, Chk::Condition::VirtualType conditionId, u8 &stdTextTrigArgNum)
+inline void TextTrigGenerator::AddConditionArgument(buffer & output, Chk::Condition & condition, Chk::Condition::VirtualType conditionId, u8 & stdTextTrigArgNum)
 {
     switch ( conditionId )
     {
@@ -537,7 +537,7 @@ inline void TextTrigGenerator::AddConditionArgument(buffer &output, Chk::Conditi
     }
 }
 
-inline void TextTrigGenerator::AddActionArgument(buffer &output, Chk::Action &action, Chk::Action::VirtualType AID, u8 &stdTextTrigArgNum)
+inline void TextTrigGenerator::AddActionArgument(buffer & output, Chk::Action & action, Chk::Action::VirtualType AID, u8 & stdTextTrigArgNum)
 {
     switch ( AID )
     {
@@ -826,7 +826,7 @@ inline void TextTrigGenerator::AddActionArgument(buffer &output, Chk::Action &ac
     }
 }
 
-bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData, std::string &trigString)
+bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData, std::string & trigString)
 {
     if ( !LoadScenario(map, true, false) )
         return false;
@@ -889,7 +889,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
             // Add conditions
             for ( int i=0; i<Chk::Trigger::MaxConditions; i++ )
             {
-                Chk::Condition& condition = trigger->condition(i);
+                Chk::Condition & condition = trigger->condition(i);
                 CID = (Chk::Condition::VirtualType)condition.conditionType;
 
                 if ( CID != Chk::Condition::VirtualType::NoCondition )
@@ -936,7 +936,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
             // Add actions
             for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
             {
-                Chk::Action& action = trigger->action(i);
+                Chk::Action & action = trigger->action(i);
                 AID = (Chk::Action::VirtualType)action.actionType;
                 if ( AID != Chk::Action::VirtualType::NoAction )
                 {
@@ -1026,7 +1026,7 @@ bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCu
            PrepStringTable(map, quoteArgs);
 }
 
-bool TextTrigGenerator::CorrectLineEndings(buffer& buf)
+bool TextTrigGenerator::CorrectLineEndings(buffer & buf)
 {
     u8 curr;
     u32 pos = 0;
@@ -1305,13 +1305,13 @@ bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
         {
             for ( u8 actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
             {
-                Chk::Action &action = trigPtr->action(actionNum);
+                Chk::Action & action = trigPtr->action(actionNum);
                 Chk::Action::Type actionId = action.actionType;
                 bool isScriptAction = (actionId == Chk::Action::Type::RunAiScript || actionId == Chk::Action::Type::RunAiScriptAtLocation);
                 if ( isScriptAction && action.number != 0 )
                 {
                     char numberString[5] = {};
-                    (u32&)numberString = action.number;
+                    (u32 &)numberString = action.number;
                     for ( u8 i = 0; i < 4; i++ )
                     {
                         if ( numberString[i] == '\0' )
@@ -1351,7 +1351,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
         if ( str != nullptr )
         {
             SingleLineChkdString newString;
-            for ( auto &character : *str )
+            for ( auto & character : *str )
             {
                 if ( character == '\"' )
                 {
@@ -1378,7 +1378,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
         if ( str != nullptr )
         {
             SingleLineChkdString newString;
-            for ( auto &character : *str )
+            for ( auto & character : *str )
             {
                 if ( character == '\"' )
                 {

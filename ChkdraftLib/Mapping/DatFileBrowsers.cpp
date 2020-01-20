@@ -5,17 +5,17 @@ ChkdDatFileBrowser::ChkdDatFileBrowser() : updatedPaths(false)
 
 }
 
-std::vector<MpqFilePtr> ChkdDatFileBrowser::openScDatFiles(const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles, const std::string &expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
+std::vector<MpqFilePtr> ChkdDatFileBrowser::openScDatFiles(const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     updatedPaths = false;
-    const std::vector<MpqFilePtr> &scDatFiles = DatFileBrowser::openScDatFiles(datFiles, expectedStarCraftDirectory, starCraftBrowser);
+    const std::vector<MpqFilePtr> & scDatFiles = DatFileBrowser::openScDatFiles(datFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( updatedPaths )
         Settings::updateSettingsFile();
 
     return scDatFiles;
 }
 
-bool ChkdDatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
+bool ChkdDatFileBrowser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     bool foundStarCraftDirectory = DatFileBrowser::findStarCraftDirectory(starCraftDirectory, declinedBrowse, expectedStarCraftDirectory, starCraftBrowser);
     if ( foundStarCraftDirectory && Settings::starCraftPath != starCraftDirectory )
@@ -26,12 +26,12 @@ bool ChkdDatFileBrowser::findStarCraftDirectory(output_param std::string &starCr
     return foundStarCraftDirectory;
 }
 
-MpqFilePtr ChkdDatFileBrowser::openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor)
+MpqFilePtr ChkdDatFileBrowser::openDatFile(const std::string & datFilePath, const DatFileDescriptor & datFileDescriptor)
 {
     MpqFilePtr mpqFile = DatFileBrowser::openDatFile(datFilePath, datFileDescriptor);
     if ( mpqFile != nullptr )
     {
-        const std::string &mpqFilePath = mpqFile->getFilePath();
+        const std::string & mpqFilePath = mpqFile->getFilePath();
         if ( datFileDescriptor.getDatFilePriority() == DatFilePriority::StarDat && mpqFilePath != Settings::starDatPath )
         {
             Settings::starDatPath = mpqFilePath;

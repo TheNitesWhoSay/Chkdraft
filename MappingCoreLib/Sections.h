@@ -643,15 +643,15 @@ class StrSection : public DynamicSection<false>
         std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType &str);
+        size_t findString(const StringType & str);
 
         bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
+        size_t addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void replaceString(size_t stringId, const StringType &str);
+        void replaceString(size_t stringId, const StringType & str);
 
         void deleteUnusedStrings(StrSynchronizer & strSynchronizer);
         bool deleteString(size_t stringId, bool deleteOnlyIfUnused = true, StrSynchronizerPtr strSynchronizer = nullptr); // strSynchronizer required for deletion if deleteOnlyIfUnused is set
@@ -680,7 +680,7 @@ class StrSection : public DynamicSection<false>
         size_t initialTailDataOffset; // The offset at which strTailData started when the STR section was read, "0" if "read" is never called or there was no tailData
         std::vector<u8> tailData; // Any data that comes after the regular STR section data, and after any padding
         
-        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
         void resolveParantage();
         void resolveParantage(ScStrPtr string);
 
@@ -699,8 +699,8 @@ class UprpSection : public StructSection<Chk::UPRP, false>
         virtual ~UprpSection();
 
         Chk::Cuwp getCuwp(size_t cuwpIndex);
-        void setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp);
-        size_t findCuwp(const Chk::Cuwp &cuwp);
+        void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
+        size_t findCuwp(const Chk::Cuwp & cuwp);
 };
 
 class UpusSection : public StructSection<Chk::UPUS, true>
@@ -737,7 +737,7 @@ class MrgnSection : public DynamicSection<false>
 
         bool stringUsed(size_t stringId);
         void markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -770,9 +770,9 @@ class TrigSection : public DynamicSection<false>
         bool gameStringUsed(size_t stringId);
         bool commentStringUsed(size_t stringId);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteLocation(size_t locationId);
@@ -801,7 +801,7 @@ class MbrfSection : public DynamicSection<false>
         void deleteBriefingTrigger(size_t briefingTriggerIndex);
         void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -827,7 +827,7 @@ class SprpSection : public StructSection<Chk::SPRP, false>
         void setScenarioNameStringId(u16 scenarioNameStringId);
         void setScenarioDescriptionStringId(u16 scenarioDescriptionStringId);
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -847,7 +847,7 @@ class ForcSection : public StructSection<Chk::FORC, false>
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -866,7 +866,7 @@ class WavSection : public StructSection<Chk::WAV, true>
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -902,7 +902,7 @@ class UnisSection : public StructSection<Chk::UNIS, false>
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
 
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -964,7 +964,7 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
         size_t getSwitchNameStringId(size_t switchIndex);
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1052,7 +1052,7 @@ class UnixSection : public StructSection<Chk::UNIx, false>
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
 
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1132,7 +1132,7 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         void setLocationNameStringId(size_t locationId, u32 locationNameStringId);
 
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1153,15 +1153,15 @@ class KstrSection : public DynamicSection<true>
         std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType &str);
+        size_t findString(const StringType & str);
 
         bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
+        size_t addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void replaceString(size_t stringId, const StringType &str);
+        void replaceString(size_t stringId, const StringType & str);
 
         void deleteUnusedStrings(StrSynchronizer & strSynchronizer);
         bool deleteString(size_t stringId, bool deleteOnlyIfUnused = true, StrSynchronizerPtr strSynchronizer = nullptr); // strSynchronizer required for deletion if deleteOnlyIfUnused is set
@@ -1180,7 +1180,7 @@ class KstrSection : public DynamicSection<true>
         std::deque<ScStrPtr> strings;
         std::vector<u8> stringBytes;
         
-        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
         bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
@@ -1208,14 +1208,14 @@ class ScStr
     public:
         const char* str; // The content of this string (RawString/no formatting)
         
-        ScStr(const std::string &str);
-        ScStr(const std::string &str, const StrProp &strProp);
+        ScStr(const std::string & str);
+        ScStr(const std::string & str, const StrProp & strProp);
 
         bool empty();
         size_t length();
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        int compare(const StringType &str);
+        int compare(const StringType & str);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> toString();
@@ -1319,7 +1319,7 @@ class StrCompressionElevator
 class StringException : std::exception
 {
     public:
-        StringException(const std::string &error) : error(error) { }
+        StringException(const std::string & error) : error(error) { }
         virtual const char* what() const throw() { return error.c_str(); }
         const std::string error;
     private:
@@ -1386,8 +1386,8 @@ class StrSynchronizer
             : requestedCompressionFlags(requestedCompressionFlags), allowedCompressionFlags(allowedCompressionFlags) { }
 
         virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false) = 0;
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
 
         virtual void syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),

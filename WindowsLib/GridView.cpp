@@ -21,7 +21,7 @@ namespace WinLib {
 
     }
 
-    GridControlItem& GridViewControl::item(int x, int y)
+    GridControlItem & GridViewControl::item(int x, int y)
     {
         if ( y>=0 && y<numRows && x>=0 && x<numColumns )
             return gridItems[y][x];
@@ -29,7 +29,7 @@ namespace WinLib {
             return nullItem;
     }
 
-    EditControl &GridViewControl::EditBox()
+    EditControl & GridViewControl::EditBox()
     {
         return editBox;
     }
@@ -76,7 +76,7 @@ namespace WinLib {
         return false;
     }
 
-    bool GridViewControl::AddColumn(int insertAt, const std::string &title, int width, int alignmentFlags)
+    bool GridViewControl::AddColumn(int insertAt, const std::string & title, int width, int alignmentFlags)
     {
         return resize(numRows, numColumns+1) &&
                ListViewControl::AddColumn(insertAt, title, width, alignmentFlags);
@@ -236,7 +236,7 @@ namespace WinLib {
         }
     }
 
-    void GridViewControl::SetEditText(const std::string &text)
+    void GridViewControl::SetEditText(const std::string & text)
     {
         if ( editing )
         {
@@ -362,7 +362,7 @@ namespace WinLib {
         return false;
     }
 
-    bool GridViewControl::GetSelTopLeft(int &topLeftX, int &topLeftY)
+    bool GridViewControl::GetSelTopLeft(int & topLeftX, int & topLeftY)
     {
         topLeftX = -1;
         topLeftY = -1;
@@ -381,14 +381,14 @@ namespace WinLib {
         return false;
     }
 
-    bool GridViewControl::GetFocusedItem(int &x, int &y)
+    bool GridViewControl::GetFocusedItem(int & x, int & y)
     {
         x = focusedX;
         y = focusedY;
         return focusedX != -1 && focusedY != -1;
     }
 
-    bool GridViewControl::GetFocusedItemRect(RECT &rect)
+    bool GridViewControl::GetFocusedItemRect(RECT & rect)
     {
         return ListViewControl::GetItemRect(focusedX, focusedY, rect);
     }
@@ -421,17 +421,17 @@ namespace WinLib {
         return pt;
     }
 
-    bool GridViewControl::GetEditItemRect(RECT &rect)
+    bool GridViewControl::GetEditItemRect(RECT & rect)
     {
         return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
     }
 
-    bool GridViewControl::GetEditText(output_param std::string &str)
+    bool GridViewControl::GetEditText(output_param std::string & str)
     {
         return editBox.GetWinText(str);
     }
 
-    bool GridViewControl::contentHitTest(int x, int y, bool &outsideLeft, bool &outsideTop, bool &outsideRight, bool &outsideBottom)
+    bool GridViewControl::contentHitTest(int x, int y, bool & outsideLeft, bool & outsideTop, bool & outsideRight, bool & outsideBottom)
     {
         if ( numRows > 0 && numColumns > 0 )
         {
@@ -593,7 +593,7 @@ namespace WinLib {
         }
     }
 
-    void GridViewControl::StartEditing(int xClick, int yClick, const std::string &initChar)
+    void GridViewControl::StartEditing(int xClick, int yClick, const std::string & initChar)
     {
         RECT rect = { };
         if ( editing == false &&
@@ -679,7 +679,7 @@ namespace WinLib {
         editBox.FocusThis();
     }
 
-    void GridViewControl::Char(const std::string &character)
+    void GridViewControl::Char(const std::string & character)
     {
         if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
             StartEditing(-1, -1, character);

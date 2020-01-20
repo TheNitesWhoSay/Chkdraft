@@ -8,7 +8,7 @@ namespace WinLib {
 
     }
 
-    bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string &initText, u64 id)
+    bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string & initText, u64 id)
     {
         return WindowControl::CreateControl( WS_EX_CLIENTEDGE, WC_BUTTON, initText, WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON,
                                              x, y, width, height, hParent, (HMENU)id, true );
@@ -24,7 +24,7 @@ namespace WinLib {
         return result;
     }
 
-    bool ButtonControl::SetText(const std::string &newText)
+    bool ButtonControl::SetText(const std::string & newText)
     {
         return WindowsItem::SetWinText(newText);
     }

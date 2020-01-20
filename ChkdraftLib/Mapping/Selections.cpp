@@ -6,7 +6,7 @@ TileNode::~TileNode()
 
 }
 
-Selections::Selections(GuiMap &map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
+Selections::Selections(GuiMap & map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
 {
     memset((void*)&recentLocations[0], 0, sizeof(recentLocations)/sizeof(u8));
     startDrag.x = -1;
@@ -41,7 +41,7 @@ void Selections::setDrags(s32 x, s32 y)
     endDrag.y = y;
 }
 
-void Selections::removeTile(TileNode* &tile)
+void Selections::removeTile(TileNode* & tile)
 {
     removeTile(tile->xc, tile->yc);
 }
@@ -79,7 +79,7 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
     tile.neighbors = TileNeighbor::All;
     tile.value = value;
 
-    for ( auto &selTile : selTiles )
+    for ( auto & selTile : selTiles )
     {
         // If tile edges are touching, remove that border
         if ( selTile.yc == yc ) // Tile is in the same row
@@ -251,7 +251,7 @@ void Selections::ensureFirst(u16 index)
 
 void Selections::sendSwap(u16 oldIndex, u16 newIndex)
 {
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
             unitIndex = oldIndex | UnitSortFlags::Swapped;
@@ -262,7 +262,7 @@ void Selections::sendSwap(u16 oldIndex, u16 newIndex)
 
 void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
 {
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
             unitIndex = oldIndex | UnitSortFlags::Moved;
@@ -275,7 +275,7 @@ void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved
 
 void Selections::finishSwap()
 {
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex & UnitSortFlags::Swapped )
             unitIndex &= UnitSortFlags::Unswap;
@@ -284,7 +284,7 @@ void Selections::finishSwap()
 
 void Selections::finishMove()
 {
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex & UnitSortFlags::Moved )
             unitIndex &= UnitSortFlags::Unmove;
@@ -293,7 +293,7 @@ void Selections::finishMove()
 
 bool Selections::unitIsSelected(u16 index)
 {
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == index )
             return true;
@@ -312,7 +312,7 @@ u16 Selections::numUnits()
 u16 Selections::numUnitsUnder(u16 index)
 {
     u16 numUnitsBefore = 0;
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex < index )
             numUnitsBefore++;
@@ -320,7 +320,7 @@ u16 Selections::numUnitsUnder(u16 index)
     return numUnitsBefore;
 }
 
-std::vector<TileNode> &Selections::getTiles()
+std::vector<TileNode> & Selections::getTiles()
 {
     return selTiles;
 }
@@ -344,7 +344,7 @@ TileNode Selections::getFirstTile()
     return tile;
 }
 
-std::vector<u16> &Selections::getUnits()
+std::vector<u16> & Selections::getUnits()
 {
     return selUnits;
 }
@@ -360,7 +360,7 @@ u16 Selections::getFirstUnit()
 u16 Selections::getHighestIndex()
 {
     int highestIndex = -1;
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( (int)unitIndex > highestIndex )
             highestIndex = (int)unitIndex;
@@ -375,7 +375,7 @@ u16 Selections::getHighestIndex()
 u16 Selections::getLowestIndex()
 {
     u16 highestIndex = u16_max;
-    for ( u16 &unitIndex : selUnits )
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex < highestIndex )
             highestIndex = unitIndex;

@@ -10,7 +10,7 @@ class PreservedUnitStats
         PreservedUnitStats();
         virtual ~PreservedUnitStats();
         void Clear();
-        void AddStats(Selections &sel, Chk::Unit::Field statField);
+        void AddStats(Selections & sel, Chk::Unit::Field statField);
         void convertToUndo();
 
     private:

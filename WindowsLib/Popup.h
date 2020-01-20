@@ -12,13 +12,13 @@ namespace WinLib {
         Cancel
     };
 
-    void Message(const std::string &text);
+    void Message(const std::string & text);
 
-    void Message(const std::string &text, const std::string &caption);
+    void Message(const std::string & text, const std::string & caption);
 
-    PromptResult GetYesNo(const std::string &text, const std::string &caption);
+    PromptResult GetYesNo(const std::string & text, const std::string & caption);
 
-    PromptResult GetYesNoCancel(const std::string &text, const std::string &caption);
+    PromptResult GetYesNoCancel(const std::string & text, const std::string & caption);
 
 }
 

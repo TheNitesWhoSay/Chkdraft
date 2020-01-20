@@ -766,10 +766,10 @@ namespace Chk {
         inline bool commentStringUsed(size_t stringId);
         inline bool briefingStringUsed(size_t stringId);
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        inline void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -814,7 +814,7 @@ namespace Chk {
         Condition & condition(size_t conditionIndex);
         Action & action(size_t actionIndex);
         Owned & owned(size_t ownerIndex);
-        Trigger& operator= (const Trigger &trigger);
+        Trigger & operator= (const Trigger & trigger);
         void deleteAction(size_t actionIndex, bool alignTop = true);
         void deleteCondition(size_t conditionIndex, bool alignTop = true);
         
@@ -843,10 +843,10 @@ namespace Chk {
         bool commentStringUsed(size_t stringId);
         bool briefingStringUsed(size_t stringId);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);

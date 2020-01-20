@@ -4,17 +4,17 @@
 
 namespace WinLib {
 
-    void Message(const std::string &text)
+    void Message(const std::string & text)
     {
         MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring("Message").c_str(), MB_OK);
     }
 
-    void Message(const std::string &text, const std::string &caption)
+    void Message(const std::string & text, const std::string & caption)
     {
         MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring(caption).c_str(), MB_OK);
     }
 
-    PromptResult GetYesNo(const std::string &text, const std::string &caption)
+    PromptResult GetYesNo(const std::string & text, const std::string & caption)
     {
         int result = MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring(caption).c_str(), MB_YESNO);
         switch ( result ) {
@@ -24,7 +24,7 @@ namespace WinLib {
         }
     }
 
-    PromptResult GetYesNoCancel(const std::string &text, const std::string &caption)
+    PromptResult GetYesNoCancel(const std::string & text, const std::string & caption)
     {
         int result = MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring(caption).c_str(), MB_YESNOCANCEL);
         switch ( result ) {

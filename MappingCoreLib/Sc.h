@@ -43,16 +43,16 @@ namespace Sc {
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
         public:
-            Descriptor(Priority priority, const std::string &fileName, const std::string &expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true)
+            Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true)
                 : datFilePriority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory) {}
 
             Priority getPriority() const { return datFilePriority; }
-            const std::string &getFileName() const { return fileName; }
-            const std::string &getExpectedFilePath() const { return expectedFilePath; }
+            const std::string & getFileName() const { return fileName; }
+            const std::string & getExpectedFilePath() const { return expectedFilePath; }
             FileBrowserPtr<u32> getBrowser() const { return browser; }
             bool isExpectedInScDirectory() const { return expectedInScDirectory; }
 
-            void setExpectedFilePath(const std::string &expectedFilePath) { this->expectedFilePath = expectedFilePath; }
+            void setExpectedFilePath(const std::string & expectedFilePath) { this->expectedFilePath = expectedFilePath; }
 
         private:
             Priority datFilePriority;
@@ -68,13 +68,13 @@ namespace Sc {
         {
         public:
             virtual std::vector<MpqFilePtr> openScDataFiles(
-                const std::unordered_map<Priority, Descriptor> &dataFiles = getDefaultDataFiles(),
-                const std::string &expectedStarCraftDirectory = ::GetDefaultScPath(),
+                const std::unordered_map<Priority, Descriptor> & dataFiles = getDefaultDataFiles(),
+                const std::string & expectedStarCraftDirectory = ::GetDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-            virtual bool findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedBrowse, const std::string &expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
+            virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
 
-            virtual MpqFilePtr openDataFile(const std::string &dataFilePath, const Descriptor &dataFileDescriptor);
+            virtual MpqFilePtr openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor);
 
             static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
         };
@@ -574,7 +574,7 @@ namespace Sc {
         {
         public:
             virtual ~Grp() {}
-            bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
+            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
 
         private:
             buffer grpData;
@@ -1887,7 +1887,7 @@ namespace Sc {
     {
     public:
         virtual ~TblFile();
-        bool load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName);
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
         const std::string & getString(size_t stringIndex);
 
     private:
@@ -1934,7 +1934,7 @@ namespace Sc {
         Weapon weapon;
         TblFile statTxt;
 
-        static bool GetAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents);
+        static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents);
         static bool ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
     };
 }

@@ -17,7 +17,7 @@
 */
 
 #ifdef CHKDRAFT
-bool GetPreSavePath(std::string &outPreSavePath); // Gets path holding assets to be written to the map file on save
+bool GetPreSavePath(std::string & outPreSavePath); // Gets path holding assets to be written to the map file on save
 #endif
 
 class SimpleMapBrowser;
@@ -38,37 +38,37 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
             bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
-        bool LoadMapFile(const std::string &filePath);
+        bool LoadMapFile(const std::string & filePath);
         bool LoadMapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
 
         void SetSaveType(SaveType newSaveType);
 
         static std::string GetStandardSoundDir();
-        bool AddMpqAsset(const std::string &assetSystemFilePath, const std::string &assetMpqFilePath, WavQuality wavQuality);
-        bool AddMpqAsset(const std::string &assetMpqFilePath, const buffer &asset, WavQuality wavQuality);
-        void RemoveMpqAsset(const std::string &assetMpqFilePath);
-        bool GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetBuffer);
-        bool ExtractMpqAsset(const std::string &assetMpqFilePath, const std::string &systemFilePath);
-        virtual bool GetSound(u16 soundIndex, size_t &outStringId);
-        bool GetSound(size_t stringId, buffer &outSoundData);
+        bool AddMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
+        bool AddMpqAsset(const std::string & assetMpqFilePath, const buffer & asset, WavQuality wavQuality);
+        void RemoveMpqAsset(const std::string & assetMpqFilePath);
+        bool GetMpqAsset(const std::string & assetMpqFilePath, buffer & outAssetBuffer);
+        bool ExtractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
+        virtual bool GetSound(u16 soundIndex, size_t & outStringId);
+        bool GetSound(size_t stringId, buffer & outSoundData);
         bool AddSound(size_t stringId); // Adds a sound string to the sound list
-        bool AddSound(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile);
-        bool AddSound(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile);
-        bool AddSound(const std::string &destMpqPath, buffer & soundContents, WavQuality wavQuality);
+        bool AddSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
+        bool AddSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
+        bool AddSound(const std::string & destMpqPath, buffer & soundContents, WavQuality wavQuality);
         virtual bool RemoveSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
         virtual bool RemoveSoundByStringId(size_t stringId, bool removeIfUsed);
         SoundStatus GetSoundStatus(size_t soundStringId);
-        bool GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSoundStatus, bool includePureStringSounds);
-        bool IsInVirtualSoundList(const std::string &soundMpqPath);
+        bool GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
+        bool IsInVirtualSoundList(const std::string & soundMpqPath);
 
         std::string GetFileName();
-        virtual const std::string &getFilePath() const;
+        virtual const std::string & getFilePath() const;
 
         static FileBrowserPtr<SaveType> getDefaultOpenMapBrowser();
         static FileBrowserPtr<SaveType> getDefaultSaveMapBrowser();
 
     protected:
-        virtual bool getSaveDetails(inout_param SaveType &saveType, output_param std::string &saveFilePath, output_param bool &overwriting, FileBrowserPtr<SaveType> fileBrowser);
+        virtual bool getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser);
 
     private:
         std::string mapFilePath;
@@ -81,7 +81,7 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         static std::map<size_t, std::string> virtualSoundTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
-        bool OpenMapFile(const std::string &filePath);
+        bool OpenMapFile(const std::string & filePath);
         bool OpenTemporaryMpq();
         bool ProcessModifiedAssets(bool updateListfile);
         

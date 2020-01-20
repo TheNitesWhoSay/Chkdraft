@@ -88,24 +88,24 @@ class Strings : public StrSynchronizer
 
         bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either);
         virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false);
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame); // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType &str, Chk::Scope storageScope = Chk::Scope::Game);
+        size_t findString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game);
 
         void setCapacity(size_t stringCapacity, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t addString(const StringType &str, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        size_t addString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
         bool addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void replaceString(size_t stringId, const StringType &str, Chk::Scope storageScope = Chk::Scope::Game);
+        void replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope = Chk::Scope::Game);
 
         void deleteUnusedStrings(Chk::Scope storageScope = Chk::Scope::Both);
         void deleteString(size_t stringId, Chk::Scope storageScope = Chk::Scope::Both, bool deleteOnlyIfUnused = true);
@@ -152,19 +152,19 @@ class Strings : public StrSynchronizer
         std::shared_ptr<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setScenarioName(const StringType &scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setScenarioDescription(const StringType &scenarioDescription, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setScenarioDescription(const StringType & scenarioDescription, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setForceName(Chk::Force force, const StringType &forceName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setForceName(Chk::Force force, const StringType & forceName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setUnitName(Sc::Unit::Type unitType, const StringType &unitName, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setSoundPath(size_t soundIndex, const StringType &soundPath, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setSwitchName(size_t switchIndex, const StringType &switchName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        void setLocationName(size_t locationId, const StringType &locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        void setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
         // Creates a viable internal data buffer for the string section using the methods in requestedCompressionFlags
         // If no configuration among requestedCompressionFlags is viable, additional methods through allowedCompressionFlags are added as neccessary
@@ -222,7 +222,7 @@ class Players
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -349,7 +349,7 @@ class Layers : public Terrain
         void matchAnywhereToDimensions();
 
         bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -467,7 +467,7 @@ class Properties
         void setTechsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
 
         bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -493,8 +493,8 @@ class Triggers : public LocationSynchronizer
         Triggers(bool useDefault = false);
 
         Chk::Cuwp getCuwp(size_t cuwpIndex);
-        void setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp);
-        size_t addCuwp(const Chk::Cuwp &cuwp, bool fixUsageBeforeAdding = true);
+        void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
+        size_t addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding = true);
         
         void fixCuwpUsage();
         bool cuwpUsed(size_t cuwpIndex);
@@ -527,9 +527,9 @@ class Triggers : public LocationSynchronizer
         bool gameStringUsed(size_t stringId);
         bool editorStringUsed(size_t stringId);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
-        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> &stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteLocation(size_t locationId);

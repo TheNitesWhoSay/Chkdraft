@@ -56,13 +56,13 @@ class Chkdraft : public WinLib::ClassWindow
 /*    Setup     */  bool CreateThis();
                     void ParseCmdLine(LPSTR lpCmdLine);
 
-/*  Preprocess  */  bool DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam);
+/*  Preprocess  */  bool DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam);
                     void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 /*    Procs     */  LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
                     LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-                    virtual void HandleDroppedFile(const std::string &dropFilePath);
+                    virtual void HandleDroppedFile(const std::string & dropFilePath);
 
     private:
 
@@ -74,9 +74,9 @@ class Chkdraft : public WinLib::ClassWindow
                     void MinimizeDialogs();
                     void RestoreDialogs();
                     void SizeSubWindows();
-                    void UseDragFile(const std::string &fileName);
+                    void UseDragFile(const std::string & fileName);
                     void OpenMapSettings(u16 menuId);
-                    void OpenWebPage(const std::string &address);
+                    void OpenWebPage(const std::string & address);
                     void ComboEditChanged(HWND hCombo, u16 comboId);
                     void ComboSelChanged(HWND hCombo, u16 comboId);
 };

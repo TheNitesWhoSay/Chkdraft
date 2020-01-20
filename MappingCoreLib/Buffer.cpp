@@ -17,7 +17,7 @@ buffer::buffer() : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(fal
         bufTitle[0] = '\0';
 }
 
-buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
+buffer::buffer(const std::string & bufferTitle) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     int numChars = std::min((int)bufferTitle.length(), 4);
     for ( int i=0; i<numChars; i++ )
@@ -28,11 +28,11 @@ buffer::buffer(const std::string &bufferTitle) : data(nullptr), sizeUsed(0), siz
 
 buffer::buffer(u32 bufferTitleVal) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
-    (u32&)bufTitle = bufferTitleVal;
+    (u32 &)bufTitle = bufferTitleVal;
     bufTitle[4] = '\0';
 }
 
-buffer::buffer(const buffer &rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
+buffer::buffer(const buffer & rhs) : data(nullptr), sizeUsed(0), sizeAllotted(0), isSizeLocked(false), bufTitle("")
 {
     for ( int i = 0; i < 5; i++ )
         this->bufTitle[i] = rhs.bufTitle[i];
@@ -91,7 +91,7 @@ const char* buffer::title()
 u32 buffer::titleVal()
 {
     if ( this != nullptr )
-        return (u32&)bufTitle;
+        return (u32 &)bufTitle;
     else
         return 0;
 }
@@ -99,7 +99,7 @@ u32 buffer::titleVal()
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::get(valueType &dest, s64 location) const
+bool buffer::get(valueType & dest, s64 location) const
 {
     if ( this != nullptr )
     {
@@ -113,7 +113,7 @@ bool buffer::get(valueType &dest, s64 location) const
 }
 /* End templates */ #else
 
-bool buffer::getBit(bool &dest, s64 location, u32 bitNum)
+bool buffer::getBit(bool & dest, s64 location, u32 bitNum)
 {
     if ( this != nullptr )
     {
@@ -192,7 +192,7 @@ const void* buffer::getPtr(s64 location, s64 sizeRequested) const
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::getPtr(valueType* &dest, s64 location, s64 sizeRequested)
+bool buffer::getPtr(valueType* & dest, s64 location, s64 sizeRequested)
 {
     if ( this != nullptr && location >= 0 && sizeRequested > 0 && location+sizeRequested <= sizeUsed )
     {
@@ -244,7 +244,7 @@ bool buffer::is(const char* str, s64 size)
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::is(const valueType &value)
+bool buffer::is(const valueType & value)
 {
     return this != nullptr && sizeUsed == s64(sizeof(valueType)) && memcmp(data, &value, sizeUsed) == 0;
 }
@@ -304,7 +304,7 @@ bool buffer::getNext(char character, s64 start, s64 &dest) const
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 &dest) const
+bool buffer::getNextUnquoted(char character, s64 start, s64 & dest) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -325,7 +325,7 @@ bool buffer::getNextUnquoted(char character, s64 start, s64 &dest) const
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminator) const
+bool buffer::getNextUnquoted(char character, s64 start, s64 & dest, char terminator) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -348,7 +348,7 @@ bool buffer::getNextUnquoted(char character, s64 start, s64 &dest, char terminat
     return false;
 }
 
-bool buffer::getNextUnescaped(char character, s64 start, s64 &dest) const
+bool buffer::getNextUnescaped(char character, s64 start, s64 & dest) const
 {
     if ( this != nullptr && start >= 0 )
     {
@@ -365,7 +365,7 @@ bool buffer::getNextUnescaped(char character, s64 start, s64 &dest) const
     return false;
 }
 
-bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 &dest) const
+bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 & dest) const
 {
     if ( this != nullptr && start >= 0 && end > start )
     {
@@ -389,7 +389,7 @@ bool buffer::getNextUnquoted(char character, s64 start, s64 end, s64 &dest) cons
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-bool buffer::add(const valueType &value)
+bool buffer::add(const valueType & value)
 {
     if ( this != nullptr )
     {
@@ -398,7 +398,7 @@ bool buffer::add(const valueType &value)
             try {
                 resize(sizeof(valueType), true);
             }
-            catch ( const BadResize &e ) {
+            catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -412,7 +412,7 @@ bool buffer::add(const valueType &value)
 }
 
 template <typename valueType>
-bool buffer::add(const valueType &value, s64 amount)
+bool buffer::add(const valueType & value, s64 amount)
 {
     if ( this != nullptr && amount > 0 )
     {
@@ -420,7 +420,7 @@ bool buffer::add(const valueType &value, s64 amount)
         {
             try {
                 resize(amount*s64(sizeof(valueType)), true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -436,7 +436,7 @@ bool buffer::add(const valueType &value, s64 amount)
 }
 /* End templates */ #else
 
-bool buffer::addStr(const std::string &chunk)
+bool buffer::addStr(const std::string & chunk)
 {
     return addStr(chunk.c_str(), chunk.size());
 }
@@ -452,7 +452,7 @@ bool buffer::addStr(const char* chunk, s64 chunkSize)
         {
             try {
                 resize(chunkSize, true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -475,7 +475,7 @@ bool buffer::insert(s64 location, valueType value)
         {
             try {
                 resize(sizeof(valueType), true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -501,7 +501,7 @@ bool buffer::insert(s64 location, valueType value, s64 amount)
         {
             try {
                 resize(sizeof(valueType)*amount, true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -529,7 +529,7 @@ bool buffer::insertStr(s64 startLocation, const char* chunk, s64 chunkSize)
         {
             try {
                 resize(chunkSize, true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -599,7 +599,7 @@ bool buffer::replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s
         {
             try {
                 resize(difference, true);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -624,7 +624,7 @@ bool buffer::replaceStr(s64 startLocation, s64 initialSize, const char* chunk, s
 
             try {
                 resize(difference, false);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to decrease size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -706,7 +706,7 @@ bool buffer::overwrite(const char* chunk, s64 chunkSize)
     return false;
 }
 
-bool buffer::takeAllData(buffer& source)
+bool buffer::takeAllData(buffer & source)
 {
     if ( this != nullptr )
     {
@@ -725,7 +725,7 @@ bool buffer::takeAllData(buffer& source)
     return false;
 }
 
-bool buffer::setTitle(const std::string &newTitle)
+bool buffer::setTitle(const std::string & newTitle)
 {
     if ( this != nullptr )
     {
@@ -772,7 +772,7 @@ bool buffer::del(s64 location)
 
         try {
             resize(-(s64)sizeof(valueType), false);
-        } catch ( const BadResize &e ) {
+        } catch ( const BadResize & e ) {
             CHKD_ERR("Failed to decrease size of %s buffer: %s", bufTitle, e.what());
             return false;
         }
@@ -795,7 +795,7 @@ bool buffer::delRange(s64 startLocation, s64 endLocation)
 
         try {
             resize(-difference, false);
-        } catch ( const BadResize &e ) {
+        } catch ( const BadResize & e ) {
             CHKD_ERR("Failed to decrease size of %s buffer: %s", bufTitle, e.what());
             return false;
         }
@@ -818,7 +818,7 @@ bool buffer::del(s64 startLocation, s64 size)
 
             try {
                 resize(-(s64)size, false);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to decrease size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -839,7 +839,7 @@ bool buffer::trimTo(s64 size)
         {
             try {
                 resize(sizeChange, false);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to trim size of %s buffer: %s", bufTitle, e.what());
                 return false;
             }
@@ -869,7 +869,7 @@ void buffer::write(FILE* pFile, bool includeHeader)
     }
 }
 
-std::ostream & buffer::write(std::ostream &outputBuffer, bool includeHeader)
+std::ostream & buffer::write(std::ostream & outputBuffer, bool includeHeader)
 {
     if ( this != nullptr )
     {
@@ -885,7 +885,7 @@ std::ostream & buffer::write(std::ostream &outputBuffer, bool includeHeader)
     return outputBuffer;
 }
 
-bool buffer::extract(buffer &buf, s64 position)
+bool buffer::extract(buffer & buf, s64 position)
 {
     if ( this != nullptr && position >= 0 )
     {
@@ -905,7 +905,7 @@ bool buffer::extract(buffer &buf, s64 position)
 
         try {
             resize(bufSize, false);
-        } catch ( const BadResize &e ) {
+        } catch ( const BadResize & e ) {
             CHKD_ERR("Failed to increase size of %s buffer: %s", bufTitle, e.what());
             return false;
         }
@@ -919,7 +919,7 @@ bool buffer::extract(buffer &buf, s64 position)
     return false;
 }
 
-bool buffer::extract(buffer &src, s64 position, s64 length)
+bool buffer::extract(buffer & src, s64 position, s64 length)
 {
     if ( this != nullptr && position >= 0 && length > 0 )
     {
@@ -953,8 +953,8 @@ std::shared_ptr<void> buffer::serialize()
     {
         std::shared_ptr<void> rawDataBuf = std::shared_ptr<void>(new u8[size_t(sizeUsed+8)]);
         u8* rawData = (u8*)rawDataBuf.get();
-        (u32&)rawData[0] = (u32&)bufTitle;
-        (u32&)rawData[4] = (u32)sizeUsed;
+        (u32 &)rawData[0] = (u32 &)bufTitle;
+        (u32 &)rawData[4] = (u32)sizeUsed;
         if ( sizeUsed > 0 )
             std::memcpy(&rawData[8], data, (size_t)sizeUsed);
 
@@ -968,8 +968,8 @@ bool buffer::deserialize(const void* incomingData)
     if ( this != nullptr && incomingData != nullptr )
     {
         const char* rawData = (const char*)incomingData;
-        u32 incomingSize = (u32&)rawData[4];
-        return overwrite(&rawData[8], (s64)incomingSize) && setTitle((u32&)rawData[0]);
+        u32 incomingSize = (u32 &)rawData[4];
+        return overwrite(&rawData[8], (s64)incomingSize) && setTitle((u32 &)rawData[0]);
     }
     return false;
 }
@@ -998,7 +998,7 @@ std::shared_ptr<buffer> buffer::makeCopy(s64 size)
     return nullptr;
 }
 
-bool FileToBuffer(const std::string &fileName, buffer &buf)
+bool FileToBuffer(const std::string & fileName, buffer & buf)
 {
     throw std::exception("Not Implemented");
 }
@@ -1018,7 +1018,7 @@ bool buffer::setSize(s64 size)
         {
             try {
                 return resize(size-sizeAllotted, false);
-            } catch ( const BadResize &e ) {
+            } catch ( const BadResize & e ) {
                 CHKD_ERR("Failed to set new size of %s buffer: %s", bufTitle, e.what());
             }
         }

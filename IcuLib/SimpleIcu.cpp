@@ -15,12 +15,12 @@ namespace icux {
         return std::string(buffer.get(), (size_t)resultSize);
     }
 
-    std::string toUtf8(const std::string &utf8Str) // Simply returns the same string
+    std::string toUtf8(const std::string & utf8Str) // Simply returns the same string
     {
         return utf8Str;
     }
 
-    std::string toUtf8(const std::wstring &utf16Str)
+    std::string toUtf8(const std::wstring & utf16Str)
     {
         return toUtf8(utf16Str.c_str(), utf16Str.size());
     }
@@ -57,12 +57,12 @@ namespace icux {
         return std::wstring(result, (size_t)resultSize);
     }
 
-    std::wstring toUtf16(const std::string &utf8Str)
+    std::wstring toUtf16(const std::string & utf8Str)
     {
         return toUtf16(utf8Str.c_str(), utf8Str.size());
     }
 
-    std::wstring toUtf16(const std::wstring &utf16Str) // Simply returns the same string
+    std::wstring toUtf16(const std::wstring & utf16Str) // Simply returns the same string
     {
         return utf16Str;
     }
@@ -76,7 +76,7 @@ namespace icux {
         #endif
     }
 
-    filestring toFilestring(const std::string &utf8Str)
+    filestring toFilestring(const std::string & utf8Str)
     {
         #ifdef UTF16_FILESYSTEM
             return toUtf16(utf8Str);
@@ -94,7 +94,7 @@ namespace icux {
         #endif
     }
 
-    uistring toUistring(const std::string &utf8Str)
+    uistring toUistring(const std::string & utf8Str)
     {
         #ifdef UTF16_UI
             return toUtf16(utf8Str);
@@ -104,7 +104,7 @@ namespace icux {
     }
 
 #ifdef UTF16_UI
-    uistring toUistring(const filestring &filestring)
+    uistring toUistring(const filestring & filestring)
     {
         #ifdef UTF16_FILESYSTEM
             #ifdef UTF16_UI

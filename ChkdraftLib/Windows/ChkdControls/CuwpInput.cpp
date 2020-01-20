@@ -6,7 +6,7 @@ CuwpInputDialog::~CuwpInputDialog()
 
 }
 
-bool CuwpInputDialog::GetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent)
+bool CuwpInputDialog::GetCuwp(Chk::Cuwp & cuwp, const Chk::Cuwp & initialCuwp, HWND hParent)
 {
     CuwpInputDialog inputDialog;
     return inputDialog.InternalGetCuwp(cuwp, initialCuwp, hParent);
@@ -40,7 +40,7 @@ void CuwpInputDialog::ClearStoredCuwps()
     initialCuwp.unitStateFlags = 0;
 }
 
-bool CuwpInputDialog::InternalGetCuwp(Chk::Cuwp &cuwp, const Chk::Cuwp &initialCuwp, HWND hParent)
+bool CuwpInputDialog::InternalGetCuwp(Chk::Cuwp & cuwp, const Chk::Cuwp & initialCuwp, HWND hParent)
 {
     gotCuwp = false;
 

@@ -23,30 +23,30 @@ class CndActGrid : public WinLib::GridViewControl
     public:
         WinLib::CheckBoxControl checkEnabled[64];
 
-        CndActGrid(ICndActGridUser &user, int numUsedRows);
+        CndActGrid(ICndActGridUser & user, int numUsedRows);
         virtual ~CndActGrid();
         bool CreateThis(HWND hParent, int x, int y, int width, int height, u32 id);
         void SetEnabledCheck(u8 cndActId, bool enabled);
 
-        Suggestions &GetSuggestions();
+        Suggestions & GetSuggestions();
         bool HasUpDownedThisEdit();
 
         virtual bool allowKeyNavDuringEdit(WinLib::GVKey key); // Checks if navigation is allowed by the specified key
         virtual bool allowSel(int x, int y);
         virtual bool allowSel(int xStart, int xEnd, int yStart, int yEnd);
-        virtual void adjustSel(int &xStart, int &xEnd, int &yStart, int &yEnd);
+        virtual void adjustSel(int & xStart, int & xEnd, int & yStart, int & yEnd);
         virtual void CellClicked(int x, int y);
 
-        size_t FindArgEnd(std::string &str, size_t argStart, ArgumentEnd &outEndsBy);
-        void EscapeString(std::string &str);
-        bool BuildSelectionString(std::string &str);
+        size_t FindArgEnd(std::string & str, size_t argStart, ArgumentEnd & outEndsBy);
+        void EscapeString(std::string & str);
+        bool BuildSelectionString(std::string & str);
         virtual void RedrawThis();
 
     protected:
         bool CreateSubWindows(HWND hWnd);
-        virtual void StartEditing(int xClick, int yClick, const std::string &initChar);
+        virtual void StartEditing(int xClick, int yClick, const std::string & initChar);
         virtual void KeyDown(WPARAM wParam);
-        virtual void EditTextChanged(const std::string &str);
+        virtual void EditTextChanged(const std::string & str);
 
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
@@ -54,7 +54,7 @@ class CndActGrid : public WinLib::GridViewControl
 
     private:
         Suggestions suggestions;
-        ICndActGridUser& user;
+        ICndActGridUser & user;
         bool hasUpDownedThisEdit;
         bool startedByClick;
         bool ignoreChange;

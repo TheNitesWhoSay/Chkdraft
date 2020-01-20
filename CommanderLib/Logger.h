@@ -43,13 +43,13 @@ class Logger : public std::ostream, public std::streambuf
 {
     public:
         Logger(LogLevel logLevel = LogLevel::Default);
-        Logger(std::ostream &outputStream, LogLevel logLevel = LogLevel::Default);
-        Logger(std::ostream &outputStream, Logger &aggregator, LogLevel logLevel = LogLevel::Default);
-        Logger(std::ostream &outputStream, std::shared_ptr<Logger> aggregator, LogLevel logLevel = LogLevel::Default);
+        Logger(std::ostream & outputStream, LogLevel logLevel = LogLevel::Default);
+        Logger(std::ostream & outputStream, Logger & aggregator, LogLevel logLevel = LogLevel::Default);
+        Logger(std::ostream & outputStream, std::shared_ptr<Logger> aggregator, LogLevel logLevel = LogLevel::Default);
         Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel = LogLevel::Default);
-        Logger(std::shared_ptr<std::ostream> outputStream, Logger &aggregator, LogLevel logLevel = LogLevel::Default);
+        Logger(std::shared_ptr<std::ostream> outputStream, Logger & aggregator, LogLevel logLevel = LogLevel::Default);
         Logger(std::shared_ptr<std::ostream> outputStream, std::shared_ptr<Logger> aggregator, LogLevel logLevel = LogLevel::Default);
-        Logger(Logger &aggregator, LogLevel logLevel = LogLevel::Default);
+        Logger(Logger & aggregator, LogLevel logLevel = LogLevel::Default);
         Logger(std::shared_ptr<Logger> aggregator, LogLevel logLevel = LogLevel::Default);
         virtual ~Logger();
 
@@ -58,9 +58,9 @@ class Logger : public std::ostream, public std::streambuf
         std::shared_ptr<Logger> getAggregator();
 
         void setLogLevel(LogLevel logLevel);
-        void setOutputStream(std::ostream &outputStream);
+        void setOutputStream(std::ostream & outputStream);
         void setOutputStream(std::shared_ptr<std::ostream> outputStream);
-        void setAggregator(Logger &logger);
+        void setAggregator(Logger & logger);
         void setAggregator(std::shared_ptr<Logger> aggregator);
 
         static std::string getTimestamp(); // Gets a timestamp string in the format "YY-MM-DDThh-mm-ssZ"
@@ -74,20 +74,20 @@ class Logger : public std::ostream, public std::streambuf
         Logger & debug();
         Logger & trace();
 
-        template <typename T> void log(LogLevel logLevel, const T& message);
-        template <typename T> void log(LogLevel logLevel, const T& message, const std::exception& e);
-        template <typename T> void fatal(const T& message);
-        template <typename T> void fatal(const T& message, const std::exception& e);
-        template <typename T> void error(const T& message);
-        template <typename T> void error(const T& message, const std::exception& e);
-        template <typename T> void warn(const T& message);
-        template <typename T> void warn(const T& message, const std::exception& e);
-        template <typename T> void info(const T& message);
-        template <typename T> void info(const T& message, const std::exception& e);
-        template <typename T> void debug(const T& message);
-        template <typename T> void debug(const T& message, const std::exception& e);
-        template <typename T> void trace(const T& message);
-        template <typename T> void trace(const T& message, const std::exception& e);
+        template <typename T> void log(LogLevel logLevel, const T & message);
+        template <typename T> void log(LogLevel logLevel, const T & message, const std::exception & e);
+        template <typename T> void fatal(const T & message);
+        template <typename T> void fatal(const T & message, const std::exception & e);
+        template <typename T> void error(const T & message);
+        template <typename T> void error(const T & message, const std::exception & e);
+        template <typename T> void warn(const T & message);
+        template <typename T> void warn(const T & message, const std::exception & e);
+        template <typename T> void info(const T & message);
+        template <typename T> void info(const T & message, const std::exception & e);
+        template <typename T> void debug(const T & message);
+        template <typename T> void debug(const T & message, const std::exception & e);
+        template <typename T> void trace(const T & message);
+        template <typename T> void trace(const T & message, const std::exception & e);
 
         static std::shared_ptr<std::ostream> getDefaultOutputStream(); // Gets a reference to the default output stream (std::out)
 
@@ -103,7 +103,7 @@ class Logger : public std::ostream, public std::streambuf
         std::shared_ptr<Logger> aggregator;
 };
 
-template <typename T> void Logger::log(LogLevel logLevel, const T& message)
+template <typename T> void Logger::log(LogLevel logLevel, const T & message)
 {
     if ( outputStream != nullptr && logLevel <= this->logLevel )
         *outputStream << getPrefix(logLevel) << message << std::endl;
@@ -111,7 +111,7 @@ template <typename T> void Logger::log(LogLevel logLevel, const T& message)
         aggregator->log(logLevel, message);
 }
 
-template <typename T> void Logger::log(LogLevel logLevel, const T& message, const std::exception& e)
+template <typename T> void Logger::log(LogLevel logLevel, const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && logLevel <= this->logLevel )
         *outputStream << getPrefix(logLevel) << message << std::endl << e.what() << std::endl;
@@ -119,7 +119,7 @@ template <typename T> void Logger::log(LogLevel logLevel, const T& message, cons
         aggregator->log(logLevel, message, e);
 }
 
-template <typename T> void Logger::fatal(const T& message)
+template <typename T> void Logger::fatal(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Fatal <= logLevel )
         *outputStream << getPrefix(LogLevel::Fatal) << message << std::endl;
@@ -127,7 +127,7 @@ template <typename T> void Logger::fatal(const T& message)
         aggregator->fatal(message);
 }
 
-template <typename T> void Logger::fatal(const T& message, const std::exception& e)
+template <typename T> void Logger::fatal(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Fatal <= logLevel )
         *outputStream << getPrefix(LogLevel::Fatal) << message << std::endl << e.what() << std::endl;
@@ -135,7 +135,7 @@ template <typename T> void Logger::fatal(const T& message, const std::exception&
         aggregator->fatal(message, e);
 }
 
-template <typename T> void Logger::error(const T& message)
+template <typename T> void Logger::error(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Error <= logLevel )
         *outputStream << getPrefix(LogLevel::Error) << message << std::endl;
@@ -143,7 +143,7 @@ template <typename T> void Logger::error(const T& message)
         aggregator->error(message);
 }
 
-template <typename T> void Logger::error(const T& message, const std::exception& e)
+template <typename T> void Logger::error(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Error <= logLevel )
         *outputStream << getPrefix(LogLevel::Error) << message << std::endl << e.what() << std::endl;
@@ -151,7 +151,7 @@ template <typename T> void Logger::error(const T& message, const std::exception&
         aggregator->error(message, e);
 }
 
-template <typename T> void Logger::warn(const T& message)
+template <typename T> void Logger::warn(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Warn <= logLevel )
         *outputStream << getPrefix(LogLevel::Warn) << message << std::endl;
@@ -159,7 +159,7 @@ template <typename T> void Logger::warn(const T& message)
         aggregator->warn(message);
 }
 
-template <typename T> void Logger::warn(const T& message, const std::exception& e)
+template <typename T> void Logger::warn(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Warn <= logLevel )
         *outputStream << getPrefix(LogLevel::Warn) << message << std::endl << e.what() << std::endl;
@@ -167,7 +167,7 @@ template <typename T> void Logger::warn(const T& message, const std::exception& 
         aggregator->warn(message, e);
 }
 
-template <typename T> void Logger::info(const T& message)
+template <typename T> void Logger::info(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Info <= logLevel )
         *outputStream << getPrefix(LogLevel::Info) << message << std::endl;
@@ -175,7 +175,7 @@ template <typename T> void Logger::info(const T& message)
         aggregator->info(message);
 }
 
-template <typename T> void Logger::info(const T& message, const std::exception& e)
+template <typename T> void Logger::info(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Info <= logLevel )
         *outputStream << getPrefix(LogLevel::Info) << message << std::endl << e.what() << std::endl;
@@ -183,7 +183,7 @@ template <typename T> void Logger::info(const T& message, const std::exception& 
         aggregator->info(message, e);
 }
 
-template <typename T> void Logger::debug(const T& message)
+template <typename T> void Logger::debug(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Debug <= logLevel )
         *outputStream << getPrefix(LogLevel::Debug) << message << std::endl;
@@ -191,7 +191,7 @@ template <typename T> void Logger::debug(const T& message)
         aggregator->debug(message);
 }
 
-template <typename T> void Logger::debug(const T& message, const std::exception& e)
+template <typename T> void Logger::debug(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Debug <= logLevel )
         *outputStream << getPrefix(LogLevel::Debug) << message << std::endl << e.what() << std::endl;
@@ -199,7 +199,7 @@ template <typename T> void Logger::debug(const T& message, const std::exception&
         aggregator->debug(message, e);
 }
 
-template <typename T> void Logger::trace(const T& message)
+template <typename T> void Logger::trace(const T & message)
 {
     if ( outputStream != nullptr && LogLevel::Trace <= logLevel )
         *outputStream << getPrefix(LogLevel::Trace) << message << std::endl;
@@ -207,7 +207,7 @@ template <typename T> void Logger::trace(const T& message)
         aggregator->trace(message);
 }
 
-template <typename T> void Logger::trace(const T& message, const std::exception& e)
+template <typename T> void Logger::trace(const T & message, const std::exception & e)
 {
     if ( outputStream != nullptr && LogLevel::Trace <= logLevel )
         *outputStream << getPrefix(LogLevel::Trace) << message << std::endl << e.what() << std::endl;

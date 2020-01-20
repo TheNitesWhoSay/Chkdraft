@@ -25,7 +25,7 @@ inline bool MpqFile::isOpen() const
 }
 
 
-inline bool MpqFile::isOpen(const std::string &filePath) const
+inline bool MpqFile::isOpen(const std::string & filePath) const
 {
     return hMpq != NULL && filePath == this->filePath;
 }
@@ -35,7 +35,7 @@ inline bool MpqFile::isUpdatingListFile() const
     return updateListFile;
 }
 
-bool MpqFile::isValid(const std::string &filePath) const
+bool MpqFile::isValid(const std::string & filePath) const
 {
     if ( isOpen(filePath) )
         return true;
@@ -48,7 +48,7 @@ bool MpqFile::isValid(const std::string &filePath) const
     return opened;
 }
 
-bool MpqFile::create(const std::string &filePath)
+bool MpqFile::create(const std::string & filePath)
 {
     if ( isOpen(filePath) )
         return true;
@@ -62,7 +62,7 @@ bool MpqFile::create(const std::string &filePath)
     return false;
 }
 
-bool MpqFile::open(const std::string &filePath, bool readOnly, bool createIfNotFound)
+bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNotFound)
 {
     if ( isOpen(filePath) )
         return true;
@@ -138,7 +138,7 @@ void MpqFile::close()
     }
 }
 
-bool MpqFile::findFile(const std::string &mpqPath) const
+bool MpqFile::findFile(const std::string & mpqPath) const
 {
     if ( isOpen() )
     {
@@ -153,7 +153,7 @@ bool MpqFile::findFile(const std::string &mpqPath) const
     return false;
 }
 
-bool MpqFile::findFile(const std::string &filePath, const std::string &mpqPath) const
+bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath) const
 {
     bool success = false;
     if ( isOpen(filePath) )
@@ -178,7 +178,7 @@ bool MpqFile::findFile(const std::string &filePath, const std::string &mpqPath) 
 /**
     This function is a friend of buffer and MpqFile and can be used to write in data directly
 */
-bool getFile(void* source, const std::string &mpqPath, buffer &fileData)
+bool getFile(void* source, const std::string & mpqPath, buffer & fileData)
 {
     if ( source != nullptr )
     {
@@ -210,12 +210,12 @@ bool getFile(void* source, const std::string &mpqPath, buffer &fileData)
     return false;
 }
 
-bool MpqFile::getFile(const std::string &mpqPath, buffer &fileData)
+bool MpqFile::getFile(const std::string & mpqPath, buffer & fileData)
 {
     return ::getFile(this, mpqPath, fileData);
 }
 
-bool MpqFile::getFile(const std::string &mpqPath, std::vector<u8> & fileData)
+bool MpqFile::getFile(const std::string & mpqPath, std::vector<u8> & fileData)
 {
     bool success = false;
     if ( isOpen() )
@@ -245,7 +245,7 @@ bool MpqFile::extractFile(const std::string & mpqPath, const std::string & syste
     return false;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData)
+bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData)
 {
     fileData.unsetf(std::ios_base::skipws);
     auto start = std::istream_iterator<u8>(fileData);
@@ -258,7 +258,7 @@ bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData)
     return false;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData, WavQuality wavQuality)
+bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData, WavQuality wavQuality)
 {
     fileData.unsetf(std::ios_base::skipws);
     auto start = std::istream_iterator<u8>(fileData);
@@ -277,7 +277,7 @@ bool MpqFile::addFile(const std::string &mpqPath, std::stringstream &fileData, W
     return addedFile;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData)
+bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData)
 {
     if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
     {
@@ -287,7 +287,7 @@ bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData)
     return false;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData, WavQuality wavQuality)
+bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData, WavQuality wavQuality)
 {
     bool addedFile = false;
     if ( isOpen() )
@@ -303,7 +303,7 @@ bool MpqFile::addFile(const std::string &mpqPath, const buffer &fileData, WavQua
     return addedFile;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath)
+bool MpqFile::addFile(const std::string & mpqPath, const std::string & filePath)
 {
     if ( isOpen() && SFileAddFile(hMpq, icux::toFilestring(filePath).c_str(), mpqPath.c_str(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
     {
@@ -313,7 +313,7 @@ bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath)
     return false;
 }
 
-bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath, WavQuality wavQuality)
+bool MpqFile::addFile(const std::string & mpqPath, const std::string & filePath, WavQuality wavQuality)
 {
     bool addedFile = false;
     if ( isOpen() )
@@ -329,12 +329,12 @@ bool MpqFile::addFile(const std::string &mpqPath, const std::string &filePath, W
     return addedFile;
 }
 
-bool MpqFile::renameFile(const std::string &mpqPath, const std::string &newMpqPath)
+bool MpqFile::renameFile(const std::string & mpqPath, const std::string & newMpqPath)
 {
     return isOpen() && SFileRenameFile(hMpq, mpqPath.c_str(), newMpqPath.c_str());
 }
 
-bool MpqFile::removeFile(const std::string &mpqPath)
+bool MpqFile::removeFile(const std::string & mpqPath)
 {
     bool removed = SFileRemoveFile(hMpq, mpqPath.c_str(), 0);
     if ( removed )
@@ -364,7 +364,7 @@ bool MpqFile::remove()
 
 u64 ModifiedAsset::nextAssetId(0);
 
-ModifiedAsset::ModifiedAsset(const std::string &assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
+ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
     : assetMpqPath(assetMpqPath), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
 {
     assetTempMpqPath = std::to_string(nextAssetId);

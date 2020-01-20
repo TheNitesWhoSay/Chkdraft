@@ -8,7 +8,7 @@ const std::string starDatFileName = "StarDat.mpq";
 const std::string brooDatFileName = "BrooDat.mpq";
 const std::string patchRtFileName = "patch_rt.mpq";
 
-bool GetScAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents)
+bool GetScAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents)
 {
     for ( auto mpqFile : orderedSourceFiles )
     {
@@ -38,7 +38,7 @@ Tiles::~Tiles()
 
 }
 
-bool Tiles::LoadSets(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Tiles::LoadSets(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     return LoadSet(orderedSourceFiles, "badlands", 0)
         && LoadSet(orderedSourceFiles, "platform", 1)
@@ -50,14 +50,14 @@ bool Tiles::LoadSets(const std::vector<MpqFilePtr> &orderedSourceFiles)
         && LoadSet(orderedSourceFiles, "Twilight", 7);
 }
 
-void CorrectPaletteForWindows(buffer &palette)
+void CorrectPaletteForWindows(buffer & palette)
 {
     s64 numColors = palette.size() / 4;
     for ( s64 i = 0; i < numColors; i++ )
         palette.swap<u8>(i * 4, i * 4 + 2);
 }
 
-bool Tiles::LoadSet(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &tilesetName, u8 num)
+bool Tiles::LoadSet(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName, u8 num)
 {
     const std::string path("tileset\\" + tilesetName);
     const size_t extensionSize = 4;
@@ -79,7 +79,7 @@ GRP::~GRP()
 
 }
 
-bool GRP::LoadGrp(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName)
+bool GRP::LoadGrp(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     return GetScAsset(orderedSourceFiles, "unit\\" + mpqFileName, imageDat);
 }
@@ -121,7 +121,7 @@ Upgrades::~Upgrades()
 
 }
 
-bool Upgrades::LoadUpgrades(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Upgrades::LoadUpgrades(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer upgradeDat("dDat");
 
@@ -197,7 +197,7 @@ Techs::~Techs()
 
 }
 
-bool Techs::LoadTechs(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Techs::LoadTechs(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer techDat("tDat");
 
@@ -318,7 +318,7 @@ Units::~Units()
 
 }
 
-bool Units::LoadUnits(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Units::LoadUnits(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer unitDat("uDat");
 
@@ -447,7 +447,7 @@ Weapons::~Weapons()
 
 }
 
-bool Weapons::LoadWeapons(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Weapons::LoadWeapons(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer weaponDat("wDat");
 
@@ -522,7 +522,7 @@ Sprites::~Sprites()
 
 }
 
-bool Sprites::LoadSprites(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool Sprites::LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer flingyDat("fDat"), spriteDat("sDat"), imageDat("iDat");
 
@@ -600,7 +600,7 @@ PCX::~PCX()
 
 }
 
-bool PCX::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &fileName)
+bool PCX::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & fileName)
 {
     buffer rawDat;
     if ( GetScAsset(orderedSourceFiles, fileName, rawDat) )
@@ -664,17 +664,17 @@ TblFiles::~TblFiles()
 
 }
 
-bool TblFiles::Load(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool TblFiles::Load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     return GetScAsset(orderedSourceFiles, "Rez\\stat_txt.tbl", stat_txtTbl);
 }
 
-bool TblFiles::GetStatTblString(u16 stringNum, std::string &outString)
+bool TblFiles::GetStatTblString(u16 stringNum, std::string & outString)
 {
     return GetTblString(stat_txtTbl, stringNum, outString);
 }
 
-bool TblFiles::GetTblString(buffer &tbl, u16 stringNum, std::string &outString)
+bool TblFiles::GetTblString(buffer & tbl, u16 stringNum, std::string & outString)
 {
     outString.clear();
     u16 numStrings = tbl.get<u16>(0);
@@ -698,12 +698,12 @@ AiScripts::~AiScripts()
 
 }
 
-bool AiScripts::Load(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool AiScripts::Load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     return GetScAsset(orderedSourceFiles, "scripts\\AISCRIPT.BIN", aiScriptBin);
 }
 
-bool AiScripts::GetAiEntry(int aiNum, AIEntry &outAiEntry)
+bool AiScripts::GetAiEntry(int aiNum, AIEntry & outAiEntry)
 {
     return aiScriptBin.get<AIEntry>(outAiEntry, aiNum*sizeof(AIEntry) + aiScriptBin.get<u32>(0));
 }
@@ -713,7 +713,7 @@ int AiScripts::GetNumAiScripts()
     return (u32(aiScriptBin.size()) - aiScriptBin.get<u32>(0)) / sizeof(AIEntry);
 }
 
-bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)
+bool AiScripts::GetAiIdentifier(int aiNum, u32 & outAiId)
 {
     AIEntry aiEntry = {};
     if ( GetAiEntry(aiNum, aiEntry) )
@@ -724,7 +724,7 @@ bool AiScripts::GetAiIdentifier(int aiNum, u32 &outAiId)
     return false;
 }
 
-bool AiScripts::GetAiIdentifier(const std::string &inAiName, u32 &outAiId)
+bool AiScripts::GetAiIdentifier(const std::string & inAiName, u32 & outAiId)
 {
     std::string scAiName;
     int numAiScripts = GetNumAiScripts();
@@ -736,13 +736,13 @@ bool AiScripts::GetAiIdentifier(const std::string &inAiName, u32 &outAiId)
     return false;
 }
 
-bool AiScripts::GetAiName(int aiNum, std::string &outAiName)
+bool AiScripts::GetAiName(int aiNum, std::string & outAiName)
 {
     AIEntry aiEntry = {};
     return GetAiEntry(aiNum, aiEntry) && tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName);
 }
 
-bool AiScripts::GetAiName(u32 aiId, std::string &outAiName)
+bool AiScripts::GetAiName(u32 aiId, std::string & outAiName)
 {
     int numAiScripts = GetNumAiScripts();
     for ( int i = 0; i < numAiScripts; i++  )
@@ -757,7 +757,7 @@ bool AiScripts::GetAiName(u32 aiId, std::string &outAiName)
     return false;
 }
 
-bool AiScripts::GetAiIdAndName(int aiNum, u32 &outId, std::string &outAiName)
+bool AiScripts::GetAiIdAndName(int aiNum, u32 & outId, std::string & outAiName)
 {
     AIEntry aiEntry = {};
     if ( GetAiEntry(aiNum, aiEntry) )
@@ -779,7 +779,7 @@ ScData::~ScData()
 
 }
 
-bool ScData::Load(DatFileBrowserPtr datFileBrowser, const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles, const std::string &expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool ScData::Load(DatFileBrowserPtr datFileBrowser, const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     if ( datFileBrowser == nullptr )
         return false;
@@ -829,8 +829,8 @@ bool ScData::Load(DatFileBrowserPtr datFileBrowser, const std::unordered_map<Dat
     return true;
 }
 
-bool ScData::GetScAsset(const std::string& assetMpqPath, buffer &outAssetContents, DatFileBrowserPtr datFileBrowser,
-    const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles, const std::string &expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool ScData::GetScAsset(const std::string & assetMpqPath, buffer & outAssetContents, DatFileBrowserPtr datFileBrowser,
+    const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     const std::vector<MpqFilePtr> orderedSourceFiles = datFileBrowser->openScDatFiles(datFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
@@ -840,8 +840,8 @@ bool ScData::GetScAsset(const std::string& assetMpqPath, buffer &outAssetContent
 }
 
 bool ScData::ExtractScAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
-    DatFileBrowserPtr datFileBrowser, const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles,
-    const std::string &expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+    DatFileBrowserPtr datFileBrowser, const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles,
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     const std::vector<MpqFilePtr> orderedSourceFiles = datFileBrowser->openScDatFiles(datFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
@@ -859,7 +859,7 @@ std::unordered_map<DatFilePriority, DatFileDescriptor> ScData::getDefaultDatFile
     };
 }
 
-bool ScData::LoadGrps(const std::vector<MpqFilePtr> &orderedSourceFiles)
+bool ScData::LoadGrps(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     buffer imageTbl;
 
@@ -884,7 +884,7 @@ bool ScData::LoadGrps(const std::vector<MpqFilePtr> &orderedSourceFiles)
     return true;
 }
 
-bool GetCV5References(TileSet* tiles, u32 &cv5Index, u16 TileValue)
+bool GetCV5References(TileSet* tiles, u32 & cv5Index, u16 TileValue)
 {
     cv5Index = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
     /** simplified from:
@@ -895,7 +895,7 @@ bool GetCV5References(TileSet* tiles, u32 &cv5Index, u16 TileValue)
     return cv5Index < tiles->cv5.size();
 }
 
-DatFileDescriptor::DatFileDescriptor(DatFilePriority datFilePriority, const std::string &fileName, const std::string &expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
+DatFileDescriptor::DatFileDescriptor(DatFilePriority datFilePriority, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
     : datFilePriority(datFilePriority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory)
 {
 
@@ -907,12 +907,12 @@ DatFilePriority DatFileDescriptor::getDatFilePriority() const
     return datFilePriority;
 }
 
-const std::string &DatFileDescriptor::getFileName() const
+const std::string & DatFileDescriptor::getFileName() const
 {
     return fileName;
 }
 
-const std::string &DatFileDescriptor::getExpectedFilePath() const
+const std::string & DatFileDescriptor::getExpectedFilePath() const
 {
     return expectedFilePath;
 }
@@ -927,14 +927,14 @@ bool DatFileDescriptor::getExpectedInScDirectory() const
     return expectedInScDirectory;
 }
 
-void DatFileDescriptor::setExpectedFilePath(const std::string &expectedFilePath)
+void DatFileDescriptor::setExpectedFilePath(const std::string & expectedFilePath)
 {
     this->expectedFilePath = expectedFilePath;
 }
 
 std::vector<MpqFilePtr> DatFileBrowser::openScDatFiles(
-    const std::unordered_map<DatFilePriority, DatFileDescriptor> &datFiles,
-    const std::string &expectedStarCraftDirectory,
+    const std::unordered_map<DatFilePriority, DatFileDescriptor> & datFiles,
+    const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
     std::unordered_map<DatFilePriority, MpqFilePtr> openedDatFiles;
@@ -949,8 +949,8 @@ std::vector<MpqFilePtr> DatFileBrowser::openScDatFiles(
         if ( datFilePriority != datFileDescriptor.getDatFilePriority() )
             throw std::exception("The datFilePriority provided in the datFile key must match the datFilePriority in the associated descriptor.");
 
-        const std::string &fileName = datFileDescriptor.getFileName();
-        const std::string &expectedFilePath = datFileDescriptor.getExpectedFilePath();
+        const std::string & fileName = datFileDescriptor.getFileName();
+        const std::string & expectedFilePath = datFileDescriptor.getExpectedFilePath();
         const FileBrowserPtr<u32> browser = datFileDescriptor.getBrowser();
         const bool expectedInScDirectory = datFileDescriptor.getExpectedInScDirectory();
         bool skipStarCraftBrowse = expectedInScDirectory && declinedStarCraftBrowse;
@@ -987,7 +987,7 @@ std::vector<MpqFilePtr> DatFileBrowser::openScDatFiles(
     return orderedDatFiles;
 }
 
-bool DatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedStarCraftBrowse, const std::string &expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool DatFileBrowser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
     if ( !expectedStarCraftDirectory.empty() && FindFile(MakeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
@@ -1010,7 +1010,7 @@ bool DatFileBrowser::findStarCraftDirectory(output_param std::string &starCraftD
     return false;
 }
 
-MpqFilePtr DatFileBrowser::openDatFile(const std::string &datFilePath, const DatFileDescriptor &datFileDescriptor)
+MpqFilePtr DatFileBrowser::openDatFile(const std::string & datFilePath, const DatFileDescriptor & datFileDescriptor)
 {
     MpqFilePtr mpqFile = MpqFilePtr(new MpqFile());
     do

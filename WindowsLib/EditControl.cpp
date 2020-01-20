@@ -65,7 +65,7 @@ namespace WinLib {
         this->stopFowardingOnClick = stopForwardingKeysOnClick;
     }
 
-    bool EditControl::SetText(const std::string &newText)
+    bool EditControl::SetText(const std::string & newText)
     {
         if ( getHandle() == ::GetFocus() )
         {
@@ -186,7 +186,7 @@ namespace WinLib {
         return WindowsItem::GetWinTextLen();
     }
 
-    bool EditControl::GetEditBinaryNum(u16 &dest)
+    bool EditControl::GetEditBinaryNum(u16 & dest)
     {
         u16 temp = 0;
         std::string editText;
@@ -210,7 +210,7 @@ namespace WinLib {
             return false;
     }
 
-    bool EditControl::GetEditBinaryNum(u32 &dest)
+    bool EditControl::GetEditBinaryNum(u32 & dest)
     {
         u32 temp = 0;
         std::string editText;
@@ -373,7 +373,7 @@ namespace WinLib {
     }
 
     template <typename numType>
-    bool EditControl::GetEditNum(numType &dest)
+    bool EditControl::GetEditNum(numType & dest)
     {
         std::string text;
         if ( GetWinText(text) && text.length() > 0 )
@@ -394,13 +394,13 @@ namespace WinLib {
         }
         return false;
     }
-    template bool EditControl::GetEditNum<u8>(u8 &dest);
-    template bool EditControl::GetEditNum<s8>(s8 &dest);
-    template bool EditControl::GetEditNum<u16>(u16 &dest);
-    template bool EditControl::GetEditNum<s16>(s16 &dest);
-    template bool EditControl::GetEditNum<u32>(u32 &dest);
-    template bool EditControl::GetEditNum<s32>(s32 &dest);
-    template bool EditControl::GetEditNum<int>(int &dest);
+    template bool EditControl::GetEditNum<u8>(u8 & dest);
+    template bool EditControl::GetEditNum<s8>(s8 & dest);
+    template bool EditControl::GetEditNum<u16>(u16 & dest);
+    template bool EditControl::GetEditNum<s16>(s16 & dest);
+    template bool EditControl::GetEditNum<u32>(u32 & dest);
+    template bool EditControl::GetEditNum<s32>(s32 & dest);
+    template bool EditControl::GetEditNum<int>(int & dest);
 
     LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {

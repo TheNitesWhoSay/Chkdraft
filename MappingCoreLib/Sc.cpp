@@ -32,8 +32,8 @@ std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> Sc::DataFil
 }
 
 std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
-    const std::unordered_map<Priority, Descriptor> &dataFiles,
-    const std::string &expectedStarCraftDirectory,
+    const std::unordered_map<Priority, Descriptor> & dataFiles,
+    const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
     std::unordered_map<Priority, MpqFilePtr> openedDataFiles;
@@ -48,8 +48,8 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
         if ( dataFilePriority != dataFileDescriptor.getPriority() )
             throw std::exception("The dataFilePriority provided in the dataFile key must match the dataFilePriority in the associated descriptor.");
 
-        const std::string &fileName = dataFileDescriptor.getFileName();
-        const std::string &expectedFilePath = dataFileDescriptor.getExpectedFilePath();
+        const std::string & fileName = dataFileDescriptor.getFileName();
+        const std::string & expectedFilePath = dataFileDescriptor.getExpectedFilePath();
         const FileBrowserPtr<u32> browser = dataFileDescriptor.getBrowser();
         const bool expectedInScDirectory = dataFileDescriptor.isExpectedInScDirectory();
         bool skipStarCraftBrowse = expectedInScDirectory && declinedStarCraftBrowse;
@@ -86,7 +86,7 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
     return orderedDataFiles;
 }
 
-bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string &starCraftDirectory, bool &declinedStarCraftBrowse, const std::string &expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
     if ( !expectedStarCraftDirectory.empty() && FindFile(MakeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
@@ -109,7 +109,7 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string &sta
     return false;
 }
 
-MpqFilePtr Sc::DataFile::Browser::openDataFile(const std::string &dataFilePath, const Descriptor &dataFileDescriptor)
+MpqFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor)
 {
     MpqFilePtr mpqFile = MpqFilePtr(new MpqFile());
     do
@@ -1385,7 +1385,7 @@ bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return success;
 }
 
-bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName)
+bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, grpData) )
         return true;
@@ -2544,7 +2544,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
 
 Sc::TblFile::~TblFile() {}
 
-bool Sc::TblFile::load(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string &mpqFileName)
+bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     strings.clear();
 
@@ -2574,7 +2574,7 @@ const std::string & Sc::TblFile::getString(size_t stringIndex)
         throw std::out_of_range("StringIndex " + std::to_string(stringIndex) + " overflows tbl file of size " + std::to_string(strings.size()));
 }
 
-bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> &orderedSourceFiles, const std::string& assetMpqPath, buffer &outAssetContents)
+bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents)
 {
     for ( auto mpqFile : orderedSourceFiles )
     {

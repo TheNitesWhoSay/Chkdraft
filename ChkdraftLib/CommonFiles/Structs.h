@@ -10,8 +10,8 @@ class points // Mirrors win32 POINTS
         points() : x(0), y(0) {}
         points(s16 x, s16 y) : x(x), y(y) {}
         virtual ~points();
-        inline bool operator==(const points &rhs) const { return x == rhs.x && y == rhs.y; }
-        inline bool operator<(const points &rhs) const {
+        inline bool operator==(const points & rhs) const { return x == rhs.x && y == rhs.y; }
+        inline bool operator<(const points & rhs) const {
             if ( y < rhs.y) return true;
             else if ( y > rhs.y ) return false;
             else return x < rhs.x;

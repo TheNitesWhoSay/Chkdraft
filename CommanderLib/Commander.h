@@ -33,8 +33,8 @@ class Commander
         virtual ~Commander();
 
         void Do(GenericCommandPtr command);
-        void Do(const std::vector<GenericCommandPtr> &commands);
-        void DoAcid(const std::vector<GenericCommandPtr> &commands, u32 undoRedoTypeid, bool async = false);
+        void Do(const std::vector<GenericCommandPtr> & commands);
+        void DoAcid(const std::vector<GenericCommandPtr> & commands, u32 undoRedoTypeid, bool async = false);
         void Undo(u32 undoRedoTypeId);
         void Redo(u32 undoRedoTypeId);
 
@@ -61,7 +61,7 @@ class Commander
 
         void NotifyCommandFinished(GenericCommandPtr command);
 
-        ErrorHandlerResult HandleError(GenericCommandPtr command, KnownError& e);
+        ErrorHandlerResult HandleError(GenericCommandPtr command, KnownError & e);
 
     private:
         friend void begin(Commander* commander);
@@ -101,7 +101,7 @@ class Commander
 class AcidRollbackFailure : public std::exception
 {
     public:
-        explicit AcidRollbackFailure(const std::string &exceptionText) : exceptionText(exceptionText) { }
+        explicit AcidRollbackFailure(const std::string & exceptionText) : exceptionText(exceptionText) { }
         virtual ~AcidRollbackFailure() throw();
         virtual const char* what() const throw() { return exceptionText.c_str(); }
 

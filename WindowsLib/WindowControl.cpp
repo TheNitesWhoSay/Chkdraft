@@ -37,7 +37,7 @@ namespace WinLib {
             return false;
     }
 
-    bool WindowControl::CreateControl( DWORD dwExStyle, const icux::uistring &lpClassName, const std::string &lpWindowName, DWORD dwStyle,
+    bool WindowControl::CreateControl( DWORD dwExStyle, const icux::uistring & lpClassName, const std::string & lpWindowName, DWORD dwStyle,
                                        int x, int y, int nWidth, int nHeight,
                                        HWND hWndParent, HMENU hMenu, bool redirectProc )
     {

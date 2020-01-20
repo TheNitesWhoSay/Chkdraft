@@ -20,7 +20,7 @@ namespace WinLib {
             virtual void EnableThis();
             virtual void DisableThis();
 
-            bool SetText(const std::string &newText); // Sets new text content
+            bool SetText(const std::string & newText); // Sets new text content
 
             template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
                 bool SetEditNum(numType num);
@@ -33,14 +33,14 @@ namespace WinLib {
             void ExpandToText(); // Expands the edit control to show all the current text
 
             int GetTextLength();
-            bool GetEditBinaryNum(u16 &dest);
-            bool GetEditBinaryNum(u32 &dest);
+            bool GetEditBinaryNum(u16 & dest);
+            bool GetEditBinaryNum(u32 & dest);
 
             bool GetHexByteString(u8* dest, u32 destLength);
             bool SetHexByteString(u8* bytes, u32 numBytes);
 
             template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
-                bool GetEditNum(numType &dest);
+                bool GetEditNum(numType & dest);
 
 
         protected:

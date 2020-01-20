@@ -60,7 +60,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
-            Chk::Condition& condition = trig->condition(y);
+            Chk::Condition & condition = trig->condition(y);
             if ( condition.conditionType > Chk::Condition::Type::NoCondition && condition.conditionType < Chk::Condition::NumConditionTypes )
             {
                 u8 numArgs = u8(conditionArgMaps[condition.conditionType].size());
@@ -123,7 +123,7 @@ void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( conditionNum >= 0 && conditionNum < 16 && trig != nullptr )
     {
-        Chk::Condition &condition = trig->condition(conditionNum);
+        Chk::Condition & condition = trig->condition(conditionNum);
         if ( condition.conditionType != Chk::Condition::Type::NoCondition )
         {
             condition.ToggleDisabled();
@@ -290,7 +290,7 @@ LRESULT TrigConditionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam
     return result;
 }
 
-void TrigConditionsWindow::ChangeConditionType(Chk::Condition &condition, Chk::Condition::Type conditionType)
+void TrigConditionsWindow::ChangeConditionType(Chk::Condition & condition, Chk::Condition::Type conditionType)
 {
     if ( condition.conditionType != conditionType )
     {
@@ -318,7 +318,7 @@ void TrigConditionsWindow::ChangeConditionType(Chk::Condition &condition, Chk::C
     }
 }
 
-bool TrigConditionsWindow::TransformCondition(Chk::Condition &condition, Chk::Condition::Type conditionType, bool refreshImmediately)
+bool TrigConditionsWindow::TransformCondition(Chk::Condition & condition, Chk::Condition::Type conditionType, bool refreshImmediately)
 {
     if ( condition.conditionType != conditionType )
     {
@@ -338,7 +338,7 @@ void TrigConditionsWindow::RefreshConditionAreas()
     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 }
 
-void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string &newText, bool refreshImmediately)
+void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately)
 {
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
@@ -347,7 +347,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
     {
         if ( trig != nullptr )
         {
-            Chk::Condition &condition = trig->condition(conditionNum);
+            Chk::Condition & condition = trig->condition(conditionNum);
             TransformCondition(condition, conditionType, refreshImmediately);
         }
     }
@@ -362,7 +362,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
     }
 }
 
-void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string &newText, bool refreshImmediately)
+void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
@@ -383,7 +383,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     }
 }
 
-BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str)
+BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string & str)
 {
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxConditions )
     {
@@ -483,13 +483,13 @@ void TrigConditionsWindow::PreDrawItems()
     hBlack = CreateSolidBrush(RGB(0, 0, 0));
 }
 
-void TrigConditionsWindow::SysColorRect(HDC hDC, RECT &rect, DWORD color)
+void TrigConditionsWindow::SysColorRect(HDC hDC, RECT & rect, DWORD color)
 {
     SetBkColor(hDC, GetSysColor(color));
     FillRect(hDC, &rect, GetSysColorBrush(color));
 }
 
-void TrigConditionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int width, int xStart)
+void TrigConditionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top;
@@ -505,7 +505,7 @@ void TrigConditionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridIt
         SysColorRect(hDC, rcFill, COLOR_WINDOW);
 }
 
-void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xStart)
+void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top - 1;
@@ -516,7 +516,7 @@ void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &
     ::FrameRect(hDC, &rcFill, hBlack);
 }
 
-void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
+void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
 {
     if ( gridItemX == 0 && gridItemY >= 0 && gridItemY < Chk::Trigger::MaxConditions )
         gridConditions.checkEnabled[gridItemY].MoveTo(rcItem.left, rcItem.top);
@@ -544,7 +544,7 @@ void TrigConditionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 
         if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
         {
-            RECT &rcItem = pdis->rcItem;
+            RECT & rcItem = pdis->rcItem;
             int itemStart = rcItem.left;
 
             int numColumns = gridConditions.GetNumColumns();
@@ -719,7 +719,7 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        Chk::Condition &condition = trig->condition((u8)gridItemY);
+        Chk::Condition & condition = trig->condition((u8)gridItemY);
         Chk::Condition::ArgType argType = Chk::Condition::ArgType::NoType;
         if ( gridItemX == 1 ) // Condition Name
             argType = Chk::Condition::ArgType::ConditionType;
@@ -762,7 +762,7 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
     }
 }
 
-void TrigConditionsWindow::NewSuggestion(std::string &str)
+void TrigConditionsWindow::NewSuggestion(std::string & str)
 {
     gridConditions.SetEditText(str);
 }

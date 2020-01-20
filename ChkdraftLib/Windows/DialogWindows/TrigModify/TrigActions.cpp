@@ -64,7 +64,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
-            Chk::Action& action = trig->action(y);
+            Chk::Action & action = trig->action(y);
             if ( action.actionType > Chk::Action::Type::NoAction && action.actionType <= Chk::Action::Type::LastAction )
             {
                 u8 numArgs = u8(actionArgMaps[action.actionType].size());
@@ -156,7 +156,7 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( actionNum >= 0 && actionNum < 64 && trig != nullptr )
     {
-        Chk::Action &action = trig->action(actionNum);
+        Chk::Action & action = trig->action(actionNum);
         if ( action.actionType != Chk::Action::Type::NoAction )
         {
             action.ToggleDisabled();
@@ -410,7 +410,7 @@ LRESULT TrigActionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, L
     return result;
 }
 
-void TrigActionsWindow::ChangeActionType(Chk::Action &action, Chk::Action::Type newType)
+void TrigActionsWindow::ChangeActionType(Chk::Action & action, Chk::Action::Type newType)
 {
     if ( action.actionType != newType )
     {
@@ -442,7 +442,7 @@ void TrigActionsWindow::ChangeActionType(Chk::Action &action, Chk::Action::Type 
     }
 }
 
-bool TrigActionsWindow::TransformAction(Chk::Action &action, Chk::Action::Type newType, bool refreshImmediately)
+bool TrigActionsWindow::TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately)
 {
     if ( action.actionType != newType )
     {
@@ -462,7 +462,7 @@ void TrigActionsWindow::RefreshActionAreas()
     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 }
 
-void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newText, bool refreshImmediately)
+void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
@@ -471,7 +471,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
     {
         if ( trig != nullptr )
         {
-            Chk::Action &action = trig->action(actionNum);
+            Chk::Action & action = trig->action(actionNum);
             TransformAction(action, newType, refreshImmediately);
         }
     }
@@ -486,7 +486,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string &newTex
     }
 }
 
-void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string &newText, bool refreshImmediately)
+void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
@@ -494,7 +494,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        Chk::Action &action = trig->action(actionNum);
+        Chk::Action & action = trig->action(actionNum);
         if ( action.actionType < Chk::Action::NumActionTypes && argNum < actionArgMaps[action.actionType].size() )
         {
             u8 textTrigArgNum = actionArgMaps[action.actionType][argNum];
@@ -526,7 +526,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 size_t numMatching = scriptTable.count(hash);
                 if ( numMatching == 1 )
                 {
-                    std::string &scriptDisplayString = scriptTable.find(hash)->second.second;
+                    std::string & scriptDisplayString = scriptTable.find(hash)->second.second;
                     if ( scriptDisplayString.compare(suggestionString) == 0 )
                         newScriptNum = scriptTable.find(hash)->second.first;
                 }
@@ -535,7 +535,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     auto range = scriptTable.equal_range(hash);
                     foreachin(pair, range)
                     {
-                        std::string &scriptDisplayString = pair->second.second;
+                        std::string & scriptDisplayString = pair->second.second;
                         if ( scriptDisplayString.compare(suggestionString) == 0 )
                         {
                             newScriptNum = scriptTable.find(hash)->second.first;
@@ -545,7 +545,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 }
                 else
                 {
-                    std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).actionType];
+                    std::vector<u8> & argMap = actionArgMaps[trig->action(actionNum).actionType];
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
                         ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
                         (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
@@ -560,7 +560,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             }
             else
             {
-                std::vector<u8> &argMap = actionArgMaps[trig->action(actionNum).actionType];
+                std::vector<u8> & argMap = actionArgMaps[trig->action(actionNum).actionType];
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
                     ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
                     (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
@@ -576,7 +576,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     }
 }
 
-BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string& str)
+BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string & str)
 {
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
     {
@@ -676,13 +676,13 @@ void TrigActionsWindow::PreDrawItems()
     hBlack = CreateSolidBrush(RGB(0, 0, 0));
 }
 
-void TrigActionsWindow::SysColorRect(HDC hDC, RECT &rect, DWORD color)
+void TrigActionsWindow::SysColorRect(HDC hDC, RECT & rect, DWORD color)
 {
     SetBkColor(hDC, GetSysColor(color));
     FillRect(hDC, &rect, GetSysColorBrush(color));
 }
 
-void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int width, int xStart)
+void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top;
@@ -698,7 +698,7 @@ void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY
         SysColorRect(hDC, rcFill, COLOR_WINDOW);
 }
 
-void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xStart)
+void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart)
 {
     RECT rcFill = {};
     rcFill.top = rcItem.top - 1;
@@ -709,7 +709,7 @@ void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT &rcItem, int width, int &xSt
     ::FrameRect(hDC, &rcFill, hBlack);
 }
 
-void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT &rcItem, int &xStart)
+void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
 {
     if ( gridItemX == 0 && gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
         gridActions.checkEnabled[gridItemY].MoveTo(rcItem.left, rcItem.top);
@@ -737,7 +737,7 @@ void TrigActionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 
         if ( pdis->itemID != -1 && (drawSelection || drawEntire) )
         {
-            RECT &rcItem = pdis->rcItem;
+            RECT & rcItem = pdis->rcItem;
             int itemStart = rcItem.left;
 
             int numColumns = gridActions.GetNumColumns();
@@ -1057,10 +1057,10 @@ void TrigActionsWindow::ButtonEditString()
         Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
         if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
         {
-            Chk::Action &action = trig->action((u8)focusedY);
+            Chk::Action & action = trig->action((u8)focusedY);
             Chk::Action::Type actionType = action.actionType;
 
-            std::vector<u8> &argMap = actionArgMaps[actionType];
+            std::vector<u8> & argMap = actionArgMaps[actionType];
             u8 numArgs = (u8)actionArgMaps[actionType].size();
             for ( u8 i = 0; i < numArgs; i++ )
             {
@@ -1102,10 +1102,10 @@ void TrigActionsWindow::ButtonEditWav()
         Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
         if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
         {
-            Chk::Action &action = trig->action((u8)focusedY);
+            Chk::Action & action = trig->action((u8)focusedY);
             Chk::Action::Type actionType = action.actionType;
 
-            std::vector<u8> &argMap = actionArgMaps[(size_t)actionType];
+            std::vector<u8> & argMap = actionArgMaps[(size_t)actionType];
             u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
             for ( u8 i = 0; i < numArgs; i++ )
             {
@@ -1145,7 +1145,7 @@ void TrigActionsWindow::ButtonEditUnitProperties()
     int focusedX = 0, focusedY = 0;
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action &action = trig->action((u8)focusedY);
+        Chk::Action & action = trig->action((u8)focusedY);
         u32 cuwpIndex = action.number;
         Chk::Cuwp initialCuwp = CM->triggers.getCuwp(cuwpIndex);
         Chk::Cuwp newCuwp = {};
@@ -1165,7 +1165,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        Chk::Action &action = trig->action((u8)gridItemY);
+        Chk::Action & action = trig->action((u8)gridItemY);
         Chk::Action::ArgType argType = Chk::Action::ArgType::NoType;
         if ( gridItemX == 1 ) // Action Name
             argType = Chk::Action::ArgType::ActionType;
@@ -1228,13 +1228,13 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        Chk::Action &action = trig->action((u8)gridItemY);
+        Chk::Action & action = trig->action((u8)gridItemY);
         Chk::Action::Type actionType = action.actionType;
         if ( actionType < Chk::Action::NumActionTypes )
         {
             bool includesString = false, includesWav = false;
             bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
-            std::vector<u8> &argMap = actionArgMaps[actionType];
+            std::vector<u8> & argMap = actionArgMaps[actionType];
             u8 numArgs = (u8)actionArgMaps[actionType].size();
             for ( u8 i = 0; i < numArgs; i++ )
             {
@@ -1279,7 +1279,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
     chkd.trigEditorWindow.triggersWindow.trigModifyWindow.RedrawThis();
 }
 
-void TrigActionsWindow::NewSuggestion(std::string &str)
+void TrigActionsWindow::NewSuggestion(std::string & str)
 {
     gridActions.SetEditText(str);
 }
@@ -1290,10 +1290,10 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action &action = trig->action((u8)focusedY);
+        Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
 
-        std::vector<u8> &argMap = actionArgMaps[actionType];
+        std::vector<u8> & argMap = actionArgMaps[actionType];
         u8 numArgs = (u8)actionArgMaps[actionType].size();
         for ( u8 i = 0; i < numArgs; i++ )
         {
@@ -1315,10 +1315,10 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action &action = trig->action((u8)focusedY);
+        Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
 
-        std::vector<u8> &argMap = actionArgMaps[actionType];
+        std::vector<u8> & argMap = actionArgMaps[actionType];
         u8 numArgs = (u8)actionArgMaps[actionType].size();
         for ( u8 i = 0; i < numArgs; i++ )
         {

@@ -28,7 +28,7 @@ bool UnitTree::CreateThis(HWND hParent, int x, int y, int width, int height, boo
         return false;
 }
 
-void UnitTree::UpdateUnitNames(const std::vector<std::string> &displayNames)
+void UnitTree::UpdateUnitNames(const std::vector<std::string> & displayNames)
 {
     unitDisplayNames = displayNames;
 }
@@ -186,7 +186,7 @@ void UnitTree::InsertUndefinedItems(HTREEITEM hParent)
     }
 }
 
-void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<u16> &unitIds)
+void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds)
 {
     size_t maxUnits = std::min(unitIds.size(), unitDisplayNames.size());
     for ( size_t i=0; i<maxUnits; i++ )

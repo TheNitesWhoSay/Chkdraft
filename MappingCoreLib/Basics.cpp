@@ -2,12 +2,12 @@
 #include <cmath>
 /* Allow file to be partitioned along templates */ #ifndef INCLUDE_TEMPLATES_ONLY
 
-void IgnoreErr(const std::string &file, unsigned int line, const std::string msg, ...)
+void IgnoreErr(const std::string & file, unsigned int line, const std::string msg, ...)
 {
 
 }
 
-void PrintError(const std::string &file, unsigned int line, const std::string msg, ...)
+void PrintError(const std::string & file, unsigned int line, const std::string msg, ...)
 {
     throw std::exception("He's dead jim");
 }
@@ -15,14 +15,14 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
 /* Templates */ #endif
                 #ifdef INCLUDE_TEMPLATES_ONLY
 template <typename valueType>
-void AscendingOrder(valueType &low, valueType &high)
+void AscendingOrder(valueType & low, valueType & high)
 {
     if ( low > high )
         std::swap(low, high);
 }
 /* End templates */ #else
 
-u32 SmallestOf(u32 &first, u32 &second)
+u32 SmallestOf(u32 & first, u32 & second)
 {
     if ( first < second )
         return first;
@@ -30,7 +30,7 @@ u32 SmallestOf(u32 &first, u32 &second)
         return second;
 }
 
-s32 SmallestOf(s32 &first, s32 &second)
+s32 SmallestOf(s32 & first, s32 & second)
 {
     if ( first < second )
         return first;
@@ -38,7 +38,7 @@ s32 SmallestOf(s32 &first, s32 &second)
         return second;
 }
 
-u32 SmallestOf(u32 &first, u32 &second, u32 &third)
+u32 SmallestOf(u32 & first, u32 & second, u32 & third)
 {
     if ( first < second )
     {
@@ -51,7 +51,7 @@ u32 SmallestOf(u32 &first, u32 &second, u32 &third)
     return third;
 }
 
-s32 SmallestOf(s32 &first, s32 &second, s32 &third)
+s32 SmallestOf(s32 & first, s32 & second, s32 & third)
 {
     if ( first < second )
     {
@@ -66,12 +66,12 @@ s32 SmallestOf(s32 &first, s32 &second, s32 &third)
 
 void LongToBytes(s32 value, u8* bytes)
 {
-    (u32&)bytes[0] = value;
+    (u32 &)bytes[0] = value;
 }
 
 void ShortToBytes(u16 value, u8* bytes)
 {
-    (u16&)bytes[0] = value;
+    (u16 &)bytes[0] = value;
 }
 
 s32 TripletToInt(u8* triplet)

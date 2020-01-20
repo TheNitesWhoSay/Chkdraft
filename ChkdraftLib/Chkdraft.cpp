@@ -167,7 +167,7 @@ void Chkdraft::SetEditFocused(bool editFocused)
     this->editFocused = editFocused;
 }
 
-bool Chkdraft::DlgKeyListener(HWND hWnd, UINT &msg, WPARAM wParam, LPARAM lParam)
+bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
     {
@@ -548,7 +548,7 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-void Chkdraft::HandleDroppedFile(const std::string &dropFilePath)
+void Chkdraft::HandleDroppedFile(const std::string & dropFilePath)
 {
     maps.OpenMap(dropFilePath);
 }
@@ -648,7 +648,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
     }
 }
 
-void Chkdraft::OpenWebPage(const std::string &address)
+void Chkdraft::OpenWebPage(const std::string & address)
 {
     int resultCode = 0;
     WinLib::executeOpen(address, resultCode);

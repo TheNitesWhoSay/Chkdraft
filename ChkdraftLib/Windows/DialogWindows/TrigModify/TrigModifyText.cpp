@@ -151,7 +151,7 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
         Error("No map open!");
 }
 
-bool TrigModifyTextWindow::CompileEditText(std::string &newText)
+bool TrigModifyTextWindow::CompileEditText(std::string & newText)
 {
     if ( CM != nullptr )
     {

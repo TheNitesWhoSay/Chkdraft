@@ -275,7 +275,7 @@ StrProp::StrProp(Chk::StringProperties stringProperties) :
     
 }
 
-ScStr::ScStr(const std::string &str) : strProp()
+ScStr::ScStr(const std::string & str) : strProp()
 {
     for ( const char & c : str )
         allocation.push_back(c);
@@ -286,7 +286,7 @@ ScStr::ScStr(const std::string &str) : strProp()
     this->str = &allocation[0];
 }
 
-ScStr::ScStr(const std::string &str, const StrProp &strProp) : strProp(strProp)
+ScStr::ScStr(const std::string & str, const StrProp & strProp) : strProp(strProp)
 {
     for ( const char & c : str )
         allocation.push_back(c);
@@ -308,16 +308,16 @@ size_t ScStr::length()
 }
 
 template <typename StringType>
-int ScStr::compare(const StringType &str)
+int ScStr::compare(const StringType & str)
 {
     RawString rawStr;
     ConvertStr<StringType, RawString>(str, rawStr);
     return strcmp(this->str, rawStr.c_str());
 }
-template int ScStr::compare<RawString>(const RawString &str);
-template int ScStr::compare<EscString>(const EscString &str);
-template int ScStr::compare<ChkdString>(const ChkdString &str);
-template int ScStr::compare<SingleLineChkdString>(const SingleLineChkdString &str);
+template int ScStr::compare<RawString>(const RawString & str);
+template int ScStr::compare<EscString>(const EscString & str);
+template int ScStr::compare<ChkdString>(const ChkdString & str);
+template int ScStr::compare<SingleLineChkdString>(const SingleLineChkdString & str);
 
 template <typename StringType>
 std::shared_ptr<StringType> ScStr::toString()
@@ -1047,7 +1047,7 @@ std::streamsize MtxmSection::read(const Chk::SectionHeader & sectionHeader, std:
         size_t readNumTiles = readSize/sizeof(u16) + readSize%sizeof(u16);
         if ( readNumTiles > tiles.size() ) // Need to expand section
             tiles.insert(tiles.end(), readNumTiles-tiles.size(), u16(0));
-        else if ( !overriding && readNumTiles < tiles.size()  ) // Need to shrink section
+        else if ( !overriding && readNumTiles < tiles.size() ) // Need to shrink section
             tiles.erase(tiles.begin()+readNumTiles, tiles.end());
     
         std::memset(&tiles[0], 0, readSize); // Zero out the bytes about to be read
@@ -2200,7 +2200,7 @@ template std::shared_ptr<ChkdString> StrSection::getString<ChkdString>(size_t st
 template std::shared_ptr<SingleLineChkdString> StrSection::getString<SingleLineChkdString>(size_t stringId);
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t StrSection::findString(const StringType &str)
+size_t StrSection::findString(const StringType & str)
 {
     for ( size_t stringId=1; stringId<strings.size(); stringId++ )
     {
@@ -2209,10 +2209,10 @@ size_t StrSection::findString(const StringType &str)
     }
     return Chk::StringId::NoString;
 }
-template size_t StrSection::findString<RawString>(const RawString &str);
-template size_t StrSection::findString<EscString>(const EscString &str);
-template size_t StrSection::findString<ChkdString>(const ChkdString &str);
-template size_t StrSection::findString<SingleLineChkdString>(const SingleLineChkdString &str);
+template size_t StrSection::findString<RawString>(const RawString & str);
+template size_t StrSection::findString<EscString>(const EscString & str);
+template size_t StrSection::findString<ChkdString>(const ChkdString & str);
+template size_t StrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str);
 
 bool StrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
@@ -2252,7 +2252,7 @@ bool StrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchro
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t StrSection::addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment)
+size_t StrSection::addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
     RawString rawString;
     ConvertStr<StringType, RawString>(str, rawString);
@@ -2273,13 +2273,13 @@ size_t StrSection::addString(const StringType &str, StrSynchronizer & strSynchro
     strings[nextUnusedStringId] = ScStrPtr(new ScStr(rawString));
     return nextUnusedStringId;
 }
-template size_t StrSection::addString<RawString>(const RawString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t StrSection::addString<EscString>(const EscString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t StrSection::addString<ChkdString>(const ChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t StrSection::addString<SingleLineChkdString>(const SingleLineChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<RawString>(const RawString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<EscString>(const EscString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<ChkdString>(const ChkdString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t StrSection::addString<SingleLineChkdString>(const SingleLineChkdString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-void StrSection::replaceString(size_t stringId, const StringType &str)
+void StrSection::replaceString(size_t stringId, const StringType & str)
 {
     RawString rawString;
     ConvertStr<StringType, RawString>(str, rawString);
@@ -2287,10 +2287,10 @@ void StrSection::replaceString(size_t stringId, const StringType &str)
     if ( stringId < strings.size() )
         strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));
 }
-template void StrSection::replaceString<RawString>(size_t stringId, const RawString &str);
-template void StrSection::replaceString<EscString>(size_t stringId, const EscString &str);
-template void StrSection::replaceString<ChkdString>(size_t stringId, const ChkdString &str);
-template void StrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString &str);
+template void StrSection::replaceString<RawString>(size_t stringId, const RawString & str);
+template void StrSection::replaceString<EscString>(size_t stringId, const EscString & str);
+template void StrSection::replaceString<ChkdString>(size_t stringId, const ChkdString & str);
+template void StrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str);
 
 void StrSection::deleteUnusedStrings(StrSynchronizer & strSynchronizer)
 {
@@ -2523,7 +2523,7 @@ void StrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
     }
 }
 
-size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
 {
     size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
     for ( size_t i=firstChecked; i<limit; i++ )
@@ -2731,13 +2731,13 @@ Chk::Cuwp UprpSection::getCuwp(size_t cuwpIndex)
     return data->createUnitProperties[cuwpIndex];
 }
 
-void UprpSection::setCuwp(size_t cuwpIndex, const Chk::Cuwp &cuwp)
+void UprpSection::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
 {
     if ( cuwpIndex < Sc::Unit::MaxCuwps )
         memcpy(&data->createUnitProperties[cuwpIndex], &cuwp, sizeof(Chk::Cuwp));
 }
 
-size_t UprpSection::findCuwp(const Chk::Cuwp &cuwp)
+size_t UprpSection::findCuwp(const Chk::Cuwp & cuwp)
 {
     for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
@@ -2878,7 +2878,10 @@ bool MrgnSection::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool 
          (!lockAnywhere || (locationIdMin != Chk::LocationId::Anywhere && locationIdMax != Chk::LocationId::Anywhere)) )
     {
         if ( locationIdMax-locationIdMin == 1 && locationIdMax < locations.size() ) // Move up or down by 1 using swap
+        {
             locations[locationIdMin].swap(locations[locationIdMax]);
+            return true;
+        }
         else // Move up or down by more than one, remove from present location, insert in the list at destination
         {
             auto location = locations[locationIdFrom];
@@ -2888,9 +2891,13 @@ bool MrgnSection::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool 
             locations.insert(insertPosition, location);
 
             if ( lockAnywhere && locationIdMin < Chk::LocationId::Anywhere && locationIdMax > Chk::LocationId::Anywhere )
+            {
                 std::swap(*std::next(locations.begin(), Chk::LocationId::Anywhere-1), *std::next(locations.begin(), Chk::LocationId::Anywhere));
+                return true;
+            }
         }
     }
+    return false;
 }
 
 bool MrgnSection::isBlank(size_t locationId)
@@ -2926,7 +2933,7 @@ void MrgnSection::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & loca
     }
 }
 
-void MrgnSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void MrgnSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=1; i<locations.size(); i++ )
     {
@@ -3187,19 +3194,19 @@ void TrigSection::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locatio
         trigger->markUsedLocations(locationIdUsed);
 }
 
-void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( auto trigger : triggers )
         trigger->markUsedStrings(stringIdUsed);
 }
 
-void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( auto trigger : triggers )
         trigger->markUsedGameStrings(stringIdUsed);
 }
 
-void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( auto trigger : triggers )
         trigger->markUsedCommentStrings(stringIdUsed);
@@ -3351,7 +3358,7 @@ bool MbrfSection::stringUsed(size_t stringId)
     return false;
 }
 
-void MbrfSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void MbrfSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( auto briefingTrigger : briefingTriggers )
         briefingTrigger->markUsedStrings(stringIdUsed);
@@ -3479,7 +3486,7 @@ void SprpSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
         data->scenarioDescriptionStringId = scenarioDescriptionRemapping->second;
 }
 
-void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( data->scenarioNameStringId > 0 )
         stringIdUsed[data->scenarioNameStringId] = true;
@@ -3570,7 +3577,7 @@ bool ForcSection::stringUsed(size_t stringId)
     return data->forceString[0] == (u16)stringId || data->forceString[1] == (u16)stringId || data->forceString[2] == (u16)stringId || data->forceString[3] == (u16)stringId;
 }
 
-void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<Chk::TotalForces; i++ )
     {
@@ -3671,7 +3678,7 @@ bool WavSection::stringUsed(size_t stringId)
     return stringIsSound(stringId);
 }
 
-void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
@@ -3904,7 +3911,7 @@ bool UnisSection::stringUsed(size_t stringId)
     return false;
 }
 
-void UnisSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void UnisSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -4231,7 +4238,7 @@ bool SwnmSection::stringUsed(size_t stringId)
     return false;
 }
 
-void SwnmSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void SwnmSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<Chk::TotalSwitches; i++ )
     {
@@ -4798,7 +4805,7 @@ bool UnixSection::stringUsed(size_t stringId)
     return false;
 }
 
-void UnixSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void UnixSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -5274,7 +5281,7 @@ bool OstrSection::stringUsed(size_t stringId)
     return false;
 }
 
-void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> &stringIdUsed)
+void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
 {
     if ( data->scenarioName != 0 )
         stringIdUsed[data->scenarioName] = true;
@@ -5480,7 +5487,7 @@ template std::shared_ptr<ChkdString> KstrSection::getString<ChkdString>(size_t s
 template std::shared_ptr<SingleLineChkdString> KstrSection::getString<SingleLineChkdString>(size_t stringId);
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t KstrSection::findString(const StringType &str)
+size_t KstrSection::findString(const StringType & str)
 {
     for ( size_t stringId=1; stringId<strings.size(); stringId++ )
     {
@@ -5489,10 +5496,10 @@ size_t KstrSection::findString(const StringType &str)
     }
     return Chk::StringId::NoString;
 }
-template size_t KstrSection::findString<RawString>(const RawString &str);
-template size_t KstrSection::findString<EscString>(const EscString &str);
-template size_t KstrSection::findString<ChkdString>(const ChkdString &str);
-template size_t KstrSection::findString<SingleLineChkdString>(const SingleLineChkdString &str);
+template size_t KstrSection::findString<RawString>(const RawString & str);
+template size_t KstrSection::findString<EscString>(const EscString & str);
+template size_t KstrSection::findString<ChkdString>(const ChkdString & str);
+template size_t KstrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str);
 
 bool KstrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
@@ -5532,7 +5539,7 @@ bool KstrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchr
 }
         
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t KstrSection::addString(const StringType &str, StrSynchronizer & strSynchronizer, bool autoDefragment)
+size_t KstrSection::addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
     RawString rawString;
     ConvertStr<StringType, RawString>(str, rawString);
@@ -5553,13 +5560,13 @@ size_t KstrSection::addString(const StringType &str, StrSynchronizer & strSynchr
     strings[nextUnusedStringId] = ScStrPtr(new ScStr(rawString));
     return nextUnusedStringId;
 }
-template size_t KstrSection::addString<RawString>(const RawString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t KstrSection::addString<EscString>(const EscString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t KstrSection::addString<ChkdString>(const ChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
-template size_t KstrSection::addString<SingleLineChkdString>(const SingleLineChkdString &str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<RawString>(const RawString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<EscString>(const EscString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<ChkdString>(const ChkdString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
+template size_t KstrSection::addString<SingleLineChkdString>(const SingleLineChkdString & str, StrSynchronizer & strSynchronizer, bool autoDefragment);
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-void KstrSection::replaceString(size_t stringId, const StringType &str)
+void KstrSection::replaceString(size_t stringId, const StringType & str)
 {
     RawString rawString;
     ConvertStr<StringType, RawString>(str, rawString);
@@ -5567,10 +5574,10 @@ void KstrSection::replaceString(size_t stringId, const StringType &str)
     if ( stringId < strings.size() )
         strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));
 }
-template void KstrSection::replaceString<RawString>(size_t stringId, const RawString &str);
-template void KstrSection::replaceString<EscString>(size_t stringId, const EscString &str);
-template void KstrSection::replaceString<ChkdString>(size_t stringId, const ChkdString &str);
-template void KstrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString &str);
+template void KstrSection::replaceString<RawString>(size_t stringId, const RawString & str);
+template void KstrSection::replaceString<EscString>(size_t stringId, const EscString & str);
+template void KstrSection::replaceString<ChkdString>(size_t stringId, const ChkdString & str);
+template void KstrSection::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str);
 
 void KstrSection::deleteUnusedStrings(StrSynchronizer & strSynchronizer)
 {
@@ -5734,7 +5741,7 @@ void KstrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
         os.write((const char*)&stringBytes[0], (std::streamsize)stringBytes.size());
 }
 
-size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> &stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
 {
     size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
     for ( size_t i=firstChecked; i<limit; i++ )

@@ -24,7 +24,7 @@ Maps::~Maps()
 
 bool Maps::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
 {
-    for ( auto &pair : openMaps )
+    for ( auto & pair : openMaps )
     {
         if ( guiMap == pair.second )
             return true;
@@ -34,7 +34,7 @@ bool Maps::isInOpenMaps(std::shared_ptr<GuiMap> guiMap)
 
 bool Maps::Focus(HWND hGuiMap)
 {
-    for ( auto &pair : openMaps )
+    for ( auto & pair : openMaps )
     {
         if ( hGuiMap == pair.second->getHandle() )
             return Focus(pair.second);
@@ -63,7 +63,7 @@ std::shared_ptr<GuiMap> Maps::GetMap(HWND hGuiMap)
     if ( hGuiMap == currentlyActiveMap->getHandle() )
         return currentlyActiveMap;
 
-    for ( auto &pair : openMaps)
+    for ( auto & pair : openMaps)
     {
         if ( hGuiMap == pair.second->getHandle() )
             return pair.second;
@@ -126,7 +126,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
     return false;
 }
 
-bool Maps::OpenMap(const std::string &fileName)
+bool Maps::OpenMap(const std::string & fileName)
 {
     GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
     if ( newMap != nullptr && newMap->isOpen() )
@@ -307,8 +307,8 @@ void Maps::ChangePlayer(u8 newPlayer)
     {
         if ( clipboard.isPasting() )
         {
-            auto &units = clipboard.getUnits();
-            for ( auto &pasteUnit : units )
+            auto & units = clipboard.getUnits();
+            for ( auto & pasteUnit : units )
                 pasteUnit.unit->owner = newPlayer;
         }
 
@@ -417,7 +417,7 @@ void Maps::properties()
 {
     if ( currentlyActiveMap->getLayer() == Layer::Terrain )
     {
-        Selections &selections = currentlyActiveMap->GetSelections();
+        Selections & selections = currentlyActiveMap->GetSelections();
         if ( selections.hasTiles() )
         {
             TileNode tile = selections.getFirstTile();
@@ -442,7 +442,7 @@ void Maps::stickCursor()
 
 void Maps::updateCursor(s32 xc, s32 yc)
 {
-    Selections &selections = currentlyActiveMap->GetSelections();
+    Selections & selections = currentlyActiveMap->GetSelections();
     if ( currentlyActiveMap->getLayer() == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
@@ -626,7 +626,7 @@ bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)
         return false;
 
     u16 toDelete = u16_max;
-    for ( auto &pair : openMaps )
+    for ( auto & pair : openMaps )
     {
         if ( guiMap == pair.second )
         {

@@ -6,7 +6,7 @@
 
 extern Logger logger;
 
-void StringToWindowsClipboard(const std::string &str)
+void StringToWindowsClipboard(const std::string & str)
 {
     if ( OpenClipboard(NULL) != 0 )
     {
@@ -30,7 +30,7 @@ void StringToWindowsClipboard(const std::string &str)
     }
 }
 
-bool WindowsClipboardToString(std::string &str)
+bool WindowsClipboardToString(std::string & str)
 {
     bool success = false;
     if ( OpenClipboard(NULL) != 0 )
@@ -93,9 +93,9 @@ bool Clipboard::hasTiles()
     return copyTiles.size() > 0;
 }
 
-void Clipboard::copy(GuiMap &map, Layer layer)
+void Clipboard::copy(GuiMap & map, Layer layer)
 {
-    Selections &selections = map.GetSelections();
+    Selections & selections = map.GetSelections();
     if ( layer == Layer::Terrain )
     {
         ClearCopyTiles(); // Clear whatever was previously copied
@@ -107,8 +107,8 @@ void Clipboard::copy(GuiMap &map, Layer layer)
             edges.top = firstTile.yc * 32;
             edges.bottom = firstTile.yc * 32 + 32;
 
-            auto &selTiles = selections.getTiles();
-            for ( auto &selTile : selTiles ) // Traverse through all tiles
+            auto & selTiles = selections.getTiles();
+            for ( auto & selTile : selTiles ) // Traverse through all tiles
             {
                 PasteTileNode tile(selTile.value, selTile.xc * 32, selTile.yc * 32, selTile.neighbors);
 
@@ -125,7 +125,7 @@ void Clipboard::copy(GuiMap &map, Layer layer)
             middle.x = edges.left+(edges.right-edges.left)/2;
             middle.y = edges.top+(edges.bottom-edges.top)/2; 
 
-            for ( auto &tile : copyTiles ) // Update the tile's relative position to the cursor
+            for ( auto & tile : copyTiles ) // Update the tile's relative position to the cursor
             {
                 tile.xc -= middle.x;
                 tile.yc -= middle.y;
@@ -144,8 +144,8 @@ void Clipboard::copy(GuiMap &map, Layer layer)
             edges.top    = currUnit->yc;
             edges.bottom = currUnit->yc;
 
-            auto &selectedUnits = selections.getUnits();
-            for ( u16 &unitIndex : selectedUnits )
+            auto & selectedUnits = selections.getUnits();
+            for ( u16 & unitIndex : selectedUnits )
             {
                 Chk::UnitPtr currUnit = map.layers.getUnit(unitIndex);
                 PasteUnitNode add(currUnit);
@@ -207,7 +207,7 @@ void Clipboard::endPasting()
     }
 }
 
-void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack)
+void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
 {
     switch ( layer )
     {
@@ -220,7 +220,7 @@ void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap &map, 
     }
 }
 
-std::vector<PasteTileNode> &Clipboard::getTiles()
+std::vector<PasteTileNode> & Clipboard::getTiles()
 {
     if ( quickPaste )
         return quickTiles;
@@ -228,7 +228,7 @@ std::vector<PasteTileNode> &Clipboard::getTiles()
         return copyTiles;
 }
 
-std::vector<PasteUnitNode> &Clipboard::getUnits()
+std::vector<PasteUnitNode> & Clipboard::getUnits()
 {
     if ( quickPaste )
         return quickUnits;
@@ -266,7 +266,7 @@ void Clipboard::toggleFillSimilarTiles()
     chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, fillSimilarTiles);
 }
 
-void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos)
+void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
     if ( fillSimilarTiles && getTiles().size() == 1 )
     {
@@ -285,8 +285,8 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &u
             u16 ySize = (u16)map.layers.getTileHeight();
 
             auto tileChanges = ReversibleActions::Make();
-            auto &tiles = getTiles();
-            for ( auto &tile : tiles )
+            auto & tiles = getTiles();
+            for ( auto & tile : tiles )
             {
                 s32 xc = (tile.xc + mapClickX) / 32;
                 s32 yc = (tile.yc + mapClickY) / 32;
@@ -309,7 +309,7 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &u
     }
 }
 
-void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos)
+void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
     mapClickX += 16;
     mapClickY += 16;
@@ -371,11 +371,11 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap &map, Undo
     }
 }
 
-void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap &map, Undos &undos, bool allowStack)
+void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
 {
     auto unitCreates = ReversibleActions::Make();
-    auto &pasteUnits = getUnits();
-    for ( auto &pasteUnit : pasteUnits )
+    auto & pasteUnits = getUnits();
+    for ( auto & pasteUnit : pasteUnits )
     {
         pasteUnit.unit->xc = u16(mapClickX + pasteUnit.xc);
         pasteUnit.unit->yc = u16(mapClickY + pasteUnit.yc);

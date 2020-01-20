@@ -6,7 +6,7 @@ LocationCreateDel::~LocationCreateDel()
 
 }
 
-std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationId, Chk::Location &location, std::string &locationName)
+std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationId, Chk::Location & location, std::string & locationName)
 {
     return std::shared_ptr<LocationCreateDel>(new LocationCreateDel(locationId, location, locationName));
 }
@@ -42,7 +42,7 @@ int32_t LocationCreateDel::GetType()
     return UndoTypes::LocationChange;
 }
 
-LocationCreateDel::LocationCreateDel(u16 locationId, Chk::Location &location, std::string &locationName) // Undo deletion
+LocationCreateDel::LocationCreateDel(u16 locationId, Chk::Location & location, std::string & locationName) // Undo deletion
     : locationId(locationId), location(nullptr), locationName(locationName)
 {
     this->location = std::unique_ptr<Chk::Location>(new Chk::Location);

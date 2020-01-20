@@ -26,15 +26,15 @@ class GenericCommand
 {
     public:
         GenericCommand(bool isSynchronous, u32 commandClassId, u32 undoRedoTypeId = UINT32_MAX);
-        GenericCommand(const std::vector<GenericCommandPtr> &subCommands, bool isSynchronous, bool subCommandsAreAcid, u32 commandClassId, u32 undoRedoTypeId = UINT32_MAX);
+        GenericCommand(const std::vector<GenericCommandPtr> & subCommands, bool isSynchronous, bool subCommandsAreAcid, u32 commandClassId, u32 undoRedoTypeId = UINT32_MAX);
         virtual ~GenericCommand();
 
         virtual std::string toString();
 
     protected:
         friend class Commander;
-        virtual void Do(Logger &logger); // Override this method to perform some action when there are no subCommands
-        virtual void Undo(Logger &logger); // Override this method to perform some action when there are no subCommands
+        virtual void Do(Logger & logger); // Override this method to perform some action when there are no subCommands
+        virtual void Undo(Logger & logger); // Override this method to perform some action when there are no subCommands
 
     private:
         GenericCommand(); // Disallow ctor

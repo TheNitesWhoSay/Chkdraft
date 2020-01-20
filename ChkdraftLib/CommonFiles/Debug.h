@@ -17,8 +17,8 @@
 #endif
 #define DEBUG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
-void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...);
-void CheckInvariant(bool condition, const std::string &file, int line);
+void ShoutError(const std::string & file, unsigned int line, const std::string msg, ...);
+void CheckInvariant(bool condition, const std::string & file, int line);
 #define Invariant(condition) ( CheckInvariant(condition, __FILE__, __LINE__) ) // States something that must be true at this point in execution
 #endif
 
@@ -54,17 +54,17 @@ extern char LastErrorLoc[];
 extern bool Break; // break point
 extern const u32 MAX_ERROR_LENGTH;
 
-void Error(const std::string &errorMessage);
-void Coord(s32 x, s32 y, const std::string &title);
+void Error(const std::string & errorMessage);
+void Coord(s32 x, s32 y, const std::string & title);
 void Debug();
 void DebugIf(bool condition);
 void NoDebug();
-void mb(const std::string &text);
-void mb(const std::string &text, const std::string &title);
-void mb(int i, const std::string &text);
-void db(const std::string &text);
-void db(int i, const std::string &text);
-void MessageInt(int integer, const std::string &caption);
+void mb(const std::string & text);
+void mb(const std::string & text, const std::string & title);
+void mb(int i, const std::string & text);
+void db(const std::string & text);
+void db(int i, const std::string & text);
+void MessageInt(int integer, const std::string & caption);
 void FindLeaks();
 
 #endif

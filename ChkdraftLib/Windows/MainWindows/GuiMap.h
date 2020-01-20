@@ -52,7 +52,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void deleteSelection();
                     void paste(s32 mapClickX, s32 mapClickY);
                     void PlayerChanged(u8 newPlayer);
-                    Selections &GetSelections();
+                    Selections & GetSelections();
                     u16 GetSelectedLocation();
 
 /*   Undo Redo  */  void AddUndo(ReversiblePtr action);
@@ -77,7 +77,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void ToggleDisplayElevations();
                     bool DisplayingElevations();
 
-                    bool snapUnitCoordinate(s32& x, s32& y);
+                    bool snapUnitCoordinate(s32 & x, s32 & y);
 
                     void ToggleUnitSnap();
                     void ToggleUnitStack();
@@ -93,11 +93,11 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void ToggleLockAnywhere();
                     bool LockAnywhere();
 
-                    bool GetSnapIntervals(u32& x, u32& y, u32& xOffset, u32& yOffset);
+                    bool GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset);
 
                     enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
                         SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 });
-                    bool SnapLocationDimensions(u32& x1, u32& y1, u32& x2, u32& y2, LocSnapFlags locSnapFlags);
+                    bool SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags);
 
                     void UpdateLocationMenuItems();
                     void UpdateZoomMenuItems();
@@ -118,7 +118,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void removeAsterisk(); // Removes an asterix from the map name
                     void updateMenu(); // Updates which items are checked in the main menu
 
-                    bool CreateThis(HWND hClient, const std::string &title);
+                    bool CreateThis(HWND hClient, const std::string & title);
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
 
@@ -144,13 +144,13 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
-                    bool GetBackupPath(time_t currTime, std::string &outFilePath);
-                    bool TryBackup(bool &outCopyFailed);
+                    bool GetBackupPath(time_t currTime, std::string & outFilePath);
+                    bool TryBackup(bool & outCopyFailed);
 
 
     private:
 
-/*     Data     */  Clipboard &clipboard;
+/*     Data     */  Clipboard & clipboard;
                     Selections selections;
                     Graphics graphics;
                     Undos undos;

@@ -15,7 +15,7 @@ namespace WinLib {
             DestroyDialog();
     }
 
-    bool ClassDialog::SetDialogItemText(int nIDDlgItem, const std::string &text)
+    bool ClassDialog::SetDialogItemText(int nIDDlgItem, const std::string & text)
     {
         return SetDlgItemText(getHandle(), nIDDlgItem, icux::toUistring(text).c_str()) != 0;
     }

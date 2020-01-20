@@ -7,7 +7,7 @@ std::string Settings::patchRtPath("");
 u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
 
-bool ParseLong(const std::string &text, u32& dest, size_t pos, size_t end)
+bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 12 )
@@ -39,7 +39,7 @@ bool ParseLong(const std::string &text, u32& dest, size_t pos, size_t end)
     return false;
 }
 
-bool GetChkdPath(std::string &outChkdPath)
+bool GetChkdPath(std::string & outChkdPath)
 {
     std::string moduleDirectory;
     if ( GetModuleDirectory(moduleDirectory) )
@@ -51,7 +51,7 @@ bool GetChkdPath(std::string &outChkdPath)
     return false;
 }
 
-bool GetPreSavePath(std::string &outPreSavePath)
+bool GetPreSavePath(std::string & outPreSavePath)
 {
     std::string chkdPath;
     if ( GetChkdPath(chkdPath) )
@@ -63,7 +63,7 @@ bool GetPreSavePath(std::string &outPreSavePath)
     return false;
 }
 
-bool GetLoggerPath(std::string &outLoggerPath)
+bool GetLoggerPath(std::string & outLoggerPath)
 {
     std::string chkdPath;
     if ( GetChkdPath(chkdPath) )
@@ -75,7 +75,7 @@ bool GetLoggerPath(std::string &outLoggerPath)
     return false;
 }
 
-bool GetSettingsPath(std::string &outFilePath)
+bool GetSettingsPath(std::string & outFilePath)
 {
     std::string moduleDirectory;
     if ( GetModuleDirectory(moduleDirectory) )
@@ -123,7 +123,7 @@ bool Settings::readSettingsFile()
                 }
                 else if ( key == "useAddressesForMemory" )
                 {
-                    for (auto &character: value)
+                    for ( auto & character : value )
                         character = toupper(character);
                     if ( value == "FALSE" || value == "0" )
                         useAddressesForMemory = false;

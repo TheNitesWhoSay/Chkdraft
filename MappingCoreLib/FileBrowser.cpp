@@ -9,21 +9,21 @@ FileBrowser<FilterId>::FileBrowser() : filters(), initialDirectory(""), title(""
 }
 
 template <typename FilterId>
-FileBrowser<FilterId>::FileBrowser(const std::vector<FilterEntry<FilterId>> &filters, const std::string &initialDirectory)
+FileBrowser<FilterId>::FileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & initialDirectory)
     : filters(filters), initialDirectory(initialDirectory), title(""), pathMustExist(false), provideOverwritePrompt(false)
 {
 
 }
 
 template <typename FilterId>
-FileBrowser<FilterId>::FileBrowser(const std::vector<FilterEntry<FilterId>> &filters, const std::string &title, bool pathMustExist, bool provideOverwritePrompt)
+FileBrowser<FilterId>::FileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & title, bool pathMustExist, bool provideOverwritePrompt)
     : filters(filters), initialDirectory(""), title(title), pathMustExist(pathMustExist), provideOverwritePrompt(provideOverwritePrompt)
 {
 
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const
+bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string & filePath, inout_param FilterId & filterIndex) const
 {
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
     if ( virtualizableBrowseForOpenPath(filePath, u32FilterIndex) )
@@ -35,7 +35,7 @@ bool FileBrowser<FilterId>::browseForOpenPath(inout_param std::string &filePath,
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::browseForSavePath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const
+bool FileBrowser<FilterId>::browseForSavePath(inout_param std::string & filePath, inout_param FilterId & filterIndex) const
 {
     u32 u32FilterIndex = static_cast<u32>(filterIndex);
     if ( virtualizableBrowseForSavePath(filePath, u32FilterIndex) )
@@ -47,25 +47,25 @@ bool FileBrowser<FilterId>::browseForSavePath(inout_param std::string &filePath,
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::promptTryBrowse(const std::string &tryBrowseMessage) const
+bool FileBrowser<FilterId>::promptTryBrowse(const std::string & tryBrowseMessage) const
 {
     return GetYesNo(tryBrowseMessage, "Browse") == PromptResult::Yes;
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::promptOpenRetry(const std::string &openRetryMessage) const
+bool FileBrowser<FilterId>::promptOpenRetry(const std::string & openRetryMessage) const
 {
     return GetYesNo(openRetryMessage, "Open") == PromptResult::Yes;
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::promptSaveRetry(const std::string &saveRetryMessage) const
+bool FileBrowser<FilterId>::promptSaveRetry(const std::string & saveRetryMessage) const
 {
     return GetYesNo(saveRetryMessage, "Save") == PromptResult::Yes;
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::confirmOverwrite(const std::string &confirmOverwriteMessage) const
+bool FileBrowser<FilterId>::confirmOverwrite(const std::string & confirmOverwriteMessage) const
 {
     return GetYesNo(confirmOverwriteMessage, "Confirm Save As") == PromptResult::Yes;
 }
@@ -101,19 +101,19 @@ bool FileBrowser<FilterId>::getProvideOverwritePrompt() const
 }
 
 template <typename FilterId>
-void FileBrowser<FilterId>::setFilters(const std::vector<FilterEntry<FilterId>> &filters)
+void FileBrowser<FilterId>::setFilters(const std::vector<FilterEntry<FilterId>> & filters)
 {
     this->filters = filters;
 }
 
 template <typename FilterId>
-void FileBrowser<FilterId>::setInitialDirectory(const std::string &initialDirectory)
+void FileBrowser<FilterId>::setInitialDirectory(const std::string & initialDirectory)
 {
     this->initialDirectory = initialDirectory;
 }
 
 template <typename FilterId>
-void FileBrowser<FilterId>::setTitle(const std::string &title)
+void FileBrowser<FilterId>::setTitle(const std::string & title)
 {
     this->title = title;
 }
@@ -134,20 +134,20 @@ template <typename FilterId>
 std::vector<std::pair<std::string, std::string>> FileBrowser<FilterId>::getFiltersAndLabels() const
 {
     std::vector<std::pair<std::string, std::string>> filtersAndLabels;
-    for ( auto &filterEntry : filters )
+    for ( auto & filterEntry : filters )
         filtersAndLabels.push_back(std::make_pair<std::string, std::string>(std::string(filterEntry.filterString), std::string(filterEntry.filterLabel)));
 
     return filtersAndLabels;
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::virtualizableBrowseForOpenPath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+bool FileBrowser<FilterId>::virtualizableBrowseForOpenPath(inout_param std::string & filePath, inout_param u32 & filterIndex) const
 {
     return BrowseForFile(filePath, filterIndex, getFiltersAndLabels(), getInitialDirectory(), getTitle(), getPathMustExist(), getProvideOverwritePrompt());
 }
 
 template <typename FilterId>
-bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const
+bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::string & filePath, inout_param u32 & filterIndex) const
 {
     bool checkingForOverwrite = getProvideOverwritePrompt();
     bool rejectedOverwrite = false;
@@ -161,7 +161,7 @@ bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::stri
         {
             if ( GetSystemFileExtension(newFilePath).empty() && newFilterIndex > 0 && newFilterIndex <= filters.size() ) // No extension specified, but a valid filter was selected
             { // Check there is a default extension for the given filter
-                const std::string &defaultExtension = filters.at(newFilterIndex-1).defaultExtension;
+                const std::string & defaultExtension = filters.at(newFilterIndex-1).defaultExtension;
                 if ( !defaultExtension.empty() )
                 { // There was a default extension, add it to the path
                     newFilePath += defaultExtension;
@@ -184,21 +184,21 @@ bool FileBrowser<FilterId>::virtualizableBrowseForSavePath(inout_param std::stri
 /* End templates */ #else
 
 template <typename FilterId>
-FilterEntry<FilterId>::FilterEntry(const std::string &filterString, const std::string &filterLabel)
+FilterEntry<FilterId>::FilterEntry(const std::string & filterString, const std::string & filterLabel)
     : filterId(0), filterString(filterString), filterLabel(filterLabel), defaultExtension("")
 {
 
 }
 // Explicit instantiation provided only for the u32 type
-template FilterEntry<u32>::FilterEntry(const std::string &filterString, const std::string &filterLabel);
+template FilterEntry<u32>::FilterEntry(const std::string & filterString, const std::string & filterLabel);
 
 template <typename FilterId>
-FilterEntry<FilterId>::FilterEntry(const std::string &filterString, const std::string &filterLabel, const std::string &defaultExtension)
+FilterEntry<FilterId>::FilterEntry(const std::string & filterString, const std::string & filterLabel, const std::string & defaultExtension)
     : filterId(0), filterString(filterString), filterLabel(filterLabel), defaultExtension(defaultExtension)
 {
 
 }
 // Explicit instantiation provided only for the u32 type
-template FilterEntry<u32>::FilterEntry(const std::string &filterString, const std::string &filterLabel, const std::string &defaultExtension);
+template FilterEntry<u32>::FilterEntry(const std::string & filterString, const std::string & filterLabel, const std::string & defaultExtension);
 
 #endif

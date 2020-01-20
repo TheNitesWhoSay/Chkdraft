@@ -19,7 +19,7 @@ class TrigModifyTextWindow : public WinLib::ClassWindow
         void CreateSubWindows(HWND hWnd);
         bool unsavedChanges();
         void Compile(bool silent, bool saveAfter);
-        bool CompileEditText(std::string &newText);
+        bool CompileEditText(std::string & newText);
         void OnLeave();
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

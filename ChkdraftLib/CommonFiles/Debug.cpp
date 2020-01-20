@@ -17,7 +17,7 @@ const u32 MAX_ERROR_LENGTH = 512;
 char LastError[MAX_ERROR_LENGTH]; // Purposed for user-based errors
 char LastErrorLoc[MAX_ERROR_LENGTH]; // Purposed for debugging internal errors
 
-void PrintError(const std::string &file, unsigned int line, const std::string msg, ...)
+void PrintError(const std::string & file, unsigned int line, const std::string msg, ...)
 {
     va_list args;
 #ifdef WINDOWS_UTF16
@@ -39,7 +39,7 @@ void PrintError(const std::string &file, unsigned int line, const std::string ms
     logger.error() << LastErrorLoc << " | " << LastError << std::endl;
 }
 
-void ShoutError(const std::string &file, unsigned int line, const std::string msg, ...)
+void ShoutError(const std::string & file, unsigned int line, const std::string msg, ...)
 {
     va_list args;
 #ifdef WINDOWS_UTF16
@@ -62,7 +62,7 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
 }
 
 #ifdef CHKD_DEBUG
-    void CheckInvariant(bool condition, const std::string &file, int line)
+    void CheckInvariant(bool condition, const std::string & file, int line)
     {
         char invarError[MAX_ERROR_LENGTH];
         std::snprintf(invarError, MAX_ERROR_LENGTH, "Invariant Check Failed!\n\nFile: %s\nLine: %i", file.c_str(), line);
@@ -72,28 +72,28 @@ void ShoutError(const std::string &file, unsigned int line, const std::string ms
     }
 #endif
 
-void Error(const std::string &errorMessage)
+void Error(const std::string & errorMessage)
 {
     WinLib::Message(errorMessage, "Error!");
 }
 
-void Coord(s32 x, s32 y, const std::string &title = "Coordinates")
+void Coord(s32 x, s32 y, const std::string & title = "Coordinates")
 {
     std::string message = "(x, y) --> (" + std::to_string(x) + ", " + std::to_string(y) + ")";
     WinLib::Message(message, title);
 }
 
-void mb(const std::string &text)
+void mb(const std::string & text)
 {
     WinLib::Message(text);
 }
 
-void mb(const std::string &text, const std::string &title)
+void mb(const std::string & text, const std::string & title)
 {
     WinLib::Message(text, title);
 }
 
-void mb(int i, const std::string &text)
+void mb(int i, const std::string & text)
 {
     MessageInt(i, text);
 }
@@ -113,19 +113,19 @@ void NoDebug()
     debugging = false;
 }
 
-void db(const std::string &text)
+void db(const std::string & text)
 {
     if ( debugging )
         WinLib::Message(text);
 }
 
-void db(int i, const std::string &text)
+void db(int i, const std::string & text)
 {
     if ( debugging )
         MessageInt(i, text);
 }
 
-void MessageInt(int integer, const std::string &caption)
+void MessageInt(int integer, const std::string & caption)
 {
     WinLib::Message(std::to_string(integer), caption);
 }

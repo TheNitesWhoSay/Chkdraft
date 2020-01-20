@@ -123,7 +123,7 @@ void UnitPropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto undoableChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
@@ -221,7 +221,7 @@ void UnitPropertiesWindow::DeselectIndex(u16 unitIndex)
 
 void UnitPropertiesWindow::UpdateEnabledState()
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
     if ( selections.hasUnits() )
     {
         EnableUnitEditing();
@@ -240,7 +240,7 @@ void UnitPropertiesWindow::RepopulateList()
     listUnits.DeleteAllItems();
     if ( CM != nullptr )
     {
-        Selections &selections = CM->GetSelections();
+        Selections & selections = CM->GetSelections();
 
         size_t numUnits = CM->layers.numUnits();
         for ( size_t i = 0; i < numUnits; i++ )
@@ -254,8 +254,8 @@ void UnitPropertiesWindow::RepopulateList()
             u16 selectedIndex = selections.getFirstUnit();
             listUnits.FocusItem(selectedIndex);
 
-            auto &selUnits = selections.getUnits();
-            for ( u16 &unitIndex : selUnits )
+            auto & selUnits = selections.getUnits();
+            for ( u16 & unitIndex : selUnits )
                 listUnits.SelectRow(unitIndex);
 
             EnableUnitEditing();
@@ -468,7 +468,7 @@ void UnitPropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
     preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
     {
@@ -519,7 +519,7 @@ void UnitPropertiesWindow::NotifyClosePressed()
 
 void UnitPropertiesWindow::NotifyMoveTopPressed()
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
 
     u16 unitStackTopIndex = selections.getFirstUnit();
     selections.sortUnits(true); // sort with lowest indexes first
@@ -531,8 +531,8 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
     u16 i = 0;
-    auto &selUnits = selections.getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = selections.getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
         {
@@ -558,7 +558,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
 
 void UnitPropertiesWindow::NotifyMoveEndPressed()
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
 
     u16 unitStackTopIndex = selections.getFirstUnit();
     selections.sortUnits(false); // Highest First
@@ -572,8 +572,8 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     u16 i = 1;
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto &selUnits = selections.getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = selections.getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex != numUnits - 1 )
         {
@@ -600,7 +600,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
 
 void UnitPropertiesWindow::NotifyMoveUpPressed()
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
     HWND hUnitList = listUnits.getHandle();
 
     selections.sortUnits(true);
@@ -608,8 +608,8 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
 
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto &selUnits = selections.getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = selections.getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
         {
@@ -635,7 +635,7 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
 
 void UnitPropertiesWindow::NotifyMoveDownPressed()
 {
-    Selections &selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
     HWND hUnitList = listUnits.getHandle();
 
     selections.sortUnits(false);
@@ -643,8 +643,8 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
 
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto &selUnits = selections.getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = selections.getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex < CM->layers.numUnits() && !selections.unitIsSelected(unitIndex + 1) )
         {
@@ -682,7 +682,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
         }
         else if ( unitMoveTo > 0 )
         {
-            Selections &selections = CM->GetSelections();
+            Selections & selections = CM->GetSelections();
             u16 numUnitsSelected = selections.numUnits();
             size_t limit = CM->layers.numUnits() - 1;
 
@@ -704,8 +704,8 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
 
             auto unitCreateDels = ReversibleActions::Make();
             u16 i = 0;
-            auto &selUnits = selections.getUnits();
-            for ( u16 &unitIndex : selUnits )
+            auto & selUnits = selections.getUnits();
+            for ( u16 & unitIndex : selUnits )
             { // Remove each selected unit from the map, store in selectedUnits
                 u32 loc = ((u32)unitIndex)*sizeof(Chk::Unit);
                 selectedUnits[shift - i] = CM->layers.getUnit(unitIndex);
@@ -731,7 +731,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
 
 void UnitPropertiesWindow::NotifyDeletePressed()
 {
-    Selections& selections = CM->GetSelections();
+    Selections & selections = CM->GetSelections();
     HWND hUnitList = listUnits.getHandle();
     listUnits.SetRedraw(false);
     auto unitDeletes = ReversibleActions::Make();
@@ -759,8 +759,8 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = CM->GetSelections().getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
@@ -776,8 +776,8 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
 void UnitPropertiesWindow::NotifyHallucinatedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = CM->GetSelections().getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
@@ -793,8 +793,8 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
 void UnitPropertiesWindow::NotifyBurrowedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = CM->GetSelections().getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
@@ -810,8 +810,8 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
 void UnitPropertiesWindow::NotifyCloakedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = CM->GetSelections().getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
@@ -827,8 +827,8 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
 void UnitPropertiesWindow::NotifyLiftedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto &selUnits = CM->GetSelections().getUnits();
-    for ( u16 &unitIndex : selUnits )
+    auto & selUnits = CM->GetSelections().getUnits();
+    for ( u16 & unitIndex : selUnits )
     {
         Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
@@ -846,8 +846,8 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
     u8 hpPercent = 0;
     if ( editLife.GetEditNum<u8>(hpPercent) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
             CM->layers.getUnit(unitIndex)->hitpointPercent = hpPercent;
 
         CM->Redraw(false);
@@ -859,8 +859,8 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
     u8 mpPercent = 0;
     if ( editMana.GetEditNum<u8>(mpPercent) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
             CM->layers.getUnit(unitIndex)->energyPercent = mpPercent;
 
         CM->Redraw(false);
@@ -872,8 +872,8 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
     u8 shieldPercent = 0;
     if ( editShield.GetEditNum<u8>(shieldPercent) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
             CM->layers.getUnit(unitIndex)->shieldPercent = shieldPercent;
 
         CM->Redraw(false);
@@ -885,8 +885,8 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
     u32 resources = 0;
     if ( editResources.GetEditNum<u32>(resources) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
             CM->layers.getUnit(unitIndex)->resourceAmount = resources;
 
         CM->Redraw(false);
@@ -898,8 +898,8 @@ void UnitPropertiesWindow::NotifyHangerEditUpdated()
     u16 hanger = 0;
     if ( editHanger.GetEditNum<u16>(hanger) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
             CM->layers.getUnit(unitIndex)->hangerAmount = hanger;
 
         CM->Redraw(true);
@@ -911,8 +911,8 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
     u16 unitID = 0;
     if ( editUnitId.GetEditNum<u16>(unitID) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
         {
             CM->layers.getUnit(unitIndex)->type = (Sc::Unit::Type)unitID;
             int row = listUnits.GetItemRow(unitIndex);
@@ -933,8 +933,8 @@ void UnitPropertiesWindow::NotifyXcEditUpdated()
     u16 unitXC = 0;
     if ( editXc.GetEditNum<u16>(unitXC) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
         {
             CM->layers.getUnit(unitIndex)->xc = unitXC;
             int row = listUnits.GetItemRow(unitIndex);
@@ -950,8 +950,8 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
     u16 unitYC = 0;
     if ( editYc.GetEditNum<u16>(unitYC) )
     {
-        auto &selUnits = CM->GetSelections().getUnits();
-        for ( u16 &unitIndex : selUnits )
+        auto & selUnits = CM->GetSelections().getUnits();
+        for ( u16 & unitIndex : selUnits )
         {
             CM->layers.getUnit(unitIndex)->yc = unitYC;
             int row = listUnits.GetItemRow(unitIndex);

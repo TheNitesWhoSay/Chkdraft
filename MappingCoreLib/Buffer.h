@@ -19,9 +19,9 @@ class buffer
     public:
 
 /* Constructors */  buffer();
-                    buffer(const std::string &bufferTitle);
+                    buffer(const std::string & bufferTitle);
                     buffer(u32 bufferTitleVal);
-                    buffer(const buffer &rhs);
+                    buffer(const buffer & rhs);
                     template <typename StructType>
                         static BufferPtr make(const StructType & data);
 
@@ -33,8 +33,8 @@ class buffer
 
                     // Puts data in 'dest' if 'location' is within the buffer
                     template <typename valueType>
-                        bool get(valueType &dest, s64 location) const;
-                    bool getBit(bool &dest, s64 location, u32 bitNum);
+                        bool get(valueType & dest, s64 location) const;
+                    bool getBit(bool & dest, s64 location, u32 bitNum);
                     bool getString(char* dest, s64 location, s64 size) const;
                     std::string getString(s64 location, s64 size) const;
                     template <typename valueType>
@@ -44,7 +44,7 @@ class buffer
                     const void* getPtr(s64 location) const;
                     const void* getPtr(s64 location, s64 sizeRequested) const; // sizeRequested in bytes
                     template <typename valueType>
-                        bool getPtr(valueType* &dest, s64 location, s64 sizeRequested); // sizeRequested in bytes
+                        bool getPtr(valueType* & dest, s64 location, s64 sizeRequested); // sizeRequested in bytes
                     template <typename valueType>
                     valueType* getPtr();
 
@@ -56,25 +56,25 @@ class buffer
 /*   Searching  */  // Returns true if the sequence was found at the location
                     bool is(const char* str, s64 size);
                     template <typename valueType>
-                        bool is(const valueType &value);
+                        bool is(const valueType & value);
                     bool has(char character, s64 location);
                     bool hasCaseless(char character, s64 location);
                     bool has(const char* str, s64 location, s64 size);
                     bool hasCaseless(const char* str, s64 location, s64 size);
 
                     // Puts next instance of 'character' in 'dest' if found
-                    bool getNext(char character, s64 start, s64 &dest) const;
-                    bool getNextUnquoted(char character, s64 start, s64 &dest) const;
-                    bool getNextUnquoted(char character, s64 start, s64 &dest, char terminator) const;
-                    bool getNextUnquoted(char character, s64 start, s64 end, s64 &dest) const;
-                    bool getNextUnescaped(char character, s64 start, s64 &dest) const;
+                    bool getNext(char character, s64 start, s64 & dest) const;
+                    bool getNextUnquoted(char character, s64 start, s64 & dest) const;
+                    bool getNextUnquoted(char character, s64 start, s64 & dest, char terminator) const;
+                    bool getNextUnquoted(char character, s64 start, s64 end, s64 & dest) const;
+                    bool getNextUnescaped(char character, s64 start, s64 & dest) const;
 
 /*   Mutators   */  // Adds data onto the end of the buffer
                     template <typename valueType>
-                        bool add(const valueType &value);
+                        bool add(const valueType & value);
                     template <typename valueType>
-                        bool add(const valueType &value, s64 amount);
-                    bool addStr(const std::string &chunk);
+                        bool add(const valueType & value, s64 amount);
+                    bool addStr(const std::string & chunk);
                     bool addStr(const char* chunk, s64 chunkSize);
 
                     // Inserts data at a position in the buffer
@@ -102,10 +102,10 @@ class buffer
                     bool overwrite(const char* chunk, s64 chunkSize);
 
                     // Transfer all contents of source to this buffer, this buffer is flushed before transfer, source is flushed after
-                    bool takeAllData(buffer& source);
+                    bool takeAllData(buffer & source);
 
                     // Gives the section a new name
-                    bool setTitle(const std::string &newTitle);
+                    bool setTitle(const std::string & newTitle);
                     bool setTitle(u32 newTitle);
 
                     // Deletes a part of the buffer
@@ -121,13 +121,13 @@ class buffer
                     void write(FILE* pFile, bool includeHeader);
                     
                     // Writes the data to 'outputBuffer'
-                    std::ostream & write(std::ostream &outputBuffer, bool includeHeader);
+                    std::ostream & write(std::ostream & outputBuffer, bool includeHeader);
 
                     // Sets the title to the first four characters and extracts data the size of the following signed 32 bit int
-                    bool extract(buffer &buf, s64 position);
+                    bool extract(buffer & buf, s64 position);
 
                     // Grabs all bytes from position to position+(length-1) from src and places them in this buffer
-                    bool extract(buffer &src, s64 position, s64 length);
+                    bool extract(buffer & src, s64 position, s64 length);
 
                     // Converts the buffer to raw data
                     std::shared_ptr<void> serialize(); // First four bytes: bufTitle, second four: sizeUsed, after that is sizeUsed bytes of data
@@ -138,8 +138,8 @@ class buffer
                     std::shared_ptr<buffer> makeCopy();
                     std::shared_ptr<buffer> makeCopy(s64 size);
 
-                    friend bool getFile(void* mpqFile, const std::string &mpqPath, buffer &fileData); // Used by MpqFile
-                    friend bool FileToBuffer(const std::string &fileName, buffer &buf);
+                    friend bool getFile(void* mpqFile, const std::string & mpqPath, buffer & fileData); // Used by MpqFile
+                    friend bool FileToBuffer(const std::string & fileName, buffer & buf);
 
 /*     Misc     */  // Checks whether a referance or pointer to a buffer is valid
                     bool exists();

@@ -12,7 +12,7 @@ bool LocationTree::AddThis(HWND hTree, HTREEITEM hParent)
     return TreeViewControl::SetHandle(hTree);
 }
 
-void LocationTree::InsertLocationItem(const std::string &text, u32 index)
+void LocationTree::InsertLocationItem(const std::string & text, u32 index)
 {
     if ( index <= TreeDataPortion )
         InsertTreeItem(hLocationRoot, text, index|TreeTypeLocation);

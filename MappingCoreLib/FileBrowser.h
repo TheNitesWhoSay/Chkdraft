@@ -25,15 +25,15 @@ class FileBrowser
 {
 public:
     FileBrowser();
-    FileBrowser(const std::vector<FilterEntry<FilterId>> &filters, const std::string &initialDirectory);
-    FileBrowser(const std::vector<FilterEntry<FilterId>> &filters, const std::string &title, bool pathMustExist, bool provideOverwritePrompt);
+    FileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & initialDirectory);
+    FileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & title, bool pathMustExist, bool provideOverwritePrompt);
 
-    virtual bool browseForOpenPath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const;
-    virtual bool browseForSavePath(inout_param std::string &filePath, inout_param FilterId &filterIndex) const;
-    virtual bool promptTryBrowse(const std::string &tryBrowseMessage) const;
-    virtual bool promptOpenRetry(const std::string &openRetryMessage) const;
-    virtual bool promptSaveRetry(const std::string &saveRetryMessage) const;
-    virtual bool confirmOverwrite(const std::string &confirmOverwriteMessage) const;
+    virtual bool browseForOpenPath(inout_param std::string & filePath, inout_param FilterId & filterIndex) const;
+    virtual bool browseForSavePath(inout_param std::string & filePath, inout_param FilterId & filterIndex) const;
+    virtual bool promptTryBrowse(const std::string & tryBrowseMessage) const;
+    virtual bool promptOpenRetry(const std::string & openRetryMessage) const;
+    virtual bool promptSaveRetry(const std::string & saveRetryMessage) const;
+    virtual bool confirmOverwrite(const std::string & confirmOverwriteMessage) const;
 
     std::vector<FilterEntry<FilterId>> getFilters() const;
     std::string getInitialDirectory() const;
@@ -41,9 +41,9 @@ public:
     bool getPathMustExist() const;
     bool getProvideOverwritePrompt() const;
 
-    void setFilters(const std::vector<FilterEntry<FilterId>> &filters);
-    void setInitialDirectory(const std::string &initialDirectory);
-    void setTitle(const std::string &title);
+    void setFilters(const std::vector<FilterEntry<FilterId>> & filters);
+    void setInitialDirectory(const std::string & initialDirectory);
+    void setTitle(const std::string & title);
     void setPathMustExist(bool pathMustExist);
     void setProvideOverwritePrompt(bool provideOverwritePrompt);
 
@@ -52,9 +52,9 @@ protected:
 
 public:
     // Classes cannot have virtual template methods, this alternate method together with type erasure form a workaround for client classes
-    virtual bool virtualizableBrowseForOpenPath(inout_param std::string &filePath, inout_param u32 &filterIndex) const;
+    virtual bool virtualizableBrowseForOpenPath(inout_param std::string & filePath, inout_param u32 & filterIndex) const;
     // Classes cannot have virtual template methods, this alternate method together with type erasure form a workaround for client classes
-    virtual bool virtualizableBrowseForSavePath(inout_param std::string &filePath, inout_param u32 &filterIndex) const;
+    virtual bool virtualizableBrowseForSavePath(inout_param std::string & filePath, inout_param u32 & filterIndex) const;
 
 private:
     std::string initialDirectory;
@@ -69,11 +69,11 @@ class FilterEntry
 {
 public:
     // This constructor will set the filterId to zero and is only defined when the FilterId type is u32
-    FilterEntry(const std::string &filterString, const std::string &filterLabel);
+    FilterEntry(const std::string & filterString, const std::string & filterLabel);
     // This constructor will set the filterId to zero and is only defined when the FilterId type is u32
-    FilterEntry(const std::string &filterString, const std::string &filterLabel, const std::string &defaultExtension);
+    FilterEntry(const std::string & filterString, const std::string & filterLabel, const std::string & defaultExtension);
 
-    FilterEntry(const FilterId &filterId, const std::string &filterString, const std::string &filterLabel, const std::string &defaultExtension = "")
+    FilterEntry(const FilterId & filterId, const std::string & filterString, const std::string & filterLabel, const std::string & defaultExtension = "")
         : filterId(filterId), filterString(filterString), filterLabel(filterLabel), defaultExtension(defaultExtension) {}
 
     const std::string filterString;

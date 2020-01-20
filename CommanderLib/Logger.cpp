@@ -9,21 +9,21 @@ Logger::Logger(LogLevel logLevel) :
 
 }
 
-Logger::Logger(std::ostream &outputStream, LogLevel logLevel) :
+Logger::Logger(std::ostream & outputStream, LogLevel logLevel) :
     logLevel(logLevel), outputStream(std::shared_ptr<std::ostream>(&outputStream, [](std::ostream*){})), aggregator(nullptr),
     streamLogLevel(logLevel), std::ostream(this)
 {
 
 }
 
-Logger::Logger(std::ostream &outputStream, Logger &aggregator, LogLevel logLevel) :
+Logger::Logger(std::ostream & outputStream, Logger & aggregator, LogLevel logLevel) :
     logLevel(logLevel), outputStream(std::shared_ptr<std::ostream>(&outputStream, [](std::ostream*){})), aggregator(std::shared_ptr<Logger>(&aggregator, [](Logger*){})),
     streamLogLevel(logLevel), std::ostream(this)
 {
 
 }
 
-Logger::Logger(std::ostream &outputStream, std::shared_ptr<Logger> aggregator, LogLevel logLevel) :
+Logger::Logger(std::ostream & outputStream, std::shared_ptr<Logger> aggregator, LogLevel logLevel) :
     logLevel(logLevel), outputStream(std::shared_ptr<std::ostream>(&outputStream, [](std::ostream*){})), aggregator(aggregator),
     streamLogLevel(logLevel), std::ostream(this)
 {
@@ -37,7 +37,7 @@ Logger::Logger(std::shared_ptr<std::ostream> outputStream, LogLevel logLevel) :
 
 }
 
-Logger::Logger(std::shared_ptr<std::ostream> outputStream, Logger &aggregator, LogLevel logLevel) :
+Logger::Logger(std::shared_ptr<std::ostream> outputStream, Logger & aggregator, LogLevel logLevel) :
     logLevel(logLevel), outputStream(outputStream), aggregator(std::shared_ptr<Logger>(&aggregator, [](Logger*){})),
     streamLogLevel(logLevel), std::ostream(this)
 {
@@ -51,7 +51,7 @@ Logger::Logger(std::shared_ptr<std::ostream> outputStream, std::shared_ptr<Logge
 
 }
 
-Logger::Logger(Logger &aggregator, LogLevel logLevel) :
+Logger::Logger(Logger & aggregator, LogLevel logLevel) :
     logLevel(logLevel), outputStream(std::shared_ptr<std::ostream>(&std::cout, [](std::ostream*){})), aggregator(std::shared_ptr<Logger>(&aggregator, [](Logger*){})),
     streamLogLevel(logLevel), std::ostream(this)
 {
@@ -91,7 +91,7 @@ void Logger::setLogLevel(LogLevel logLevel)
     this->streamLogLevel = logLevel;
 }
 
-void Logger::setOutputStream(std::ostream &outputStream)
+void Logger::setOutputStream(std::ostream & outputStream)
 {
     this->outputStream = std::shared_ptr<std::ostream>(&outputStream, [](std::ostream*){});
 }
@@ -101,7 +101,7 @@ void Logger::setOutputStream(std::shared_ptr<std::ostream> outputStream)
     this->outputStream = outputStream;
 }
 
-void Logger::setAggregator(Logger &aggregator)
+void Logger::setAggregator(Logger & aggregator)
 {
     this->aggregator = std::shared_ptr<Logger>(&aggregator, [](Logger*){});
 }

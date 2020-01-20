@@ -64,7 +64,7 @@ void Commander::Do(GenericCommandPtr command)
     }
 }
 
-void Commander::Do(const std::vector<GenericCommandPtr> &commands)
+void Commander::Do(const std::vector<GenericCommandPtr> & commands)
 {
     commandLocker.lock();
 
@@ -88,7 +88,7 @@ void Commander::Do(const std::vector<GenericCommandPtr> &commands)
     }
 }
 
-void Commander::DoAcid(const std::vector<GenericCommandPtr> &subCommands, u32 undoRedoTypeid, bool async)
+void Commander::DoAcid(const std::vector<GenericCommandPtr> & subCommands, u32 undoRedoTypeid, bool async)
 {
     commandLocker.lock();
 
@@ -241,14 +241,14 @@ bool Commander::DoDo(GenericCommandPtr command, bool retrying)
 {
     try {
         command->Do(*logger);
-    } catch ( KnownError &e ) {
+    } catch ( KnownError & e ) {
         ErrorHandlerResult result = HandleError(command, e);
         logger->log(result.logLevel, result.logString);
         if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
             return DoDo(command, true);
         else
             return false;
-    } catch ( std::exception &e ) {
+    } catch ( std::exception & e ) {
         logger->error(std::string(e.what()));
         logger->error("An unknown exception occured during command: " + command->toString());
     }
@@ -259,14 +259,14 @@ bool Commander::DoUndo(GenericCommandPtr command, bool retrying)
 {
     try {
         command->Undo(*logger);
-    } catch ( KnownError &e ) {
+    } catch ( KnownError & e ) {
         ErrorHandlerResult result = HandleError(command, e);
         logger->log(result.logLevel, result.logString);
         if ( result.primaryAction == ErrorAction::RetryCommand && !retrying )
             return DoUndo(command, true);
         else
             return false;
-    } catch ( std::exception &e ) {
+    } catch ( std::exception & e ) {
         logger->error(std::string(e.what()));
         logger->error("An unknown exception occured during undo command: " + command->toString());
     }
@@ -292,22 +292,22 @@ bool Commander::DoAcidSubItems(GenericCommandPtr command)
         bool success = false;
         try {
             success = DoCommand(*subCommand, true);
-        } catch ( KnownError &e ) {
+        } catch ( KnownError & e ) {
             ErrorHandlerResult result = HandleError(*subCommand, e);
             logger->log(result.logLevel, result.logString);
             if ( result.primaryAction == ErrorAction::RetryCommand )
             {
                 try {
                     success = DoCommand(*subCommand, true);
-                } catch ( KnownError &e ) {
+                } catch ( KnownError & e ) {
                     result = HandleError(*subCommand, e);
                     logger->log(result.logLevel, result.logString);
-                } catch ( std::exception &e ) {
+                } catch ( std::exception & e ) {
                     logger->error(std::string(e.what()));
                     logger->error("An unknown exception occured during command: " + (*subCommand)->toString());
                 }
             }
-        } catch ( std::exception &e ) {
+        } catch ( std::exception & e ) {
             logger->error(std::string(e.what()));
             logger->error("An unknown exception occured during undo command: " + (*subCommand)->toString());
         }
@@ -323,22 +323,22 @@ bool Commander::DoAcidSubItems(GenericCommandPtr command)
                 bool undoSucceeded = false;
                 try {
                     undoSucceeded = UndoCommand(*subCommand, true);
-                } catch ( KnownError &e ) {
+                } catch ( KnownError & e ) {
                     ErrorHandlerResult result = HandleError(*subCommand, e);
                     logger->log(result.logLevel, result.logString);
                     if ( result.primaryAction == ErrorAction::RetryCommand )
                     {
                         try {
                             success = DoCommand(*subCommand, true);
-                        } catch ( KnownError &e ) {
+                        } catch ( KnownError & e ) {
                             result = HandleError(*subCommand, e);
                             logger->log(result.logLevel, result.logString);
-                        } catch ( std::exception &e ) {
+                        } catch ( std::exception & e ) {
                             logger->error(std::string(e.what()));
                             logger->error("An unknown exception occured during command: " + (*subCommand)->toString());
                         }
                     }
-                } catch ( std::exception &e ) {
+                } catch ( std::exception & e ) {
                     logger->error(std::string(e.what()));
                     logger->error("An unknown exception occured during undo command: " + (*subCommand)->toString());
                 }
@@ -357,22 +357,22 @@ bool Commander::UndoAcidSubItems(GenericCommandPtr command)
         bool success = false;
         try {
             success = UndoCommand(*subCommand, true);
-        } catch ( KnownError &e ) {
+        } catch ( KnownError & e ) {
             ErrorHandlerResult result = HandleError(*subCommand, e);
             logger->log(result.logLevel, result.logString);
             if ( result.primaryAction == ErrorAction::RetryCommand )
             {
                 try {
                     success = UndoCommand(*subCommand, true);
-                } catch ( KnownError &e ) {
+                } catch ( KnownError & e ) {
                     result = HandleError(command, e);
                     logger->log(result.logLevel, result.logString);
-                } catch ( std::exception &e ) {
+                } catch ( std::exception & e ) {
                     logger->error(std::string(e.what()));
                     logger->error("An unknown exception occured during undo command: " + (*subCommand)->toString());
                 }
             }
-        } catch ( std::exception &e ) {
+        } catch ( std::exception & e ) {
             logger->error(std::string(e.what()));
             logger->error("An unknown exception occured during undo command: " + (*subCommand)->toString());
         }
@@ -388,22 +388,22 @@ bool Commander::UndoAcidSubItems(GenericCommandPtr command)
                 bool doSucceeded = false;
                 try {
                     doSucceeded = DoCommand(*subCommand, true);
-                } catch ( KnownError &e ) {
+                } catch ( KnownError & e ) {
                     ErrorHandlerResult result = HandleError(*subCommand, e);
                     logger->log(result.logLevel, result.logString);
                     if ( result.primaryAction == ErrorAction::RetryCommand )
                     {
                         try {
                             success = UndoCommand(*subCommand, true);
-                        } catch ( KnownError &e ) {
+                        } catch ( KnownError & e ) {
                             result = HandleError(*subCommand, e);
                             logger->log(result.logLevel, result.logString);
-                        } catch ( std::exception &e ) {
+                        } catch ( std::exception & e ) {
                             logger->error(std::string(e.what()));
                             logger->error("An unknown exception occured during command: " + (*subCommand)->toString());
                         }
                     }
-                } catch ( std::exception &e ) {
+                } catch ( std::exception & e ) {
                     logger->error(std::string(e.what()));
                     logger->error("An unknown exception occured during undo command: " + (*subCommand)->toString());
                 }
@@ -426,7 +426,7 @@ void Commander::NotifyCommandFinished(GenericCommandPtr command)
     }
 }
 
-ErrorHandlerResult Commander::HandleError(GenericCommandPtr command, KnownError& e)
+ErrorHandlerResult Commander::HandleError(GenericCommandPtr command, KnownError & e)
 {
     auto handler = errorHandlers.find(e.getErrorId());
     if ( handler != errorHandlers.end() )

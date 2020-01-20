@@ -70,9 +70,9 @@ namespace icux {
 
     std::string toUtf8(const wchar_t* utf16Str, size_t length);
 
-    std::string toUtf8(const std::string &utf8Str); // Simply returns the same string
+    std::string toUtf8(const std::string & utf8Str); // Simply returns the same string
 
-    std::string toUtf8(const std::wstring &utf16Str);
+    std::string toUtf8(const std::wstring & utf16Str);
 
     std::string toUtf8(wchar_t utf32Char);
 
@@ -80,19 +80,19 @@ namespace icux {
 
     std::wstring toUtf16(const char* utf8Str, size_t length);
 
-    std::wstring toUtf16(const std::string &utf8Str);
+    std::wstring toUtf16(const std::string & utf8Str);
 
-    std::wstring toUtf16(const std::wstring &utf16Str); // Simply returns the same string
+    std::wstring toUtf16(const std::wstring & utf16Str); // Simply returns the same string
 
     filestring toFilestring(const char* utf8Str, size_t length);
 
-    filestring toFilestring(const std::string &utf8Str);
+    filestring toFilestring(const std::string & utf8Str);
 
     uistring toUistring(const char* utf8Str, size_t length);
 
-    uistring toUistring(const std::string &utf8Str);
+    uistring toUistring(const std::string & utf8Str);
 
-    uistring toUistring(const filestring &filestring);
+    uistring toUistring(const filestring & filestring);
 
 }
 

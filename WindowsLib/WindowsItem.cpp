@@ -68,7 +68,7 @@ namespace WinLib {
     }
 
     bool WindowsItem::RegisterWindowClass(UINT style, HICON hIcon, HCURSOR hCursor, HBRUSH hbrBackground,
-        u64 menuResourceId, const std::string &className, HICON hIconSm, WNDPROC wndProc)
+        u64 menuResourceId, const std::string & className, HICON hIconSm, WNDPROC wndProc)
     {
         if ( getHandle() == NULL && windowClassName.length() <= 0 )
         {
@@ -103,7 +103,7 @@ namespace WinLib {
         return false;
     }
 
-    bool WindowsItem::WindowClassIsRegistered(const std::string &lpszClassName)
+    bool WindowsItem::WindowClassIsRegistered(const std::string & lpszClassName)
     {
         try { windowClassName = lpszClassName; }
         catch ( std::exception ) { return false; }
@@ -126,7 +126,7 @@ namespace WinLib {
     return ((WindowsItem*)lParam)->CompareLvItems(index1, index2);
     }
 
-    std::string &WindowsItem::WindowClassName()
+    std::string & WindowsItem::WindowClassName()
     {
         return windowClassName;
     }
@@ -167,7 +167,7 @@ namespace WinLib {
         return paintDc;
     }
 
-    void WindowsItem::SetPaintFont(int height, int width, const std::string &fontString)
+    void WindowsItem::SetPaintFont(int height, int width, const std::string & fontString)
     {
         if ( paintStatus != PaintStatus::NotPainting )
         {
@@ -176,7 +176,7 @@ namespace WinLib {
         }
     }
 
-    void WindowsItem::PaintText(const std::string &str, int x, int y, bool clipped, bool opaque, const rect &rc)
+    void WindowsItem::PaintText(const std::string & str, int x, int y, bool clipped, bool opaque, const rect & rc)
     {
         if ( paintStatus != PaintStatus::NotPainting )
         {
@@ -254,7 +254,7 @@ namespace WinLib {
             ::FillRect(paintDc, &paintRect, hBrush);
     }
 
-    void WindowsItem::FrameRect(HBRUSH hBrush, RECT &rect)
+    void WindowsItem::FrameRect(HBRUSH hBrush, RECT & rect)
     {
         if ( rect.left < rect.right || rect.top < rect.bottom )
             ::FrameRect(paintDc, &rect, hBrush);
@@ -272,7 +272,7 @@ namespace WinLib {
         return text;
     }
 
-    bool WindowsItem::GetWinText(output_param std::string &text)
+    bool WindowsItem::GetWinText(output_param std::string & text)
     {
         int titleLength = ::GetWindowTextLength(getHandle()) + 1;
         if ( titleLength > 1 )
@@ -293,12 +293,12 @@ namespace WinLib {
         return false;
     }
 
-    bool WindowsItem::getWindowRect(output_param RECT &rect)
+    bool WindowsItem::getWindowRect(output_param RECT & rect)
     {
         return ::GetWindowRect(getHandle(), &rect) != 0;
     }
 
-    bool WindowsItem::getClientRect(RECT &rect)
+    bool WindowsItem::getClientRect(RECT & rect)
     {
         return ::GetClientRect(getHandle(), &rect) != 0;
     }
@@ -401,7 +401,7 @@ namespace WinLib {
             ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(FALSE, 0));
     }
 
-    void WindowsItem::SetFont(int height, int width, const std::string &fontString, bool redrawImmediately)
+    void WindowsItem::SetFont(int height, int width, const std::string & fontString, bool redrawImmediately)
     {
         if ( hFont != NULL )
         {
@@ -520,12 +520,12 @@ namespace WinLib {
         ::SendMessage(getHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
     }
 
-    bool WindowsItem::SetWinText(const std::string& newText)
+    bool WindowsItem::SetWinText(const std::string & newText)
     {
         return ::SetWindowText(getHandle(), icux::toUistring(newText).c_str()) != 0;
     }
 
-    bool WindowsItem::AddTooltip(const std::string& text)
+    bool WindowsItem::AddTooltip(const std::string & text)
     {
         tooltipHandle = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,

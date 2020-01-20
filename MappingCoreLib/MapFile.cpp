@@ -52,7 +52,7 @@ MapFile::~MapFile()
 
 }
 
-bool MapFile::LoadMapFile(const std::string &filePath)
+bool MapFile::LoadMapFile(const std::string & filePath)
 {
     return !filePath.empty() && OpenMapFile(filePath);
 }
@@ -203,7 +203,7 @@ bool MapFile::OpenTemporaryMpq()
     return false;
 }
 
-bool MapFile::OpenMapFile(const std::string &filePath)
+bool MapFile::OpenMapFile(const std::string & filePath)
 {
     std::string extension = GetSystemFileExtension(filePath);
     if ( !extension.empty() )
@@ -270,7 +270,7 @@ bool MapFile::ProcessModifiedAssets(bool updateListFile)
     {
         for ( auto modifiedAsset = modifiedAssets.begin(); modifiedAsset != modifiedAssets.end(); ++modifiedAsset )
         {
-            const std::string &assetMpqPath = (*modifiedAsset)->assetMpqPath;
+            const std::string & assetMpqPath = (*modifiedAsset)->assetMpqPath;
             if ( (*modifiedAsset)->actionTaken == AssetAction::Add )
             {
                 buffer assetBuffer = buffer("TmpA");
@@ -321,7 +321,7 @@ std::string MapFile::GetStandardSoundDir()
     return "staredit\\wav\\";
 }
 
-bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::string &assetMpqFilePath, WavQuality wavQuality)
+bool MapFile::AddMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
     if ( FindFile(assetSystemFilePath) )
@@ -329,7 +329,7 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
         if ( OpenTemporaryMpq() )
         {
             ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-            const std::string &tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
+            const std::string & tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
             if ( temporaryMpq.addFile(tempMpqPath, assetSystemFilePath) )
             {
                 modifiedAssets.push_back(modifiedAssetPtr);
@@ -350,13 +350,13 @@ bool MapFile::AddMpqAsset(const std::string &assetSystemFilePath, const std::str
     return success;
 }
 
-bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &asset, WavQuality wavQuality)
+bool MapFile::AddMpqAsset(const std::string & assetMpqFilePath, const buffer & asset, WavQuality wavQuality)
 {
     bool success = false;
     if ( OpenTemporaryMpq() )
     {
         ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-        const std::string &tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
+        const std::string & tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
         if ( temporaryMpq.open(temporaryMpqPath, false, true) )
         {
             if ( temporaryMpq.addFile(modifiedAssetPtr->assetTempMpqPath, asset) )
@@ -379,7 +379,7 @@ bool MapFile::AddMpqAsset(const std::string &assetMpqFilePath, const buffer &ass
     return success;
 }
 
-void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
+void MapFile::RemoveMpqAsset(const std::string & assetMpqFilePath)
 {
     auto recentlyAddedAsset = modifiedAssets.end();
     for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
@@ -410,7 +410,7 @@ void MapFile::RemoveMpqAsset(const std::string &assetMpqFilePath)
         modifiedAssets.push_back(ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Remove)));
 }
 
-bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetBuffer)
+bool MapFile::GetMpqAsset(const std::string & assetMpqFilePath, buffer & outAssetBuffer)
 {
     bool success = false;
     for ( auto asset : modifiedAssets ) // Check if it's a recently added asset
@@ -428,7 +428,7 @@ bool MapFile::GetMpqAsset(const std::string &assetMpqFilePath, buffer &outAssetB
     return success;
 }
 
-bool MapFile::ExtractMpqAsset(const std::string &assetMpqFilePath, const std::string &systemFilePath)
+bool MapFile::ExtractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath)
 {
     buffer assetBuffer("AsBu");
     if ( GetMpqAsset(assetMpqFilePath, assetBuffer) )
@@ -441,7 +441,7 @@ bool MapFile::ExtractMpqAsset(const std::string &assetMpqFilePath, const std::st
     return false;
 }
 
-bool MapFile::GetSound(u16 soundIndex, size_t &outStringId)
+bool MapFile::GetSound(u16 soundIndex, size_t & outStringId)
 {
     outStringId = Scenario::triggers.getSoundStringId(soundIndex);
     return outStringId != Chk::StringId::UnusedSound;
@@ -467,14 +467,14 @@ bool MapFile::AddSound(size_t stringId)
     return false;
 }
 
-bool MapFile::AddSound(const std::string &srcFilePath, WavQuality wavQuality, bool virtualFile)
+bool MapFile::AddSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
     std::string mpqSoundDirectory = GetStandardSoundDir();
     std::string mpqFilePath = MakeMpqFilePath(mpqSoundDirectory, GetSystemFileName(srcFilePath));
     return AddSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 
-bool MapFile::AddSound(const std::string &srcFilePath, const std::string &destMpqPath, WavQuality wavQuality, bool virtualFile)
+bool MapFile::AddSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
     if ( virtualFile )
     {
@@ -499,7 +499,7 @@ bool MapFile::AddSound(const std::string &srcFilePath, const std::string &destMp
     return false;
 }
 
-bool MapFile::AddSound(const std::string &destMpqPath, buffer &soundContents, WavQuality wavQuality)
+bool MapFile::AddSound(const std::string & destMpqPath, buffer & soundContents, WavQuality wavQuality)
 {
     bool success = false;
     if ( AddMpqAsset(destMpqPath, soundContents, wavQuality) )
@@ -583,7 +583,7 @@ SoundStatus MapFile::GetSoundStatus(size_t soundStringId)
     return SoundStatus::Unknown;
 }
 
-bool MapFile::GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSoundStatus, bool includePureStringSounds)
+bool MapFile::GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds)
 {
     std::map<size_t/*stringId*/, u16/*soundIndex*/> soundMap;
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
@@ -655,13 +655,13 @@ bool MapFile::GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> &outSo
     return true;
 }
 
-bool MapFile::IsInVirtualSoundList(const std::string &soundMpqPath)
+bool MapFile::IsInVirtualSoundList(const std::string & soundMpqPath)
 {
     size_t hash = MapFile::strHash(soundMpqPath);
     size_t numMatching = MapFile::virtualSoundTable.count(hash);
     if ( numMatching == 1 )
     {
-        std::string &tableSoundPath = MapFile::virtualSoundTable.find(hash)->second;
+        std::string & tableSoundPath = MapFile::virtualSoundTable.find(hash)->second;
         if ( soundMpqPath.compare(tableSoundPath) == 0 )
             return true;
     }
@@ -691,12 +691,12 @@ std::string MapFile::GetFileName()
         return std::string("");
 }
 
-const std::string &MapFile::getFilePath() const
+const std::string & MapFile::getFilePath() const
 {
     return mapFilePath;
 }
 
-bool MapFile::getSaveDetails(inout_param SaveType &saveType, output_param std::string &saveFilePath, output_param bool &overwriting, FileBrowserPtr<SaveType> fileBrowser)
+bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser)
 {
     if ( fileBrowser != nullptr )
     {

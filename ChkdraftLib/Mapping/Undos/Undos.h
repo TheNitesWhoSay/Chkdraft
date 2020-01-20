@@ -24,7 +24,7 @@ class Undos
 {
     public:
 
-        Undos(IObserveUndos &observer);
+        Undos(IObserveUndos & observer);
         virtual ~Undos();
 
         void AddUndo(ReversiblePtr action);
@@ -40,7 +40,7 @@ class Undos
 
     private:
         
-        IObserveUndos &observer;
+        IObserveUndos & observer;
         std::list<ReversiblePtr> undos; // front = next undo
         std::list<ReversiblePtr> redos; // front = next redo
         std::map<int32_t, int32_t> changeCounters; // <type, numChanges>, 1 addition/redo = +1 change, 1 undo = -1 change

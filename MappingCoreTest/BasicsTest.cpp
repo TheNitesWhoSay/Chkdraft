@@ -585,7 +585,7 @@ TEST(BasicsTest, NotImplemented)
     std::string test = "test";
     try {
         throw NotImplemented(test);
-    } catch ( NotImplemented &e ) {
+    } catch ( NotImplemented & e ) {
         EXPECT_STREQ(test.c_str(), e.what());
     }
 }

@@ -59,7 +59,7 @@ void TerrainPaletteWindow::DoPaint()
         int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
         int numRows = (WindowsItem::cliHeight()-START_TILES_YC) / PIXELS_PER_TILE + 2;
         bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
-        std::vector<PasteTileNode> &pasteTiles = chkd.maps.clipboard.getTiles();
+        std::vector<PasteTileNode> & pasteTiles = chkd.maps.clipboard.getTiles();
         u16 numHighlighted = 0;
         if ( pasteTiles.size() > 0 )
             numHighlighted = pasteTiles[0].value;

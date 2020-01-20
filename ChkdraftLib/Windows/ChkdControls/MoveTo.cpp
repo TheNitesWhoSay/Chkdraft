@@ -7,18 +7,18 @@ MoveToDialog<indexType>::~MoveToDialog()
 }
 
 template <typename indexType>
-bool MoveToDialog<indexType>::GetIndex(indexType &index, HWND hParent)
+bool MoveToDialog<indexType>::GetIndex(indexType & index, HWND hParent)
 {
     MoveToDialog<indexType> moveTo;
     return moveTo.InternalGetMoveTo(index, hParent);
 }
-template bool MoveToDialog<u8>::GetIndex(u8 &index, HWND hParent);
-template bool MoveToDialog<s8>::GetIndex(s8 &index, HWND hParent);
-template bool MoveToDialog<u16>::GetIndex(u16 &index, HWND hParent);
-template bool MoveToDialog<s16>::GetIndex(s16 &index, HWND hParent);
-template bool MoveToDialog<u32>::GetIndex(u32 &index, HWND hParent);
-template bool MoveToDialog<s32>::GetIndex(s32 &index, HWND hParent);
-template bool MoveToDialog<int>::GetIndex(int &index, HWND hParent);
+template bool MoveToDialog<u8>::GetIndex(u8 & index, HWND hParent);
+template bool MoveToDialog<s8>::GetIndex(s8 & index, HWND hParent);
+template bool MoveToDialog<u16>::GetIndex(u16 & index, HWND hParent);
+template bool MoveToDialog<s16>::GetIndex(s16 & index, HWND hParent);
+template bool MoveToDialog<u32>::GetIndex(u32 & index, HWND hParent);
+template bool MoveToDialog<s32>::GetIndex(s32 & index, HWND hParent);
+template bool MoveToDialog<int>::GetIndex(int & index, HWND hParent);
 
 template <typename indexType>
 MoveToDialog<indexType>::MoveToDialog() : indexMovedTo(0), gotIndex(false)
@@ -27,7 +27,7 @@ MoveToDialog<indexType>::MoveToDialog() : indexMovedTo(0), gotIndex(false)
 }
 
 template <typename indexType>
-bool MoveToDialog<indexType>::InternalGetMoveTo(indexType &index, HWND hParent)
+bool MoveToDialog<indexType>::InternalGetMoveTo(indexType & index, HWND hParent)
 {
     indexMovedTo = 0;
     gotIndex = false;

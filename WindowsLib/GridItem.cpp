@@ -12,7 +12,7 @@ namespace WinLib {
 
     }
 
-    void GridControlItem::SetText(const std::string &newText)
+    void GridControlItem::SetText(const std::string & newText)
     {
         try { this->text = newText; }
         catch ( std::exception ) { }
@@ -46,7 +46,7 @@ namespace WinLib {
         text = "";
     }
 
-    bool GridControlItem::getText(output_param std::string &text)
+    bool GridControlItem::getText(output_param std::string & text)
     {
         try { text = this->text; return true; }
         catch ( std::exception ) { return false; }

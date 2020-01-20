@@ -403,7 +403,7 @@ std::string SHA256::operator()(const void* data, size_t numBytes)
 
 
 /// compute SHA256 of a string, excluding final zero
-std::string SHA256::operator()(const std::string& text)
+std::string SHA256::operator()(const std::string & text)
 {
   reset();
   add(text.c_str(), text.size());

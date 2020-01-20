@@ -19,7 +19,7 @@ namespace WinLib {
                                              x, y, width, height, hParent, (HMENU)id, true );
     }
 
-    HTREEITEM TreeViewControl::InsertTreeItem(HTREEITEM hParentItem, const std::string &text, LPARAM lParam)
+    HTREEITEM TreeViewControl::InsertTreeItem(HTREEITEM hParentItem, const std::string & text, LPARAM lParam)
     {
         if ( hParentItem == NULL )
             return InsertParent(text, lParam);
@@ -37,7 +37,7 @@ namespace WinLib {
         }
     }
 
-    HTREEITEM TreeViewControl::InsertParent(const std::string &text, LPARAM lParam)
+    HTREEITEM TreeViewControl::InsertParent(const std::string & text, LPARAM lParam)
     {
         icux::uistring sysText = icux::toUistring(text);
 
@@ -57,7 +57,7 @@ namespace WinLib {
         return WindowControl::FindThis(GetParent(hWnd), GetDlgCtrlID(hWnd));
     }
 
-    bool TreeViewControl::SetItemText(HTREEITEM hItem, const std::string &newText)
+    bool TreeViewControl::SetItemText(HTREEITEM hItem, const std::string & newText)
     {
         icux::uistring sysNewText = icux::toUistring(newText);
 
