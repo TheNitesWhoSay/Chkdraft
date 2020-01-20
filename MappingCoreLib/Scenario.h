@@ -1,14 +1,11 @@
 #ifndef SCENARIO_H
 #define SCENARIO_H
-#include "Buffer.h"
 #include "Basics.h"
 #include "EscapeStrings.h"
 #include "Sections.h"
-#include <cstdio>
-#include <list>
-#include <array>
 #include <memory>
 #include <string>
+#include <array>
 #include <map>
 
 /*
@@ -553,8 +550,6 @@ using ScenarioPtr = std::shared_ptr<Scenario>;
 class ScenarioSaver;
 using ScenarioSaverPtr = std::shared_ptr<ScenarioSaver>;
 
-enum class ChkVersion : u32;
-
 class Scenario : ScenarioSaver
 {
     public:
@@ -572,36 +567,27 @@ class Scenario : ScenarioSaver
         
         bool isProtected(); // Checks if map is protected
         bool hasPassword(); // Checks if the map has a password
-        bool isPassword(std::string &password); // Checks if this is the password the map has
-        bool SetPassword(std::string &oldPass, std::string &newPass); // Attempts to password-protect the map
-        bool Login(std::string &password); // Attempts to login to the map
+        bool isPassword(const std::string & password); // Checks if this is the password the map has
+        bool setPassword(const std::string & oldPass, const std::string & newPass); // Attempts to password-protect the map
+        bool login(const std::string & password); // Attempts to login to the map
 
-        bool ParseScenario(std::istream & is); // Parses supplied scenario file data
-        void Write(std::ostream & os); // Writes all sections to the supplied file
-        std::vector<u8> Serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
+        bool read(std::istream & is); // Parses supplied scenario file data
+        void write(std::ostream & os); // Writes all sections to the supplied stream
+
+        std::vector<u8> serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                          includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
-        bool Deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
+        bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
         
         bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
-                                                    
-        /** Makes whatever changes are required for saving in the given ChkVersion
-            and writes the scenario to outputStream
-            
-            Returns true upon success, returns false and rolls back any changes made during save on failure */
-        bool Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver = nullptr);
-        bool PrepareSaveSectionChanges(ChkVersion chkVersion, std::unordered_map<Section, Section> &sectionsToReplace,
-            std::vector<Section> sectionsToAdd, std::vector<SectionName> sectionsToRemove, ScenarioSaverPtr scenarioSaver = nullptr) { return false; }
-
-        virtual bool confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str);
-        virtual StrSynchronizerPtr getStrSynchronizer();
 
     protected:
+        virtual StrSynchronizerPtr getStrSynchronizer(); // Returns strings, may be overidden
+
         void addSection(Section section);
         void removeSection(const SectionName & sectionName);
 
-        bool ParsingFailed(const std::string & error);
-        bool ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections);
-        void Clear();
+        bool parsingFailed(const std::string & error);
+        void clear();
 
     private:
         std::vector<Section> allSections; // Holds all the sections of a map
@@ -620,14 +606,6 @@ public:
 private:
     std::string sectionName;
     ScenarioAllocationFailure();
-};
-
-enum class ChkVersion : u32
-{
-    StarCraft = 0,
-    Hybrid = 1,
-    BroodWar = 2,
-    Unchanged = 3
 };
 
 #endif

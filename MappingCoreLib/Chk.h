@@ -147,15 +147,12 @@ namespace Chk {
     
     __declspec(align(1)) struct Doodad
     {
-        enum_t(Type, u16, {
-            // TODO: index all doodads
-        });
         enum_t(Enabled, u8, {
             Enabled = 0, // Doodad is enabled
             Disabled = 1 // Doodad is disabled
         });
 
-        Type type;
+        Sc::Terrain::Doodad::Type type;
         u16 xc;
         u16 yc;
         u8 owner;
@@ -164,9 +161,6 @@ namespace Chk {
 
     __declspec(align(1)) struct Sprite
     {
-        enum_t(Type, u16, {
-            // TODO: index all sprites
-        });
         enum_t(SpriteFlags, u16, {
             DrawAsSprite = BIT_12, // If deselected this is a SpriteUnit
             Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
@@ -1210,7 +1204,7 @@ namespace Chk {
     };
 
     constexpr u32 CHK = 541804611; // "CHK " = 43|48|4B|20
-    using Size = u32;
+    using Size = u64;
 
     __declspec(align(1)) struct ChkHeader { // Not used by a Scenario.chk file, used by serializations
         u32 name; // Set to CHK

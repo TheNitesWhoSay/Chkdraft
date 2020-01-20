@@ -26,7 +26,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         {
                             case UPDATE_CHK_FILE:
                                 {
-                                    if ( map->Deserialize((Chk::SerializedChk*)copyData) )
+                                    if ( map->deserialize((Chk::SerializedChk*)copyData) )
                                     {
                                         map->refreshScenario();
                                         map->notifyChange(false);
@@ -79,7 +79,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     u16 mapID = chkd.maps.GetMapID(map);
                     COPYDATASTRUCT copyData;
                     copyData.dwData = (ULONG_PTR)MAKELONG(COPY_CHK_FILE, mapID);
-                    std::vector<u8> chkFile = map->Serialize();
+                    std::vector<u8> chkFile = map->serialize();
                     copyData.lpData = PVOID(&chkFile[0]);
                     copyData.cbData = DWORD(chkFile.size() - sizeof(Chk::ChkHeader));
                     SendMessage((HWND)wParam, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&copyData);

@@ -101,7 +101,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                 if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
                 {
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                    Scenario::Write(chk);
+                    Scenario::write(chk);
                     if ( chk.good() )
                     {
                         if ( MpqFile::open(mapFilePath, false, true) )
@@ -130,7 +130,7 @@ bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType
                     std::ofstream outFile(icux::toFilestring(mapFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
                     if ( outFile.is_open() )
                     {
-                        Scenario::Write(outFile);
+                        Scenario::write(outFile);
                         bool success = outFile.good();
                         if ( !success )
                             logger.error("Failed to write scenario file!");
@@ -221,7 +221,7 @@ bool MapFile::OpenMapFile(const std::string &filePath)
 
                 std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                 std::copy(chkData.begin(), chkData.end(), std::ostream_iterator<u8>(chk));
-                if ( Scenario::ParseScenario(chk) )
+                if ( Scenario::read(chk) )
                 {
                     if ( Scenario::versions.isOriginal() )
                         saveType = SaveType::StarCraftScm; // Vanilla
@@ -243,7 +243,7 @@ bool MapFile::OpenMapFile(const std::string &filePath)
         else if ( extension == ".chk" )
         {
             std::ifstream chk(filePath);
-            if ( Scenario::ParseScenario(chk) )
+            if ( Scenario::read(chk) )
             {
                 if ( Scenario::versions.isOriginal() )
                     saveType = SaveType::StarCraftChk; // Vanilla chk

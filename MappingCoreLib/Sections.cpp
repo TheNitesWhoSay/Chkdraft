@@ -2454,7 +2454,7 @@ Chk::SectionSize StrSection::getSize(ScenarioSaver & scenarioSaver)
         }
 
         if ( totalSize <= ChkSection::MaxChkSectionSize )
-            return totalSize;
+            return (Chk::SectionSize)totalSize;
         else
             throw MaxSectionSizeExceeded(SectionName::STR, std::to_string(stringBytes.size()));
     }

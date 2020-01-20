@@ -113,7 +113,7 @@ Scenario::~Scenario()
 
 }
 
-void Scenario::Clear()
+void Scenario::clear()
 {
     strings.clear();
     triggers.clear();
@@ -143,7 +143,7 @@ bool Scenario::hasPassword()
     return tailLength == 7;
 }
 
-bool Scenario::isPassword(std::string &password)
+bool Scenario::isPassword(const std::string & password)
 {
     if ( hasPassword() )
     {
@@ -168,7 +168,7 @@ bool Scenario::isPassword(std::string &password)
         return false;
 }
 
-bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
+bool Scenario::setPassword(const std::string & oldPass, const std::string & newPass)
 {
     if ( isPassword(oldPass) )
     {
@@ -200,7 +200,7 @@ bool Scenario::SetPassword(std::string &oldPass, std::string &newPass)
     return false;
 }
 
-bool Scenario::Login(std::string &password)
+bool Scenario::login(const std::string & password)
 {
     if ( isPassword(password) )
     {
@@ -210,9 +210,9 @@ bool Scenario::Login(std::string &password)
     return false;
 }
 
-bool Scenario::ParseScenario(std::istream & is)
+bool Scenario::read(std::istream & is)
 {
-    Clear();
+    clear();
 
     // First read contents of "is" to "chk", this will allow jumping backwards when reading chks with jump sections
     std::stringstream chk(std::ios_base::binary|std::ios_base::in|std::ios_base::out);
@@ -233,7 +233,7 @@ bool Scenario::ParseScenario(std::istream & is)
         if ( headerBytesRead == 0 && chk.eof() )
             break;
         else if ( headerBytesRead == 0 )
-            return ParsingFailed("Unexpected failure reading chk section header!");
+            return parsingFailed("Unexpected failure reading chk section header!");
 
         if ( headerBytesRead == sizeof(Chk::SectionHeader) ) // Valid section header
         {
@@ -250,13 +250,13 @@ bool Scenario::ParseScenario(std::istream & is)
                         mapIsProtected = true;
                 }
                 else
-                    return ParsingFailed("Unexpected error reading chk section contents!");
+                    return parsingFailed("Unexpected error reading chk section contents!");
             }
             else // if ( sectionHeader.sizeInBytes < 0 ) // Jump section
             {
                 chk.seekg(sectionHeader.sizeInBytes, std::ios_base::cur);
                 if ( !chk.good() )
-                    return ParsingFailed("Unexpected error processing chk jump section!");
+                    return parsingFailed("Unexpected error processing chk jump section!");
 
                 jumpCompress = true;
             }
@@ -306,7 +306,7 @@ bool Scenario::ParseScenario(std::istream & is)
     triggers.set(finalSections);
 
     if ( versions.ver == nullptr )
-        return ParsingFailed("Map was missing the VER section!");
+        return parsingFailed("Map was missing the VER section!");
 
     Chk::Version version = versions.ver->getVersion();
 
@@ -314,11 +314,6 @@ bool Scenario::ParseScenario(std::istream & is)
 
     logger.info("Scenario parsed successfully!");
     return true;
-}
-
-bool Scenario::confirmRemoveLocations(MrgnSectionPtr mrgn, StrSectionPtr str)
-{
-    return true; // Override to customize behavior
 }
 
 StrSynchronizerPtr Scenario::getStrSynchronizer()
@@ -355,64 +350,27 @@ void Scenario::removeSection(const SectionName & sectionName)
     while ( foundSection );
 }
 
-bool Scenario::ParsingFailed(const std::string & error)
+bool Scenario::parsingFailed(const std::string & error)
 {
     logger.error(error);
-    Clear();
+    clear();
     return false;
 }
 
-bool Scenario::ParseSection(buffer &chk, s64 position, s64 &nextPosition, std::vector<Section> &sections)
-{
-/*    u32 sectionName = 0;
-    s32 sectionSize = 0;
-
-    if ( chk.get<u32>(sectionName, position) &&    // Get sectionName/title
-        chk.get<s32>(sectionSize, position + 4) ) // Get section size
-    {
-        nextPosition = position + s64(8) + s64(sectionSize);
-    }
-    else
-        return false; // Unexpected read faliure
-
-    if ( sectionSize >= 0 ) // Normal section
-    {
-        try
-        {
-            Section newSection(new ChkSection((ChkSection::SectionName)sectionName));
-            if ( nextPosition >= position + s64(8) && // Check for addition overflow
-                (nextPosition > chk.size() || // Either oversized
-                    sectionSize == 0 || // Or empty
-                    newSection->extract(chk, position+8, sectionSize)) ) // Or got the section data
-            {
-                sections.push_back(newSection);
-                return true;
-            }
-        } catch ( std::exception &e ) {}
-        return false; // Either failed to allocate section or the section data was valid but extraction failed
-    }
-    else if ( sectionSize < 0 ) // Jump section
-    {
-        return nextPosition < position + s64(8) && // Check for addition underflow
-            nextPosition != 0;                  // Check for loop (right now it just checks for position to zero)
-    }*/
-    return true; // sectionSize == 0
-}
-
-void Scenario::Write(std::ostream & os)
+void Scenario::write(std::ostream & os)
 {
     for ( auto & section : allSections )
         section->writeWithHeader(os, *this);
 }
 
-std::vector<u8> Scenario::Serialize()
+std::vector<u8> Scenario::serialize()
 {
     Chk::Size size = 0;
     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
     chk.write((const char*)&Chk::CHK, sizeof(Chk::CHK)); // Header
     chk.write((const char*)&size, sizeof(size)); // Size
 
-    Write(chk);
+    write(chk);
     chk.unsetf(std::ios_base::skipws);
     auto start = std::istream_iterator<u8>(chk);
     std::vector<u8> chkBytes(start, std::istream_iterator<u8>());
@@ -422,13 +380,13 @@ std::vector<u8> Scenario::Serialize()
     return chkBytes;
 }
 
-bool Scenario::Deserialize(Chk::SerializedChk* data)
+bool Scenario::deserialize(Chk::SerializedChk* data)
 {
     if ( data->header.name == Chk::CHK )
     {
-        // Chk::Size size = data->header.sizeInBytes; // Unused
-        // void* scenarioData = &data->data[0];
-        // return ParseScenario(scenarioData, size);
+        Chk::Size size = data->header.sizeInBytes;
+        std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+        std::copy(&data->data[0], &data->data[size], std::ostream_iterator<u8>(chk));
     }
     return false;
 }
@@ -479,95 +437,6 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
     }
     return false;
 }
-
-bool Scenario::Save(ChkVersion chkVersion, std::ostream &outputStream, ScenarioSaverPtr scenarioSaver)
-{
-/*    if ( isProtected() )
-        return false;
-
-    Strubgs
-    if ( chkVersion == ChkVersion::Unchanged )
-    {
-        for ( auto &section : allSections )
-            section->write(outputStream);
-
-        if ( tailLength > 0 && tailLength < 8 )
-            outputStream.write(tailData.data, tailLength);
-    }
-    else // chkVersion changed, update all potentially affected sections
-    {
-        Section newMrgn(new ChkSection(ChkSection::SectionName::MRGN));
-        Section newType(new ChkSection(ChkSection::SectionName::TYPE));
-        Section newVer(new ChkSection(ChkSection::SectionName::VER));
-        Section newIver(new ChkSection(ChkSection::SectionName::IVER));
-        Section newIve2(new ChkSection(ChkSection::SectionName::IVE2));
-
-        bool removeIver = false;
-        if ( !PrepareSaveSectionChanges(chkVersion, newMrgn, newType, newVer, newIver, newIve2, removeIver, scenarioSaver) )
-            return false;
-
-        std::unordered_set<ChkSection::SectionName> skipSections;
-        std::unordered_map<Section, Section> sectionsToReplace;
-        std::vector<Section> sectionsToAdd;
-        std::vector<ChkSection::SectionName> sectionsToRemove;
-        for ( auto section = allSections.rbegin(); section != allSections.rend(); ++section )
-        {
-            ChkSection::SectionName sectionName = (ChkSection::SectionName)(*section)->titleVal();
-            if ( foundSectionNames.find(sectionName) == foundSectionNames.end() )
-            {
-                foundSectionNames.insert(sectionName);
-                switch ( sectionName )
-                {
-                case ChkSection::SectionName::MRGN:
-                    replacedSections.insert(std::pair<Section, Section>(*section, newMrgn)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::TYPE: replacedSections.insert(std::pair<Section, Section>(*section, newType)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::VER:
-                    replacedSections.insert(std::pair<Section, Section>(*section, newVer)); foundSectionNames.insert(sectionName); break;
-                case ChkSection::SectionName::IVE2:
-                    if ( IVE2->exists() )
-                        replacedSections.insert(std::pair<Section, Section>(*section, newIve2));
-                    break;
-                case ChkSection::SectionName::IVER:
-                    if ( !removeIver && IVER->exists() )
-                        replacedSections.insert(std::pair<Section, Section>(*section, newIver));
-                    break;
-                }
-            }
-        }
-
-        size_t numSectionsToAdd = (MRGN->exists() ? 0 : 1) + (TYPE->exists() ? 0 : 1) + (VER->exists() ? 0 : 1) + (IVE2->exists() ? 0 : 1) +
-            (removeIver || IVER->exists() ? 0 : 1);
-
-        allSections.reserve(allSections.size() + numSectionsToAdd);
-
-        bool wroteMRGN = false, wroteTYPE = false, wroteVER = false, wroteIVER = false, wroteIVE2 = false;
-        for ( auto &section : allSections )
-        {
-            ChkSection::SectionName sectionName = (ChkSection::SectionName)section->titleVal;
-            switch ( sectionName )
-            {
-            case ChkSection::SectionName::MRGN:
-            case ChkSection::SectionName::TYPE:
-            case ChkSection::SectionName::VER:
-            case ChkSection::SectionName::IVER:
-            case ChkSection::SectionName::IVE2:
-                if ( section == lastSectionInstances.find(sectionName)->second )
-
-                    break;
-            default:
-                section->write(outputStream, true);
-                break;
-            }
-        }
-
-        if ( tailLength > 0 && tailLength < 8 )
-            outputStream.write((const char*)tailData, tailLength);
-
-        // Save succeeded, now update the scenario with the saveSections
-    }*/
-    return false;
-}
-
 
 Versions::Versions(bool useDefault) : layers(nullptr)
 {

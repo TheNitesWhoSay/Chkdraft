@@ -540,6 +540,9 @@ namespace Sc {
     class Sprite
     {
     public:
+        enum_t(Type, u16, {
+            // TODO: Aftering loading code is working, index all sprites using imageFile + grpFile + 
+        });
         static constexpr size_t TotalSprites = 517;
         struct DatEntry
         {
@@ -583,7 +586,7 @@ namespace Sc {
                 From130To517 = 387
             });
             
-            u16 imageFile[TotalSprites];
+            u16 imageFile[TotalSprites]; // images.dat index
             u8 healthBar[IdRange::From130To517]; // Id 130-517 only
             u8 unknown[TotalSprites];
             u8 isVisible[TotalSprites];
@@ -592,7 +595,7 @@ namespace Sc {
         };
         struct ImageDatFile
         {
-            u32 grpFile[999];
+            u32 grpFile[999]; // image.tbl index
             u8 graphicTurns[999];
             u8 clickable[999];
             u8 useFullIscript[999];
@@ -1540,6 +1543,10 @@ namespace Sc {
             u16 megaTileIndex[16]; // To VF4/VX4
         };
         struct Doodad {
+            enum_t(Type, u16, {
+                // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
+            });
+
             u16 index; // Always 1 for doodads?
             u8 buildability;
             u8 flags; // 0x10 = sprite overlay, 0x20 = unit overlay, 0x40 = overlay flipped

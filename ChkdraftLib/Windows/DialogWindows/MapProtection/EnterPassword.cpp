@@ -23,7 +23,7 @@ void EnterPasswordDialog::ButtonLogin()
     if ( editPassword.GetWinText(password) )
     {
         editPassword.SetText("");
-        bool success = CM->Login(password);
+        bool success = CM->login(password);
         password.clear();
         if ( success )
         {

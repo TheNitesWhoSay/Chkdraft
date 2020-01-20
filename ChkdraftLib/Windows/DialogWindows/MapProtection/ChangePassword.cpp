@@ -46,7 +46,7 @@ void ChangePasswordDialog::ButtonApply()
     editNewPass.SetText("");
     if ( CM != nullptr )
     {
-        if ( CM->SetPassword(oldPass, newPass) )
+        if ( CM->setPassword(oldPass, newPass) )
         {
             CM->notifyChange(false);
             mb("Password Set Successfully.");
