@@ -22,6 +22,42 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getStarCraftExeFilter()
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starCraftFileName, "StarCraft Executable") };
 }
 
+Sc::DataFile::Descriptor::Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
+    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory)
+{
+
+}
+
+Sc::DataFile::Priority Sc::DataFile::Descriptor::getPriority() const
+{
+    return priority;
+}
+
+const std::string & Sc::DataFile::Descriptor::getFileName() const
+{
+    return fileName;
+}
+
+const std::string & Sc::DataFile::Descriptor::getExpectedFilePath() const
+{
+    return expectedFilePath;
+}
+
+FileBrowserPtr<u32> Sc::DataFile::Descriptor::getBrowser() const
+{
+    return browser;
+}
+
+bool Sc::DataFile::Descriptor::isExpectedInScDirectory() const
+{
+    return expectedInScDirectory;
+}
+
+void Sc::DataFile::Descriptor::setExpectedFilePath(const std::string & expectedFilePath)
+{
+    this->expectedFilePath = expectedFilePath;
+}
+
 std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
 {
     return std::unordered_map<Priority, Descriptor> {
@@ -80,7 +116,7 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
         dataFilePriorities.push_back(openedDataFile.first);
     
     dataFilePriorities.sort();
-    for ( auto dataFilePriority = dataFilePriorities.rbegin(); dataFilePriority != dataFilePriorities.rend(); ++dataFilePriority )
+    for ( auto dataFilePriority = dataFilePriorities.begin(); dataFilePriority != dataFilePriorities.end(); ++dataFilePriority )
         orderedDataFiles.push_back(openedDataFiles.find(*dataFilePriority)->second);
 
     return orderedDataFiles;
@@ -2585,6 +2621,16 @@ bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, cons
     return false;
 }
 
+bool Sc::Data::GetAsset(const std::string & assetMpqPath, buffer & outAssetContents,
+    Sc::DataFile::BrowserPtr dataFileBrowser,
+    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::string & expectedStarCraftDirectory,
+    FileBrowserPtr<u32> starCraftBrowser)
+{
+    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::GetAsset(orderedSourceFiles, assetMpqPath, outAssetContents);
+}
+
 bool Sc::Data::ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath)
 {
     for ( auto mpqFile : orderedSourceFiles )
@@ -2593,4 +2639,14 @@ bool Sc::Data::ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, 
             return mpqFile->extractFile(assetMpqPath, systemFilePath);
     }
     return false;
+}
+
+bool Sc::Data::ExtractAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
+    Sc::DataFile::BrowserPtr dataFileBrowser,
+    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::string & expectedStarCraftDirectory,
+    FileBrowserPtr<u32> starCraftBrowser)
+{
+    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::ExtractAsset(orderedSourceFiles, assetMpqPath, systemFilePath);
 }

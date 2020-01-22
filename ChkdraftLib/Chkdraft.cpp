@@ -1,7 +1,7 @@
 #include "Chkdraft.h"
 #include "../CommanderLib/Logger.h"
 #include "../CommanderLib/TestCommands.h"
-#include "Mapping/DatFileBrowsers.h"
+#include "Mapping/DataFileBrowsers.h"
 #include "Mapping/Settings.h"
 #include <shellapi.h>
 #include <iostream>
@@ -50,7 +50,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     if ( !CreateThis() )
         return 1;
 
-    scData.Load(DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory());
+    scData.Load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
     ShowWindow(getHandle(), nCmdShow);
     UpdateWindow();

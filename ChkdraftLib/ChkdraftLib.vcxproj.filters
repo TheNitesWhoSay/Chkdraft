@@ -341,7 +341,7 @@
     <ClInclude Include="Windows\MainWindows\MiniMap.h">
       <Filter>Header Files\Windows\Main Windows</Filter>
     </ClInclude>
-    <ClInclude Include="Mapping\DatFileBrowsers.h">
+    <ClInclude Include="Mapping\DataFileBrowsers.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
   </ItemGroup>
@@ -553,7 +553,7 @@
     <ClCompile Include="Windows\MainWindows\MiniMap.cpp">
       <Filter>Source Files\Windows\Main Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Mapping\DatFileBrowsers.cpp">
+    <ClCompile Include="Mapping\DataFileBrowsers.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>

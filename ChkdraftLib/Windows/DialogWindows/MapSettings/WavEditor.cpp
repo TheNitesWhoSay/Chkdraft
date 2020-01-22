@@ -1,6 +1,6 @@
 #include "WavEditor.h"
 #include "../../../Chkdraft.h"
-#include "../../../Mapping/DatFileBrowsers.h"
+#include "../../../Mapping/DataFileBrowsers.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
 
 enum_t(Id, u32, {
@@ -197,8 +197,8 @@ void WavEditorWindow::PlaySoundButtonPressed()
         {
             RawStringPtr soundString = CM->strings.getString<RawString>(soundStringId);
             if ( soundString != nullptr && CM->IsInVirtualSoundList(*soundString) &&
-                chkd.scData.GetScAsset(*soundString, wavBuffer, DatFileBrowserPtr(new ChkdDatFileBrowser()),
-                ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+                Sc::Data::GetAsset(*soundString, wavBuffer, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
+                    ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
             {
 #ifdef UNICODE
                 PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
@@ -221,9 +221,9 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
     std::string wavString = "";
     if ( listVirtualSounds.GetCurSelString(wavString) )
     {
-        if ( CM->IsInVirtualSoundList(wavString) && chkd.scData.GetScAsset(wavString, wavBuffer,
-            DatFileBrowserPtr(new ChkdDatFileBrowser()), ChkdDatFileBrowser::getDatFileDescriptors(),
-            ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+        if ( CM->IsInVirtualSoundList(wavString) && Sc::Data::GetAsset(wavString, wavBuffer,
+            Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
@@ -255,8 +255,8 @@ void WavEditorWindow::ExtractSoundButtonPressed()
                 SoundStatus soundStatus = CM->GetSoundStatus(soundStringId);
                 if ( soundStatus == SoundStatus::VirtualFile )
                 {
-                    if ( !chkd.scData.ExtractScAsset(*wavMpqPath, saveFilePath, DatFileBrowserPtr(new ChkdDatFileBrowser()),
-                        ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+                    if ( !Sc::Data::ExtractAsset(*wavMpqPath, saveFilePath, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
+                        ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
                     {
                         Error("Error Extracting Asset!");
                     }
@@ -323,8 +323,8 @@ void WavEditorWindow::AddFileButtonPressed()
     else if ( !useVirtualFile && CM->IsInVirtualSoundList(filePath) )
     {
         buffer wavContents("WaCo");
-        if ( chkd.scData.GetScAsset(filePath, wavContents, DatFileBrowserPtr(new ChkdDatFileBrowser()),
-            ChkdDatFileBrowser::getDatFileDescriptors(), ChkdDatFileBrowser::getExpectedStarCraftDirectory()) )
+        if ( Sc::Data::GetAsset(filePath, wavContents, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
+            ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
             if ( useCustomMpqString )
                 addedWav = CM->AddSound(customMpqPath, wavContents, wavQuality);

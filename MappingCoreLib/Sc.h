@@ -43,19 +43,18 @@ namespace Sc {
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
         public:
-            Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true)
-                : datFilePriority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory) {}
+            Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
 
-            Priority getPriority() const { return datFilePriority; }
-            const std::string & getFileName() const { return fileName; }
-            const std::string & getExpectedFilePath() const { return expectedFilePath; }
-            FileBrowserPtr<u32> getBrowser() const { return browser; }
-            bool isExpectedInScDirectory() const { return expectedInScDirectory; }
+            Priority getPriority() const;
+            const std::string & getFileName() const;
+            const std::string & getExpectedFilePath() const;
+            FileBrowserPtr<u32> getBrowser() const;
+            bool isExpectedInScDirectory() const;
 
-            void setExpectedFilePath(const std::string & expectedFilePath) { this->expectedFilePath = expectedFilePath; }
+            void setExpectedFilePath(const std::string & expectedFilePath);
 
         private:
-            Priority datFilePriority;
+            Priority priority;
             std::string fileName;
             std::string expectedFilePath;
             FileBrowserPtr<u32> browser;
@@ -1933,9 +1932,20 @@ namespace Sc {
         Terrain terrain;
         Weapon weapon;
         TblFile statTxt;
-
+        
         static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents);
+        static bool GetAsset(const std::string & assetMpqPath, buffer & outAssetContents,
+            Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
+            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
+        
         static bool ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
+        static bool ExtractAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
+            Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
+            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
     };
 }
 
