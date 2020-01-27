@@ -1677,6 +1677,27 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.info() << "GRP loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+
+    std::vector<u8> imageData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat", imageData) )
+    {
+        logger.error() << "Failed to load arr\\images.dat" << std::endl;
+        return false;
+    }
+    else if ( imageData.size() != sizeof(Sc::Sprite::ImageDatFile) )
+    {
+        logger.error() << "Unrecognized ImageDat format!" << std::endl;
+        return false;
+    }
+
+    ImageDatFile datFile = (ImageDatFile & )imageData[0];
+    for ( size_t i=0; i<TotalImages; i++ )
+    {
+        images.push_back(ImageDatEntry { datFile.grpFile[i], datFile.graphicTurns[i], datFile.clickable[i], datFile.useFullIscript[i], datFile.drawIfCloaked[i],
+            datFile.drawFunction[i], datFile.remapping[i], datFile.iScriptId[i], datFile.shieldOverlay[i], datFile.attackOverlay[i], datFile.damageOverlay[i],
+            datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
+    }
+
     return true;
 }
 
@@ -1688,9 +1709,22 @@ const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
         throw std::out_of_range(std::string("GrpIndex: ") + std::to_string(grpIndex) + " is out of range for grps vector of size " + std::to_string(grps.size()));
 }
 
+const Sc::Sprite::ImageDatEntry & Sc::Sprite::getImage(size_t imageIndex)
+{
+    if ( imageIndex < images.size() )
+        return images[imageIndex];
+    else
+        throw std::out_of_range(std::string("ImageIndex: ") + std::to_string(imageIndex) + " is out of range for images vector of size " + std::to_string(images.size()));
+}
+
 size_t Sc::Sprite::numGrps()
 {
     return grps.size();
+}
+
+size_t Sc::Sprite::numImages()
+{
+    return images.size();
 }
 
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {

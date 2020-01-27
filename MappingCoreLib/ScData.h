@@ -154,24 +154,6 @@ struct SPRITEDAT
     u8 SelectionCircleOffset;
 };
 
-struct IMAGEDAT
-{
-    u32 GRPFile;
-    u8 GraphicTurns;
-    u8 Clickable;
-    u8 UseFullIscript;
-    u8 DrawIfCloaked;
-    u8 DrawFunction;
-    u8 Remapping;
-    u32 IscriptID;
-    u32 ShieldOverlay;
-    u32 AttackOverlay;
-    u32 DamageOverlay;
-    u32 SpecialOverlay;
-    u32 LandingDustOverlay;
-    u32 LiftOffOverlay;
-};
-
 class Upgrades
 {
 public:
@@ -228,13 +210,10 @@ public:
     bool LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles);
     FLINGYDAT* FlingyDat(u32 id);
     SPRITEDAT* SpriteDat(u32 id);
-    IMAGEDAT* ImageDat(u32 id);
 
 private:
     FLINGYDAT flingy[209];
     SPRITEDAT sprite[517];
-    IMAGEDAT image[999];
-    buffer iscriptBin;
 };
 
 class PCX
@@ -325,10 +304,10 @@ public:
     Techs techs;
     Units units;
     Weapons weapons;
-    Sprites sprites;
+    Sprites oldSprites;
     TblFiles tblFiles;
     AiScripts aiScripts;
-    Sc::Sprite grps;
+    Sc::Sprite sprites;
     Sc::Terrain terrain;
     Sc::Pcx tunit;
     Sc::Pcx tselect;
@@ -336,9 +315,8 @@ public:
 
     UNITDAT*   UnitDat  (u16 id) { return units.UnitDat    (id); }
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
-    FLINGYDAT* FlingyDat(u32 id) { return sprites.FlingyDat(id); }
-    SPRITEDAT* SpriteDat(u32 id) { return sprites.SpriteDat(id); }
-    IMAGEDAT*  ImageDat (u32 id) { return sprites.ImageDat (id); }
+    FLINGYDAT* FlingyDat(u32 id) { return oldSprites.FlingyDat(id); }
+    SPRITEDAT* SpriteDat(u32 id) { return oldSprites.SpriteDat(id); }
 
     bool Load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
         const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),

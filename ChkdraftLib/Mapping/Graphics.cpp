@@ -937,17 +937,17 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
                  s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
     u16 drawnUnitId = unitID < 228 ? unitID : 0; // Extended units use ID:0's graphics (for now)
-    u32 grpId = chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->ImageFile)->GRPFile;
+    u32 grpId = chkd.scData.sprites.getImage(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->ImageFile).grpFile;
 
-    if ( (size_t)grpId < chkd.scData.grps.numGrps() )
+    if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
     {
         Sc::SystemColor remapped[8];
         if ( selected )
         {
-            u32 grpId = chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile;
-            if ( grpId < chkd.scData.grps.numGrps() )
+            u32 selectionGrpId = chkd.scData.sprites.getImage(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->SelectionCircleImage+561).grpFile;
+            if ( selectionGrpId < chkd.scData.sprites.numGrps() )
             {
-                const Sc::Sprite::GrpFile & selCirc = chkd.scData.grps.getGrp(grpId).get();
+                const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
                 u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
                 std::memcpy(remapped, &palette[0], sizeof(remapped));
                 std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
@@ -956,7 +956,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
             }
         }
         
-        const Sc::Sprite::GrpFile & curr = chkd.scData.grps.getGrp(grpId).get();
+        const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
         std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
         GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, false);
@@ -967,7 +967,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
 {
-    const Sc::Sprite::GrpFile & curr = chkd.scData.grps.getGrp(chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1).get();
+    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.SpriteDat(spriteID)->ImageFile).grpFile).get();
     Sc::SystemColor remapped[8];
     std::memcpy(remapped, &palette[8], sizeof(remapped));
     std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));

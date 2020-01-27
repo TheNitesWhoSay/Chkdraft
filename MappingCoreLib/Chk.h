@@ -168,7 +168,7 @@ namespace Chk {
 
         bool isDrawnAsSprite();
 
-        Type type;
+        Sc::Sprite::Type type;
         u16 xc;
         u16 yc;
         u8 owner;

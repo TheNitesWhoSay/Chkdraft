@@ -222,8 +222,12 @@ class DataSection : public ChkSection
     protected:
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool overrideOrAppend = false) {
             data.assign((size_t)sectionHeader.sizeInBytes, u8(0));
-            is.read((char*)&data[0], (std::streamsize)sectionHeader.sizeInBytes);
-            return (Chk::SectionSize)is.gcount();
+            if ( sectionHeader.sizeInBytes > 0 )
+            {
+                is.read((char*)&data[0], (std::streamsize)sectionHeader.sizeInBytes);
+                return (Chk::SectionSize)is.gcount();
+            }
+            return Chk::SectionSize(0);
         }
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) {
             os.write((const char*)&data[0], (std::streamsize)data.size());

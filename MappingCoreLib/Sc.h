@@ -547,6 +547,7 @@ namespace Sc {
             // TODO: Aftering loading code is working, index all sprites using imageFile + grpFile + 
         });
         static constexpr size_t TotalSprites = 517;
+        static constexpr size_t TotalImages = 999;
         struct DatEntry
         {
             u16 imageFile;
@@ -590,20 +591,20 @@ namespace Sc {
         };
         __declspec(align(1)) struct ImageDatFile
         {
-            u32 grpFile[999]; // image.tbl index
-            u8 graphicTurns[999];
-            u8 clickable[999];
-            u8 useFullIscript[999];
-            u8 drawIfCloaked[999];
-            u8 drawFunction[999];
-            u8 remapping[999];
-            u32 iScriptId[999];
-            u32 shieldOverlay[999];
-            u32 attackOverlay[999];
-            u32 damageOverlay[999];
-            u32 specialOverlay[999];
-            u32 landingDustOverlay[999];
-            u32 liftOffOverlay[999];
+            u32 grpFile[TotalImages]; // image.tbl index
+            u8 graphicTurns[TotalImages];
+            u8 clickable[TotalImages];
+            u8 useFullIscript[TotalImages];
+            u8 drawIfCloaked[TotalImages];
+            u8 drawFunction[TotalImages];
+            u8 remapping[TotalImages];
+            u32 iScriptId[TotalImages];
+            u32 shieldOverlay[TotalImages];
+            u32 attackOverlay[TotalImages];
+            u32 damageOverlay[TotalImages];
+            u32 specialOverlay[TotalImages];
+            u32 landingDustOverlay[TotalImages];
+            u32 liftOffOverlay[TotalImages];
         };
         
         __declspec(align(1)) struct PixelLine {
@@ -702,10 +703,13 @@ namespace Sc {
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const Grp & getGrp(size_t grpIndex);
+        const ImageDatEntry & getImage(size_t imageIndex);
         size_t numGrps();
+        size_t numImages();
 
     private:
         std::vector<Grp> grps;
+        std::vector<ImageDatEntry> images;
     };
 
     class Upgrade {

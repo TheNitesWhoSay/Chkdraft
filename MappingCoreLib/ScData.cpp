@@ -431,14 +431,12 @@ Sprites::~Sprites()
 
 bool Sprites::LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
-    buffer flingyDat("fDat"), spriteDat("sDat"), imageDat("iDat");
+    buffer flingyDat("fDat"), spriteDat("sDat");
 
     if (   !Sc::Data::GetAsset(orderedSourceFiles, "arr\\flingy.dat", flingyDat) 
         || !Sc::Data::GetAsset(orderedSourceFiles, "arr\\sprites.dat", spriteDat)
-        || !Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat", imageDat)
         || flingyDat.size() != 3135
-        || spriteDat.size() != 3229
-        || imageDat.size() != 37962 )
+        || spriteDat.size() != 3229 )
     {
         return false;
     }
@@ -460,21 +458,6 @@ bool Sprites::LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles)
     pos = 0x997; for ( i=130; i<517; i++ ) sprite[i].SelectionCircleImage  = spriteDat.get<u8>(pos+i-130);
     pos = 0xB1A; for ( i=130; i<517; i++ ) sprite[i].SelectionCircleOffset = spriteDat.get<u8>(pos+i-130);
 
-    pos = 0x0000; for ( i=0; i<999; i++ ) image[i].GRPFile            = imageDat.get<u32>(pos+i*4);
-    pos = 0x0F9C; for ( i=0; i<999; i++ ) image[i].GraphicTurns       = imageDat.get<u8>(pos+i);
-    pos = 0x1383; for ( i=0; i<999; i++ ) image[i].Clickable          = imageDat.get<u8>(pos+i);
-    pos = 0x176A; for ( i=0; i<999; i++ ) image[i].UseFullIscript     = imageDat.get<u8>(pos+i);
-    pos = 0x1B51; for ( i=0; i<999; i++ ) image[i].DrawIfCloaked      = imageDat.get<u8>(pos+i);
-    pos = 0x1F38; for ( i=0; i<999; i++ ) image[i].DrawFunction       = imageDat.get<u8>(pos+i);
-    pos = 0x231F; for ( i=0; i<999; i++ ) image[i].Remapping          = imageDat.get<u8>(pos+i);
-    pos = 0x2706; for ( i=0; i<999; i++ ) image[i].IscriptID          = imageDat.get<u32>(pos+i*4);
-    pos = 0x36A2; for ( i=0; i<999; i++ ) image[i].ShieldOverlay      = imageDat.get<u32>(pos+i*4);
-    pos = 0x463E; for ( i=0; i<999; i++ ) image[i].AttackOverlay      = imageDat.get<u32>(pos+i*4);
-    pos = 0x55DA; for ( i=0; i<999; i++ ) image[i].DamageOverlay      = imageDat.get<u32>(pos+i*4);
-    pos = 0x6576; for ( i=0; i<999; i++ ) image[i].SpecialOverlay     = imageDat.get<u32>(pos+i*4);
-    pos = 0x7512; for ( i=0; i<999; i++ ) image[i].LandingDustOverlay = imageDat.get<u32>(pos+i*4);
-    pos = 0x84AE; for ( i=0; i<999; i++ ) image[i].LiftOffOverlay     = imageDat.get<u32>(pos+i*4);
-
     return true;
 }
 
@@ -492,14 +475,6 @@ SPRITEDAT* Sprites::SpriteDat(u32 id)
         return &sprite[id];
     else
         return &sprite[0];
-}
-
-IMAGEDAT* Sprites::ImageDat(u32 id)
-{
-    if ( id < 999 )
-        return &image[id];
-    else
-        return &image[0];
 }
 
 PCX::~PCX()
@@ -712,9 +687,9 @@ bool ScData::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered
     if ( !weapons.LoadWeapons(orderedSourceFiles) )
         CHKD_ERR("Failed to load Weapons.dat");
 
-    if ( sprites.LoadSprites(orderedSourceFiles) )
+    if ( oldSprites.LoadSprites(orderedSourceFiles) )
     {
-        if ( !grps.load(orderedSourceFiles) )
+        if ( !sprites.load(orderedSourceFiles) )
             CHKD_ERR("Failed to load grps!");
     }
     else
