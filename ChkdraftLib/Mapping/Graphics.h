@@ -11,8 +11,12 @@ class GuiMap;
     - Final Tile Data (what MTXM will be)
     - Units & Sprites, northmost to southmost, in the case of a tie, the highest index is drawn first. */
 
-using ChkdBitmap = std::vector<u32>;
-using ChkdPalette = std::array<u32, 256>;
+using ChkdBitmap = std::vector<Sc::SystemColor>;
+using ChkdPalette = std::array<Sc::SystemColor, Sc::NumColors>;
+
+extern Sc::SystemColor black;
+
+class Graphics;
 
 struct colorcycle
 {
@@ -49,7 +53,7 @@ class ColorCycler
         };
 
         virtual ~ColorCycler();
-        static bool CycleColors(const u16 tileset); // Returns true if the map should be redrawn
+        static bool CycleColors(const u16 tileset, ChkdPalette & palette); // Returns true if the map should be redrawn
 
     private:
         static constexpr size_t TotalRotatorSets = 4;
@@ -66,9 +70,11 @@ class Graphics
 {
     public:
 
-        Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
-            displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0) { }
+        Graphics(GuiMap & map, Selections & selections);
         virtual ~Graphics();
+        
+        ChkdPalette & getPalette();
+        void updatePalette();
 
         void DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, HDC hDC, bool showAnywhere);
 
@@ -99,6 +105,9 @@ class Graphics
         bool SetGridSize(u32 gridNum, u16 xSize, u16 ySize);
         bool SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue);
 
+        void DrawTools(HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+            Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
+
         /** Forces all SpriteNodes to be updated upon next draw
             Should be called whenever changes are made to
             unit or sprite data */
@@ -109,6 +118,7 @@ class Graphics
 
         GuiMap & map; // Reference to the map this instance of graphics renders
         Selections & selections; // Reference to the selections belonging to the corresponding map
+        ChkdPalette palette;
 
         s32 screenLeft; // X-Position of the screens left edge in the map
         s32 screenTop; // Y-Position of the screens top edge in the map
@@ -128,36 +138,30 @@ class Graphics
 
 BITMAPINFO GetBMI(s32 width, s32 height);
 
-void GrpToBits(ChkdBitmap & bitmap, u16 & bitWidth, u16 & bitHeight, s32 & xStart, s32 & yStart, GRP* grp,
-                u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped );
-
-void UnitToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                  s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected );
 
-void SpriteToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC );
 
-void TileToBits(ChkdBitmap & bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 TileValue);
+void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s64 xStart, s64 yStart, s64 width, s64 height, u16 TileValue);
 
-void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, u8 miniTileX, u8 miniTileY, BITMAPINFO & bmi);
+void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi);
 
-void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi);
+void DrawTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi);
 
-void TileElevationsToBits(ChkdBitmap & bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
-                           s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation );
+void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, const Sc::Terrain::Tiles & tiles,
+                           s64 xOffset, s64 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation );
 
-void DrawTile( HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 & TileValue,
-               BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset );
+void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi,
+    u8 redOffset, u8 greenOffset, u8 blueOffset);
 
-void DrawTileNumbers( HDC hDC, bool tileNumsFromMTXM, u32 screenLeft, u32 screenTop,
-                      u16 xSize, u16 ySize, u16 bitHeight, u16 bitWidth, GuiMap & map );
-
-void DrawTools( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                 Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
+void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
+void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
                         Clipboard & clipboard, GuiMap & map, Layer layer);
 
 void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
@@ -166,7 +170,7 @@ void DrawSelectingFrame(HDC hDC, Selections & selections, u32 screenLeft, u32 sc
 
 void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom);
 
-void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap & map);
+void DrawMiniMap(HDC hDC, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map);
 
 void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
 

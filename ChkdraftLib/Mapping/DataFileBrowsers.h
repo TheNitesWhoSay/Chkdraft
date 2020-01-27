@@ -9,7 +9,7 @@ class ChkdDataFileBrowser : public Sc::DataFile::Browser
         ChkdDataFileBrowser();
 
         virtual std::vector<MpqFilePtr> openScDataFiles(
-            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = getDataFileDescriptors(),
             const std::string & expectedStarCraftDirectory = Settings::starCraftPath,
             FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
 

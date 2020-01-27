@@ -438,6 +438,11 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
     return false;
 }
 
+void Scenario::setTileset(Sc::Terrain::Tileset tileset)
+{
+    layers.setTileset(tileset);
+}
+
 Versions::Versions(bool useDefault) : layers(nullptr)
 {
     if ( useDefault )

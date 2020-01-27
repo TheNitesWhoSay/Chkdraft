@@ -46,7 +46,7 @@ ColorCycler::~ColorCycler()
 
 }
 
-bool ColorCycler::CycleColors(const u16 tileset)
+bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
 {
     bool redraw = false;
     if ( GetTickCount() > prevTickCount )
@@ -61,7 +61,7 @@ bool ColorCycler::CycleColors(const u16 tileset)
                 if ( rotator.ticksRemaining == 0 )
                 {
                     for ( u16 paletteIndex = rotator.paletteIndexMax; paletteIndex > rotator.paletteIndexMin; paletteIndex-- )
-                        chkd.scData.tilesets.set[tileset].wpe.swap<u32>(4*paletteIndex, 4*paletteIndex-4); // Swap adjacent colors starting from max and ending at min, net effect is each rotates one to the right
+                        std::swap(palette[paletteIndex], palette[paletteIndex-1]); // Swap adjacent colors starting from max and ending at min, net effect is each rotates one to the right
 
                     rotator.ticksRemaining = rotator.ticksBetweenRotations; // Reset the timer
                     redraw = true; // Flag that anything using the palette should be redrawn
@@ -77,15 +77,7 @@ bool ColorCycler::CycleColors(const u16 tileset)
     return redraw;
 }
 
-inline u32 AdjustPx(u32 pixel, u8 redOffset, u8 greenOffset, u8 blueOffset)
-{
-    ((u8*)&pixel)[0] += blueOffset;
-    ((u8*)&pixel)[1] += greenOffset;
-    ((u8*)&pixel)[2] += redOffset;
-    return pixel;
-}
-
-inline void BoundedAdjustPx(u32 & pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
+inline void BoundedAdjustPx(Sc::SystemColor & pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
 {
     u8 result = ((u8*)&pixel)[0] + (u8)blueOffset;
     if ( blueOffset > 0 )
@@ -136,9 +128,27 @@ inline void BoundedAdjustPx(u32 & pixel, s16 redOffset, s16 greenOffset, s16 blu
     }
 }
 
+Sc::SystemColor black = Sc::SystemColor();
+
+Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
+    displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
+{
+    updatePalette();
+}
+
 Graphics::~Graphics()
 {
 
+}
+
+ChkdPalette & Graphics::getPalette()
+{
+    return palette;
+}
+
+void Graphics::updatePalette()
+{
+    palette = chkd.scData.terrain.getColorPalette(map.layers.getTileset());
 }
 
 void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, HDC hDC, bool showAnywhere)
@@ -181,10 +191,10 @@ void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
     u32 maxRowX, maxRowY;
 
-    u16 yTile, xTile,
-        tileset = map.layers.getTileset();
+    Sc::Terrain::Tileset tileset = map.layers.getTileset();
 
-    TileSet* tiles = &chkd.scData.tilesets.set[tileset];
+    u16 yTile, xTile;
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
 
     if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
         maxRowY = mapHeight;
@@ -200,7 +210,7 @@ void Graphics::DrawTerrain(ChkdBitmap & bitmap)
     {
         for ( xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
         {
-            TileToBits(bitmap, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
+            TileToBits(bitmap, palette, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
                 u16(screenWidth), u16(screenHeight), map.layers.getTile(xTile, yTile));
         }
     }
@@ -210,20 +220,20 @@ void Graphics::DrawTileElevations(ChkdBitmap & bitmap)
 {
     u32 maxRowX, maxRowY, xc, yc;
 
-    if ( screenHeight > (s32)mapHeight*32 )
+    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
         maxRowY = mapHeight;
     else
         maxRowY = (screenTop+screenHeight)/32+1;
 
-    if ( screenWidth > (s32)mapWidth*32 )
+    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
         maxRowX = mapWidth;
     else
         maxRowX = (screenLeft+screenWidth)/32+1;
 
     BITMAPINFO bmi = GetBMI(32, 32);
-
-    u16 tileset = map.layers.getTileset();
-    TileSet* tiles = &chkd.scData.tilesets.set[tileset];
+    
+    Sc::Terrain::Tileset tileset = map.layers.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
 
     for ( yc=screenTop/32; yc<maxRowY; yc++ )
     {
@@ -252,7 +262,7 @@ void Graphics::DrawGrid(ChkdBitmap & bitmap)
             for ( x = gridXSize-(screenLeft%gridXSize); x < screenWidth; x += gridXSize ) // Draw vertical lines
             {
                 for ( y = 0; y < screenHeight; y++ )
-                    bitmap[y*screenWidth + x] = (u32 &)currGrid.red;
+                    bitmap[y*screenWidth + x] = currGrid.color;
             }
         }
             
@@ -261,7 +271,7 @@ void Graphics::DrawGrid(ChkdBitmap & bitmap)
             for ( y = gridYSize-(screenTop%gridYSize); y < screenHeight; y += gridYSize )
             {
                 for ( x = 0; x < screenWidth; x++ )
-                    bitmap[y*screenWidth + x] = (u32 &)currGrid.red;
+                    bitmap[y*screenWidth + x] = currGrid.color;
             }
         }
     }
@@ -324,22 +334,22 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
                             if ( leftMostOnScreen )
                             {
                                 for ( s32 y = topMost; y < bottomMost; y++ )
-                                    bitmap[y*screenWidth + leftMost] = 0;
+                                    bitmap[y*screenWidth + leftMost] = black;
                             }
                             if ( rightMostOnScreen )
                             {
                                 for ( s32 y = topMost; y < bottomMost; y++ )
-                                    bitmap[y*screenWidth + rightMost] = 0;
+                                    bitmap[y*screenWidth + rightMost] = black;
                             }
                             if ( topMostOnScreen )
                             {
                                 for ( s32 x = leftMost; x < rightMost; x++ )
-                                    bitmap[topMost*screenWidth + x] = 0;
+                                    bitmap[topMost*screenWidth + x] = black;
                             }
                             if ( bottomMostOnScreen )
                             {
                                 for ( s32 x = leftMost; x < rightMost; x++ )
-                                    bitmap[bottomMost*screenWidth + x] = 0;
+                                    bitmap[bottomMost*screenWidth + x] = black;
                             }
 
                             if ( inverted )
@@ -408,22 +418,22 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
                 if ( leftMostOnScreen )
                 {
                     for ( s32 y = topMost; y < bottomMost; y++ )
-                        bitmap[y*screenWidth + leftMost] = RGB(255, 255, 255);
+                        bitmap[y*screenWidth + leftMost] = Sc::SystemColor(255, 255, 255);
                 }
                 if ( rightMostOnScreen )
                 {
                     for ( s32 y = topMost; y < bottomMost; y++ )
-                        bitmap[y*screenWidth + rightMost] = RGB(255, 255, 255);
+                        bitmap[y*screenWidth + rightMost] = Sc::SystemColor(255, 255, 255);
                 }
                 if ( topMostOnScreen )
                 {
                     for ( s32 x = leftMost; x < rightMost; x++ )
-                        bitmap[topMost*screenWidth + x] = RGB(255, 255, 255);
+                        bitmap[topMost*screenWidth + x] = Sc::SystemColor(255, 255, 255);
                 }
                 if ( bottomMostOnScreen )
                 {
                     for ( s32 x = leftMost; x < rightMost; x++ )
-                        bitmap[bottomMost*screenWidth + x] = RGB(255, 255, 255);
+                        bitmap[bottomMost*screenWidth + x] = Sc::SystemColor(255, 255, 255);
                 }
             }
         }
@@ -436,8 +446,6 @@ void Graphics::DrawUnits(ChkdBitmap & bitmap)
         screenBottom = screenTop+screenHeight;
 
     u16 tileset = map.layers.getTileset();
-
-    buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 
     for ( u16 unitNum = 0; unitNum < map.layers.numUnits(); unitNum++ )
     {
@@ -470,8 +478,6 @@ void Graphics::DrawSprites(ChkdBitmap & bitmap)
         screenBottom = screenTop + screenHeight;
 
     u16 tileset = map.layers.getTileset();
-
-    buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
 
     for ( size_t spriteId = 0; spriteId < map.layers.numSprites(); spriteId++ )
     {
@@ -593,23 +599,17 @@ void Graphics::DrawLocationNames(HDC hDC)
 
 void Graphics::DrawTileNumbers(HDC hDC)
 {
-    //buffer* tileBuf = nullptr;
-    //if ( tileNumsFromMTXM )
-    //  tileBuf = &map.MTXM();
-    //else
-    //  tileBuf = &map.TILE();
-
     u32 maxRowX, maxRowY,
         xc, yc;
 
     u16 wTileHex;
 
-    if ( screenHeight > (s32)mapHeight*32 )
+    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
         maxRowY = mapHeight;
     else
         maxRowY = (screenTop+screenHeight)/32+1;
 
-    if ( screenWidth > (s32)mapWidth*32 )
+    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
         maxRowX = mapWidth;
     else
         maxRowX = (screenLeft+screenWidth)/32+1;
@@ -716,15 +716,15 @@ bool Graphics::GetGridColor(u32 gridNum, u8 & red, u8 & green, u8 & blue)
 {
     if ( gridNum >= 0 && gridNum < 2 )
     {
-        red = grids[gridNum].red;
-        green = grids[gridNum].green;
-        blue = grids[gridNum].blue;
+        red = grids[gridNum].color.red;
+        green = grids[gridNum].color.green;
+        blue = grids[gridNum].color.blue;
     }
     else
     {
-        red = grids[0].red;
-        green = grids[0].green;
-        blue = grids[0].blue;
+        red = grids[0].color.red;
+        green = grids[0].color.green;
+        blue = grids[0].color.blue;
     }
     return gridNum >= 0 && gridNum < 2;
 }
@@ -743,11 +743,18 @@ bool Graphics::SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue)
 {
     if ( gridNum >= 0 && gridNum < 2 )
     {
-        grids[gridNum].red = red;
-        grids[gridNum].green = green;
-        grids[gridNum].blue = blue;
+        grids[gridNum].color.red = red;
+        grids[gridNum].color.green = green;
+        grids[gridNum].color.blue = blue;
     }
     return gridNum >= 0 && gridNum < 2;
+}
+
+
+void Graphics::DrawTools(HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+    Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
+{
+    ::DrawTools(hDC, tempBitmap, palette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
@@ -767,78 +774,67 @@ BITMAPINFO GetBMI(s32 width, s32 height)
     return bmi;
 }
 
-void TileElevationsToBits(ChkdBitmap & bitmap, s32 bitWidth, s32 bitHeight, TileSet* tiles,
-                           s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation )
+void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, const Sc::Terrain::Tiles & tiles,
+                           s64 xOffset, s64 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation )
 {
-    u32 bitMax = bitWidth*bitHeight*3,
-        cv5Ref, MegaTileRef; // Pointers and index's to tile components
-
-    u8 yMiniTile,  xMiniTile;
-
-    if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(TileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
     {
-        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-
-        for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
-            for ( xMiniTile=0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                u8 miniFlags = 0;
-                if ( tiles->vf4.get<u8>(miniFlags, MegaTileRef+2*(4*yMiniTile+xMiniTile)) )
+                Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
+                u8 red = 0, blue = 0, green = 100;
+                switch ( miniTileFlags.getElevation() )
                 {
-                    u8 red = 0, blue = 0, green = 100;
-                    if ( miniFlags & 0x2 ) // Mid ground
-                    {
-                        blue = 100;
-                        green = 0;
-                    }
-                    if ( miniFlags & 0x4 ) // High ground
-                    {
-                        red = 100;
-                        green = 0;
-                    }
-                    if ( !(miniFlags & 0x1) ) // Not walkable
-                    {
-                        red /= 3;
-                        green /= 3;
-                        blue /= 3;
-                    }
+                    case Sc::Terrain::TileElevation::Low: blue = 100; green = 0; break;
+                    case Sc::Terrain::TileElevation::Mid: red = 100; green = 0; break;
+                    case Sc::Terrain::TileElevation::High: red = 100; green = 0; break;
+                }
+                if ( !miniTileFlags.isWalkable() )
+                {
+                    red /= 3;
+                    green /= 3;
+                    blue /= 3;
+                }
 
-                    u32 miniTileYC = yOffset+yMiniTile*(8+miniTileSeparation),
-                        miniTileXC = xOffset+xMiniTile*(8+miniTileSeparation);
+                s64 miniTileYc = yOffset + 8*(yMiniTile + miniTileSeparation),
+                    miniTileXc = xOffset + 8*(xMiniTile + miniTileSeparation);
 
-                    for ( u32 yc=0; yc<8; yc++ )
+                for ( s64 yc = 0; yc < 8; yc++ )
+                {
+                    if ( yc + miniTileYc >= 0 && yc + miniTileYc < bitHeight )
                     {
-                        if ( yc + miniTileYC < (u32)bitHeight )
+                        for ( s64 xc = 0; xc < 8; xc ++ )
                         {
-                            for ( u32 xc=0; xc<8; xc++ )
-                            {
-                                if ( xc + miniTileXC < (u32)bitWidth )
-                                    bitmap[(yc + miniTileYC)*bitWidth + xc + miniTileXC] = RGB(red, green, blue);
-                            }
+                            if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
+                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(red, green, blue);
                         }
                     }
                 }
             }
         }
     }
-    else // No CV5 Reference
+    else // No corresponding CV5 entry
     {
-        for ( yMiniTile = 0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
-            for ( xMiniTile = 0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                u32 miniTileYC = yOffset + yMiniTile*(8 + miniTileSeparation),
-                    miniTileXC = xOffset + xMiniTile*(8 + miniTileSeparation);
-
-                for ( u32 yc = 0; yc<8; yc++ )
+                s64 miniTileYc = yOffset + yMiniTile * (8*miniTileSeparation),
+                    miniTileXc = xOffset + xMiniTile * (8*miniTileSeparation);
+                
+                for ( s64 yc = 0; yc < 8; yc++ )
                 {
-                    if ( yc + miniTileYC < (u32)bitHeight )
+                    if ( yc + miniTileYc < bitHeight )
                     {
-                        for ( u32 xc = 0; xc<8; xc++ )
+                        for ( s64 xc = 0; xc < 8; xc ++ )
                         {
-                            if ( xc + miniTileXC < (u32)bitWidth )
-                                bitmap[(yc + miniTileYC)*bitWidth + xc + miniTileXC] = RGB(0, 0, 0);
+                            if ( xc + miniTileXc < bitWidth )
+                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(0, 0, 0);
                         }
                     }
                 }
@@ -847,265 +843,165 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s32 bitWidth, s32 bitHeight, Tile
     }
 }
 
-void GrpToBits(ChkdBitmap & bitmap, u16 & bitWidth, u16 & bitHeight, s32 & xStart, s32 & yStart,
-                GRP* grp, u16 grpXC, u16 grpYC, u16 frame, buffer* palette, u8 color, bool flipped )
-{
-    if ( grp == nullptr )
-        return;
-
-    if ( frame > grp->numFrames() )
-        frame = grp->numFrames()-1;
-
-    u8 frameXOffset = grp->xOffset(frame),
-       frameYOffset = grp->yOffset(frame);
-
-    s16 frameHeight = grp->frameHeight(frame),
-        frameWidth = grp->frameWidth(frame),
-        line = 0;
-
-    u16 grpHeight = grp->GrpHeight(),
-        grpWidth = grp->GrpWidth();
-
-    s32 xOffset = grpXC-xStart-grpWidth/2+frameXOffset,
-        yOffset = grpYC-yStart-grpHeight/2+frameYOffset;
-
-    u8* lineDat,
-        compSect,
-        pos,
-        x;
-
-    if ( yOffset < 0 ) // Prevent writing before the first line
-        line = (s16)(-yOffset);
-
-    if ( yOffset+frameHeight > bitHeight ) // Prevent writing past the last line
-        frameHeight -= (s16)yOffset+frameHeight-bitHeight;
-
-    while ( line < frameHeight )
-    {
-        lineDat = grp->data(frame, line);
-
-        pos = 0;
-        x = 0;
-
-        while ( x < frameWidth )
-        {
-            compSect = lineDat[pos];
-            pos++;
-
-            if ( compSect >= 0x80 ) // Skip over transparent pixels
-            {
-                x += compSect - 0x80;
-            }
-            else if ( compSect >= 0x40 ) // Place compSect-0x40 pixels of specified color
-            {
-                for ( u8 i=0; i<compSect-0x40; i++ )
-                {
-                    u32 bitmapIndex = flipped ? (line+yOffset)*bitWidth+frameWidth-x+xOffset : (line+yOffset)*bitWidth+x+xOffset;
-                    if ( x+xOffset < bitWidth && x+xOffset > 0 )
-                    {
-                        if ( lineDat[pos] < 8 )
-                            bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((lineDat[pos] + 16) * 4);
-                        else if ( lineDat[pos] < 16 )
-                            bitmap[bitmapIndex] = chkd.scData.tunit.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
-                        else
-                            bitmap[bitmapIndex] = palette->get<u32>(lineDat[pos] * 4);
-                    }
-                    x++;
-                }
-                pos++;
-            }
-            else // compSect < 0x40, place compSect pixels directly from data
-            {
-                for ( u8 i=0; i<compSect; i++ )
-                {
-                    u32 bitmapIndex = ((u32)line+(u32)yOffset)*(u32)bitWidth+(u32)x+(u32)xOffset;
-                    if ( x+xOffset < bitWidth && x+xOffset > 0 )
-                    {
-                        if ( lineDat[pos] < 8 )
-                            bitmap[bitmapIndex] = chkd.scData.tselect.pcxDat.get<u32>((lineDat[pos] + 16) * 4);
-                        else if ( lineDat[pos] < 16 )
-                            bitmap[bitmapIndex] = chkd.scData.tunit.pcxDat.get<u32>((color * 8 + lineDat[pos] - 8) * 4);
-                        else
-                            bitmap[bitmapIndex] = palette->get<u32>(lineDat[pos] * 4);
-                    }
-                    x++;
-                    pos++;
-                }
-            }
-        }
-        line ++;
-    }
-}
-
-void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u16 bitWidth, u16 bitHeight, s32 xStart, s32 yStart,
-               Sc::Sprite::GrpFile & grpFile, u16 grpXc, u16 grpYc, u16 frame, u8 color, bool flipped)
+void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xStart, s64 yStart,
+               const Sc::Sprite::GrpFile & grpFile, s64 grpXc, s64 grpYc, u16 frame, u8 color, bool flipped)
 {
     if ( frame < grpFile.numFrames )
     {
-        const Sc::Sprite::GrpFrameHeader grpFrameHeader = grpFile.frameHeaders[frame];
+        const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
         
-        s32 xOffset = grpXc-xStart-grpFile.grpWidth/2+grpFrameHeader.xOffset,
-            yOffset = grpYc-yStart-grpFile.grpHeight/2+grpFrameHeader.yOffset;
+        s64 xOffset = grpXc-xStart-s64(grpFile.grpWidth)/2+s64(grpFrameHeader.xOffset),
+            yOffset = grpYc-yStart-s64(grpFile.grpHeight)/2+s64(grpFrameHeader.yOffset);
 
-        s16 row = 0;
+        s64 row = 0;
         if ( yOffset < 0 ) // Only draw visible rows by starting at row: |yOffset|, if yOffset is negative
-            row = (s16)(-yOffset);
+            row = s64(-yOffset);
 
-        u8 frameWidth = grpFrameHeader.frameWidth;
-        s16 frameHeight = grpFrameHeader.frameHeight;
+        s64 frameWidth = s64(grpFrameHeader.frameWidth);
+        s64 frameHeight = s64(grpFrameHeader.frameHeight);
+
+        if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
+            return;
+
         if ( yOffset+frameHeight >= bitHeight ) // Only draw visible rows by limiting row < bitHeight-yOffset if yOffset+frameHeight >= bitHeight
             frameHeight = bitHeight - yOffset;
         
-        u32 frameOffset = grpFrameHeader.frameOffset;
+        size_t frameOffset = size_t(grpFrameHeader.frameOffset);
         const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-        if ( flipped )
+        for ( ; row < frameHeight; row++ )
         {
-            for ( ; row < frameHeight; row++ )
+            size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+            const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+            const s64 rowStart = (row+yOffset)*bitWidth;
+            const s64 rowLimit = (row+yOffset+1)*bitWidth;
+            s64 currPixelIndex = rowStart + xOffset;
+            size_t pixelLineOffset = 0;
+            if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
             {
-                u16 rowOffset = grpFrame.rowOffsets[row];
-                const Sc::Sprite::PixelRow* grpPixelRow = (const Sc::Sprite::PixelRow*)((u8*)&grpFile)[frameOffset+(u32)rowOffset];
-                const Sc::Sprite::PixelLine* pixelLine = (const Sc::Sprite::PixelLine*)&grpPixelRow->adjacentHorizontalLines[0];
-                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset + frameWidth - 1; // Start from the right-most pixel of this row of the frame
-                u32 pixelLineOffset = 0;
-                for ( u8 xc=0; xc<frameWidth; xc++ )
+                auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+rowStart : bitmap.begin()+currPixelIndex; // Start from the left-most pixel of this row of the frame
+                auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+rowLimit : bitmap.begin()+(currPixelIndex+frameWidth);
+                while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
                 {
-                    pixelLineOffset ++; // Forward 1 byte for the header all line types share
-
-                    if ( pixelLine->isTransparentLine() )
+                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                    s64 lineLength = s64(pixelLine.lineLength());
+                    s64 inBoundLength = currPixelIndex+lineLength-rowStart;
+                    if ( rowStart+inBoundLength > rowLimit )
+                        inBoundLength = bitWidth;
+                    
+                    if ( inBoundLength > 0 )
                     {
-                        currPixel -= pixelLine->transparentLineLength();
-                        pixelLine ++; // Forward 1 byte for the header to get to the next pixelLine
+                        if ( pixelLine.isSpeckled() )
+                        {
+                            for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, ++currPixel )
+                                *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        }
+                        else // Solid or transparent
+                        {
+                            if ( pixelLine.isSolidLine() )
+                                std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                            
+                            currPixel += inBoundLength;
+                        }
                     }
-                    else if ( pixelLine->isSolidLine() )
-                    {
-                        u8 lineLength = pixelLine->solidLineLength();
-                        currPixel -= lineLength;
-                        std::fill_n(currPixel+1, lineLength, palette[pixelLine->paletteIndex[0]]); // Place single color across the entire line
-                        pixelLine += 2; // Forward 1 byte for the header and 1 for the solid line color to get to the next pixelLine
-                    }
-                    else if ( pixelLine->isSpeckled() )
-                    {
-                        u8 lineLength = pixelLine->speckledLineLength();
-                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
-                            *currPixel = palette[pixelLine->paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
-                        pixelLine += 1+lineLength; // Forward 1 byte for the header and lineLength for the colors to get to the next pixelLine
-                    }
+                    currPixelIndex += lineLength;
+                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
-            }
-        }
-        else // !flipped
-        {
-            for ( ; row < frameHeight; row++ )
-            {
-                u16 rowOffset = grpFrame.rowOffsets[row];
-                const Sc::Sprite::PixelRow* grpPixelRow = (const Sc::Sprite::PixelRow*)((u8*)&grpFile)[frameOffset+(u32)rowOffset];
-                auto currPixel = bitmap.begin() + (row+yOffset)*bitWidth + xOffset; // Start from the left-most pixel of this row of the frame
-                u32 pixelLineOffset = 0;
-                for ( u8 xc=0; xc<frameWidth; xc++ )
-                {
-                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)grpPixelRow)[pixelLineOffset];
-                    pixelLineOffset ++; // Forward 1 byte for the header all line types share
 
-                    if ( pixelLine.isTransparentLine() )
-                        currPixel += pixelLine.transparentLineLength();
-                    else if ( pixelLine.isSolidLine() )
+                while ( currPixel < frameEnd ) // Draw all remaining adjacent horizontal lines
+                {
+                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                    s64 lineLength = s64(pixelLine.lineLength());
+                    if ( std::distance(currPixel, frameEnd) < lineLength )
+                        lineLength = frameEnd - currPixel;
+                    
+                    if ( pixelLine.isSpeckled() )
                     {
-                        u8 lineLength = pixelLine.solidLineLength();
-                        currPixel += lineLength;
-                        std::fill_n(currPixel+1, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
-                        pixelLineOffset ++; // Forward 1 byte for the solid line color
-                    }
-                    else if ( pixelLine.isSpeckled() )
-                    {
-                        u8 lineLength = pixelLine.speckledLineLength();
-                        pixelLineOffset += lineLength; // Forward lineLength pixels for the palette index array
-                        for ( u8 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                        for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
                             *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
                     }
+                    else // Solid or transparent
+                    {
+                        if ( pixelLine.isSolidLine() )
+                            std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line'
+
+                        currPixel += lineLength;
+                    }
+                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
             }
         }
     }
 }
 
-void UnitToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                  s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
-    GRP* curr = nullptr;
     u16 drawnUnitId = unitID < 228 ? unitID : 0; // Extended units use ID:0's graphics (for now)
-    u32 grpId = chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->ImageFile)->GRPFile - 1;
+    u32 grpId = chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->ImageFile)->GRPFile;
 
-    if ( (u16)grpId < chkd.scData.numGrps )
-        curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite)->ImageFile)->GRPFile - 1];
-
-    if ( selected && curr != nullptr )
+    if ( (size_t)grpId < chkd.scData.grps.numGrps() )
     {
-        GRP* selCirc = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile-1];
-        u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
-        GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, palette, 0, false);
+        Sc::SystemColor remapped[8];
+        if ( selected )
+        {
+            u32 grpId = chkd.scData.ImageDat(chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleImage+561)->GRPFile;
+            if ( grpId < chkd.scData.grps.numGrps() )
+            {
+                const Sc::Sprite::GrpFile & selCirc = chkd.scData.grps.getGrp(grpId).get();
+                u16 offsetY = unitYC + chkd.scData.SpriteDat(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite)->SelectionCircleOffset;
+                std::memcpy(remapped, &palette[0], sizeof(remapped));
+                std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
+                GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, 0, false);
+                std::memcpy(&palette[0], remapped, sizeof(remapped));
+            }
+        }
+        
+        const Sc::Sprite::GrpFile & curr = chkd.scData.grps.getGrp(grpId).get();
+        std::memcpy(remapped, &palette[8], sizeof(remapped));
+        std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, false);
+        std::memcpy(&palette[8], remapped, sizeof(remapped));
     }
-
-    GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, palette, color, false);
 }
 
-void SpriteToBits(ChkdBitmap & bitmap, buffer* palette, u8 color, u16 bitWidth, u16 bitHeight,
+void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
 {
-    GRP* curr = &chkd.scData.grps[chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1];
-    GrpToBits(bitmap, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, palette, color, false);
+    const Sc::Sprite::GrpFile & curr = chkd.scData.grps.getGrp(chkd.scData.ImageDat(chkd.scData.SpriteDat(spriteID)->ImageFile)->GRPFile-1).get();
+    Sc::SystemColor remapped[8];
+    std::memcpy(remapped, &palette[8], sizeof(remapped));
+    std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+    GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, false);
+    std::memcpy(&palette[8], remapped, sizeof(remapped));
 }
 
-void TileToBits(ChkdBitmap & bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16 width, u16 height, u16 TileValue)
+void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s64 xStart, s64 yStart, s64 width, s64 height, u16 TileValue)
 {
-    u32 cv5Ref, MegaTileRef, MiniTileRef, // Pointers and index's of tile components
-        yMiniOffset, xMiniOffset, // Processing optimizers
-        yPixel, xPixel; // Bitmap coordinates
-
-    u16 wpeRef; // Pointer to WPE start
-
-    u8 xMiniTile,  yMiniTile ,
-       xMiniPixel, yMiniPixel;
-    
-    buffer* palette = &tiles->wpe;
-
-    s8 negative; // Simplifies calculating flipped tiles
-
-    if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(TileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
     {
-        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-        
-        for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 MiniTile rows
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
+        const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
-            yMiniOffset = yStart + yMiniTile*8; // Calculate the MiniTile's y-contribution once rather than 8 times
-            for ( xMiniTile=0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            s64 yMiniOffset = yStart + yMiniTile*8;
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                if ( tiles->vx4.get<u8>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) & 1 ) // If the MiniTile's xPixels are flipped (1st bit)
-                {
-                    xMiniOffset = xStart + xMiniTile*8 + 7; // Calculate the MiniTile's x-contribution once rather than 64 times
-                    negative = -1;
-                }
-                else // Not Flipped
-                {
-                    xMiniOffset = xStart + xMiniTile*8; // Calculate the MiniTile's x-contribution once rather than 64 times
-                    negative =  1;
-                }
+                const Sc::Terrain::TileGraphics::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                bool flipped = miniTileGraphics.isFlipped();
+                size_t vr4Index = size_t(miniTileGraphics.vr4Index());
                 
-                MiniTileRef = (tiles->vx4.get<u16>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
-
-                for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
+                s64 xMiniOffset = xStart + xMiniTile*8;
+                s64 yMiniLimit = yMiniOffset+8 > height ? height-yMiniOffset : 8;
+                s64 xMiniLimit = xMiniOffset+8 > width ? width-xMiniOffset : 8;
+                for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < yMiniLimit; yMiniPixel++ )
                 {
-                    yPixel = yMiniOffset + yMiniPixel; // The y-position within the current bitmap
-                    if ( yPixel < height )
+                    for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < xMiniLimit; xMiniPixel++ )
                     {
-                        for ( xMiniPixel=0; xMiniPixel<8; xMiniPixel++ ) // Cycle through the 8 mini tile pixel columns
-                        {
-                            xPixel = negative*xMiniPixel + xMiniOffset; // The x-position within the current bitmap
-                            if ( xPixel < width )
-                            {
-                                wpeRef = tiles->vr4.get<u8>(MiniTileRef+yMiniPixel*8+xMiniPixel)*4; // WPE start point for the given pixel
-                                bitmap[yPixel*width + xPixel] = palette->get<u32>(wpeRef);
-                            }
-                        }
+                        const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                        const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                        bitmap[(yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel)] = palette[wpeIndex];
                     }
                 }
             }
@@ -1113,104 +1009,83 @@ void TileToBits(ChkdBitmap & bitmap, TileSet* tiles, s32 xStart, s32 yStart, u16
     }
     else // No CV5 Reference
     {
-        u32 yEnd = std::min(yStart + 32, height - 1);
-        u32 xEnd = std::min(xStart + 32, width - 1);
-        for ( u32 yc = yStart; yc < yEnd; yc++ )
+        s64 yEnd = std::min(yStart + 32, height);
+        s64 xEnd = std::min(xStart + 32, width);
+        for ( s64 yc = yStart; yc < yEnd; yc++ )
         {
-            for ( u32 xc = xStart; xc < xEnd; xc++ )
-                bitmap[yc*width + xc] = 0;
+            for ( s64 xc = xStart; xc < xEnd; xc++ )
+                bitmap[yc*width + xc] = black;
         }
     }
 }
 
-void DrawMiniTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, u8 miniTileX, u8 miniTileY, BITMAPINFO & bmi)
+void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi)
 {
-    u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
-
     ChkdBitmap graphicBits;
     graphicBits.resize(64);
-
-    if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
+    
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
     {
-        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-
-        u8 miniFlags = 0;
-        if ( tiles->vf4.get<u8>(miniFlags, MegaTileRef+2*(4*miniTileY+miniTileX)) )
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileValue)];
+        const Sc::Terrain::TileFlags::MiniTileFlags & miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[miniTileY][miniTileX];
+        u8 red = 0, blue = 0, green = 100;
+        switch ( miniTileFlags.getElevation() )
         {
-            u8 red = 0, blue = 0, green = 100;
-            if ( miniFlags & 0x2 ) // Mid ground
-            {
-                blue = 100;
-                green = 0;
-            }
-            if ( miniFlags & 0x4 ) // High ground
-            {
-                red = 100;
-                green = 0;
-            }
-            if ( !(miniFlags & 0x1) ) // Not walkable
-            {
-                red /= 3;
-                green /= 3;
-                blue /= 3;
-            }
+            case Sc::Terrain::TileElevation::Low: blue = 100; green = 0; break;
+            case Sc::Terrain::TileElevation::Mid: red = 100; green = 0; break;
+            case Sc::Terrain::TileElevation::High: red = 100; green = 0; break;
+        }
 
-            for ( u32 yc=0; yc<8; yc++ )
-            {
-                for ( u32 xc = 0; xc < 8; xc++ )
-                    graphicBits[yc * 8 + xc] = RGB(red, green, blue);
-            }
+        for ( s64 yc=0; yc<8; yc++ )
+        {
+            for ( s64 xc = 0; xc < 8; xc++ )
+                graphicBits[yc * 8 + xc] = Sc::SystemColor(red, green, blue);
         }
     }
-    SetDIBitsToDevice(hDC, xOffset, yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+    SetDIBitsToDevice(hDC, (int)xOffset, (int)yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi)
+void DrawTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi)
 {
-    u32 cv5Ref, MegaTileRef; // Pointers and index's to tile components
-
-    u8 yMiniTile, xMiniTile;
-
     ChkdBitmap graphicBits;
     graphicBits.resize(1024);
 
-    if ( GetCV5References(tiles, cv5Ref, tileValue) ) // Get tile CV5 start point for the given MTXM value
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
     {
-        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-
-        for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileValue)];
+        const Sc::Terrain::TileFlags & tileFlags = tiles.tileFlags[megaTileIndex];
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
-            for ( xMiniTile=0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                u8 miniFlags = 0;
-                if ( tiles->vf4.get<u8>(miniFlags, MegaTileRef+2*(4*yMiniTile+xMiniTile)) )
+                const Sc::Terrain::TileFlags::MiniTileFlags & miniTileFlags = tileFlags.miniTileFlags[yMiniTile][xMiniTile];
+                const Sc::Terrain::TileElevation elevation = miniTileFlags.getElevation();
+
+                u8 red = 0, blue = 0, green = 100;
+                switch ( elevation )
                 {
-                    u8 red = 0, blue = 0, green = 100;
-                    if ( miniFlags & 0x2 ) // Mid ground
-                    {
-                        blue = 100;
-                        green = 0;
-                    }
-                    if ( miniFlags & 0x4 ) // High ground
-                    {
-                        red = 100;
-                        green = 0;
-                    }
-                    if ( !(miniFlags & 0x1) ) // Not walkable
-                    {
-                        red /= 3;
-                        green /= 3;
-                        blue /= 3;
-                    }
+                    case Sc::Terrain::TileElevation::Mid: blue = 100; green = 0; break;
+                    case Sc::Terrain::TileElevation::High: red = 100; green = 0; break;
+                }
 
-                    u32 miniTileYC = yMiniTile*(8),
-                          miniTileXC = xMiniTile*(8);
+                if ( !miniTileFlags.isWalkable() )
+                {
+                    red /= 3;
+                    green /= 3;
+                    blue /= 3;
+                }
 
-                    for ( u32 yc=0; yc<8; yc++ )
-                    {
-                        for ( u32 xc = 0; xc < 8; xc++ )
-                            graphicBits[(yc + miniTileYC) * 32 + xc + miniTileXC] = RGB(red, green, blue);
-                    }
+                size_t miniTileYC = yMiniTile*(8),
+                    miniTileXC = xMiniTile*(8);
+
+                for ( u32 yc=0; yc<8; yc++ )
+                {
+                    for ( u32 xc = 0; xc < 8; xc++ )
+                        graphicBits[(yc + miniTileYC) * 32 + xc + miniTileXC] = Sc::SystemColor(red, green, blue);
                 }
             }
         }
@@ -1218,49 +1093,34 @@ void DrawTileElevation(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 ti
     SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 }
 
-void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
+void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
 {
-    u32 cv5Ref, MegaTileRef, MiniTileRef; // Pointers and index's to tile components
-
-    u16 MiniTileOffset, yMiniOffset, // Processing optimizers
-        wpeRef; // Pointer to WPE start
-
-    u8 yMiniTile,  xMiniTile ,
-       yMiniPixel, xMiniPixel;
-
-    s8 negative; // Simplifies calculating flipped tiles
-
-    if ( GetCV5References(tiles, cv5Ref, TileValue) ) // Get tile CV5 start point for the given MTXM value
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(TileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
     {
         ChkdBitmap graphicBits;
         graphicBits.resize(1024);
-        MegaTileRef = tiles->cv5.get<u16>(cv5Ref)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
 
-        for ( yMiniTile=0; yMiniTile<4; yMiniTile++ ) // Cycle through the 4 mini tile rows
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
+        const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
-            yMiniOffset = yMiniTile*32;
-            for ( xMiniTile=0; xMiniTile<4; xMiniTile++ ) // Cycle through the 4 mini tile columns
+            s64 yMiniOffset = yMiniTile*8;
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                if ( tiles->vx4.get<u8>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) & 1 ) // If the MiniTile's xPixels are flipped (1st bit)
+                const Sc::Terrain::TileGraphics::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                bool flipped = miniTileGraphics.isFlipped();
+                size_t vr4Index = size_t(miniTileGraphics.vr4Index());
+                
+                s64 xMiniOffset = xMiniTile*8;
+                for ( s64 yMiniPixel = 0; yMiniPixel < 8; yMiniPixel++ )
                 {
-                    MiniTileOffset = (yMiniOffset + xMiniTile)*8 + 7; // Simplified: (yMiniTile*32*8 + xMiniTile*8 + 7*flipped)
-                    negative = -1;
-                }
-                else
-                {
-                    MiniTileOffset = (yMiniOffset + xMiniTile)*8; // Simplified: (yMiniTile*32*8 + xMiniTile*8)
-                    negative =  1;
-                }
-
-                MiniTileRef = (tiles->vx4.get<u16>(MegaTileRef+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
-
-                for ( yMiniPixel=0; yMiniPixel<8; yMiniPixel++ ) // Cycle through the 8 mini tile pixel rows
-                {
-                    for ( xMiniPixel=0; xMiniPixel<8; xMiniPixel++ ) // Cycle through the 8 mini tile pixel columns
+                    for ( s64 xMiniPixel = 0; xMiniPixel < 8; xMiniPixel++ )
                     {
-                        wpeRef = tiles->vr4.get<u8>((MiniTileRef+yMiniPixel*8+xMiniPixel))*4; // WPE start point for the given pixel
-                        graphicBits[(yMiniPixel * 32 + negative*xMiniPixel) + MiniTileOffset] =
-                            AdjustPx(tiles->wpe.get<u32>(wpeRef), redOffset, greenOffset, blueOffset);
+                        const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                        const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                        graphicBits[(yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel)] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
                     }
                 }
             }
@@ -1269,26 +1129,26 @@ void DrawTile(HDC hDC, TileSet* tiles, s16 xOffset, s16 yOffset, u16 & TileValue
     }
 }
 
-void DrawTools(HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
     if ( map.getLayer() == Layer::Terrain && selections.hasTiles() ) // Draw selected tiles
-        DrawTileSel(hDC, width, height, screenLeft, screenTop, selections, map);
+        DrawTileSel(hDC, palette, width, height, screenLeft, screenTop, selections, map);
     else if ( map.getLayer() == Layer::Locations ) // Draw Location Creation/Movement Graphics
         DrawTempLocs(hDC, screenLeft, screenTop, selections, map);
 
     if ( pasting ) // Draw paste graphics
-        DrawPasteGraphics(hDC, bitmap, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
+        DrawPasteGraphics(hDC, bitmap, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
 }
 
-void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
     SelectObject(hDC, pen);
     RECT rect, rcBorder;
-
-    u16 tilesetNum = map.layers.getTileset();
-    TileSet* tileset = &chkd.scData.tilesets.set[tilesetNum];
+    
+    Sc::Terrain::Tileset tileset = map.layers.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
 
     BITMAPINFO bmi = GetBMI(32, 32);
     rcBorder.left   = (0      + screenLeft)/32 - 1;
@@ -1296,8 +1156,8 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    std::vector<TileNode> & tiles = selections.getTiles();
-    for ( auto & tile : tiles )
+    std::vector<TileNode> & selectedTiles = selections.getTiles();
+    for ( auto & tile : selectedTiles )
     {
         if ( tile.xc > rcBorder.left &&
              tile.xc < rcBorder.right &&
@@ -1307,7 +1167,8 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
         {
             // Draw tile with a blue haze, might replace with blending
                 DrawTile( hDC,
-                          tileset,
+                          palette,
+                          tiles,
                           s16(tile.xc*32-screenLeft),
                           s16(tile.yc*32-screenTop),
                           tile.value,
@@ -1355,7 +1216,7 @@ void DrawTileSel(HDC hDC, u16 width, u16 height, u32 screenLeft, u32 screenTop, 
     }
 }
 
-void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                         Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer )
 {
     if ( layer == Layer::Terrain )
@@ -1364,8 +1225,8 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
         SelectObject(hDC, pen);
     
         RECT rect, rcShade;
-        u16 tileset = map.layers.getTileset();
-        TileSet* tiles = &chkd.scData.tilesets.set[tileset];
+        Sc::Terrain::Tileset tileset = map.layers.getTileset();
+        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
     
         BITMAPINFO bmi = GetBMI(32, 32);
         rcShade.left   = -32;
@@ -1389,7 +1250,7 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
             // If tile is within current map border
             {
                 // Draw tile with a blue haze
-                    DrawTile(hDC, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
+                    DrawTile(hDC, palette, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
 
                 if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
                 {
@@ -1433,7 +1294,6 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, u16 width, u16 height, u32 scre
 
         u16 tileset = map.layers.getTileset();
 
-        buffer* palette = &chkd.scData.tilesets.set[tileset].wpe;
         s32 sScreenLeft = screenLeft;
         s32 sScreenTop = screenTop;
 
@@ -1588,26 +1448,13 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
     DeleteObject(brush);
 }
 
-void DrawMiniMapTiles(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap & map )
+void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xSize, s64 ySize,
+                       s64 xOffset, s64 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map )
 {
-    // minimap colors are equivilant to pixel 7, 6 of the minitile given by (MiniMapCoord%scale)
-    u32 screenWidth  = bitWidth,
-        screenHeight = bitHeight,
-        mtxmReference,
-        cv5Reference,
-        MegaTileReference, MiniTileRef;
-
-    u8 xMiniTile = 0, yMiniTile = 0;
-
-    u16 TileValue,
-        yTile, xTile,
-        yc, xc,
-        wpeRef;
-
-    for ( yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
+    for ( s64 yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
     {
-        yTile = (u16)(yc/scale); // Get the yc of tile used for the pixel
+        s64 yMiniTile = 0;
+        s64 yTile = (s64)(yc/scale); // Get the yc of tile used for the pixel
         if ( scale > 1 )
         {
             yMiniTile = yc%(int)scale; // Get the y-minitile used for the pixel
@@ -1615,25 +1462,30 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
                 yMiniTile %= 4; // Correct for invalid y-minitiles
         }
     
-        for ( xc=0; xc<128-2*xOffset; xc++ ) // Cycle through all minimap pixel columns
+        for ( s64 xc=0; xc<128-2*xOffset; xc++ ) // Cycle through all minimap pixel columns
         {
-            xTile = (u16)(xc/scale); // Get the xc of the tile used for the pixel
+            s64 xMiniTile = 0;
+            s64 xTile = (s64)(xc/scale); // Get the xc of the tile used for the pixel
             if ( scale > 1 )
             {
                 xMiniTile = xc%(int)scale; // Get the x-minitile used for the pixel
                 if ( xMiniTile > 3 )
                     xMiniTile %= 4; // Correct for invalid x-minitiles
             }
-    
-            mtxmReference = 2*(xSize*yTile+xTile);
 
-            TileValue = map.layers.getTile(xTile, yTile);
-            if ( GetCV5References(tiles, cv5Reference, TileValue) ) // Get tile CV5 start point for the given MTXM value
+            u16 tileIndex = map.layers.getTile(xTile, yTile);
+            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+            if ( groupIndex < tiles.tileGroups.size() )
             {
-                MegaTileReference = tiles->cv5.get<u16>(cv5Reference)*32; // Get tile VX4 start point ('MegaTile') for the given CV5 struct
-                MiniTileRef = (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64; // Get VR4 start point for the given minitile
-                wpeRef = 4 * tiles->vr4.get<u8>(MiniTileRef+6*8+7); // WPE start point for the given pixel
-                bitmap[(yc + yOffset) * 128 + xc + xOffset] = tiles->wpe.get<u32>(wpeRef);
+                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+
+                const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
+                const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
+                
+                bitmap[(yc + yOffset) * 128 + xc + xOffset] = palette[wpeIndex];
             }
         }
     }
@@ -1642,7 +1494,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
 #define MINI_MAP_MAXBIT 65536 // Maximum graphicBits position
 
 void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
-                       u16 xOffset, u16 yOffset, float scale, TileSet* tiles, GuiMap & map )
+                       u16 xOffset, u16 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map )
 {
     for ( u16 i = 0; i < map.layers.numUnits(); i++ )
     {
@@ -1657,7 +1509,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
             );
 
         if ( bitIndex < MINI_MAP_MAXBIT )
-            bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
+            bitmap[bitIndex] = chkd.scData.tminimap.palette[color];
     }
 
     for ( size_t i = 0; i < map.layers.numSprites(); i++ )
@@ -1666,33 +1518,30 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
         if ( sprite->isDrawnAsSprite() )
         {
             Chk::PlayerColor color = (sprite->owner < Sc::Player::TotalSlots ?
-                map.players.getPlayerColor(sprite->owner) : (Chk::PlayerColor)sprite->owner);
+                map.players.getPlayerColor(sprite->owner) : Chk::PlayerColor(sprite->owner%16));
 
             u32 bitIndex = (((u32)((sprite->yc / 32)*scale) + yOffset) * 128
                 + (u32)((sprite->xc / 32)*scale) + xOffset);
 
             if ( bitIndex < MINI_MAP_MAXBIT )
-                bitmap[bitIndex] = chkd.scData.tminimap.pcxDat.get<u32>(color * 4);
+                bitmap[bitIndex] = chkd.scData.tminimap.palette[color];
         }
     }
 }
 
-void DrawMiniMap(HDC hDC, u16 xSize, u16 ySize, float scale, GuiMap & map)
+void DrawMiniMap(HDC hDC, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map)
 {
     ChkdBitmap graphicBits;
     graphicBits.resize(65536);
 
-    u16 tileset = map.layers.getTileset();
-
     BITMAPINFO bmi = GetBMI(128, 128);
-
-    TileSet* tiles = nullptr;
 
     u16 xOffset = (u16)((128-xSize*scale)/2),
         yOffset = (u16)((128-ySize*scale)/2);
-
-    tiles = &chkd.scData.tilesets.set[tileset];
-    DrawMiniMapTiles(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
+    
+    Sc::Terrain::Tileset tileset = map.layers.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    DrawMiniMapTiles(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi, DIB_RGB_COLORS);
 

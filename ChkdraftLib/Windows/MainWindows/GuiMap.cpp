@@ -117,6 +117,12 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
     return true;
 }
 
+void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
+{
+    Scenario::setTileset(tileset);
+    graphics.updatePalette();
+}
+
 Layer GuiMap::getLayer()
 {
     return currLayer;
@@ -776,7 +782,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         BitBlt(toolsBuffer.GetPaintDc(), 0, 0, scaledWidth, scaledHeight, mapBuffer.GetPaintDc(), 0, 0, SRCCOPY);
         if ( currMap == nullptr || currMap.get() == this )
         { // Drag and paste graphics
-            DrawTools(toolsBuffer.GetPaintDc(), toolsBuffer.GetPaintBitmap(), scaledWidth, scaledHeight,
+            graphics.DrawTools(toolsBuffer.GetPaintDc(), toolsBuffer.GetPaintBitmap(), scaledWidth, scaledHeight,
                 screenLeft, screenTop, selections, pasting, clipboard, *this);
 
             if ( currLayer != Layer::Locations )
@@ -798,7 +804,7 @@ void GuiMap::PaintMiniMap(HDC miniMapDc, int miniMapWidth, int miniMapHeight)
         if ( RedrawMiniMap && miniMapBuffer.SetSize(miniMapDc, miniMapWidth, miniMapHeight) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer.GetPaintDc(), (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
+            DrawMiniMap(miniMapBuffer.GetPaintDc(), getPalette(), (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
                 MiniMapScale((u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight()), *this);
         }
 
@@ -1312,6 +1318,11 @@ void GuiMap::ReturnKeyPress()
 void GuiMap::SetAutoBackup(bool doAutoBackups)
 {
     GuiMap::doAutoBackups = doAutoBackups;
+}
+
+ChkdPalette & GuiMap::getPalette()
+{
+    return graphics.getPalette();
 }
 
 LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

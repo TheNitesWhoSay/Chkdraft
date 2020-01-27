@@ -36,7 +36,7 @@ void Chkdraft::OnLoadTest()
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr)
 {
-
+    
 }
 
 Chkdraft::~Chkdraft()
@@ -79,7 +79,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->layers.getTileset()) )
+        if ( CM != nullptr && ColorCycler::CycleColors(CM->layers.getTileset(), CM->getPalette()) )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core

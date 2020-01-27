@@ -91,15 +91,14 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 u16 tile = 0;
                 editTileValue.GetEditNum<u16>(tile);
 
-                u16 tileset = CM->layers.getTileset();
-                TileSet* tiles = &chkd.scData.tilesets.set[tileset];
+                const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->layers.getTileset());
 
                 HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));
                 FillRect(MemhDC, &rect, brush);
                 DeleteObject(brush);
 
                 BITMAPINFO bmi = GetBMI(32, 32);
-                DrawTile(MemhDC, tiles, 0, 0, tile, bmi, 0, 0, 0);
+                DrawTile(MemhDC, CM->getPalette(), tiles, 0, 0, tile, bmi, 0, 0, 0);
                 BitBlt(hDC, 55, 50, width, height, MemhDC, 0, 0, SRCCOPY);
 
                 BITMAPINFO bmiMini = GetBMI(8, 8);

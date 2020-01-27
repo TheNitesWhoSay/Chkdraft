@@ -579,6 +579,7 @@ class Scenario : ScenarioSaver
         bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
         
         bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
+        virtual void setTileset(Sc::Terrain::Tileset tileset);
 
     protected:
         virtual StrSynchronizerPtr getStrSynchronizer(); // Returns strings, may be overidden

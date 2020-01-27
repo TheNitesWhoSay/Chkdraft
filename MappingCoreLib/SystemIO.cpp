@@ -127,6 +127,19 @@ std::string GetMpqFileName(const std::string & mpqFilePath)
     return mpqFilePath;
 }
 
+std::string GetMpqFileExtension(const std::string & mpqFilePath)
+{
+    const std::string mpqExtensionSeparator = ".";
+    size_t lastExtensionSeparator = mpqFilePath.find_last_of(mpqExtensionSeparator);
+    if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < mpqFilePath.length()-mpqExtensionSeparator.length() )
+    {
+        size_t lastPathSeparator = mpqFilePath.find_last_of(GetMpqFileSeparator());
+        if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
+            return mpqFilePath.substr(lastExtensionSeparator, mpqFilePath.length() - lastExtensionSeparator); 
+    }
+    return "";
+}
+
 std::string MakeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName)
 {
     const std::string mpqFileSeparator = GetMpqFileSeparator();

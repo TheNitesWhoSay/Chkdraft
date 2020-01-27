@@ -1379,57 +1379,318 @@ const std::vector<std::string> Sc::Terrain::TilesetNames = {
     "Twilight"
 };
 
-/*void Sc::Terrain::Tiles::FixPalette()
+bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName)
 {
-#ifdef _WIN32
-    // In the .wpe files the palette format is RR | GG | BB | 00
-    // On windows the palette format is ...... BB | GG | RR | 00
-    // Swap bytes zero and two to make the palette windows compatible
-    s64 numColors = wpe.size() / 4;
-    for ( s64 i = 0; i < numColors; i++ )
-        wpe.swap<u8>(i * 4, i * 4 + 2);
-#endif
-}*/
+    constexpr const char tilesetMpqDirectory[] = "tileset";
+    const std::string mpqFilePath = MakeMpqFilePath(tilesetMpqDirectory, tilesetName);
+    const std::string cv5FilePath = MakeExtMpqFilePath(mpqFilePath, "cv5");
+    const std::string vf4FilePath = MakeExtMpqFilePath(mpqFilePath, "vf4");
+    const std::string vr4FilePath = MakeExtMpqFilePath(mpqFilePath, "vr4");
+    const std::string vx4FilePath = MakeExtMpqFilePath(mpqFilePath, "vx4");
+    const std::string wpeFilePath = MakeExtMpqFilePath(mpqFilePath, "wpe");
+    
+    std::vector<u8> cv5Data, vf4Data, vr4Data, vx4Data, wpeData;
+
+    if ( Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath, cv5Data) &&
+        Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath, vf4Data) &&
+        Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath, vr4Data) &&
+        Sc::Data::GetAsset(orderedSourceFiles, vx4FilePath, vx4Data) &&
+        Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath, wpeData) )
+    {
+        if ( cv5Data.size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
+            vf4Data.size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
+            vr4Data.size() % sizeof(Sc::Terrain::MiniTilePixels) == 0 &&
+            vx4Data.size() % sizeof(Sc::Terrain::TileGraphics) == 0 &&
+            wpeData.size() == sizeof(Sc::Terrain::WpeDat) )
+        {
+            size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data.size());
+            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data.size());
+            size_t numTileFlags = Vf4Dat::size(vf4Data.size());
+            size_t numMiniTilePixels = Vr4Dat::size(vr4Data.size());
+            size_t numTileGraphics = Vx4Dat::size(vx4Data.size());
+
+            if ( numTileGroups > 0 )
+            {
+                TileGroup* rawTileGroups = (TileGroup*)&cv5Data[0];
+                tileGroups.assign(&rawTileGroups[0], &rawTileGroups[numTileGroups]);
+            }
+            else
+                tileGroups.clear();
+
+            if ( numDoodads > 0 )
+            {
+                Doodad* rawDoodads = (Doodad*)&cv5Data[Cv5Dat::MaxTileGroups];
+                doodads.assign(&rawDoodads[0], &rawDoodads[numDoodads]);
+            }
+            else
+                doodads.clear();
+
+            if ( numTileFlags > 0 )
+            {
+                TileFlags* rawTileFlags = (TileFlags*)&vf4Data[0];
+                tileFlags.assign(&rawTileFlags[0], &rawTileFlags[numTileFlags]);
+            }
+            else
+                tileFlags.clear();
+
+            if ( numMiniTilePixels > 0 )
+            {
+                MiniTilePixels* rawMiniTilePixels = (MiniTilePixels*)&vr4Data[0];
+                miniTilePixels.assign(&rawMiniTilePixels[0], &rawMiniTilePixels[numMiniTilePixels]);
+            }
+            else
+                miniTilePixels.clear();
+
+            if ( numTileGraphics > 0 )
+            {
+                TileGraphics* rawTileGraphics = (TileGraphics*)&vx4Data[0];
+                tileGraphics.assign(&rawTileGraphics[0], &rawTileGraphics[numTileGraphics]);
+            }
+            else
+                tileGraphics.clear();
+
+            WpeColor* wpeColors = (WpeColor*)&wpeData[0];
+            std::memcpy(&systemColorPalette[0], wpeColors, sizeof(Sc::Terrain::WpeDat));
+            if ( offsetof(WpeColor, red) == offsetof(SystemColor, blue) &&
+                offsetof(WpeColor, green) == offsetof(SystemColor, green) &&
+                offsetof(WpeColor, blue) == offsetof(SystemColor, red) )
+            {
+                // Red-blue swap
+                for ( size_t i=0; i<NumColors; i++ )
+                    std::swap(systemColorPalette[i].red, systemColorPalette[i].blue);
+            }
+            else if ( offsetof(WpeColor, red) != offsetof(SystemColor, red) ||
+                offsetof(WpeColor, green) != offsetof(SystemColor, green) ||
+                offsetof(WpeColor, blue) != offsetof(SystemColor, blue) )
+            {
+                throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
+            }
+
+            return true;
+        }
+        else
+            logger.error() << "One or more files improperly sized for tileset " << mpqFilePath << std::endl;
+    }
+    else
+        logger.error() << "Failed to get one or more files for tileset " << mpqFilePath << std::endl;
+
+    return false;
+}
+
+const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
+{
+    if ( tileset < NumTilesets )
+        return tilesets[tileset];
+    else
+        return tilesets[tileset % NumTilesets];
+}
 
 bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     bool success = true;
     for ( size_t i=0; i<NumTilesets; i++ )
-    {
-        constexpr const char tilesetMpqDirectory[] = "tileset";
-        const std::string mpqFilePath = MakeMpqFilePath(tilesetMpqDirectory, TilesetNames[i]);
-        const std::string cv5FilePath = MakeExtMpqFilePath(mpqFilePath, "cv5");
-        const std::string vf4FilePath = MakeExtMpqFilePath(mpqFilePath, "vf4");
-        const std::string vr4FilePath = MakeExtMpqFilePath(mpqFilePath, "vr4");
-        const std::string vx4FilePath = MakeExtMpqFilePath(mpqFilePath, "vx4");
-        const std::string wpeFilePath = MakeExtMpqFilePath(mpqFilePath, "wpe");
-
-        /*if ( Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath, tilesets[i].cv5) &&
-            Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath, tilesets[i].vf4) &&
-            Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath, tilesets[i].vr4) &&
-            Sc::Data::GetAsset(orderedSourceFiles, vx4FilePath, tilesets[i].vx4) &&
-            Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath, tilesets[i].wpe) )
-        {
-            tilesets->FixPalette();
-        }
-        else
-        {
-            success = false;
-            logger.error() << "The " << TilesetNames[i] << " tileset was not loaded correctly!" << std::endl;
-        }*/
-    }
+        success &= tilesets[i].load(orderedSourceFiles, TilesetNames[i]);
+    
     return success;
+}
+
+const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(Tileset tileset)
+{
+    if ( tileset < Terrain::NumTilesets )
+        return tilesets[tileset].systemColorPalette;
+    else
+        return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
 }
 
 bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, grpData) )
-        return true;
+        return isValid(mpqFileName);
     else
-    {
         logger.error() << "Failed to load GRP " << mpqFileName << std::endl;
+
+    return false;
+}
+
+void Sc::Sprite::Grp::makeBlank()
+{
+    grpData.assign(GrpFile::FileHeaderSize, u8(0));
+}
+
+const Sc::Sprite::GrpFile & Sc::Sprite::Grp::get() const
+{
+    return (const GrpFile &)grpData[0];
+}
+
+bool Sc::Sprite::Grp::isValid(const std::string & mpqFileName)
+{
+    return fileHeaderIsValid(mpqFileName) &&
+        frameHeadersAreValid(mpqFileName) &&
+        framesAreValid(mpqFileName);
+}
+
+bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & mpqFileName)
+{
+    if ( grpData.size() < Sc::Sprite::GrpFile::FileHeaderSize )
+    {
+        logger.error() << "GRP file \"" << mpqFileName << "\" must be at least " << Sc::Sprite::GrpFile::FileHeaderSize << " bytes" << std::endl;
         return false;
     }
+    return true;
+}
+
+bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & mpqFileName)
+{
+    GrpFile & grpFile = (GrpFile &)grpData[0];
+    size_t minimumFileSize = Sc::Sprite::GrpFile::FileHeaderSize + size_t(grpFile.numFrames)*sizeof(GrpFrameHeader);
+    if ( grpData.size() < minimumFileSize )
+    {
+        logger.error() << "GRP file \"" << mpqFileName << "\" with " << grpFile.numFrames << " frames must be at least " << minimumFileSize << " bytes" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName)
+{
+    GrpFile & grpFile = (GrpFile &)grpData[0];
+    u16 numFrames = grpFile.numFrames;
+    for ( u16 frame=0; frame<grpFile.numFrames; frame++ )
+    {
+        GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
+        if ( grpFrameHeader.frameHeight == 0 )
+        {
+            logger.warn() << "GRP file \"" << mpqFileName << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
+            continue;
+        }
+        else if ( grpFrameHeader.frameWidth == 0 )
+        {
+            logger.warn() << "GRP file \"" << mpqFileName << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
+            continue;
+        }
+        else if ( u16(grpFrameHeader.yOffset) + u16(grpFrameHeader.frameHeight) > grpFile.grpHeight )
+        {
+            logger.error() << "GRP file \"" << mpqFileName << "\" with height " << grpFile.grpHeight << " has frame " << frame
+                << " with yOffset " << u16(grpFrameHeader.yOffset) << " and frameHeight " << u16(grpFrameHeader.frameHeight)
+                << " which overflows the grp height!" << std::endl;
+            return false;
+        }
+        else if ( u16(grpFrameHeader.xOffset) + u16(grpFrameHeader.frameWidth) > grpFile.grpWidth )
+        {
+            logger.error() << "GRP file \"" << mpqFileName << "\" with width " << grpFile.grpWidth << " has frame " << frame
+                << " with xOffset " << u16(grpFrameHeader.xOffset) << " and frameWidth " << u16(grpFrameHeader.frameWidth)
+                << " which overflows the grp width!" << std::endl;
+            return false;
+        }
+
+        size_t frameMinimumFileSize = grpFrameHeader.frameOffset +
+            sizeof(u16) * size_t(grpFrameHeader.frameHeight) +
+            PixelRow::MinimumSize * size_t(grpFrameHeader.frameHeight);
+
+        if ( grpData.size() < frameMinimumFileSize )
+        {
+            logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << grpFrameHeader.frameHeight
+                << " requires a file size of at least " << frameMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
+            return false;
+        }
+
+        GrpFrame & grpFrame = (GrpFrame &)grpData[grpFrameHeader.frameOffset];
+        for ( size_t row = 0; row < size_t(grpFrameHeader.frameHeight); row++ )
+        {
+            u16 rowOffset = grpFrame.rowOffsets[row];
+            size_t pixelRowOffset = size_t(grpFrameHeader.frameOffset) + size_t(rowOffset);
+
+            size_t pixelRowMinimumFileSize = pixelRowOffset + PixelRow::MinimumSize;
+            if ( grpData.size() < pixelRowMinimumFileSize )
+            {
+                logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                    << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
+                return false;
+            }
+            
+            size_t column = 0;
+            size_t pixelLineOffset = pixelRowOffset;
+
+            // Loop until column == frameWidth or until error is found
+            for ( size_t line = 0; column < grpFrameHeader.frameWidth; line++ )
+            {
+                if ( grpData.size() < pixelLineOffset + PixelLine::MinimumSize )
+                {
+                    logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << ", line header " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                        << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
+                    return false;
+                }
+
+                PixelLine & pixelLine = (PixelLine &)grpData[pixelLineOffset];
+                if ( grpData.size() < pixelLineOffset + size_t(pixelLine.sizeInBytes()) )
+                {
+                    logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << ", line " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                        << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
+                    return false;
+                }
+
+                column += size_t(pixelLine.lineLength());
+                pixelLineOffset += pixelLine.sizeInBytes();
+            }
+        }
+    }
+    return true;
+}
+
+#include <chrono>
+bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    logger.info("Loading GRPs...");
+    auto start = std::chrono::high_resolution_clock::now();
+    TblFile tblFile;
+    if ( !tblFile.load(orderedSourceFiles, "arr\\images.tbl") )
+    {
+        logger.info() << "Failed to load arr\\images.tbl" << std::endl;
+        return false;
+    }
+
+    Sc::Sprite::Grp blankGrp;
+    blankGrp.makeBlank();
+    
+    grps.push_back(blankGrp);
+    size_t numStrings = tblFile.numStrings();
+    for ( size_t i=0; i<numStrings; i++ )
+    {
+        const std::string & imageFilePath = tblFile.getString(i);
+        Sc::Sprite::Grp grp;
+        if ( GetMpqFileExtension(imageFilePath).compare(".grp") == 0 )
+        {
+            if ( grp.load(orderedSourceFiles, "unit\\" + imageFilePath) )
+                grps.push_back(grp);
+            else
+            {
+                logger.error() << "Loading of one or more GRP files failed!" << std::endl;
+                return false;
+            }
+        }
+        else
+            grps.push_back(blankGrp);
+    }
+
+    if ( numStrings == 0 )
+        logger.warn() << "images.tbl was empty, no grps were loaded!" << std::endl;
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.info() << "GRP loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+    return true;
+}
+
+const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
+{
+    if ( grpIndex < grps.size() )
+        return grps[grpIndex];
+    else
+        throw std::out_of_range(std::string("GrpIndex: ") + std::to_string(grpIndex) + " is out of range for grps vector of size " + std::to_string(grps.size()));
+}
+
+size_t Sc::Sprite::numGrps()
+{
+    return grps.size();
 }
 
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
@@ -2602,12 +2863,80 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
     return false;
 }
 
+size_t Sc::TblFile::numStrings()
+{
+    return strings.size();
+}
+
 const std::string & Sc::TblFile::getString(size_t stringIndex)
 {
     if ( stringIndex < strings.size() )
         return strings[stringIndex];
     else
         throw std::out_of_range("StringIndex " + std::to_string(stringIndex) + " overflows tbl file of size " + std::to_string(strings.size()));
+}
+
+bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
+{
+    std::vector<u8> pcxData;
+    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, pcxData) )
+    {
+        if ( pcxData.size() < PcxFile::PcxHeaderSize )
+        {
+            logger.error() << "PCX format not recognized!" << std::endl;
+            return false;
+        }
+
+        PcxFile & pcxFile = (PcxFile &)pcxData[0];
+        if ( pcxFile.bitCount != 8 )
+        {
+            logger.error() << "PCX bit count not recognized!" << std::endl;
+            return false;
+        }
+
+        u8* paletteData = &pcxData[pcxData.size()-PcxFile::PaletteSize];
+        size_t dataOffset = 0;
+        size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
+        for ( size_t pixel = 0; pixel < pixelCount; )
+        {
+            u8 compSect = pcxFile.data[dataOffset++];
+            if ( compSect < PcxFile::MaxOffset ) // Single RGB from palette starting at compSect*3
+            {
+                palette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                pixel++;
+            }
+            else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
+            {
+                u8 colorIndex = pcxFile.data[dataOffset++];
+                Sc::SystemColor color(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                palette.insert(palette.end(), compSect-PcxFile::MaxOffset, color);
+                pixel += (compSect-PcxFile::MaxOffset);
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents)
+{
+    for ( auto mpqFile : orderedSourceFiles )
+    {
+        if ( mpqFile != nullptr && mpqFile->getFile(assetMpqPath, outAssetContents) )
+            return true;
+    }
+    logger.error() << "Failed to get StarCraft asset: " << assetMpqPath << std::endl;
+    return false;
+}
+
+bool Sc::Data::GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
+    Sc::DataFile::BrowserPtr dataFileBrowser,
+    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::string & expectedStarCraftDirectory,
+    FileBrowserPtr<u32> starCraftBrowser)
+{
+    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::GetAsset(orderedSourceFiles, assetMpqPath, outAssetContents);
 }
 
 bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents)
@@ -2617,7 +2946,7 @@ bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, cons
         if ( mpqFile != nullptr && mpqFile->getFile(assetMpqPath, outAssetContents) )
             return true;
     }
-    logger.error() << "Failed to get StarCraft asset: " << assetMpqPath << std::endl;
+    logger.error() << "Failed to get StarCraft assetbuf: " << assetMpqPath << std::endl;
     return false;
 }
 

@@ -53,7 +53,7 @@ void TerrainPaletteWindow::DoPaint()
         HDC paintDc = GetPaintDc();
         BITMAPINFO bmi = GetBMI(32, 32);
 
-        TileSet* tileset = &chkd.scData.tilesets.set[CM->layers.getTileset()];
+        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->layers.getTileset());
 
         u16 tileValue = u16(tilesetIndexedYC / PIXELS_PER_TILE*TILES_PER_ROW);
         int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
@@ -70,7 +70,7 @@ void TerrainPaletteWindow::DoPaint()
             {
                 if ( tileHighlighted && tileValue == numHighlighted )
                 {
-                    DrawTile(paintDc, tileset, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
+                    DrawTile(paintDc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
                         tileValue, bmi, 0, 0, 0);
 
                     COLORREF selClr = RGB(255, 255, 255);
@@ -91,9 +91,9 @@ void TerrainPaletteWindow::DoPaint()
                 else
                 {
                     if ( CM->DisplayingElevations() )
-                        DrawTileElevation(paintDc, tileset, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
+                        DrawTileElevation(paintDc, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
                     else
-                        DrawTile(paintDc, tileset, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
+                        DrawTile(paintDc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
 
                     if ( CM->DisplayingTileNums() )
                     {

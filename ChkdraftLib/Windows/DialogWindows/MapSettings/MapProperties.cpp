@@ -212,7 +212,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( HIWORD(wParam) == BN_CLICKED )
         {
             Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
-            CM->layers.setTileset(newTileset);
+            CM->setTileset(newTileset);
             u16 newWidth, newHeight;
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
                 CM->layers.setDimensions(newWidth, newHeight);

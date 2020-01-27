@@ -5,6 +5,7 @@
 #include "MpqFile.h"
 #include "SystemIO.h"
 #include "FileBrowser.h"
+#include <array>
 
 /**
     The Sc files defines static structures, constants, and enumerations general to StarCraft, there may be some limited overlap with Chk
@@ -13,6 +14,7 @@
 */
 
 // TODO: Re-implement ScData through this file
+// TODO: Remove all buffers from data files if feasible
 
 namespace Sc {
 
@@ -448,8 +450,9 @@ namespace Sc {
             u8 unused;
             u8 moveControl;
         };
-
-        struct DatFile
+        
+#pragma pack(push, 1)
+        __declspec(align(1)) struct DatFile
         {
             enum_t(IdRange, size_t, {
                 From0To105 = 105,
@@ -516,7 +519,7 @@ namespace Sc {
             u8 broodWarUnitFlag[TotalTypes];
             u16 starEditAvailabilityFlags[TotalTypes];
         };
-        struct FlingyDatFile
+        __declspec(align(1)) struct FlingyDatFile
         {
             u16 sprite[TotalFlingies];
             u32 topSpeed[TotalFlingies];
@@ -526,6 +529,7 @@ namespace Sc {
             u8 unused[TotalFlingies];
             u8 moveControl[TotalFlingies];
         };
+#pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
         const DatEntry & getUnitDat(Type unitType);
@@ -569,17 +573,9 @@ namespace Sc {
             u32 landingDustOverlay;
             u32 liftOffOverlay;
         };
-        class Grp
-        {
-        public:
-            virtual ~Grp() {}
-            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
-
-        private:
-            buffer grpData;
-        };
         
-        struct DatFile
+#pragma pack(push, 1)
+        __declspec(align(1)) struct DatFile
         {
             enum_t(IdRange, size_t, {
                 From130To517 = 387
@@ -592,7 +588,7 @@ namespace Sc {
             u8 selectionCircleImage[IdRange::From130To517]; // Id 130-517 only
             u8 selectionCircleOffset[IdRange::From130To517]; // Id 130-517 only
         };
-        struct ImageDatFile
+        __declspec(align(1)) struct ImageDatFile
         {
             u32 grpFile[999]; // image.tbl index
             u8 graphicTurns[999];
@@ -610,7 +606,7 @@ namespace Sc {
             u32 liftOffOverlay[999];
         };
         
-        struct PixelLine {
+        __declspec(align(1)) struct PixelLine {
             enum_t(Header, u8, {
                 // If (header & IsTransparentLine): place horizontal transparent line of (header & TransparentLineLength) pixels in length
                 IsTransparentLine = BIT_7,
@@ -629,7 +625,7 @@ namespace Sc {
             /** Units are drawn using three sets of colors:
                 1.) Color at indexes 0-7 on the palette, sometimes remapped to tselect for selection circles, or using shift for hallucintations
                 2.) Color at indexes 8-15 on the palette, usually remapped to tunit to apply player-based colors, or using shift for hallucinations
-                3.) Color at indexes 16-255 on the palette palette, sometimes remapped using shift for hallucinations
+                3.) Color at indexes 16-255 on the palette, sometimes remapped using shift for hallucinations
                         
                 Note that for palette (which is initially loaded from tileset\tilesetName.wpe)...
                 color values 248-254 will rotate rightwards every eight ticks (every change in GetTickCount(), ~16ms) on badlands, jungle, desert, iceworld, and twilight */
@@ -645,8 +641,10 @@ namespace Sc {
             inline u8 speckledLineLength() const { return header; }
             inline u8 lineLength() const { return isTransparentLine() ? transparentLineLength() : (isSolidLine() ? solidLineLength() : speckledLineLength()); }
             inline u8 sizeInBytes() const { return isTransparentLine() ? 1 : (isSolidLine() ? 2 : 1+speckledLineLength()); }
-        };
-        struct PixelRow {
+
+            constexpr static size_t MinimumSize = 1;
+        }; // 1 <= Size <= 64
+        __declspec(align(1)) struct PixelRow {
             PixelLine adjacentHorizontalLines[1]; // One pixel row is made up of an indeterminate number of adjacent horizontal lines, these lines continue until you've placed the pixel at frameWidth-1
 
             inline u8 totalLines(u8 frameWidth, u16 maxRowLength) const {
@@ -660,28 +658,51 @@ namespace Sc {
                 }
                 return totalLines;
             }
-        };
-        struct GrpFrame {
-            u16 rowOffsets[1]; // u16 lineOffsets[frameHeight] // One frame is made up of frameHeight pixel rows
-            // PixelRow rows[frameHeight] // One frame is made up of frameHeight pixel rows
-        };
-        struct GrpFrameHeader {
+
+            constexpr static size_t MinimumSize = 1;
+        }; // Size >= 1
+        __declspec(align(1)) struct GrpFrame {
+            u16 rowOffsets[1]; // u16 rowOffsets[frameHeight] // One frame is made up of frameHeight pixel rows
+            // PixelRow rows[frameHeight] // One frame is made up of frameHeight pixel rows, the size of a PixelRow may vary
+        }; // Size >= 3*frameHeight
+        __declspec(align(1)) struct GrpFrameHeader {
             u8 xOffset;
             u8 yOffset;
             u8 frameWidth;
             u8 frameHeight;
             u32 frameOffset;
         };
-        struct GrpFile {
+        __declspec(align(1)) struct GrpFile {
             u16 numFrames;
             u16 grpWidth;
             u16 grpHeight;
             GrpFrameHeader frameHeaders[1]; // GrpFrameHeader frameHeaders[numFrames]
-            // GrpFrame frames[numFrames];
+            // GrpFrame frames[numFrames]; // The size of a GrpFrame may vary
+
+            static constexpr size_t FileHeaderSize = sizeof(numFrames)+sizeof(grpWidth)+sizeof(grpHeight);
+        };
+#pragma pack(pop)
+
+        class Grp
+        {
+        public:
+            virtual ~Grp() {}
+            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+            void makeBlank();
+            const GrpFile & get() const;
+
+        private:
+            std::vector<u8> grpData;
+            
+            inline bool isValid(const std::string & mpqFileName);
+            inline bool fileHeaderIsValid(const std::string & mpqFileName);
+            inline bool frameHeadersAreValid(const std::string & mpqFileName);
+            inline bool framesAreValid(const std::string & mpqFileName);
         };
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const Grp & getGrp(size_t grpIndex);
+        size_t numGrps();
 
     private:
         std::vector<Grp> grps;
@@ -773,8 +794,9 @@ namespace Sc {
             u8 broodWarSpecific;
         };
         
+#pragma pack(push, 1)
         template <bool expansion>
-        struct DatFile
+        struct alignas(1) DatFile
         {
             u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
             u16 mineralFactor[expansion ? TotalTypes : TotalOriginalTypes];
@@ -788,6 +810,7 @@ namespace Sc {
             u8 race[expansion ? TotalTypes : TotalOriginalTypes];
             u8 maxRepeats[expansion ? TotalTypes : TotalOriginalTypes];
         };
+#pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const DatEntry & getDat(Type upgradeType);
@@ -863,8 +886,9 @@ namespace Sc {
             u8 broodWar;
         };
         
+#pragma pack(push, 1)
         template <bool expansion>
-        struct DatFile
+        struct alignas(1) DatFile
         {
             u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
             u16 vespeneCost[expansion ? TotalTypes : TotalOriginalTypes];
@@ -876,6 +900,7 @@ namespace Sc {
             u8 race[expansion ? TotalTypes : TotalOriginalTypes];
             u8 unused[expansion ? TotalTypes : TotalOriginalTypes];
         };
+#pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const DatEntry & getDat(Type techType);
@@ -1482,8 +1507,9 @@ namespace Sc {
 
         static const std::unordered_map<Sc::Ai::ScriptId, std::string> scriptNames;
         static const std::unordered_map<Sc::Ai::ScriptId, std::string> scriptIdStr;
-
-        struct Entry
+        
+#pragma pack(push, 1)
+        __declspec(align(1)) struct Entry
         {
             enum_t(Flags, u32, { // u32
                 UseWithRunAiScriptAtLocation = 0x1,
@@ -1495,6 +1521,7 @@ namespace Sc {
             u32 statStrIndex; // stat_txt.tbl string index for name
             u32 flags;
         };
+#pragma pack(pop)
 
         virtual ~Ai();
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
@@ -1503,6 +1530,27 @@ namespace Sc {
     private:
         std::vector<Entry> entries;
     };
+
+    static constexpr size_t NumColors = 256;
+#pragma pack(push, 1)
+    __declspec(align(1)) struct SystemColor {
+#ifdef _WIN32
+        // RGBQUAD format
+        u8 blue;
+        u8 green;
+        u8 red;
+        u8 null;
+#else
+        u8 red;
+        u8 green;
+        u8 blue;
+        u8 null;
+#endif
+        SystemColor() : red(0), green(0), blue(0), null(0) {}
+        SystemColor(u8 red, u8 green, u8 blue) : red(red), green(green), blue(blue), null(0) {}
+        SystemColor(const SystemColor & other, u8 redOffset, u8 greenOffset, u8 blueOffset) : red(other.red+redOffset), green(other.green+greenOffset), blue(other.blue+blueOffset), null(0) {}
+    };
+#pragma pack(pop)
 
     class Terrain {
     public:
@@ -1526,8 +1574,9 @@ namespace Sc {
             Mid,
             High
         };
-
-        struct TileGroup {
+        
+#pragma pack(push, 1)
+        __declspec(align(1)) struct TileGroup {
             u16 index;
             u8 buildability;
             u8 groundHeight;
@@ -1541,7 +1590,7 @@ namespace Sc {
             u16 unknown4; // Unknown: edge piece has rows below it (1 = Basic edge piece, 2 = Right edge piece, 3 = Left edge piece)
             u16 megaTileIndex[16]; // To VF4/VX4
         };
-        struct Doodad {
+        __declspec(align(1)) struct Doodad {
             enum_t(Type, u16, {
                 // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
             });
@@ -1559,8 +1608,8 @@ namespace Sc {
             u16 unknown3;
             u16 megaTileRef[16]; // To VF4/VX4
         };
-        struct TileFlags {
-            struct MiniTileFlags {
+        __declspec(align(1)) struct TileFlags {
+            __declspec(align(1))struct MiniTileFlags {
                 enum_t(Flags, u16, {
                     Walkable = BIT_0,
                     MidElevation = BIT_1,
@@ -1571,10 +1620,10 @@ namespace Sc {
 
                 Flags flags;
                 
-                inline bool isWalkable() { return (flags & Flags::Walkable) == Flags::Walkable; }
-                inline bool blocksView() { return (flags & Flags::BlocksView) == Flags::BlocksView; }
-                inline bool isRamp() { return (flags & Flags::Ramp) == Flags::Ramp; }
-                inline TileElevation getElevation() {
+                inline bool isWalkable() const { return (flags & Flags::Walkable) == Flags::Walkable; }
+                inline bool blocksView() const { return (flags & Flags::BlocksView) == Flags::BlocksView; }
+                inline bool isRamp() const { return (flags & Flags::Ramp) == Flags::Ramp; }
+                inline TileElevation getElevation() const {
                     if ( (flags & Flags::HighElevation) == Flags::HighElevation )
                         return TileElevation::High;
                     else if ( (flags & Flags::MidElevation) == Flags::MidElevation )
@@ -1586,8 +1635,8 @@ namespace Sc {
 
             MiniTileFlags miniTileFlags[4][4];
         };
-        struct TileGraphics {
-            struct MiniTileGraphics {
+        __declspec(align(1)) struct TileGraphics {
+            __declspec(align(1))struct MiniTileGraphics {
                 enum_t(Graphics, u16, {
                     Flipped = BIT_0,
                     Vr4Index = u16_max & x16BIT_0
@@ -1595,23 +1644,23 @@ namespace Sc {
 
                 Graphics graphics;
 
-                inline bool isFlipped() { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
-                inline u16 vr4Index() { return graphics & Graphics::Vr4Index; }
+                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
+                inline u16 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
             };
 
             MiniTileGraphics miniTileGraphics[4][4];
         };
-        struct MiniTilePixels {
+        __declspec(align(1)) struct MiniTilePixels {
             u8 wpeIndex[8][8];
         };
-        struct WpeColor {
+        __declspec(align(1)) struct WpeColor {
             u8 red;
             u8 green;
             u8 blue;
             u8 null;
         };
         
-        struct Cv5Dat {
+        __declspec(align(1)) struct Cv5Dat {
             static constexpr size_t MaxTileGroups = 1024;
 
             TileGroup tileGroups[MaxTileGroups];
@@ -1620,40 +1669,26 @@ namespace Sc {
             static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
             static inline size_t doodadsSize(size_t cv5FileSize) { return cv5FileSize > MaxTileGroups*sizeof(TileGroup) ? cv5FileSize/sizeof(Doodad)-MaxTileGroups : 0; }
         };
-        struct Vf4Dat {
+        __declspec(align(1)) struct Vf4Dat {
             TileFlags tileFlags[1];
 
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
         };
-        struct Vx4Dat {
+        __declspec(align(1)) struct Vx4Dat {
             TileGraphics tileGraphics[1];
 
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileGraphics); }
         };
-        struct Vr4Dat {
+        __declspec(align(1)) struct Vr4Dat {
             MiniTilePixels miniTilePixels[1];
 
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(MiniTilePixels); }
         };
-        struct WpeDat {
-            static constexpr size_t NumColors = 256;
-
+        __declspec(align(1)) struct WpeDat {
             WpeColor color[NumColors];
         };
         
-        struct SystemColor {
-#ifdef _WIN32
-            u8 blue;
-            u8 green;
-            u8 red;
-            u8 null;
-#else
-            u8 red;
-            u8 green;
-            u8 blue;
-            u8 null;
-#endif
-        };
+#pragma pack(pop)
         
         struct Tiles
         {
@@ -1662,13 +1697,16 @@ namespace Sc {
             std::vector<TileFlags> tileFlags;
             std::vector<TileGraphics> tileGraphics;
             std::vector<MiniTilePixels> miniTilePixels;
-            SystemColor systemColorPalette[256];
-
-            inline const TileGroup & getTileGroup(u16 tileIndex) {  }
+            std::array<SystemColor, NumColors> systemColorPalette;
+            
+            static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
+            static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
+            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName);
         };
 
+        const Tiles & get(const Tileset & tileset) const;
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const TileGroup & getCv5(Tileset tilset, u16 tileValue);
+        const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset);
 
     private:
         Tiles tilesets[NumTilesets];
@@ -1811,7 +1849,8 @@ namespace Sc {
             Id129 = 129
         });
         
-        struct DatEntry
+#pragma pack(push, 1)
+        __declspec(align(1)) struct DatEntry
         {
             u16 label;
             u32 graphics;
@@ -1838,7 +1877,7 @@ namespace Sc {
             u16 targetErrorMessage;
             u16 icon;
         };
-        struct DatFile
+        __declspec(align(1)) struct DatFile
         {
             u16 label[130];
             u32 graphics[130];
@@ -1865,6 +1904,7 @@ namespace Sc {
             u16 targetErrorMessage[130];
             u16 icon[130];
         };
+#pragma pack(pop)
 
     private:
         std::vector<DatEntry> weapons;
@@ -1887,33 +1927,48 @@ namespace Sc {
     public:
         virtual ~TblFile();
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        size_t numStrings();
         const std::string & getString(size_t stringIndex);
 
     private:
         std::vector<std::string> strings;
     };
-
-    struct PcxFile
+    
+    class Pcx
     {
-        u8 manufacturer;
-        u8 verInfo;
-        u8 encoding;
-        u8 bitCount;
-        u16 leftMargin;
-        u16 upperMargin;
-        u16 rightMargin;
-        u16 lowerMargin;
-        u16 hozDpi;
-        u16 vertDpi;
-        u8 palette[48];
-        u8 reserved;
-        u8 ncp;
-        u16 nbs;
-        u16 palInfo;
-        u16 hozScreenSize;
-        u16 vertScreenSize;
-        u8 reserved2[54];
-        u8 data[1];
+    public:
+#pragma pack(push, 1)
+        __declspec(align(1)) struct PcxFile
+        {
+            u8 manufacturer;
+            u8 verInfo;
+            u8 encoding;
+            u8 bitCount;
+            u16 leftMargin;
+            u16 upperMargin;
+            u16 rightMargin;
+            u16 lowerMargin;
+            u16 hozDpi;
+            u16 vertDpi;
+            u8 palette[48];
+            u8 reserved;
+            u8 ncp;
+            u16 nbs;
+            u16 palInfo;
+            u16 hozScreenSize;
+            u16 vertScreenSize;
+            u8 reserved2[54];
+            u8 data[1];
+
+            static constexpr size_t PcxHeaderSize = 128;
+            static constexpr size_t PaletteSize = 3*256;
+            static constexpr u8 MaxOffset = 192;
+        };
+#pragma pack(pop)
+
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        
+        std::vector<Sc::SystemColor> palette;
     };
 
     /**
@@ -1933,6 +1988,13 @@ namespace Sc {
         Weapon weapon;
         TblFile statTxt;
         
+        static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents);
+        static bool GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
+            Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
+            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
+
         static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents);
         static bool GetAsset(const std::string & assetMpqPath, buffer & outAssetContents,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
@@ -1947,6 +2009,6 @@ namespace Sc {
             const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
     };
-}
+};
 
 #endif

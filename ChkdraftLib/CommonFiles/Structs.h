@@ -1,6 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #include "Constants.h"
+#include "../../MappingCoreLib/Sc.h"
 
 class points // Mirrors win32 POINTS
 {
@@ -37,10 +38,7 @@ class MapGrid // A simple grid that can be displayed over a map
     public:
         points size;
         point offset;
-        u8 red;
-        u8 green;
-        u8 blue;
-        u8 reserved;
+        Sc::SystemColor color;
 
         MapGrid(); // ctor
         virtual ~MapGrid();

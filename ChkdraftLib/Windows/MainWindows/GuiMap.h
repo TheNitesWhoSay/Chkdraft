@@ -22,6 +22,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     virtual bool SaveFile(bool saveAs);
 
 /*   Chk Accel  */  bool SetTile(s32 x, s32 y, u16 tileNum);
+                    virtual void setTileset(Sc::Terrain::Tileset tileset);
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
@@ -121,6 +122,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     bool CreateThis(HWND hClient, const std::string & title);
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
+
+                    ChkdPalette & getPalette();
 
 
     protected:

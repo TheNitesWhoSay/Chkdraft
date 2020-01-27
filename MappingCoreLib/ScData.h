@@ -12,45 +12,6 @@
 
 // TOOD: Finish Sc.h and delete this file
 
-class CV5Entry
-{
-public:
-    u16 index;
-    u8 buildability;
-    u8 groundHeight;
-    u16 leftEdge;
-    u16 topEdge;
-    u16 rightEdge;
-    u16 bottomEdge;
-    u16 Unknown1;
-    u16 Unknown2;
-    u16 Unknown3;
-    u16 Unknown4;
-    u16 megaTileRef[16]; // To VF4/VX4
-
-    virtual ~CV5Entry();
-};
-
-struct TileSet
-{
-    buffer cv5; // CV5Entry
-    buffer vf4; // 
-    buffer vr4;
-    buffer vx4;
-    buffer wpe;
-};
-
-class Tiles
-{
-public:
-    TileSet set[8];
-    virtual ~Tiles();
-    bool LoadSets(const std::vector<MpqFilePtr> & orderedSourceFiles);
-
-private:
-    bool LoadSet(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName, u8 num);
-};
-
 struct UPGRADEDAT
 {
     u16 MineralCost;
@@ -211,27 +172,6 @@ struct IMAGEDAT
     u32 LiftOffOverlay;
 };
 
-class GRP
-{
-private:
-    buffer imageDat;
-
-public:
-    virtual ~GRP();
-    bool LoadGrp(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
-    u16 numFrames() { return imageDat.get<u16>(0); }
-    u16 GrpWidth() { return imageDat.get<u16>(2); }
-    u16 GrpHeight() { return imageDat.get<u16>(4); }
-    u8 xOffset(u32 frame) { return imageDat.get<u8>(0x6+frame*8); }
-    u8 yOffset(u32 frame) { return imageDat.get<u8>(0x7+frame*8); }
-    u8 frameWidth(u32 frame) { return imageDat.get<u8>(0x8+frame*8); }
-    u8 frameHeight(u32 frame) { return imageDat.get<u8>(0x9+frame*8); }
-    u32 frameOffset(u32 frame) { return imageDat.get<u32>(0xA+frame*8); }
-    u16 lineOffset(u32 frameOffset, u32 line) { return imageDat.get<u32>(frameOffset+line*2); }
-    u8* frameData(u32 frame, u32 line) { return (u8*)imageDat.getPtr(frameOffset(frame)+lineOffset(frameOffset(frame), line)); }
-    u8* data(u32 frame, u32 line);
-};
-
 class Upgrades
 {
 public:
@@ -381,7 +321,6 @@ public:
     ScData();
     virtual ~ScData();
 
-    Tiles tilesets;
     Upgrades upgrades;
     Techs techs;
     Units units;
@@ -389,11 +328,11 @@ public:
     Sprites sprites;
     TblFiles tblFiles;
     AiScripts aiScripts;
-    PCX tminimap;
-    PCX tunit;
-    PCX tselect;
-    GRP* grps;
-    u16 numGrps;
+    Sc::Sprite grps;
+    Sc::Terrain terrain;
+    Sc::Pcx tunit;
+    Sc::Pcx tselect;
+    Sc::Pcx tminimap;
 
     UNITDAT*   UnitDat  (u16 id) { return units.UnitDat    (id); }
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
@@ -405,17 +344,6 @@ public:
         const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
         const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
         FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
-
-private:
-
-    bool LoadGrps(const std::vector<MpqFilePtr> & orderedSourceFiles);
-
 };
-
-bool GetCV5References(TileSet* tiles, u32 & cv5Reference, u16 TileValue);
-
-#define GetMegaTileRef(tiles, cv5Reference) tiles->cv5.get<u16>(cv5Reference)*32
-
-#define GetMiniTileRef(tiles, MegaTileReference, xMiniTile, yMiniTile) (tiles->vx4.get<u16>(MegaTileReference+2*(4*yMiniTile+xMiniTile)) >> 1)*64
 
 #endif

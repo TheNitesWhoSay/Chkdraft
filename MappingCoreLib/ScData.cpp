@@ -4,75 +4,6 @@
 
 extern Logger logger;
 
-CV5Entry::~CV5Entry()
-{
-
-}
-
-Tiles::~Tiles()
-{
-
-}
-
-bool Tiles::LoadSets(const std::vector<MpqFilePtr> & orderedSourceFiles)
-{
-    return LoadSet(orderedSourceFiles, "badlands", 0)
-        && LoadSet(orderedSourceFiles, "platform", 1)
-        && LoadSet(orderedSourceFiles, "install" , 2)
-        && LoadSet(orderedSourceFiles, "ashworld", 3)
-        && LoadSet(orderedSourceFiles, "jungle"  , 4)
-        && LoadSet(orderedSourceFiles, "Desert"  , 5)
-        && LoadSet(orderedSourceFiles, "Ice"     , 6)
-        && LoadSet(orderedSourceFiles, "Twilight", 7);
-}
-
-void CorrectPaletteForWindows(buffer & palette)
-{
-    s64 numColors = palette.size() / 4;
-    for ( s64 i = 0; i < numColors; i++ )
-        palette.swap<u8>(i * 4, i * 4 + 2);
-}
-
-bool Tiles::LoadSet(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName, u8 num)
-{
-    const std::string path("tileset\\" + tilesetName);
-    const size_t extensionSize = 4;
-
-    if ( Sc::Data::GetAsset(orderedSourceFiles, path + ".cv5", set[num].cv5) &&
-        Sc::Data::GetAsset(orderedSourceFiles, path + ".vf4", set[num].vf4) &&
-        Sc::Data::GetAsset(orderedSourceFiles, path + ".vr4", set[num].vr4) &&
-        Sc::Data::GetAsset(orderedSourceFiles, path + ".vx4", set[num].vx4) &&
-        Sc::Data::GetAsset(orderedSourceFiles, path + ".wpe", set[num].wpe) )
-    {
-        CorrectPaletteForWindows(set[num].wpe);
-        return true;
-    }
-    return false;
-}
-
-GRP::~GRP()
-{
-
-}
-
-bool GRP::LoadGrp(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
-{
-    return Sc::Data::GetAsset(orderedSourceFiles, "unit\\" + mpqFileName, imageDat);
-}
-
-u8* GRP::data(u32 frame, u32 line)
-{
-    if ( frame < numFrames() )
-    {
-        if ( line < imageDat.get<u8>(0x9+frame*8) )
-        {
-            u32 frameOffset = imageDat.get<u32>(0xA+frame*8);
-            return (u8*)imageDat.getPtr(frameOffset+(u32)imageDat.get<u16>(frameOffset+line*2));
-        }
-    }
-    return nullptr;
-}
-
 Upgrades::Upgrades()
 {
     for ( u8 i=0; i<61; i++ )
@@ -629,7 +560,6 @@ bool PCX::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::st
                 }
             }
         }
-        CorrectPaletteForWindows(pcxDat);
         return true;
     }
     return false;
@@ -745,7 +675,7 @@ bool AiScripts::GetAiIdAndName(int aiNum, u32 & outId, std::string & outAiName)
     return false;
 }
 
-ScData::ScData() : numGrps(0), grps(nullptr), aiScripts(tblFiles)
+ScData::ScData() : aiScripts(tblFiles)
 {
 
 }
@@ -767,8 +697,8 @@ bool ScData::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered
         return false;
     }
     
-    if ( !tilesets.LoadSets(orderedSourceFiles) )
-        CHKD_ERR("Failed to load tilesets");
+    if ( !terrain.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load terrain");
 
     if ( !upgrades.LoadUpgrades(orderedSourceFiles) )
         CHKD_ERR("Failed to load upgrades");
@@ -783,7 +713,10 @@ bool ScData::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered
         CHKD_ERR("Failed to load Weapons.dat");
 
     if ( sprites.LoadSprites(orderedSourceFiles) )
-        LoadGrps(orderedSourceFiles);
+    {
+        if ( !grps.load(orderedSourceFiles) )
+            CHKD_ERR("Failed to load grps!");
+    }
     else
         CHKD_ERR("Failed to load sprites");
 
@@ -803,40 +736,4 @@ bool ScData::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered
         CHKD_ERR("Failed to load tbl files");
 
     return true;
-}
-
-bool ScData::LoadGrps(const std::vector<MpqFilePtr> & orderedSourceFiles)
-{
-    buffer imageTbl;
-
-    if ( !::Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.tbl", imageTbl) )
-        CHKD_ERR("Could not load images.tbl");
-
-    numGrps = imageTbl.get<u16>(0);
-
-    try {
-        grps = new GRP[numGrps];
-    }
-    catch ( std::bad_alloc ) {
-        return false;
-    }
-
-    for ( u32 i = 0; i<numGrps; i++ )
-    {
-        const std::string fileName = (const char*)imageTbl.getPtr(imageTbl.get<u16>((i + 1) * 2));
-        grps[i].LoadGrp(orderedSourceFiles, fileName);
-    }
-
-    return true;
-}
-
-bool GetCV5References(TileSet* tiles, u32 & cv5Index, u16 TileValue)
-{
-    cv5Index = ((TileValue>>4)*26+(TileValue&0xF)+0xA)*2;
-    /** simplified from:
-    cv5Index = group*52 + tile*2 + 0x14
-    where:  group = TileValue / 16  = high 12 bits
-    tile  = TileValue & 0xF = low 4 bits   */
-
-    return cv5Index < tiles->cv5.size();
 }
