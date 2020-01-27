@@ -133,7 +133,8 @@ Sc::SystemColor black = Sc::SystemColor();
 Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
     displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
-    updatePalette();
+    if ( !map.empty() )
+        updatePalette();
 }
 
 Graphics::~Graphics()

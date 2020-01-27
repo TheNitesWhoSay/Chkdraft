@@ -129,7 +129,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
 bool Maps::OpenMap(const std::string & fileName)
 {
     GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
-    if ( newMap != nullptr && newMap->isOpen() )
+    if ( newMap != nullptr && !newMap->empty() )
     {
         AddMap(newMap);
         if ( newMap->CreateThis(getHandle(), fileName) )
@@ -162,7 +162,7 @@ bool Maps::OpenMap(const std::string & fileName)
 bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
     auto newMap = GuiMapPtr(new GuiMap(clipboard, fileBrowser));
-    if ( newMap != nullptr && !newMap->getFilePath().empty() )
+    if ( newMap != nullptr && !newMap->empty() )
     {
         AddMap(newMap);
         if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )

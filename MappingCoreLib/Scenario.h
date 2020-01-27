@@ -34,6 +34,8 @@ class Versions
         VcodSectionPtr vcod; // Validation
 
         Versions(bool useDefault = false);
+
+        bool empty();
         
         Chk::Version getVersion();
         bool is(Chk::Version version);
@@ -63,6 +65,8 @@ class Strings : public StrSynchronizer
         KstrSectionPtr kstr; // Editor only string data
 
         Strings(bool useDefault = false);
+
+        bool empty();
 
         enum_t(RescopeFlag, u32, {
             RescopeSwitchNames = BIT_0,
@@ -206,6 +210,8 @@ class Players
 
         Players(bool useDefault = false);
 
+        bool empty();
+
         Sc::Player::SlotType getSlotType(size_t slotIndex, Chk::Scope scope = Chk::Scope::Game);
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope = Chk::Scope::Both);
 
@@ -246,6 +252,8 @@ class Terrain
         Terrain();
         Terrain(Sc::Terrain::Tileset tileset, u16 width, u16 height);
 
+        bool empty();
+
         Sc::Terrain::Tileset getTileset();
         void setTileset(Sc::Terrain::Tileset tileset);
 
@@ -283,6 +291,8 @@ class Layers : public Terrain
 
         Layers();
         Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height);
+
+        bool empty();
 
         enum_t(SizeValidationFlag, u16, {
             UpdateAnywhere = BIT_0,
@@ -378,6 +388,8 @@ class Properties
         PtexSectionPtr ptex; // Expansion technology availability
 
         Properties(bool useDefault = false);
+
+        bool empty();
 
         bool useExpansionUnitSettings(Chk::UseExpSection useExp);
         bool unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
@@ -492,6 +504,8 @@ class Triggers : public LocationSynchronizer
 
         Triggers(bool useDefault = false);
 
+        bool empty();
+
         Chk::Cuwp getCuwp(size_t cuwpIndex);
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
         size_t addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding = true);
@@ -564,6 +578,8 @@ class Scenario : ScenarioSaver
         Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
         
         virtual ~Scenario();
+
+        bool empty();
         
         bool isProtected(); // Checks if map is protected
         bool hasPassword(); // Checks if the map has a password

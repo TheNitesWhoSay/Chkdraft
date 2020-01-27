@@ -133,6 +133,11 @@ void Scenario::clear()
     mapIsProtected = false;
 }
 
+bool Scenario::empty()
+{
+    return allSections.empty() && tailLength == 0 && versions.empty() && strings.empty() && players.empty() && layers.empty() && properties.empty() && triggers.empty();
+}
+
 bool Scenario::isProtected()
 {
     return mapIsProtected;
@@ -464,6 +469,11 @@ Versions::Versions(bool useDefault) : layers(nullptr)
     }
 }
 
+bool Versions::empty()
+{
+    return ver == nullptr && type == nullptr && iver == nullptr && ive2 == nullptr && vcod == nullptr;
+}
+
 Chk::Version Versions::getVersion()
 {
     return ver->getVersion();
@@ -585,6 +595,11 @@ Strings::Strings(bool useDefault) : versions(nullptr), players(nullptr), layers(
                 ChkSection::getNameString(SectionName::SPRP));
         }
     }
+}
+
+bool Strings::empty()
+{
+    return sprp == nullptr && str == nullptr && ostr == nullptr && kstr == nullptr;
 }
 
 size_t Strings::getCapacity(Chk::Scope storageScope)
@@ -1658,6 +1673,11 @@ Players::Players(bool useDefault) : strings(nullptr)
     }
 }
 
+bool Players::empty()
+{
+    return side == nullptr && colr == nullptr && forc == nullptr && ownr == nullptr && iown == nullptr;
+}
+
 Sc::Player::SlotType Players::getSlotType(size_t slotIndex, Chk::Scope scope)
 {
     switch ( scope )
@@ -1797,6 +1817,11 @@ Terrain::Terrain(Sc::Terrain::Tileset tileset, u16 width, u16 height)
             (dim == nullptr ? ChkSection::getNameString(SectionName::DIM) :
             ChkSection::getNameString(SectionName::ERA)))));
     }
+}
+
+bool Terrain::empty()
+{
+    return era == nullptr && dim == nullptr && mtxm == nullptr && tile == nullptr && isom == nullptr;
 }
 
 Sc::Terrain::Tileset Terrain::getTileset()
@@ -1950,6 +1975,11 @@ Layers::Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height) : Terrain(ti
             (thg2 == nullptr ? ChkSection::getNameString(SectionName::THG2) :
             ChkSection::getNameString(SectionName::MASK)))));
     }
+}
+
+bool Layers::empty()
+{
+    return Terrain::empty() && mask == nullptr && thg2 == nullptr && dd2 == nullptr && unit == nullptr & mrgn == nullptr;
 }
 
 void Layers::setTileWidth(u16 tileWidth, u16 sizeValidationFlags, s32 leftEdge)
@@ -2366,6 +2396,12 @@ Properties::Properties(bool useDefault) : versions(nullptr), strings(nullptr)
                 ChkSection::getNameString(SectionName::PTEx)))))))))));
         }
     }
+}
+
+bool Properties::empty()
+{
+    return unis == nullptr && unix == nullptr && puni == nullptr && upgs == nullptr && upgx == nullptr &&
+        upgr == nullptr && pupx == nullptr && tecs == nullptr && tecx == nullptr & ptec == nullptr && ptex == nullptr;
 }
 
 bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp)
@@ -3275,6 +3311,11 @@ Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), 
                 ChkSection::getNameString(SectionName::UPRP))))));
         }
     }
+}
+
+bool Triggers::empty()
+{
+    return uprp == nullptr && upus == nullptr && trig == nullptr && mbrf == nullptr && swnm == nullptr && wav == nullptr;
 }
 
 Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex)
