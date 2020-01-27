@@ -86,9 +86,7 @@ class Commander
 
         std::unique_ptr<std::thread> commandThread;
         std::mutex commandLocker;
-        std::mutex hasCommandsLocker;
         std::mutex synchronousLocker;
-        std::unique_lock<std::mutex> hasCommandsLock;
         std::unique_lock<std::mutex> synchronousLock;
         std::condition_variable hasCommands;
         std::condition_variable synchronousExecution;

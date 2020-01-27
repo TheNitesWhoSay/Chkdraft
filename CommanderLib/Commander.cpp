@@ -30,7 +30,7 @@ void begin(Commander* commander);
 }*/
 
 Commander::Commander(std::shared_ptr<Logger> logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
-    hasCommandsLock(hasCommandsLocker), synchronousLock(synchronousLocker),
+    synchronousLock(synchronousLocker),
     undoCommand(std::shared_ptr<GenericUndoCommand>(new GenericUndoCommand())),
     redoCommand(std::shared_ptr<GenericRedoCommand>(new GenericRedoCommand())),
     killCommand(std::shared_ptr<KillCommand>(new KillCommand()))
@@ -442,6 +442,8 @@ void begin(Commander* commander)
 
 void Commander::Run()
 {
+    std::mutex hasCommandsLocker;
+    std::unique_lock<std::mutex> hasCommandsLock(hasCommandsLocker);
     bool keepRunning = true;
     do
     {
@@ -454,8 +456,9 @@ void Commander::Run()
             commandLocker.unlock(); // Release resources before sleeping!
             hasCommands.wait(hasCommandsLock, [this] {
                 return hasCommandsToExecute;
-            });
-            commandLocker.lock();
+            }); // hasCommandsLock will be locked by the wait method
+            hasCommandsLock.unlock();
+            commandLocker.lock(); // Re-aquire commandLocker as sleeping is complete
         }
         if ( todoBuffer.size() > 0 ) // Check if there's any commands to execute
         {
@@ -508,9 +511,9 @@ void Commander::End()
         synchronousExecution.wait(synchronousLock, [this] {
             return numSynchronousCommands == 0;
         });
-        commandThread->join();
     }
-} // TODO: Here we get an unlock of unowned mutex, needs debugging
+    commandThread->join();
+}
 
 void Commander::ClipRedos(u32 undoRedoTypeId)
 {
