@@ -144,16 +144,6 @@ struct FLINGYDAT
     u8 MoveControl;
 };
 
-struct SPRITEDAT
-{
-    u16 ImageFile;
-    u8 HealthBar;
-    u8 Unknown;
-    u8 IsVisible;
-    u8 SelectionCircleImage;
-    u8 SelectionCircleOffset;
-};
-
 class Upgrades
 {
 public:
@@ -209,11 +199,9 @@ public:
     virtual ~Sprites();
     bool LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles);
     FLINGYDAT* FlingyDat(u32 id);
-    SPRITEDAT* SpriteDat(u32 id);
 
 private:
     FLINGYDAT flingy[209];
-    SPRITEDAT sprite[517];
 };
 
 class PCX
@@ -316,7 +304,6 @@ public:
     UNITDAT*   UnitDat  (u16 id) { return units.UnitDat    (id); }
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
     FLINGYDAT* FlingyDat(u32 id) { return oldSprites.FlingyDat(id); }
-    SPRITEDAT* SpriteDat(u32 id) { return oldSprites.SpriteDat(id); }
 
     bool Load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
         const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),

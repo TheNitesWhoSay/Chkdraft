@@ -579,6 +579,7 @@ namespace Sc {
         __declspec(align(1)) struct DatFile
         {
             enum_t(IdRange, size_t, {
+                From0To130 = 130,
                 From130To517 = 387
             });
             
@@ -704,12 +705,15 @@ namespace Sc {
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex);
+        const DatEntry & getSprite(size_t spriteIndex);
         size_t numGrps();
         size_t numImages();
+        size_t numSprites();
 
     private:
         std::vector<Grp> grps;
         std::vector<ImageDatEntry> images;
+        std::vector<DatEntry> sprites;
     };
 
     class Upgrade {

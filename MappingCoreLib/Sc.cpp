@@ -1690,12 +1690,36 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
         return false;
     }
 
-    ImageDatFile datFile = (ImageDatFile & )imageData[0];
+    ImageDatFile & datFile = (ImageDatFile &)imageData[0];
     for ( size_t i=0; i<TotalImages; i++ )
     {
         images.push_back(ImageDatEntry { datFile.grpFile[i], datFile.graphicTurns[i], datFile.clickable[i], datFile.useFullIscript[i], datFile.drawIfCloaked[i],
             datFile.drawFunction[i], datFile.remapping[i], datFile.iScriptId[i], datFile.shieldOverlay[i], datFile.attackOverlay[i], datFile.damageOverlay[i],
             datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
+    }
+
+    std::vector<u8> spriteData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\sprites.dat", spriteData) )
+    {
+        logger.error() << "Failed to load arr\\sprites.dat" << std::endl;
+        return false;
+    }
+    else if ( spriteData.size() != sizeof(Sc::Sprite::DatFile) )
+    {
+        logger.error() << "Unrecognized SpriteDat format!" << std::endl;
+        return false;
+    }
+
+    DatFile & spriteDatFile = (DatFile &)spriteData[0];
+    size_t i=0;
+    for ( ; i<DatFile::IdRange::From0To130; i++ )
+        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], u8(0), spriteDatFile.unknown[i], spriteDatFile.isVisible[i], u8(0), u8(0) });
+
+    for ( ; i<TotalSprites; i++ )
+    {
+        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], spriteDatFile.healthBar[i-DatFile::IdRange::From0To130],
+            spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To130],
+            spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To130] });
     }
 
     return true;
@@ -1717,6 +1741,14 @@ const Sc::Sprite::ImageDatEntry & Sc::Sprite::getImage(size_t imageIndex)
         throw std::out_of_range(std::string("ImageIndex: ") + std::to_string(imageIndex) + " is out of range for images vector of size " + std::to_string(images.size()));
 }
 
+const Sc::Sprite::DatEntry & Sc::Sprite::getSprite(size_t spriteIndex)
+{
+    if ( spriteIndex < sprites.size() )
+        return sprites[spriteIndex];
+    else
+        throw std::out_of_range(std::string("SpriteIndex: ") + std::to_string(spriteIndex) + " is out of range for sprites vector of size " + std::to_string(sprites.size()));
+}
+
 size_t Sc::Sprite::numGrps()
 {
     return grps.size();
@@ -1725,6 +1757,11 @@ size_t Sc::Sprite::numGrps()
 size_t Sc::Sprite::numImages()
 {
     return images.size();
+}
+
+size_t Sc::Sprite::numSprites()
+{
+    return sprites.size();
 }
 
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {

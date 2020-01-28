@@ -412,16 +412,6 @@ Sprites::Sprites()
         flingy[i].Unused = 0;
         flingy[i].MoveControl = 0;
     }
-
-    for ( u32 i=0; i<517; i++ )
-    {
-        sprite[i].ImageFile = 0;
-        sprite[i].HealthBar = 0;
-        sprite[i].Unknown = 0;
-        sprite[i].IsVisible = 0;
-        sprite[i].SelectionCircleImage = 0;
-        sprite[i].SelectionCircleOffset = 0;
-    }
 }
 
 Sprites::~Sprites()
@@ -451,13 +441,6 @@ bool Sprites::LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles)
     pos = 0xA96; for ( i=0; i<209; i++ ) flingy[i].Unused       = flingyDat.get<u8>(pos+i);
     pos = 0xB6E; for ( i=0; i<209; i++ ) flingy[i].MoveControl  = flingyDat.get<u8>(pos+i);
 
-    pos = 0x000; for ( i=  0; i<517; i++ ) sprite[i].ImageFile             = spriteDat.get<u16>(pos+i*2);
-    pos = 0x40A; for ( i=130; i<517; i++ ) sprite[i].HealthBar             = spriteDat.get<u8>(pos+i-130);
-    pos = 0x58D; for ( i=  0; i<517; i++ ) sprite[i].Unknown               = spriteDat.get<u8>(pos+i);
-    pos = 0x792; for ( i=  0; i<517; i++ ) sprite[i].IsVisible             = spriteDat.get<u8>(pos+i);
-    pos = 0x997; for ( i=130; i<517; i++ ) sprite[i].SelectionCircleImage  = spriteDat.get<u8>(pos+i-130);
-    pos = 0xB1A; for ( i=130; i<517; i++ ) sprite[i].SelectionCircleOffset = spriteDat.get<u8>(pos+i-130);
-
     return true;
 }
 
@@ -467,14 +450,6 @@ FLINGYDAT* Sprites::FlingyDat(u32 id)
         return &flingy[id];
     else
         return &flingy[0];
-}
-
-SPRITEDAT* Sprites::SpriteDat(u32 id)
-{
-    if ( id < 517 )
-        return &sprite[id];
-    else
-        return &sprite[0];
 }
 
 PCX::~PCX()
