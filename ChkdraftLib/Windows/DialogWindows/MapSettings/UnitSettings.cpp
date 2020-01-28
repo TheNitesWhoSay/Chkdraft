@@ -87,17 +87,18 @@ void UnitSettingsWindow::RefreshWindow()
         else
             EnableUnitProperties();
 
-        UNITDAT* unitDat = chkd.scData.UnitDat((u16)selectedUnitType);
-        u32 groundWeapon = (u32)unitDat->GroundWeapon,
-            airWeapon    = (u32)unitDat->AirWeapon;
-        u16 subUnitId = unitDat->Subunit1;
+        const Sc::Unit::DatEntry & unitDat = chkd.scData.units.getUnit(selectedUnitType);
+
+        u32 groundWeapon = (u32)unitDat.groundWeapon,
+            airWeapon    = (u32)unitDat.airWeapon;
+        Sc::Unit::Type subUnitId = unitDat.subunit1;
         
         if ( subUnitId != 228 ) // If unit has a subunit
         {
             if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
-                groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon;
+                groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon;
             if ( airWeapon == 130 ) // If unit might have a subunit air attack
-                airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon;
+                airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon;
         }
 
         if ( groundWeapon == 130 )
@@ -140,13 +141,13 @@ void UnitSettingsWindow::RefreshWindow()
 
         if ( unitUsesDefaultSettings )
         {
-            editHitPoints.SetEditNum<u32>(unitDat->HitPoints/256);
-            editHitPointsByte.SetEditNum<u32>(unitDat->HitPoints%256);
-            editShieldPoints.SetEditNum<u16>(unitDat->ShieldAmount);
-            editArmor.SetEditNum<u8>(unitDat->Armor);
-            editBuildTime.SetEditNum<u16>(unitDat->BuildTime);
-            editMineralCost.SetEditNum<u16>(unitDat->MineralCost);
-            editGasCost.SetEditNum<u16>(unitDat->VespeneCost);
+            editHitPoints.SetEditNum<u32>(unitDat.hitPoints/256);
+            editHitPointsByte.SetEditNum<u32>(unitDat.hitPoints%256);
+            editShieldPoints.SetEditNum<u16>(unitDat.shieldAmount);
+            editArmor.SetEditNum<u8>(unitDat.armor);
+            editBuildTime.SetEditNum<u16>(unitDat.buildTime);
+            editMineralCost.SetEditNum<u16>(unitDat.mineralCost);
+            editGasCost.SetEditNum<u16>(unitDat.vespeneCost);
             if ( groundWeapon != 130 )
             {
                 editGroundDamage.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageAmount);
@@ -168,10 +169,16 @@ void UnitSettingsWindow::RefreshWindow()
             editBuildTime.SetEditNum<u16>(CM->properties.getUnitBuildTime(selectedUnitType));
             editMineralCost.SetEditNum<u16>(CM->properties.getUnitMineralCost(selectedUnitType));
             editGasCost.SetEditNum<u16>(CM->properties.getUnitGasCost(selectedUnitType));
-            editGroundDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)unitDat->GroundWeapon));
-            editGroundBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
-            editAirDamage.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
-            editAirBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+            if ( groundWeapon != 130 )
+            {
+                editGroundDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)unitDat.groundWeapon));
+                editGroundBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+            }
+            if ( airWeapon != 130 && airWeapon != groundWeapon )
+            {
+                editAirDamage.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+                editAirBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+            }
         }
 
         checkEnabledByDefault.SetCheck(CM->properties.isUnitDefaultBuildable(selectedUnitType));
@@ -422,24 +429,24 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         chkd.unitWindow.RepopulateList();
         RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 
-        u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->GroundWeapon,
-            airWeapon    = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->AirWeapon;
+        u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon,
+            airWeapon    = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
 
-        u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnitType)->Subunit1;
+        Sc::Unit::Type subUnitId = chkd.scData.units.getUnit(selectedUnitType).subunit1;
         if ( subUnitId != 228 ) // If unit has a subunit
         {
             if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
-                groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon;
+                groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon;
             if ( airWeapon == 130 ) // If unit might have a subunit air attack
-                airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon;
+                airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon;
         }
         
-        CM->properties.setUnitHitpoints(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->HitPoints);
-        CM->properties.setUnitShieldPoints(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->ShieldAmount);
-        CM->properties.setUnitArmorLevel(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->Armor);
-        CM->properties.setUnitBuildTime(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->BuildTime);
-        CM->properties.setUnitMineralCost(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->MineralCost);
-        CM->properties.setUnitGasCost(selectedUnitType, chkd.scData.UnitDat((u16)selectedUnitType)->VespeneCost);
+        CM->properties.setUnitHitpoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).hitPoints);
+        CM->properties.setUnitShieldPoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).shieldAmount);
+        CM->properties.setUnitArmorLevel(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).armor);
+        CM->properties.setUnitBuildTime(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).buildTime);
+        CM->properties.setUnitMineralCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).mineralCost);
+        CM->properties.setUnitGasCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).vespeneCost);
 
         if ( groundWeapon != 130 )
         {
@@ -468,8 +475,8 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
 {
     if ( selectedUnitType != Sc::Unit::Type::NoUnit )
     {
-        u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->GroundWeapon,
-            airWeapon    = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->AirWeapon;
+        u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon,
+            airWeapon    = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
 
         u16 origName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No),
             expName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
@@ -683,11 +690,11 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newGroundDamage;
             if ( editGroundDamage.GetEditNum<u16>(newGroundDamage) )
             {
-                u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->GroundWeapon;
-                u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnitType)->Subunit1;
+                u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon;
+                Sc::Unit::Type subUnitId = chkd.scData.units.getUnit(selectedUnitType).subunit1;
 
                 if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
-                    groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+                    groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
                 {
                     CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
@@ -702,11 +709,11 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newGroundBonus;
             if ( editGroundBonus.GetEditNum<u16>(newGroundBonus) )
             {
-                u32 groundWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->GroundWeapon;
-                u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnitType)->Subunit1;
+                u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon;
+                Sc::Unit::Type subUnitId = chkd.scData.units.getUnit(selectedUnitType).subunit1;
 
                 if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && groundWeapon == 130 ) // If unit has a subunit
-                    groundWeapon = chkd.scData.UnitDat(subUnitId)->GroundWeapon; // If unit might have a subunit ground attack
+                    groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
                 {
                     CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, newGroundBonus);
@@ -721,11 +728,11 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newAirDamage;
             if ( editAirDamage.GetEditNum<u16>(newAirDamage) )
             {
-                u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->AirWeapon;
-                u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnitType)->Subunit1;
+                u32 airWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
+                Sc::Unit::Type subUnitId = chkd.scData.units.getUnit(selectedUnitType).subunit1;
 
                 if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && airWeapon == 130 ) // If unit has a subunit
-                    airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
+                    airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
                 if ( airWeapon < 130 )
                 {
                     CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, newAirDamage);
@@ -740,11 +747,11 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newAirBonus;
             if ( editAirBonus.GetEditNum<u16>(newAirBonus) )
             {
-                u32 airWeapon = (u32)chkd.scData.UnitDat((u16)selectedUnitType)->AirWeapon;
-                u16 subUnitId = chkd.scData.UnitDat((u16)selectedUnitType)->Subunit1;
+                u32 airWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
+                Sc::Unit::Type subUnitId = chkd.scData.units.getUnit(selectedUnitType).subunit1;
 
                 if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
-                    airWeapon = chkd.scData.UnitDat(subUnitId)->AirWeapon; // If unit might have a subunit ground attack
+                    airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
 
                 CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);
                 CM->notifyChange(false);

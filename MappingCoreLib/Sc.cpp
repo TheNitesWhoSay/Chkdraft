@@ -163,6 +163,113 @@ FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), GetDefaultScPath()));
 }
 
+bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    std::vector<u8> unitData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\units.dat", unitData) )
+    {
+        logger.error() << "Failed to load arr\\units.dat" << std::endl;
+        return false;
+    }
+    else if ( unitData.size() != sizeof(Sc::Unit::DatFile) )
+    {
+        logger.error() << "Unrecognized UnitDat format!" << std::endl;
+        return false;
+    }
+
+    DatFile & dat = (DatFile &)unitData[0];
+    size_t i=0;
+    for ( ; i<DatFile::IdRange::From0To105; i++ )
+    {
+        units.push_back(Sc::Unit::DatEntry {
+            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.armor[i], dat.rightClickAction[i], dat.readySound[i], dat.whatSoundStart[i], dat.whatSoundEnd[i],
+            dat.pissSoundStart[i], dat.pissSoundEnd[i], dat.yesSoundStart[i], dat.yesSoundEnd[i],
+            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], u16(0), u16(0),
+            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+            dat.starEditAvailabilityFlags[i]
+        });
+    }
+    for ( ; i<DatFile::IdRange::From0To105+DatFile::IdRange::From106To201; i++ )
+    {
+        units.push_back(Sc::Unit::DatEntry {
+            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], dat.infestation[i], dat.constructionAnimation[i],
+            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+            u16(0), u16(0), u16(0), u16(0),
+            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], dat.addonHorizontal[i], dat.addonVertical[i],
+            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+            dat.starEditAvailabilityFlags[i]
+        });
+    }
+    for ( ; i<TotalTypes; i++ )
+    {
+        units.push_back(Sc::Unit::DatEntry {
+            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+            u16(0), u16(0), u16(0), u16(0),
+            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], u16(0), u16(0),
+            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+            dat.starEditAvailabilityFlags[i]
+        });
+    }
+
+    std::vector<u8> flingyData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\flingy.dat", flingyData) )
+    {
+        logger.error() << "Failed to load arr\\flingy.dat" << std::endl;
+        return false;
+    }
+    else if ( flingyData.size() != sizeof(Sc::Unit::FlingyDatFile) )
+    {
+        logger.error() << "Unrecognized UnitDat format!" << std::endl;
+        return false;
+    }
+
+    FlingyDatFile & flingyDat = (FlingyDatFile &)flingyData[0];
+    for ( i=0; i<TotalFlingies; i++ )
+    {
+        flingies.push_back(Sc::Unit::FlingyDatEntry { flingyDat.sprite[i], flingyDat.topSpeed[i], flingyDat.acceleration[i],
+            flingyDat.haltDistance[i], flingyDat.turnRadius[i], flingyDat.unused[i], flingyDat.moveControl[i] });
+    }
+
+    return true;
+}
+
+const Sc::Unit::DatEntry & Sc::Unit::getUnit(Type unitType)
+{
+    if ( unitType < units.size() )
+        return units[unitType];
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for units vector of size " + std::to_string(units.size()));
+}
+
+const Sc::Unit::FlingyDatEntry & Sc::Unit::getFlingy(size_t flingyIndex)
+{
+    if ( flingyIndex < flingies.size() )
+        return flingies[flingyIndex];
+    else
+        throw std::out_of_range(std::string("FlingyIndex: ") + std::to_string(flingyIndex) + " is out of range for flingies vector of size " + std::to_string(flingies.size()));
+}
+
+
 const std::unordered_map<Sc::Ai::ScriptId, std::string> Sc::Ai::scriptNames = {
     std::pair<Sc::Ai::ScriptId, const std::string>( Sc::Ai::ScriptId::Ter3, "Terran 3 - Zerg Town" ),
     std::pair<Sc::Ai::ScriptId, const std::string>( Sc::Ai::ScriptId::Ter5, "Terran 5 - Terran Main Town" ),
@@ -1712,14 +1819,14 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 
     DatFile & spriteDatFile = (DatFile &)spriteData[0];
     size_t i=0;
-    for ( ; i<DatFile::IdRange::From0To130; i++ )
+    for ( ; i<DatFile::IdRange::From0To129; i++ )
         sprites.push_back(DatEntry { spriteDatFile.imageFile[i], u8(0), spriteDatFile.unknown[i], spriteDatFile.isVisible[i], u8(0), u8(0) });
 
     for ( ; i<TotalSprites; i++ )
     {
-        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], spriteDatFile.healthBar[i-DatFile::IdRange::From0To130],
-            spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To130],
-            spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To130] });
+        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], spriteDatFile.healthBar[i-DatFile::IdRange::From0To129],
+            spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To129],
+            spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To129] });
     }
 
     return true;

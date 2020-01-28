@@ -937,19 +937,19 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
 void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                  s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
-    u16 drawnUnitId = unitID < 228 ? unitID : 0; // Extended units use ID:0's graphics (for now)
-    u32 grpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite).imageFile).grpFile;
+    Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
+    u32 grpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).imageFile).grpFile;
 
     if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
     {
         Sc::SystemColor remapped[8];
         if ( selected )
         {
-            u32 selectionGrpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.FlingyDat(chkd.scData.UnitDat(drawnUnitId)->Graphics)->Sprite).selectionCircleImage+561).grpFile;
+            u32 selectionGrpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+561).grpFile;
             if ( selectionGrpId < chkd.scData.sprites.numGrps() )
             {
                 const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
-                u16 offsetY = unitYC + chkd.scData.sprites.getSprite(chkd.scData.FlingyDat(chkd.scData.UnitDat(unitID)->Graphics)->Sprite).selectionCircleOffset;
+                u16 offsetY = unitYC + chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).selectionCircleOffset;
                 std::memcpy(remapped, &palette[0], sizeof(remapped));
                 std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
                 GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, 0, false);

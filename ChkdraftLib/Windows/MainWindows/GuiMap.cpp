@@ -1939,17 +1939,17 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         
         if ( (u16)unit->type < (u16)Sc::Unit::TotalTypes )
         {
-            unitLeft = unit->xc - chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeLeft;
-            unitRight = unit->xc + chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeRight;
-            unitTop = unit->yc - chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeUp;
-            unitBottom = unit->yc + chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeDown;
+            unitLeft = unit->xc - chkd.scData.units.getUnit(unit->type).unitSizeLeft;
+            unitRight = unit->xc + chkd.scData.units.getUnit(unit->type).unitSizeRight;
+            unitTop = unit->yc - chkd.scData.units.getUnit(unit->type).unitSizeUp;
+            unitBottom = unit->yc + chkd.scData.units.getUnit(unit->type).unitSizeDown;
         }
         else
         {
-            unitLeft = unit->xc - chkd.scData.units.UnitDat(0)->UnitSizeLeft;
-            unitRight = unit->xc + chkd.scData.units.UnitDat(0)->UnitSizeRight;
-            unitTop = unit->yc - chkd.scData.units.UnitDat(0)->UnitSizeUp;
-            unitBottom = unit->yc + chkd.scData.units.UnitDat(0)->UnitSizeDown;
+            unitLeft = unit->xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
+            unitRight = unit->xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
+            unitTop = unit->yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
+            unitBottom = unit->yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
         }
     
         if ( selections.getStartDrag().x <= unitRight && selections.getEndDrag().x >= unitLeft

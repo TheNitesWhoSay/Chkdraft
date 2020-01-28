@@ -384,19 +384,19 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
             bool canPaste = true;
             if ( allowStack == false )
             {
-                s32 unitLeft   = pasteUnit.unit->xc - chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeLeft,
-                    unitRight  = pasteUnit.unit->xc + chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeRight,
-                    unitTop    = pasteUnit.unit->yc - chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeUp,
-                    unitBottom = pasteUnit.unit->yc + chkd.scData.units.UnitDat((u16)pasteUnit.unit->type)->UnitSizeDown;
+                s32 unitLeft   = pasteUnit.unit->xc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeLeft,
+                    unitRight  = pasteUnit.unit->xc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeRight,
+                    unitTop    = pasteUnit.unit->yc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeUp,
+                    unitBottom = pasteUnit.unit->yc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeDown;
 
                 size_t numUnits = map.layers.numUnits();
                 for ( size_t i=0; i<numUnits; i++ )
                 {
                     Chk::UnitPtr unit = map.layers.getUnit(i);
-                    s32 left   = unit->xc - chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeLeft,
-                        right  = unit->xc + chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeRight,
-                        top    = unit->yc - chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeUp,
-                        bottom = unit->yc + chkd.scData.units.UnitDat((u16)unit->type)->UnitSizeDown;
+                    s32 left   = unit->xc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeLeft,
+                        right  = unit->xc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeRight,
+                        top    = unit->yc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeUp,
+                        bottom = unit->yc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeDown;
 
                     if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
                     {

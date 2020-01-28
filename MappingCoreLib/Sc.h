@@ -381,8 +381,8 @@ namespace Sc {
         struct DatEntry
         {
             u8 graphics;
-            u16 subunit1;
-            u16 subunit2;
+            Sc::Unit::Type subunit1;
+            Sc::Unit::Type subunit2;
             u16 infestation; // Id 106-201 only
             u32 constructionAnimation;
             u8 unitDirection;
@@ -455,13 +455,13 @@ namespace Sc {
         __declspec(align(1)) struct DatFile
         {
             enum_t(IdRange, size_t, {
-                From0To105 = 105,
+                From0To105 = 106,
                 From106To201 = 96
             });
 
             u8 graphics[TotalTypes];
-            u16 subunit1[TotalTypes];
-            u16 subunit2[TotalTypes];
+            Sc::Unit::Type subunit1[TotalTypes];
+            Sc::Unit::Type subunit2[TotalTypes];
             u16 infestation[IdRange::From106To201]; // Id 106-201 only
             u32 constructionAnimation[TotalTypes];
             u8 unitDirection[TotalTypes];
@@ -531,13 +531,13 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
-        const DatEntry & getUnitDat(Type unitType);
-        const FlingyDatEntry & getFlingyDat(Type unitType);
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const DatEntry & getUnit(Type unitType);
+        const FlingyDatEntry & getFlingy(size_t flingyIndex);
 
     private:
-        std::vector<DatEntry> unitData;
-        std::vector<FlingyDatEntry> flingyData;
+        std::vector<DatEntry> units;
+        std::vector<FlingyDatEntry> flingies;
     };
 
     class Sprite
@@ -579,16 +579,16 @@ namespace Sc {
         __declspec(align(1)) struct DatFile
         {
             enum_t(IdRange, size_t, {
-                From0To130 = 130,
-                From130To517 = 387
+                From0To129 = 130,
+                From130To516 = 387
             });
             
             u16 imageFile[TotalSprites]; // images.dat index
-            u8 healthBar[IdRange::From130To517]; // Id 130-517 only
+            u8 healthBar[IdRange::From130To516]; // Id 130-516 only
             u8 unknown[TotalSprites];
             u8 isVisible[TotalSprites];
-            u8 selectionCircleImage[IdRange::From130To517]; // Id 130-517 only
-            u8 selectionCircleOffset[IdRange::From130To517]; // Id 130-517 only
+            u8 selectionCircleImage[IdRange::From130To516]; // Id 130-516 only
+            u8 selectionCircleOffset[IdRange::From130To516]; // Id 130-516 only
         };
         __declspec(align(1)) struct ImageDatFile
         {

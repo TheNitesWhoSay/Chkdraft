@@ -42,69 +42,6 @@ struct TECHDAT
     u8 BroodWar;
 };
 
-struct UNITDAT
-{
-    u8 Graphics;
-    u16 Subunit1;
-    u16 Subunit2;
-    u16 Infestation; // ID 106-201 only
-    u32 ConstructionAnimation;
-    u8 UnitDirection;
-    u8 ShieldEnable;
-    u16 ShieldAmount;
-    u32 HitPoints;
-    u8 ElevationLevel;
-    u8 Unknown;
-    u8 Sublabel;
-    u8 CompAIIdle;
-    u8 HumanAIIdle;
-    u8 ReturntoIdle;
-    u8 AttackUnit;
-    u8 AttackMove;
-    u8 GroundWeapon;
-    u8 MaxGroundHits;
-    u8 AirWeapon;
-    u8 MaxAirHits;
-    u8 AIInternal;
-    u32 SpecialAbilityFlags;
-    u8 TargetAcquisitionRange;
-    u8 SightRange;
-    u8 ArmorUpgrade;
-    u8 UnitSize;
-    u8 Armor;
-    u8 RightClickAction;
-    u16 ReadySound; // ID 0-105 only
-    u16 WhatSoundStart;
-    u16 WhatSoundEnd;
-    u16 PissSoundStart; // ID 0-105 only
-    u16 PissSoundEnd; // ID 0-105 only
-    u16 YesSoundStart; // ID 0-105 only
-    u16 YesSoundEnd; // ID 0-105 only
-    u16 StarEditPlacementBoxWidth;
-    u16 StarEditPlacementBoxHeight;
-    u16 AddonHorizontal; // ID 106-201 only
-    u16 AddonVertical; // ID 106-201 only
-    u16 UnitSizeLeft;
-    u16 UnitSizeUp;
-    u16 UnitSizeRight;
-    u16 UnitSizeDown;
-    u16 Portrait;
-    u16 MineralCost;
-    u16 VespeneCost;
-    u16 BuildTime;
-    u16 Unknown1;
-    u8 StarEditGroupFlags;
-    u8 SupplyProvided;
-    u8 SupplyRequired;
-    u8 SpaceRequired;
-    u8 SpaceProvided;
-    u16 BuildScore;
-    u16 DestroyScore;
-    u16 UnitMapString;
-    u8 BroodWarUnitFlag;
-    u16 StarEditAvailabilityFlags;
-};
-
 struct WEAPONDAT
 {
     u16 Label;
@@ -133,17 +70,6 @@ struct WEAPONDAT
     u16 Icon;
 };
 
-struct FLINGYDAT
-{
-    u16 Sprite;
-    u32 TopSpeed;
-    u16 Acceleration;
-    u32 HaltDistance;
-    u8 TurnRadius;
-    u8 Unused;
-    u8 MoveControl;
-};
-
 class Upgrades
 {
 public:
@@ -168,18 +94,6 @@ private:
     TECHDAT tech[44];
 };
 
-class Units
-{
-public:
-    Units();
-    virtual ~Units();
-    bool LoadUnits(const std::vector<MpqFilePtr> & orderedSourceFiles);
-    UNITDAT* UnitDat(u16 id);
-
-private:
-    UNITDAT unit[228];
-};
-
 class Weapons
 {
 public:
@@ -190,50 +104,6 @@ public:
 
 private:
     WEAPONDAT weapons[130];
-};
-
-class Sprites
-{
-public:
-    Sprites();
-    virtual ~Sprites();
-    bool LoadSprites(const std::vector<MpqFilePtr> & orderedSourceFiles);
-    FLINGYDAT* FlingyDat(u32 id);
-
-private:
-    FLINGYDAT flingy[209];
-};
-
-class PCX
-{
-public:
-    buffer pcxDat;
-    virtual ~PCX();
-    bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & fileName);
-
-    class PcxFile
-    {
-    public:
-        u8 manufacturer;
-        u8 verInfo;
-        u8 encoding;
-        u8 bitCount;
-        u16 leftMargin;
-        u16 upperMargin;
-        u16 rightMargin;
-        u16 lowerMargin;
-        u16 hozDpi;
-        u16 vertDpi;
-        u8 palette[48];
-        u8 reserved;
-        u8 ncp;
-        u16 nbs;
-        u16 palInfo;
-        u16 hozScreenSize;
-        u16 vertScreenSize;
-        u8 reserved2[54];
-        u8 data[1];
-    };
 };
 
 struct AIEntry
@@ -290,20 +160,18 @@ public:
 
     Upgrades upgrades;
     Techs techs;
-    Units units;
     Weapons weapons;
-    Sprites oldSprites;
     TblFiles tblFiles;
     AiScripts aiScripts;
+
+    Sc::Unit units;
     Sc::Sprite sprites;
     Sc::Terrain terrain;
     Sc::Pcx tunit;
     Sc::Pcx tselect;
     Sc::Pcx tminimap;
 
-    UNITDAT*   UnitDat  (u16 id) { return units.UnitDat    (id); }
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
-    FLINGYDAT* FlingyDat(u32 id) { return oldSprites.FlingyDat(id); }
 
     bool Load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
         const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
