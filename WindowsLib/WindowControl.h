@@ -41,6 +41,10 @@ namespace WinLib {
                             ControlProc method, which you may override to alter default behavior */
                         bool RedirectProc();
 
+                        /** Attempts to reset the encapsulated control's message handling to the
+                            original method; used to prevent calls to virtual methods during destruction */
+                        bool ResetProc();
+
     /*  Overridden  */  /** This method is called when WM_NOTIFY is sent to the
                             control, override this to respond to notifications */
                         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);

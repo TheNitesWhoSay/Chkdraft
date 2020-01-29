@@ -10,7 +10,7 @@ namespace WinLib {
 
     WindowControl::~WindowControl()
     {
-    
+        ResetProc();
     }
 
     bool WindowControl::FindThis(HWND hParent, u32 controlId)
@@ -65,6 +65,12 @@ namespace WinLib {
         }
         else
             return false;
+    }
+    
+    bool WindowControl::ResetProc()
+    {
+        if ( getHandle() != NULL )
+            return SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     bool WindowControl::CreateThis(HWND, int, int, int, int)
