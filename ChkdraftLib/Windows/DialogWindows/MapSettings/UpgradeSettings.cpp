@@ -72,7 +72,7 @@ void UpgradeSettingsWindow::RefreshWindow()
     refreshing = true;
     if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && CM != nullptr )
     {
-        u8 upgrade = (u8)selectedUpgrade;
+        Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         chkd.mapSettingsWindow.SetWinText("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
 
         if ( isDisabled )
@@ -88,16 +88,13 @@ void UpgradeSettingsWindow::RefreshWindow()
         u16 mineralCost = 0, mineralFactor = 0, gasCost = 0, gasFactor = 0, timeCost = 0, timeFactor = 0;
         if ( useDefaultCosts )
         {
-            UPGRADEDAT* upgDat = chkd.scData.upgrades.UpgradeDat(upgrade);
-            if ( upgDat != nullptr )
-            {
-                editMineralBaseCosts.SetEditNum<u16>(upgDat->MineralCost);
-                editMineralUpgradeFactor.SetEditNum<u16>(upgDat->MineralFactor);
-                editGasBaseCosts.SetEditNum<u16>(upgDat->VespeneCost);
-                editGasUpgradeFactor.SetEditNum<u16>(upgDat->VespeneFactor);
-                editTimeBaseCosts.SetEditNum<u16>(upgDat->TimeCost/15);
-                editTimeUpgradeFactor.SetEditNum<u16>(upgDat->TimeFactor/15);
-            }
+            const Sc::Upgrade::DatEntry & upgDat = chkd.scData.upgrades.getUpgrade(upgrade);
+            editMineralBaseCosts.SetEditNum<u16>(upgDat.mineralCost);
+            editMineralUpgradeFactor.SetEditNum<u16>(upgDat.mineralFactor);
+            editGasBaseCosts.SetEditNum<u16>(upgDat.vespeneCost);
+            editGasUpgradeFactor.SetEditNum<u16>(upgDat.vespeneFactor);
+            editTimeBaseCosts.SetEditNum<u16>(upgDat.timeCost/15);
+            editTimeUpgradeFactor.SetEditNum<u16>(upgDat.timeFactor/15);
         }
         else
         {
@@ -297,15 +294,15 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 {
     if ( selectedUpgrade > 0 && selectedUpgrade < 61 && CM != nullptr )
     {
-        u8 upgrade = (u8)selectedUpgrade;
-        UPGRADEDAT* upgDat = chkd.scData.upgrades.UpgradeDat(upgrade);
+        Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
+        const Sc::Upgrade::DatEntry & upgDat = chkd.scData.upgrades.getUpgrade(upgrade);
         
-        CM->properties.setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, upgDat->MineralCost);
-        CM->properties.setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, upgDat->MineralFactor);
-        CM->properties.setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, upgDat->VespeneCost);
-        CM->properties.setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, upgDat->VespeneFactor);
-        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, upgDat->TimeCost);
-        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, upgDat->TimeFactor);
+        CM->properties.setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, upgDat.mineralCost);
+        CM->properties.setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, upgDat.mineralFactor);
+        CM->properties.setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, upgDat.vespeneCost);
+        CM->properties.setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, upgDat.vespeneFactor);
+        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, upgDat.timeCost);
+        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, upgDat.timeFactor);
     }
 }
 

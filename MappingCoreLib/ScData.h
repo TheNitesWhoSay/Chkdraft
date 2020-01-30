@@ -12,22 +12,6 @@
 
 // TOOD: Finish Sc.h and delete this file
 
-struct UPGRADEDAT
-{
-    u16 MineralCost;
-    u16 MineralFactor;
-    u16 VespeneCost;
-    u16 VespeneFactor;
-    u16 TimeCost;
-    u16 TimeFactor;
-    u16 Unknown;
-    u16 Icon;
-    u16 Label;
-    u8 Race;
-    u8 MaxRepeats;
-    u8 BroodWarSpecific;
-};
-
 struct TECHDAT
 {
     u16 MineralCost;
@@ -70,18 +54,6 @@ struct WEAPONDAT
     u16 Icon;
 };
 
-class Upgrades
-{
-public:
-    Upgrades();
-    virtual ~Upgrades();
-    bool LoadUpgrades(const std::vector<MpqFilePtr> & orderedSourceFiles);
-    UPGRADEDAT* UpgradeDat(u8 id);
-
-private:
-    UPGRADEDAT upgrade[61];
-};
-
 class Techs
 {
 public:
@@ -113,7 +85,6 @@ public:
     ScData();
     virtual ~ScData();
 
-    Upgrades upgrades;
     Techs techs;
     Weapons weapons;
 
@@ -124,6 +95,7 @@ public:
     Sc::Pcx tselect;
     Sc::Pcx tminimap;
     Sc::Ai ai;
+    Sc::Upgrade upgrades;
 
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
 

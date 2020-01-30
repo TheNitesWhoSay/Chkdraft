@@ -1921,6 +1921,53 @@ size_t Sc::Sprite::numSprites()
     return sprites.size();
 }
 
+bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    std::vector<u8> upgradeData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\upgrades.dat", upgradeData) )
+    {
+        logger.error() << "Failed to load arr\\upgrades.dat" << std::endl;
+        return false;
+    }
+    else if ( upgradeData.size() != sizeof(Sc::Upgrade::DatFile) && upgradeData.size() != sizeof(Sc::Upgrade::OriginalDatFile) )
+    {
+        logger.error() << "Unrecognized UpgradeDat format!" << std::endl;
+        return false;
+    }
+    
+    bool isExpansion = (upgradeData.size() == sizeof(Sc::Upgrade::DatFile));
+    if ( isExpansion )
+    {
+        const DatFile & upgradeDat = (DatFile &)upgradeData[0];
+        for ( size_t i=0; i<TotalTypes; i++ )
+        {
+            upgrades.push_back(Sc::Upgrade::DatEntry { upgradeDat.mineralCost[i], upgradeDat.mineralFactor[i], upgradeDat.vespeneCost[i], upgradeDat.vespeneFactor[i],
+                upgradeDat.timeCost[i], upgradeDat.timeFactor[i], upgradeDat.unknown[i], upgradeDat.icon[i], upgradeDat.label[i], upgradeDat.race[i],
+                upgradeDat.maxRepeats[i], upgradeDat.broodWarSpecific[i] });
+        }
+    }
+    else
+    {
+        const OriginalDatFile & upgradeDat = (OriginalDatFile &)upgradeData[0];
+        for ( size_t i=0; i<TotalOriginalTypes; i++ )
+        {
+            upgrades.push_back(Sc::Upgrade::DatEntry { upgradeDat.mineralCost[i], upgradeDat.mineralFactor[i], upgradeDat.vespeneCost[i], upgradeDat.vespeneFactor[i],
+                upgradeDat.timeCost[i], upgradeDat.timeFactor[i], upgradeDat.unknown[i], upgradeDat.icon[i], upgradeDat.label[i], upgradeDat.race[i],
+                upgradeDat.maxRepeats[i], u8(0) });
+        }
+    }
+
+    return true;
+}
+
+const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType)
+{
+    if ( upgradeType < upgrades.size() )
+        return upgrades[upgradeType];
+    else
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for upgrades vector of size " + std::to_string(upgrades.size()));
+}
+
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\Drone\\ZDrErr00.WAV",
     "sound\\Misc\\Buzz.wav (1)",

@@ -803,25 +803,39 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        template <bool expansion>
-        struct alignas(1) DatFile
+        __declspec(align(1)) struct OriginalDatFile
         {
-            u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 mineralFactor[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 vespeneCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 vespeneFactor[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 timeCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 timeFactor[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 unknown[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 icon[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 label[expansion ? TotalTypes : TotalOriginalTypes];
-            u8 race[expansion ? TotalTypes : TotalOriginalTypes];
-            u8 maxRepeats[expansion ? TotalTypes : TotalOriginalTypes];
+            u16 mineralCost[TotalOriginalTypes];
+            u16 mineralFactor[TotalOriginalTypes];
+            u16 vespeneCost[TotalOriginalTypes];
+            u16 vespeneFactor[TotalOriginalTypes];
+            u16 timeCost[TotalOriginalTypes];
+            u16 timeFactor[TotalOriginalTypes];
+            u16 unknown[TotalOriginalTypes];
+            u16 icon[TotalOriginalTypes];
+            u16 label[TotalOriginalTypes];
+            u8 race[TotalOriginalTypes];
+            u8 maxRepeats[TotalOriginalTypes];
+        };
+        __declspec(align(1)) struct DatFile
+        {
+            u16 mineralCost[TotalTypes];
+            u16 mineralFactor[TotalTypes];
+            u16 vespeneCost[TotalTypes];
+            u16 vespeneFactor[TotalTypes];
+            u16 timeCost[TotalTypes];
+            u16 timeFactor[TotalTypes];
+            u16 unknown[TotalTypes];
+            u16 icon[TotalTypes];
+            u16 label[TotalTypes];
+            u8 race[TotalTypes];
+            u8 maxRepeats[TotalTypes];
+            u8 broodWarSpecific[TotalTypes];
         };
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & getDat(Type upgradeType);
+        const DatEntry & getUpgrade(Type upgradeType);
 
     private:
         std::vector<DatEntry> upgrades;
@@ -1934,6 +1948,9 @@ namespace Sc {
             u16 icon[130];
         };
 #pragma pack(pop)
+
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        const DatEntry & get(Type weaponType);
 
     private:
         std::vector<DatEntry> weapons;
