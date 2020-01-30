@@ -12,7 +12,6 @@
 
 #include "Basics.h" // Numerous useful definitions, constants, and utility functions
 #include "Buffer.h" // Buffers provide a means to hold, read, and modify an arbitrary set of bytes
-#include "ScData.h" // TODO: Delete me (merging with Sc.h)
 #include "sha256.h" // Provides the means to compute sha256 hashes for securing sensitive passwords or keys
 
 #include "Chk.h" // Defines all static structures, constants, and enumerations specific to scenario files (.chk)

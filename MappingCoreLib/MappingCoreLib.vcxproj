@@ -312,7 +312,6 @@
     <ClInclude Include="MapFile.h" />
     <ClInclude Include="MappingCore.h" />
     <ClInclude Include="ArchiveFile.h" />
-    <ClInclude Include="ScData.h" />
     <ClInclude Include="Scenario.h" />
     <ClInclude Include="sha256.h" />
     <ClInclude Include="StaticTrigComponentParser.h" />
@@ -331,7 +330,6 @@
     <ClCompile Include="SystemIO.cpp" />
     <ClCompile Include="MapFile.cpp" />
     <ClCompile Include="ArchiveFile.cpp" />
-    <ClCompile Include="ScData.cpp" />
     <ClCompile Include="Scenario.cpp" />
     <ClCompile Include="sha256.cpp" />
     <ClCompile Include="StaticTrigComponentParser.cpp" />

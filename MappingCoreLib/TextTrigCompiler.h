@@ -2,7 +2,7 @@
 #define TEXTTRIGCOMPILER_H
 #include "Basics.h"
 #include "StaticTrigComponentParser.h"
-#include "ScData.h"
+#include "Sc.h"
 #include "Scenario.h"
 #include <unordered_map>
 #include <sstream>
@@ -41,16 +41,16 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
         virtual ~TextTrigCompiler();
-        bool CompileTriggers(std::string trigText, ScenarioPtr chk, ScData & scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTriggers(buffer & text, ScenarioPtr chk, ScData & scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, ScData & scData); // Compiles text, fills trigger upon success
-        bool CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, ScData & scData); // Compiles text, fills trigger upon success
+        bool CompileTriggers(std::string trigText, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
+        bool CompileTriggers(buffer & text, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
+        bool CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
+        bool CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
 
         // Attempts to compile the argNum'th condition argument into the given condition
         bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
-        bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, ScData & scData);
+        bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData);
         bool ParseActionName(std::string text, Chk::Action::Type & actionType);
-        bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, ScData & scData);
+        bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData);
         static u8 defaultConditionFlags(Chk::Condition::Type conditionType);
         static u8 defaultActionFlags(Chk::Action::Type actionType);
         static u8 numConditionArgs(Chk::Condition::VirtualType conditionType);
@@ -59,7 +59,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
     protected:
 
-        bool LoadCompiler(ScenarioPtr chk, ScData & scData); // Sets up all the data needed for a run of the compiler
+        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData); // Sets up all the data needed for a run of the compiler
         void ClearCompiler(); // Clears data loaded for a run of the compiler
         void CleanText(buffer & text); // Remove spacing and standardize line endings
 
@@ -133,7 +133,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
         bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
         bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
-        bool PrepScriptTable(ScData & scData); // Fills scriptTable
+        bool PrepScriptTable(Sc::Data & scData); // Fills scriptTable
         bool PrepStringTable(ScenarioPtr map); // Fills stringUsed and stringTable
         bool PrepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
 

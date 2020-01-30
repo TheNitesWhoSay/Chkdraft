@@ -15,7 +15,7 @@ class Chkdraft : public WinLib::ClassWindow
     public:
                     void OnLoadTest(); // Write testing code here
 
-/*  Main Items  */  ScData scData; // Data from StarCraft files
+/*  Main Items  */  Sc::Data scData; // Data from StarCraft files
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
 

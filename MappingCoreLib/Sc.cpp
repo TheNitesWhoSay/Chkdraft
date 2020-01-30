@@ -3307,6 +3307,56 @@ bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std
     return false;
 }
 
+bool Sc::Data::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+{
+    if ( dataFileBrowser == nullptr )
+        return false;
+
+    const std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    if ( orderedSourceFiles.empty() )
+    {
+        CHKD_ERR("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
+        return false;
+    }
+    
+    if ( !terrain.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load terrain");
+
+    if ( !upgrades.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load upgrades");
+
+    if ( !techs.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load techs");
+
+    if ( !units.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load unit dat");
+
+    if ( !weapons.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load Weapons.dat");
+
+    if ( !sprites.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load sprites!");
+
+    if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
+        CHKD_ERR("Failed to load tunit.pcx");
+
+    if ( !tminimap.load(orderedSourceFiles, "game\\tminimap.pcx") )
+        CHKD_ERR("Failed to load tminimap.pcx");
+
+    if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
+        CHKD_ERR("Failed to load tselect.pcx");
+
+    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+        CHKD_ERR("Failed to load stat_txt.tbl");
+
+    if ( !ai.load(orderedSourceFiles, statTxt) )
+        CHKD_ERR("Failed to load AiScripts");
+
+    return true;
+}
+
 bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents)
 {
     for ( auto mpqFile : orderedSourceFiles )
@@ -3319,27 +3369,6 @@ bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, cons
 }
 
 bool Sc::Data::GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
-    Sc::DataFile::BrowserPtr dataFileBrowser,
-    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
-    const std::string & expectedStarCraftDirectory,
-    FileBrowserPtr<u32> starCraftBrowser)
-{
-    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    return Sc::Data::GetAsset(orderedSourceFiles, assetMpqPath, outAssetContents);
-}
-
-bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, buffer & outAssetContents)
-{
-    for ( auto mpqFile : orderedSourceFiles )
-    {
-        if ( mpqFile != nullptr && mpqFile->getFile(assetMpqPath, outAssetContents) )
-            return true;
-    }
-    logger.error() << "Failed to get StarCraft assetbuf: " << assetMpqPath << std::endl;
-    return false;
-}
-
-bool Sc::Data::GetAsset(const std::string & assetMpqPath, buffer & outAssetContents,
     Sc::DataFile::BrowserPtr dataFileBrowser,
     const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory,

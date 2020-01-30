@@ -19,13 +19,13 @@ TextTrigCompiler::~TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, ScData & scData)
+bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, Sc::Data & scData)
 {
     buffer text("TxTr");
     return text.addStr(trigText.c_str(), trigText.length()) && CompileTriggers(text, chk, scData);
 }
 
-bool TextTrigCompiler::CompileTriggers(buffer & text, ScenarioPtr chk, ScData & scData)
+bool TextTrigCompiler::CompileTriggers(buffer & text, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -55,13 +55,13 @@ bool TextTrigCompiler::CompileTriggers(buffer & text, ScenarioPtr chk, ScData & 
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, ScData & scData)
+bool TextTrigCompiler::CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
 {
     buffer text("TxTr");
     return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk, scData);
 }
 
-bool TextTrigCompiler::CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, ScData & scData)
+bool TextTrigCompiler::CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -129,7 +129,7 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
 }
 
 bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
-    std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, ScData & scData)
+    std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -187,7 +187,7 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
 }
 
 bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
-    std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, ScData & scData)
+    std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -267,7 +267,7 @@ u8 TextTrigCompiler::numActionArgs(Chk::Action::VirtualType actionType)
 
 // protected
 
-bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, ScData & scData)
+bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData)
 {
     ClearCompiler();
     stringUsed.reset();
@@ -3962,7 +3962,7 @@ bool TextTrigCompiler::PrepExtendedStringTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepScriptTable(ScData & scData)
+bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
 {
     std::string aiName;
     size_t numScripts = scData.ai.numEntries();
