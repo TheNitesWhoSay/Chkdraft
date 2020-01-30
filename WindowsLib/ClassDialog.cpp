@@ -4,13 +4,14 @@
 
 namespace WinLib {
 
-    ClassDialog::ClassDialog() : allowEditNotify(true)
+    ClassDialog::ClassDialog() : allowEditNotify(true), defaultProc(NULL)
     {
         WindowClassName().clear();
     }
 
     ClassDialog::~ClassDialog()
     {
+        ResetProc();
         if ( getHandle() != NULL )
             DestroyDialog();
     }
@@ -42,6 +43,7 @@ namespace WinLib {
         {
             setHandle(NULL);
             allowEditNotify = true;
+            defaultProc = NULL;
             return true;
         }
         else
@@ -134,6 +136,7 @@ namespace WinLib {
         {
             LONG_PTR classPtr = (LONG_PTR)lParam;
             SetWindowLongPtr(hWnd, DWLP_USER, classPtr);
+            ((ClassDialog*)classPtr)->defaultProc = (WNDPROC)GetWindowLongPtr(hWnd, DWLP_DLGPROC);
             if ( GetWindowLongPtr(hWnd, DWLP_USER) == classPtr && classPtr != 0 && SetWindowLongPtr(hWnd, DWLP_DLGPROC, (LONG_PTR)ForwardDlgProc) != 0 )
             {
                 ((ClassDialog*)classPtr)->setHandle(hWnd); // Preload the window handle
@@ -144,6 +147,12 @@ namespace WinLib {
         }
         else
             return FALSE;
+    }
+
+    bool ClassDialog::ResetProc()
+    {
+        if ( getHandle() != NULL )
+            return SetWindowLongPtr(getHandle(), DWLP_DLGPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

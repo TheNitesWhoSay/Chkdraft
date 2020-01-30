@@ -82,11 +82,12 @@ namespace WinLib {
 
 
         private:
-
+            
     /*     Data     */  HWND hWndMDIClient; // Handle to the MDI client if applicable, NULL otherwise
                         enum class WindowType { None, Regular, MDIFrame, MDIChild, Dialog };
                         WindowType windowType; // Specifies what type of window this is, see enumerated WindowTypes
                         bool allowEditNotify; // Used to prevent edit update recursion
+                        WNDPROC defaultProc; // Stores the default proc for the encapsulated window
 
     /*   Internal   */  /* Calls NotifyEditUpdated and ensures the function is not called again until it returns */
                         void SendNotifyEditUpdated(int idFrom, HWND hWndFrom);
@@ -98,6 +99,10 @@ namespace WinLib {
                         /** This method is used by MDIChild windows until WM_NCCREATE is handled, at which point
                             ForwardWndProc is used to forward window messages to the WndProc method */
                         static LRESULT CALLBACK SetupMDIChildProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+                        /** Attempts to reset the encapsulated windows's message handling to the
+                            original method; used to prevent calls to virtual methods during destruction */
+                        bool ResetProc();
 
                         /** This method simply returns the value given by WndProc with the same parameters
                             This replaces SetupWndProc to remove the overhead of checking for WM_NCCREATE

@@ -8,13 +8,14 @@ extern Logger logger;
 
 namespace WinLib {
 
-    ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowType::None), allowEditNotify(true)
+    ClassWindow::ClassWindow() : hWndMDIClient(NULL), windowType(WindowType::None), allowEditNotify(true), defaultProc(NULL)
     {
         WindowClassName().clear();
     }
 
     ClassWindow::~ClassWindow()
     {
+        ResetProc();
         if ( getHandle() != NULL )
             DestroyWindow(getHandle());
     }
@@ -64,6 +65,7 @@ namespace WinLib {
         hWndMDIClient = NULL;
         windowType = WindowType::None;
         allowEditNotify = true;
+        defaultProc = NULL;
         WindowClassName().clear();
     }
 
@@ -202,6 +204,7 @@ namespace WinLib {
         {
             LONG_PTR classPtr = (LONG_PTR)((LPCREATESTRUCT)lParam)->lpCreateParams;
             SetWindowLongPtr(hWnd, GWLP_USERDATA, classPtr);
+            ((ClassWindow*)classPtr)->defaultProc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
             if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)ForwardWndProc) != 0 )
                 return ((ClassWindow*)classPtr)->WndProc(hWnd, msg, wParam, lParam);
             else
@@ -226,12 +229,19 @@ namespace WinLib {
         {
             LONG_PTR classPtr = (LONG_PTR)((LPMDICREATESTRUCT)((LPCREATESTRUCT)lParam)->lpCreateParams)->lParam;
             SetWindowLongPtr(hWnd, GWLP_USERDATA, classPtr);
+            ((ClassWindow*)classPtr)->defaultProc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
             if ( GetWindowLongPtr(hWnd, GWLP_USERDATA) == classPtr  && classPtr != 0 && SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)ForwardWndProc) != 0 )
                 return ((ClassWindow*)classPtr)->WndProc(hWnd, msg, wParam, lParam);
             else
                 return FALSE;
         }
         return DefMDIChildProc(hWnd, msg, wParam, lParam);
+    }
+
+    bool ClassWindow::ResetProc()
+    {
+        if ( getHandle() != NULL )
+            return SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

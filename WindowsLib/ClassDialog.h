@@ -59,6 +59,7 @@ namespace WinLib {
         private:
 
             bool allowEditNotify; // Used to prevent edit update recursion
+            WNDPROC defaultProc; // Stores the default proc for the encapsulated dialog
 
             /* Calls NotifyEditUpdated and ensures the function is not called again until it returns */
             void SendNotifyEditUpdated(int idFrom, HWND hWndFrom);
@@ -66,6 +67,10 @@ namespace WinLib {
             /** This method is used by Dialog windows until WM_INITDIALOG is handled, at which point
             ForwardDlgProc is used to forward messages to the WndProc method */
             static BOOL CALLBACK SetupDialogProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+            /** Attempts to reset the encapsulated dialog's message handling to the
+                original method; used to prevent calls to virtual methods during destruction */
+            bool ResetProc();
 
             /** This method simply returns the value given by DlgProc with the same parameters
             This replaces SetupDialogProc to remove the overhead of checking for WM_INITDIALOG
