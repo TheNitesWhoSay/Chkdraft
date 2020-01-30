@@ -362,18 +362,18 @@ void TrigActionsWindow::InitializeArgMaps()
 
 void TrigActionsWindow::InitializeScriptTable()
 {
-    int numScripts = chkd.scData.aiScripts.GetNumAiScripts();
-    for ( int i = 0; i < numScripts; i++ )
+    size_t numScripts = chkd.scData.ai.numEntries();
+    for ( size_t i = 0; i < numScripts; i++ )
     {
-        u32 scriptId = 0;
-        std::string scriptName = "";
-        if ( chkd.scData.aiScripts.GetAiIdAndName(i, scriptId, scriptName) )
+        std::string scriptName;
+        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
+        if ( chkd.scData.ai.getName(i, scriptName) )
         {
-            char* scriptStringPtr = (char*)&scriptId;
+            char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
             std::string displayString = scriptName + " (" + std::string(scriptIdString) + ")";
             size_t hash = strHash(displayString);
-            scriptTable.insert(std::pair<size_t, std::pair<u32, std::string>>(hash, std::pair<u32, std::string>(scriptId, displayString)));
+            scriptTable.insert(std::pair<size_t, std::pair<u32, std::string>>(hash, std::pair<u32, std::string>(entry.identifier, displayString)));
         }
     }
 }
@@ -939,14 +939,14 @@ void TrigActionsWindow::SuggestDuration()
 void TrigActionsWindow::SuggestScript()
 {
     suggestions.AddString(std::string("No Script"));
-    int numScripts = chkd.scData.aiScripts.GetNumAiScripts();
-    for ( int i = 0; i < numScripts; i++ )
+    size_t numScripts = chkd.scData.ai.numEntries();
+    for ( size_t i = 0; i < numScripts; i++ )
     {
-        u32 scriptId = 0;
-        std::string scriptName = "";
-        if ( chkd.scData.aiScripts.GetAiIdAndName(i, scriptId, scriptName) )
+        std::string scriptName;
+        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
+        if ( chkd.scData.ai.getName(i, scriptName) )
         {
-            char* scriptStringPtr = (char*)&scriptId;
+            char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
             suggestions.AddString(scriptName + " (" + std::string(scriptIdString) + ")");
         }

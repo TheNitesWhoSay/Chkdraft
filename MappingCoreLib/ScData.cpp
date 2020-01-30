@@ -236,117 +236,7 @@ WEAPONDAT* Weapons::WeaponDat(u32 weaponId)
         return nullptr;
 }
 
-TblFiles::~TblFiles()
-{
-
-}
-
-bool TblFiles::Load(const std::vector<MpqFilePtr> & orderedSourceFiles)
-{
-    return Sc::Data::GetAsset(orderedSourceFiles, "Rez\\stat_txt.tbl", stat_txtTbl);
-}
-
-bool TblFiles::GetStatTblString(u16 stringNum, std::string & outString)
-{
-    return GetTblString(stat_txtTbl, stringNum, outString);
-}
-
-bool TblFiles::GetTblString(buffer & tbl, u16 stringNum, std::string & outString)
-{
-    outString.clear();
-    u16 numStrings = tbl.get<u16>(0);
-
-    if ( tbl.exists() && stringNum != 0 )
-    {
-        s64 start = tbl.get<u16>(2 * stringNum);
-        s64 end = 0;
-        if ( !tbl.getNext('\0', start, end) ) // Next NUL char marks the end of the string
-            end = tbl.size(); // Just end it where buffer ends
-
-        size_t length = (size_t)(end - start);
-        outString = (const char*)tbl.getPtr(start);
-        return true;
-    }
-    return false;
-}
-
-AiScripts::~AiScripts()
-{
-
-}
-
-bool AiScripts::Load(const std::vector<MpqFilePtr> & orderedSourceFiles)
-{
-    return Sc::Data::GetAsset(orderedSourceFiles, "scripts\\AISCRIPT.BIN", aiScriptBin);
-}
-
-bool AiScripts::GetAiEntry(int aiNum, AIEntry & outAiEntry)
-{
-    return aiScriptBin.get<AIEntry>(outAiEntry, aiNum*sizeof(AIEntry) + aiScriptBin.get<u32>(0));
-}
-
-int AiScripts::GetNumAiScripts()
-{
-    return (u32(aiScriptBin.size()) - aiScriptBin.get<u32>(0)) / sizeof(AIEntry);
-}
-
-bool AiScripts::GetAiIdentifier(int aiNum, u32 & outAiId)
-{
-    AIEntry aiEntry = {};
-    if ( GetAiEntry(aiNum, aiEntry) )
-    {
-        outAiId = aiEntry.identifier;
-        return true;
-    }
-    return false;
-}
-
-bool AiScripts::GetAiIdentifier(const std::string & inAiName, u32 & outAiId)
-{
-    std::string scAiName;
-    int numAiScripts = GetNumAiScripts();
-    for ( int i = 0; i < numAiScripts; i++ )
-    {
-        if ( GetAiName(i, scAiName) && scAiName.compare(inAiName) == 0 )
-            return true;
-    }
-    return false;
-}
-
-bool AiScripts::GetAiName(int aiNum, std::string & outAiName)
-{
-    AIEntry aiEntry = {};
-    return GetAiEntry(aiNum, aiEntry) && tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName);
-}
-
-bool AiScripts::GetAiName(u32 aiId, std::string & outAiName)
-{
-    int numAiScripts = GetNumAiScripts();
-    for ( int i = 0; i < numAiScripts; i++  )
-    {
-        AIEntry aiEntry = {};
-        if ( GetAiEntry(i, aiEntry) )
-        {
-            if ( aiId == aiEntry.identifier )
-                return GetAiName(i, outAiName);
-        }
-    }
-    return false;
-}
-
-bool AiScripts::GetAiIdAndName(int aiNum, u32 & outId, std::string & outAiName)
-{
-    AIEntry aiEntry = {};
-    if ( GetAiEntry(aiNum, aiEntry) )
-    {
-        outId = aiEntry.identifier;
-        if ( tblFiles.GetStatTblString(aiEntry.statStrIndex, outAiName) )
-            return true;
-    }
-    return false;
-}
-
-ScData::ScData() : aiScripts(tblFiles)
+ScData::ScData() //: aiScripts(tblFiles)
 {
 
 }
@@ -395,11 +285,12 @@ bool ScData::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
 
-    if ( !aiScripts.Load(orderedSourceFiles) )
-        CHKD_ERR("Failed to load AIScripts");
+    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+        CHKD_ERR("Failed to load stat_txt.tbl");
 
-    if ( !tblFiles.Load(orderedSourceFiles) )
-        CHKD_ERR("Failed to load tbl files");
+    if ( !ai.load(orderedSourceFiles, statTxt) )
+        CHKD_ERR("Failed to load AiScripts");
 
     return true;
 }

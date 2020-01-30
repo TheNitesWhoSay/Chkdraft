@@ -106,10 +106,14 @@ public:
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual bool addFile(const std::string & mpqPath, std::stringstream & fileData, WavQuality wavQuality);
-
+    
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual bool addFile(const std::string & mpqPath, const buffer & fileData);
+
+    // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool addFile(const std::string & mpqPath, const std::vector<u8> & fileData);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open

@@ -1447,22 +1447,44 @@ const std::vector<std::string> Sc::Tech::names = {
 
 const std::string Sc::Ai::aiScriptBinPath = MakeExtMpqFilePath(MakeMpqFilePath("scripts", "AISCRIPT"), "BIN");
 
+const std::string & Sc::Ai::Entry::getName(const TblFile & tblFile) const
+{
+    return tblFile.getString(statStrIndex);
+}
+
+bool Sc::Ai::Entry::getName(const TblFile & statTxt, std::string & outAiName) const
+{
+    return statTxt.getString(statStrIndex, outAiName);
+}
+
 Sc::Ai::~Ai()
 {
 
 }
 
-bool Sc::Ai::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Ai::load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr statTxt)
 {
-    buffer rawData;
+    this->statTxt = statTxt;
+
+    std::vector<u8> rawData;
     if ( Sc::Data::GetAsset(orderedSourceFiles, aiScriptBinPath, rawData) )
     {
-        u32 aiEntriesOffset = rawData.get<u32>(0);
-        u32 numAiEntries = u32((rawData.size() - (s64)aiEntriesOffset) / sizeof(Entry));
-        for ( u32 i=0; i<numAiEntries; i++ )
-            entries.push_back(rawData.get<Entry>(aiEntriesOffset+i*sizeof(Entry)));
+        if ( rawData.size() >= 4 )
+        {
+            u32 aiEntriesOffset = (u32 &)rawData[0];
+            u32 numAiEntries = u32((rawData.size() - (size_t)aiEntriesOffset) / sizeof(Entry));
+            if ( numAiEntries > 0 )
+            {
+                for ( u32 i=0; i<numAiEntries; i++ )
+                    entries.push_back((Entry &)rawData[aiEntriesOffset+i*sizeof(Entry)]);
+            }
+            else
+                logger.warn() << "Zero AI entries in " << aiScriptBinPath << std::endl;
 
-        return true;
+            return true;
+        }
+        else
+            logger.error() << "Unrecognized " << aiScriptBinPath << " format!" << std::endl;
     }
     return false;
 }
@@ -1473,6 +1495,34 @@ const Sc::Ai::Entry & Sc::Ai::getEntry(size_t aiIndex)
         return entries[aiIndex];
     else
         throw std::out_of_range("AiIndex " + std::to_string(aiIndex) + " is out of range for the AISCRIPT.BIN file containing " + std::to_string(entries.size()) + " entries");
+}
+
+const std::string & Sc::Ai::getName(size_t aiIndex) const
+{
+    if ( aiIndex < entries.size() )
+    {
+        if ( statTxt != nullptr )
+            return entries[aiIndex].getName(*statTxt);
+        else
+            throw std::logic_error("statTxt cannot be null during a call to getName!");
+    }
+    else
+        throw std::out_of_range("AiIndex " + std::to_string(aiIndex) + " is out of range for the AISCRIPT.BIN file containing " + std::to_string(entries.size()) + " entries");
+}
+
+bool Sc::Ai::getName(size_t aiIndex, std::string & outAiName) const
+{
+    if ( aiIndex < entries.size() )
+    {
+        if ( statTxt != nullptr )
+            return entries[aiIndex].getName(*statTxt, outAiName);
+    }
+    return false;
+}
+
+size_t Sc::Ai::numEntries() const
+{
+    return entries.size();
 }
 
 const std::vector<std::string> Sc::Terrain::TilesetNames = {
@@ -3023,19 +3073,27 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
 {
     strings.clear();
 
-    buffer rawData;
+    std::vector<u8> rawData;
     if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, rawData) )
     {
-        s64 numStrings = (s64)rawData.get<u16>(0);
-        for ( s64 i=1; i<numStrings && i>0; i++ )
+        s64 numStrings = rawData.size() >= 2 ? s64((u16 &)rawData[0]) : 0;
+        if ( numStrings > 0 )
         {
-            s64 stringOffset = (s64)rawData.get<u16>(2*i);
-            s64 stringEnd = 0;
-            if ( !rawData.getNext('\0', (s64)stringOffset, stringEnd) )
-                rawData.add<char>('\0');
-            
-            strings.push_back(std::string((const char*)rawData.getPtr(stringOffset)));
+            if ( rawData.back() != u8('\0') )
+                rawData.push_back('\0');
+
+            for ( s64 i=1; i<numStrings && 2*i; i++ )
+            {
+                size_t stringOffset = size_t((u16 &)rawData[2*size_t(i)]);
+                if ( stringOffset < rawData.size() )
+                    strings.push_back((char*)&rawData[stringOffset]);
+                else
+                    strings.push_back(std::string());
+            }
         }
+        else
+            logger.warn() << mpqFileName << " contained no strings" << std::endl;
+
         return true;
     }
     return false;
@@ -3046,12 +3104,22 @@ size_t Sc::TblFile::numStrings()
     return strings.size();
 }
 
-const std::string & Sc::TblFile::getString(size_t stringIndex)
+const std::string & Sc::TblFile::getString(size_t stringIndex) const
 {
     if ( stringIndex < strings.size() )
         return strings[stringIndex];
     else
         throw std::out_of_range("StringIndex " + std::to_string(stringIndex) + " overflows tbl file of size " + std::to_string(strings.size()));
+}
+
+bool Sc::TblFile::getString(size_t stringIndex, std::string & outString) const
+{
+    if ( stringIndex < strings.size() )
+    {
+        outString = strings[stringIndex];
+        return true;
+    }
+    return false;
 }
 
 bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)

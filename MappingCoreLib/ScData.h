@@ -106,51 +106,6 @@ private:
     WEAPONDAT weapons[130];
 };
 
-struct AIEntry
-{
-    u32 identifier; // 4-byte text, stored in TRIG section
-    u32 filePtr; // File pointer in this file, 0 means it's in BWScript.bin
-    u32 statStrIndex; // stat_txt.tbl string index for name
-    u32 flags;
-    // 01 - Ran in Location (Run AI Script at Location)
-    // 02 - StarEdit Invisible
-    // 04 - BW Only
-};
-
-class TblFiles
-{
-public:
-    TblFiles() {}
-    virtual ~TblFiles();
-    bool Load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-    bool GetStatTblString(u16 stringNum, std::string & outString);
-
-protected:
-    bool GetTblString(buffer & buf, u16 stringNum, std::string & outString);
-
-private:
-    buffer stat_txtTbl;
-};
-
-class AiScripts
-{
-public:
-    AiScripts(TblFiles & tblFiles) : tblFiles(tblFiles) {}
-    virtual ~AiScripts();
-    bool Load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-    bool GetAiEntry(int aiNum, AIEntry & outAiEntry);
-    int GetNumAiScripts();
-    bool GetAiIdentifier(int aiNum, u32 & outAiId);
-    bool GetAiIdentifier(const std::string & inAiName, u32 & outAiId);
-    bool GetAiName(int aiNum, std::string & outAiName);
-    bool GetAiName(u32 aiId, std::string & outAiName);
-    bool GetAiIdAndName(int aiNum, u32 & outId, std::string & outAiName);
-
-private:
-    buffer aiScriptBin;
-    TblFiles & tblFiles;
-};
-
 class ScData
 {
 public:
@@ -161,8 +116,6 @@ public:
     Upgrades upgrades;
     Techs techs;
     Weapons weapons;
-    TblFiles tblFiles;
-    AiScripts aiScripts;
 
     Sc::Unit units;
     Sc::Sprite sprites;
@@ -170,6 +123,7 @@ public:
     Sc::Pcx tunit;
     Sc::Pcx tselect;
     Sc::Pcx tminimap;
+    Sc::Ai ai;
 
     WEAPONDAT* WeaponDat(u32 id) { return weapons.WeaponDat(id); }
 

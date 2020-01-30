@@ -917,6 +917,20 @@ namespace Sc {
         std::vector<DatEntry> techs;
     };
 
+    class TblFile
+    {
+    public:
+        virtual ~TblFile();
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        size_t numStrings();
+        const std::string & getString(size_t stringIndex) const;
+        bool getString(size_t stringIndex, std::string & outString) const;
+
+    private:
+        std::vector<std::string> strings;
+    };
+    using TblFilePtr = std::shared_ptr<TblFile>;
+
     class Ai {
     public:
         const static std::string aiScriptBinPath;
@@ -1528,15 +1542,22 @@ namespace Sc {
             u32 filePtr; // File pointer in this file, 0 means it's in BWScript.bin
             u32 statStrIndex; // stat_txt.tbl string index for name
             u32 flags;
+            
+            const std::string & getName(const TblFile & statTxt) const;
+            bool getName(const TblFile & statTxt, std::string & outAiName) const;
         };
 #pragma pack(pop)
 
         virtual ~Ai();
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr statTxt = nullptr);
         const Entry & getEntry(size_t aiIndex);
+        const std::string & getName(size_t aiIndex) const;
+        bool getName(size_t aiIndex, std::string & outAiName) const;
+        size_t numEntries() const;
 
     private:
         std::vector<Entry> entries;
+        TblFilePtr statTxt;
     };
 
     static constexpr size_t NumColors = 256;
@@ -1930,18 +1951,6 @@ namespace Sc {
         });
     };
 
-    class TblFile
-    {
-    public:
-        virtual ~TblFile();
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
-        size_t numStrings();
-        const std::string & getString(size_t stringIndex);
-
-    private:
-        std::vector<std::string> strings;
-    };
-    
     class Pcx
     {
     public:

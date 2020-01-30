@@ -287,6 +287,16 @@ bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData)
     return false;
 }
 
+bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileData)
+{
+    if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
+    {
+        addedMpqAssetPaths.push_back(mpqPath);
+        return true;
+    }
+    return false;
+}
+
 bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData, WavQuality wavQuality)
 {
     bool addedFile = false;

@@ -3965,11 +3965,12 @@ bool TextTrigCompiler::PrepExtendedStringTable(ScenarioPtr map)
 bool TextTrigCompiler::PrepScriptTable(ScData & scData)
 {
     std::string aiName;
-    int numScripts = scData.aiScripts.GetNumAiScripts();
-    for ( int i = 0; i < numScripts; i++ )
+    size_t numScripts = scData.ai.numEntries();
+    for ( size_t i = 0; i < numScripts; i++ )
     {
         ScriptTableNode scriptNode;
-        if ( scData.aiScripts.GetAiIdAndName(i, scriptNode.scriptId, scriptNode.scriptName) )
+        const Sc::Ai::Entry & entry = scData.ai.getEntry(i);
+        if ( scData.ai.getName(i, aiName) )
             scriptTable.insert(std::pair<size_t, ScriptTableNode>(strHash(scriptNode.scriptName), scriptNode));
     }
     return true;

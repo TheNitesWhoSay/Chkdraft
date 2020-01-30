@@ -184,13 +184,13 @@ void WavEditorWindow::PlaySoundButtonPressed()
     u32 soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        buffer wavBuffer("WaBu");
+        std::vector<u8> wavBuffer;
         if ( CM->GetSound(soundStringId, wavBuffer) )
         {
 #ifdef UNICODE
-            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+            PlaySoundW((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #else
-            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+            PlaySoundA((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
         }
         else
@@ -201,9 +201,9 @@ void WavEditorWindow::PlaySoundButtonPressed()
                     ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
             {
 #ifdef UNICODE
-                PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+                PlaySoundW((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #else
-                PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+                PlaySoundA((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
             }
             else
@@ -216,7 +216,7 @@ void WavEditorWindow::PlaySoundButtonPressed()
 
 void WavEditorWindow::PlayVirtualSoundButtonPressed()
 {
-    buffer wavBuffer("WaBu");
+    std::vector<u8> wavBuffer;
     int sel = 0;
     std::string wavString = "";
     if ( listVirtualSounds.GetCurSelString(wavString) )
@@ -226,9 +226,9 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
             ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
 #ifdef UNICODE
-            PlaySoundW((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+            PlaySoundW((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #else
-            PlaySoundA((LPCTSTR)wavBuffer.getPtr(0), NULL, SND_ASYNC|SND_MEMORY);
+            PlaySoundA((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
         }
     }
@@ -322,7 +322,7 @@ void WavEditorWindow::AddFileButtonPressed()
     }
     else if ( !useVirtualFile && CM->IsInVirtualSoundList(filePath) )
     {
-        buffer wavContents("WaCo");
+        std::vector<u8> wavContents;
         if ( Sc::Data::GetAsset(filePath, wavContents, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
             ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
