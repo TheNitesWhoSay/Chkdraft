@@ -34,8 +34,9 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64);
 
         virtual ~MapFile();
-
-        virtual bool SaveFile(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
+        
+        virtual bool save(const std::string & saveFilePath, bool updateListFile = true, bool lockAnywhere = true, bool autoDefragmentLocations = true);
+        virtual bool save(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
             bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
         bool LoadMapFile(const std::string & filePath);

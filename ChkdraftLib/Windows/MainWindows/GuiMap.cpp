@@ -80,7 +80,7 @@ bool GuiMap::SaveFile(bool saveAs)
     if ( backupCopyFailed && WinLib::GetYesNo("Backup failed, would you like to save anyway?", "Backup Failed!") == WinLib::PromptResult::No )
         return false;
 
-    if ( MapFile::SaveFile(saveAs) )
+    if ( MapFile::save(saveAs) )
     {
         changeLock = false;
         if ( unsavedChanges )

@@ -64,83 +64,99 @@ bool MapFile::LoadMapFile(FileBrowserPtr<SaveType> fileBrowser)
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && OpenMapFile(browseFilePath);
 }
 
-bool MapFile::SaveFile(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
+bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool lockAnywhere, bool autoDefragmentLocations)
 {
-    std::string prevFilePath(mapFilePath);
-    if ( saveAs && prevFilePath.empty() )
+    bool saveAs = !mapFilePath.empty() && saveFilePath.compare(mapFilePath) != 0;
+
+    if ( isProtected() )
+        CHKD_ERR("Cannot save protected maps!");
+    else if ( !saveFilePath.empty() )
+    {
+        logger.info() << "Saving to: " << saveFilePath << " with saveType: " << (int)saveType << std::endl;
+        bool versionCorrect = true;
+        if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
+            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
+        else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
+            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
+        else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
+            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
+
+        if ( !versionCorrect )
+        {
+            logger.error("Failed to update version, save failed!");
+            return false;
+        }
+
+        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+        {
+            if ( !saveAs || (saveAs && MakeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location
+            {
+                std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+                Scenario::write(chk);
+                if ( chk.good() )
+                {
+                    if ( MpqFile::open(saveFilePath, false, true) )
+                    {
+                        if ( !MpqFile::addFile("staredit\\scenario.chk", chk) )
+                            CHKD_ERR("Failed to add scenario file!");
+
+                        if ( !ProcessModifiedAssets(updateListFile) )
+                            CHKD_ERR("Processing assets failed!");
+
+                        MpqFile::setUpdatingListFile(updateListFile);
+                        MpqFile::close();
+                        mapFilePath = saveFilePath;
+                        return true;
+                    }
+                    else
+                        CHKD_ERR("Failed to create the new MPQ file!");
+                }
+                else
+                    CHKD_ERR("Failed to compile the scenario file!");
+            }
+        }
+        else // Is a chk file or unrecognized format, write out chk file
+        {
+            if ( RemoveFile(saveFilePath) ) // Remove any existing files of the same name
+            {
+                std::ofstream outFile(icux::toFilestring(saveFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
+                if ( outFile.is_open() )
+                {
+                    Scenario::write(outFile);
+                    if ( outFile.good() )
+                    {
+                        mapFilePath = saveFilePath;
+                        return true;
+                    }
+                    else
+                    {
+                        logger.error("Failed to write scenario file!");
+                        return false;
+                    }
+                }
+            }
+            CHKD_ERR("Failed to create the new map file!");
+        }
+    }
+    return false;
+}
+
+bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
+{
+    if ( saveAs && mapFilePath.empty() )
         saveAs = false; // This is a new map or a map without a path, use regular save operation
 
     if ( isProtected() )
         CHKD_ERR("Cannot save protected maps!");
     else
     {
-        bool overwriting = true;
-
+        bool overwriting = false;
+        std::string newMapFilePath;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-            getSaveDetails(saveType, mapFilePath, overwriting, fileBrowser);
+            getSaveDetails(saveType, newMapFilePath, overwriting, fileBrowser);
 
-        if ( !mapFilePath.empty() ) // Map path has been determined
-        {
-            logger.info() << "Saving to: " << mapFilePath << " with saveType: " << (int)saveType << std::endl;
-            bool versionCorrect = true;
-            if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
-                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
-            else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
-                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
-            else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
-                versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
-
-            if ( !versionCorrect )
-            {
-                logger.error("Failed to update version, save failed!");
-                return false;
-            }
-
-            if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
-            {
-                if ( !saveAs || (saveAs && MakeFileCopy(prevFilePath, mapFilePath)) ) // If using save-as, copy the existing mpq to the new location
-                {
-                    std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                    Scenario::write(chk);
-                    if ( chk.good() )
-                    {
-                        if ( MpqFile::open(mapFilePath, false, true) )
-                        {
-                            if ( !MpqFile::addFile("staredit\\scenario.chk", chk) )
-                                CHKD_ERR("Failed to add scenario file!");
-
-                            if ( !ProcessModifiedAssets(updateListFile) )
-                                CHKD_ERR("Processing assets failed!");
-
-                            MpqFile::setUpdatingListFile(updateListFile);
-                            MpqFile::close();
-                            return true;
-                        }
-                        else
-                            CHKD_ERR("Failed to create the new MPQ file!");
-                    }
-                    else
-                        CHKD_ERR("Failed to compile the scenario file!");
-                }
-            }
-            else // Is a chk file or unrecognized format, write out chk file
-            {
-                if ( RemoveFile(mapFilePath) ) // Remove any existing files of the same name
-                {
-                    std::ofstream outFile(icux::toFilestring(mapFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
-                    if ( outFile.is_open() )
-                    {
-                        Scenario::write(outFile);
-                        bool success = outFile.good();
-                        if ( !success )
-                            logger.error("Failed to write scenario file!");
-
-                        return success;
-                    }
-                }
-                CHKD_ERR("Failed to create the new map file!");
-            }
-        }
+        if ( !newMapFilePath.empty() )
+            return save(newMapFilePath, updateListFile, lockAnywhere, autoDefragmentLocations);
     }
     return false;
 }
