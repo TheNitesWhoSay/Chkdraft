@@ -1,6 +1,7 @@
 #ifndef TEXTTRIGGENERATOR_H
 #define TEXTTRIGGENERATOR_H
 #include "Basics.h"
+#include "Buffer.h"
 #include "Scenario.h"
 #include <vector>
 #include <string>

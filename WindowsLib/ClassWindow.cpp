@@ -240,8 +240,7 @@ namespace WinLib {
 
     bool ClassWindow::ResetProc()
     {
-        if ( getHandle() != NULL )
-            return SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
+        return getHandle() != NULL && SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     LRESULT CALLBACK ClassWindow::ForwardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

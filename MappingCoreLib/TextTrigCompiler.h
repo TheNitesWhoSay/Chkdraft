@@ -1,6 +1,7 @@
 #ifndef TEXTTRIGCOMPILER_H
 #define TEXTTRIGCOMPILER_H
 #include "Basics.h"
+#include "Buffer.h"
 #include "StaticTrigComponentParser.h"
 #include "Sc.h"
 #include "Scenario.h"

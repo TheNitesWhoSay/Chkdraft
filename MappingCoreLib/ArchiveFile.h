@@ -1,7 +1,6 @@
 #ifndef ARCHIVEFILE_H
 #define ARCHIVEFILE_H
 #include "Basics.h"
-#include "Buffer.h"
 #include "FileBrowser.h"
 #include <string>
 
@@ -79,11 +78,11 @@ public:
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool getFile(const std::string & archivedFilePath, buffer & fileData) = 0;
+    virtual bool getFile(const std::string & archivedFilePath, std::vector<u8> & fileData) = 0;
 
     // Attempts to add a file to this archive at archivedFilePath with the data from the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool addFile(const std::string & archivedFilePath, const buffer & fileData) = 0;
+    virtual bool addFile(const std::string & archivedFilePath, const std::vector<u8> & fileData) = 0;
 
     // Attempts to add the file at filePath to this archive at archivedFilePath
     // Cannot be used unless the archive is already open

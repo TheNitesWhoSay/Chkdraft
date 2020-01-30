@@ -45,19 +45,15 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
 
         static std::string GetStandardSoundDir();
         bool AddMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
-        bool AddMpqAsset(const std::string & assetMpqFilePath, const buffer & asset, WavQuality wavQuality);
         bool AddMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
         void RemoveMpqAsset(const std::string & assetMpqFilePath);
-        bool GetMpqAsset(const std::string & assetMpqFilePath, buffer & outAssetBuffer);
         bool GetMpqAsset(const std::string & assetMpqFilePath, std::vector<u8> & outAssetBuffer);
         bool ExtractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
         virtual bool GetSound(u16 soundIndex, size_t & outStringId);
-        bool GetSound(size_t stringId, buffer & outSoundData);
         bool GetSound(size_t stringId, std::vector<u8> & outSoundData);
         bool AddSound(size_t stringId); // Adds a sound string to the sound list
         bool AddSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
         bool AddSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
-        bool AddSound(const std::string & destMpqPath, buffer & soundContents, WavQuality wavQuality);
         bool AddSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
         virtual bool RemoveSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
         virtual bool RemoveSoundByStringId(size_t stringId, bool removeIfUsed);

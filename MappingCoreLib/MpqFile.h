@@ -1,7 +1,6 @@
 #ifndef MPQFILE_H
 #define MPQFILE_H
 #include "Basics.h"
-#include "Buffer.h"
 #include "FileBrowser.h"
 #include "ArchiveFile.h"
 #include "../StormLib/src/StormLib.h"
@@ -89,10 +88,6 @@ public:
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool getFile(const std::string & mpqPath, buffer & fileData);
-
-    // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
-    // Cannot be used unless the MPQ is already open
     virtual bool getFile(const std::string & mpqPath, std::vector<u8> & fileData);
 
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
@@ -106,10 +101,6 @@ public:
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual bool addFile(const std::string & mpqPath, std::stringstream & fileData, WavQuality wavQuality);
-    
-    // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
-    // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string & mpqPath, const buffer & fileData);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
@@ -117,7 +108,7 @@ public:
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool addFile(const std::string & mpqPath, const buffer & fileData, WavQuality wavQuality);
+    virtual bool addFile(const std::string & mpqPath, const std::vector<u8> & fileData, WavQuality wavQuality);
 
     // Attempts to add the file at filePath to this MPQ at mpqPath
     // Cannot be used unless the MPQ is already open
@@ -141,8 +132,6 @@ private:
     std::vector<std::string> addedMpqAssetPaths;
     std::string filePath;
     HANDLE hMpq;
-
-    friend bool getFile(void* source, const std::string & mpqPath, buffer & fileData);
 
     // Removes this MPQ from the disk, only valid if the MPQ has already been closed but filePath is still set
     bool remove();

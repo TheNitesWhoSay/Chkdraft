@@ -69,8 +69,7 @@ namespace WinLib {
     
     bool WindowControl::ResetProc()
     {
-        if ( getHandle() != NULL )
-            return SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
+        return getHandle() != NULL && SetWindowLongPtr(getHandle(), GWLP_WNDPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     bool WindowControl::CreateThis(HWND, int, int, int, int)

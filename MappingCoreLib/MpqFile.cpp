@@ -175,46 +175,6 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
     return success;
 }
 
-/**
-    This function is a friend of buffer and MpqFile and can be used to write in data directly
-*/
-bool getFile(void* source, const std::string & mpqPath, buffer & fileData)
-{
-    if ( source != nullptr )
-    {
-        MpqFile* mpqFile = (MpqFile*)source;
-        if ( mpqFile->isOpen() )
-        {
-            u32 bytesRead = 0;
-            HANDLE openFile = NULL;
-            if ( SFileOpenFileEx(mpqFile->hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
-            {
-                u32 fileSize = (u32)SFileGetFileSize(openFile, NULL);
-                if ( fileData.setSize(fileSize) )
-                {
-                    fileData.sizeUsed = fileSize;
-                    SFileReadFile(openFile, (LPVOID)fileData.data, (DWORD)fileData.sizeUsed, (LPDWORD)(&bytesRead), NULL);
-                    SFileCloseFile(openFile);
-
-                    if ( fileData.sizeUsed == bytesRead )
-                        return true;
-                }
-                else
-                {
-                    SFileCloseFile(openFile);
-                    fileData.flush();
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool MpqFile::getFile(const std::string & mpqPath, buffer & fileData)
-{
-    return ::getFile(this, mpqPath, fileData);
-}
-
 bool MpqFile::getFile(const std::string & mpqPath, std::vector<u8> & fileData)
 {
     bool success = false;
@@ -277,16 +237,6 @@ bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData,
     return addedFile;
 }
 
-bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData)
-{
-    if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
-    {
-        addedMpqAssetPaths.push_back(mpqPath);
-        return true;
-    }
-    return false;
-}
-
 bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileData)
 {
     if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
@@ -297,15 +247,15 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileD
     return false;
 }
 
-bool MpqFile::addFile(const std::string & mpqPath, const buffer & fileData, WavQuality wavQuality)
+bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileData, WavQuality wavQuality)
 {
     bool addedFile = false;
     if ( isOpen() )
     {
         if ( wavQuality == WavQuality::Uncompressed )
-            addedFile = SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
+            addedFile = SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
         else
-            addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)fileData.getPtr(0), (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
+            addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
 
         if ( addedFile )
             addedMpqAssetPaths.push_back(mpqPath);

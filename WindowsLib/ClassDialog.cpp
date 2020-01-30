@@ -151,8 +151,7 @@ namespace WinLib {
 
     bool ClassDialog::ResetProc()
     {
-        if ( getHandle() != NULL )
-            return SetWindowLongPtr(getHandle(), DWLP_DLGPROC, (LONG_PTR)defaultProc) != 0;
+        return getHandle() != NULL && SetWindowLongPtr(getHandle(), DWLP_DLGPROC, (LONG_PTR)defaultProc) != 0;
     }
 
     BOOL CALLBACK ClassDialog::ForwardDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
