@@ -909,23 +909,35 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        template <bool expansion>
-        struct alignas(1) DatFile
+        __declspec(align(1)) struct OriginalDatFile
         {
-            u16 mineralCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 vespeneCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 researchTime[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 energyCost[expansion ? TotalTypes : TotalOriginalTypes];
-            u32 unknown[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 icon[expansion ? TotalTypes : TotalOriginalTypes];
-            u16 label[expansion ? TotalTypes : TotalOriginalTypes];
-            u8 race[expansion ? TotalTypes : TotalOriginalTypes];
-            u8 unused[expansion ? TotalTypes : TotalOriginalTypes];
+            u16 mineralCost[TotalOriginalTypes];
+            u16 vespeneCost[TotalOriginalTypes];
+            u16 researchTime[TotalOriginalTypes];
+            u16 energyCost[TotalOriginalTypes];
+            u32 unknown[TotalOriginalTypes];
+            u16 icon[TotalOriginalTypes];
+            u16 label[TotalOriginalTypes];
+            u8 race[TotalOriginalTypes];
+            u8 unused[TotalOriginalTypes];
+        };
+        __declspec(align(1)) struct DatFile
+        {
+            u16 mineralCost[TotalTypes];
+            u16 vespeneCost[TotalTypes];
+            u16 researchTime[TotalTypes];
+            u16 energyCost[TotalTypes];
+            u32 unknown[TotalTypes];
+            u16 icon[TotalTypes];
+            u16 label[TotalTypes];
+            u8 race[TotalTypes];
+            u8 unused[TotalTypes];
+            u8 broodWar[TotalTypes];
         };
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & getDat(Type techType);
+        const DatEntry & getTech(Type techType);
 
     private:
         std::vector<DatEntry> techs;
@@ -1920,32 +1932,34 @@ namespace Sc {
             u16 targetErrorMessage;
             u16 icon;
         };
-        __declspec(align(1)) struct DatFile
+
+        template <bool expansion>
+        struct alignas(1) DatFile
         {
-            u16 label[130];
-            u32 graphics[130];
-            u8 unused[130];
-            u16 targetFlags[130];
-            u32 minimumRange[130];
-            u32 maximumRange[130];
-            u8 damageUpgrade[130];
-            u8 weaponType[130];
-            u8 weaponBehavior[130];
-            u8 removeAfter[130];
-            u8 weaponEffect[130];
-            u16 innerSplashRadius[130];
-            u16 mediumSplashRadius[130];
-            u16 outerSplashRadius[130];
-            u16 damageAmount[130];
-            u16 damageBonus[130];
-            u8 weaponCooldown[130];
-            u8 damageFactor[130];
-            u8 attackAngle[130];
-            u8 launchSpin[130];
-            u8 forwardOffset[130];
-            u8 upwardOffset[130];
-            u16 targetErrorMessage[130];
-            u16 icon[130];
+            u16 label[expansion ? Total : TotalOriginal];
+            u32 graphics[expansion ? Total : TotalOriginal];
+            u8 unused[expansion ? Total : TotalOriginal];
+            u16 targetFlags[expansion ? Total : TotalOriginal];
+            u32 minimumRange[expansion ? Total : TotalOriginal];
+            u32 maximumRange[expansion ? Total : TotalOriginal];
+            u8 damageUpgrade[expansion ? Total : TotalOriginal];
+            u8 weaponType[expansion ? Total : TotalOriginal];
+            u8 weaponBehavior[expansion ? Total : TotalOriginal];
+            u8 removeAfter[expansion ? Total : TotalOriginal];
+            u8 weaponEffect[expansion ? Total : TotalOriginal];
+            u16 innerSplashRadius[expansion ? Total : TotalOriginal];
+            u16 mediumSplashRadius[expansion ? Total : TotalOriginal];
+            u16 outerSplashRadius[expansion ? Total : TotalOriginal];
+            u16 damageAmount[expansion ? Total : TotalOriginal];
+            u16 damageBonus[expansion ? Total : TotalOriginal];
+            u8 weaponCooldown[expansion ? Total : TotalOriginal];
+            u8 damageFactor[expansion ? Total : TotalOriginal];
+            u8 attackAngle[expansion ? Total : TotalOriginal];
+            u8 launchSpin[expansion ? Total : TotalOriginal];
+            u8 forwardOffset[expansion ? Total : TotalOriginal];
+            u8 upwardOffset[expansion ? Total : TotalOriginal];
+            u16 targetErrorMessage[expansion ? Total : TotalOriginal];
+            u16 icon[expansion ? Total : TotalOriginal];
         };
 #pragma pack(pop)
 

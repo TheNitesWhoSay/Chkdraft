@@ -56,7 +56,7 @@ void TechSettingsWindow::RefreshWindow()
     refreshing = true;
     if ( selectedTech >= 0 && selectedTech < 44 && CM != nullptr )
     {
-        u8 tech = (u8)selectedTech;
+        Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
         if ( selectedTech != -1 )
             chkd.mapSettingsWindow.SetWinText("Map Settings - [" + techNames.at(selectedTech) + "]");
 
@@ -67,10 +67,10 @@ void TechSettingsWindow::RefreshWindow()
         checkUseDefaultCosts.SetCheck(techUsesDefaultCosts);
         if ( techUsesDefaultCosts )
         {
-            editMineralCosts.SetEditNum<u16>(chkd.scData.techs.TechDat(tech)->MineralCost);
-            editGasCosts.SetEditNum<u16>(chkd.scData.techs.TechDat(tech)->VespeneCost);
-            editTimeCosts.SetEditNum<u16>(chkd.scData.techs.TechDat(tech)->ResearchTime/15);
-            editEnergyCosts.SetEditNum<u16>(chkd.scData.techs.TechDat(tech)->EnergyCost);
+            editMineralCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).mineralCost);
+            editGasCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).vespeneCost);
+            editTimeCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).researchTime/15);
+            editEnergyCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).energyCost);
             DisableTechCosts();
         }
         else
@@ -239,7 +239,7 @@ void TechSettingsWindow::EnableTechEditing()
 {
     checkUseDefaultCosts.EnableThis();
 
-    if ( !CM->properties.techUsesDefaultSettings((Sc::Tech::Type)selectedTech) )
+    if ( selectedTech >= 0 && selectedTech < Sc::Tech::TotalTypes && !CM->properties.techUsesDefaultSettings((Sc::Tech::Type)selectedTech) )
         EnableTechCosts();
 
     groupDefaultPlayerSettings.EnableThis();
@@ -261,13 +261,13 @@ void TechSettingsWindow::SetDefaultTechCosts()
 {
     if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
     {
-        u8 tech = (u8)selectedTech;
-        TECHDAT* techDat = chkd.scData.techs.TechDat(tech);
+        Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
+        const Sc::Tech::DatEntry & techDat = chkd.scData.techs.getTech(tech);
 
-        CM->properties.setTechMineralCost((Sc::Tech::Type)tech, techDat->MineralCost);
-        CM->properties.setTechGasCost((Sc::Tech::Type)tech, techDat->VespeneCost);
-        CM->properties.setTechResearchTime((Sc::Tech::Type)tech, techDat->ResearchTime);
-        CM->properties.setTechEnergyCost((Sc::Tech::Type)tech, techDat->EnergyCost);
+        CM->properties.setTechMineralCost((Sc::Tech::Type)tech, techDat.mineralCost);
+        CM->properties.setTechGasCost((Sc::Tech::Type)tech, techDat.vespeneCost);
+        CM->properties.setTechResearchTime((Sc::Tech::Type)tech, techDat.researchTime);
+        CM->properties.setTechEnergyCost((Sc::Tech::Type)tech, techDat.energyCost);
     }
 }
 

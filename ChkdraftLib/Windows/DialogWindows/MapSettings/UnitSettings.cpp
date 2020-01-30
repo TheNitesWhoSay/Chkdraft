@@ -150,13 +150,13 @@ void UnitSettingsWindow::RefreshWindow()
             editGasCost.SetEditNum<u16>(unitDat.vespeneCost);
             if ( groundWeapon != 130 )
             {
-                editGroundDamage.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageAmount);
-                editGroundBonus.SetEditNum<u16>(chkd.scData.WeaponDat(groundWeapon)->DamageBonus);
+                editGroundDamage.SetEditNum<u16>(chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount);
+                editGroundBonus.SetEditNum<u16>(chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus);
             }
             if ( airWeapon != 130 && airWeapon != groundWeapon )
             {
-                editAirDamage.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageAmount);
-                editAirBonus.SetEditNum<u16>(chkd.scData.WeaponDat(airWeapon)->DamageBonus);
+                editAirDamage.SetEditNum<u16>(chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageAmount);
+                editAirBonus.SetEditNum<u16>(chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageBonus);
             }
         }
         else // Not default settings
@@ -450,8 +450,8 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 
         if ( groundWeapon != 130 )
         {
-            u16 defaultBaseDamage = chkd.scData.WeaponDat(groundWeapon)->DamageAmount,
-                defaultBonusDamage = chkd.scData.WeaponDat(groundWeapon)->DamageBonus;
+            u16 defaultBaseDamage = chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount,
+                defaultBonusDamage = chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus;
             
             CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, defaultBaseDamage);
             CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, defaultBonusDamage);
@@ -459,8 +459,8 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
 
         if ( airWeapon != 130 )
         {
-            u16 defaultBaseDamage = chkd.scData.WeaponDat(airWeapon)->DamageAmount,
-                defaultBonusDamage = chkd.scData.WeaponDat(airWeapon)->DamageBonus;
+            u16 defaultBaseDamage = chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageAmount,
+                defaultBonusDamage = chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageBonus;
             
             CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, defaultBaseDamage);
             CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, defaultBonusDamage);

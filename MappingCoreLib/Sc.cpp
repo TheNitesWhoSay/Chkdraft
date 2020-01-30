@@ -1659,6 +1659,57 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
         return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
 }
 
+bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    std::vector<u8> weaponData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\weapons.dat", weaponData) )
+    {
+        logger.error() << "Failed to load arr\\weapons.dat" << std::endl;
+        return false;
+    }
+    else if ( weaponData.size() != sizeof(Sc::Weapon::DatFile<true>) && weaponData.size() != sizeof(Sc::Weapon::DatFile<false>) )
+    {
+        logger.error() << "Unrecognized WeaponDat format!" << std::endl;
+        return false;
+    }
+    
+    bool isExpansion = (weaponData.size() == sizeof(Sc::Weapon::DatFile<true>));
+    if ( isExpansion )
+    {
+        const DatFile<true> & weaponDat = (DatFile<true> &)weaponData[0];
+        for ( size_t i=0; i<Total; i++ )
+        {
+            weapons.push_back(Sc::Weapon::DatEntry { weaponDat.label[i], weaponDat.graphics[i], weaponDat.unused[i], weaponDat.targetFlags[i], weaponDat.minimumRange[i],
+                weaponDat.maximumRange[i], weaponDat.damageUpgrade[i], weaponDat.weaponType[i], weaponDat.weaponBehavior[i], weaponDat.removeAfter[i], weaponDat.weaponEffect[i],
+                weaponDat.innerSplashRadius[i], weaponDat.mediumSplashRadius[i], weaponDat.outerSplashRadius[i], weaponDat.damageAmount[i], weaponDat.damageBonus[i],
+                weaponDat.weaponCooldown[i], weaponDat.damageFactor[i], weaponDat.attackAngle[i], weaponDat.launchSpin[i], weaponDat.forwardOffset[i], weaponDat.upwardOffset[i],
+                weaponDat.targetErrorMessage[i], weaponDat.icon[i] });
+        }
+    }
+    else
+    {
+        const DatFile<false> & weaponDat = (DatFile<false> &)weaponData[0];
+        for ( size_t i=0; i<TotalOriginal; i++ )
+        {
+            weapons.push_back(Sc::Weapon::DatEntry { weaponDat.label[i], weaponDat.graphics[i], weaponDat.unused[i], weaponDat.targetFlags[i], weaponDat.minimumRange[i],
+                weaponDat.maximumRange[i], weaponDat.damageUpgrade[i], weaponDat.weaponType[i], weaponDat.weaponBehavior[i], weaponDat.removeAfter[i], weaponDat.weaponEffect[i],
+                weaponDat.innerSplashRadius[i], weaponDat.mediumSplashRadius[i], weaponDat.outerSplashRadius[i], weaponDat.damageAmount[i], weaponDat.damageBonus[i],
+                weaponDat.weaponCooldown[i], weaponDat.damageFactor[i], weaponDat.attackAngle[i], weaponDat.launchSpin[i], weaponDat.forwardOffset[i], weaponDat.upwardOffset[i],
+                weaponDat.targetErrorMessage[i], weaponDat.icon[i] });
+        }
+    }
+
+    return true;
+}
+
+const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType)
+{
+    if ( weaponType < weapons.size() )
+        return weapons[weaponType];
+    else
+        throw std::out_of_range(std::string("WeaponType: ") + std::to_string(weaponType) + " is out of range for weapons vector of size " + std::to_string(weapons.size()));
+}
+
 bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, grpData) )
@@ -1966,6 +2017,51 @@ const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType)
         return upgrades[upgradeType];
     else
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for upgrades vector of size " + std::to_string(upgrades.size()));
+}
+
+bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+{
+    std::vector<u8> techData;
+    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\techdata.dat", techData) )
+    {
+        logger.error() << "Failed to load arr\\techdata.dat" << std::endl;
+        return false;
+    }
+    else if ( techData.size() != sizeof(Sc::Tech::DatFile) && techData.size() != sizeof(Sc::Tech::OriginalDatFile) )
+    {
+        logger.error() << "Unrecognized TechDat format!" << std::endl;
+        return false;
+    }
+    
+    bool isExpansion = (techData.size() == sizeof(Sc::Tech::DatFile));
+    if ( isExpansion )
+    {
+        const DatFile & techDat = (DatFile &)techData[0];
+        for ( size_t i=0; i<TotalTypes; i++ )
+        {
+            techs.push_back(Sc::Tech::DatEntry { techDat.mineralCost[i], techDat.vespeneCost[i], techDat.researchTime[i], techDat.energyCost[i],
+                techDat.unknown[i], techDat.icon[i], techDat.label[i], techDat.race[i], techDat.unused[i], techDat.broodWar[i] });
+        }
+    }
+    else
+    {
+        const OriginalDatFile & techDat = (OriginalDatFile &)techData[0];
+        for ( size_t i=0; i<TotalOriginalTypes; i++ )
+        {
+            techs.push_back(Sc::Tech::DatEntry { techDat.mineralCost[i], techDat.vespeneCost[i], techDat.researchTime[i], techDat.energyCost[i],
+                techDat.unknown[i], techDat.icon[i], techDat.label[i], techDat.race[i], techDat.unused[i], u8(0) });
+        }
+    }
+
+    return true;
+}
+
+const Sc::Tech::DatEntry & Sc::Tech::getTech(Type techType)
+{
+    if ( size_t(techType) < techs.size() )
+        return techs[size_t(techType)];
+    else
+        throw std::out_of_range(std::string("TechType: ") + std::to_string(size_t(techType)) + " is out of range for tecs vector of size " + std::to_string(techs.size()));
 }
 
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
