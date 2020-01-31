@@ -234,6 +234,13 @@ s32 TripletToInt(u8* triplet);
 template <typename T>
 s32 round(T value);
 
+template <typename T>
+inline std::string to_hex_string(const T & t)
+{
+    char buf[36];
+    std::snprintf(buf, sizeof(buf)/sizeof(char), "0x%X", t);
+    return std::string(buf);
+}
 
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope

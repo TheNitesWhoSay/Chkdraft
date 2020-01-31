@@ -1504,6 +1504,9 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
         Chk::PlayerColor color = (unit->owner < Sc::Player::TotalSlots ?
             map.players.getPlayerColor(unit->owner) : (Chk::PlayerColor)unit->owner);
 
+        if ( color > Chk::TotalColors )
+            color = Chk::PlayerColor(color % Chk::TotalColors);
+
         u32 bitIndex = (
             ((u32)((unit->yc / 32)*scale) + yOffset) * 128
             + (u32)((unit->xc / 32)*scale) + xOffset

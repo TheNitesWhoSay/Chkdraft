@@ -1,7 +1,7 @@
 #ifndef STATICTRIGCOMPONENTPARSER_H
 #define STATICTRIGCOMPONENTPARSER_H
-#include "Sections.h"
 #include "Basics.h"
+#include "Chk.h"
 
 class StaticTrigComponentParser
 {

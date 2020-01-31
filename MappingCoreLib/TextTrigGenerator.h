@@ -1,7 +1,6 @@
 #ifndef TEXTTRIGGENERATOR_H
 #define TEXTTRIGGENERATOR_H
 #include "Basics.h"
-#include "Buffer.h"
 #include "Scenario.h"
 #include <vector>
 #include <string>
@@ -11,6 +10,31 @@
     ArgumentMap
     argMap[i] = stdActionArgNum
 */
+
+class StringBuffer : public std::vector<char>
+{
+    public:
+        using std::vector<char>::vector;
+        virtual ~StringBuffer() {}
+
+        inline void operator+=(const char & c) { push_back(c); }
+        template <size_t N> inline void operator+=(const char (& str)[N]) { insert(end(), &str[0], &str[N-1]); }
+        inline void operator+=(const std::string & str) { insert(end(), str.begin(), str.end()); }
+        template <typename T> inline void operator+=(const T & t) { (*this) += std::to_string(t); }
+
+        inline char* c_str() {
+            if ( empty() || back() != '\0' )
+                push_back('\0');
+
+            return &(*this)[0];
+        }
+        inline std::string str() {
+            if ( empty() || back() != '\0' )
+                push_back('\0');
+
+            return std::string(begin(), end());
+        }
+};
 
 class TextTrigGenerator
 {
@@ -57,11 +81,11 @@ class TextTrigGenerator
     
     protected:
 
-        inline void AddConditionArgument(buffer & output, Chk::Condition & condition, Chk::Condition::VirtualType conditionType, u8 & stdTextTrigArgNum);
-        inline void AddActionArgument(buffer & output, Chk::Action & action, Chk::Action::VirtualType actionType, u8 & stdTextTrigArgNum);
+        inline void AddConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::VirtualType conditionType, u8 & stdTextTrigArgNum);
+        inline void AddActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::VirtualType actionType, u8 & stdTextTrigArgNum);
         bool BuildTextTrigs(ScenarioPtr map, TrigSectionPtr triggerData, std::string & trigString);
         bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
-        bool CorrectLineEndings(buffer & buf); // Corrects any improperly formatted line endings
+        bool CorrectLineEndings(StringBuffer & buf); // Corrects any improperly formatted line endings
 
 
     private:
@@ -80,7 +104,6 @@ class TextTrigGenerator
         std::vector<std::string> actionTable; // Array of action names
         bool goodConditionTable;
         bool goodActionTable;
-        char number[36];
 
         bool PrepConditionTable(); // Fills conditionTable
         bool PrepActionTable(); // Fills actionTable

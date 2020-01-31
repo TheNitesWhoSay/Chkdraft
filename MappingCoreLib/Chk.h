@@ -879,6 +879,8 @@ namespace Chk {
         Azure_NeutralColor = 11
     });
 
+    constexpr size_t TotalColors = 12;
+
     constexpr u32 baseFontSize = 8;
     constexpr u32 fontStepSize = 2;
 
