@@ -242,6 +242,31 @@ inline std::string to_hex_string(const T & t)
     return std::string(buf);
 }
 
+class StringBuffer : public std::vector<char>
+{
+    public:
+        using std::vector<char>::vector;
+        virtual ~StringBuffer() {}
+
+        inline void operator+=(const char & c) { push_back(c); }
+        template <size_t N> inline void operator+=(const char (& str)[N]) { insert(end(), &str[0], &str[N-1]); }
+        inline void operator+=(const std::string & str) { insert(end(), str.begin(), str.end()); }
+        template <typename T> inline void operator+=(const T & t) { (*this) += std::to_string(t); }
+
+        inline char* c_str() {
+            if ( empty() || back() != '\0' )
+                push_back('\0');
+
+            return &(*this)[0];
+        }
+        inline std::string str() {
+            if ( empty() || back() != '\0' )
+                push_back('\0');
+
+            return std::string(begin(), end());
+        }
+};
+
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope
     e.g. MyClass::MyEnum::Value cannot be accessed via MyClass::Value (as it could with regular enums) and potentially cause redefinition errors

@@ -19,13 +19,7 @@ TextTrigCompiler::~TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string trigText, ScenarioPtr chk, Sc::Data & scData)
-{
-    buffer text("TxTr");
-    return text.addStr(trigText.c_str(), trigText.length()) && CompileTriggers(text, chk, scData);
-}
-
-bool TextTrigCompiler::CompileTriggers(buffer & text, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -55,13 +49,7 @@ bool TextTrigCompiler::CompileTriggers(buffer & text, ScenarioPtr chk, Sc::Data 
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
-{
-    buffer text("TxTr");
-    return text.addStr(trigText.c_str(), trigText.length()+1) && CompileTrigger(text, trigger, chk, scData);
-}
-
-bool TextTrigCompiler::CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
@@ -97,32 +85,29 @@ bool TextTrigCompiler::CompileTrigger(buffer & text, Chk::Trigger* trigger, Scen
 
 bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type & conditionType)
 {
-    buffer txcd("TxCd");
-    if ( txcd.addStr(text.c_str(), text.size()) )
+    std::string txcd = text;
+    CleanText(txcd);
+    Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
+    if ( ParseConditionName(txcd, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
     {
-        CleanText(txcd);
-        Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
-        if ( ParseConditionName(txcd, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
+        if ( ((s32)newConditionType) < 0 )
+            conditionType = ExtendedToRegularCID(newConditionType);
+        else
+            conditionType = (Chk::Condition::Type)newConditionType;
+
+        return true;
+    }
+    else
+    {
+        u32 temp = 0;
+        if ( ParseLong(txcd.c_str(), temp, 0, txcd.size()) )
         {
-            if ( ((s32)newConditionType) < 0 )
-                conditionType = ExtendedToRegularCID(newConditionType);
+            if ( ((s32)temp) < 0 )
+                conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
             else
-                conditionType = (Chk::Condition::Type)newConditionType;
+                conditionType = (Chk::Condition::Type)temp;
 
             return true;
-        }
-        else
-        {
-            u32 temp = 0;
-            if ( ParseLong((char*)txcd.getPtr(0), temp, 0, txcd.size()) )
-            {
-                if ( ((s32)temp) < 0 )
-                    conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
-                else
-                    conditionType = (Chk::Condition::Type)temp;
-
-                return true;
-            }
         }
     }
     return false;
@@ -134,11 +119,9 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
     if ( !LoadCompiler(chk, scData) )
         return false;
 
-    buffer txcd("TxCd");
-    if ( argNum < argMap.size() &&
-        txcd.addStr(conditionArgText.c_str(), conditionArgText.size()) &&
-        txcd.add<u8>(0) )
+    if ( argNum < argMap.size() )
     {
+        std::string txcd = conditionArgText;
         std::stringstream argumentError;
         u32 argsLeft = numConditionArgs((Chk::Condition::VirtualType)condition.conditionType) - argMap[argNum];
         if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (Chk::Condition::VirtualType)condition.conditionType, argsLeft, argumentError) )
@@ -155,32 +138,29 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum
 
 bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & actionType)
 {
-    buffer txac("TxAc");
-    if ( txac.addStr(text.c_str(), text.size()) )
+    std::string txac = text;
+    CleanText(txac);
+    Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
+    if ( ParseActionName(txac, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
     {
-        CleanText(txac);
-        Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
-        if ( ParseActionName(txac, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
+        if ( ((s32)newActionType) < 0 )
+            actionType = ExtendedToRegularAID(newActionType);
+        else
+            actionType = (Chk::Action::Type)newActionType;
+
+        return true;
+    }
+    else
+    {
+        u32 temp = 0;
+        if ( ParseLong(txac.c_str(), temp, 0, txac.size()) )
         {
-            if ( ((s32)newActionType) < 0 )
-                actionType = ExtendedToRegularAID(newActionType);
+            if ( ((s32)temp) < 0 )
+                actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
             else
-                actionType = (Chk::Action::Type)newActionType;
+                actionType = (Chk::Action::Type)temp;
 
             return true;
-        }
-        else
-        {
-            u32 temp = 0;
-            if ( ParseLong((char*)txac.getPtr(0), temp, 0, txac.size()) )
-            {
-                if ( ((s32)temp) < 0 )
-                    actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
-                else
-                    actionType = (Chk::Action::Type)temp;
-
-                return true;
-            }
         }
     }
     return false;
@@ -191,11 +171,9 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
-
-    buffer txac("TxAc");
-    if ( argNum < argMap.size() &&
-        txac.addStr(actionArgText.c_str(), actionArgText.size()) &&
-        txac.add<u8>(0) )
+    
+    std::string txac = actionArgText;
+    if ( argNum < argMap.size() )
     {
         std::stringstream argumentError;
         u32 argsLeft = numActionArgs((Chk::Action::VirtualType)action.actionType) - argMap[argNum];
@@ -296,16 +274,15 @@ void TextTrigCompiler::ClearCompiler()
     extendedStringUsed.reset();
 }
 
-void TextTrigCompiler::CleanText(buffer & text)
+void TextTrigCompiler::CleanText(std::string & text)
 {
-    s64 pos = 0;
+    size_t pos = 0;
     bool inString = false;
-    buffer dest("TeCp");
-    dest.setSize(text.size()+1);
+    StringBuffer dest;
 
     while ( pos < text.size() ) 
     {
-        u8 character = text.get<u8>(pos);
+        char character = text[pos];
         pos++;
         switch ( character )
         {
@@ -313,27 +290,26 @@ void TextTrigCompiler::CleanText(buffer & text)
             break; // Ignore (delete) spaces and tabs
 
         case '\r': // CR (line ending)
-            if ( text.get<u8>(pos) == '\n' ) // Followed by LF
+            if ( text[pos] == '\n' ) // Followed by LF
                 pos++; // Increment position and continue to LF case
                        // Else continue to the LF case
         case '\n': // LF (line ending)
         case '\13': // VT (line ending)
         case '\14': // FF (line ending)
-            dest.add<u8>('\r');
-            dest.add<u8>('\n');
+            dest += '\r';
+            dest += '\n';
             break;
 
         case '/': // Might be a comment
-            if ( text.get<u8>(pos) == '/' ) // Found a comment
+            if ( text[pos] == '/' ) // Found a comment
             {
-                s64 newPos = pos;
-                if ( text.getNext('\n', pos, newPos) || // Check for nearby LF
-                    text.getNext('\r', pos, newPos) || // Check for nearby CR (should be checked after LF)
-                    text.getNext('\13', pos, newPos) || // Check for nearby VT
-                    text.getNext('\14', pos, newPos) ) // Check for nearby FF
-                {
+                size_t newPos = text.find('\n', pos); // Check for nearby LF
+                if ( newPos != std::string::npos ) newPos = text.find('\r', pos); // Check for nearby CR (should be checked after LF)
+                if ( newPos != std::string::npos ) newPos = text.find('\13', pos); // Check for nearby VT
+                if ( newPos != std::string::npos ) newPos = text.find('\14', pos); // Check for nearby FF
+
+                if ( newPos != std::string::npos )
                     pos = newPos; // Skip (delete) contents until line ending
-                }
                 else // File ended on this line
                     pos = text.size();
             }
@@ -341,114 +317,111 @@ void TextTrigCompiler::CleanText(buffer & text)
 
         case '\"': // Found a string
         {
-            dest.add<u8>('\"');
+            dest += '\"';
 
-            s64 closeQuotePos = pos;
-            if ( text.getNextUnescaped('\"', pos, closeQuotePos) )
+            size_t searchStart = pos;
+            size_t closeQuotePos = findStringEnd(text, searchStart);
+
+            while ( pos < closeQuotePos )
             {
-                while ( pos < closeQuotePos )
+                char curr = text[pos];
+                if ( curr == '\\' ) // Escape Character
                 {
-                    u8 curr = text.get<u8>(pos);
-                    if ( curr == '\\' ) // Escape Character
+                    pos++;
+                    if ( text[pos] == 'x' )
                     {
                         pos++;
-                        if ( text.get<u8>(pos) == 'x' )
-                        {
-                            pos++;
-                            pos++; // First num should always be 0
+                        pos++; // First num should always be 0
 
-                            u8 targetVal = 0;
+                        char targetVal = 0;
 
-                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                targetVal += 16 * (text.get<u8>(pos) - '0');
-                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
+                        if ( text[pos] >= '0' && text[pos] <= '9' )
+                            targetVal += 16 * (text[pos] - '0');
+                        else if ( text[pos] >= 'A' && text[pos] <= 'F' )
+                            targetVal += 16 * (text[pos] - 'A' + 10);
 
-                            pos++;
+                        pos++;
 
-                            if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                                targetVal += text.get<u8>(pos) - '0';
-                            else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                                targetVal += text.get<u8>(pos) - 'A' + 10;
+                        if ( text[pos] >= '0' && text[pos] <= '9' )
+                            targetVal += text[pos] - '0';
+                        else if ( text[pos] >= 'A' && text[pos] <= 'F' )
+                            targetVal += text[pos] - 'A' + 10;
 
-                            dest.add<u8>(targetVal);
-                        }
-                        else if ( text.get<u8>(pos) == 'r' )
-                        {
-                            dest.add<u8>('\r');
-                        }
-                        else if ( text.get<u8>(pos) == 'n' )
-                        {
-                            dest.add<u8>('\n');
-                        }
-                        else if ( text.get<u8>(pos) == 't' )
-                        {
-                            dest.add<u8>('\t');
-                        }
-                        else if ( text.get<u8>(pos) == '\"' )
-                        {
-                            dest.add<u8>('\\');
-                            dest.add<u8>('\"');
-                        }
-                        else if ( text.get<u8>(curr, pos) )
-                            dest.add<u8>(curr);
+                        dest += targetVal;
                     }
-                    else if ( curr == '<' && text.get<u8>(pos + 3) == '>' &&
-                        (text.get<u8>(pos+1) >= '0' && text.get<u8>(pos+1) <= '9' ||
-                            text.get<u8>(pos+1) >= 'A' && text.get<u8>(pos+1) <= 'F') &&
-                            (text.get<u8>(pos + 2) >= '0' && text.get<u8>(pos + 2) <= '9' ||
-                                text.get<u8>(pos + 2) >= 'A' && text.get<u8>(pos + 2) <= 'F') )
+                    else if ( text[pos] == 'r' )
                     {
-                        pos++;
-
-                        u8 targetVal = 0;
-
-                        if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                            targetVal += 16 * (text.get<u8>(pos) - '0');
-                        else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                            targetVal += 16 * (text.get<u8>(pos) - 'A' + 10);
-
-                        pos++;
-
-                        if ( text.get<u8>(pos) >= '0' && text.get<u8>(pos) <= '9' )
-                            targetVal += text.get<u8>(pos) - '0';
-                        else if ( text.get<u8>(pos) >= 'A' && text.get<u8>(pos) <= 'F' )
-                            targetVal += text.get<u8>(pos) - 'A' + 10;
-
-                        dest.add<u8>(targetVal);
-
-                        pos++;
+                        dest += '\r';
+                    }
+                    else if ( text[pos] == 'n' )
+                    {
+                        dest += '\n';
+                    }
+                    else if ( text[pos] == 't' )
+                    {
+                        dest += '\t';
+                    }
+                    else if ( text[pos] == '\"' )
+                    {
+                        dest += '\\';
+                        dest += '\"';
                     }
                     else
-                        dest.add<u8>(curr);
+                        dest += text[pos];
+                }
+                else if ( curr == '<' && text[pos + 3] == '>' &&
+                    (text[pos+1] >= '0' && text[pos+1] <= '9' ||
+                        text[pos+1] >= 'A' && text[pos+1] <= 'F') &&
+                        (text[pos + 2] >= '0' && text[pos + 2] <= '9' ||
+                            text[pos + 2] >= 'A' && text[pos + 2] <= 'F') )
+                {
+                    pos++;
+                    char targetVal = 0;
+
+                    if ( text[pos] >= '0' && text[pos] <= '9' )
+                        targetVal += 16 * (text[pos] - '0');
+                    else if ( text[pos] >= 'A' && text[pos] <= 'F' )
+                        targetVal += 16 * (text[pos] - 'A' + 10);
 
                     pos++;
-                }
 
-                dest.add<u8>('\"');
-                pos = closeQuotePos+1;
+                    if ( text[pos] >= '0' && text[pos] <= '9' )
+                        targetVal += text[pos] - '0';
+                    else if ( text[pos] >= 'A' && text[pos] <= 'F' )
+                        targetVal += text[pos] - 'A' + 10;
+
+                    dest += targetVal;
+                    pos++;
+                }
+                else
+                    dest += curr;
+
+                pos++;
             }
+
+            dest += '\"';
+            pos = closeQuotePos+1;
         }
         break;
 
         default:
             if ( character >= 'a' && character <= 'z' ) // If lowercase
-                dest.add<u8>(character-32); // Captialize
+                dest += char(character-32); // Captialize
             else
-                dest.add<u8>(character); // Add character as normal
+                dest += character; // Add character as normal
             break;
         }
     }
-    text.overwrite((const char*)dest.getPtr(0), dest.size());
+    dest.str().swap(text);
 }
 
-bool TextTrigCompiler::ParseTriggers(buffer & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error)
+bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error)
 {
-    text.add<u8>(0); // Add a terminating null character
+    text.push_back('\0'); // Add a terminating null character
 
     u8 flags;
 
-    s64 pos = 0,
+    size_t pos = 0,
         lineEnd = 0,
         playerEnd = 0,
         conditionEnd = 0,
@@ -471,7 +444,7 @@ bool TextTrigCompiler::ParseTriggers(buffer & text, std::deque<std::shared_ptr<C
         Chk::Condition* currCondition = &currTrig->condition(0);
         Chk::Action* currAction = &currTrig->action(0);
 
-        if ( text.has('\15', pos) ) // Line End
+        if ( text[pos] == '\15' ) // Line End
         {
             pos += 2;
             line ++;
@@ -572,7 +545,7 @@ bool TextTrigCompiler::ParseTriggers(buffer & text, std::deque<std::shared_ptr<C
 
                 output.push_back(currTrig);
                 expecting = 0;
-                if ( text.has('\0', pos) ) // End of Text
+                if ( text[pos] == '\0' ) // End of Text
                 {
                     error << "Success!";
                     return true;
@@ -585,24 +558,24 @@ bool TextTrigCompiler::ParseTriggers(buffer & text, std::deque<std::shared_ptr<C
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(buffer & text, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      trigger
     // or   %NULL
-    if ( text.has("TRIGGER(", pos, 8) )
+    if ( text.compare(pos, 8, "TRIGGER(") == 0 )
     {
         pos += 8;
         expecting ++;
     }
-    else if ( text.has("TRIGGER", pos, 7) )
+    else if ( text.compare(pos, 7, "TRIGGER") == 0 )
     {
         pos += 7;
-        while ( text.has('\r', pos) )
+        while ( text[pos] == '\r' )
         {
             pos += 2;
             line ++;
         }
-        if ( text.has('(', pos) )
+        if ( text[pos] == '(' )
         {
             pos ++;
             expecting ++;
@@ -613,7 +586,7 @@ inline bool TextTrigCompiler::ParsePartZero(buffer & text, std::stringstream & e
             return false;
         }
     }
-    else if ( text.has('\0', pos) ) // End of text
+    else if ( text[pos] == '\0' ) // End of text
     {
         pos ++;
     }
@@ -625,37 +598,40 @@ inline bool TextTrigCompiler::ParsePartZero(buffer & text, std::stringstream & e
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting, s64 & playerEnd, s64 & lineEnd)
+inline bool TextTrigCompiler::ParsePartOne(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, size_t & playerEnd, size_t & lineEnd)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
     // or   %PlayerName)
     // or   %PlayerName:Value)
     // or   )
-    if ( text.get<u8>(pos) == ')' ) // No players
+    if ( text[pos] == ')' ) // No players
     {
         pos ++;
         expecting ++;
     }
     else
     {
-        if ( text.getNextUnquoted(',', pos, playerEnd, '{') || text.getNextUnquoted(')', pos, playerEnd, '{') )
+        size_t nextComma = findNextUnquoted(text, pos, ',', '{');
+        playerEnd = nextComma != std::string::npos ? nextComma : findNextUnquoted(text, pos, ')', '{');
+
+        if ( playerEnd != std::string::npos )
         {
-            lineEnd = u32_max;
-            if ( !text.getNextUnquoted('\15', pos, lineEnd) )
-                text.getNext('\0', pos, lineEnd); // Text ends on this line
+            lineEnd = findNextUnquoted(text, pos, '\15');
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length(); // Text ends on this line
 
             playerEnd = std::min(playerEnd, lineEnd);
 
             if ( ParseExecutingPlayer(text, output, pos, playerEnd) )
             {
                 pos = playerEnd;
-                while ( text.has('\15', pos) )
+                while ( text[pos] == '\15' )
                 {
                     pos += 2;
                     line ++;
                 }
-                if ( text.has(')', pos) )
+                if ( text[pos] == ')' )
                     expecting ++;
 
                 pos ++;
@@ -675,10 +651,10 @@ inline bool TextTrigCompiler::ParsePartOne(buffer & text, Chk::Trigger & output,
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartTwo(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      {
-    if ( text.has('{', pos) )
+    if ( text[pos] == '{' )
     {
         pos ++;
         expecting ++;
@@ -691,45 +667,45 @@ inline bool TextTrigCompiler::ParsePartTwo(buffer & text, Chk::Trigger & output,
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartThree(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      conditions:
     // or   actions:
     // or   flags:
     // or   }
-    if ( text.has("CONDITIONS:", pos, 11) )
+    if ( text.compare(pos, 11, "CONDITIONS:") == 0 )
     {
         pos += 11;
         expecting ++;
     }
-    else if ( text.has("ACTIONS:", pos, 8) )
+    else if ( text.compare(pos, 8, "ACTIONS:") == 0 )
     {
         pos += 8;
         expecting += 4;
     }
-    else if ( text.has("FLAGS:", pos, 6) )
+    else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
         expecting += 7;
     }
-    else if ( text.has('}', pos ) )
+    else if ( text[pos] == '}' )
     {
         pos ++;
         expecting = 12;
     }
     else
     {
-        bool hasConditions = text.has("CONDITIONS", pos, 10);
-        if ( hasConditions || text.has("ACTIONS", pos, 7) )
+        bool hasConditions = text.compare(pos, 10, "CONDITIONS") == 0;
+        if ( hasConditions || text.compare(pos, 7, "ACTIONS") == 0 )
         {
             pos += hasConditions ? 10 : 7;
-            while ( text.has('\15', pos) )
+            while ( text[pos] == '\15' )
             {
                 pos += 2;
                 line ++;
             }
 
-            if ( text.has(':', pos) ) 
+            if ( text[pos] == ':' ) 
             {
                 pos ++;
                 expecting += hasConditions ? 1 : 4;
@@ -749,8 +725,8 @@ inline bool TextTrigCompiler::ParsePartThree(buffer & text, Chk::Trigger & outpu
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-    s64 & conditionEnd, s64 & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argsLeft, u32 & numConditions,
+inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+    size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argsLeft, u32 & numConditions,
     Chk::Condition* & currCondition)
 {
     //      %ConditionName(
@@ -758,18 +734,20 @@ inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output
     // or   actions:
     // or   flags:
     // or   }
-    if ( text.has(';', pos) ) // Disabled condition
+    if ( text[pos] == ';' ) // Disabled condition
     {
-        while ( text.has('\15', pos) )
+        while ( text[pos] == '\15' )
         {
             pos += 2;
             line ++;
         }
         pos ++;
-        if ( text.getNext('(', pos, conditionEnd) )
+        conditionEnd = text.find('(', pos);
+        if ( conditionEnd != std::string::npos )
         {
-            if ( !text.getNextUnquoted('\r', pos, lineEnd) )
-                text.getNext('\0', pos, lineEnd);
+            lineEnd = findNextUnquoted(text, pos, '\r');
+            if ( lineEnd != std::string::npos )
+                lineEnd = text.size();
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
@@ -789,13 +767,13 @@ inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output
                 numConditions ++;
 
                 pos = conditionEnd;
-                while ( text.has('\r', pos) )
+                while ( text[pos] == '\r' )
                 {
                     pos += 2;
                     line ++;
                 }
 
-                if ( text.has('(', pos) )
+                if ( text[pos] == '(' )
                 {
                     pos ++;
                     expecting ++;
@@ -818,20 +796,20 @@ inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output
             return false;
         }
     }
-    else if ( text.has('}', pos ) ) // End trigger
+    else if ( text[pos] == '}' ) // End trigger
     {
         pos ++;
         expecting = 12;
     }
-    else if ( text.has("ACTIONS", pos, 7 ) ) // End conditions
+    else if ( text.compare(pos, 7, "ACTIONS") == 0 ) // End conditions
     {
         pos += 7;
-        while ( text.has('\r', pos) )
+        while ( text[pos] == '\r' )
         {
             pos += 2;
             line ++;
         }
-        if ( text.has(':', pos) )
+        if ( text[pos] == ':' )
         {
             pos ++;
             expecting = 7;
@@ -842,10 +820,10 @@ inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output
             return false;
         }
     }
-    else if ( text.has("FLAGS", pos, 5) ) // End conditions, no actions
+    else if ( text.compare(pos, 5, "FLAGS") == 0 ) // End conditions, no actions
     {
         pos += 5;
-        if ( text.has(':', pos) )
+        if ( text[pos] == ':' )
         {
             pos ++;
             expecting = 10;
@@ -856,67 +834,72 @@ inline bool TextTrigCompiler::ParsePartFour(buffer & text, Chk::Trigger & output
             return false;
         }
     }
-    else if ( text.getNext('(', pos, conditionEnd) ) // Has a condition or an error
+    else
     {
-        if ( !text.getNextUnquoted('\15', pos, lineEnd) )
-            text.getNext('\0', pos, lineEnd);
-
-        conditionEnd = std::min(conditionEnd, lineEnd);
-
-        if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags, argsLeft) )
+        conditionEnd = text.find('(', pos);
+        if ( conditionEnd != std::string::npos ) // Has a condition or an error
         {
-            if ( numConditions > Chk::Trigger::MaxConditions )
-            {
-                error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
-                return false;
-            }
-            currCondition = &output.condition(numConditions);
-            currCondition->flags = flags;
-            if ( (s32)conditionId < 0 )
-                currCondition->conditionType = ExtendedToRegularCID(conditionId);
-            else
-                currCondition->conditionType = (Chk::Condition::Type)conditionId;
-            numConditions ++;
+            lineEnd = text.find('\15', pos);
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length();
 
-            pos = conditionEnd;
-            while ( text.has('\15', pos) )
-            {
-                pos += 2;
-                line ++;
-            }
+            conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( text.has('(', pos) )
+            if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags, argsLeft) )
             {
-                pos ++;
-                expecting ++;
+                if ( numConditions > Chk::Trigger::MaxConditions )
+                {
+                    error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
+                    return false;
+                }
+                currCondition = &output.condition(numConditions);
+                currCondition->flags = flags;
+                if ( (s32)conditionId < 0 )
+                    currCondition->conditionType = ExtendedToRegularCID(conditionId);
+                else
+                    currCondition->conditionType = (Chk::Condition::Type)conditionId;
+                numConditions ++;
+
+                pos = conditionEnd;
+                while ( text[pos] == '\15' )
+                {
+                    pos += 2;
+                    line ++;
+                }
+
+                if ( text[pos] == '(' )
+                {
+                    pos ++;
+                    expecting ++;
+                }
+                else
+                {
+                    error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
+                    return false;
+                }
             }
             else
             {
-                error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
+                error << "Line: " << line << std::endl << std::endl << "Expected: Condition Name";
                 return false;
             }
         }
         else
         {
-            error << "Line: " << line << std::endl << std::endl << "Expected: Condition Name";
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
             return false;
         }
-    }
-    else
-    {
-        error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
-        return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting, u32 & argsLeft, s64 & argEnd,
+inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argsLeft, size_t & argEnd,
     Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionId)
 {
     //      );
     // or   %ConditionArg,
     // or   %ConditionArg);
-    if ( text.has(')', pos) ) // Condition End
+    if ( text[pos] == ')' ) // Condition End
     {
         if ( argsLeft > 0 )
         {
@@ -925,13 +908,13 @@ inline bool TextTrigCompiler::ParsePartFive(buffer & text, Chk::Trigger & output
         }
 
         pos ++;
-        while ( text.has('\15', pos) )
+        while ( text[pos] == '\15' )
         {
             pos += 2;
             line ++;
         }
 
-        if ( text.has(';', pos) )
+        if ( text[pos] == ';' )
         {
             pos ++;
             expecting --;
@@ -949,7 +932,8 @@ inline bool TextTrigCompiler::ParsePartFive(buffer & text, Chk::Trigger & output
     }
     else if ( argsLeft == 1 )
     {
-        if ( text.getNextUnquoted(')', pos, argEnd) )
+        argEnd = findNextUnquoted(text, pos, ')');
+        if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
             if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
@@ -969,51 +953,55 @@ inline bool TextTrigCompiler::ParsePartFive(buffer & text, Chk::Trigger & output
             return false;
         }
     }
-    else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
+    else
     {
-        std::stringstream argumentError;
-        if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
+        argEnd = findNextUnquoted(text, pos, ',');
+        if ( argEnd != std::string::npos ) // Has argument
         {
-            pos = argEnd+1;
-            argsLeft --;
+            std::stringstream argumentError;
+            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
+            {
+                pos = argEnd+1;
+                argsLeft --;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << argumentError.str();
+                return false;
+            }
         }
         else
         {
-            error << "Line: " << line << std::endl << std::endl << argumentError.str();
+            error << "Line: " << line << std::endl << std::endl << "Expected: \',\'";
             return false;
         }
-    }
-    else
-    {
-        error << "Line: " << line << std::endl << std::endl << "Expected: \',\'";
-        return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartSix(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      actions:
     // or   flags:
     // or   }
-    if ( text.has('}', pos) )
+    if ( text[pos] == '}' )
     {
         pos ++;
         expecting = 12;
     }
-    else if ( text.has("ACTIONS:", pos, 8) )
+    else if ( text.compare(pos, 8, "ACTIONS:") == 0 )
     {
         pos += 8;
         expecting ++;
     }
-    else if ( text.has("FLAGS:", pos, 6) )
+    else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
         expecting = 10;
     }
     else
     {
-        if ( text.has("ACTIONS", pos, 7) || text.has("FLAGS", pos, 5) )
+        if ( text.compare(pos, 7, "ACTIONS") == 0 || text.compare(pos, 5, "FLAGS") == 0 )
             error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
         else
             error << "Line: " << line << std::endl << std::endl << "Expected: \"Actions\" or \"Flags\" or '}'";
@@ -1022,21 +1010,23 @@ inline bool TextTrigCompiler::ParsePartSix(buffer & text, Chk::Trigger & output,
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSeven(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-    u8 & flags, s64 & actionEnd, s64 & lineEnd, Chk::Action::VirtualType & actionId, u32 & argsLeft, u32 & numActions,
+inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+    u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argsLeft, u32 & numActions,
     Chk::Action* & currAction)
 {
     //      %ActionName(
     // or   ;%ActionName(
     // or   flags:
     // or   }
-    if ( text.has(';', pos ) )
+    if ( text[pos] == ';' )
     {
         pos ++;
-        if ( text.getNext('(', pos, actionEnd) )
+        actionEnd = text.find('(', pos);
+        if ( actionEnd != std::string::npos )
         {
-            if ( !text.getNextUnquoted('\15', pos, lineEnd) )
-                text.getNext('\0', pos, lineEnd);
+            lineEnd = findNextUnquoted(text, pos, '\15');
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length();
 
             actionEnd = std::min(actionEnd, lineEnd);
 
@@ -1065,15 +1055,15 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer & text, Chk::Trigger & outpu
             }
         }
     }
-    else if ( text.has('}', pos) )
+    else if ( text[pos] == '}' )
     {
         pos ++;
         expecting = 12;
     }
-    else if ( text.has("FLAGS", pos, 5) ) // End actions
+    else if ( text.compare(pos, 5, "FLAGS") == 0 ) // End actions
     {
         pos += 5;
-        if ( text.has(':', pos) )
+        if ( text[pos] == ':' )
         {
             pos ++;
             expecting = 10;
@@ -1084,52 +1074,57 @@ inline bool TextTrigCompiler::ParsePartSeven(buffer & text, Chk::Trigger & outpu
             return false;
         }
     }
-    else if ( text.getNext('(', pos, actionEnd) )
+    else
     {
-        if ( !text.getNextUnquoted('\15', pos, lineEnd) )
-            text.getNext('\0', pos, lineEnd);
-
-        actionEnd = std::min(actionEnd, lineEnd);
-
-        if ( ParseAction(text, pos, actionEnd, false, actionId, flags, argsLeft) )
+        actionEnd = text.find('(', pos);
+        if ( actionEnd != std::string::npos )
         {
-            if ( numActions > Chk::Trigger::MaxActions )
+            lineEnd = findNextUnquoted(text, pos, '\15');
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length();
+
+            actionEnd = std::min(actionEnd, lineEnd);
+
+            if ( ParseAction(text, pos, actionEnd, false, actionId, flags, argsLeft) )
             {
-                error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
+                if ( numActions > Chk::Trigger::MaxActions )
+                {
+                    error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
+                    return false;
+                }
+                currAction = &output.action(numActions);
+                currAction->flags = flags;
+                if ( (s32)actionId < 0 )
+                    currAction->actionType = ExtendedToRegularAID(actionId);
+                else
+                    currAction->actionType = (Chk::Action::Type)actionId;
+                numActions ++;
+
+                pos = actionEnd+1;
+                expecting ++;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
                 return false;
             }
-            currAction = &output.action(numActions);
-            currAction->flags = flags;
-            if ( (s32)actionId < 0 )
-                currAction->actionType = ExtendedToRegularAID(actionId);
-            else
-                currAction->actionType = (Chk::Action::Type)actionId;
-            numActions ++;
-
-            pos = actionEnd+1;
-            expecting ++;
         }
         else
         {
-            error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
             return false;
         }
-    }
-    else
-    {
-        error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
-        return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-    u32 & argsLeft, s64 & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
+inline bool TextTrigCompiler::ParsePartEight(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+    u32 & argsLeft, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
 {
     //      );
     // or   %ActionArg,
     // or   %ActionArg);
-    if ( text.has(')', pos) ) // Action End
+    if ( text[pos] == ')' ) // Action End
     {
         if ( argsLeft > 0 )
         {
@@ -1138,13 +1133,13 @@ inline bool TextTrigCompiler::ParsePartEight(buffer & text, Chk::Trigger & outpu
         }
 
         pos ++;
-        while ( text.has('\15', pos) )
+        while ( text[pos] == '\15' )
         {
             pos += 2;
             line ++;
         }
 
-        if ( text.has(';', pos) )
+        if ( text[pos] == ';' )
         {
             pos ++;
             expecting --;
@@ -1162,7 +1157,8 @@ inline bool TextTrigCompiler::ParsePartEight(buffer & text, Chk::Trigger & outpu
     }
     else if ( argsLeft == 1 )
     {
-        if ( text.getNextUnquoted(')', pos, argEnd) )
+        argEnd = findNextUnquoted(text, pos, ')');
+        if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
             if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
@@ -1182,46 +1178,50 @@ inline bool TextTrigCompiler::ParsePartEight(buffer & text, Chk::Trigger & outpu
             return false;
         }
     }
-    else if ( text.getNextUnquoted(',', pos, argEnd) ) // Has argument
+    else
     {
-        std::stringstream argumentError;
-        if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
+        argEnd = findNextUnquoted(text, pos, ',');
+        if ( argEnd != std::string::npos ) // Has argument
         {
-            pos = argEnd+1;
-            argsLeft --;
+            std::stringstream argumentError;
+            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
+            {
+                pos = argEnd+1;
+                argsLeft --;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
+                return false;
+            }
         }
         else
         {
-            error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
+            error << "Line: " << line << std::endl << std::endl << "Expected: Additional Arguments";
             return false;
         }
-    }
-    else
-    {
-        error << "Line: " << line << std::endl << std::endl << "Expected: Additional Arguments";
-        return false;
     }
 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartNine(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      }
     // or   flags:,
-    if ( text.has('}', pos) )
+    if ( text[pos] == '}' )
     {
         pos ++;
         expecting = 12;
     }
-    else if ( text.has("FLAGS:", pos, 6) )
+    else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
         expecting ++;
     }
     else
     {
-        if ( text.has("FLAGS", pos, 5) )
+        if ( text.compare(pos, 5, "FLAGS") == 0 )
             error << "Line: " << line << std::endl << std::endl << "Expected: \':\'";
         else
             error << "Line: " << line << std::endl << std::endl << "Expected: \"Flags\" or \'}\'";
@@ -1230,41 +1230,45 @@ inline bool TextTrigCompiler::ParsePartNine(buffer & text, Chk::Trigger & output
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTen(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-    s64 & flagsEnd)
+inline bool TextTrigCompiler::ParsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+    size_t & flagsEnd)
 {
     //      ;
     // or  %32BitFlags;
-    if ( text.has(';', pos) )
+    if ( text[pos] == ';' )
     {
         pos ++;
         expecting ++;
     }
-    else if ( text.getNext(';', pos, flagsEnd) )
+    else
     {
-        if ( ParseExecutionFlags(text, pos, flagsEnd, output.flags) )
+        flagsEnd = text.find(';', pos);
+        if ( flagsEnd != std::string::npos )
         {
-            pos = flagsEnd+1;
-            expecting ++;
+            if ( ParseExecutionFlags(text, pos, flagsEnd, output.flags) )
+            {
+                pos = flagsEnd+1;
+                expecting ++;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Binary Execution Flags (32-bit max).";
+                return false;
+            }
         }
         else
         {
-            error << "Line: " << line << std::endl << std::endl << "Expected: Binary Execution Flags (32-bit max).";
+            error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
             return false;
         }
-    }
-    else
-    {
-        error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
-        return false;
     }
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartEleven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      }
-    if ( text.has('}', pos) )
+    if ( text[pos] == '}' )
     {
         pos ++;
         expecting ++;
@@ -1277,16 +1281,16 @@ inline bool TextTrigCompiler::ParsePartEleven(buffer & text, Chk::Trigger & outp
     return true;
 }
 
-bool TextTrigCompiler::ParseExecutingPlayer(buffer & text, Chk::Trigger & currTrig, s64 pos, s64 end)
+bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, Chk::Trigger & currTrig, size_t pos, size_t end)
 {
     u32 group;
-    s64 separator;
-    if ( text.getNextUnquoted(':', pos, end, separator) &&
+    size_t separator = findNextUnquoted(text, pos, ':');
+    if ( separator != std::string::npos &&
         ParsePlayer(text, group, pos, separator) &&
         group < 28 )
     {
         u8 appendedValue;
-        if ( !ParseByte((char*)text.getPtr(0), appendedValue, separator+1, end) )
+        if ( !ParseByte(text.c_str(), appendedValue, separator+1, end) )
             appendedValue = 1;
 
         currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
@@ -1300,111 +1304,111 @@ bool TextTrigCompiler::ParseExecutingPlayer(buffer & text, Chk::Trigger & currTr
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(buffer & arg, Chk::Condition::VirtualType & conditionType)
+bool TextTrigCompiler::ParseConditionName(std::string & arg, Chk::Condition::VirtualType & conditionType)
 {
-    char currChar = arg.get<u8>(0);
+    char currChar = arg[0];
     switch ( currChar )
     {
     case 'A':
     {
-        if ( arg.has("CCUMULATE", 1, 9) )
+        if ( arg.compare(1, 9, "CCUMULATE") == 0 )
             conditionType = Chk::Condition::VirtualType::Accumulate;
-        else if ( arg.has("LWAYS", 1, 5) )
+        else if ( arg.compare(1, 5, "LWAYS") == 0 )
             conditionType = Chk::Condition::VirtualType::Always;
     }
     break;
 
     case 'B':
-        if ( arg.has("RING", 1, 4) )
+        if ( arg.compare(1, 4, "RING") == 0 )
             conditionType = Chk::Condition::VirtualType::Bring;
         break;
 
     case 'C':
-        if ( arg.has("OMMAND", 1, 6) )
+        if ( arg.compare(1, 6, "OMMAND") == 0 )
         {
-            if ( arg.has("THELEAST", 7, 8) )
+            if ( arg.compare(7, 8, "THELEAST") == 0 )
             {
-                if ( arg.has("AT", 15, 2) )
+                if ( arg.compare(15, 2, "AT") == 0 )
                     conditionType = Chk::Condition::VirtualType::CommandTheLeastAt;
                 else if ( arg.size() == 15 )
                     conditionType = Chk::Condition::VirtualType::CommandTheLeast;
             }
-            else if ( arg.has("THEMOST", 7, 7) )
+            else if ( arg.compare(7, 7, "THEMOST") == 0 )
             {
-                if ( arg.has("AT", 14, 2) )
+                if ( arg.compare(14, 2, "AT") == 0 )
                     conditionType = Chk::Condition::VirtualType::CommandTheMostAt;
                 else if ( arg.size() == 14 )
                     conditionType = Chk::Condition::VirtualType::CommandTheMost;
             }
-            else if ( arg.has("STHEMOSTAT", 7, 10) ) // command'S', added for backwards compatibility
+            else if ( arg.compare(7, 10, "STHEMOSTAT") == 0 ) // command'S', added for backwards compatibility
                 conditionType = Chk::Condition::VirtualType::CommandTheMostAt;
             else if ( arg.size() == 7 )
                 conditionType = Chk::Condition::VirtualType::Command;
         }
-        else if ( arg.has("OUNTDOWNTIMER", 1, 13) )
+        else if ( arg.compare(1, 13, "OUNTDOWNTIMER") == 0 )
             conditionType = Chk::Condition::VirtualType::CountdownTimer;
-        else if ( arg.has("USTOM", 1, 5) )
+        else if ( arg.compare(1, 5, "USTOM") == 0 )
             conditionType = Chk::Condition::VirtualType::Custom;
         break;
 
     case 'D':
-        if ( arg.has("EATHS", 1, 5) )
+        if ( arg.compare(1, 5, "EATHS") == 0 )
             conditionType = Chk::Condition::VirtualType::Deaths;
         break;
 
     case 'E':
-        if ( arg.has("LAPSEDTIME", 1, 10) )
+        if ( arg.compare(1, 10, "LAPSEDTIME") == 0 )
             conditionType = Chk::Condition::VirtualType::ElapsedTime;
         break;
 
     case 'H':
-        if ( arg.has("IGHESTSCORE", 1, 11) )
+        if ( arg.compare(1, 11, "IGHESTSCORE") == 0 )
             conditionType = Chk::Condition::VirtualType::HighestScore;
         break;
 
     case 'K':
-        if ( arg.has("ILL", 1, 3) )
+        if ( arg.compare(1, 3, "ILL") == 0 )
             conditionType = Chk::Condition::VirtualType::Kill;
         break;
 
     case 'L':
-        if ( arg.has("EAST", 1, 4) )
+        if ( arg.compare(1, 4, "EAST") == 0 )
         {
-            if ( arg.has("KILLS", 5, 5) )
+            if ( arg.compare(5, 5, "KILLS") == 0 )
                 conditionType = Chk::Condition::VirtualType::LeastKills;
-            else if ( arg.has("RESOURCES", 5, 9) )
+            else if ( arg.compare(5, 9, "RESOURCES") == 0 )
                 conditionType = Chk::Condition::VirtualType::LeastResources;
         }
-        else if ( arg.has("OWESTSCORE", 1, 10) )
+        else if ( arg.compare(1, 10, "OWESTSCORE") == 0 )
             conditionType = Chk::Condition::VirtualType::LowestScore;
         break;
 
     case 'M':
-        if ( arg.has("EMORY", 1, 5) )
+        if ( arg.compare(1, 5, "EMORY") == 0 )
             conditionType = Chk::Condition::VirtualType::Memory;
-        else if ( arg.has("OST", 1, 3) )
+        else if ( arg.compare(1, 3, "OST") == 0 )
         {
-            if ( arg.has("KILLS", 4, 5) )
+            if ( arg.compare(4, 5, "KILLS") == 0 )
                 conditionType = Chk::Condition::VirtualType::MostKills;
-            else if ( arg.has("RESOURCES", 4, 9) )
+            else if ( arg.compare(4, 9, "RESOURCES") == 0 )
                 conditionType = Chk::Condition::VirtualType::MostResources;
         }
         break;
 
     case 'N':
-        if ( arg.has("EVER", 1, 4) )
+        if ( arg.compare(1, 4, "EVER") == 0 )
             conditionType = Chk::Condition::VirtualType::Never;
         break;
 
     case 'O':
-        if ( arg.has("PPONENTS", 1, 8) )
+        if ( arg.compare(1, 8, "PPONENTS") == 0 )
             conditionType = Chk::Condition::VirtualType::Opponents;
         break;
 
     case 'S':
-        if ( arg.has("CORE", 1, 4) )
+        if ( arg.compare(1, 4, "CORE") == 0 )
             conditionType = Chk::Condition::VirtualType::Score;
-        else if ( arg.has("WITCH", 1, 5) )
+        else if ( arg.compare(1, 5, "WITCH") == 0 )
             conditionType = Chk::Condition::VirtualType::Switch;
         break;
     }
@@ -1412,27 +1416,21 @@ bool TextTrigCompiler::ParseConditionName(buffer & arg, Chk::Condition::VirtualT
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(buffer & text, s64 pos, s64 end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft)
+bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft)
 {
     conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
 
-    s64 size = end - pos;
-    buffer arg;
+    size_t size = end - pos;
+    std::string arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
     {
-        arg.add<u8>(text.get<u8>(i+pos));
-        if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
-            arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
-    }
-
-    for ( u32 i=0; i<arg.size(); i++ )
-    {
-        if ( arg.get<u8>(i) == ' ' ) // Del spacing
-            arg.del<u8>(i);
-        else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
-            arg.del<u8>(i);
+        char character = text[i+pos];
+        if ( character > 96 && character < 123 ) // lower-case
+            arg.push_back(character-32); // Capitalize
+        else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
+            arg.push_back(character);
     }
 
     ParseConditionName(arg, conditionType);
@@ -1443,45 +1441,45 @@ bool TextTrigCompiler::ParseCondition(buffer & text, s64 pos, s64 end, bool disa
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseActionName(buffer & arg, Chk::Action::VirtualType & actionType)
+bool TextTrigCompiler::ParseActionName(std::string & arg, Chk::Action::VirtualType & actionType)
 {
-    char currChar = arg.get<u8>(0);
+    char currChar = arg[0];
     switch ( currChar )
     {
     case 'C':
-        if ( arg.has("OMMENT", 1, 6) )
+        if ( arg.compare(1, 6, "OMMENT") == 0 )
             actionType = Chk::Action::VirtualType::Comment;
-        else if ( arg.has("REATEUNIT", 1, 9) )
+        else if ( arg.compare(1, 9, "REATEUNIT") == 0 )
         {
-            if ( arg.has("WITHPROPERTIES", 10, 14) )
+            if ( arg.compare(10, 14, "WITHPROPERTIES") == 0 )
                 actionType = Chk::Action::VirtualType::CreateUnitWithProperties;
             else if ( arg.size() == 10 )
                 actionType = Chk::Action::VirtualType::CreateUnit;
         }
-        else if ( arg.has("ENTERVIEW", 1, 9) )
+        else if ( arg.compare(1, 9, "ENTERVIEW") == 0 )
             actionType = Chk::Action::VirtualType::CenterView;
-        else if ( arg.has("USTOM", 1, 5) )
+        else if ( arg.compare(1, 5, "USTOM") == 0 )
             actionType = Chk::Action::VirtualType::Custom;
         break;
 
     case 'D':
-        if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
+        if ( arg.compare(1, 17, "ISPLAYTEXTMESSAGE") == 0 )
             actionType = Chk::Action::VirtualType::DisplayTextMessage;
-        else if ( arg.has("EFEAT", 1, 5) )
+        else if ( arg.compare(1, 5, "EFEAT") == 0 )
             actionType = Chk::Action::VirtualType::Defeat;
-        else if ( arg.has("RAW", 1, 3) )
+        else if ( arg.compare(1, 3, "RAW") == 0 )
             actionType = Chk::Action::VirtualType::Draw;
         break;
 
     case 'G':
-        if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
+        if ( arg.compare(1, 16, "IVEUNITSTOPLAYER") == 0 )
             actionType = Chk::Action::VirtualType::GiveUnitsToPlayer;
         break;
 
     case 'K':
-        if ( arg.has("ILLUNIT", 1, 7) )
+        if ( arg.compare(1, 7, "ILLUNIT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 8, 10) )
+            if ( arg.compare(8, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::KillUnitAtLocation;
             else if ( arg.size() == 8 )
                 actionType = Chk::Action::VirtualType::KillUnit;
@@ -1489,106 +1487,106 @@ bool TextTrigCompiler::ParseActionName(buffer & arg, Chk::Action::VirtualType & 
         break;
 
     case 'L':
-        if ( arg.has("EADERBOARD", 1, 10) )
+        if ( arg.compare(1, 10, "EADERBOARD") == 0 )
         {
-            if ( arg.has("GOAL", 11, 4) )
+            if ( arg.compare(11, 4, "GOAL") == 0 )
             {
-                if ( arg.has("CONTROL", 15, 7) )
+                if ( arg.compare(15, 7, "CONTROL") == 0 )
                 {
-                    if ( arg.has("ATLOCATION", 22, 10) )
+                    if ( arg.compare(22, 10, "ATLOCATION") == 0 )
                         actionType = Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc;
                     else if ( arg.size() == 22 )
                         actionType = Chk::Action::VirtualType::LeaderboardGoalCtrl;
                 }
-                else if ( arg.has("KILLS", 15, 5) )
+                else if ( arg.compare(15, 5, "KILLS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalKills;
-                else if ( arg.has("POINTS", 15, 6) )
+                else if ( arg.compare(15, 6, "POINTS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalPoints;
-                else if ( arg.has("RESOURCES", 15, 9) )
+                else if ( arg.compare(15, 9, "RESOURCES") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalResources;
             }
             else
             {
-                if ( arg.has("CONTROL", 11, 7) )
+                if ( arg.compare(11, 7, "CONTROL") == 0 )
                 {
-                    if ( arg.has("ATLOCATION", 18, 10) )
+                    if ( arg.compare(18, 10, "ATLOCATION") == 0 )
                         actionType = Chk::Action::VirtualType::LeaderboardCtrlAtLoc;
                     else if ( arg.size() == 18 )
                         actionType = Chk::Action::VirtualType::LeaderboardCtrl;
                 }
-                else if ( arg.has("GREED", 11, 5) )
+                else if ( arg.compare(11, 5, "GREED") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGreed;
-                else if ( arg.has("KILLS", 11, 5) )
+                else if ( arg.compare(11, 5, "KILLS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardKills;
-                else if ( arg.has("POINTS", 11, 6) )
+                else if ( arg.compare(11, 6, "POINTS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardPoints;
-                else if ( arg.has("RESOURCES", 11, 9) )
+                else if ( arg.compare(11, 9, "RESOURCES") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardResources;
-                else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
+                else if ( arg.compare(11, 15, "COMPUTERPLAYERS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardCompPlayers;
             }
         }
         break;
 
     case 'M':
-        if ( arg.has("EMORY", 1, 5) )
+        if ( arg.compare(1, 5, "EMORY") == 0 )
             actionType = Chk::Action::VirtualType::SetMemory;
-        else if ( arg.has("OVE", 1, 3) )
+        else if ( arg.compare(1, 3, "OVE") == 0 )
         {
-            if ( arg.has("UNIT", 4, 4) )
+            if ( arg.compare(4, 4, "UNIT") == 0 )
                 actionType = Chk::Action::VirtualType::MoveUnit;
-            else if ( arg.has("LOCATION", 4, 8) )
+            else if ( arg.compare(4, 8, "LOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::MoveLocation;
         }
-        else if ( arg.has("ODIFYUNIT", 1, 9) )
+        else if ( arg.compare(1, 9, "ODIFYUNIT") == 0 )
         {
-            if ( arg.has("ENERGY", 10, 6) )
+            if ( arg.compare(10, 6, "ENERGY") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
-            else if ( arg.has("HANGERCOUNT", 10, 11) )
+            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
-            else if ( arg.has("HITPOINTS", 10, 9) )
+            else if ( arg.compare(10, 9, "HITPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
-            else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
+            else if ( arg.compare(10, 14, "RESOURCEAMOUNT") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitResourceAmount;
-            else if ( arg.has("SHIELDPOINTS", 10, 12) )
+            else if ( arg.compare(10, 12, "SHIELDPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitShieldPoints;
         }
-        else if ( arg.has("INIMAPPING", 1, 10) )
+        else if ( arg.compare(1, 10, "INIMAPPING") == 0 )
             actionType = Chk::Action::VirtualType::MinimapPing;
-        else if ( arg.has("UTEUNITSPEECH", 1, 13) )
+        else if ( arg.compare(1, 13, "UTEUNITSPEECH") == 0 )
             actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'O':
-        if ( arg.has("RDER", 1, 4) )
+        if ( arg.compare(1, 4, "RDER") == 0 )
             actionType = Chk::Action::VirtualType::Order;
         break;
 
     case 'P':
-        if ( arg.has("RESERVETRIGGER", 1, 14) )
+        if ( arg.compare(1, 14, "RESERVETRIGGER") == 0 )
             actionType = Chk::Action::VirtualType::PreserveTrigger;
-        else if ( arg.has("LAYWAV", 1, 6) )
+        else if ( arg.compare(1, 6, "LAYWAV") == 0 )
             actionType = Chk::Action::VirtualType::PlaySound;
-        else if ( arg.has("AUSE", 1, 4) )
+        else if ( arg.compare(1, 4, "AUSE") == 0 )
         {
-            if ( arg.has("GAME", 5, 4) )
+            if ( arg.compare(5, 4, "GAME") == 0 )
                 actionType = Chk::Action::VirtualType::PauseGame;
-            else if ( arg.has("TIMER", 5, 5) )
+            else if ( arg.compare(5, 5, "TIMER") == 0 )
                 actionType = Chk::Action::VirtualType::PauseTimer;
         }
         break;
 
     case 'R':
-        if ( arg.has("EMOVEUNIT", 1, 9) )
+        if ( arg.compare(1, 9, "EMOVEUNIT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 10, 10) )
+            if ( arg.compare(10, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::RemoveUnitAtLocation;
             else if ( arg.size() == 10 )
                 actionType = Chk::Action::VirtualType::RemoveUnit;
         }
-        else if ( arg.has("UNAISCRIPT", 1, 10) )
+        else if ( arg.compare(1, 10, "UNAISCRIPT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 11, 10) )
+            if ( arg.compare(11, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::RunAiScriptAtLocation;
             else if ( arg.size() == 11 )
                 actionType = Chk::Action::VirtualType::RunAiScript;
@@ -1596,59 +1594,59 @@ bool TextTrigCompiler::ParseActionName(buffer & arg, Chk::Action::VirtualType & 
         break;
 
     case 'S':
-        if ( arg.has("ET", 1, 2) )
+        if ( arg.compare(1, 2, "ET") == 0 )
         {
-            if ( arg.has("DEATHS", 3, 6) )
+            if ( arg.compare(3, 6, "DEATHS") == 0 )
                 actionType = Chk::Action::VirtualType::SetDeaths;
-            else if ( arg.has("SWITCH", 3, 6) )
+            else if ( arg.compare(3, 6, "SWITCH") == 0 )
                 actionType = Chk::Action::VirtualType::SetSwitch;
-            else if ( arg.has("RESOURCES", 3, 9) )
+            else if ( arg.compare(3, 9, "RESOURCES") == 0 )
                 actionType = Chk::Action::VirtualType::SetResources;
-            else if ( arg.has("SCORE", 3, 5) )
+            else if ( arg.compare(3, 5, "SCORE") == 0 )
                 actionType = Chk::Action::VirtualType::SetScore;
-            else if ( arg.has("ALLIANCESTATUS", 3, 14) )
+            else if ( arg.compare(3, 14, "ALLIANCESTATUS") == 0 )
                 actionType = Chk::Action::VirtualType::SetAllianceStatus;
-            else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
+            else if ( arg.compare(3, 14, "COUNTDOWNTIMER") == 0 )
                 actionType = Chk::Action::VirtualType::SetCountdownTimer;
-            else if ( arg.has("DOODADSTATE", 3, 11) )
+            else if ( arg.compare(3, 11, "DOODADSTATE") == 0 )
                 actionType = Chk::Action::VirtualType::SetDoodadState;
-            else if ( arg.has("INVINCIBILITY", 3, 13) )
+            else if ( arg.compare(3, 13, "INVINCIBILITY") == 0 )
                 actionType = Chk::Action::VirtualType::SetInvincibility;
-            else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
+            else if ( arg.compare(3, 17, "MISSIONOBJECTIVES") == 0 )
                 actionType = Chk::Action::VirtualType::SetMissionObjectives;
-            else if ( arg.has("NEXTSCENARIO", 3, 12) )
+            else if ( arg.compare(3, 12, "NEXTSCENARIO") == 0 )
                 actionType = Chk::Action::VirtualType::SetNextScenario;
-            else if ( arg.has("MEMORY", 3, 6) )
+            else if ( arg.compare(3, 6, "MEMORY") == 0 )
                 actionType = Chk::Action::VirtualType::SetMemory;
         }
         break;
 
     case 'T':
-        if ( arg.has("ALKINGPORTRAIT", 1, 14) )
+        if ( arg.compare(1, 14, "ALKINGPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::TalkingPortrait;
-        else if ( arg.has("RANSMISSION", 1, 11) )
+        else if ( arg.compare(1, 11, "RANSMISSION") == 0 )
             actionType = Chk::Action::VirtualType::Transmission;
         break;
 
     case 'U':
-        if ( arg.has("NPAUSE", 1, 6) )
+        if ( arg.compare(1, 6, "NPAUSE") == 0 )
         {
-            if ( arg.has("TIMER", 7, 5) )
+            if ( arg.compare(7, 5, "TIMER") == 0 )
                 actionType = Chk::Action::VirtualType::UnpauseTimer;
-            else if ( arg.has("GAME", 7, 4) )
+            else if ( arg.compare(7, 4, "GAME") == 0 )
                 actionType = Chk::Action::VirtualType::UnpauseGame;
         }
-        else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
+        else if ( arg.compare(1, 15, "NMUTEUNITSPEECH") == 0 )
             actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'V':
-        if ( arg.has("ICTORY", 1, 6) )
+        if ( arg.compare(1, 6, "ICTORY") == 0 )
             actionType = Chk::Action::VirtualType::Victory;
         break;
 
     case 'W':
-        if ( arg.has("AIT", 1, 3) )
+        if ( arg.compare(1, 3, "AIT") == 0 )
             actionType = Chk::Action::VirtualType::Wait;
         break;
     }
@@ -1656,67 +1654,61 @@ bool TextTrigCompiler::ParseActionName(buffer & arg, Chk::Action::VirtualType & 
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(buffer & text, s64 pos, s64 end, bool diabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft)
+bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, bool diabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft)
 {
     actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
 
-    s64 size = end - pos;
-    buffer arg;
+    size_t size = end - pos;
+    std::string arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
     {
-        arg.add<u8>(text.get<u8>(i+pos));
-        if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
-            arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
+        char character = text[i+pos];
+        if ( character > 96 && character < 123 ) // lower-case
+            arg.push_back(character-32); // Capitalize
+        else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
+            arg.push_back(character);
     }
 
-    for ( u32 i=0; i<arg.size(); i++ )
-    {
-        if ( arg.get<u8>(i) == ' ' ) // Del spacing
-            arg.del<u8>(i);
-        else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
-            arg.del<u8>(i);
-    }
-
-    char currChar = arg.get<u8>(0);
+    char currChar = arg[0];
 
     switch ( currChar )
     {
     case 'C':
-        if ( arg.has("OMMENT", 1, 6) )
+        if ( arg.compare(1, 6, "OMMENT") == 0 )
             actionType = Chk::Action::VirtualType::Comment;
-        else if ( arg.has("REATEUNIT", 1, 9) )
+        else if ( arg.compare(1, 9, "REATEUNIT") == 0 )
         {
-            if ( arg.has("WITHPROPERTIES", 10, 14) )
+            if ( arg.compare(10, 14, "WITHPROPERTIES") == 0 )
                 actionType = Chk::Action::VirtualType::CreateUnitWithProperties;
             else if ( arg.size() == 10 )
                 actionType = Chk::Action::VirtualType::CreateUnit;
         }
-        else if ( arg.has("ENTERVIEW", 1, 9) )
+        else if ( arg.compare(1, 9, "ENTERVIEW") == 0 )
             actionType = Chk::Action::VirtualType::CenterView;
-        else if ( arg.has("USTOM", 1, 5) )
+        else if ( arg.compare(1, 5, "USTOM") == 0 )
             actionType = Chk::Action::VirtualType::Custom;
         break;
 
     case 'D':
-        if ( arg.has("ISPLAYTEXTMESSAGE", 1, 17) )
+        if ( arg.compare(1, 17, "ISPLAYTEXTMESSAGE") == 0 )
             actionType = Chk::Action::VirtualType::DisplayTextMessage;
-        else if ( arg.has("EFEAT", 1, 5) )
+        else if ( arg.compare(1, 5, "EFEAT") == 0 )
             actionType = Chk::Action::VirtualType::Defeat;
-        else if ( arg.has("RAW", 1, 3) )
+        else if ( arg.compare(1, 3, "RAW") == 0 )
             actionType = Chk::Action::VirtualType::Draw;
         break;
 
     case 'G':
-        if ( arg.has("IVEUNITSTOPLAYER", 1, 16) )
+        if ( arg.compare(1, 16, "IVEUNITSTOPLAYER") == 0 )
             actionType = Chk::Action::VirtualType::GiveUnitsToPlayer;
         break;
 
     case 'K':
-        if ( arg.has("ILLUNIT", 1, 7) )
+        if ( arg.compare(1, 7, "ILLUNIT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 8, 10) )
+            if ( arg.compare(8, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::KillUnitAtLocation;
             else if ( arg.size() == 8 )
                 actionType = Chk::Action::VirtualType::KillUnit;
@@ -1724,106 +1716,106 @@ bool TextTrigCompiler::ParseAction(buffer & text, s64 pos, s64 end, bool diabled
         break;
 
     case 'L':
-        if ( arg.has("EADERBOARD", 1, 10) )
+        if ( arg.compare(1, 10, "EADERBOARD") == 0 )
         {
-            if ( arg.has("GOAL", 11, 4) )
+            if ( arg.compare(11, 4, "GOAL") == 0 )
             {
-                if ( arg.has("CONTROL", 15, 7) )
+                if ( arg.compare(15, 7, "CONTROL") == 0 )
                 {
-                    if ( arg.has("ATLOCATION", 22, 10) )
+                    if ( arg.compare(22, 10, "ATLOCATION") == 0 )
                         actionType = Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc;
                     else if ( arg.size() == 22 )
                         actionType = Chk::Action::VirtualType::LeaderboardGoalCtrl;
                 }
-                else if ( arg.has("KILLS", 15, 5) )
+                else if ( arg.compare(15, 5, "KILLS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalKills;
-                else if ( arg.has("POINTS", 15, 6) )
+                else if ( arg.compare(15, 6, "POINTS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalPoints;
-                else if ( arg.has("RESOURCES", 15, 9) )
+                else if ( arg.compare(15, 9, "RESOURCES") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGoalResources;
             }
             else
             {
-                if ( arg.has("CONTROL", 11, 7) )
+                if ( arg.compare(11, 7, "CONTROL") == 0 )
                 {
-                    if ( arg.has("ATLOCATION", 18, 10) )
+                    if ( arg.compare(18, 10, "ATLOCATION") == 0 )
                         actionType = Chk::Action::VirtualType::LeaderboardCtrlAtLoc;
                     else if ( arg.size() == 18 )
                         actionType = Chk::Action::VirtualType::LeaderboardCtrl;
                 }
-                else if ( arg.has("GREED", 11, 5) )
+                else if ( arg.compare(11, 5, "GREED") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardGreed;
-                else if ( arg.has("KILLS", 11, 5) )
+                else if ( arg.compare(11, 5, "KILLS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardKills;
-                else if ( arg.has("POINTS", 11, 6) )
+                else if ( arg.compare(11, 6, "POINTS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardPoints;
-                else if ( arg.has("RESOURCES", 11, 9) )
+                else if ( arg.compare(11, 9, "RESOURCES") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardResources;
-                else if ( arg.has("COMPUTERPLAYERS", 11, 15) )
+                else if ( arg.compare(11, 15, "COMPUTERPLAYERS") == 0 )
                     actionType = Chk::Action::VirtualType::LeaderboardCompPlayers;
             }
         }
         break;
 
     case 'M':
-        if ( arg.has("EMORY", 1, 5) )
+        if ( arg.compare(1, 5, "EMORY") == 0 )
             actionType = Chk::Action::VirtualType::SetMemory;
-        else if ( arg.has("OVE", 1, 3) )
+        else if ( arg.compare(1, 3, "OVE") == 0 )
         {
-            if ( arg.has("UNIT", 4, 4) )
+            if ( arg.compare(4, 4, "UNIT") == 0 )
                 actionType = Chk::Action::VirtualType::MoveUnit;
-            else if ( arg.has("LOCATION", 4, 8) )
+            else if ( arg.compare(4, 8, "LOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::MoveLocation;
         }
-        else if ( arg.has("ODIFYUNIT", 1, 9) )
+        else if ( arg.compare(1, 9, "ODIFYUNIT") == 0 )
         {
-            if ( arg.has("ENERGY", 10, 6) )
+            if ( arg.compare(10, 6, "ENERGY") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
-            else if ( arg.has("HANGERCOUNT", 10, 11) )
+            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
-            else if ( arg.has("HITPOINTS", 10, 9) )
+            else if ( arg.compare(10, 9, "HITPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
-            else if ( arg.has("RESOURCEAMOUNT", 10, 14) )
+            else if ( arg.compare(10, 14, "RESOURCEAMOUNT") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitResourceAmount;
-            else if ( arg.has("SHIELDPOINTS", 10, 12) )
+            else if ( arg.compare(10, 12, "SHIELDPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitShieldPoints;
         }
-        else if ( arg.has("INIMAPPING", 1, 10) )
+        else if ( arg.compare(1, 10, "INIMAPPING") == 0 )
             actionType = Chk::Action::VirtualType::MinimapPing;
-        else if ( arg.has("UTEUNITSPEECH", 1, 13) )
+        else if ( arg.compare(1, 13, "UTEUNITSPEECH") == 0 )
             actionType = Chk::Action::VirtualType::MuteUnitSpeech;
         break;
 
     case 'O':
-        if ( arg.has("RDER", 1, 4) )
+        if ( arg.compare(1, 4, "RDER") == 0 )
             actionType = Chk::Action::VirtualType::Order;
         break;
 
     case 'P':
-        if ( arg.has("RESERVETRIGGER", 1, 14) )
+        if ( arg.compare(1, 14, "RESERVETRIGGER") == 0 )
             actionType = Chk::Action::VirtualType::PreserveTrigger;
-        else if ( arg.has("LAYWAV", 1, 6) )
+        else if ( arg.compare(1, 6, "LAYWAV") == 0 )
             actionType = Chk::Action::VirtualType::PlaySound;
-        else if ( arg.has("AUSE", 1, 4) )
+        else if ( arg.compare(1, 4, "AUSE") == 0 )
         {
-            if ( arg.has("GAME", 5, 4) )
+            if ( arg.compare(5, 4, "GAME") == 0 )
                 actionType = Chk::Action::VirtualType::PauseGame;
-            else if ( arg.has("TIMER", 5, 5) )
+            else if ( arg.compare(5, 5, "TIMER") == 0 )
                 actionType = Chk::Action::VirtualType::PauseTimer;
         }
         break;
 
     case 'R':
-        if ( arg.has("EMOVEUNIT", 1, 9) )
+        if ( arg.compare(1, 9, "EMOVEUNIT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 10, 10) )
+            if ( arg.compare(10, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::RemoveUnitAtLocation;
             else if ( arg.size() == 10 )
                 actionType = Chk::Action::VirtualType::RemoveUnit;
         }
-        else if ( arg.has("UNAISCRIPT", 1, 10) )
+        else if ( arg.compare(1, 10, "UNAISCRIPT") == 0 )
         {
-            if ( arg.has("ATLOCATION", 11, 10) )
+            if ( arg.compare(11, 10, "ATLOCATION") == 0 )
                 actionType = Chk::Action::VirtualType::RunAiScriptAtLocation;
             else if ( arg.size() == 11 )
                 actionType = Chk::Action::VirtualType::RunAiScript;
@@ -1831,59 +1823,59 @@ bool TextTrigCompiler::ParseAction(buffer & text, s64 pos, s64 end, bool diabled
         break;
 
     case 'S':
-        if ( arg.has("ET", 1, 2) )
+        if ( arg.compare(1, 2, "ET") == 0 )
         {
-            if ( arg.has("DEATHS", 3, 6) )
+            if ( arg.compare(3, 6, "DEATHS") == 0 )
                 actionType = Chk::Action::VirtualType::SetDeaths;
-            else if ( arg.has("SWITCH", 3, 6) )
+            else if ( arg.compare(3, 6, "SWITCH") == 0 )
                 actionType = Chk::Action::VirtualType::SetSwitch;
-            else if ( arg.has("RESOURCES", 3, 9) )
+            else if ( arg.compare(3, 9, "RESOURCES") == 0 )
                 actionType = Chk::Action::VirtualType::SetResources;
-            else if ( arg.has("SCORE", 3, 5) )
+            else if ( arg.compare(3, 5, "SCORE") == 0 )
                 actionType = Chk::Action::VirtualType::SetScore;
-            else if ( arg.has("ALLIANCESTATUS", 3, 14) )
+            else if ( arg.compare(3, 14, "ALLIANCESTATUS") == 0 )
                 actionType = Chk::Action::VirtualType::SetAllianceStatus;
-            else if ( arg.has("COUNTDOWNTIMER", 3, 14) )
+            else if ( arg.compare(3, 14, "COUNTDOWNTIMER") == 0 )
                 actionType = Chk::Action::VirtualType::SetCountdownTimer;
-            else if ( arg.has("DOODADSTATE", 3, 11) )
+            else if ( arg.compare(3, 11, "DOODADSTATE") == 0 )
                 actionType = Chk::Action::VirtualType::SetDoodadState;
-            else if ( arg.has("INVINCIBILITY", 3, 13) )
+            else if ( arg.compare(3, 13, "INVINCIBILITY") == 0 )
                 actionType = Chk::Action::VirtualType::SetInvincibility;
-            else if ( arg.has("MISSIONOBJECTIVES", 3, 17) )
+            else if ( arg.compare(3, 17, "MISSIONOBJECTIVES") == 0 )
                 actionType = Chk::Action::VirtualType::SetMissionObjectives;
-            else if ( arg.has("NEXTSCENARIO", 3, 12) )
+            else if ( arg.compare(3, 12, "NEXTSCENARIO") == 0 )
                 actionType = Chk::Action::VirtualType::SetNextScenario;
-            else if ( arg.has("MEMORY", 3, 6) )
+            else if ( arg.compare(3, 6, "MEMORY") == 0 )
                 actionType = Chk::Action::VirtualType::SetMemory;
         }
         break;
 
     case 'T':
-        if ( arg.has("ALKINGPORTRAIT", 1, 14) )
+        if ( arg.compare(1, 14, "ALKINGPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::TalkingPortrait;
-        else if ( arg.has("RANSMISSION", 1, 11) )
+        else if ( arg.compare(1, 11, "RANSMISSION") == 0 )
             actionType = Chk::Action::VirtualType::Transmission;
         break;
 
     case 'U':
-        if ( arg.has("NPAUSE", 1, 6) )
+        if ( arg.compare(1, 6, "NPAUSE") == 0 )
         {
-            if ( arg.has("TIMER", 7, 5) )
+            if ( arg.compare(7, 5, "TIMER") == 0 )
                 actionType = Chk::Action::VirtualType::UnpauseTimer;
-            else if ( arg.has("GAME", 7, 4) )
+            else if ( arg.compare(7, 4, "GAME") == 0 )
                 actionType = Chk::Action::VirtualType::UnpauseGame;
         }
-        else if ( arg.has("NMUTEUNITSPEECH", 1, 15) )
+        else if ( arg.compare(1, 15, "NMUTEUNITSPEECH") == 0 )
             actionType = Chk::Action::VirtualType::UnmuteUnitSpeech;
         break;
 
     case 'V':
-        if ( arg.has("ICTORY", 1, 6) )
+        if ( arg.compare(1, 6, "ICTORY") == 0 )
             actionType = Chk::Action::VirtualType::Victory;
         break;
 
     case 'W':
-        if ( arg.has("AIT", 1, 3) )
+        if ( arg.compare(1, 3, "AIT") == 0 )
             actionType = Chk::Action::VirtualType::Wait;
         break;
     }
@@ -1894,9 +1886,9 @@ bool TextTrigCompiler::ParseAction(buffer & text, s64 pos, s64 end, bool diabled
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(buffer & text, Chk::Condition & currCondition, s64 pos, s64 end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error)
+bool TextTrigCompiler::ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error)
 {
-    char* textPtr = (char*)text.getPtr(0);
+    const char* textPtr = text.c_str();
 
     // Search for condition ID
     switch ( conditionType )
@@ -2057,7 +2049,7 @@ ParseConditionResourceTypeField: // 1 byte
         "Expected: Resource type or 1-byte resourceID" );
 
 ParseConditionScoreTypeField: // 1 byte
-    returnMsg( ParseScoreType(textPtr,currCondition.typeIndex, pos, end) ||
+    returnMsg( ParseScoreType(text, currCondition.typeIndex, pos, end) ||
         ParseByte(textPtr, currCondition.typeIndex, pos, end),
         "Expected: Score type or 1-byte scoreID" );
 
@@ -2068,8 +2060,8 @@ ParseConditionSwitchField: // 1 byte
 
 ParseConditionTypeIndexField: // 1 byte, resource type, score type, switch num
     returnMsg( ParseByte(textPtr, currCondition.typeIndex, pos, end) ||
-        ParseResourceType(textPtr, currCondition.typeIndex, pos, end) ||
-        ParseScoreType(textPtr, currCondition.typeIndex, pos, end) ||
+        ParseResourceType(text, currCondition.typeIndex, pos, end) ||
+        ParseScoreType(text, currCondition.typeIndex, pos, end) ||
         ParseSwitch(text, currCondition.typeIndex, pos, end),
         "Expected: 1-byte typeId, resource type, score type, or switch name" );
 
@@ -2087,9 +2079,9 @@ ParseConditionDeathOffsetField: // 4 bytes
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseActionArg(buffer & text, Chk::Action & currAction, s64 pos, s64 end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error)
+bool TextTrigCompiler::ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error)
 {
-    char* textPtr = (char*)text.getPtr(0);
+    const char* textPtr = text.c_str();
 
     switch ( actionType )
     {
@@ -2428,8 +2420,8 @@ ParseActionAmountField: // 4 bytes
 
 ParseActionTypeIndexField: // 2 bytes
     returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
-        ParseScoreType(textPtr, currAction.type, pos, end) ||
-        ParseResourceType(textPtr, currAction.type, pos, end) ||
+        ParseScoreType(text, currAction.type, pos, end) ||
+        ParseResourceType(text, currAction.type, pos, end) ||
         ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
         ParseShort(textPtr, currAction.type, pos, end),
         "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
@@ -2440,12 +2432,12 @@ ParseActionUnitField: // 2 bytes
         "Expected: Unit name or 2-byte unitID" );
 
 ParseActionScoreTypeField: // 2 bytes
-    returnMsg( ParseScoreType(textPtr, currAction.type, pos, end) ||
+    returnMsg( ParseScoreType(text, currAction.type, pos, end) ||
         ParseShort(textPtr, currAction.type, pos, end),
         "Expected: Score type or 1-byte scoreID" );
 
 ParseActionResourceTypeField:
-    returnMsg( ParseResourceType(textPtr, currAction.type, pos, end) ||
+    returnMsg( ParseResourceType(text, currAction.type, pos, end) ||
         ParseShort(textPtr, currAction.type, pos, end),
         "Expected: Resource type or 2-byte number" );
 
@@ -2511,62 +2503,57 @@ ParseActionDeathOffsetField: // 4 bytes
         (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
-bool TextTrigCompiler::ParseExecutionFlags(buffer & text, s64 pos, s64 end, u32 & flags)
+bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags)
 {
     flags = 0;
 
-    s64 size = end - pos;
-    buffer arg;
+    size_t size = end - pos;
+    std::string arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
     {
-        arg.add<u8>(text.get<u8>(i+pos));
-        if ( arg.get<u8>(i) > 96 && arg.get<u8>(i) < 123 ) // If lower-case
-            arg.replace<char>(i, arg.get<u8>(i)-32); // Capitalize
+        char character = text[i+pos];
+        if ( character > 96 && character < 123 ) // lower-case
+            arg.push_back(character-32); // Capitalize
+        else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
+            arg.push_back(character);
     }
 
-    for ( u32 i=0; i<arg.size(); i++ )
-    {
-        if ( arg.get<u8>(i) == ' ' ) // Del spacing
-            arg.del<u8>(i);
-        else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
-            arg.del<u8>(i);
-    }
-
-    char* argData = (char*)arg.getPtr(0);
+    const char* argData = arg.c_str();
     return ParseBinaryLong(argData, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::zzParseString(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::zzParseString(std::string & text, u32 & dest, size_t pos, size_t end)
 {
-    if ( text.hasCaseless("No String", pos, 9) || text.hasCaseless("\"No String\"", pos, 11) )
+    if ( compareCaseless(text, pos, 9, "No String") || compareCaseless(text, pos, 11, "\"No String\"") )
     {
         dest = 0;
         return true;
     }
 
-    if ( text.get<u8>(pos) == '\"' )
+    if ( text[pos] == '\"' )
     {
+        if ( end-pos < 2 )
+            return false;
+
         pos ++;
         end --;
     }
     else
-        return ParseLong((char*)text.getPtr(0), dest, pos, end);
+        return ParseLong(text.c_str(), dest, pos, end);
 
-    s64 size = end-pos;
+    size_t size = end-pos;
 
     if ( size < 0 )
         return false;
 
-    char* stringPtr;
     bool success = false;
 
-    if ( text.getPtr<char>(stringPtr, pos, size+1) )
+    if ( pos+size <= text.length() )
     {
+        const char* stringPtr = &text.c_str()[pos];
         char temp = stringPtr[size];
-        stringPtr[size] = '\0';
-        EscString escStr(stringPtr);
-        stringPtr[size] = temp;
+        EscString escStr(stringPtr, size);
 
         RawString str;
         ConvertStr(escStr, str);
@@ -2624,18 +2611,21 @@ bool TextTrigCompiler::zzParseString(buffer & text, u32 & dest, s64 pos, s64 end
     return success;
 }
 
-bool TextTrigCompiler::ParseLocationName(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseLocationName(std::string & text, u32 & dest, size_t pos, size_t end)
 {
-    s64 size = end-pos;
-    if ( text.get<u8>(pos) == '\"' )
+    size_t size = end-pos;
+    if ( text[pos] == '\"' )
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
     }
-    else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+    else if ( ParseLong(text.c_str(), dest, pos, end) )
         return true;
-    else if ( text.has("NOLOCATION", pos, size) )
+    else if ( text.compare(pos, size, "NOLOCATION") == 0 )
     {
         dest = 0;
         return true;
@@ -2644,20 +2634,17 @@ bool TextTrigCompiler::ParseLocationName(buffer & text, u32 & dest, s64 pos, s64
     if ( size < 1 )
         return false;
 
-    char* locStringPtr;
     bool success = false;
 
-    if ( text.getPtr<char>(locStringPtr, pos, size+1) )
-    { // At least one character must come after the location string
-      // Temporarily replace next char with NUL char
-        char temp = locStringPtr[size];
-        locStringPtr[size] = '\0';
-        std::string str(locStringPtr);
+    if ( pos+size <= text.length() )
+    {
+        const char* locStringPtr = &text.c_str()[pos];
+        std::string str(locStringPtr, size);
 
         if ( str.compare("anywhere") == 0 ) // Capitalize lower-case anywhere's
         {
-            locStringPtr[0] = 'A';
-            str[0] = 'A';
+            text[pos] = 'A';
+            str[pos] = 'A';
         }
 
         // Grab the string hash
@@ -2666,7 +2653,7 @@ bool TextTrigCompiler::ParseLocationName(buffer & text, u32 & dest, s64 pos, s64
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             LocationTableNode & node = locationTable.find(hash)->second;
-            if ( node.locationName.compare(locStringPtr) == 0 )
+            if ( node.locationName.compare(str) == 0 )
             {
                 dest = node.locationId;
                 success = true;
@@ -2678,7 +2665,7 @@ bool TextTrigCompiler::ParseLocationName(buffer & text, u32 & dest, s64 pos, s64
             foreachin(pair, range)
             {
                 LocationTableNode & node = pair->second;
-                if ( node.locationName.compare(locStringPtr) == 0 )
+                if ( node.locationName.compare(str) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
@@ -2693,39 +2680,36 @@ bool TextTrigCompiler::ParseLocationName(buffer & text, u32 & dest, s64 pos, s64
                 }
             }
         }
-        locStringPtr[size] = temp;
     }
     return success;
 }
 
-bool TextTrigCompiler::ParseUnitName(buffer & text, Sc::Unit::Type & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseUnitName(std::string & text, Sc::Unit::Type & dest, size_t pos, size_t end)
 {
-    if ( text.get<u8>(pos) == '\"' ) // If quoted, ignore quotes
+    if ( text[pos] == '\"' ) // If quoted, ignore quotes
     {
+        if ( end-pos < 2 )
+            return false;
+
         pos ++;
         end --;
     }
-    else if ( ParseShort((char*)text.getPtr(0), (u16 &)dest, pos, end) )
+    else if ( ParseShort(text.c_str(), (u16 &)dest, pos, end) )
         return true;
 
-    s64 size = end-pos;
-    char* unitNamePtr;
+    size_t size = end-pos;
     char unit[40] = { };
     bool success = false;
 
-    if ( text.getPtr<char>(unitNamePtr, pos, size+1) )
-    { // At least one character must come after the unit string
-      // Temporarily replace next char with NUL char
-        char temp = unitNamePtr[size],
-            currChar;
-        unitNamePtr[size] = '\0';
-
+    if ( pos+size < text.length() )
+    {
+        const char* unitNamePtr = &text.c_str()[pos];
         if ( size < 40 )
         {
             // Take an upper case copy of the name
             for ( int i=0; i<size; i++ )
             {
-                currChar = unitNamePtr[i];
+                char currChar = unitNamePtr[i];
                 if ( currChar > 96 && currChar < 123 )
                     unit[i] = currChar - 32;
                 else
@@ -3275,16 +3259,13 @@ bool TextTrigCompiler::ParseUnitName(buffer & text, Sc::Unit::Type & dest, s64 p
                 break;
             }
         }
-
-        // Remove the temporary NUL char
-        unitNamePtr[size] = temp;
     }
     return success;
 }
 
-bool TextTrigCompiler::ParseWavName(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseWavName(std::string & text, u32 & dest, size_t pos, size_t end)
 {
-    if ( text.hasCaseless("No WAV", 0, 6) || text.hasCaseless("\"No WAV\"", 0, 8) )
+    if ( compareCaseless(text, 0, 6, "No WAV") || compareCaseless(text, 0, 8, "\"No WAV\"") )
     {
         dest = 0;
         return true;
@@ -3293,55 +3274,47 @@ bool TextTrigCompiler::ParseWavName(buffer & text, u32 & dest, s64 pos, s64 end)
         return zzParseString(text, dest, pos, end);
 }
 
-bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParsePlayer(std::string & text, u32 & dest, size_t pos, size_t end)
 {
-    s64 size = end - pos;
+    size_t size = end - pos;
     u32 number;
 
-    if ( text.get<u8>(pos) == '\"' )
+    if ( text[pos] == '\"' )
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
     }
-    else if ( ParseLong((char*)text.getPtr(0), dest, pos, end) )
+    else if ( ParseLong(text.c_str(), dest, pos, end) )
         return true;
 
     if ( size < 1 )
         return false;
-
-    buffer arg;
-    u8 curr;
+    
+    std::string arg;
 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
     {
-        curr = text.get<u8>(i+pos);
-        if ( curr > 96 && curr < 123 )
-            arg.add<u8>(curr-32);
-        else
-            arg.add(curr);
+        char character = text[i+pos];
+        if ( character > 96 && character < 123 ) // lower-case
+            arg.push_back(character-32); // Capitalize
+        else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
+            arg.push_back(character);
     }
 
-    for ( u32 i=0; i<arg.size(); i++ )
-    {
-        if ( arg.get<u8>(i) == ' ' ) // Del Spacing
-            arg.del<u8>(i);
-        else if ( arg.get<u8>(i) == '\t' ) // Del tabbing
-            arg.del<u8>(i);
-    }
-    arg.add<u8>('\0');
-
-    char currChar = toupper(arg.get<u8>(0));
-    char* argPtr;
+    char currChar = toupper(arg[0]);
 
     if ( currChar == 'P' )
     {
-        currChar = arg.get<u8>(1);
+        currChar = arg[1];
         if ( currChar == 'L' )
         {
-            if ( arg.hasCaseless("AYER", 2, 4) )
+            if ( compareCaseless(arg, 2, 4, "AYER") )
             {
-                argPtr = (char*)arg.getPtr(6);
+                const char* argPtr = &arg.c_str()[6];
                 if ( number = atoi(argPtr) )
                 {
                     // Do something with player number
@@ -3355,7 +3328,7 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
         }
         else if ( currChar > 47 && currChar < 58 ) // Number
         {
-            argPtr = (char*)arg.getPtr(2);
+            const char* argPtr = &arg.c_str()[2];
             if ( number = atoi(argPtr) )
             {
                 // Do something with player number
@@ -3369,12 +3342,12 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'F' )
     {
-        currChar = toupper(arg.get<u8>(1));
+        currChar = toupper(arg[1]);
         if ( currChar == 'O' )
         {
-            if ( arg.hasCaseless("RCE", 2, 3) )
+            if ( compareCaseless(arg, 2, 3, "RCE") )
             {
-                argPtr = (char*)arg.getPtr(5);
+                const char* argPtr = &arg.c_str()[5];
 
                 if ( number = atoi(argPtr) )
                 {
@@ -3386,7 +3359,7 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
                     }
                 }
             }
-            else if ( arg.hasCaseless("ES", 2, 2) )
+            else if ( compareCaseless(arg, 2, 2, "ES") )
             {
                 // Do something with foes
                 dest = 14;
@@ -3395,7 +3368,7 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
         }
         else if ( currChar > 47 && currChar < 58 ) // Number
         {
-            argPtr = (char*)arg.getPtr(2);
+            const char* argPtr = &arg.c_str()[2];
 
             if ( number = atoi(argPtr) )
             {
@@ -3410,16 +3383,16 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'A' )
     {
-        currChar = toupper(arg.get<u8>(1));
+        currChar = toupper(arg[1]);
         if ( currChar == 'L' )
         {
-            if ( arg.hasCaseless("LPLAYERS", 2, 8) )
+            if ( compareCaseless(arg, 2, 8, "LPLAYERS") )
             {
                 // Do something with all players
                 dest = 17;
                 return true;
             }
-            else if ( arg.hasCaseless("LIES", 2, 4) )
+            else if ( compareCaseless(arg, 2, 4, "LIES") )
             {
                 // Do something with allies
                 dest = 15;
@@ -3435,13 +3408,13 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'C' )
     {
-        if ( arg.hasCaseless("URRENTPLAYER", 1, 12) )
+        if ( compareCaseless(arg, 1, 12, "URRENTPLAYER") )
         {
             // Do something with current player
             dest = 13;
             return true;
         }
-        else if ( arg.has('P', 1) )
+        else if ( arg[1] == 'P' )
         {
             // Do something with current player
             dest = 13;
@@ -3450,9 +3423,9 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'I' )
     {
-        if ( arg.has("D:", 1, 2) )
+        if ( arg.compare(1, 2, "D:") == 0 )
         {
-            argPtr = (char*)arg.getPtr(3);
+            const char* argPtr = &arg.c_str()[3];
             if ( number = atoi(argPtr) )
             {
                 // Do something with player number
@@ -3463,25 +3436,25 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'N' )
     {
-        if ( arg.has("EUTRALPLAYERS", 1, 13) )
+        if ( arg.compare(1, 13, "EUTRALPLAYERS") == 0 )
         {
             // Do something with Neutral Players
             dest = 16;
             return true;
         }
-        else if ( arg.has("ONALLIEDVICTORYPLAYERS", 1, 22) )
+        else if ( arg.compare(1, 22, "ONALLIEDVICTORYPLAYERS") == 0 )
         {
             // Do something with non allied victory players
             dest = 26;
             return true;
         }
-        else if ( arg.has("ONE", 1, 3) )
+        else if ( arg.compare(1, 3, "ONE") == 0 )
         {
             // Do something with 'none' players (ID:12)
             dest = 12;
             return true;
         }
-        else if ( arg.has("ONAVPLAYERS", 1, 11) )
+        else if ( arg.compare(1, 11, "ONAVPLAYERS") == 0 )
         {
             // Do something with non av players
             dest = 26;
@@ -3490,28 +3463,28 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar == 'U' )
     {
-        if ( arg.has("NKNOWN/UNUSED", 1, 13) )
+        if ( arg.compare(1, 13, "NKNOWN/UNUSED") == 0 )
         {
             // Do something with Unknown/Unused
             dest = 12;
             return true;
         }
-        else if ( arg.has("NUSED1", 1, 6) )
+        else if ( arg.compare(1, 6, "NUSED1") == 0 )
         {
             dest = 22;
             return true;
         }
-        else if ( arg.has("NUSED2", 1, 6) )
+        else if ( arg.compare(1, 6, "NUSED2") == 0 )
         {
             dest = 23;
             return true;
         }
-        else if ( arg.has("NUSED3", 1, 6) )
+        else if ( arg.compare(1, 6, "NUSED3") == 0 )
         {
             dest = 24;
             return true;
         }
-        else if ( arg.has("NUSED4", 1, 6) )
+        else if ( arg.compare(1, 6, "NUSED4") == 0 )
         {
             dest = 25;
             return true;
@@ -3519,7 +3492,7 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
     else if ( currChar > 47 && currChar < 58 ) // pure number
     {
-        argPtr = (char*)arg.getPtr(0);
+        const char* argPtr = arg.c_str();
         if ( number = atoi(argPtr) )
         {
             dest = number;
@@ -3528,23 +3501,20 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
     }
 
     // Might be a defined group name
-    char* groupStrPtr;
     bool success = false;
 
-    if ( text.getPtr<char>(groupStrPtr, pos, size+1) )
-    { // At least one character must come after the group string
-      // Temporarily replace next char with NUL char
-        char temp = groupStrPtr[size];
-        groupStrPtr[size] = '\0';
+    if ( pos+size <= text.size() )
+    {
+        const char* groupStrPtr = &text.c_str()[pos];
 
         // Grab the string hash
-        std::string str(groupStrPtr);
+        std::string str(groupStrPtr, size);
         size_t hash = strHash(str);
         size_t numMatching = groupTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             GroupTableNode & node = groupTable.find(hash)->second;
-            if ( node.groupName.compare(groupStrPtr) == 0 )
+            if ( node.groupName.compare(str) == 0 )
             {
                 dest = node.groupId;
                 success = true;
@@ -3556,7 +3526,7 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
             foreachin(pair, range)
             {
                 GroupTableNode & node = pair->second;
-                if ( node.groupName.compare(groupStrPtr) == 0 )
+                if ( node.groupName.compare(str) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
@@ -3571,40 +3541,38 @@ bool TextTrigCompiler::ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end)
                 }
             }
         }
-        groupStrPtr[size] = temp;
     }
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(buffer & text, u8 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseSwitch(std::string & text, u8 & dest, size_t pos, size_t end)
 {
-    if ( text.get<u8>(pos) == '\"' ) // If quoted, ignore quotes
+    if ( text[pos] == '\"' ) // If quoted, ignore quotes
     {
+        if ( end-pos < 2 )
+            return false;
+
         pos ++;
         end --;
     }
-    else if ( ParseByte((char*)text.getPtr(0), dest, pos, end) )
+    else if ( ParseByte(text.c_str(), dest, pos, end) )
         return true;
 
-    s64 size = end-pos;
-    char* switchNamePtr;
+    size_t size = end-pos;
     bool success = false;
 
-    if ( text.getPtr<char>(switchNamePtr, pos, size+1) )
-    { // At least one character must come after the switch string
-      // Temporarily replace next char with NUL char
-        char temp = switchNamePtr[size],
-            currChar;
-        switchNamePtr[size] = '\0';
+    if ( pos+size < text.size() )
+    {
+        const char* switchNamePtr = &text.c_str()[pos];
 
         if ( size < 12 )
         {
             // Take an upper case copy of the name
             char sw[12] = { };
-            int numSkipped = 0;
-            for ( int i=0; i<size; i++ )
+            size_t numSkipped = 0;
+            for ( size_t i=0; i<size; i++ )
             {
-                currChar = switchNamePtr[i];
+                char currChar = switchNamePtr[i];
                 if ( currChar > 96 && currChar < 123 )
                     sw[i-numSkipped] = currChar - 32;
                 else if ( currChar != ' ' )
@@ -3626,13 +3594,13 @@ bool TextTrigCompiler::ParseSwitch(buffer & text, u8 & dest, s64 pos, s64 end)
 
         if ( !success ) // Otherwise search switch name table
         {
-            std::string str(switchNamePtr);
+            std::string str(switchNamePtr, size);
             size_t hash = strHash(str);
             size_t numMatching = switchTable.count(hash);
             if ( numMatching == 1 )
             { // Should guarentee that you can find at least one entry
                 SwitchTableNode & node = switchTable.find(hash)->second;
-                if ( node.switchName.compare(switchNamePtr) == 0 )
+                if ( node.switchName.compare(str) == 0 )
                 {
                     dest = node.switchId;
                     success = true;
@@ -3644,7 +3612,7 @@ bool TextTrigCompiler::ParseSwitch(buffer & text, u8 & dest, s64 pos, s64 end)
                 foreachin(pair, range)
                 {
                     SwitchTableNode & node = pair->second;
-                    if ( node.switchName.compare(switchNamePtr) == 0 )
+                    if ( node.switchName.compare(str) == 0 )
                     {
                         if ( success == false ) // If no matches have previously been found
                         {
@@ -3660,14 +3628,11 @@ bool TextTrigCompiler::ParseSwitch(buffer & text, u8 & dest, s64 pos, s64 end)
                 }
             }
         }
-
-        // Remove the temporary NUL char
-        switchNamePtr[size] = temp;
     }
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseSwitch(std::string & text, u32 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
     bool success = ParseSwitch(text, temp, pos, end);
@@ -3675,18 +3640,21 @@ bool TextTrigCompiler::ParseSwitch(buffer & text, u32 & dest, s64 pos, s64 end)
     return success;
 }
 
-bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
+bool TextTrigCompiler::ParseScript(std::string & text, u32 & dest, size_t pos, size_t end)
 {
-    if ( text.hasCaseless("NOSCRIPT", pos, 8) || text.hasCaseless("No Script", pos, 9) || text.hasCaseless("\"No Script\"", pos, 11) )
+    if ( compareCaseless(text, pos, 8, "NOSCRIPT") || compareCaseless(text, pos, 9, "No Script") || compareCaseless(text, pos, 11, "\"No Script\"") )
     {
         dest = 0;
         return true;
     }
 
-    s64 size = end - pos;
-    bool isQuoted = text.get<u8>(pos) == '\"';
+    size_t size = end - pos;
+    bool isQuoted = text[pos] == '\"';
     if ( isQuoted )
     {
+        if ( size < 2 )
+            return false;
+
         pos++;
         end--;
         size -= 2;
@@ -3695,15 +3663,12 @@ bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
     if ( size < 1 )
         return false;
 
-    char* scriptStringPtr;
     bool success = false;
 
-    if ( text.getPtr<char>(scriptStringPtr, pos, size + 1) )
-    { // At least one character must come after the script string
-      // Temporarily replace next char with NUL char
-        char temp = scriptStringPtr[size];
-        scriptStringPtr[size] = '\0';
-        std::string str(scriptStringPtr);
+    if ( pos+size <= text.size() )
+    {
+        const char* scriptStringPtr = &text.c_str()[pos];
+        std::string str(scriptStringPtr, size);
 
         // Grab the string hash
         size_t hash = strHash(str);
@@ -3711,7 +3676,7 @@ bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             ScriptTableNode & node = scriptTable.find(hash)->second;
-            if ( node.scriptName.compare(scriptStringPtr) == 0 )
+            if ( node.scriptName.compare(str) == 0 )
             {
                 dest = node.scriptId;
                 success = true;
@@ -3723,7 +3688,7 @@ bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
             foreachin(pair, range)
             {
                 ScriptTableNode & node = pair->second;
-                if ( node.scriptName.compare(scriptStringPtr) == 0 && success == false ) // Compare equal and no prev matches
+                if ( node.scriptName.compare(str) == 0 && success == false ) // Compare equal and no prev matches
                 {
                     dest = node.scriptId;
                     success = true;
@@ -3731,7 +3696,6 @@ bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
                 }
             }
         }
-        scriptStringPtr[size] = temp;
     }
 
     if ( !success && size == 4 )
@@ -3742,14 +3706,14 @@ bool TextTrigCompiler::ParseScript(buffer & text, u32 & dest, s64 pos, s64 end)
         return false so ParseByte can be called. */
 
         bool hasNonNumericCharacter =
-            text.get<char>(pos) < '0' || text.get<char>(pos) > '9' ||
-            text.get<char>(pos + 1) < '0' || text.get<char>(pos + 1) > '9' ||
-            text.get<char>(pos + 2) < '0' || text.get<char>(pos + 2) > '9' ||
-            text.get<char>(pos + 3) < '0' || text.get<char>(pos + 3) > '9';
+            text[pos] < '0' || text[pos] > '9' ||
+            text[pos + 1] < '0' || text[pos + 1] > '9' ||
+            text[pos + 2] < '0' || text[pos + 2] > '9' ||
+            text[pos + 3] < '0' || text[pos + 3] > '9';
 
         if ( isQuoted || hasNonNumericCharacter )
         {
-            dest = text.get<u32>(pos);
+            dest = text[pos];
             success = true;
         }
     }
@@ -3979,4 +3943,78 @@ bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
 bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map, std::stringstream & error)
 {
     return map->strings.addStrings(zzAddedStrings, Chk::Scope::Game, true) && map->strings.addStrings(addedExtendedStrings, Chk::Scope::Editor, true);
+}
+
+size_t findStringEnd(const std::string & str, size_t pos)
+{
+    size_t strSize = str.size();
+    while ( pos < strSize )
+    {
+        size_t nextQuote = str.find('\"', pos);
+        if ( nextQuote == std::string::npos )
+            return std::string::npos;
+        else if ( nextQuote > 0 && str[nextQuote-1] == '\\' ) // Escaped quote
+            pos = nextQuote;
+        else  // Terminating quote
+            return nextQuote;
+    }
+    return std::string::npos;
+}
+
+size_t findNextUnquoted(const std::string & str, size_t pos, char character)
+{
+    size_t strSize = str.size();
+    while ( pos < strSize )
+    {
+        size_t nextQuote = str.find('\"', pos);
+        size_t nextChar = str.find(character, pos);
+        if ( nextChar == std::string::npos )
+            return std::string::npos;
+        else if ( nextQuote == std::string::npos || nextChar < nextQuote )
+            return nextChar;
+        else
+        {
+            pos = findStringEnd(str, pos);
+            if ( pos == std::string::npos )
+                return std::string::npos;
+        }
+    }
+    return std::string::npos;
+}
+
+size_t findNextUnquoted(const std::string & str, size_t pos, char character, char terminator)
+{
+    const char * cStr = str.c_str();
+    size_t strSize = str.size();
+    for ( ; pos<strSize; pos++ )
+    {
+        char curr = cStr[pos];
+        if ( curr == '\"' )
+        {
+            pos = findStringEnd(str, pos);
+            if ( pos == std::string::npos )
+                return std::string::npos;
+        }
+        else if ( curr == terminator )
+            return std::string::npos;
+        else if ( curr == character )
+            return pos;
+    }
+    return std::string::npos;
+}
+
+bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other)
+{
+    size_t limit = pos+count;
+    if ( limit <= str.size() )
+    {
+        const char* cStr = &str.c_str()[pos];
+        for ( size_t i=0; i<count; i++ )
+        {
+            if ( cStr[i] != other[i] )
+                return false;
+        }
+        return true;
+    }
+    return false;
 }

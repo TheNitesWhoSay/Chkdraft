@@ -40,9 +40,8 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     std::memcpy(inputText.get(), copyData, length);
                                     if ( inputText.get()[length-2] != '\0' ) // Ensure NUL-terminated
                                         inputText.get()[length-1] = '\0';
-    
-                                    buffer textBuf("TxTr");
-                                    textBuf.addStr(inputText.get(), length);
+
+                                    std::string textBuf(inputText.get());
 
                                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
                                     if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )

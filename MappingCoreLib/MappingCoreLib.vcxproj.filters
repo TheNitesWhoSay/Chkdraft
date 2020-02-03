@@ -89,15 +89,9 @@
     <ClInclude Include="Chk.h">
       <Filter>Header Files\StarCraft\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Header Files\%2a</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp">
-      <Filter>Source Files\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Buffer.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="sha256.cpp">

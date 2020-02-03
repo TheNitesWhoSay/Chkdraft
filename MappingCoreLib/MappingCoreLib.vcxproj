@@ -301,7 +301,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Basics.h" />
-    <ClInclude Include="Buffer.h" />
     <ClInclude Include="Chk.h" />
     <ClInclude Include="MpqFile.h" />
     <ClInclude Include="Sc.h" />
@@ -320,7 +319,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp" />
-    <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Chk.cpp" />
     <ClCompile Include="MpqFile.cpp" />
     <ClCompile Include="Sc.cpp" />

@@ -1,7 +1,6 @@
 #ifndef TEXTTRIGCOMPILER_H
 #define TEXTTRIGCOMPILER_H
 #include "Basics.h"
-#include "Buffer.h"
 #include "StaticTrigComponentParser.h"
 #include "Sc.h"
 #include "Scenario.h"
@@ -42,10 +41,8 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
         virtual ~TextTrigCompiler();
-        bool CompileTriggers(std::string trigText, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTriggers(buffer & text, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTrigger(std::string trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
-        bool CompileTrigger(buffer & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
+        bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
+        bool CompileTrigger(std::string & trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
 
         // Attempts to compile the argNum'th condition argument into the given condition
         bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
@@ -62,47 +59,47 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData); // Sets up all the data needed for a run of the compiler
         void ClearCompiler(); // Clears data loaded for a run of the compiler
-        void CleanText(buffer & text); // Remove spacing and standardize line endings
+        void CleanText(std::string & text); // Remove spacing and standardize line endings
 
-        bool ParseTriggers(buffer & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
-        inline bool ParsePartZero(buffer & text, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartOne(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting, s64 & playerEnd, s64 & lineEnd);
-        inline bool ParsePartTwo(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartThree(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartFour(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-            s64 & conditionEnd, s64 & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft, u32 & numConditions,
+        bool ParseTriggers(std::string & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
+        inline bool ParsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartOne(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, size_t & playerEnd, size_t & lineEnd);
+        inline bool ParsePartTwo(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartThree(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+            size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft, u32 & numConditions,
             Chk::Condition* & currCondition);
-        inline bool ParsePartFive(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting, u32 & argsLeft, s64 & argEnd,
+        inline bool ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argsLeft, size_t & argEnd,
             Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionType);
-        inline bool ParsePartSix(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartSeven(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-            u8 & flags, s64 & actionEnd, s64 & lineEnd, Chk::Action::VirtualType & actionType, u32 & argsLeft, u32 & numActions,
+        inline bool ParsePartSix(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+            u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argsLeft, u32 & numActions,
             Chk::Action* & currAction);
-        inline bool ParsePartEight(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-            u32 & argsLeft, s64 & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType);
-        inline bool ParsePartNine(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartTen(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting,
-            s64 & flagsEnd);
-        inline bool ParsePartEleven(buffer & text, Chk::Trigger & output, std::stringstream & error, s64 & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartEight(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+            u32 & argsLeft, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType);
+        inline bool ParsePartNine(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+            size_t & flagsEnd);
+        inline bool ParsePartEleven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
 
-        bool ParseExecutingPlayer(buffer & text, Chk::Trigger & currTrig, s64 pos, s64 end); // Parse a player that the trigger is executed by
-        bool ParseConditionName(buffer & arg, Chk::Condition::VirtualType & conditionType);
-        bool ParseCondition(buffer & text, s64 pos, s64 end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft); // Find the equivilant conditionType
-        bool ParseActionName(buffer & arg, Chk::Action::VirtualType & actionType);
-        bool ParseAction(buffer & text, s64 pos, s64 end, bool disabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft); // Find the equivilant actionType
-        bool ParseConditionArg(buffer & text, Chk::Condition & currCondition, s64 pos, s64 end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to a condition
-        bool ParseActionArg(buffer & text, Chk::Action & currAction, s64 pos, s64 end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to an action
-        bool ParseExecutionFlags(buffer & text, s64 pos, s64 end, u32 & flags);
+        bool ParseExecutingPlayer(std::string & text, Chk::Trigger & currTrig, size_t pos, size_t end); // Parse a player that the trigger is executed by
+        bool ParseConditionName(std::string & arg, Chk::Condition::VirtualType & conditionType);
+        bool ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft); // Find the equivilant conditionType
+        bool ParseActionName(std::string & arg, Chk::Action::VirtualType & actionType);
+        bool ParseAction(std::string & text, size_t pos, size_t end, bool disabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft); // Find the equivilant actionType
+        bool ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to a condition
+        bool ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to an action
+        bool ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags);
 
-        bool zzParseString(buffer & text, u32 & dest, s64 pos, s64 end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
-        bool ParseLocationName(buffer & text, u32 & dest, s64 pos, s64 end); // Find a location in the map by its string
-        bool ParseUnitName(buffer & text, Sc::Unit::Type & dest, s64 pos, s64 end); // Get a unitID using a unit name
-        bool ParseWavName(buffer & text, u32 & dest, s64 pos, s64 end); // Find a wav in the map by its string, redundant? remove me?
-        bool ParsePlayer(buffer & text, u32 & dest, s64 pos, s64 end); // Get a groupID using a group/player name
-        bool ParseSwitch(buffer & text, u8 & dest, s64 pos, s64 end); // Find a switch in the map by name (or standard name)
-        bool ParseScript(buffer & text, u32 & dest, s64 pos, s64 end); // Find a script by name
+        bool zzParseString(std::string & text, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
+        bool ParseLocationName(std::string & text, u32 & dest, size_t pos, size_t end); // Find a location in the map by its string
+        bool ParseUnitName(std::string & text, Sc::Unit::Type & dest, size_t pos, size_t end); // Get a unitID using a unit name
+        bool ParseWavName(std::string & text, u32 & dest, size_t pos, size_t end); // Find a wav in the map by its string, redundant? remove me?
+        bool ParsePlayer(std::string & text, u32 & dest, size_t pos, size_t end); // Get a groupID using a group/player name
+        bool ParseSwitch(std::string & text, u8 & dest, size_t pos, size_t end); // Find a switch in the map by name (or standard name)
+        bool ParseScript(std::string & text, u32 & dest, size_t pos, size_t end); // Find a script by name
 
-        bool ParseSwitch(buffer & text, u32 & dest, s64 pos, s64 end); // Accelerator for 4-byte switches
+        bool ParseSwitch(std::string & text, u32 & dest, size_t pos, size_t end); // Accelerator for 4-byte switches
 
         Chk::Condition::Type ExtendedToRegularCID(Chk::Condition::VirtualType extendedConditionType); // Returns the conditionType the extended condition is based on
         Chk::Action::Type ExtendedToRegularAID(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
@@ -140,5 +137,10 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         bool BuildNewStringTable(ScenarioPtr chk, std::stringstream & error); // Builds a new STR section using stringTable and addedStrings
 };
+
+size_t findStringEnd(const std::string & str, size_t pos);
+size_t findNextUnquoted(const std::string & str, size_t pos, char character);
+size_t findNextUnquoted(const std::string & str, size_t pos, char character, char terminator);
+bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other);
 
 #endif

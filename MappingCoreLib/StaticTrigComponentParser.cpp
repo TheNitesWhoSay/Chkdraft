@@ -7,11 +7,14 @@ StaticTrigComponentParser::~StaticTrigComponentParser()
 
 }
 
-bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Condition::Comparison & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseNumericComparison(const char* text, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -25,8 +28,8 @@ bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Conditio
     char comparison[12] = { };
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( text[i] >= 'a' && text[i] <= 'z' )
             comparison[i-numSkipped] = text[i] - 32;
@@ -50,11 +53,14 @@ bool StaticTrigComponentParser::ParseNumericComparison(char* text, Chk::Conditio
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Comparison & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSwitchState(const char* text, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -64,11 +70,11 @@ bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Com
         return false;
 
     char comparison[8] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -95,12 +101,15 @@ bool StaticTrigComponentParser::ParseSwitchState(char* text, Chk::Condition::Com
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSpecialUnitAmount(const char* text, u8 & dest, size_t pos, size_t end)
     // All
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -110,11 +119,11 @@ bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 & dest, s6
         return false;
 
     char comparison[4] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -134,12 +143,15 @@ bool StaticTrigComponentParser::ParseSpecialUnitAmount(char* text, u8 & dest, s6
         return false;
 }
 
-bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseAllianceStatus(const char* text, u16 & dest, size_t pos, size_t end)
     // Ally, Enemy, Allied Victory
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -149,11 +161,11 @@ bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 & dest, s64 
         return false;
 
     char comparison[16] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -178,11 +190,14 @@ bool StaticTrigComponentParser::ParseAllianceStatus(char* text, u16 & dest, s64 
     return success;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseResourceType(const std::string & text, u8 & dest, size_t pos, size_t end)
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -192,11 +207,11 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u8 & dest, s64 pos
         return false;
 
     char resource[12] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text.c_str()[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             resource[i-numSkipped] = srcStr[i] - 32;
@@ -207,8 +222,6 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u8 & dest, s64 pos
     }
 
     resource[size] = '\0';
-    char temp = text[end+1]; // temporarily NUL terminate the src str
-    text[end+1] = '\0';
     bool success = false;
     switch ( resource[0] )
     {
@@ -220,15 +233,17 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u8 & dest, s64 pos
             if ( strcmp(&resource[1], "AS") == 0 ) { dest = 1; success = true; }
             break;
     }
-    text[end+1] = temp;
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseScoreType(const std::string & text, u8 & dest, size_t pos, size_t end)
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -238,11 +253,11 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u8 & dest, s64 pos, s
         return false;
 
     char score[20] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text.c_str()[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<20; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<20; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             score[i-numSkipped] = srcStr[i] - 32;
@@ -253,8 +268,6 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u8 & dest, s64 pos, s
     }
 
     score[size] = '\0';
-    char temp = text[end+1]; // temporarily NUL terminate the src str
-    text[end+1] = '\0';
     bool success = false;
     switch ( score[0] )
     {
@@ -279,16 +292,18 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u8 & dest, s64 pos, s
             else if ( strcmp(&score[1], "NITSANDBUILDINGS") == 0 ) { dest = 3; success = true; }
             break;
     }
-    text[end+1] = temp;
     return success;
 }
 
-bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseTextDisplayFlag(const char* text, u8 & dest, size_t pos, size_t end)
     // Always Display, Don't Always Display
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -298,11 +313,11 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 & dest, s64 
         return false;
 
     char comparison[24] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -326,12 +341,15 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(char* text, u8 & dest, s64 
     return success;
 }
 
-bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseNumericModifier(const char* text, u8 & dest, size_t pos, size_t end)
     // Add, subtract, set to
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -343,11 +361,11 @@ bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 & dest, s64 
     }
 
     char comparison[12] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -372,12 +390,15 @@ bool StaticTrigComponentParser::ParseNumericModifier(char* text, u8 & dest, s64 
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseSwitchMod(const char* text, u8 & dest, size_t pos, size_t end)
     // Set, clear, toggle, randomize
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -387,11 +408,11 @@ bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 & dest, s64 pos, s
         return false;
 
     char comparison[10] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -421,12 +442,15 @@ bool StaticTrigComponentParser::ParseSwitchMod(char* text, u8 & dest, s64 pos, s
     return success;
 }
 
-bool StaticTrigComponentParser::ParseStateMod(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseStateMod(const char* text, u8 & dest, size_t pos, size_t end)
     // Disable, Disabled, Enable, Enabled, Toggle
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -436,11 +460,11 @@ bool StaticTrigComponentParser::ParseStateMod(char* text, u8 & dest, s64 pos, s6
         return false;
 
     char comparison[12] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -469,12 +493,15 @@ bool StaticTrigComponentParser::ParseStateMod(char* text, u8 & dest, s64 pos, s6
     return success;
 }
 
-bool StaticTrigComponentParser::ParseOrder(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseOrder(const char* text, u8 & dest, size_t pos, size_t end)
     // Attack, move, patrol
 {
-    s64 size = end-pos;
+    size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
+        if ( size < 2 )
+            return false;
+
         pos ++;
         end --;
         size -= 2;
@@ -484,11 +511,11 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 & dest, s64 pos, s64 e
         return false;
 
     char comparison[8] = { };
-    char* srcStr = &text[pos];
+    const char* srcStr = &text[pos];
 
     // Take uppercase copy of argument
-    int numSkipped = 0;
-    for ( int i=0; i<size; i++ )
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
     {
         if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
             comparison[i-numSkipped] = srcStr[i] - 32;
@@ -515,7 +542,7 @@ bool StaticTrigComponentParser::ParseOrder(char* text, u8 & dest, s64 pos, s64 e
     return success;
 }
 
-bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32 & dest, s64 pos, s64 end, u32 deathTableOffset)
+bool StaticTrigComponentParser::ParseMemoryAddress(const char* text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
 {
     u32 temp = 0;
     if ( ParseLong(text, temp, pos, end) )
@@ -526,7 +553,7 @@ bool StaticTrigComponentParser::ParseMemoryAddress(char* text, u32 & dest, s64 p
     return false;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(char* text, u16 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseResourceType(const std::string & text, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
     bool success = ParseResourceType(text, temp, pos, end);
@@ -534,7 +561,7 @@ bool StaticTrigComponentParser::ParseResourceType(char* text, u16 & dest, s64 po
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(char* text, u16 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseScoreType(const std::string & text, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
     bool success = ParseScoreType(text, temp, pos, end);
@@ -542,9 +569,9 @@ bool StaticTrigComponentParser::ParseScoreType(char* text, u16 & dest, s64 pos, 
     return success;
 }
 
-bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseBinaryLong(const char* text, u32 & dest, size_t pos, size_t end)
 {
-    s64 size = end - pos;
+    size_t size = end - pos;
     if ( size < 33 )
     {
         if ( size == 0 )
@@ -555,7 +582,7 @@ bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32 & dest, s64 pos,
         else
         {
             bool allZero = true;
-            for ( int i=0; i<size; i++ )
+            for ( size_t i=0; i<size; i++ )
             {
                 if ( text[pos+i] != '0' )
                     allZero = false;
@@ -579,9 +606,9 @@ bool StaticTrigComponentParser::ParseBinaryLong(char* text, u32 & dest, s64 pos,
     return false;
 }
 
-bool StaticTrigComponentParser::ParseLong(char* text, u32 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseLong(const char* text, u32 & dest, size_t pos, size_t end)
 {
-    s64 size = end - pos;
+    size_t size = end - pos;
     if ( size < 12 )
     {
         if ( size == 1 && text[pos] == '0' )
@@ -611,7 +638,7 @@ bool StaticTrigComponentParser::ParseLong(char* text, u32 & dest, s64 pos, s64 e
     return false;
 }
 
-bool StaticTrigComponentParser::ParseTriplet(char* text, u8* dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseTriplet(const char* text, u8* dest, size_t pos, size_t end)
 {
     u32 val;
     bool isNegative = false;
@@ -637,9 +664,9 @@ bool StaticTrigComponentParser::ParseTriplet(char* text, u8* dest, s64 pos, s64 
     return false;
 }
 
-bool StaticTrigComponentParser::ParseShort(char* text, u16 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseShort(const char* text, u16 & dest, size_t pos, size_t end)
 {
-    s64 size = end - pos;
+    size_t size = end - pos;
     if ( size < 7 )
     {
         if ( size == 1 && text[pos] == '0' )
@@ -669,9 +696,9 @@ bool StaticTrigComponentParser::ParseShort(char* text, u16 & dest, s64 pos, s64 
     return false;
 }
 
-bool StaticTrigComponentParser::ParseByte(char* text, u8 & dest, s64 pos, s64 end)
+bool StaticTrigComponentParser::ParseByte(const char* text, u8 & dest, size_t pos, size_t end)
 {
-    s64 size = end - pos;
+    size_t size = end - pos;
     if ( size < 5 )
     {
         if ( size == 1 && text[pos] == '0' )

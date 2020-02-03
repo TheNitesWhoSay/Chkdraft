@@ -162,9 +162,9 @@ bool LitWindow::RunLit(ScenarioPtr map)
             if ( WinLib::executeOpen(litBatPath, litDirectory, resultCode) )
             {
                 int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
-                buffer litTrigs("litT");
+                std::string litTrigs;
                 bool foundLitText = PatientFindFile(textPath, 4, waitTimes) && FileToString(textPath, litText);
-                bool foundLitTrigs = FileToBuffer(trigPath, litTrigs);
+                bool foundLitTrigs = FileToString(trigPath, litTrigs);
                 RemoveFiles(textPath, trigPath, litBatPath);
                 if ( foundLitTrigs )
                 {
