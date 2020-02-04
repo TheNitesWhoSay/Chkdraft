@@ -17,7 +17,7 @@ enum_t(Id, u32, {
 TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), gridConditions(*this, 16),
     suggestions(gridConditions.GetSuggestions()), isPasting(false)
 {
-    InitializeArgMaps();
+
 }
 
 TrigConditionsWindow::~TrigConditionsWindow()
@@ -63,21 +63,21 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
             Chk::Condition & condition = trig->condition(y);
             if ( condition.conditionType > Chk::Condition::Type::NoCondition && condition.conditionType < Chk::Condition::NumConditionTypes )
             {
-                u8 numArgs = u8(conditionArgMaps[condition.conditionType].size());
-                if ( numArgs > 8 )
-                    numArgs = 8;
-
                 gridConditions.item(1, y).SetDisabled(false);
                 gridConditions.item(1, y).SetText(ttg.GetConditionName(condition.conditionType));
-                for ( u8 x=0; x<numArgs; x++ )
+                for ( u8 x=0; x<Chk::Condition::MaxArguments; x++ )
                 {
-                    gridConditions.item(x + 2, y).SetDisabled(false);
-                    gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, x, conditionArgMaps[condition.conditionType]));
-                }
-                for ( u8 x = numArgs; x < 8; x++ )
-                {
-                    gridConditions.item(x + 2, y).SetDisabled(true);
-                    gridConditions.item(x + 2, y).SetText("");
+                    Chk::Condition::Argument argument = Chk::Condition::getClassicArg(condition.conditionType, x);
+                    if ( argument.type != Chk::Condition::ArgType::NoType )
+                    {
+                        gridConditions.item(x + 2, y).SetDisabled(false);
+                        gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, argument));
+                    }
+                    else
+                    {
+                        gridConditions.item(x + 2, y).SetDisabled(true);
+                        gridConditions.item(x + 2, y).SetText("");
+                    }
                 }
                 
                 gridConditions.SetEnabledCheck(y, !condition.isDisabled());
@@ -215,55 +215,6 @@ void TrigConditionsWindow::Paste()
     isPasting = false;
 }
 
-void TrigConditionsWindow::InitializeArgMaps()
-{
-    #define ADD_ARRAY(anArray, vector)                  \
-    for ( u8 i=0; i<sizeof(anArray)/sizeof(u8); i++ )   \
-        vector.push_back(anArray[i]);
-
-    u8 accumulate[] = { 0, 1, 2, 3 };
-    u8 bring[] = { 0, 3, 4, 1, 2 };
-    u8 command[] = { 0, 2, 3, 1 };
-    u8 commandTheLeast[] = { 0 };
-    u8 commandTheLeastAt[] = { 0, 1 };
-    u8 commandTheMost[] = { 0 };
-    u8 commandTheMostAt[] = { 0, 1 };
-    u8 coundownTimer[] = { 0, 1 };
-    u8 deaths[] = { 0, 2, 3, 1 };
-    u8 elapsedTime[] = { 0, 1 };
-    u8 highestScore[] = { 0 };
-    u8 kill[] = { 0, 2, 3, 1 };
-    u8 leastKills[] = { 0 };
-    u8 leastResources[] = { 0 };
-    u8 lowestScore[] = { 0 };
-    u8 mostKills[] = { 0 };
-    u8 mostResources[] = { 0 };
-    u8 opponents[] = { 0, 1, 2 };
-    u8 score[] = { 0, 1, 2, 3 };
-    u8 switchState[] = { 0, 1 };
-
-    ADD_ARRAY(accumulate, conditionArgMaps[4]);
-    ADD_ARRAY(bring, conditionArgMaps[3]);
-    ADD_ARRAY(command, conditionArgMaps[2]);
-    ADD_ARRAY(commandTheLeast, conditionArgMaps[16]);
-    ADD_ARRAY(commandTheLeastAt, conditionArgMaps[17]);
-    ADD_ARRAY(commandTheMost, conditionArgMaps[6]);
-    ADD_ARRAY(commandTheMostAt, conditionArgMaps[7]);
-    ADD_ARRAY(coundownTimer, conditionArgMaps[1]);
-    ADD_ARRAY(deaths, conditionArgMaps[15]);
-    ADD_ARRAY(elapsedTime, conditionArgMaps[12]);
-    ADD_ARRAY(highestScore, conditionArgMaps[9]);
-    ADD_ARRAY(kill, conditionArgMaps[5]);
-    ADD_ARRAY(leastKills, conditionArgMaps[18]);
-    ADD_ARRAY(leastResources, conditionArgMaps[20]);
-    ADD_ARRAY(lowestScore, conditionArgMaps[19]);
-    ADD_ARRAY(mostKills, conditionArgMaps[8]);
-    ADD_ARRAY(mostResources, conditionArgMaps[10]);
-    ADD_ARRAY(opponents, conditionArgMaps[14]);
-    ADD_ARRAY(score, conditionArgMaps[21]);
-    ADD_ARRAY(switchState, conditionArgMaps[11]);
-}
-
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridConditions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_CONDITIONS);
@@ -370,12 +321,11 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( trig != nullptr )
     {
+        Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig->condition(conditionNum).conditionType, argNum);
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
-               ttc.ParseConditionArg(rawUpdateText, argNum, conditionArgMaps[trig->condition(conditionNum).conditionType],
-                trig->condition(conditionNum), CM, chkd.scData) ) ||
+               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData) ) ||
              ( ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
-               ttc.ParseConditionArg(rawSuggestText, argNum, conditionArgMaps[trig->condition(conditionNum).conditionType],
-                trig->condition(conditionNum), CM, chkd.scData) ) )
+               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData) ) )
         {
             if ( refreshImmediately )
                 RefreshConditionAreas();
@@ -726,11 +676,8 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
         else if ( gridItemX > 1 ) // Condition Arg
         {
             u8 conditionArgNum = (u8)gridItemX - 2;
-            if ( condition.conditionType < Chk::Condition::NumConditionTypes && conditionArgMaps[condition.conditionType].size() > conditionArgNum )
-            {
-                u8 textTrigArgNum = conditionArgMaps[condition.conditionType][conditionArgNum];
+            if ( condition.conditionType < Chk::Condition::NumConditionTypes )
                 argType = condition.getClassicArgType(condition.conditionType, conditionArgNum);
-            }
         }
 
         if ( argType != Chk::Condition::ArgType::NoType )

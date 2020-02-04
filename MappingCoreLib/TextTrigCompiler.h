@@ -44,11 +44,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
         bool CompileTrigger(std::string & trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
 
-        // Attempts to compile the argNum'th condition argument into the given condition
+        // Attempts to compile the condition argument at argIndex into the given condition
         bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
-        bool ParseConditionArg(std::string conditionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData);
+        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData);
         bool ParseActionName(std::string text, Chk::Action::Type & actionType);
-        bool ParseActionArg(std::string actionArgText, u8 argNum, std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData);
+        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData);
         static u8 defaultConditionFlags(Chk::Condition::Type conditionType);
         static u8 defaultActionFlags(Chk::Action::Type actionType);
         static u8 numConditionArgs(Chk::Condition::VirtualType conditionType);
@@ -67,16 +67,16 @@ class TextTrigCompiler : public StaticTrigComponentParser
         inline bool ParsePartTwo(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartThree(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-            size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft, u32 & numConditions,
+            size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argIndex, u32 & numConditions,
             Chk::Condition* & currCondition);
-        inline bool ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argsLeft, size_t & argEnd,
+        inline bool ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
             Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionType);
         inline bool ParsePartSix(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-            u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argsLeft, u32 & numActions,
+            u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions,
             Chk::Action* & currAction);
         inline bool ParsePartEight(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-            u32 & argsLeft, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType);
+            u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType);
         inline bool ParsePartNine(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
             size_t & flagsEnd);
@@ -84,11 +84,11 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         bool ParseExecutingPlayer(std::string & text, Chk::Trigger & currTrig, size_t pos, size_t end); // Parse a player that the trigger is executed by
         bool ParseConditionName(std::string & arg, Chk::Condition::VirtualType & conditionType);
-        bool ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft); // Find the equivilant conditionType
+        bool ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags); // Find the equivilant conditionType
         bool ParseActionName(std::string & arg, Chk::Action::VirtualType & actionType);
-        bool ParseAction(std::string & text, size_t pos, size_t end, bool disabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft); // Find the equivilant actionType
-        bool ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to a condition
-        bool ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error); // Parse an argument belonging to an action
+        bool ParseAction(std::string & text, size_t pos, size_t end, bool disabled, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
+        bool ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
+        bool ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument argument, std::stringstream & error); // Parse an argument belonging to an action
         bool ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags);
 
         bool zzParseString(std::string & text, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary

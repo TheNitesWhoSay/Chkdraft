@@ -472,9 +472,16 @@ namespace Chk {
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void deleteLocation(size_t locationId);
-        static ArgType getClassicArgType(Type conditionType, size_t argNum);
-        static ArgType getClassicArgType(VirtualType conditionType, size_t argNum);
-
+        static Argument getClassicArg(Type conditionType, size_t argIndex);
+        static Argument getClassicArg(VirtualType conditionType, size_t argIndex);
+        static ArgType getClassicArgType(Type conditionType, size_t argIndex);
+        static ArgType getClassicArgType(VirtualType conditionType, size_t argIndex);
+        static Argument getTextArg(Type conditionType, size_t argIndex);
+        static Argument getTextArg(VirtualType conditionType, size_t argIndex);
+        static ArgType getTextArgType(Type conditionType, size_t argIndex);
+        static ArgType getTextArgType(VirtualType conditionType, size_t argIndex);
+        
+        static Argument noArg;
         static Argument classicArguments[NumConditionTypes][MaxArguments];
         static Argument textArguments[NumConditionTypes][MaxArguments];
         static u8 defaultFlags[NumConditionTypes];
@@ -670,16 +677,14 @@ namespace Chk {
             NumericMod = 18,
             Switch = 19,
             SwitchMod = 20,
-            Type = 21,
-            ActionType = 22,
-            SecondaryType = 23,
-            Flags = 24,
-            Number = 25, // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-            TypeIndex = 26, // Unit, ScoreType, ResourceType, AllianceStatus
-            SecondaryTypeIndex = 27, // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-            Padding = 28,
-            MaskFlag = 29,
-            MemoryOffset = 30
+            ActionType = 21,
+            Flags = 22,
+            Number = 23, // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+            TypeIndex = 24, // Unit, ScoreType, ResourceType, AllianceStatus
+            SecondaryTypeIndex = 25, // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+            Padding = 26,
+            MaskFlag = 27,
+            MemoryOffset = 28
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,
@@ -758,8 +763,14 @@ namespace Chk {
 
         bool isDisabled() { return (flags & Flags::Disabled) == Flags::Disabled; }
         void ToggleDisabled();
-        static ArgType getClassicArgType(Type actionType, size_t argNum);
-        static ArgType getClassicArgType(VirtualType actionType, size_t argNum);
+        static Argument getClassicArg(Type actionType, size_t argIndex);
+        static Argument getClassicArg(VirtualType actionType, size_t argIndex);
+        static ArgType getClassicArgType(Type actionType, size_t argIndex);
+        static ArgType getClassicArgType(VirtualType actionType, size_t argIndex);
+        static Argument getTextArg(Type actionType, size_t argIndex);
+        static Argument getTextArg(VirtualType actionType, size_t argIndex);
+        static ArgType getTextArgType(Type actionType, size_t argIndex);
+        static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
         inline bool locationUsed(size_t locationId);
         inline bool stringUsed(size_t stringId);
         inline bool gameStringUsed(size_t stringId);
@@ -776,7 +787,8 @@ namespace Chk {
         void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
         void deleteBriefingString(size_t stringId);
-
+        
+        static Argument noArg;
         static Argument classicArguments[NumActionTypes][MaxArguments];
         static Argument textArguments[NumActionTypes][MaxArguments];
         static u8 defaultFlags[NumActionTypes];

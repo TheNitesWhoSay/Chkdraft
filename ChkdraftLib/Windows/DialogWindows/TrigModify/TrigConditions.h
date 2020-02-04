@@ -24,7 +24,6 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void Paste();
 
     protected:
-        void InitializeArgMaps(); // Gives default values to all the argMaps
         void CreateSubWindows(HWND hWnd);
         void OnLeave();
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
@@ -35,8 +34,6 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         HBRUSH hBlack;
         u32 trigIndex;
         bool isPasting;
-
-        std::vector<u8> conditionArgMaps[24];
 
         Suggestions & suggestions;
 

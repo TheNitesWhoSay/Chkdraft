@@ -113,25 +113,20 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, u8 argNum,
-    std::vector<u8> & argMap, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
 
-    if ( argNum < argMap.size() )
+    std::string txcd = conditionArgText;
+    std::stringstream argumentError;
+    if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (Chk::Condition::VirtualType)condition.conditionType, argument, argumentError) )
+        return true;
+    else
     {
-        std::string txcd = conditionArgText;
-        std::stringstream argumentError;
-        u32 argsLeft = numConditionArgs((Chk::Condition::VirtualType)condition.conditionType) - argMap[argNum];
-        if ( ParseConditionArg(txcd, condition, 0, txcd.size()-1, (Chk::Condition::VirtualType)condition.conditionType, argsLeft, argumentError) )
-            return true;
-        else
-        {
-            std::stringstream errorMessage;
-            errorMessage << "Unable to parse condition. " << argumentError.str();
-            CHKD_ERR(errorMessage.str());
-        }
+        std::stringstream errorMessage;
+        errorMessage << "Unable to parse condition. " << argumentError.str();
+        CHKD_ERR(errorMessage.str());
     }
     return false;
 }
@@ -166,25 +161,20 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string actionArgText, u8 argNum,
-    std::vector<u8> & argMap, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData)
 {
     if ( !LoadCompiler(chk, scData) )
         return false;
     
     std::string txac = actionArgText;
-    if ( argNum < argMap.size() )
+    std::stringstream argumentError;
+    if ( ParseActionArg(txac, action, 0, txac.size() - 1, (Chk::Action::VirtualType)action.actionType, argument, argumentError) )
+        return true;
+    else
     {
-        std::stringstream argumentError;
-        u32 argsLeft = numActionArgs((Chk::Action::VirtualType)action.actionType) - argMap[argNum];
-        if ( ParseActionArg(txac, action, 0, txac.size() - 1, (Chk::Action::VirtualType)action.actionType, argsLeft, argumentError) )
-            return true;
-        else
-        {
-            std::stringstream errorMessage;
-            errorMessage << "Unable to parse action. " << argumentError.str();
-            CHKD_ERR(errorMessage.str());
-        }
+        std::stringstream errorMessage;
+        errorMessage << "Unable to parse action. " << argumentError.str();
+        CHKD_ERR(errorMessage.str());
     }
     return false;
 }
@@ -431,7 +421,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
 
     u32 expecting = 0,
         line = 1,
-        argsLeft = 0,
+        argIndex = 0,
         numConditions = 0,
         numActions = 0;
 
@@ -487,14 +477,14 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
                     // or   flags:
                     // or   }
                 if ( !ParsePartFour(text, *currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
-                    flags, argsLeft, numConditions, currCondition) )
+                    flags, argIndex, numConditions, currCondition) )
                     return false;
                 break;
 
             case 5: //      );
                     // or   %ConditionArg,
                     // or   %ConditionArg);
-                if ( !ParsePartFive(text, *currTrig, error, pos, line, expecting, argsLeft, argEnd, currCondition, conditionId) )
+                if ( !ParsePartFive(text, *currTrig, error, pos, line, expecting, argIndex, argEnd, currCondition, conditionId) )
                     return false;
                 break;
 
@@ -510,14 +500,14 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
                     // or   flags:
                     // or   }
                 if ( !ParsePartSeven(text, *currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
-                    actionId, argsLeft, numActions, currAction) )
+                    actionId, argIndex, numActions, currAction) )
                     return false;
                 break;
 
             case 8: //      );
                     // or   %ActionArg,
                     // or   %ActionArg);
-                if ( !ParsePartEight(text, *currTrig, error, pos, line, expecting, argsLeft, argEnd, currAction, actionId) )
+                if ( !ParsePartEight(text, *currTrig, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
                     return false;
                 break;
 
@@ -726,7 +716,7 @@ inline bool TextTrigCompiler::ParsePartThree(std::string & text, Chk::Trigger & 
 }
 
 inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-    size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argsLeft, u32 & numConditions,
+    size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argIndex, u32 & numConditions,
     Chk::Condition* & currCondition)
 {
     //      %ConditionName(
@@ -751,7 +741,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags, argsLeft) )
+            if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags) )
             {
                 if ( numConditions > Chk::Trigger::MaxConditions )
                 {
@@ -845,7 +835,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags, argsLeft) )
+            if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags) )
             {
                 if ( numConditions > Chk::Trigger::MaxConditions )
                 {
@@ -893,15 +883,17 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argsLeft, size_t & argEnd,
+inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
     Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionId)
 {
     //      );
     // or   %ConditionArg,
     // or   %ConditionArg);
+    Chk::Condition::Argument argument = Chk::Condition::getTextArg(conditionId, argIndex);
+    Chk::Condition::ArgType argType = argument.type;
     if ( text[pos] == ')' ) // Condition End
     {
-        if ( argsLeft > 0 )
+        if ( argType != Chk::Condition::ArgType::NoType )
         {
             error << "Line: " << line << std::endl << std::endl << "Expected: Condition Argument";
             return false;
@@ -925,21 +917,21 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & o
             return false;
         }
     }
-    else if ( argsLeft == 0 )
+    else if ( argType == Chk::Condition::ArgType::NoType )
     {
         error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
         return false;
     }
-    else if ( argsLeft == 1 )
+    else if ( Chk::Condition::getTextArgType(conditionId, argIndex+1) == Chk::Condition::ArgType::NoType )
     {
         argEnd = findNextUnquoted(text, pos, ')');
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
+            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argument, argumentError) )
             {
                 pos = argEnd;
-                argsLeft --;
+                argIndex ++;
             }
             else
             {
@@ -959,10 +951,10 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & o
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argsLeft, argumentError) )
+            if ( ParseConditionArg(text, *currCondition, pos, argEnd, conditionId, argument, argumentError) )
             {
                 pos = argEnd+1;
-                argsLeft --;
+                argIndex ++;
             }
             else
             {
@@ -1011,7 +1003,7 @@ inline bool TextTrigCompiler::ParsePartSix(std::string & text, Chk::Trigger & ou
 }
 
 inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-    u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argsLeft, u32 & numActions,
+    u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argIndex, u32 & numActions,
     Chk::Action* & currAction)
 {
     //      %ActionName(
@@ -1030,7 +1022,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, true, actionId, flags, argsLeft) )
+            if ( ParseAction(text, pos, actionEnd, true, actionId, flags) )
             {
                 if ( numActions > Chk::Trigger::MaxActions )
                 {
@@ -1085,7 +1077,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, false, actionId, flags, argsLeft) )
+            if ( ParseAction(text, pos, actionEnd, false, actionId, flags) )
             {
                 if ( numActions > Chk::Trigger::MaxActions )
                 {
@@ -1119,14 +1111,16 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 }
 
 inline bool TextTrigCompiler::ParsePartEight(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
-    u32 & argsLeft, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
+    u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
 {
     //      );
     // or   %ActionArg,
     // or   %ActionArg);
+    Chk::Action::Argument argument = Chk::Action::getTextArg(actionId, argIndex);
+    Chk::Action::ArgType argType = argument.type;
     if ( text[pos] == ')' ) // Action End
     {
-        if ( argsLeft > 0 )
+        if ( argType != Chk::Action::ArgType::NoType )
         {
             error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument";
             return false;
@@ -1150,21 +1144,21 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, Chk::Trigger & 
             return false;
         }
     }
-    else if ( argsLeft == 0 )
+    else if ( argType == Chk::Action::ArgType::NoType )
     {
         error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
         return false;
     }
-    else if ( argsLeft == 1 )
+    else if ( Chk::Action::getTextArgType(actionId, argIndex+1) == Chk::Action::ArgType::NoType )
     {
         argEnd = findNextUnquoted(text, pos, ')');
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
+            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argument, argumentError) )
             {
                 pos = argEnd;
-                argsLeft --;
+                argIndex ++;
             }
             else
             {
@@ -1184,10 +1178,10 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, Chk::Trigger & 
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argsLeft, argumentError) )
+            if ( ParseActionArg(text, *currAction, pos, argEnd, actionId, argument, argumentError) )
             {
                 pos = argEnd+1;
-                argsLeft --;
+                argIndex ++;
             }
             else
             {
@@ -1416,7 +1410,7 @@ bool TextTrigCompiler::ParseConditionName(std::string & arg, Chk::Condition::Vir
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argsLeft)
+bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags)
 {
     conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
@@ -1436,7 +1430,6 @@ bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end
     ParseConditionName(arg, conditionType);
 
     flags = defaultConditionFlags(ExtendedToRegularCID(conditionType));
-    argsLeft = numConditionArgs(conditionType);
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
@@ -1654,7 +1647,7 @@ bool TextTrigCompiler::ParseActionName(std::string & arg, Chk::Action::VirtualTy
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, bool diabled, Chk::Action::VirtualType & actionType, u8 & flags, u32 & argsLeft)
+bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, bool diabled, Chk::Action::VirtualType & actionType, u8 & flags)
 {
     actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
@@ -1881,119 +1874,13 @@ bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, b
     }
 
     flags = defaultActionFlags(ExtendedToRegularAID(actionType));
-    argsLeft = numActionArgs(actionType);
 
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, u32 argsLeft, std::stringstream & error)
+bool TextTrigCompiler::ParseConditionArg(std::string & text, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, Chk::Condition::Argument argument, std::stringstream & error)
 {
     const char* textPtr = text.c_str();
-
-    // Search for condition ID
-    switch ( conditionType )
-    {
-    case Chk::Condition::VirtualType::Custom:
-        switch ( argsLeft ) {
-        case 9: goto ParseConditionLocationField    ; break;
-        case 8: goto ParseConditionPlayerField      ; break;
-        case 7: goto ParseConditionAmountField      ; break;
-        case 6: goto ParseConditionUnitField        ; break;
-        case 5: goto ParseConditionComparisonField  ; break;
-        case 4: goto ParseConditionConditionField   ; break;
-        case 3: goto ParseConditionTypeIndexField   ; break;
-        case 2: goto ParseConditionFlagsField       ; break;
-        case 1: goto ParseConditionInternalDataField; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Memory: // deathTable+, mod, num
-        switch ( argsLeft ) {
-        case 3: goto ParseConditionDeathOffsetField      ; break;
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Accumulate: // player, mod, num, resouce
-        switch ( argsLeft ) {
-        case 4: goto ParseConditionPlayerField           ; break;
-        case 3: goto ParseConditionNumericComparisonField; break;
-        case 2: goto ParseConditionAmountField           ; break;
-        case 1: goto ParseConditionResourceTypeField     ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Bring: // player, mod, num, unit, location
-        switch ( argsLeft ) {
-        case 5: goto ParseConditionPlayerField           ; break;
-        case 4: goto ParseConditionUnitField             ; break;
-        case 3: goto ParseConditionLocationField         ; break;
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Command: // Player, Unit, NumericComparison, Amount
-    case Chk::Condition::VirtualType::Deaths:  // Player, Unit, NumericComparison, Amount
-    case Chk::Condition::VirtualType::Kill:    // Player, Unit, NumericComparison, Amount
-        switch ( argsLeft ) {
-        case 4: goto ParseConditionPlayerField           ; break;
-        case 3: goto ParseConditionUnitField             ; break;
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-
-        }
-        break;
-    case Chk::Condition::VirtualType::CommandTheLeast: // unit
-    case Chk::Condition::VirtualType::CommandTheMost:  // unit
-    case Chk::Condition::VirtualType::LeastKills:      // unit
-    case Chk::Condition::VirtualType::MostKills:       // unit
-        if ( argsLeft == 1 ) goto ParseConditionUnitField;
-        break;
-    case Chk::Condition::VirtualType::CommandTheLeastAt: // unit, location
-    case Chk::Condition::VirtualType::CommandTheMostAt:  // unit, location
-        switch ( argsLeft ) {
-        case 2: goto ParseConditionUnitField    ; break;
-        case 1: goto ParseConditionLocationField; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::CountdownTimer: // NumericComparison, Amount
-    case Chk::Condition::VirtualType::ElapsedTime: // NumericComparison, Amount
-        switch ( argsLeft ) {
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::HighestScore: // scoreType
-    case Chk::Condition::VirtualType::LowestScore: // scoreType
-        if ( argsLeft == 1 ) goto ParseConditionScoreTypeField;
-        break;
-    case Chk::Condition::VirtualType::LeastResources: // resource
-    case Chk::Condition::VirtualType::MostResources: // resource
-        if ( argsLeft == 1 ) goto ParseConditionResourceTypeField;
-        break;
-    case Chk::Condition::VirtualType::Opponents: // Player, NumericComparison, Amount
-        switch ( argsLeft ) {
-        case 3: goto ParseConditionPlayerField           ; break;
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Score: // Player, ScoreType, NumericComparison, Amount
-        switch ( argsLeft ) {
-        case 4: goto ParseConditionPlayerField           ; break;
-        case 3: goto ParseConditionScoreTypeField        ; break;
-        case 2: goto ParseConditionNumericComparisonField; break;
-        case 1: goto ParseConditionAmountField           ; break;
-        }
-        break;
-    case Chk::Condition::VirtualType::Switch: // Switch, SwitchState
-        switch ( argsLeft ) {
-        case 2: goto ParseConditionSwitchField     ; break;
-        case 1: goto ParseConditionSwitchStateField; break;
-        }
-        break;
-    }
-
-    CHKD_ERR("INTERNAL ERROR: Invalid args left or argument unhandled, report this");
-    return false;
 
     // returns whether the condition was true and prints msg to the error message if false
 #define returnMsg(condition, msg)                           \
@@ -2004,503 +1891,189 @@ bool TextTrigCompiler::ParseConditionArg(std::string & text, Chk::Condition & cu
         return false;                                       \
     }
 
-ParseConditionLocationField: // 4 bytes
-    returnMsg( ParseLocationName(text, currCondition.locationId, pos, end) ||
-        ParseLong(textPtr, currCondition.locationId, pos, end),
-        "Expected: Location name or 4-byte locationNum" );
-
-ParseConditionPlayerField: // 4 bytes
-    returnMsg( ParsePlayer(text, currCondition.player, pos, end) ||
-        ParseLong(textPtr, currCondition.player, pos, end),
-        "Expected: Player/group name or 4-byte id" );
-
-ParseConditionAmountField: // 4 bytes
-    returnMsg( ParseLong(textPtr, currCondition.amount, pos, end),
-        "Expected: 4-byte amount" );
-
-ParseConditionUnitField: // 2 bytes
-    returnMsg( ParseUnitName(text, currCondition.unitType, pos, end) ||
-        ParseShort(textPtr, (u16 &)currCondition.unitType, pos, end),
-        "Expected: Unit name or 2-byte unitID" );
-
-ParseConditionNumericComparisonField: // 1 byte
-    returnMsg( ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
-        ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
-        "Expected: Numeric comparison or 1-byte comparisonID" );
-
-ParseConditionSwitchStateField: // 1 byte
-    returnMsg( ParseSwitchState(textPtr, currCondition.comparison, pos, end) ||
-        ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
-        "Expected: Switch state or 1-byte comparisonID" );
-
-ParseConditionComparisonField: // 1 byte, comparison type or switch state
-    returnMsg( ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end) ||
-        ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
-        ParseSwitchState(textPtr, currCondition.comparison, pos, end),
-        "Expected: 1-byte comparison" );
-
-ParseConditionConditionField: // 1 byte, only used by custom
-    returnMsg( ParseByte(textPtr, (u8 &)currCondition.conditionType, pos, end),
-        "Expected: 1-byte conditionID" );
-
-ParseConditionResourceTypeField: // 1 byte
-    returnMsg( ParseResourceType(textPtr, currCondition.typeIndex, pos, end) ||
-        ParseByte(textPtr, currCondition.typeIndex, pos, end),
-        "Expected: Resource type or 1-byte resourceID" );
-
-ParseConditionScoreTypeField: // 1 byte
-    returnMsg( ParseScoreType(text, currCondition.typeIndex, pos, end) ||
-        ParseByte(textPtr, currCondition.typeIndex, pos, end),
-        "Expected: Score type or 1-byte scoreID" );
-
-ParseConditionSwitchField: // 1 byte
-    returnMsg( ParseSwitch(text, currCondition.typeIndex, pos, end) ||
-        ParseByte(textPtr, currCondition.typeIndex, pos, end),
-        "Expected: Switch name or 1-byte switchID" );
-
-ParseConditionTypeIndexField: // 1 byte, resource type, score type, switch num
-    returnMsg( ParseByte(textPtr, currCondition.typeIndex, pos, end) ||
-        ParseResourceType(text, currCondition.typeIndex, pos, end) ||
-        ParseScoreType(text, currCondition.typeIndex, pos, end) ||
-        ParseSwitch(text, currCondition.typeIndex, pos, end),
-        "Expected: 1-byte typeId, resource type, score type, or switch name" );
-
-ParseConditionFlagsField: // 1 byte
-    returnMsg( ParseByte(textPtr, currCondition.flags, pos, end),
-        "Expected: 1-byte flags" );
-
-ParseConditionInternalDataField: // 2 bytes
-    returnMsg( ParseShort(textPtr, (u16 &)currCondition.maskFlag, pos, end),
-        "Expected: 2-byte internal data" );
-
-ParseConditionDeathOffsetField: // 4 bytes
-    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.player, pos, end, deathTableOffset) ||
-        !useAddressesForMemory && ParseLong(textPtr, currCondition.player, pos, end)),
-        (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
+    Chk::Condition::ArgType argType = argument.type;
+    switch ( argType )
+    {
+        case Chk::Condition::ArgType::Unit:
+            returnMsg( ParseUnitName(text, currCondition.unitType, pos, end) ||
+                ParseShort(textPtr, (u16 &)currCondition.unitType, pos, end),
+                "Expected: Unit name or 2-byte unitID" );
+        case Chk::Condition::ArgType::Location:
+            returnMsg( ParseLocationName(text, currCondition.locationId, pos, end) ||
+                ParseLong(textPtr, currCondition.locationId, pos, end),
+                "Expected: Location name or 4-byte locationNum" );
+        case Chk::Condition::ArgType::Player:
+            returnMsg( ParsePlayer(text, currCondition.player, pos, end) ||
+                ParseLong(textPtr, currCondition.player, pos, end),
+                "Expected: Player/group name or 4-byte id" );
+        case Chk::Condition::ArgType::Amount:
+            returnMsg( ParseLong(textPtr, currCondition.amount, pos, end),
+                "Expected: 4-byte amount" );
+        case Chk::Condition::ArgType::NumericComparison:
+            returnMsg( ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
+                ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
+                "Expected: Numeric comparison or 1-byte comparisonID" );
+        case Chk::Condition::ArgType::ResourceType:
+            returnMsg( ParseResourceType(textPtr, currCondition.typeIndex, pos, end) ||
+                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+                "Expected: Resource type or 1-byte resourceID" );
+        case Chk::Condition::ArgType::ScoreType:
+            returnMsg( ParseScoreType(text, currCondition.typeIndex, pos, end) ||
+                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+                "Expected: Score type or 1-byte scoreID" );
+        case Chk::Condition::ArgType::Switch:
+            returnMsg( ParseSwitch(text, currCondition.typeIndex, pos, end) ||
+                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+                "Expected: Switch name or 1-byte switchID" );
+        case Chk::Condition::ArgType::SwitchState:
+            returnMsg( ParseSwitchState(textPtr, currCondition.comparison, pos, end) ||
+                ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
+                "Expected: Switch state or 1-byte comparisonID" );
+        case Chk::Condition::ArgType::Comparison: // NumericComparison, SwitchState
+            returnMsg( ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end) ||
+                ParseNumericComparison(textPtr, currCondition.comparison, pos, end) ||
+                ParseSwitchState(textPtr, currCondition.comparison, pos, end),
+                "Expected: 1-byte comparison" );
+        case Chk::Condition::ArgType::ConditionType:
+            returnMsg( ParseByte(textPtr, (u8 &)currCondition.conditionType, pos, end),
+                "Expected: 1-byte conditionID" );
+        case Chk::Condition::ArgType::TypeIndex: // ResourceType, ScoreType, Switch
+            returnMsg( ParseByte(textPtr, currCondition.typeIndex, pos, end) ||
+                ParseResourceType(text, currCondition.typeIndex, pos, end) ||
+                ParseScoreType(text, currCondition.typeIndex, pos, end) ||
+                ParseSwitch(text, currCondition.typeIndex, pos, end),
+                "Expected: 1-byte typeId, resource type, score type, or switch name" );
+        case Chk::Condition::ArgType::Flags:
+            returnMsg( ParseByte(textPtr, currCondition.flags, pos, end),
+                "Expected: 1-byte flags" );
+        case Chk::Condition::ArgType::MaskFlag:
+            returnMsg( ParseShort(textPtr, (u16 &)currCondition.maskFlag, pos, end),
+                "Expected: 2-byte internal data" );
+        case Chk::Condition::ArgType::MemoryOffset:
+            returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.player, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && ParseLong(textPtr, currCondition.player, pos, end)),
+                (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
+    }
+    CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
+    return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, u32 argsLeft, std::stringstream & error)
+bool TextTrigCompiler::ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument arg, std::stringstream & error)
 {
     const char* textPtr = text.c_str();
-
-    switch ( actionType )
+    
+    switch ( arg.type )
     {
-    case Chk::Action::VirtualType::Custom: // bytes: 4, 4, 4, 4, 4, 4, 2, 1, 1, 1, 3
-        switch ( argsLeft ) {
-        case 11: goto ParseActionLocationField    ; break;
-        case 10: goto ParseActionTextField        ; break;
-        case  9: goto ParseActionWavField         ; break;
-        case  8: goto ParseActionDurationField    ; break;
-        case  7: goto ParseActionFirstGroupField  ; break;
-        case  6: goto ParseActionNumberField      ; break;
-        case  5: goto ParseActionTypeIndexField   ; break;
-        case  4: goto ParseActionActionField      ; break;
-        case  3: goto ParseActionTypeIndexField2  ; break;
-        case  2: goto ParseActionFlagsField       ; break;
-        case  1: goto ParseActionInternalDataField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetMemory: // deathTable+, mod, num
-        switch ( argsLeft ) {
-        case 3: goto ParseActionDeathOffsetField    ; break;
-        case 2: goto ParseActionNumericModifierField; break;
-        case 1: goto ParseActionAmountField         ; break;
-        }
-        break;
-    case Chk::Action::VirtualType::CenterView:  // Location
-    case Chk::Action::VirtualType::MinimapPing: // Location
-        if ( argsLeft == 1 ) goto ParseActionLocationField;
-        break;
-    case Chk::Action::VirtualType::Comment:              // String
-    case Chk::Action::VirtualType::SetMissionObjectives: // String
-    case Chk::Action::VirtualType::SetNextScenario:      // String
-        if ( argsLeft == 1 ) goto ParseActionTextField;
-        break;
-    case Chk::Action::VirtualType::CreateUnit:         // Player, Unit, NumUnits, Location
-    case Chk::Action::VirtualType::KillUnitAtLocation: // Player, Unit, NumUnits, Location
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionNumUnitsField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::CreateUnitWithProperties: // Player, Unit, NumUnits, Location, Amount
-        switch ( argsLeft ) {
-        case 5: goto ParseActionFirstGroupField; break;
-        case 4: goto ParseActionUnitField; break;
-        case 3: goto ParseActionNumUnitsField; break;
-        case 2: goto ParseActionLocationField; break;
-        case 1: goto ParseActionAmountField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::DisplayTextMessage: // TextFlags, String
-        switch ( argsLeft ) {
-        case 2: goto ParseActionTextFlagField; break;
-        case 1: goto ParseActionTextField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::GiveUnitsToPlayer: // Player, SecondPlayer, Unit, NumUnits, Location
-        switch ( argsLeft ) {
-        case 5: goto ParseActionFirstGroupField; break;
-        case 4: goto ParseActionSecondGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionNumUnitsField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::KillUnit:   // Player, Unit
-    case Chk::Action::VirtualType::RemoveUnit: // Player, Unit
-        switch ( argsLeft ) {
-        case 2: goto ParseActionFirstGroupField; break;
-        case 1: goto ParseActionUnitField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardCtrlAtLoc: // String, Unit, Location
-        switch ( argsLeft ) {
-        case 3: goto ParseActionTextField; break;
-        case 2: goto ParseActionUnitField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardCtrl:  // String, Unit
-    case Chk::Action::VirtualType::LeaderboardKills: // String, Unit
-        switch ( argsLeft ) {
-        case 2: goto ParseActionTextField; break;
-        case 1: goto ParseActionUnitField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardGreed: // Amount
-        if ( argsLeft == 1 ) goto ParseActionAmountField;
-        break;
-    case Chk::Action::VirtualType::LeaderboardPoints: // String, ScoreType
-        switch ( argsLeft ) {
-        case 2: goto ParseActionTextField; break;
-        case 1: goto ParseActionScoreTypeField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardResources: // String, ResourceType
-        switch ( argsLeft ) {
-        case 2: goto ParseActionTextField; break;
-        case 1: goto ParseActionResourceTypeField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardCompPlayers: // StateModifier
-        if ( argsLeft == 1 ) goto ParseActionStateModifierField;
-        break;
-    case Chk::Action::VirtualType::LeaderboardGoalCtrlAtLoc: // String, Unit, Amount, Location
-        switch ( argsLeft ) {
-        case 4: goto ParseActionTextField    ; break;
-        case 3: goto ParseActionUnitField    ; break;
-        case 2: goto ParseActionAmountField  ; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardGoalCtrl: // String, Unit, Amount
-    case Chk::Action::VirtualType::LeaderboardGoalKills:   // String, Unit, Amount
-        switch ( argsLeft ) {
-        case 3: goto ParseActionTextField; break;
-        case 2: goto ParseActionUnitField; break;
-        case 1: goto ParseActionAmountField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardGoalPoints: // String, ScoreType, Amount
-        switch ( argsLeft ) {
-        case 3: goto ParseActionTextField     ; break;
-        case 2: goto ParseActionScoreTypeField; break;
-        case 1: goto ParseActionAmountField   ; break;
-        }
-        break;
-    case Chk::Action::VirtualType::LeaderboardGoalResources: // String, Amount, ResourceType
-        switch ( argsLeft ) {
-        case 3: goto ParseActionTextField; break;
-        case 2: goto ParseActionAmountField; break;
-        case 1: goto ParseActionResourceTypeField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::ModifyUnitEnergy:       // Player, Unit, Amount, NumUnits, Location
-    case Chk::Action::VirtualType::ModifyUnitHangerCount:  // Player, Unit, Amount, NumUnits, Location
-    case Chk::Action::VirtualType::ModifyUnitHitpoints:    // Player, Unit, Amount, NumUnits, Location
-    case Chk::Action::VirtualType::ModifyUnitShieldPoints: // Player, Unit, Amount, NumUnits, Location
-        switch ( argsLeft ) {
-        case 5: goto ParseActionFirstGroupField; break;
-        case 4: goto ParseActionUnitField; break;
-        case 3: goto ParseActionAmountField; break;
-        case 2: goto ParseActionNumUnitsField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::ModifyUnitResourceAmount: // Player, Amount, NumUnits, Location
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionAmountField; break;
-        case 2: goto ParseActionNumUnitsField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::MoveLocation: // Player, Unit, LocDest, Location
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionLocationField; break;
-        case 1: goto ParseActionSecondLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::MoveUnit: // Player, Unit, NumUnits, Location, LocDest
-        switch ( argsLeft ) {
-        case 5: goto ParseActionFirstGroupField; break;
-        case 4: goto ParseActionUnitField; break;
-        case 3: goto ParseActionNumUnitsField; break;
-        case 2: goto ParseActionLocationField; break;
-        case 1: goto ParseActionSecondLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::Order: // Player, Unit, Location, LocDest, OrderType
-        switch ( argsLeft ) {
-        case 5: goto ParseActionFirstGroupField; break;
-        case 4: goto ParseActionUnitField; break;
-        case 3: goto ParseActionLocationField; break;
-        case 2: goto ParseActionSecondLocationField; break;
-        case 1: goto ParseActionOrderField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::PlaySound: // Wav, Duration
-        switch ( argsLeft ) {
-        case 2: goto ParseActionWavField; break;
-        case 1: goto ParseActionDurationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::RemoveUnitAtLocation: // Player, Unit, NumUnits, Location
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionNumUnitsField; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::RunAiScript: // Script
-        if ( argsLeft == 1 ) goto ParseActionScriptField;
-        break;
-    case Chk::Action::VirtualType::RunAiScriptAtLocation: // Script, Location
-        switch ( argsLeft ) {
-        case 2: goto ParseActionScriptField  ; break;
-        case 1: goto ParseActionLocationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetAllianceStatus: // Player, AllyState
-        switch ( argsLeft ) {
-        case 2: goto ParseActionFirstGroupField    ; break;
-        case 1: goto ParseActionAllianceStatusField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetCountdownTimer: // NumericModifier, Duration
-        switch ( argsLeft ) {
-        case 2: goto ParseActionNumericModifierField; break;
-        case 1: goto ParseActionDurationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetDeaths: // Player, Unit, NumericModifier, Amount
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionNumericModifierField; break;
-        case 1: goto ParseActionAmountField; break;
-        }
-    case Chk::Action::VirtualType::SetDoodadState:   // Player, Unit, Location, StateMod
-    case Chk::Action::VirtualType::SetInvincibility: // Player, Unit, Location, StateMod
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField; break;
-        case 3: goto ParseActionUnitField; break;
-        case 2: goto ParseActionLocationField; break;
-        case 1: goto ParseActionStateModifierField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetResources: // Player, NumericModifier, Amount, ResourceType
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField     ; break;
-        case 3: goto ParseActionNumericModifierField; break;
-        case 2: goto ParseActionAmountField         ; break;
-        case 1: goto ParseActionResourceTypeField   ; break;
-        }
-    case Chk::Action::VirtualType::SetScore: // Player, NumericModifier, Amount, ScoreType
-        switch ( argsLeft ) {
-        case 4: goto ParseActionFirstGroupField     ; break;
-        case 3: goto ParseActionNumericModifierField; break;
-        case 2: goto ParseActionAmountField         ; break;
-        case 1: goto ParseActionScoreTypeField      ; break;
-        }
-        break;
-    case Chk::Action::VirtualType::SetSwitch: // Switch, SwitchMod
-        switch ( argsLeft ) {
-        case 2: goto ParseActionSwitchField; break;
-        case 1: goto ParseActionSwitchModifierField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::TalkingPortrait: // Unit, Duration
-        switch ( argsLeft ) {
-        case 2: goto ParseActionUnitField    ; break;
-        case 1: goto ParseActionDurationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::Transmission: // TextFlags, String, Unit, Location, NumericModifier, SecondAmount, Wav, Duration
-        switch ( argsLeft ) {
-        case 8: goto ParseActionTextFlagField; break;
-        case 7: goto ParseActionTextField; break;
-        case 6: goto ParseActionUnitField; break;
-        case 5: goto ParseActionLocationField; break;
-        case 4: goto ParseActionNumericModifierField; break;
-        case 3: goto ParseActionAmountField; break;
-        case 2: goto ParseActionWavField; break;
-        case 1: goto ParseActionDurationField; break;
-        }
-        break;
-    case Chk::Action::VirtualType::Wait: // Duration
-        if ( argsLeft == 1 ) goto ParseActionDurationField;
-        break;
+        case Chk::Action::ArgType::Location:
+            returnMsg( ParseLocationName(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
+                ParseLong(textPtr, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
+                "Expected: Location name or 4-byte locationNum" );
+        case Chk::Action::ArgType::String:
+            returnMsg( zzParseString(text, currAction.stringId, pos, end) ||
+                ParseLong(textPtr, currAction.stringId, pos, end),
+                "Expected: String or stringNum" );
+        case Chk::Action::ArgType::Player:
+            returnMsg( ParsePlayer(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
+                ParseLong(textPtr, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
+                "Expected: Group name or 4-byte groupID" );
+        case Chk::Action::ArgType::Unit:
+            returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
+                ParseShort(textPtr, (u16 &)currAction.type, pos, end),
+                "Expected: Unit name or 2-byte unitID" );
+        case Chk::Action::ArgType::NumUnits:
+            returnMsg( ParseSpecialUnitAmount(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: 1-byte number" );
+        case Chk::Action::ArgType::CUWP:
+        case Chk::Action::ArgType::Percent:
+        case Chk::Action::ArgType::Amount:
+            returnMsg( ParseLong(textPtr, currAction.number, pos, end),
+                "Expected: 4-byte number" );
+        case Chk::Action::ArgType::ScoreType:
+            returnMsg( ParseScoreType(text, currAction.type, pos, end) ||
+                ParseShort(textPtr, currAction.type, pos, end),
+                "Expected: Score type or 1-byte scoreID" );
+        case Chk::Action::ArgType::ResourceType:
+            returnMsg( ParseResourceType(text, currAction.type, pos, end) ||
+                ParseShort(textPtr, currAction.type, pos, end),
+                "Expected: Resource type or 2-byte number" );
+        case Chk::Action::ArgType::StateMod:
+            returnMsg( ParseStateMod(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: State modifier or 1-byte number" );
+        case Chk::Action::ArgType::Order:
+            returnMsg ( ParseOrder(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: Order or 1-byte number" );
+        case Chk::Action::ArgType::Sound:
+            returnMsg( ParseWavName(text, currAction.soundStringId, pos, end) ||
+                ParseLong(textPtr, currAction.soundStringId, pos, end),
+                "Expected: Wav name or 4-byte wavID" );
+        case Chk::Action::ArgType::Duration:
+            returnMsg( ParseLong(textPtr, currAction.time, pos, end),
+                "Expected: 4-byte duration" );
+        case Chk::Action::ArgType::Script:
+            returnMsg ( ParseScript(text, currAction.number, pos, end) ||
+                ParseLong(textPtr, currAction.number, pos, end),
+                "Expected: Script name or 4-byte script num" );
+        case Chk::Action::ArgType::AllyState:
+            returnMsg( ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
+                ParseShort(textPtr, currAction.type, pos, end),
+                "Expected: Alliance status or 2-byte number" );
+        case Chk::Action::ArgType::NumericMod:
+            returnMsg( ParseNumericModifier(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: Numeric modifier or 1-byte number" );
+        case Chk::Action::ArgType::Switch:
+            returnMsg ( ParseSwitch(text, currAction.number, pos, end) ||
+                ParseLong(textPtr, currAction.number, pos, end),
+                "Expected: Switch name or 4-byte number" );
+        case Chk::Action::ArgType::SwitchMod:
+            returnMsg ( ParseSwitchMod(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: Switch modifier or 1-byte number" );
+        case Chk::Action::ArgType::ActionType:
+            returnMsg( ParseByte(textPtr, (u8 &)currAction.actionType, pos, end),
+                "Expected: 1-byte actionID" );
+        case Chk::Action::ArgType::TextFlags:
+        case Chk::Action::ArgType::Flags:
+            returnMsg( ParseTextDisplayFlag(textPtr, currAction.flags, pos, end) ||
+                ParseByte(textPtr, currAction.flags, pos, end),
+                "Expected: Always display text flags or 1-byte flag data" );
+        case Chk::Action::ArgType::Number: // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+            returnMsg( ParsePlayer(text, currAction.number, pos, end) ||
+                ParseLocationName(text, currAction.number, pos, end) ||
+                ParseScript(text, currAction.number, pos, end) ||
+                ParseSwitch(text, currAction.number, pos, end) ||
+                ParseLong(textPtr, currAction.number, pos, end),
+                "Expected: Group, location, script, switch, or 4-byte number" );
+        case Chk::Action::ArgType::TypeIndex: // Unit, ScoreType, ResourceType, AllianceStatus
+            returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
+                ParseScoreType(text, currAction.type, pos, end) ||
+                ParseResourceType(text, currAction.type, pos, end) ||
+                ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
+                ParseShort(textPtr, currAction.type, pos, end),
+                "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
+        case Chk::Action::ArgType::SecondaryTypeIndex: // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+            returnMsg( ParseSwitchMod(textPtr, currAction.type2, pos, end) ||
+                ParseOrder(textPtr, currAction.type2, pos, end) ||
+                ParseNumericModifier(textPtr, currAction.type2, pos, end) ||
+                ParseStateMod(textPtr, currAction.type2, pos, end) ||
+                ParseByte(textPtr, currAction.type2, pos, end),
+                "Expected: Switch modifier, order, numeric modifier, state modifier, or 1-byte number" );
+        case Chk::Action::ArgType::Padding:
+            returnMsg( ParseByte(textPtr, currAction.padding, pos, end),
+                "Expected: 1-byte padding" );
+        case Chk::Action::ArgType::MaskFlag:
+            returnMsg( ParseShort(textPtr, (u16 &)currAction.maskFlag, pos, end),
+                "Expected: 2-byte mask flag" );
+        case Chk::Action::ArgType::MemoryOffset:
+            returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currAction.group, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && ParseLong(textPtr, currAction.group, pos, end)),
+                (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
     }
-
-    CHKD_ERR("INTERNAL ERROR: Invalid args left or argument unhandled, report this");
+    CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return false;
-
-ParseActionLocationField: // 4 bytes
-    returnMsg( ParseLocationName(text, currAction.locationId, pos, end) ||
-        ParseLong(textPtr, currAction.locationId, pos, end),
-        "Expected: Location name or 4-byte locationNum" );
-
-ParseActionTextField: // 4 bytes
-    returnMsg( zzParseString(text, currAction.stringId, pos, end) ||
-        ParseLong(textPtr, currAction.stringId, pos, end),
-        "Expected: String or stringNum" );
-
-ParseActionWavField: // 4 bytes
-    returnMsg( ParseWavName(text, currAction.soundStringId, pos, end) ||
-        ParseLong(textPtr, currAction.soundStringId, pos, end),
-        "Expected: Wav name or 4-byte wavID" );
-
-ParseActionDurationField: // 4 bytes
-    returnMsg( ParseLong(textPtr, currAction.time, pos, end),
-        "Expected: 4-byte duration" );
-
-ParseActionFirstGroupField: // 4 bytes
-    returnMsg( ParsePlayer(text, currAction.group, pos, end) ||
-        ParseLong(textPtr, currAction.group, pos, end),
-        "Expected: Group name or 4-byte groupID" );
-
-ParseActionNumberField: // 4 bytes
-    returnMsg( ParsePlayer(text, currAction.number, pos, end) ||
-        ParseLocationName(text, currAction.number, pos, end) ||
-        ParseScript(text, currAction.number, pos, end) ||
-        ParseSwitch(text, currAction.number, pos, end) ||
-        ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: Group, location, script, switch, or 4-byte number" );
-
-ParseActionSecondGroupField: // 4 bytes
-    returnMsg( ParsePlayer(text, currAction.number, pos, end) ||
-        ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: Group name or 4-byte number" );
-
-ParseActionSecondLocationField: // 4 bytes
-    returnMsg( ParseLocationName(text, currAction.number, pos, end) ||
-        ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: Location name or 4-byte number" );
-
-ParseActionScriptField: // 4 bytes
-    returnMsg ( ParseScript(text, currAction.number, pos, end) ||
-        ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: Script name or 4-byte script num" );
-
-ParseActionSwitchField: // 4 bytes
-    returnMsg ( ParseSwitch(text, currAction.number, pos, end) ||
-        ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: Switch name or 4-byte number" );
-
-ParseActionAmountField: // 4 bytes
-    returnMsg( ParseLong(textPtr, currAction.number, pos, end),
-        "Expected: 4-byte number" );
-
-ParseActionTypeIndexField: // 2 bytes
-    returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
-        ParseScoreType(text, currAction.type, pos, end) ||
-        ParseResourceType(text, currAction.type, pos, end) ||
-        ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
-        ParseShort(textPtr, currAction.type, pos, end),
-        "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
-
-ParseActionUnitField: // 2 bytes
-    returnMsg( ParseUnitName(text, (Sc::Unit::Type &)currAction.type, pos, end) ||
-        ParseShort(textPtr, (u16 &)currAction.type, pos, end),
-        "Expected: Unit name or 2-byte unitID" );
-
-ParseActionScoreTypeField: // 2 bytes
-    returnMsg( ParseScoreType(text, currAction.type, pos, end) ||
-        ParseShort(textPtr, currAction.type, pos, end),
-        "Expected: Score type or 1-byte scoreID" );
-
-ParseActionResourceTypeField:
-    returnMsg( ParseResourceType(text, currAction.type, pos, end) ||
-        ParseShort(textPtr, currAction.type, pos, end),
-        "Expected: Resource type or 2-byte number" );
-
-ParseActionAllianceStatusField:
-    returnMsg( ParseAllianceStatus(textPtr, currAction.type, pos, end) ||
-        ParseShort(textPtr, currAction.type, pos, end),
-        "Expected: Alliance status or 2-byte number" );
-
-ParseActionActionField: // 1 byte, only used by custom
-    returnMsg( ParseByte(textPtr, (u8 &)currAction.actionType, pos, end),
-        "Expected: 1-byte actionID" );
-
-ParseActionTypeIndexField2: // 1 byte
-    returnMsg( ParseSwitchMod(textPtr, currAction.type2, pos, end) ||
-        ParseOrder(textPtr, currAction.type2, pos, end) ||
-        ParseNumericModifier(textPtr, currAction.type2, pos, end) ||
-        ParseStateMod(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: Switch modifier, order, numeric modifier, state modifier, or 1-byte number" );
-
-ParseActionSwitchModifierField: // 1 byte
-    returnMsg ( ParseSwitchMod(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: Switch modifier or 1-byte number" );
-
-ParseActionOrderField:
-    returnMsg ( ParseOrder(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: Order or 1-byte number" );
-
-ParseActionNumericModifierField: // 1 byte
-    returnMsg( ParseNumericModifier(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: Numeric modifier or 1-byte number" );
-
-ParseActionStateModifierField: // 1 byte
-    returnMsg( ParseStateMod(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: State modifier or 1-byte number" );
-
-ParseActionNumUnitsField: // 1 byte
-    returnMsg( ParseSpecialUnitAmount(textPtr, currAction.type2, pos, end) ||
-        ParseByte(textPtr, currAction.type2, pos, end),
-        "Expected: 1-byte number" );
-
-ParseActionFlagsField: // 1 byte
-    returnMsg( ParseTextDisplayFlag(textPtr, currAction.flags, pos, end) ||
-        ParseByte(textPtr, currAction.flags, pos, end),
-        "Expected: Always display text flags or 1-byte flag data" );
-
-ParseActionTextFlagField: // 1 byte
-    returnMsg( ParseTextDisplayFlag(textPtr, currAction.flags, pos, end) ||
-        ParseByte(textPtr, currAction.flags, pos, end),
-        "Expected: Always display text flags or 1-byte flag data" );
-
-ParseActionInternalDataField: // 3 bytes
-    returnMsg( ParseShort(textPtr, (u16 &)currAction.maskFlag, pos, end),
-        "Expected: 2-byte mask flag" );
-
-ParseActionDeathOffsetField: // 4 bytes
-    returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currAction.group, pos, end, deathTableOffset) ||
-        !useAddressesForMemory && ParseLong(textPtr, currAction.group, pos, end)),
-        (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
 }
 
 bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags)

@@ -25,7 +25,6 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void RedrawThis();
 
     protected:
-        void InitializeArgMaps(); // Gives default values to all the argMaps
         void InitializeScriptTable();
         void CreateSubWindows(HWND hWnd);
         void OnLeave();
@@ -47,7 +46,6 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         bool isPasting;
 
         std::hash<std::string> strHash; // A hasher to help generate tables
-        std::vector<u8> actionArgMaps[60];
         std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
         Suggestions & suggestions;
@@ -96,9 +94,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void SuggestNumericMod();
         void SuggestSwitch();
         void SuggestSwitchMod();
-        void SuggestType();
         void SuggestActionType();
-        void SuggestSecondaryType();
         void SuggestFlags();
         void SuggestNumber(); // Amount, Group2, LocDest, UnitPropNum, ScriptNum
         void SuggestTypeIndex(); // Unit, ScoreType, ResourceType, AllianceStatus

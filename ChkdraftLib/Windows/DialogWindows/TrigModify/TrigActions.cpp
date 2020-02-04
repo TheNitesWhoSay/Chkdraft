@@ -18,7 +18,7 @@ enum_t(Id, u32, {
 TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
     suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
 {
-    InitializeArgMaps();
+
 }
 
 TrigActionsWindow::~TrigActionsWindow()
@@ -67,20 +67,20 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
             Chk::Action & action = trig->action(y);
             if ( action.actionType > Chk::Action::Type::NoAction && action.actionType <= Chk::Action::Type::LastAction )
             {
-                u8 numArgs = u8(actionArgMaps[action.actionType].size());
-                if ( numArgs > 8 )
-                    numArgs = 8;
-
                 gridActions.item(1, y).SetText(ttg.GetActionName(action.actionType));
-                for ( u8 x = 0; x<numArgs; x++ )
+                for ( u8 x = 0; x<Chk::Action::MaxArguments; x++ )
                 {
-                    gridActions.item(x + 2, y).SetDisabled(false);
-                    gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, x, actionArgMaps[action.actionType]));
-                }
-                for ( u8 x = numArgs; x < 8; x++ )
-                {
-                    gridActions.item(x + 2, y).SetText("");
-                    gridActions.item(x + 2, y).SetDisabled(true);
+                    Chk::Action::Argument argument = Chk::Action::getClassicArg(action.actionType, x);
+                    if ( argument.type != Chk::Action::ArgType::NoType )
+                    {
+                        gridActions.item(x + 2, y).SetDisabled(false);
+                        gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, argument));
+                    }
+                    else
+                    {
+                        gridActions.item(x + 2, y).SetText("");
+                        gridActions.item(x + 2, y).SetDisabled(true);
+                    }
                 }
 
                 gridActions.SetEnabledCheck(y, !action.isDisabled());
@@ -257,109 +257,6 @@ void TrigActionsWindow::RedrawThis()
     gridActions.RedrawThis();
 }
 
-void TrigActionsWindow::InitializeArgMaps()
-{
-    #define ADD_ARRAY(anArray, vector)                      \
-        for ( u8 i=0; i<sizeof(anArray)/sizeof(u8); i++ )   \
-            vector.push_back(anArray[i]);
-
-    u8 centerView[] = { 0 };
-    u8 comment[] = { 0 };
-    u8 createUnits[] = { 2, 1, 3, 0 };
-    u8 createUnitsWithProperties[] = { 2, 1, 3, 0, 4 };
-    u8 displayTextMessage[] = { 1 };
-    u8 giveUnitsToPlayer[] = { 3, 2, 0, 4, 1 };
-    u8 killUnit[] = { 1, 0 };
-    u8 killUnitsAtLocation[] = { 2, 1, 0, 3 };
-    u8 leaderboardCtrlAtLoc[] = { 1, 2, 0 };
-    u8 leaderboardCtrl[] = { 1, 0 };
-    u8 leaderboardGreed[] = { 0 };
-    u8 leaderboardKills[] = { 1, 0 };
-    u8 leaderboardPoints[] = { 1, 0 };
-    u8 leaderboardResources[] = { 1, 0 };
-    u8 leaderboardGoalCtrlAtLoc[] = { 2, 1, 3, 0 };
-    u8 leaderboardGoalCtrl[] = { 2, 1, 0 };
-    u8 leaderboardGoalKills[] = { 2, 1, 0 };
-    u8 leaderboardGoalPoints[] = { 2, 1, 0 };
-    u8 leaderboardGoalResources[] = { 1, 2, 0 };
-    u8 leaderboardCompPlayers[] = { 0 };
-    u8 minimapPing[] = { 0 };
-    u8 modifyUnitEnergy[] = { 3, 1, 0, 4, 2 };
-    u8 modifyUnitHangerCount[] = { 2, 3, 1, 4, 0 };
-    u8 modifyUnitHitPoints[] = { 3, 1, 0, 4, 2 };
-    u8 modifyUnitResourceAmount[] = { 2, 0, 3, 1 };
-    u8 modifyUnitShieldPoints[] = { 3, 1, 0, 4, 2 };
-    u8 moveLocation[] = { 3, 1, 0, 2 };
-    u8 moveUnits[] = { 2, 1, 0, 3, 4 };
-    u8 order[] = { 1, 0, 2, 4, 3 };
-    u8 playWav[] = { 0 };
-    u8 removeUnit[] = { 1, 0 };
-    u8 removeUnitsAtLocation[] = { 2, 1, 0, 3 };
-    u8 runAiScript[] = { 0 };
-    u8 runAiScriptAtLocation[] = { 0, 1 };
-    u8 setAllianceStatus[] = { 0, 1 };
-    u8 setCountdownTimer[] = { 0, 1 };
-    u8 setDeaths[] = { 0, 2, 3, 1 };
-    u8 setDoodadState[] = { 3, 1, 0, 2 };
-    u8 setInvincibility[] = { 3, 1, 0, 2 };
-    u8 setMissionObjectives[] = { 0 };
-    u8 setNextScenario[] = { 0 };
-    u8 setResources[] = { 0, 1, 2, 3 };
-    u8 setScore[] = { 0, 1, 2, 3 };
-    u8 setSwitch[] = { 1, 0 };
-    u8 talkingPortrait[] = { 0, 1 };
-    u8 transmission[] = { 2, 3, 6, 4, 5, 1 };
-    u8 wait[] = { 0 };
-
-    ADD_ARRAY(centerView, actionArgMaps[10]);
-    ADD_ARRAY(comment, actionArgMaps[47]);
-    ADD_ARRAY(createUnits, actionArgMaps[44]);
-    ADD_ARRAY(createUnitsWithProperties, actionArgMaps[11]);
-    ADD_ARRAY(displayTextMessage, actionArgMaps[9]);
-    ADD_ARRAY(giveUnitsToPlayer, actionArgMaps[48]);
-    ADD_ARRAY(killUnit, actionArgMaps[22]);
-    ADD_ARRAY(killUnitsAtLocation, actionArgMaps[23]);
-    ADD_ARRAY(leaderboardCtrlAtLoc, actionArgMaps[18]);
-    ADD_ARRAY(leaderboardCtrl, actionArgMaps[17]);
-    ADD_ARRAY(leaderboardGreed, actionArgMaps[40]);
-    ADD_ARRAY(leaderboardKills, actionArgMaps[20]);
-    ADD_ARRAY(leaderboardPoints, actionArgMaps[21]);
-    ADD_ARRAY(leaderboardResources, actionArgMaps[19]);
-    ADD_ARRAY(leaderboardGoalCtrlAtLoc, actionArgMaps[34]);
-    ADD_ARRAY(leaderboardGoalCtrl, actionArgMaps[33]);
-    ADD_ARRAY(leaderboardGoalKills, actionArgMaps[36]);
-    ADD_ARRAY(leaderboardGoalPoints, actionArgMaps[37]);
-    ADD_ARRAY(leaderboardGoalResources, actionArgMaps[35]);
-    ADD_ARRAY(leaderboardCompPlayers, actionArgMaps[32]);
-    ADD_ARRAY(minimapPing, actionArgMaps[28]);
-    ADD_ARRAY(modifyUnitEnergy, actionArgMaps[50]);
-    ADD_ARRAY(modifyUnitHangerCount, actionArgMaps[53]);
-    ADD_ARRAY(modifyUnitHitPoints, actionArgMaps[49]);
-    ADD_ARRAY(modifyUnitResourceAmount, actionArgMaps[52]);
-    ADD_ARRAY(modifyUnitShieldPoints, actionArgMaps[51]);
-    ADD_ARRAY(moveLocation, actionArgMaps[38]);
-    ADD_ARRAY(moveUnits, actionArgMaps[39]);
-    ADD_ARRAY(order, actionArgMaps[46]);
-    ADD_ARRAY(playWav, actionArgMaps[8]);
-    ADD_ARRAY(removeUnit, actionArgMaps[24]);
-    ADD_ARRAY(removeUnitsAtLocation, actionArgMaps[25]);
-    ADD_ARRAY(runAiScript, actionArgMaps[15]);
-    ADD_ARRAY(runAiScriptAtLocation, actionArgMaps[16]);
-    ADD_ARRAY(setAllianceStatus, actionArgMaps[57]);
-    ADD_ARRAY(setCountdownTimer, actionArgMaps[14]);
-    ADD_ARRAY(setDeaths, actionArgMaps[45]);
-    ADD_ARRAY(setDoodadState, actionArgMaps[42]);
-    ADD_ARRAY(setInvincibility, actionArgMaps[43]);
-    ADD_ARRAY(setMissionObjectives, actionArgMaps[12]);
-    ADD_ARRAY(setNextScenario, actionArgMaps[41]);
-    ADD_ARRAY(setResources, actionArgMaps[26]);
-    ADD_ARRAY(setScore, actionArgMaps[27]);
-    ADD_ARRAY(setSwitch, actionArgMaps[13]);
-    ADD_ARRAY(talkingPortrait, actionArgMaps[29]);
-    ADD_ARRAY(transmission, actionArgMaps[7]);
-    ADD_ARRAY(wait, actionArgMaps[4]);
-}
-
 void TrigActionsWindow::InitializeScriptTable()
 {
     size_t numScripts = chkd.scData.ai.numEntries();
@@ -495,10 +392,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     if ( trig != nullptr )
     {
         Chk::Action & action = trig->action(actionNum);
-        if ( action.actionType < Chk::Action::NumActionTypes && argNum < actionArgMaps[action.actionType].size() )
+        if ( action.actionType < Chk::Action::NumActionTypes )
         {
-            u8 textTrigArgNum = actionArgMaps[action.actionType][argNum];
-            Chk::Action::ArgType argType = action.getClassicArgType(action.actionType, textTrigArgNum);
+            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
             SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
             SingleLineChkdString chkdNewText = ChkdString(newText);
 
@@ -545,11 +441,11 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 }
                 else
                 {
-                    std::vector<u8> & argMap = actionArgMaps[trig->action(actionNum).actionType];
+                    Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
+                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData)) ||
                         (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                            ttc.ParseActionArg(rawSuggestText, argNum, argMap, action, CM, chkd.scData));
+                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData));
                 }
 
                 if ( newScriptNum != 0 )
@@ -560,11 +456,11 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             }
             else
             {
-                std::vector<u8> & argMap = actionArgMaps[trig->action(actionNum).actionType];
+                Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.ParseActionArg(rawUpdateText, argNum, argMap, action, CM, chkd.scData)) ||
+                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData)) ||
                     (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.ParseActionArg(rawSuggestText, argNum, argMap, action, CM, chkd.scData));
+                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData));
             }
 
             if ( madeChange )
@@ -995,20 +891,10 @@ void TrigActionsWindow::SuggestSwitchMod()
     suggestions.Show();
 }
 
-void TrigActionsWindow::SuggestType()
-{
-
-}
-
 void TrigActionsWindow::SuggestActionType()
 {
     suggestions.AddStrings(triggerActions);
     suggestions.Show();
-}
-
-void TrigActionsWindow::SuggestSecondaryType()
-{
-
 }
 
 void TrigActionsWindow::SuggestFlags()
@@ -1060,11 +946,9 @@ void TrigActionsWindow::ButtonEditString()
             Chk::Action & action = trig->action((u8)focusedY);
             Chk::Action::Type actionType = action.actionType;
 
-            std::vector<u8> & argMap = actionArgMaps[actionType];
-            u8 numArgs = (u8)actionArgMaps[actionType].size();
-            for ( u8 i = 0; i < numArgs; i++ )
+            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
             {
-                Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
                 if ( argType == Chk::Action::ArgType::String )
                 {
                     size_t stringId = CM->strings.addString<ChkdString>(str);
@@ -1105,11 +989,9 @@ void TrigActionsWindow::ButtonEditWav()
             Chk::Action & action = trig->action((u8)focusedY);
             Chk::Action::Type actionType = action.actionType;
 
-            std::vector<u8> & argMap = actionArgMaps[(size_t)actionType];
-            u8 numArgs = (u8)actionArgMaps[(size_t)actionType].size();
-            for ( u8 i = 0; i < numArgs; i++ )
+            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
             {
-                Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
 
                 if ( argType == Chk::Action::ArgType::Sound )
                 {
@@ -1172,11 +1054,8 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
         else if ( gridItemX > 1 ) // Action Arg
         {
             u8 actionArgNum = (u8)gridItemX - 2;
-            if ( action.actionType < Chk::Action::NumActionTypes && actionArgMaps[action.actionType].size() > actionArgNum )
-            {
-                u8 textTrigArgNum = actionArgMaps[action.actionType][actionArgNum];
-                argType = action.getClassicArgType(action.actionType, textTrigArgNum);
-            }
+            if ( action.actionType < Chk::Action::NumActionTypes  )
+                argType = Chk::Action::getClassicArgType(action.actionType, actionArgNum);
         }
 
         if ( argType != Chk::Action::ArgType::NoType )
@@ -1210,9 +1089,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
             case Chk::Action::ArgType::NumericMod: SuggestNumericMod(); break;
             case Chk::Action::ArgType::Switch: SuggestSwitch(); break;
             case Chk::Action::ArgType::SwitchMod: SuggestSwitchMod(); break;
-            case Chk::Action::ArgType::Type: SuggestType(); break;
             case Chk::Action::ArgType::ActionType: SuggestActionType(); break;
-            case Chk::Action::ArgType::SecondaryType: SuggestSecondaryType(); break;
             case Chk::Action::ArgType::Flags: SuggestFlags(); break;
             case Chk::Action::ArgType::Number: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
             case Chk::Action::ArgType::TypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
@@ -1234,18 +1111,16 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
         {
             bool includesString = false, includesWav = false;
             bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
-            std::vector<u8> & argMap = actionArgMaps[actionType];
-            u8 numArgs = (u8)actionArgMaps[actionType].size();
-            for ( u8 i = 0; i < numArgs; i++ )
+            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
             {
-                Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
                 if ( argType == Chk::Action::ArgType::String )
                     includesString = true;
             }
 
-            for ( u8 i = 0; i < numArgs; i++ )
+            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
             {
-                Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
                 if ( argType == Chk::Action::ArgType::Sound )
                     includesWav = true;
             }
@@ -1292,12 +1167,9 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
     {
         Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
-
-        std::vector<u8> & argMap = actionArgMaps[actionType];
-        u8 numArgs = (u8)actionArgMaps[actionType].size();
-        for ( u8 i = 0; i < numArgs; i++ )
+        for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
-            Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
             {
                 ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);
@@ -1317,12 +1189,9 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
     {
         Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
-
-        std::vector<u8> & argMap = actionArgMaps[actionType];
-        u8 numArgs = (u8)actionArgMaps[actionType].size();
-        for ( u8 i = 0; i < numArgs; i++ )
+        for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
-            Chk::Action::ArgType argType = action.getClassicArgType(actionType, argMap[i]);
+            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
             {
                 ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);

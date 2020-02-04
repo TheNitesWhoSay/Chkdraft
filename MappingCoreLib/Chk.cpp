@@ -1,6 +1,6 @@
 #include "Chk.h"
 
-Chk::Condition::Argument noCndArg = { Chk::Condition::ArgType::NoType, Chk::Condition::ArgField::NoField };
+Chk::Condition::Argument Chk::Condition::noArg = { Chk::Condition::ArgType::NoType, Chk::Condition::ArgField::NoField };
 Chk::Condition::Argument amountCndArg = { Chk::Condition::ArgType::Amount, Chk::Condition::ArgField::Amount };
 Chk::Condition::Argument numericComparisonCndArg = { Chk::Condition::ArgType::NumericComparison, Chk::Condition::ArgField::Comparison };
 Chk::Condition::Argument switchStateCndArg = { Chk::Condition::ArgType::SwitchState, Chk::Condition::ArgField::Comparison };
@@ -133,7 +133,7 @@ std::unordered_map<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition
         Chk::Condition::VirtualType::Memory, { Chk::Condition::VirtualType::Deaths, { memoryOffsetCndArg, numericComparisonCndArg, amountCndArg } } )
 };
 
-Chk::Action::Argument noArg = { Chk::Action::ArgType::NoType, Chk::Action::ArgField::NoField };
+Chk::Action::Argument Chk::Action::noArg = { Chk::Action::ArgType::NoType, Chk::Action::ArgField::NoField };
 Chk::Action::Argument amountArg = { Chk::Action::ArgType::Amount, Chk::Action::ArgField::Number };
 Chk::Action::Argument percentArg = { Chk::Action::ArgType::Percent, Chk::Action::ArgField::Number };
 Chk::Action::Argument durationArg = { Chk::Action::ArgType::Duration, Chk::Action::ArgField::Time };
@@ -356,46 +356,178 @@ u8 Chk::Action::defaultFlags[NumActionTypes] = {
     /** 59 = Enable Debug Mode                      */ 0
 };
 
-Chk::Condition::ArgType Chk::Condition::getClassicArgType(Type conditionType, size_t argNum)
+Chk::Condition::Argument Chk::Condition::getClassicArg(Type conditionType, size_t argIndex)
 {
-    if ( conditionType < NumConditionTypes && argNum < MaxArguments )
-        return classicArguments[conditionType][argNum].type;
+    if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
+        return classicArguments[conditionType][argIndex];
+    else
+        return Chk::Condition::noArg;
+}
+
+Chk::Condition::Argument Chk::Condition::getClassicArg(VirtualType conditionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)conditionType < NumConditionTypes )
+            return classicArguments[conditionType][argIndex];
+
+        auto virtualCondition = virtualConditions.find(conditionType);
+        if ( virtualCondition != virtualConditions.end() )
+            return virtualCondition->second.arguments[argIndex];
+    }
+    return Chk::Condition::noArg;
+}
+
+Chk::Condition::ArgType Chk::Condition::getClassicArgType(Type conditionType, size_t argIndex)
+{
+    if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
+        return classicArguments[conditionType][argIndex].type;
     else
         return Chk::Condition::ArgType::NoType;
 }
 
-Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionType, size_t argNum)
+Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionType, size_t argIndex)
 {
-    if ( argNum < MaxArguments )
+    if ( argIndex < MaxArguments )
     {
         if ( (size_t)conditionType < NumConditionTypes )
-            return classicArguments[conditionType][argNum].type;
+            return classicArguments[conditionType][argIndex].type;
 
         auto virtualCondition = virtualConditions.find(conditionType);
         if ( virtualCondition != virtualConditions.end() )
-            return virtualCondition->second.arguments[argNum].type;
+            return virtualCondition->second.arguments[argIndex].type;
     }
     return Chk::Condition::ArgType::NoType;
 }
 
-Chk::Action::ArgType Chk::Action::getClassicArgType(Type actionType, size_t argNum)
+Chk::Condition::Argument Chk::Condition::getTextArg(Type conditionType, size_t argIndex)
 {
-    if ( actionType < NumActionTypes && argNum < MaxArguments )
-        return classicArguments[actionType][argNum].type;
+    if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
+        return textArguments[conditionType][argIndex];
+    else
+        return Chk::Condition::noArg;
+}
+
+Chk::Condition::Argument Chk::Condition::getTextArg(VirtualType conditionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)conditionType < NumConditionTypes )
+            return textArguments[conditionType][argIndex];
+
+        auto virtualCondition = virtualConditions.find(conditionType);
+        if ( virtualCondition != virtualConditions.end() )
+            return virtualCondition->second.arguments[argIndex];
+    }
+    return Chk::Condition::noArg;
+}
+
+Chk::Condition::ArgType Chk::Condition::getTextArgType(Type conditionType, size_t argIndex)
+{
+    if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
+        return textArguments[conditionType][argIndex].type;
+    else
+        return Chk::Condition::ArgType::NoType;
+}
+
+Chk::Condition::ArgType Chk::Condition::getTextArgType(VirtualType conditionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)conditionType < NumConditionTypes )
+            return textArguments[conditionType][argIndex].type;
+
+        auto virtualCondition = virtualConditions.find(conditionType);
+        if ( virtualCondition != virtualConditions.end() )
+            return virtualCondition->second.arguments[argIndex].type;
+    }
+    return Chk::Condition::ArgType::NoType;
+}
+
+Chk::Action::Argument Chk::Action::getClassicArg(Type actionType, size_t argIndex)
+{
+    if ( actionType < NumActionTypes && argIndex < MaxArguments )
+        return classicArguments[actionType][argIndex];
+    else
+        return Chk::Action::noArg;
+}
+
+Chk::Action::Argument Chk::Action::getClassicArg(VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumActionTypes )
+            return classicArguments[actionType][argIndex];
+
+        auto virtualAction = virtualActions.find(actionType);
+        if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex];
+    }
+    return Chk::Action::noArg;
+}
+
+Chk::Action::ArgType Chk::Action::getClassicArgType(Type actionType, size_t argIndex)
+{
+    if ( actionType < NumActionTypes && argIndex < MaxArguments )
+        return classicArguments[actionType][argIndex].type;
     else
         return Chk::Action::ArgType::NoType;
 }
 
-Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size_t argNum)
+Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size_t argIndex)
 {
-    if ( argNum < MaxArguments )
+    if ( argIndex < MaxArguments )
     {
         if ( (size_t)actionType < NumActionTypes )
-            return classicArguments[actionType][argNum].type;
+            return classicArguments[actionType][argIndex].type;
 
         auto virtualAction = virtualActions.find(actionType);
         if ( virtualAction != virtualActions.end() )
-            return virtualAction->second.arguments[argNum].type;
+            return virtualAction->second.arguments[argIndex].type;
+    }
+    return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::Argument Chk::Action::getTextArg(Type actionType, size_t argIndex)
+{
+    if ( actionType < NumActionTypes && argIndex < MaxArguments )
+        return textArguments[actionType][argIndex];
+    else
+        return Chk::Action::noArg;
+}
+
+Chk::Action::Argument Chk::Action::getTextArg(VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumActionTypes )
+            return textArguments[actionType][argIndex];
+
+        auto virtualAction = virtualActions.find(actionType);
+        if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex];
+    }
+    return Chk::Action::noArg;
+}
+
+Chk::Action::ArgType Chk::Action::getTextArgType(Type actionType, size_t argIndex)
+{
+    if ( actionType < NumActionTypes && argIndex < MaxArguments )
+        return textArguments[actionType][argIndex].type;
+    else
+        return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getTextArgType(VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumActionTypes )
+            return textArguments[actionType][argIndex].type;
+
+        auto virtualAction = virtualActions.find(actionType);
+        if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex].type;
     }
     return Chk::Action::ArgType::NoType;
 }
