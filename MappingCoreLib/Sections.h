@@ -634,7 +634,7 @@ class MaskSection : public DynamicSection<true>
 class StrSection : public DynamicSection<false>
 {
     public:
-        static StrSectionPtr GetDefault();
+        static StrSectionPtr GetDefault(bool blank = false);
         StrSection();
         virtual ~StrSection();
 

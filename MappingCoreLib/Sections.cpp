@@ -2131,24 +2131,27 @@ void MaskSection::write(std::ostream & os, ScenarioSaver &)
     os.write((const char*)&fogTiles[0], std::streamsize(fogTiles.size()));
 }
 
-StrSectionPtr StrSection::GetDefault()
+StrSectionPtr StrSection::GetDefault(bool blank)
 {
     StrSectionPtr newSection(new (std::nothrow) StrSection());
 
-    const std::vector<std::string> defaultStrings = {
-        /* StringId: 1 */ "Untitled Scenario",
-        /* StringId: 2 */ "Destroy all enemy buildings.",
-        /* StringId: 3 */ "Anywhere",
-        /* StringId: 4 */ "Force 1",
-        /* StringId: 5 */ "Force 2",
-        /* StringId: 6 */ "Force 3",
-        /* StringId: 7 */ "Force 4"
-    };
-
     newSection->strings.clear();
     newSection->strings.push_back(nullptr); // Fill the non-existant 0th stringId
-    for ( const std::string & defaultString : defaultStrings )
-        newSection->strings.push_back(ScStrPtr(new ScStr(defaultString)));
+    if ( !blank )
+    {
+        const std::vector<std::string> defaultStrings = {
+            /* StringId: 1 */ "Untitled Scenario",
+            /* StringId: 2 */ "Destroy all enemy buildings.",
+            /* StringId: 3 */ "Anywhere",
+            /* StringId: 4 */ "Force 1",
+            /* StringId: 5 */ "Force 2",
+            /* StringId: 6 */ "Force 3",
+            /* StringId: 7 */ "Force 4"
+        };
+
+        for ( const std::string & defaultString : defaultStrings )
+            newSection->strings.push_back(ScStrPtr(new ScStr(defaultString)));
+    }
 
     return newSection;
 }

@@ -1637,6 +1637,8 @@ void Strings::set(std::unordered_map<SectionName, Section> & sections)
     ostr = GetSection<OstrSection>(sections, SectionName::OSTR);
     kstr = GetSection<KstrSection>(sections, SectionName::KSTR);
 
+    if ( str == nullptr )
+        str = StrSection::GetDefault(true);
     if ( ostr == nullptr )
         ostr = OstrSection::GetDefault();
     if ( kstr == nullptr )
