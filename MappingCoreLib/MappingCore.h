@@ -12,6 +12,7 @@
 
 #include "Basics.h" // Numerous useful definitions, constants, and utility functions
 #include "sha256.h" // Provides the means to compute sha256 hashes for securing sensitive passwords or keys
+#include "StringBuffer.h" // Provides faster alternatives to std::stringstream
 
 #include "Chk.h" // Defines all static structures, constants, and enumerations specific to scenario files (.chk)
 #include "EscapeStrings.h" // Defines several string types that extend basic strings in ways useful for mapping purposes

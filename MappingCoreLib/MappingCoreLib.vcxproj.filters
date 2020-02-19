@@ -89,6 +89,9 @@
     <ClInclude Include="Chk.h">
       <Filter>Header Files\StarCraft\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="StringBuffer.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp">

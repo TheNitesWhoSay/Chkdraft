@@ -307,6 +307,7 @@
     <ClInclude Include="Sections.h" />
     <ClInclude Include="EscapeStrings.h" />
     <ClInclude Include="FileBrowser.h" />
+    <ClInclude Include="StringBuffer.h" />
     <ClInclude Include="SystemIO.h" />
     <ClInclude Include="MapFile.h" />
     <ClInclude Include="MappingCore.h" />
