@@ -6,11 +6,6 @@
 #include <string>
 #include <map>
 
-/**
-    ArgumentMap
-    argMap[i] = stdActionArgNum
-*/
-
 class TextTrigGenerator
 {
     public:

@@ -799,9 +799,10 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
             }
         }
 
-        if ( locationTable.size() == i+1 )
-            locationTable.push_back(std::to_string(i + 1));
+        if ( locationTable.size() == i )
+            locationTable.push_back(std::to_string(i));
     }
+
     return true;
 }
 
