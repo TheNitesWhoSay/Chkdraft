@@ -646,7 +646,7 @@ bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
 
 void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
         bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
         bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
@@ -669,10 +669,9 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::
                 triggers->markUsedEditorStrings(stringIdUsed); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
         }
     }
-    else if ( storageScope == Chk::Scope::Editor )
-    {
+    
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
         ostr->markUsedStrings(stringIdUsed);
-    }
 }
 
 void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)

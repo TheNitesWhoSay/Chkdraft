@@ -15,12 +15,12 @@ std::vector<std::string> numericModifiers = { "0", "1", "2", "3", "4", "5", "6",
 
 void CollapsableDefines()
 {
-#define ADD_TEXTTRIG_LOCATION(src) {                     \
+    #define ADD_TEXTTRIG_LOCATION(src) {                 \
         if ( src >= 0 && src < locationTable.size() )    \
             output += (std::string &)locationTable[src]; \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_STRING(src) {                                                                       \
+    #define ADD_TEXTTRIG_STRING(src) {                                                                   \
         if ( src == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )                       \
             output += "No String";                                                                       \
         else if ( src >= 0 && (src < stringTable.size() || (65536-src) < extendedStringTable.size() ) )  \
@@ -32,7 +32,7 @@ void CollapsableDefines()
         }                                                                                                \
         else { output += std::to_string(src); } }
     
-#define ADD_TEXTTRIG_SOUND(src) {                                                                        \
+    #define ADD_TEXTTRIG_SOUND(src) {                                                                    \
         if ( src == 0 && (stringTable.size() <= 0 || stringTable[0].size() == 0) )                       \
             output += "No WAV";                                                                          \
         else if ( src >= 0 && (src < stringTable.size() || (65536 - src) < extendedStringTable.size()) ) \
@@ -45,63 +45,63 @@ void CollapsableDefines()
         else { output += std::to_string(src); } }
 
 
-#define ADD_TEXTTRIG_PLAYER(src) {                                                  \
+    #define ADD_TEXTTRIG_PLAYER(src) {                                              \
         if ( src >= 0 && src < groupTable.size() )                                  \
             output += (std::string &)groupTable[src];                               \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_UNIT(src) {                                                    \
+    #define ADD_TEXTTRIG_UNIT(src) {                                                \
         if ( (u16)src >= 0 && (u16)src < unitTable.size() )                         \
             output += (std::string &)unitTable[(u16)src];                           \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_SWITCH(src) {                                                  \
+    #define ADD_TEXTTRIG_SWITCH(src) {                                              \
         if ( src >= 0 && src < switchTable.size() )                                 \
             output += (std::string &)switchTable[src];                              \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_SCORE_TYPE(src) {                                              \
-        if ( src >= 0 && src < sizeof(scoreTypes)/sizeof(const char*) )             \
+    #define ADD_TEXTTRIG_SCORE_TYPE(src) {                                          \
+        if ( src >= 0 && src < scoreTypes.size() )                                  \
             output += scoreTypes[src];                                              \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_RESOURCE_TYPE(src) {                                           \
-        if ( src >= 0 && src < sizeof(resourceTypes)/sizeof(const char*) )          \
+    #define ADD_TEXTTRIG_RESOURCE_TYPE(src) {                                       \
+        if ( src >= 0 && src < resourceTypes.size() )                               \
             output += resourceTypes[src];                                           \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_ORDER(src) {                                                   \
-        if ( src >= 0 && src < sizeof(orderTypes)/sizeof(const char*) )             \
+    #define ADD_TEXTTRIG_ORDER(src) {                                               \
+        if ( src >= 0 && src < orderTypes.size() )                                  \
             output += orderTypes[src];                                              \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_STATE_MODIFIER(src) {                                          \
-        if ( src >= 0 && src < sizeof(stateModifiers)/sizeof(const char*) )         \
+    #define ADD_TEXTTRIG_STATE_MODIFIER(src) {                                      \
+        if ( src >= 0 && src < stateModifiers.size() )                              \
             output += stateModifiers[src];                                          \
         else { output += std::to_string(src); } } 
 
-#define ADD_TEXTTRIG_SWITCH_STATE(src) {                                            \
-        if ( (u8)src >= 0 && (u8)src < sizeof(switchStates)/sizeof(const char*) )   \
+    #define ADD_TEXTTRIG_SWITCH_STATE(src) {                                        \
+        if ( (u8)src >= 0 && (u8)src < switchStates.size() )                        \
             output += switchStates[(u8)src];                                        \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {                                         \
-        if ( src >= 0 && src < sizeof(switchModifiers)/sizeof(const char*) )        \
+    #define ADD_TEXTTRIG_SWITCH_MODIFIER(src) {                                     \
+        if ( src >= 0 && src < switchModifiers.size() )                             \
             output += switchModifiers[src];                                         \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_ALLY_STATE(src) {                                              \
-        if ( src >= 0 && src < sizeof(allyStates)/sizeof(const char*) )             \
+    #define ADD_TEXTTRIG_ALLY_STATE(src) {                                          \
+        if ( src >= 0 && src < allyStates.size() )                                  \
             output += allyStates[src];                                              \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {                                                  \
-        if ( (u8)src >= (u8)0 && (u8)src < (u8)sizeof(numericComparisons)/sizeof(const char*) ) \
-            output += numericComparisons[(u8)src];                                              \
+    #define ADD_TEXTTRIG_NUMERIC_COMPARISON(src) {                                  \
+        if ( (u8)src >= (u8)0 && (u8)src < (u8)numericComparisons.size() )          \
+            output += numericComparisons[(u8)src];                                  \
         else { output += std::to_string(src); } }
 
-#define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {                                        \
-        if ( src >= 0 && src < sizeof(numericModifiers)/sizeof(const char*) )       \
+    #define ADD_TEXTTRIG_NUMERIC_MODIFIER(src) {                                    \
+        if ( src >= 0 && src < numericModifiers.size() )                            \
             output += numericModifiers[src];                                        \
         else { output += std::to_string(src); } }
 
@@ -440,18 +440,33 @@ inline void TextTrigGenerator::AddActionArgument(StringBuffer & output, Chk::Act
 {
     switch ( argument.type )
     {
-        case Chk::Action::ArgType::Location: ADD_TEXTTRIG_LOCATION(argument.field == Chk::Action::ArgField::Number ? action.number : action.locationId) break;
+        case Chk::Action::ArgType::Location:
+            if ( argument.field == Chk::Action::ArgField::Number ) {
+                ADD_TEXTTRIG_LOCATION(action.number)
+            } else {
+                ADD_TEXTTRIG_LOCATION(action.locationId)
+            } break;
         case Chk::Action::ArgType::String: ADD_TEXTTRIG_STRING(action.stringId) break;
-        case Chk::Action::ArgType::Player: ADD_TEXTTRIG_PLAYER(argument.field == Chk::Action::ArgField::Number ? action.number : action.group) break;
+        case Chk::Action::ArgType::Player:
+            if ( argument.field == Chk::Action::ArgField::Number ) {
+                ADD_TEXTTRIG_PLAYER(action.number)
+            } else {
+                ADD_TEXTTRIG_PLAYER(action.group)
+            } break;
         case Chk::Action::ArgType::Unit: ADD_TEXTTRIG_UNIT(action.type) break;
         case Chk::Action::ArgType::NumUnits: ADD_TEXTTRIG_NUM_UNITS(action.type2) break;
         case Chk::Action::ArgType::CUWP: ADD_TEXTTRIG_NUMBER(action.number) break;
         case Chk::Action::ArgType::TextFlags: ADD_TEXTTRIG_TEXT_FLAGS(action.flags) break;
-        case Chk::Action::ArgType::Amount: ADD_TEXTTRIG_NUMBER(action.number) break;
+        case Chk::Action::ArgType::Amount:
+            if ( argument.field == Chk::Action::ArgField::Type2 ) {
+                ADD_TEXTTRIG_NUMBER(action.type2)
+            } else {
+                ADD_TEXTTRIG_NUMBER(action.number)
+            } break;
         case Chk::Action::ArgType::ScoreType: ADD_TEXTTRIG_SCORE_TYPE(action.type) break;
         case Chk::Action::ArgType::ResourceType: ADD_TEXTTRIG_RESOURCE_TYPE(action.type) break;
-        case Chk::Action::ArgType::StateMod: ADD_TEXTTRIG_STATE_MODIFIER(action.type2);
-        case Chk::Action::ArgType::Percent: ADD_TEXTTRIG_NUMBER(action.number);
+        case Chk::Action::ArgType::StateMod: ADD_TEXTTRIG_STATE_MODIFIER(action.type2); break;
+        case Chk::Action::ArgType::Percent: ADD_TEXTTRIG_NUMBER(action.number); break;
         case Chk::Action::ArgType::Order: ADD_TEXTTRIG_ORDER(action.type2) break;
         case Chk::Action::ArgType::Sound: ADD_TEXTTRIG_SOUND(action.soundStringId) break;
         case Chk::Action::ArgType::Duration: ADD_TEXTTRIG_NUMBER(action.time) break;
@@ -513,7 +528,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
                     else
                         hasPrevious = true;
 
-                    ChkdString groupName = groupTable[groupNum];
+                    EscString groupName = groupTable[groupNum];
                     output += (std::string &)groupName;
                 }
                 else if ( trigger->owned(groupNum) != Chk::Trigger::Owned::No )
@@ -583,6 +598,7 @@ bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData,
             {
                 Chk::Action & action = trigger->action(i);
                 AID = (Chk::Action::VirtualType)action.actionType;
+
                 if ( AID != Chk::Action::VirtualType::NoAction )
                 {
                     if ( (action.flags&Chk::Action::Flags::Disabled) == Chk::Action::Flags::Disabled )
@@ -765,9 +781,9 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 {
     locationTable.clear();
     
-    SingleLineChkdString locationName;
+    EscString locationName;
 
-    locationTable.push_back(SingleLineChkdString("No Location"));
+    locationTable.push_back(EscString("No Location"));
 
     size_t numLocations = map->layers.numLocations();
     for ( size_t i=1; i<=numLocations; i++ )
@@ -810,25 +826,25 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
     unitTable.clear();
 
-    SingleLineChkdStringPtr unitName;
     for ( int unitID=0; unitID<=232; unitID++ )
     {
+        EscStringPtr unitName = nullptr;
         if ( quoteArgs )
         {
             if ( useCustomNames && unitID < 228 )
             {
-                SingleLineChkdStringPtr unquotedName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID, true);
-                unitName = SingleLineChkdStringPtr(new SingleLineChkdString("\"" + *unquotedName + "\""));
+                EscStringPtr unquotedName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitID, false);
+                unitName = EscStringPtr(new EscString("\"" + *unquotedName + "\""));
             }
-            else
-                unitName = SingleLineChkdStringPtr(new SingleLineChkdString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\""));
+            if ( unitName == nullptr )
+                unitName = EscStringPtr(new EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\""));
         }
         else
         {
             if ( useCustomNames && unitID < 228 )
-                unitName = map->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)unitID, true);
-            else
-                unitName = SingleLineChkdStringPtr(new SingleLineChkdString(Sc::Unit::legacyTextTrigDisplayNames[unitID]));
+                unitName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitID, false);
+            if ( unitName == nullptr )
+                unitName = EscStringPtr(new EscString(Sc::Unit::legacyTextTrigDisplayNames[unitID]));
         }
 
         unitTable.push_back(*unitName);
@@ -865,7 +881,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
     groupTable.clear();
 
-    SingleLineChkdString groupName;
+    EscString groupName;
 
     const char** legacyLowerGroupNames;
     const char** legacyUpperGroupNames;
@@ -906,7 +922,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
 
     for ( u32 i=0; i<4; i++ )
     {
-        ChkdStringPtr forceName = map->strings.getForceName<ChkdString>((Chk::Force)i);
+        EscStringPtr forceName = map->strings.getForceName<EscString>((Chk::Force)i);
         if ( forceName != nullptr )
         {
             if ( quoteArgs )
@@ -986,17 +1002,17 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
     std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
     map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
     map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
-    SingleLineChkdStringPtr str;
+    EscStringPtr str;
 
     size_t numStrings = map->strings.getCapacity(Chk::Scope::Game);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( stringUsed[i] )
-            str = map->strings.getString<SingleLineChkdString>(i);
+            str = map->strings.getString<EscString>(i);
 
         if ( str != nullptr )
         {
-            SingleLineChkdString newString;
+            EscString newString;
             for ( auto & character : *str )
             {
                 if ( character == '\"' )
@@ -1013,17 +1029,19 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
             else
                 stringTable.push_back(newString);
         }
+        else
+            stringTable.push_back("");
     }
 
     numStrings = map->strings.getCapacity(Chk::Scope::Editor);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( extendedStringUsed[i] )
-            str = map->strings.getString<SingleLineChkdString>(i);
+            str = map->strings.getString<EscString>(i);
         
         if ( str != nullptr )
         {
-            SingleLineChkdString newString;
+            EscString newString;
             for ( auto & character : *str )
             {
                 if ( character == '\"' )
@@ -1040,6 +1058,8 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
             else
                 extendedStringTable.push_back(newString);
         }
+        else
+            stringTable.push_back("");
     }
 
     return true;
