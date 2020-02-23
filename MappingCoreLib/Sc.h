@@ -958,6 +958,7 @@ namespace Sc {
         const static std::string aiScriptBinPath;
 
         enum class ScriptId : u32 { // u32
+            NoScript = 0,
             Ter3 = 863135060,
             Ter5 = 896689492,
             Te5H = 1211458900,
@@ -1254,6 +1255,7 @@ namespace Sc {
         };
 
         enum class Script : u32 { // u32
+            NoScript = (u32)ScriptId::NoScript,
             Terran3ZergTown = (u32)ScriptId::Ter3,
             Terran5TerranMainTown = (u32)ScriptId::Ter5,
             Terran5TerranHarvestTown = (u32)ScriptId::Te5H,

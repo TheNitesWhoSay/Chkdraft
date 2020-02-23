@@ -433,16 +433,6 @@ namespace Chk {
             NotSet = 3,
             Exactly = 10
         });
-        enum_t(ScoreType, u8, { // u8
-            Total = 0,
-            Units = 1,
-            Buildings = 2,
-            UnitsAndBuildings = 3,
-            Kills = 4,
-            Razings = 5,
-            KillsAndRazings = 6,
-            Custom = 7
-        });
         enum_t(MaskFlag, u16, { // u16
             Enabled = 0x4353, // "SC" in little-endian; 'S' = 0x53, 'C' = 0x43
             Disabled = 0
@@ -707,30 +697,12 @@ namespace Chk {
         enum_t(NumUnits, u8, { // u8
             All = 0
         });
-        enum_t(ResourceType, u8, { // u8
-            Ore = 0,
-            Gas = 1,
-            OreAndGas = 2
-        });
         enum_t(AllianceStatus, u16, { // u16
             Enemy = 0,
             Ally = 1,
             AlliedVictory = 2
         });
-        enum_t(ValueModifier, u8, { // u8
-            Enable = 4,
-            Enabled = 4,
-            Set = 4,
-            Disable = 5,
-            Diabled = 5,
-            Clear = 5,
-            Toggle = 6,
-            SetTo = 7,
-            Add = 8,
-            Subtract = 9,
-            Randomize = 11
-        });
-        enum_t(UnitOrders, u8, { // u8
+        enum_t(Order, u8, { // u8
             Move = 0,
             Patrol = 1,
             Attack = 2
@@ -818,6 +790,34 @@ namespace Chk {
             IgnoreMiscActions = BIT_4,
             Paused = BIT_5,
             IgnoreWaitSkipOnce = BIT_6
+        });
+        enum_t(ResourceType, u8, { // u8
+            Ore = 0,
+            Gas = 1,
+            OreAndGas = 2
+        });
+        enum_t(ScoreType, u8, { // u8
+            Total = 0,
+            Units = 1,
+            Buildings = 2,
+            UnitsAndBuildings = 3,
+            Kills = 4,
+            Razings = 5,
+            KillsAndRazings = 6,
+            Custom = 7
+        });
+        enum_t(ValueModifier, u8, { // u8
+            Enable = 4,
+            Enabled = 4,
+            Set = 4,
+            Disable = 5,
+            Diabled = 5,
+            Clear = 5,
+            Toggle = 6,
+            SetTo = 7,
+            Add = 8,
+            Subtract = 9,
+            Randomize = 11
         });
         enum_t(Owned, u8, { // u8
             Yes = 1,
