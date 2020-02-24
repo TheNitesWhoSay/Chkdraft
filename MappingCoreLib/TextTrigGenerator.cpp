@@ -13,16 +13,10 @@ std::vector<std::string> allyStates = { "Enemy", "Ally", "Allied Victory" };
 std::vector<std::string> numericComparisons = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
 std::vector<std::string> numericModifiers = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 
-TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset) : goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
+TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset) :
+    goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
-    stringTable.clear();
-    extendedStringTable.clear();
-    locationTable.clear();
-    unitTable.clear();
-    switchTable.clear();
-    groupTable.clear();
-    conditionTable.clear();
-    actionTable.clear();
+
 }
 
 TextTrigGenerator::~TextTrigGenerator()
@@ -32,28 +26,25 @@ TextTrigGenerator::~TextTrigGenerator()
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string & trigString)
 {
-    return this != nullptr && map != nullptr && BuildTextTrigs(map, map->triggers.trig, trigString);
+    return map != nullptr &&
+        LoadScenario(map, true, false) &&
+        BuildTextTrigs(map, trigString);
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString)
 {
-    if ( this != nullptr && map != nullptr )
+    if ( map != nullptr )
     {
         Chk::TriggerPtr trig = map->triggers.getTrigger(trigIndex);
         if ( trig != nullptr )
-        {
-            TrigSectionPtr trigSection(new TrigSection());
-            trigSection->addTrigger(trig);
-            return BuildTextTrigs(map, trigSection, trigString);
-        }
+            return LoadScenario(map, true, false) && BuildTextTrig(*trig, trigString);
     }
     return false;
 }
 
 bool TextTrigGenerator::LoadScenario(ScenarioPtr map)
 {
-    return this != nullptr &&
-           map != nullptr &&
+    return map != nullptr &&
            LoadScenario(map, false, true);
 }
 
@@ -78,14 +69,14 @@ std::string TextTrigGenerator::GetConditionName(Chk::Condition::Type conditionTy
 std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, size_t textArgumentIndex)
 {
     StringBuffer output;
-    AddConditionArgument(output, condition, Chk::Condition::getTextArg(condition.conditionType, textArgumentIndex));
+    appendConditionArgument(output, condition, Chk::Condition::getTextArg(condition.conditionType, textArgumentIndex));
     return output.str();
 }
 
 std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument)
 {
     StringBuffer output;
-    AddConditionArgument(output, condition, argument);
+    appendConditionArgument(output, condition, argument);
     return output.str();
 }
 
@@ -100,14 +91,14 @@ std::string TextTrigGenerator::GetActionName(Chk::Action::Type actionType)
 std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, size_t textArgumentIndex)
 {
     StringBuffer output;
-    AddActionArgument(output, action, Chk::Action::getTextArg(action.actionType, textArgumentIndex));
+    appendActionArgument(output, action, Chk::Action::getTextArg(action.actionType, textArgumentIndex));
     return output.str();
 }
 
 std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, Chk::Action::Argument argument)
 {
     StringBuffer output;
-    AddActionArgument(output, action, argument);
+    appendActionArgument(output, action, argument);
     return output.str();
 }
 
@@ -292,7 +283,224 @@ std::string TextTrigGenerator::GetTrigTextFlags(Chk::Action::Flags textFlags)
         return std::to_string(textFlags);
 }
 
-inline void TextTrigGenerator::AddConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument)
+// protected
+
+bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
+{
+    return map != nullptr &&
+           PrepConditionTable() &&
+           PrepActionTable() &&
+           PrepLocationTable(map, quoteArgs) &&
+           PrepUnitTable(map, quoteArgs, useCustomNames) &&
+           PrepSwitchTable(map, quoteArgs) &&
+           PrepGroupTable(map, quoteArgs) &&
+           PrepScriptTable(map, quoteArgs) &&
+           PrepStringTable(map, quoteArgs);
+}
+
+bool TextTrigGenerator::CorrectLineEndings(StringBuffer & buf)
+{
+    char curr;
+    size_t pos = 0;
+    StringBuffer dest;
+
+    while ( pos < buf.size() ) 
+    {
+        curr = buf[pos];
+        switch ( curr )
+        {
+            case '\15': // CR (line ending)
+                if ( buf[pos+1] == '\12' ) // Has LF
+                    pos ++;
+            case '\12': // LF (line ending)
+            case '\13': // VT (line ending)
+            case '\14': // FF (line ending)
+                dest += '\15';
+                dest += '\12';
+                pos ++;
+                break;
+            default:
+                dest += curr;
+                pos ++;
+                break;
+        }
+    }
+
+    buf.swap(dest);
+    return true;
+}
+
+bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr scenario, std::string & trigString)
+{
+    StringBuffer output;
+    appendTriggers(output, scenario);
+    CorrectLineEndings(output);
+    trigString = output.str();
+    ClearScenario();
+    return true;
+}
+
+bool TextTrigGenerator::BuildTextTrig(Chk::Trigger & trigger, std::string & trigString)
+{
+    StringBuffer output;
+    appendTrigger(output, trigger);
+    CorrectLineEndings(output);
+    trigString += output.str();
+    ClearScenario();
+    return true;
+}
+
+inline void TextTrigGenerator::appendTriggers(StringBuffer & output, ScenarioPtr scenario)
+{
+    Triggers & triggers = scenario->triggers;
+    size_t numTrigs = triggers.numTriggers();
+    for ( size_t trigIndex=0; trigIndex<numTrigs; trigIndex++ )
+    {
+        std::shared_ptr<Chk::Trigger> trigger = triggers.getTrigger(trigIndex);
+        if ( trigger != nullptr )
+            appendTrigger(output, *trigger);
+    }
+}
+
+inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger & trigger)
+{
+    output += "Trigger(";
+
+    // Add players
+    bool hasPrevious = false;
+    for ( int groupNum=0; groupNum<Chk::Trigger::MaxOwners; groupNum++ )
+    {
+        if ( trigger.owned(groupNum) == Chk::Trigger::Owned::Yes )
+        {
+            if ( hasPrevious )
+                output += ',';
+            else
+                hasPrevious = true;
+
+            EscString groupName = groupTable[groupNum];
+            output += (std::string &)groupName;
+        }
+        else if ( trigger.owned(groupNum) != Chk::Trigger::Owned::No )
+        {
+            if ( hasPrevious )
+                output += ',';
+            else
+                hasPrevious = true;
+
+            output += (std::string &)groupTable[groupNum];
+            output += ':';
+            output += std::to_string((int)trigger.owned(groupNum));
+        }
+    }
+
+    output += "){\nConditions:";
+
+    // Add conditions
+    for ( int i=0; i<Chk::Trigger::MaxConditions; i++ )
+    {
+        Chk::Condition & condition = trigger.condition(i);
+        Chk::Condition::VirtualType conditionType = (Chk::Condition::VirtualType)condition.conditionType;
+
+        if ( conditionType != Chk::Condition::VirtualType::NoCondition )
+        {
+            if ( (condition.flags & Chk::Condition::Flags::Disabled) == Chk::Condition::Flags::Disabled )
+                output += "\n;\t";
+            else
+                output += "\n\t";
+
+            // Add condition name
+            if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
+                output += "Memory";
+            else if ( conditionType >= 0 && (size_t)conditionType < conditionTable.size() )
+                output += conditionTable[conditionType];
+            else
+                output += "Custom";
+
+            output += '(';
+            // Add condition args
+            if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
+                conditionType = Chk::Condition::VirtualType::Memory;
+
+            for ( size_t argumentIndex=0; argumentIndex<Chk::Condition::MaxArguments; argumentIndex++ )
+            {
+                const Chk::Condition::Argument & argument = Chk::Condition::getTextArg(conditionType, 0);
+                if ( argument.type == Chk::Condition::ArgType::NoType )
+                    break;
+                else
+                {
+                    if ( argumentIndex > 0 )
+                        output += ", ";
+
+                    appendConditionArgument(output, condition, argument);
+                }
+            }
+
+            output += ");";
+        }
+    }
+
+    output += "\n\nActions:";
+
+    // Add actions
+    for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
+    {
+        Chk::Action & action = trigger.action(i);
+        Chk::Action::VirtualType actionType = (Chk::Action::VirtualType)action.actionType;
+
+        if ( actionType != Chk::Action::VirtualType::NoAction )
+        {
+            if ( (action.flags&Chk::Action::Flags::Disabled) == Chk::Action::Flags::Disabled )
+                output += "\n;\t";
+            else
+                output += "\n\t";
+
+            // Add action name
+            if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
+                output += "Set Memory";
+            else if ( actionType >= 0 && (size_t)actionType < actionTable.size() )
+                output += actionTable[actionType];
+            else
+                output += "Custom";
+
+            output += '(';
+            // Add action args
+            if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
+                actionType = Chk::Action::VirtualType::SetMemory;
+
+            for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
+            {
+                const Chk::Action::Argument & argument = Chk::Action::getTextArg(actionType, 0);
+                if ( argument.type == Chk::Action::ArgType::NoType )
+                    break;
+                else
+                {
+                    if ( argumentIndex > 0 )
+                        output += ", ";
+
+                    appendActionArgument(output, action, argument);
+                }
+            }
+
+            output += ");";
+        }
+    }
+
+    // Add Flags
+    if ( trigger.flags > 0 )
+    {
+        output += "\n\nFlags:\n";
+        char number[36];
+        _itoa_s(trigger.flags, number, 36, 2); // TODO: FIXME
+        size_t length = std::strlen(number);
+        output += std::string(32-length, '0');
+        output += std::string(number);
+        output += ';';
+    }
+
+    output += "\n}\n\n//-----------------------------------------------------------------//\n\n";
+}
+
+inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument)
 {
     switch ( argument.type )
     {
@@ -314,7 +522,7 @@ inline void TextTrigGenerator::AddConditionArgument(StringBuffer & output, Chk::
     }
 }
 
-inline void TextTrigGenerator::AddActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument)
+inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument)
 {
     switch ( argument.type )
     {
@@ -362,229 +570,6 @@ inline void TextTrigGenerator::AddActionArgument(StringBuffer & output, Chk::Act
         case Chk::Action::ArgType::MaskFlag: appendActionMaskFlag(output, action.maskFlag); break;
         case Chk::Action::ArgType::MemoryOffset: appendMemory(output, action.group); break;
     }
-}
-
-bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData, std::string & trigString)
-{
-    if ( !LoadScenario(map, true, false) )
-        return false;
-
-    StringBuffer output;
-
-    size_t numTrigs = trigData->numTriggers();
-    Chk::Condition::VirtualType conditionType = Chk::Condition::VirtualType::NoCondition;
-    Chk::Action::VirtualType actionType = Chk::Action::VirtualType::NoAction;
-
-    int numArgs;
-
-    const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
-                                    1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
-                                    1, 4, 0, 0 };
-
-    const u8 actionNumArgs[] = { 0, 0, 0, 0, 1, 0, 0, 8, 2, 2,
-                                 1, 5, 1, 2, 2, 1, 2, 2, 3, 2,
-                                 2, 2, 2, 4, 2, 4, 4, 4, 1, 2,
-                                 0, 0, 1, 3, 4, 3, 3, 3, 4, 5,
-                                 1, 1, 4, 4, 4, 4, 5, 1, 5, 5,
-                                 5, 5, 4, 5, 0, 0, 0, 2, 0, 0 };
-
-    for ( size_t trigIndex=0; trigIndex<numTrigs; trigIndex++ )
-    {
-        std::shared_ptr<Chk::Trigger> trigger = trigData->getTrigger(trigIndex);
-        if ( trigger != nullptr )
-        {
-            output += "Trigger(";
-
-            // Add players
-            bool hasPrevious = false;
-            for ( int groupNum=0; groupNum<Chk::Trigger::MaxOwners; groupNum++ )
-            {
-                if ( trigger->owned(groupNum) == Chk::Trigger::Owned::Yes )
-                {
-                    if ( hasPrevious )
-                        output += ',';
-                    else
-                        hasPrevious = true;
-
-                    EscString groupName = groupTable[groupNum];
-                    output += (std::string &)groupName;
-                }
-                else if ( trigger->owned(groupNum) != Chk::Trigger::Owned::No )
-                {
-                    if ( hasPrevious )
-                        output += ',';
-                    else
-                        hasPrevious = true;
-
-                    output += (std::string &)groupTable[groupNum];
-                    output += ':';
-                    output += std::to_string((int)trigger->owned(groupNum));
-                }
-            }
-
-            output += "){\nConditions:";
-
-            // Add conditions
-            for ( int i=0; i<Chk::Trigger::MaxConditions; i++ )
-            {
-                Chk::Condition & condition = trigger->condition(i);
-                conditionType = (Chk::Condition::VirtualType)condition.conditionType;
-
-                if ( conditionType != Chk::Condition::VirtualType::NoCondition )
-                {
-                    if ( (condition.flags & Chk::Condition::Flags::Disabled) == Chk::Condition::Flags::Disabled )
-                        output += "\n;\t";
-                    else
-                        output += "\n\t";
-
-                    // Add condition name
-                    if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
-                        output += "Memory";
-                    else if ( conditionType >= 0 && (size_t)conditionType < conditionTable.size() )
-                        output += conditionTable[conditionType];
-                    else
-                        output += "Custom";
-
-                    output += '(';
-                    // Add condition args
-                    if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
-                    {
-                        conditionType = Chk::Condition::VirtualType::Memory;
-                        numArgs = 3;
-                    }
-                    else if ( conditionType < sizeof(conditionNumArgs) )
-                        numArgs = conditionNumArgs[conditionType];
-                    else
-                        numArgs = 9; // custom
-
-                    for ( int arg=0; arg<numArgs; arg++ )
-                    {
-                        if ( arg > 0 )
-                            output += ", ";
-
-                        AddConditionArgument(output, condition, Chk::Condition::getTextArg(conditionType, arg));
-                    }
-
-                    output += ");";
-                }
-            }
-
-            output += "\n\nActions:";
-
-            // Add actions
-            for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
-            {
-                Chk::Action & action = trigger->action(i);
-                actionType = (Chk::Action::VirtualType)action.actionType;
-
-                if ( actionType != Chk::Action::VirtualType::NoAction )
-                {
-                    if ( (action.flags&Chk::Action::Flags::Disabled) == Chk::Action::Flags::Disabled )
-                        output += "\n;\t";
-                    else
-                        output += "\n\t";
-
-                    // Add action name
-                    if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
-                        output += "Set Memory";
-                    else if ( actionType >= 0 && (size_t)actionType < actionTable.size() )
-                        output += actionTable[actionType];
-                    else
-                        output += "Custom";
-
-                    output += '(';
-                    // Add action args
-                    if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
-                    {
-                        actionType = Chk::Action::VirtualType::SetMemory;
-                        numArgs = 3;
-                    }
-                    else if ( actionType < sizeof(actionNumArgs) )
-                        numArgs = actionNumArgs[actionType];
-                    else
-                        numArgs = 11; // custom
-
-                    for ( size_t arg=0; arg<numArgs; arg++ )
-                    {
-                        if ( arg > 0 )
-                            output += ", ";
-
-                        AddActionArgument(output, action, Chk::Action::getTextArg(actionType, arg));
-                    }
-
-                    output += ");";
-                }
-            }
-
-            // Add Flags
-            if ( trigger->flags > 0 )
-            {
-                output += "\n\nFlags:\n";
-                char number[36];
-                _itoa_s(trigger->flags, number, 36, 2); // TODO: FIXME
-                size_t length = std::strlen(number);
-                output += std::string(32-length, '0');
-                output += std::string(number);
-                output += ';';
-            }
-
-            output += "\n}\n\n//-----------------------------------------------------------------//\n\n";
-        }
-    }
-    // Add NUL
-    output += '\0';
-    CorrectLineEndings(output);
-
-    trigString = output.str();
-    ClearScenario();
-    return true;
-}
-
-// protected
-
-bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
-{
-    return map != nullptr &&
-           PrepConditionTable() &&
-           PrepActionTable() &&
-           PrepLocationTable(map, quoteArgs) &&
-           PrepUnitTable(map, quoteArgs, useCustomNames) &&
-           PrepSwitchTable(map, quoteArgs) &&
-           PrepGroupTable(map, quoteArgs) &&
-           PrepScriptTable(map, quoteArgs) &&
-           PrepStringTable(map, quoteArgs);
-}
-
-bool TextTrigGenerator::CorrectLineEndings(StringBuffer & buf)
-{
-    char curr;
-    size_t pos = 0;
-    StringBuffer dest;
-
-    while ( pos < buf.size() ) 
-    {
-        curr = buf[pos];
-        switch ( curr )
-        {
-            case '\15': // CR (line ending)
-                if ( buf[pos+1] == '\12' ) // Has LF
-                    pos ++;
-            case '\12': // LF (line ending)
-            case '\13': // VT (line ending)
-            case '\14': // FF (line ending)
-                dest += '\15';
-                dest += '\12';
-                pos ++;
-                break;
-            default:
-                dest += curr;
-                pos ++;
-                break;
-        }
-    }
-
-    buf.swap(dest);
-    return true;
 }
 
 inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_t & locationId)

@@ -357,7 +357,7 @@ u8 Chk::Action::defaultFlags[NumActionTypes] = {
     /** 59 = Enable Debug Mode                      */ 0
 };
 
-Chk::Condition::Argument Chk::Condition::getClassicArg(Type conditionType, size_t argIndex)
+const Chk::Condition::Argument & Chk::Condition::getClassicArg(Type conditionType, size_t argIndex)
 {
     if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
         return classicArguments[conditionType][argIndex];
@@ -365,7 +365,7 @@ Chk::Condition::Argument Chk::Condition::getClassicArg(Type conditionType, size_
         return Chk::Condition::noArg;
 }
 
-Chk::Condition::Argument Chk::Condition::getClassicArg(VirtualType conditionType, size_t argIndex)
+const Chk::Condition::Argument & Chk::Condition::getClassicArg(VirtualType conditionType, size_t argIndex)
 {
     if ( argIndex < MaxArguments )
     {
@@ -401,7 +401,7 @@ Chk::Condition::ArgType Chk::Condition::getClassicArgType(VirtualType conditionT
     return Chk::Condition::ArgType::NoType;
 }
 
-Chk::Condition::Argument Chk::Condition::getTextArg(Type conditionType, size_t argIndex)
+const Chk::Condition::Argument & Chk::Condition::getTextArg(Type conditionType, size_t argIndex)
 {
     if ( conditionType < NumConditionTypes && argIndex < MaxArguments )
         return textArguments[conditionType][argIndex];
@@ -409,7 +409,7 @@ Chk::Condition::Argument Chk::Condition::getTextArg(Type conditionType, size_t a
         return Chk::Condition::noArg;
 }
 
-Chk::Condition::Argument Chk::Condition::getTextArg(VirtualType conditionType, size_t argIndex)
+const Chk::Condition::Argument & Chk::Condition::getTextArg(VirtualType conditionType, size_t argIndex)
 {
     if ( argIndex < MaxArguments )
     {
@@ -445,7 +445,7 @@ Chk::Condition::ArgType Chk::Condition::getTextArgType(VirtualType conditionType
     return Chk::Condition::ArgType::NoType;
 }
 
-Chk::Action::Argument Chk::Action::getClassicArg(Type actionType, size_t argIndex)
+const Chk::Action::Argument & Chk::Action::getClassicArg(Type actionType, size_t argIndex)
 {
     if ( actionType < NumActionTypes && argIndex < MaxArguments )
         return classicArguments[actionType][argIndex];
@@ -453,7 +453,7 @@ Chk::Action::Argument Chk::Action::getClassicArg(Type actionType, size_t argInde
         return Chk::Action::noArg;
 }
 
-Chk::Action::Argument Chk::Action::getClassicArg(VirtualType actionType, size_t argIndex)
+const Chk::Action::Argument & Chk::Action::getClassicArg(VirtualType actionType, size_t argIndex)
 {
     if ( argIndex < MaxArguments )
     {
@@ -489,7 +489,7 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
     return Chk::Action::ArgType::NoType;
 }
 
-Chk::Action::Argument Chk::Action::getTextArg(Type actionType, size_t argIndex)
+const Chk::Action::Argument & Chk::Action::getTextArg(Type actionType, size_t argIndex)
 {
     if ( actionType < NumActionTypes && argIndex < MaxArguments )
         return textArguments[actionType][argIndex];
@@ -497,7 +497,7 @@ Chk::Action::Argument Chk::Action::getTextArg(Type actionType, size_t argIndex)
         return Chk::Action::noArg;
 }
 
-Chk::Action::Argument Chk::Action::getTextArg(VirtualType actionType, size_t argIndex)
+const Chk::Action::Argument & Chk::Action::getTextArg(VirtualType actionType, size_t argIndex)
 {
     if ( argIndex < MaxArguments )
     {

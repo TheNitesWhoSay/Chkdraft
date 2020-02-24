@@ -18,8 +18,9 @@ class TextTrigGenerator
 
         // Places text trigs representative of the given trigger in trigString if successful
         bool GenerateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString);
-
+        
         bool LoadScenario(ScenarioPtr map); // Loads data about the given scenario for use outside text trigs
+
         void ClearScenario(); // Clears loaded scenario data
 
         std::string GetConditionName(Chk::Condition::Type conditionType);
@@ -51,11 +52,15 @@ class TextTrigGenerator
     
     protected:
 
-        inline void AddConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument);
-        inline void AddActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument);
-        bool BuildTextTrigs(ScenarioPtr map, TrigSectionPtr trigData, std::string & trigString);
         bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
         bool CorrectLineEndings(StringBuffer & buf); // Corrects any improperly formatted line endings
+        
+        bool BuildTextTrigs(ScenarioPtr scenario, std::string & trigString);
+        bool BuildTextTrig(Chk::Trigger & trigger, std::string & trigString);
+        inline void appendTriggers(StringBuffer & output, ScenarioPtr scenario);
+        inline void appendTrigger(StringBuffer & output, Chk::Trigger & trigger);
+        inline void appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument);
+        inline void appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument);
 
         inline void appendLocation(StringBuffer & output, const size_t & locationId);
         inline void appendString(StringBuffer & output, const size_t & stringId);

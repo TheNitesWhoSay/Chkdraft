@@ -462,12 +462,12 @@ namespace Chk {
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void deleteLocation(size_t locationId);
-        static Argument getClassicArg(Type conditionType, size_t argIndex);
-        static Argument getClassicArg(VirtualType conditionType, size_t argIndex);
+        static const Argument & getClassicArg(Type conditionType, size_t argIndex);
+        static const Argument & getClassicArg(VirtualType conditionType, size_t argIndex);
         static ArgType getClassicArgType(Type conditionType, size_t argIndex);
         static ArgType getClassicArgType(VirtualType conditionType, size_t argIndex);
-        static Argument getTextArg(Type conditionType, size_t argIndex);
-        static Argument getTextArg(VirtualType conditionType, size_t argIndex);
+        static const Argument & getTextArg(Type conditionType, size_t argIndex);
+        static const Argument & getTextArg(VirtualType conditionType, size_t argIndex);
         static ArgType getTextArgType(Type conditionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType conditionType, size_t argIndex);
         
@@ -735,12 +735,12 @@ namespace Chk {
 
         bool isDisabled() { return (flags & Flags::Disabled) == Flags::Disabled; }
         void ToggleDisabled();
-        static Argument getClassicArg(Type actionType, size_t argIndex);
-        static Argument getClassicArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getClassicArg(Type actionType, size_t argIndex);
+        static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
         static ArgType getClassicArgType(Type actionType, size_t argIndex);
         static ArgType getClassicArgType(VirtualType actionType, size_t argIndex);
-        static Argument getTextArg(Type actionType, size_t argIndex);
-        static Argument getTextArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getTextArg(Type actionType, size_t argIndex);
+        static const Argument & getTextArg(VirtualType actionType, size_t argIndex);
         static ArgType getTextArgType(Type actionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
         inline bool locationUsed(size_t locationId);
