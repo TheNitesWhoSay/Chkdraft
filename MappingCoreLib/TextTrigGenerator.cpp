@@ -247,16 +247,7 @@ std::string TextTrigGenerator::GetTrigScript(Sc::Ai::ScriptId scriptId)
     (u32 &)script[0] = (u32)scriptId;
     script[4] = '\0';
 
-    bool hasNonNumericCharacter =
-        script[0] < '0' || script[0] > '9' ||
-        script[1] < '0' || script[1] > '9' ||
-        script[2] < '0' || script[2] > '9' ||
-        script[3] < '0' || script[3] > '9';
-
-    if ( hasNonNumericCharacter )
-        return std::string(script);
-    else
-        return std::string("\"" + std::string(script) + "\"");
+    return std::string(script);
 }
 
 std::string TextTrigGenerator::GetTrigNumUnits(Chk::Action::NumUnits numUnits)
@@ -368,7 +359,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
 
     // Add players
     bool hasPrevious = false;
-    for ( int groupNum=0; groupNum<Chk::Trigger::MaxOwners; groupNum++ )
+    for ( size_t groupNum=0; groupNum<Chk::Trigger::MaxOwners; groupNum++ )
     {
         if ( trigger.owned(groupNum) == Chk::Trigger::Owned::Yes )
         {
@@ -396,7 +387,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     output += "){\nConditions:";
 
     // Add conditions
-    for ( int i=0; i<Chk::Trigger::MaxConditions; i++ )
+    for ( size_t i=0; i<Chk::Trigger::MaxConditions; i++ )
     {
         Chk::Condition & condition = trigger.condition(i);
         Chk::Condition::VirtualType conditionType = (Chk::Condition::VirtualType)condition.conditionType;
@@ -423,7 +414,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
 
             for ( size_t argumentIndex=0; argumentIndex<Chk::Condition::MaxArguments; argumentIndex++ )
             {
-                const Chk::Condition::Argument & argument = Chk::Condition::getTextArg(conditionType, 0);
+                const Chk::Condition::Argument & argument = Chk::Condition::getTextArg(conditionType, argumentIndex);
                 if ( argument.type == Chk::Condition::ArgType::NoType )
                     break;
                 else
@@ -442,7 +433,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     output += "\n\nActions:";
 
     // Add actions
-    for ( int i=0; i<Chk::Trigger::MaxActions; i++ )
+    for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
     {
         Chk::Action & action = trigger.action(i);
         Chk::Action::VirtualType actionType = (Chk::Action::VirtualType)action.actionType;
@@ -469,7 +460,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
 
             for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
             {
-                const Chk::Action::Argument & argument = Chk::Action::getTextArg(actionType, 0);
+                const Chk::Action::Argument & argument = Chk::Action::getTextArg(actionType, argumentIndex);
                 if ( argument.type == Chk::Action::ArgType::NoType )
                     break;
                 else
@@ -782,18 +773,18 @@ bool TextTrigGenerator::PrepConditionTable()
     if ( goodConditionTable )
         return true;
 
-    const char* legacyConditionNames[] = { "", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command the Most", 
+    const char* legacyConditionNames[] = { "No Condition", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command the Most", 
                                            "Commands the Most At", "Most Kills", "Highest Score", "Most Resources", "Switch", "Elapsed Time", 
                                            "Never", "Opponents", "Deaths", "Command the Least", "Command the Least At", "Least Kills", 
                                            "Lowest Score", "Least Resources", "Score", "Always", "Never" };
 
     const char** conditionNames = legacyConditionNames;
 
-    for ( int i=0; i<24; i++ )
+    for ( size_t i=0; i<sizeof(legacyConditionNames)/sizeof(const char*); i++ )
         conditionTable.push_back(std::string(conditionNames[i]));
 
     std::string custom("Custom");
-    for ( int i=24; i<256; i++ )
+    for ( size_t i=sizeof(legacyConditionNames)/sizeof(const char*); i<256; i++ )
         conditionTable.push_back(custom);
 
     goodConditionTable = true;
@@ -820,11 +811,11 @@ bool TextTrigGenerator::PrepActionTable()
 
     const char** actionNames = legacyActionNames;
 
-    for ( int i=0; i<60; i++ )
+    for ( size_t i=0; i<sizeof(legacyActionNames)/sizeof(const char*); i++ )
         actionTable.push_back(std::string(actionNames[i]));
 
     std::string custom("Custom");
-    for ( int i=60; i<256; i++ )
+    for ( size_t i=sizeof(legacyActionNames)/sizeof(const char*); i<256; i++ )
         actionTable.push_back(custom);
 
     goodActionTable = true;
@@ -834,9 +825,6 @@ bool TextTrigGenerator::PrepActionTable()
 bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
 {
     locationTable.clear();
-    
-    EscString locationName;
-
     locationTable.push_back(EscString("No Location"));
 
     size_t numLocations = map->layers.numLocations();
@@ -845,16 +833,10 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
         Chk::LocationPtr loc = map->layers.getLocation(i);
         if ( loc != nullptr )
         {
-            locationName = "";
-
             if ( i == Chk::LocationId::Anywhere )
             {
-                if ( quoteArgs )
-                    locationName = "\"Anywhere\"";
-                else
-                    locationName = "Anywhere";
-
-                locationTable.push_back( locationName );
+                EscString locationName = quoteArgs ? "\"Anywhere\"" : "Anywhere";
+                locationTable.push_back(locationName);
             }
             else if ( loc->stringId > 0 )
             {
@@ -880,25 +862,25 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
 {
     unitTable.clear();
 
-    for ( int unitID=0; unitID<=232; unitID++ )
+    for ( size_t unitType=0; unitType<Sc::Unit::TotalReferenceTypes; unitType++ )
     {
         EscStringPtr unitName = nullptr;
         if ( quoteArgs )
         {
-            if ( useCustomNames && unitID < 228 )
+            if ( useCustomNames && unitType < 228 )
             {
-                EscStringPtr unquotedName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitID, false);
+                EscStringPtr unquotedName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
                 unitName = EscStringPtr(new EscString("\"" + *unquotedName + "\""));
             }
             if ( unitName == nullptr )
-                unitName = EscStringPtr(new EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitID]) + "\""));
+                unitName = EscStringPtr(new EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitType]) + "\""));
         }
         else
         {
-            if ( useCustomNames && unitID < 228 )
-                unitName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitID, false);
+            if ( useCustomNames && unitType < 228 )
+                unitName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
             if ( unitName == nullptr )
-                unitName = EscStringPtr(new EscString(Sc::Unit::legacyTextTrigDisplayNames[unitID]));
+                unitName = EscStringPtr(new EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]));
         }
 
         unitTable.push_back(*unitName);
