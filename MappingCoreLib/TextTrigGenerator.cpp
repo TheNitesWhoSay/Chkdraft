@@ -135,7 +135,7 @@ ChkdString TextTrigGenerator::GetTrigWav(size_t stringId)
 
 ChkdString TextTrigGenerator::GetTrigPlayer(size_t playerIndex)
 {
-    if ( playerIndex >= 0 && playerIndex < groupTable.size() )
+    if ( playerIndex < groupTable.size() )
         return groupTable[playerIndex].c_str();
     else
         return ChkdString(std::to_string(playerIndex));
@@ -143,7 +143,7 @@ ChkdString TextTrigGenerator::GetTrigPlayer(size_t playerIndex)
 
 ChkdString TextTrigGenerator::GetTrigUnit(Sc::Unit::Type unitType)
 {
-    if ( unitType >= 0 && unitType < unitTable.size() )
+    if ( unitType < unitTable.size() )
         return unitTable[unitType];
     else
         return ChkdString(std::to_string(unitType));
@@ -151,7 +151,7 @@ ChkdString TextTrigGenerator::GetTrigUnit(Sc::Unit::Type unitType)
 
 ChkdString TextTrigGenerator::GetTrigSwitch(size_t switchIndex)
 {
-    if ( switchIndex >= 0 && switchIndex < switchTable.size() )
+    if ( switchIndex < switchTable.size() )
         return switchTable[switchIndex];
     else
         return ChkdString(std::to_string(switchIndex));
@@ -160,7 +160,7 @@ ChkdString TextTrigGenerator::GetTrigSwitch(size_t switchIndex)
 std::string TextTrigGenerator::GetTrigScoreType(Chk::Trigger::ScoreType scoreType)
 {
     const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
-    if ( scoreType >= 0 && scoreType < sizeof(scoreTypes) / sizeof(const char*) )
+    if ( scoreType < sizeof(scoreTypes) / sizeof(const char*) )
         return scoreTypes[scoreType];
     else
         return std::to_string((int)scoreType);
@@ -169,7 +169,7 @@ std::string TextTrigGenerator::GetTrigScoreType(Chk::Trigger::ScoreType scoreTyp
 std::string TextTrigGenerator::GetTrigResourceType(Chk::Trigger::ResourceType resourceType)
 {
     const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
-    if ( resourceType >= 0 && resourceType < sizeof(resourceTypes) / sizeof(const char*) )
+    if ( resourceType < sizeof(resourceTypes) / sizeof(const char*) )
         return resourceTypes[resourceType];
     else
         return std::to_string((int)resourceType);
@@ -178,7 +178,7 @@ std::string TextTrigGenerator::GetTrigResourceType(Chk::Trigger::ResourceType re
 std::string TextTrigGenerator::GetTrigOrder(Chk::Action::Order order)
 {
     const char* orderTypes[] = { "move", "patrol", "attack" };
-    if ( order >= 0 && order < sizeof(orderTypes) / sizeof(const char*) )
+    if ( order < sizeof(orderTypes) / sizeof(const char*) )
         return orderTypes[order];
     else
         return std::to_string((int)order);
@@ -187,7 +187,7 @@ std::string TextTrigGenerator::GetTrigOrder(Chk::Action::Order order)
 std::string TextTrigGenerator::GetTrigStateModifier(Chk::Trigger::ValueModifier stateModifier)
 {
     const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
-    if ( stateModifier >= 0 && stateModifier < sizeof(stateModifiers) / sizeof(const char*) )
+    if ( stateModifier < sizeof(stateModifiers) / sizeof(const char*) )
         return std::string(stateModifiers[stateModifier]);
     else
         return std::to_string((int)stateModifier);
@@ -196,7 +196,7 @@ std::string TextTrigGenerator::GetTrigStateModifier(Chk::Trigger::ValueModifier 
 std::string TextTrigGenerator::GetTrigSwitchState(Chk::Trigger::ValueModifier switchState)
 {
     const char* switchStates[] = { "0", "1", "Set", "Cleared" };
-    if ( switchState >= 0 && switchState < sizeof(switchStates) / sizeof(const char*) )
+    if ( switchState < sizeof(switchStates) / sizeof(const char*) )
         return std::string(switchStates[switchState]);
     else
         return std::to_string((int)switchState);
@@ -205,7 +205,7 @@ std::string TextTrigGenerator::GetTrigSwitchState(Chk::Trigger::ValueModifier sw
 std::string TextTrigGenerator::GetTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier)
 {
     const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
-    if ( switchModifier >= 0 && switchModifier < sizeof(switchModifiers) / sizeof(const char*) )
+    if ( switchModifier < sizeof(switchModifiers) / sizeof(const char*) )
         return std::string(switchModifiers[switchModifier]);
     else
         return std::to_string((int)switchModifier);
@@ -214,7 +214,7 @@ std::string TextTrigGenerator::GetTrigSwitchModifier(Chk::Trigger::ValueModifier
 std::string TextTrigGenerator::GetTrigAllyState(Chk::Action::AllianceStatus allyState)
 {
     const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
-    if ( allyState >= 0 && allyState < sizeof(allyStates) / sizeof(const char*) )
+    if ( allyState < sizeof(allyStates) / sizeof(const char*) )
         return std::string(allyStates[allyState]);
     else
         return std::to_string(allyState);
@@ -223,7 +223,7 @@ std::string TextTrigGenerator::GetTrigAllyState(Chk::Action::AllianceStatus ally
 std::string TextTrigGenerator::GetTrigNumericComparison(Chk::Condition::Comparison numericComparison)
 {
     const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
-    if ( numericComparison >= 0 && numericComparison < sizeof(numericComparisons) / sizeof(const char*) )
+    if ( numericComparison < sizeof(numericComparisons) / sizeof(const char*) )
         return std::string(numericComparisons[numericComparison]);
     else
         return std::to_string((int)numericComparison);
@@ -232,7 +232,7 @@ std::string TextTrigGenerator::GetTrigNumericComparison(Chk::Condition::Comparis
 std::string TextTrigGenerator::GetTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier)
 {
     const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
-    if ( numericModifier >= 0 && numericModifier < sizeof(numericModifiers) / sizeof(const char*) )
+    if ( numericModifier < sizeof(numericModifiers) / sizeof(const char*) )
         return std::string(numericModifiers[numericModifier]);
     else
         return std::to_string((int)numericModifier);
@@ -584,7 +584,7 @@ inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t 
 {
     if ( stringId == 0 )
         output += "No String";
-    else if ( stringId >= 0 && (stringId < stringTable.size() || (65536-stringId) < extendedStringTable.size() ) )
+    else if ( stringId < stringTable.size() || (65536-stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
             output += (std::string &)stringTable[stringId];
@@ -599,7 +599,7 @@ inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t &
 {
     if ( stringId == 0 )
         output += "No WAV";
-    else if ( stringId >= 0 && (stringId < stringTable.size() || (65536 - stringId) < extendedStringTable.size()) )
+    else if ( stringId < stringTable.size() || (65536 - stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
             output += (std::string &)stringTable[stringId];
