@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <set>
 #include <memory>
+#include <iterator>
 
 ChkSection::ChkSection(SectionName sectionName, bool virtualizable, bool isVirtual)
     : sectionIndex(SectionIndex::UNKNOWN), sectionName(sectionName), virtualizable(virtualizable), dataIsVirtual(isVirtual)
@@ -2161,6 +2162,13 @@ StrSection::StrSection() : DynamicSection<false>(SectionName::STR), bytePaddedTo
     
 }
 
+
+StrSection::StrSection(const StrSection & other) : DynamicSection<false>(SectionName::STR), strings(other.strings), stringBytes(other.stringBytes),
+    bytePaddedTo(other.bytePaddedTo), initialTailDataOffset(other.initialTailDataOffset), tailData(other.tailData)
+{
+
+}
+
 StrSection::~StrSection()
 {
 
@@ -2441,6 +2449,24 @@ size_t StrSection::getBytePaddedTo()
 void StrSection::setBytePaddedTo(size_t bytePaddedTo)
 {
     this->bytePaddedTo = bytePaddedTo;
+}
+
+StrSectionPtr StrSection::backup()
+{
+    StrSectionPtr backup = StrSectionPtr(new StrSection(*this));
+    return backup;
+}
+
+void StrSection::restore(StrSectionPtr backup)
+{
+    if ( backup != nullptr )
+    {
+        strings.swap(backup->strings);
+        stringBytes.swap(backup->stringBytes);
+        bytePaddedTo = backup->bytePaddedTo;
+        initialTailDataOffset = backup->initialTailDataOffset;
+        tailData.swap(backup->tailData);
+    }
 }
 
 Chk::SectionSize StrSection::getSize(ScenarioSaver & scenarioSaver)
@@ -3151,6 +3177,27 @@ void TrigSection::swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers)
     this->triggers.swap(triggers);
 }
 
+std::deque<Chk::TriggerPtr> TrigSection::replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers)
+{
+    if ( beginIndex == 0 && endIndex == triggers.size() )
+    {
+        this->triggers.swap(triggers);
+        return triggers;
+    }
+    else if ( beginIndex < endIndex && endIndex <= this->triggers.size() )
+    {
+        auto begin = this->triggers.begin()+beginIndex;
+        auto end = this->triggers.begin()+endIndex;
+        std::deque<Chk::TriggerPtr> replacedTriggers(this->triggers.begin()+beginIndex, this->triggers.begin()+endIndex);
+        this->triggers.erase(begin, end);
+        this->triggers.insert(this->triggers.begin()+beginIndex, triggers.begin(), triggers.end());
+        return replacedTriggers;
+    }
+    else
+        throw std::out_of_range(std::string("Range [") + std::to_string(beginIndex) + ", " + std::to_string(endIndex) +
+            ") is invalid for trigger list of size: " + std::to_string(triggers.size()));
+}
+
 bool TrigSection::locationUsed(size_t locationId)
 {
     for ( auto trigger : triggers )
@@ -3463,9 +3510,10 @@ void SprpSection::setScenarioDescriptionStringId(u16 scenarioDescriptionStringId
     data->scenarioDescriptionStringId = scenarioDescriptionStringId;
 }
 
-bool SprpSection::stringUsed(size_t stringId)
+bool SprpSection::stringUsed(size_t stringId, u32 userMask)
 {
-    return data->scenarioNameStringId == (u16)stringId || data->scenarioDescriptionStringId == (u16)stringId;
+    return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioNameStringId == (u16)stringId )
+        || ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescriptionStringId == (u16)stringId );
 }
 
 void SprpSection::deleteString(size_t stringId)
@@ -3489,12 +3537,12 @@ void SprpSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
         data->scenarioDescriptionStringId = scenarioDescriptionRemapping->second;
 }
 
-void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    if ( data->scenarioNameStringId > 0 )
+    if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioNameStringId > 0 )
         stringIdUsed[data->scenarioNameStringId] = true;
 
-    if ( data->scenarioDescriptionStringId > 0 )
+    if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescriptionStringId > 0 )
         stringIdUsed[data->scenarioDescriptionStringId] = true;
 }
 
@@ -5240,7 +5288,7 @@ void OstrSection::setLocationNameStringId(size_t locationId, u32 locationNameStr
         throw std::out_of_range(std::string("locationId: ") + std::to_string((u32)locationId) + " is out of range for the OSTR section!");
 }
 
-bool OstrSection::stringUsed(size_t stringId)
+bool OstrSection::stringUsed(size_t stringId, u32 userMask)
 {
     if ( data->scenarioName == stringId || data->scenarioDescription == stringId )
         return true;
@@ -5284,48 +5332,66 @@ bool OstrSection::stringUsed(size_t stringId)
     return false;
 }
 
-void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    if ( data->scenarioName != 0 )
+    if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioName != 0 )
         stringIdUsed[data->scenarioName] = true;
 
-    if ( data->scenarioDescription != 0 )
+    if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescription != 0 )
         stringIdUsed[data->scenarioDescription] = true;
 
-    for ( size_t i=0; i<Chk::TotalForces; i++ )
+    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
     {
-        if ( data->forceName[i] != 0 )
-            stringIdUsed[data->forceName[i]] = true;
+        for ( size_t i=0; i<Chk::TotalForces; i++ )
+        {
+            if ( data->forceName[i] != 0 )
+                stringIdUsed[data->forceName[i]] = true;
+        }
     }
 
-    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
     {
-        if ( data->unitName[i] != 0 )
-            stringIdUsed[data->unitName[i]] = true;
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( data->unitName[i] != 0 )
+                stringIdUsed[data->unitName[i]] = true;
+        }
     }
 
-    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
     {
-        if ( data->expUnitName[i] != 0 )
-            stringIdUsed[data->expUnitName[i]] = true;
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( data->expUnitName[i] != 0 )
+                stringIdUsed[data->expUnitName[i]] = true;
+        }
     }
 
-    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
     {
-        if ( data->soundPath[i] != 0 )
-            stringIdUsed[data->soundPath[i]] = true;
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            if ( data->soundPath[i] != 0 )
+                stringIdUsed[data->soundPath[i]] = true;
+        }
     }
 
-    for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+    if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
     {
-        if ( data->switchName[i] != 0 )
-            stringIdUsed[data->switchName[i]] = true;
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            if ( data->switchName[i] != 0 )
+                stringIdUsed[data->switchName[i]] = true;
+        }
     }
 
-    for ( size_t i=0; i<Chk::TotalLocations; i++ )
+    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
-        if ( data->locationName[i] != 0 )
-            stringIdUsed[data->locationName[i]] = true;
+        for ( size_t i=0; i<Chk::TotalLocations; i++ )
+        {
+            if ( data->locationName[i] != 0 )
+                stringIdUsed[data->locationName[i]] = true;
+        }
     }
 }
 
@@ -5595,7 +5661,7 @@ void KstrSection::deleteUnusedStrings(StrSynchronizer & strSynchronizer)
 
 bool KstrSection::deleteString(size_t stringId, bool deleteOnlyIfUnused, StrSynchronizerPtr strSynchronizer)
 {
-    if ( !deleteOnlyIfUnused || (strSynchronizer != nullptr && !strSynchronizer->stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, false)) )
+    if ( !deleteOnlyIfUnused || (strSynchronizer != nullptr && !strSynchronizer->stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, false)) )
     {
         if ( stringId < strings.size() )
         {

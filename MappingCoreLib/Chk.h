@@ -199,6 +199,24 @@ namespace Chk {
         UnusedSound = 0
     });
 
+    enum_t(StringUserFlag, u32, {
+        None = 0,
+        ScenarioName = BIT_0,
+        ScenarioDescription = BIT_1,
+        Force = BIT_2,
+        Location = BIT_3,
+        OriginalUnitSettings = BIT_4,
+        ExpansionUnitSettings = BIT_5,
+        Sound = BIT_6,
+        Switch = BIT_7,
+        Trigger = BIT_8,
+        BriefingTrigger = BIT_9,
+
+        xTrigger = x32BIT_8,
+
+        All = u32_max
+    });
+
     enum_t(CuwpUsed, u8, { // u8
         No = 0, // CUWP slot is unused
         Yes = 1 // CUWP slot is used

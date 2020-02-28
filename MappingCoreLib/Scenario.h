@@ -64,6 +64,11 @@ class Strings : public StrSynchronizer
         OstrSectionPtr ostr; // Overrides for all but trigger and briefing strings
         KstrSectionPtr kstr; // Editor only string data
 
+        struct StringBackup
+        {
+            StrSectionPtr strBackup;
+        };
+
         Strings(bool useDefault = false);
 
         bool empty();
@@ -74,26 +79,12 @@ class Strings : public StrSynchronizer
             Rescope
         });
 
-        enum class StringUserType : u8 {
-            None = 0,
-            ScenarioName,
-            ScenarioDescription = ScenarioName+1,
-            Force,
-            Location,
-            OriginalUnitSettings,
-            ExpansionUnitSettings,
-            Sound,
-            Switch,
-            Trigger,
-            BriefingTrigger
-        };
-
         size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game);
 
         bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either);
-        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false);
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either);
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false);
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame); // Gets the string at stringId with formatting based on StringType
@@ -105,8 +96,6 @@ class Strings : public StrSynchronizer
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         size_t addString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
-
-        bool addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope = Chk::Scope::Game);
@@ -182,6 +171,9 @@ class Strings : public StrSynchronizer
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
 
+        StringBackup backup();
+        void restore(StringBackup & backup); // A backup instance can only be restored once
+
     protected:
         virtual void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
 
@@ -227,8 +219,8 @@ class Players
         void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -358,8 +350,8 @@ class Layers : public Terrain
         bool anywhereIsStandardDimensions();
         void matchAnywhereToDimensions();
 
-        bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -478,8 +470,8 @@ class Properties
         void setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
 
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -520,6 +512,7 @@ class Triggers : public LocationSynchronizer
         void insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger);
         void deleteTrigger(size_t triggerIndex);
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
+        std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
         size_t numBriefingTriggers();
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
@@ -537,13 +530,13 @@ class Triggers : public LocationSynchronizer
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
         bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId);
-        bool gameStringUsed(size_t stringId);
-        bool editorStringUsed(size_t stringId);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteLocation(size_t locationId);

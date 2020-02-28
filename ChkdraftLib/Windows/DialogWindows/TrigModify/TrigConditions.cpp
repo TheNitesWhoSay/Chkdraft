@@ -323,9 +323,9 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     {
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig->condition(conditionNum).conditionType, argNum);
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
-               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData) ) ||
+               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex) ) ||
              ( ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
-               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData) ) )
+               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex) ) )
         {
             if ( refreshImmediately )
                 RefreshConditionAreas();

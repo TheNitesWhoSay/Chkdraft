@@ -32,8 +32,12 @@ struct ScriptTableNode {
     RawString scriptName;
     u32 scriptId;
 };
-
-constexpr u32 maxErrorMessageSize = 512;
+struct StringTableNode {
+    bool unused; // If unused, string was only used by triggers being replaced and has yet to be used by new triggers
+    ScStrPtr scStr;
+    u32 stringId;
+    std::vector<u32*> assignees;
+};
 
 class TextTrigCompiler : public StaticTrigComponentParser
 {
@@ -41,14 +45,14 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
         virtual ~TextTrigCompiler();
-        bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTrigger(std::string & trigText, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData); // Compiles text, fills trigger upon success
+        bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
+        bool CompileTrigger(std::string & trigText, Chk::TriggerPtr trigger, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
         // Attempts to compile the condition argument at argIndex into the given condition
         bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
-        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData);
+        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
         bool ParseActionName(std::string text, Chk::Action::Type & actionType);
-        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData);
+        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
         static u8 defaultConditionFlags(Chk::Condition::Type conditionType);
         static u8 defaultActionFlags(Chk::Action::Type actionType);
         static u8 numConditionArgs(Chk::Condition::VirtualType conditionType);
@@ -57,7 +61,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
     protected:
 
-        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData); // Sets up all the data needed for a run of the compiler
+        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Sets up all the data needed for a run of the compiler
         void ClearCompiler(); // Clears data loaded for a run of the compiler
         void CleanText(std::string & text); // Remove spacing and standardize line endings
 
@@ -91,7 +95,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool ParseActionArg(std::string & text, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument argument, std::stringstream & error); // Parse an argument belonging to an action
         bool ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags);
 
-        bool zzParseString(std::string & text, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
+        bool ParseString(std::string & text, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
         bool ParseLocationName(std::string & text, u32 & dest, size_t pos, size_t end); // Find a location in the map by its string
         bool ParseUnitName(std::string & text, Sc::Unit::Type & dest, size_t pos, size_t end); // Get a unitID using a unit name
         bool ParseWavName(std::string & text, u32 & dest, size_t pos, size_t end); // Find a wav in the map by its string, redundant? remove me?
@@ -113,29 +117,31 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
         u32 deathTableOffset;
         std::hash<std::string> strHash; // A hasher to help generate tables
-        std::unordered_multimap<size_t, LocationTableNode> locationTable; // Binary tree of the maps locations
-        std::unordered_multimap<size_t, UnitTableNode> unitTable; // Binary tree of the maps untis
-        std::unordered_multimap<size_t, SwitchTableNode> switchTable; // Binary tree of the maps switches
-        std::unordered_multimap<size_t, GroupTableNode> groupTable; // Binary tree of the maps groups
-        std::unordered_multimap<size_t, ScriptTableNode> scriptTable; // Binary tree of map scripts
-        std::unordered_multimap<size_t, zzStringTableNode> zzStringTable; // Binary tree of the maps strings
-        std::unordered_multimap<size_t, zzStringTableNode> extendedStringTable; // Binary tree of the maps strings
-        std::vector<zzStringTableNode> zzAddedStrings; // Forward list of strings added during compilation
-        std::vector<zzStringTableNode> addedExtendedStrings; // Forward list of extended strings added during compilation
-        std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
-        std::bitset<Chk::MaxStrings> extendedStringUsed; // Table of extended strings currently used in the map
-        bool useNextString(u32 & index);
-        bool useNextExtendedString(u32 & index);
+        std::unordered_multimap<size_t, LocationTableNode> locationTable; // Location hash map
+        std::unordered_multimap<size_t, UnitTableNode> unitTable; // Unit hash map
+        std::unordered_multimap<size_t, SwitchTableNode> switchTable; // Switch hash map
+        std::unordered_multimap<size_t, GroupTableNode> groupTable; // Group/Player hash map
+        std::unordered_multimap<size_t, ScriptTableNode> scriptTable; // Script hash map
+
+        std::unordered_multimap<size_t, StringTableNode> newStringTable; // String hash map
+        std::vector<StringTableNode*> unassignedStrings; // Strings in stringTable that have yet to be assigned stringIds
+
+        std::unordered_multimap<size_t, StringTableNode> newExtendedStringTable; // Extended string hash map
+        std::vector<StringTableNode*> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
+
+        //bool useNextString(u32 & index);
+        //bool useNextExtendedString(u32 & index);
 
         bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
         bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
         bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
         bool PrepScriptTable(Sc::Data & scData); // Fills scriptTable
-        bool PrepStringTable(ScenarioPtr map); // Fills stringUsed and stringTable
+        bool PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
+        void PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
         bool PrepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
 
-        bool BuildNewStringTable(ScenarioPtr chk, std::stringstream & error); // Builds a new STR section using stringTable and addedStrings
+        bool BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error); // Builds the new TRIG and STR sections
 };
 
 size_t findStringEnd(const std::string & str, size_t pos);

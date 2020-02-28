@@ -147,7 +147,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
         if ( editControl.GetWinText(trigText) )
         {
             TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.CompileTriggers(trigText, map, chkd.scData) )
+            if ( compiler.CompileTriggers(trigText, map, chkd.scData, 0, map->triggers.numTriggers()) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

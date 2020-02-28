@@ -19,9 +19,9 @@ TextTrigCompiler::~TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
-    if ( !LoadCompiler(chk, scData) )
+    if ( !LoadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
         return false;
 
     try
@@ -30,17 +30,17 @@ bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::
 
         std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
-        std::stringstream stringTableError;
+        std::stringstream buildError;
 
         if ( ParseTriggers(text, triggers, compilerError) )
         {
-            if ( BuildNewStringTable(chk, stringTableError) )
+            if ( BuildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
             {
                 chk->triggers.trig->swap(triggers);
                 return true;
             }
             else
-                compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
+                compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
         }
 
         CHKD_ERR(compilerError.str());
@@ -49,9 +49,9 @@ bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::Trigger* trigger, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::TriggerPtr trigger, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !LoadCompiler(chk, scData) )
+    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
 
     try
@@ -59,22 +59,20 @@ bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::Trigger* trigger,
         CleanText(text);
         std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
-        std::stringstream stringTableError;
+        std::stringstream buildError;
 
         if ( ParseTriggers(text, triggers, compilerError) )
         {
-            if ( BuildNewStringTable(chk, stringTableError) )
+            if ( triggers.size() == 1 )
             {
-                if ( triggers.size() == 0 )
-                {
-                    *trigger = *triggers[0];
+
+                if ( BuildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
                     return true;
-                }
                 else
-                    compilerError << "No text errors, but trigger could not be transferred.";
+                    compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
             }
             else
-                compilerError << "No text errors, but compilation must abort due to errors recompiling strings." << std::endl << std::endl << stringTableError.str();
+                compilerError << "Expected 1 trigger but found " << triggers.size() << " triggers.";
         }
 
         CHKD_ERR(compilerError.str());
@@ -113,9 +111,9 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !LoadCompiler(chk, scData) )
+    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
 
     std::string txcd = conditionArgText;
@@ -161,9 +159,9 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !LoadCompiler(chk, scData) )
+    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
     
     std::string txac = actionArgText;
@@ -235,17 +233,15 @@ u8 TextTrigCompiler::numActionArgs(Chk::Action::VirtualType actionType)
 
 // protected
 
-bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData)
+bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     ClearCompiler();
-    stringUsed.reset();
-    extendedStringUsed.reset();
-    chk->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
-    chk->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Either);
 
     return
         PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
-        PrepGroupTable(chk) && PrepStringTable(chk) && PrepScriptTable(scData);
+        PrepGroupTable(chk) && PrepScriptTable(scData) &&
+        PrepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game) &&
+        PrepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor);
 }
 
 void TextTrigCompiler::ClearCompiler()
@@ -254,14 +250,12 @@ void TextTrigCompiler::ClearCompiler()
     unitTable.clear();
     switchTable.clear();
     groupTable.clear();
-    zzStringTable.clear();
-    extendedStringTable.clear();
 
-    zzAddedStrings.clear();
-    addedExtendedStrings.clear();
+    unassignedStrings.clear();
+    newStringTable.clear();
 
-    stringUsed.reset();
-    extendedStringUsed.reset();
+    unassignedExtendedStrings.clear();
+    newExtendedStringTable.clear();
 }
 
 void TextTrigCompiler::CleanText(std::string & text)
@@ -402,7 +396,11 @@ void TextTrigCompiler::CleanText(std::string & text)
             break;
         }
     }
-    dest.str().swap(text);
+
+    if ( !dest.empty() )
+        text.assign(dest.begin(), dest.end());
+    else
+        text = "";
 }
 
 bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error)
@@ -1969,7 +1967,7 @@ bool TextTrigCompiler::ParseActionArg(std::string & text, Chk::Action & currActi
                 ParseLong(textPtr, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Action::ArgType::String:
-            returnMsg( zzParseString(text, currAction.stringId, pos, end) ||
+            returnMsg( ParseString(text, currAction.stringId, pos, end) ||
                 ParseLong(textPtr, currAction.stringId, pos, end),
                 "Expected: String or stringNum" );
         case Chk::Action::ArgType::Player:
@@ -2096,7 +2094,7 @@ bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_
     return ParseBinaryLong(argData, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::zzParseString(std::string & text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseString(std::string & text, u32 & dest, size_t pos, size_t end)
 {
     if ( compareCaseless(text, pos, 9, "No String") || compareCaseless(text, pos, 11, "\"No String\"") )
     {
@@ -2128,60 +2126,40 @@ bool TextTrigCompiler::zzParseString(std::string & text, u32 & dest, size_t pos,
         char temp = stringPtr[size];
         EscString escStr(stringPtr, size);
 
-        RawString str;
-        ConvertStr(escStr, str);
+        RawString rawString;
+        ConvertStr(escStr, rawString);
 
-        size_t hash = strHash(str);
-        size_t numMatching = zzStringTable.count(hash);
-        if ( numMatching == 1 )
-        { // Should guarentee that you can find at least one entry
-            zzStringTableNode & node = zzStringTable.find(hash)->second;
-            if ( node.scStr->compare<RawString>(str) == 0 )
-            {
-                dest = node.stringId;
-                success = true;
-            }
-        }
-        else if ( numMatching > 1 )
+        size_t hash = strHash(rawString);
+        auto matches = newStringTable.equal_range(hash);
+        if ( matches.first != newStringTable.end() && matches.first->first == hash )
         {
-            auto range = zzStringTable.equal_range(hash);
-            foreachin(pair, range)
+            for ( auto it = matches.first; it != matches.second; ++it )
             {
-                zzStringTableNode & node = pair->second;
-                if ( node.scStr->compare<RawString>(str) == 0 )
+                StringTableNode & node = it->second;
+                if ( node.scStr->compare(rawString) == 0 )
                 {
-                    if ( success == false ) // If no matches have previously been found
-                    {
+                    if ( node.unused )
+                        node.unused = false;
+
+                    if ( node.stringId == Chk::StringId::NoString )
+                        node.assignees.push_back(&dest);
+                    else
                         dest = node.stringId;
-                        success = true;
-                    }
-                    else // If matches have previously been found
-                    {
-                        if ( node.stringId < dest )
-                        { // Replace if stringNum < prevStringNum
-                            dest = node.stringId;
-                        }
-                    }
+
+                    return true;
                 }
             }
         }
 
-        if ( success == false ) // No string matches have been found
-                                // New string, try to add it to the map
-        {
-            zzStringTableNode node;
-            node.scStr = ScStrPtr(new ScStr(str));
-
-            if ( useNextString(node.stringId) )
-            {
-                zzAddedStrings.push_back(node); // Add to the addedStrings list so it can be added to the map after compiling
-                zzStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(str), node)); // Add to search tree for recycling
-                dest = node.stringId;
-                success = true;
-            }
-        }
+        // No matches
+        StringTableNode node;
+        node.unused = false;
+        node.scStr = ScStrPtr(new ScStr(rawString));
+        node.stringId = 0;
+        node.assignees.push_back(&dest);
+        return true;
     }
-    return success;
+    return false;
 }
 
 bool TextTrigCompiler::ParseLocationName(std::string & text, u32 & dest, size_t pos, size_t end)
@@ -2844,7 +2822,7 @@ bool TextTrigCompiler::ParseWavName(std::string & text, u32 & dest, size_t pos, 
         return true;
     }
     else
-        return zzParseString(text, dest, pos, end);
+        return ParseString(text, dest, pos, end);
 }
 
 bool TextTrigCompiler::ParsePlayer(std::string & text, u32 & dest, size_t pos, size_t end)
@@ -3343,7 +3321,7 @@ s32 TextTrigCompiler::ExtendedNumActionArgs(Chk::Action::VirtualType actionType)
 
 // private
 
-bool TextTrigCompiler::useNextString(u32 & index)
+/*bool TextTrigCompiler::useNextString(u32 & index)
 {
     for ( size_t i=1; i>0 && i<Chk::MaxStrings; i++ )
     {
@@ -3367,7 +3345,7 @@ bool TextTrigCompiler::useNextExtendedString(u32 & index)
         }
     }
     return false;
-}
+}*/
 
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {
@@ -3457,46 +3435,87 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepStringTable(ScenarioPtr map)
+bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
-    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
-    size_t stringCapacity = map->strings.getCapacity(Chk::Scope::Game);
-    for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
+    std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
+    u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
+    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, scope, userMask);
+    size_t stringCapacity = map->strings.getCapacity(scope);
+    for ( size_t stringId=1; stringId<=stringCapacity; stringId++ )
     {
         if ( stringUsed[stringId] )
         {
-            RawStringPtr rawString = map->strings.getString<RawString>(stringId, Chk::Scope::Game);
+            RawStringPtr rawString = map->strings.getString<RawString>(stringId, scope);
             if ( rawString != nullptr )
             {
-                zzStringTableNode node;
+                StringTableNode node;
+                node.unused = false;
                 node.scStr = ScStrPtr(new ScStr(*rawString));
                 node.stringId = (u32)stringId;
-                zzStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(*rawString), node));
+                stringHashTable.insert(std::pair<size_t, StringTableNode>(strHash(*rawString), node));
             }
         }
     }
+
+    if ( scope == Chk::Scope::Game )
+    {
+        auto & triggers = map->triggers;
+        size_t numTriggers = triggers.numTriggers();
+        for ( size_t trigIndex = 0; trigIndex < numTriggers; trigIndex++ )
+        {
+            bool inReplacedRange = trigIndex >= trigIndexBegin && trigIndex < trigIndexEnd;
+            const Chk::TriggerPtr trigger = triggers.getTrigger(trigIndex);
+            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                const Chk::Action & action = trigger->actions[actionIndex];
+                const Chk::Action::Type & actionType = action.actionType;
+                if ( actionType < Chk::Action::NumActionTypes )
+                {
+                    if ( Chk::Action::actionUsesStringArg[actionType] && action.stringId > 0 )
+                        PrepTriggerString(*map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
+
+                    if ( Chk::Action::actionUsesSoundArg[actionType] && action.soundStringId > 0 )
+                        PrepTriggerString(*map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
+                }
+            }
+        }
+    }
+
     return true;
 }
 
-bool TextTrigCompiler::PrepExtendedStringTable(ScenarioPtr map)
+void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
-    map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
-    size_t extendedStringCapacity = map->strings.getCapacity(Chk::Scope::Editor);
-    for ( size_t stringId=1; stringId<extendedStringCapacity; stringId++ )
+    RawStringPtr rawString = scenario.strings.getString<RawString>(stringId, scope);
+    if ( rawString != nullptr )
     {
-        if ( stringUsed[stringId] )
+        size_t hash = strHash(*rawString);
+        bool exists = false;
+        auto matches = stringHashTable.equal_range(hash);
+        if ( matches.first != stringHashTable.end() && matches.first->first == hash )
         {
-            RawStringPtr rawString = map->strings.getString<RawString>(stringId, Chk::Scope::Editor);
-            if ( rawString != nullptr )
+            for ( auto it = matches.first; it != matches.second; ++it )
             {
-                zzStringTableNode node;
-                node.scStr = ScStrPtr(new ScStr(*rawString));
-                node.stringId = (u32)stringId;
-                extendedStringTable.insert(std::pair<size_t, zzStringTableNode>(strHash(*rawString), node));
+                if ( it->second.stringId == stringId && it->second.scStr->compare(*rawString) == 0 )
+                {
+                    exists = true;
+                    if ( it->second.unused && !inReplacedRange )
+                        it->second.unused = false;
+
+                    break;
+                }
             }
         }
+
+        if ( !exists )
+        {
+            StringTableNode node;
+            node.unused = inReplacedRange;
+            node.scStr = ScStrPtr(new ScStr(*rawString));
+            node.stringId = stringId;
+            stringHashTable.insert(std::pair<size_t, StringTableNode>(strHash(*rawString), node));
+        }
     }
-    return true;
 }
 
 bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
@@ -3513,9 +3532,39 @@ bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
     return true;
 }
 
-bool TextTrigCompiler::BuildNewStringTable(ScenarioPtr map, std::stringstream & error)
+bool TextTrigCompiler::BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error)
 {
-    return map->strings.addStrings(zzAddedStrings, Chk::Scope::Game, true) && map->strings.addStrings(addedExtendedStrings, Chk::Scope::Editor, true);
+    auto strBackup = scenario->strings.backup();
+    std::deque<Chk::TriggerPtr> replacedTriggers = scenario->triggers.replaceRange(trigIndexBegin, trigIndexEnd, triggers);
+    bool success = true;
+    try {
+        scenario->strings.deleteUnusedStrings(Chk::Scope::Both);
+        for ( auto str : unassignedStrings )
+        {
+            str->stringId = (u32)scenario->strings.addString<RawString>(str->scStr->str, Chk::Scope::Game);
+            if ( str->stringId != Chk::StringId::NoString )
+            {
+                for ( auto assignee : str->assignees )
+                    *assignee = str->stringId;
+            }
+            else
+            {
+                success = false;
+                break;
+            }
+        }
+    } catch ( std::exception & e ) {
+        error << e.what() << std::endl;
+        success = false;
+    }
+
+    if ( !success )
+    {
+        size_t unreplaceEndIndex = trigIndexBegin + replacedTriggers.size();
+        scenario->triggers.replaceRange(trigIndexBegin, unreplaceEndIndex, replacedTriggers);
+        scenario->strings.restore(strBackup);
+    }
+    return success;
 }
 
 size_t findStringEnd(const std::string & str, size_t pos)
@@ -3524,6 +3573,9 @@ size_t findStringEnd(const std::string & str, size_t pos)
     while ( pos < strSize )
     {
         size_t nextQuote = str.find('\"', pos);
+        if ( pos == nextQuote )
+            nextQuote = str.find('\"', ++pos);
+
         if ( nextQuote == std::string::npos )
             return std::string::npos;
         else if ( nextQuote > 0 && str[nextQuote-1] == '\\' ) // Escaped quote
@@ -3540,6 +3592,9 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character)
     while ( pos < strSize )
     {
         size_t nextQuote = str.find('\"', pos);
+        if ( pos == nextQuote )
+            nextQuote = str.find('\"', ++pos);
+
         size_t nextChar = str.find(character, pos);
         if ( nextChar == std::string::npos )
             return std::string::npos;

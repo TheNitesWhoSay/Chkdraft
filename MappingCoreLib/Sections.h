@@ -59,7 +59,6 @@ typedef std::shared_ptr<OstrSection> OstrSectionPtr; typedef std::shared_ptr<Kst
 
 class StrProp;
 class ScStr;
-struct zzStringTableNode;
 class StrCompressionElevator;
 class StringException;
 class MaximumStringsExceeded;
@@ -636,6 +635,7 @@ class StrSection : public DynamicSection<false>
     public:
         static StrSectionPtr GetDefault(bool blank = false);
         StrSection();
+        StrSection(const StrSection & other);
         virtual ~StrSection();
 
         size_t getCapacity();
@@ -670,6 +670,9 @@ class StrSection : public DynamicSection<false>
         size_t getInitialTailDataOffset(); // Gets the offset tail data was at when it was initially read in
         size_t getBytePaddedTo(); // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none for tail data read in)
         void setBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
+
+        StrSectionPtr backup();
+        void restore(StrSectionPtr backup); // A backup instance can only be restored once
 
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
@@ -768,6 +771,7 @@ class TrigSection : public DynamicSection<false>
         void deleteTrigger(size_t triggerIndex);
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
         void swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers);
+        std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
         bool locationUsed(size_t locationId);
         bool stringUsed(size_t stringId);
@@ -788,7 +792,7 @@ class TrigSection : public DynamicSection<false>
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        std::deque<std::shared_ptr<Chk::Trigger>> triggers;
+        std::deque<Chk::TriggerPtr> triggers;
 };
 
 class MbrfSection : public DynamicSection<false>
@@ -830,8 +834,8 @@ class SprpSection : public StructSection<Chk::SPRP, false>
         size_t getScenarioDescriptionStringId();
         void setScenarioNameStringId(u16 scenarioNameStringId);
         void setScenarioDescriptionStringId(u16 scenarioDescriptionStringId);
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1135,8 +1139,8 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         void setSwitchNameStringId(size_t switchIndex, u32 switchNameStringId);
         void setLocationNameStringId(size_t locationId, u32 locationNameStringId);
 
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1237,11 +1241,6 @@ class ScStr
         StrProp strProp; // Additional color and font details, if this string is extended and gets stored
 
         static void adopt(ScStrPtr parent, ScStrPtr child, size_t parentLength, size_t childLength, const char* parentSubString);
-};
-
-struct zzStringTableNode {
-    ScStrPtr scStr;
-    u32 stringId;
 };
 
 /** None - No compression methods applied
@@ -1389,9 +1388,9 @@ class StrSynchronizer
         StrSynchronizer(u32 requestedCompressionFlags, u32 allowedCompressionFlags)
             : requestedCompressionFlags(requestedCompressionFlags), allowedCompressionFlags(allowedCompressionFlags) { }
 
-        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, bool ensureStored = false) = 0;
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either) = 0;
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) = 0;
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) = 0;
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) = 0;
 
         virtual void syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),

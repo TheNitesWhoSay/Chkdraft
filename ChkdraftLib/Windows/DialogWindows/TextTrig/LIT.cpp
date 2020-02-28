@@ -169,7 +169,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
                 if ( foundLitTrigs )
                 {
                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
-                    if ( compiler.CompileTriggers(litTrigs, map, chkd.scData) )
+                    if ( compiler.CompileTriggers(litTrigs, map, chkd.scData, 0, map->triggers.numTriggers()) )
                     {
                         foundLitText ? WinLib::Message(litText, "LIT") : WinLib::Message("Success!", "Text Trigger Compiler");
                         return true;

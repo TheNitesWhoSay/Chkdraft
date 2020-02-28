@@ -612,28 +612,35 @@ size_t Strings::getCapacity(Chk::Scope storageScope)
         return 0;
 }
 
-bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, bool ensureStored)
+bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored)
 {
     if ( storageScope == Chk::Scope::Game && (str->stringStored(stringId) || !ensureStored) )
     {
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
         {
             if ( usageScope == Chk::Scope::Editor )
-                return layers->stringUsed(stringId) || triggers->editorStringUsed(stringId);
+                return layers->stringUsed(stringId, storageScope, userMask) || triggers->editorStringUsed(stringId, userMask);
             else if ( usageScope == Chk::Scope::Game )
-                return sprp->stringUsed(stringId) || players->stringUsed(stringId) || properties->stringUsed(stringId) || triggers->gameStringUsed(stringId);
+            {
+                return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
+                    properties->stringUsed(stringId, userMask) || triggers->gameStringUsed(stringId, userMask);
+            }
             else // if ( usageScope == Chk::Scope::Either )
-                return sprp->stringUsed(stringId) || players->stringUsed(stringId) || properties->stringUsed(stringId) || layers->stringUsed(stringId) || triggers->stringUsed(stringId);
+            {
+                return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
+                    properties->stringUsed(stringId, userMask) || layers->stringUsed(stringId, storageScope, userMask) ||
+                    triggers->stringUsed(stringId, userMask);
+            }
         }
         else // stringId >= Chk::MaxStrings // 32-bit stringId
         {
-            return usageScope == Chk::Scope::Either && triggers->stringUsed(stringId) ||
-                usageScope == Chk::Scope::Game && triggers->gameStringUsed(stringId) ||
-                usageScope == Chk::Scope::Editor && triggers->editorStringUsed(stringId);
+            return usageScope == Chk::Scope::Either && triggers->stringUsed(stringId, userMask) ||
+                usageScope == Chk::Scope::Game && triggers->gameStringUsed(stringId, userMask) ||
+                usageScope == Chk::Scope::Editor && triggers->editorStringUsed(stringId, userMask);
         }
     }
     else if ( storageScope == Chk::Scope::Editor && (kstr->stringStored(stringId) || !ensureStored) )
-        return ostr->stringUsed(stringId);
+        return ostr->stringUsed(stringId, userMask);
 
     return false;
 }
@@ -644,7 +651,7 @@ bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
         (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
 }
 
-void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
+void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
 {
     if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
@@ -653,30 +660,30 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::
 
         if ( markGameStrings )
         {
-            sprp->markUsedStrings(stringIdUsed); // {SPRP, Game, u16}: Scenario Name and Scenario Description
-            players->markUsedStrings(stringIdUsed); // {FORC, Game, u16}: Force Names
-            properties->markUsedStrings(stringIdUsed); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
+            sprp->markUsedStrings(stringIdUsed, userMask); // {SPRP, Game, u16}: Scenario Name and Scenario Description
+            players->markUsedStrings(stringIdUsed, userMask); // {FORC, Game, u16}: Force Names
+            properties->markUsedStrings(stringIdUsed, userMask); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
             if ( markEditorStrings ) // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, ...
-                triggers->markUsedStrings(stringIdUsed); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
+                triggers->markUsedStrings(stringIdUsed, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
             else
-                triggers->markUsedGameStrings(stringIdUsed); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
+                triggers->markUsedGameStrings(stringIdUsed, userMask); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
         }
 
         if ( markEditorStrings )
         {
-            layers->markUsedStrings(stringIdUsed); // {MRGN, Editor, u16}: location name
+            layers->markUsedStrings(stringIdUsed, userMask); // {MRGN, Editor, u16}: location name
             if ( !markGameStrings )
-                triggers->markUsedEditorStrings(stringIdUsed); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
+                triggers->markUsedEditorStrings(stringIdUsed, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
         }
     }
     
     if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
-        ostr->markUsedStrings(stringIdUsed);
+        ostr->markUsedStrings(stringIdUsed, userMask);
 }
 
-void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope)
+void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
 {
-    markUsedStrings(stringIdUsed, usageScope);
+    markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
     switch ( storageScope )
     {
         case Chk::Scope::Game:
@@ -798,77 +805,6 @@ template size_t Strings::addString<EscString>(const EscString & str, Chk::Scope 
 template size_t Strings::addString<ChkdString>(const ChkdString & str, Chk::Scope storageScope, bool autoDefragment);
 template size_t Strings::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope, bool autoDefragment);
 
-bool Strings::addStrings(const std::vector<zzStringTableNode> stringsToAdd, Chk::Scope storageScope, bool autoDefragment)
-{
-    size_t highestStringId = 0;
-    std::vector<zzStringTableNode> allocatedStrings; // Create the strings' final containers all before adding any, do not use the containers passed in as that would allow those strings to mutate without validation
-    if ( storageScope == Chk::Scope::Game )
-    {
-        std::bitset<Chk::MaxStrings> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
-        for ( const zzStringTableNode & stringToAdd : stringsToAdd )
-        {
-            if ( stringToAdd.stringId > 0 || stringToAdd.stringId > Chk::MaxStrings || stringIdUsed[stringToAdd.stringId] ) // Check if stringId invalid or stringId already in use
-                return false;
-            else // Looks good, setup the final container for the string
-            {
-                zzStringTableNode stringAllocation;
-                stringAllocation.scStr = ScStrPtr(new ScStr(stringToAdd.scStr->str));
-                stringAllocation.stringId = stringToAdd.stringId;
-                allocatedStrings.push_back(stringAllocation);
-                if ( stringAllocation.stringId > highestStringId )
-                    highestStringId = stringAllocation.stringId;
-            }
-        }
-
-        if ( highestStringId > getCapacity(Chk::Scope::Game) ) // If the strings capacity needs to be adjusted, do so now
-            setCapacity(highestStringId, Chk::Scope::Game, autoDefragment);
-
-        for ( zzStringTableNode stringAllocation : allocatedStrings ) // Copy the string into the str section
-        {
-            if ( stringAllocation.scStr == nullptr )
-                this->str->deleteString(stringAllocation.stringId, false, nullptr);
-            else
-                this->str->replaceString<RawString>(stringAllocation.stringId, RawString(stringAllocation.scStr->str));
-        }
-
-        return true;
-    }
-    else if ( storageScope == Chk::Scope::Editor )
-    {
-        std::bitset<Chk::MaxStrings> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
-        for ( const zzStringTableNode & stringToAdd : stringsToAdd )
-        {
-            if ( stringToAdd.stringId == 0 || stringToAdd.stringId > Chk::MaxStrings || stringIdUsed[stringToAdd.stringId] ) // Check if stringId invalid or stringId already in use
-                return false;
-            else // Looks good, setup the final container for the string
-            {
-                zzStringTableNode stringAllocation;
-                stringAllocation.scStr = ScStrPtr(new ScStr(stringToAdd.scStr->str));
-                stringAllocation.stringId = stringToAdd.stringId;
-                allocatedStrings.push_back(stringAllocation);
-                if ( stringAllocation.stringId > highestStringId )
-                    highestStringId = stringAllocation.stringId;
-            }
-        }
-
-        if ( highestStringId > getCapacity(Chk::Scope::Editor) ) // If the strings capacity needs to be adjusted, do so now
-            setCapacity(highestStringId, Chk::Scope::Editor, autoDefragment);
-
-        for ( zzStringTableNode stringAllocation : allocatedStrings ) // Copy the string into the kstr section
-        {
-            if ( stringAllocation.scStr == nullptr )
-                kstr->deleteString(stringAllocation.stringId, false, nullptr);
-            else
-                kstr->replaceString<RawString>(stringAllocation.stringId, RawString(stringAllocation.scStr->str));
-        }
-
-        return true;
-    }
-    return false;
-}
-
 template <typename StringType>
 void Strings::replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope)
 {
@@ -910,7 +846,7 @@ void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool delete
     
     if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
     {
-        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, true) )
+        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
         {
             kstr->deleteString(stringId, deleteOnlyIfUnused, std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
 
@@ -929,7 +865,7 @@ void Strings::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope stor
 
 size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, bool autoDefragment)
 {
-    if ( changeStorageScopeTo == Chk::Scope::Editor && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, true) )
+    if ( changeStorageScopeTo == Chk::Scope::Editor && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, Chk::StringUserFlag::All, true) )
     {
         RawStringPtr toRescope = getString<RawString>(stringId, Chk::Scope::Game);
         size_t newStringId = addString<RawString>(*toRescope, Chk::Scope::Editor, autoDefragment);
@@ -1002,7 +938,7 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
                 deleteString(stringIdReplaced, Chk::Scope::Editor, true);
         }
     }
-    else if ( changeStorageScopeTo == Chk::Scope::Game && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, true) )
+    else if ( changeStorageScopeTo == Chk::Scope::Game && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
     {
         RawStringPtr toRescope = getString<RawString>(stringId, Chk::Scope::Editor);
         size_t newStringId = addString<RawString>(*toRescope, Chk::Scope::Game, autoDefragment);
@@ -1615,6 +1551,18 @@ const std::vector<u32> Strings::compressionFlagsProgression = {
         | StrCompressFlag::SizeBytesRecycling
 };
 
+
+Strings::StringBackup Strings::backup()
+{
+    return { (str == nullptr ? nullptr : str->backup()) };
+}
+
+void Strings::restore(StringBackup & backup)
+{
+    if ( str != nullptr )
+        str->restore(backup.strBackup);
+}
+
 void Strings::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
@@ -1751,14 +1699,15 @@ void Players::setForceFlags(Chk::Force force, u8 forceFlags)
     forc->setForceFlags(force, forceFlags);
 }
 
-bool Players::stringUsed(size_t stringId)
+bool Players::stringUsed(size_t stringId, u32 userMask)
 {
-    return forc->stringUsed(stringId);
+    return (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force && forc->stringUsed(stringId);
 }
 
-void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    forc->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
+        forc->markUsedStrings(stringIdUsed);
 }
 
 void Players::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -2304,22 +2253,27 @@ void Layers::matchAnywhereToDimensions()
     }
 }
 
-bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope)
+bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
 {
-    switch ( storageScope )
+    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
-        case Chk::Scope::Either:
-        case Chk::Scope::EditorOverGame:
-        case Chk::Scope::GameOverEditor: return mrgn->stringUsed(stringId) || strings->ostr->stringUsed(stringId);
-        case Chk::Scope::Game: return mrgn->stringUsed(stringId);
-        case Chk::Scope::Editor: return strings->ostr->stringUsed(stringId);
-        default: return false;
+        switch ( storageScope )
+        {
+            case Chk::Scope::Either:
+            case Chk::Scope::EditorOverGame:
+            case Chk::Scope::GameOverEditor: return mrgn->stringUsed(stringId) || strings->ostr->stringUsed(stringId, Chk::StringUserFlag::Location);
+            case Chk::Scope::Game: return mrgn->stringUsed(stringId);
+            case Chk::Scope::Editor: return strings->ostr->stringUsed(stringId, Chk::StringUserFlag::Location);
+            default: return false;
+        }
     }
+    return false;
 }
 
-void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    mrgn->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
+        mrgn->markUsedStrings(stringIdUsed);
 }
 
 void Layers::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -3208,15 +3162,19 @@ void Properties::setTechsToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::stringUsed(size_t stringId)
+bool Properties::stringUsed(size_t stringId, u32 userMask)
 {
-    return unis->stringUsed(stringId) || unix->stringUsed(stringId);
+    return ((userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings && unis->stringUsed(stringId)) ||
+        ((userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings && unix->stringUsed(stringId));
 }
 
-void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    unis->markUsedStrings(stringIdUsed);
-    unix->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
+        unis->markUsedStrings(stringIdUsed);
+    
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+        unix->markUsedStrings(stringIdUsed);
 }
 
 void Properties::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -3405,6 +3363,11 @@ void Triggers::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
     trig->moveTrigger(triggerIndexFrom, triggerIndexTo);
 }
 
+std::deque<Chk::TriggerPtr> Triggers::replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers)
+{
+    return trig->replaceRange(beginIndex, endIndex, triggers);
+}
+
 size_t Triggers::numBriefingTriggers()
 {
     return mbrf->numBriefingTriggers();
@@ -3470,19 +3433,25 @@ bool Triggers::locationUsed(size_t locationId)
     return trig->locationUsed(locationId);
 }
 
-bool Triggers::stringUsed(size_t stringId)
+bool Triggers::stringUsed(size_t stringId, u32 userMask)
 {
-    return wav->stringUsed(stringId) || swnm->stringUsed(stringId) || trig->stringUsed(stringId) || mbrf->stringUsed(stringId);
+    return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->stringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger && mbrf->stringUsed(stringId);
 }
 
-bool Triggers::gameStringUsed(size_t stringId)
+bool Triggers::gameStringUsed(size_t stringId, u32 userMask)
 {
-    return trig->gameStringUsed(stringId) || mbrf->stringUsed(stringId);
+    return (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->gameStringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger && mbrf->stringUsed(stringId);
 }
 
-bool Triggers::editorStringUsed(size_t stringId)
+bool Triggers::editorStringUsed(size_t stringId, u32 userMask)
 {
-    return wav->stringUsed(stringId) || swnm->stringUsed(stringId) || trig->commentStringUsed(stringId);
+    return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
+        (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->commentStringUsed(stringId);
 }
 
 void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
@@ -3490,25 +3459,40 @@ void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationId
     trig->markUsedLocations(locationIdUsed);
 }
 
-void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    wav->markUsedStrings(stringIdUsed);
-    swnm->markUsedStrings(stringIdUsed);
-    trig->markUsedStrings(stringIdUsed);
-    mbrf->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+        wav->markUsedStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+        swnm->markUsedStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
+        trig->markUsedStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger )
+        mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    trig->markUsedGameStrings(stringIdUsed);
-    mbrf->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
+        trig->markUsedGameStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger )
+        mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    wav->markUsedStrings(stringIdUsed);
-    swnm->markUsedStrings(stringIdUsed);
-    trig->markUsedCommentStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+        wav->markUsedStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+        swnm->markUsedStrings(stringIdUsed);
+
+    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
+        trig->markUsedCommentStrings(stringIdUsed);
 }
 
 void Triggers::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)

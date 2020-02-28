@@ -44,7 +44,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     std::string textBuf(inputText.get());
 
                                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
-                                    if ( compiler.CompileTriggers(textBuf, map, chkd.scData) )
+                                    if ( compiler.CompileTriggers(textBuf, map, chkd.scData, 0, map->triggers.numTriggers()) )
                                     {
                                         map->notifyChange(false);
                                         return TRUE;

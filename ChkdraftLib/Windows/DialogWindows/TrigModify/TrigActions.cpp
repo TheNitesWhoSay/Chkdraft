@@ -443,9 +443,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData)) ||
+                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex)) ||
                         (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData));
+                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex));
                 }
 
                 if ( newScriptNum != 0 )
@@ -458,9 +458,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             {
                 Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData)) ||
+                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex)) ||
                     (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData));
+                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex));
             }
 
             if ( madeChange )
