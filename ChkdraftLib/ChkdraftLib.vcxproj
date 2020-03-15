@@ -66,7 +66,6 @@
     <ClInclude Include="Windows\ChkdControls\MoveTo.h" />
     <ClInclude Include="Windows\ChkdControls\PeerListBox.h" />
     <ClInclude Include="Windows\ChkdControls\PlayerDropdown.h" />
-    <ClInclude Include="Windows\ChkdControls\StreamEditControl.h" />
     <ClInclude Include="Windows\ChkdControls\Suggestions.h" />
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
@@ -106,6 +105,7 @@
     <ClInclude Include="Windows\DialogWindows\TrigModify\TrigPlayers.h" />
     <ClInclude Include="Windows\MainWindows\GuiMap.h" />
     <ClInclude Include="Windows\MainWindows\LeftBar.h" />
+    <ClInclude Include="Windows\MainWindows\LoggerWindow.h" />
     <ClInclude Include="Windows\MainWindows\MainPlot.h" />
     <ClInclude Include="Windows\MainWindows\MainToolbar.h" />
     <ClInclude Include="Windows\MainWindows\Maps.h" />
@@ -140,7 +140,6 @@
     <ClCompile Include="Windows\ChkdControls\MoveTo.cpp" />
     <ClCompile Include="Windows\ChkdControls\PeerListBox.cpp" />
     <ClCompile Include="Windows\ChkdControls\PlayerDropdown.cpp" />
-    <ClCompile Include="Windows\ChkdControls\StreamEditControl.cpp" />
     <ClCompile Include="Windows\ChkdControls\Suggestions.cpp" />
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />
@@ -179,6 +178,7 @@
     <ClCompile Include="Windows\DialogWindows\TrigModify\TrigPlayers.cpp" />
     <ClCompile Include="Windows\MainWindows\GuiMap.cpp" />
     <ClCompile Include="Windows\MainWindows\LeftBar.cpp" />
+    <ClCompile Include="Windows\MainWindows\LoggerWindow.cpp" />
     <ClCompile Include="Windows\MainWindows\MainPlot.cpp" />
     <ClCompile Include="Windows\MainWindows\MainToolbar.cpp" />
     <ClCompile Include="Windows\MainWindows\Maps.cpp" />

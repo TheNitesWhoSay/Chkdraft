@@ -1,14 +1,14 @@
 #ifndef MAINPLOT_H
 #define MAINPLOT_H
 #include "../../../WindowsLib/WindowsUI.h"
-#include "../ChkdControls/StreamEditControl.h"
+#include "../MainWindows/LoggerWindow.h"
 #include "LeftBar.h"
 
 class MainPlot : public WinLib::ClassWindow
 {
     public:
         LeftBar leftBar;
-        StreamEditControl loggerWindow;
+        LoggerWindow loggerWindow;
         virtual ~MainPlot();
         bool CreateThis(HWND hParent, u64 id);
 

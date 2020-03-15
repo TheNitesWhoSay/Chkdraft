@@ -1,4 +1,4 @@
-#include "StreamEditControl.h"
+#include "LoggerWindow.h"
 #include "../../Chkdraft.h"
 
 enum_t(Id, u32, {
@@ -6,17 +6,17 @@ enum_t(Id, u32, {
     RichText
 });
 
-StreamEditControl::StreamEditControl() : std::ostream((std::streambuf*)this), lineNumber(1), showLineNumbers(true)
+LoggerWindow::LoggerWindow() : std::ostream((std::streambuf*)this), lineNumber(1), showLineNumbers(true)
 {
 
 }
 
-StreamEditControl::~StreamEditControl()
+LoggerWindow::~LoggerWindow()
 {
 
 }
 
-bool StreamEditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id)
+bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "NumberedEdit", NULL, false) &&
         ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, x, y, width, height, hParent, (HMENU)id) )
@@ -43,12 +43,12 @@ bool StreamEditControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 he
     return false;
 }
     
-int StreamEditControl::sync()
+int LoggerWindow::sync()
 {
     return 0;
 }
 
-int StreamEditControl::overflow(int c)
+int LoggerWindow::overflow(int c)
 {
     if ( c == '\n' )
     {
@@ -89,7 +89,7 @@ int StreamEditControl::overflow(int c)
     return 0;
 }
 
-void StreamEditControl::SizeSubWindows()
+void LoggerWindow::SizeSubWindows()
 {
     s32 lineNumberTextWidth = 50;
     s32 lineNumberMarginWidth = 20;
@@ -113,7 +113,7 @@ void StreamEditControl::SizeSubWindows()
     richText.RedrawThis();
 }
     
-void StreamEditControl::ToggleLineNumbers()
+void LoggerWindow::ToggleLineNumbers()
 {
     if ( showLineNumbers )
     {
@@ -131,7 +131,7 @@ void StreamEditControl::ToggleLineNumbers()
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
 }
     
-void StreamEditControl::ContextMenu(int x, int y)
+void LoggerWindow::ContextMenu(int x, int y)
 {
     HMENU hMenu = ::CreatePopupMenu();
     auto displayLineNumbers = icux::toUistring(showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers");
@@ -141,7 +141,7 @@ void StreamEditControl::ContextMenu(int x, int y)
         ToggleLineNumbers();
 }
 
-LRESULT StreamEditControl::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
     {

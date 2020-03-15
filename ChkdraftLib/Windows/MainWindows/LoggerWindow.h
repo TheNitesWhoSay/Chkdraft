@@ -1,5 +1,5 @@
-#ifndef STREAMEDITCONTROL_H
-#define STREAMEDITCONTROL_H
+#ifndef LOGGERWINDOW_H
+#define LOGGERWINDOW_H
 #include "../../CommonFiles/CommonFiles.h"
 #include "../WindowsLib/WindowsUi.h"
 #include "../IcuLib/SimpleIcu.h"
@@ -7,11 +7,11 @@
 #include <ostream>
 #include <streambuf>
 
-class StreamEditControl : public WinLib::ClassWindow, public std::ostream, public std::streambuf
+class LoggerWindow : public WinLib::ClassWindow, public std::ostream, public std::streambuf
 {
     public:
-        StreamEditControl();
-        virtual ~StreamEditControl();
+        LoggerWindow();
+        virtual ~LoggerWindow();
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id);
 
     protected:
