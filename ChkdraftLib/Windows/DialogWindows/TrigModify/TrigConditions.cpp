@@ -264,7 +264,7 @@ void TrigConditionsWindow::ChangeConditionType(Chk::Condition & condition, Chk::
 
         condition.conditionType = conditionType;
         condition.typeIndex = 0;
-        condition.flags = TextTrigCompiler::defaultConditionFlags(conditionType);
+        condition.flags = Chk::Condition::getDefaultFlags(conditionType);
         condition.maskFlag = Chk::Condition::MaskFlag::Disabled;
     }
 }

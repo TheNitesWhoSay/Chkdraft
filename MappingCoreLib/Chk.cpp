@@ -445,6 +445,29 @@ Chk::Condition::ArgType Chk::Condition::getTextArgType(VirtualType conditionType
     return Chk::Condition::ArgType::NoType;
 }
 
+u8 Chk::Condition::getDefaultFlags(Type conditionType)
+{
+    if ( conditionType < NumConditionTypes )
+        return defaultFlags[conditionType];
+    else
+        return u8(0);
+}
+
+u8 Chk::Condition::getDefaultFlags(VirtualType conditionType)
+{
+    if ( conditionType < 0 )
+    {
+        switch ( conditionType )
+        {
+            // Don't include VirtualType::Custom, that is determined by parsing args
+            case Condition::VirtualType::Memory: return defaultFlags[Condition::ExtendedBaseType::Memory];
+            default: return u8(0);
+        }
+    }
+    else
+        return getDefaultFlags((Condition::Type)conditionType);
+}
+
 const Chk::Action::Argument & Chk::Action::getClassicArg(Type actionType, size_t argIndex)
 {
     if ( actionType < NumActionTypes && argIndex < MaxArguments )
@@ -531,6 +554,29 @@ Chk::Action::ArgType Chk::Action::getTextArgType(VirtualType actionType, size_t 
             return virtualAction->second.arguments[argIndex].type;
     }
     return Chk::Action::ArgType::NoType;
+}
+
+u8 Chk::Action::getDefaultFlags(Type actionType)
+{
+    if ( actionType < NumActionTypes )
+        return defaultFlags[actionType];
+    else
+        return u8(0);
+}
+
+u8 Chk::Action::getDefaultFlags(VirtualType actionType)
+{
+    if ( actionType < 0 )
+    {
+        switch ( actionType )
+        {
+            // Don't include VirtualType::Custom, that is determined by parsing args
+            case Action::VirtualType::SetMemory: return defaultFlags[Action::ExtendedBaseType::SetMemory];
+            default: return u8(0);
+        }
+    }
+    else
+        return getDefaultFlags((Action::Type)actionType);
 }
 
 inline bool Chk::Action::locationUsed(size_t locationId)

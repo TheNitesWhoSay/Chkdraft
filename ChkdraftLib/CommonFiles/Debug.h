@@ -22,32 +22,6 @@ void CheckInvariant(bool condition, const std::string & file, int line);
 #define Invariant(condition) ( CheckInvariant(condition, __FILE__, __LINE__) ) // States something that must be true at this point in execution
 #endif
 
-#ifdef SHOW_CLI
-#include <iostream>
-#include <Windows.h>
-class CLI
-{
-public:
-    CLI()
-    {
-        AllocConsole();
-        freopen_s(&console, "CONOUT$", "w", stdout);
-        freopen_s(&console, "CONIN$", "r", stdin);
-        std::cout.clear();
-        std::cin.clear();
-    }
-
-    virtual ~CLI()
-    {
-        fclose(console);
-        FreeConsole();
-    }
-
-private:
-    FILE* console;
-};
-#endif
-
 extern char LastError[];
 extern char LastErrorLoc[];
 

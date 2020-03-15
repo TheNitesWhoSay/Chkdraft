@@ -177,60 +177,6 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Ar
     return false;
 }
 
-u8 TextTrigCompiler::defaultConditionFlags(Chk::Condition::Type conditionType)
-{
-    u8 defaultFlags[] = { 0, 0, 16, 16, 0,  16, 16, 16, 16, 0,
-        0, 0, 0, 0, 0,    16, 16, 16, 16, 0,
-        0, 0, 0, 0 };
-
-    if ( conditionType < sizeof(defaultFlags) / sizeof(const u8) )
-        return defaultFlags[conditionType];
-    else
-        return 0;
-}
-
-u8 TextTrigCompiler::defaultActionFlags(Chk::Action::Type actionType)
-{
-    u8 defaultFlags[] = { 0, 4, 4, 4, 4,        4, 4, 0, 4, 0,
-        4, 28, 0, 4, 4,       4, 4, 16, 16, 0,
-        16, 0, 20, 20, 20,    20, 4, 4, 4, 20,
-        4, 4, 4, 16, 16,      0, 16, 0, 20, 20,
-        4, 4, 20, 20, 20,     20, 20, 0, 20, 20,
-        20, 20, 4, 20, 4,     4, 4, 4, 0, 0 };
-
-    if ( actionType < sizeof(defaultFlags) / sizeof(const u8) )
-        return defaultFlags[actionType];
-    else
-        return 0;
-}
-
-u8 TextTrigCompiler::numConditionArgs(Chk::Condition::VirtualType conditionType)
-{
-    const u8 conditionNumArgs[] = { 0, 2, 4, 5, 4, 4, 1, 2, 1, 1,
-        1, 2, 2, 0, 3, 4, 1, 2, 1, 1,
-        1, 4, 0, 0 };
-
-    if ( conditionType >= 0 && conditionType < sizeof(conditionNumArgs) / sizeof(const u8) )
-        return conditionNumArgs[conditionType];
-    else
-        return ExtendedNumConditionArgs(conditionType);
-}
-
-u8 TextTrigCompiler::numActionArgs(Chk::Action::VirtualType actionType)
-{
-    const u8 actionNumArgs[] = { 0, 0, 0, 0, 1,  0, 0, 8, 2, 2,
-        1, 5, 1, 2, 2,  1, 2, 2, 3, 2,
-        2, 2, 2, 4, 2,  4, 4, 4, 1, 2,
-        0, 0, 1, 3, 4,  3, 3, 3, 4, 5,
-        1, 1, 4, 4, 4,  4, 5, 1, 5, 5,
-        5, 5, 4, 5, 0,  0, 0, 2, 0, 0 };
-
-    if ( actionType >= 0 && actionType < sizeof(actionNumArgs) / sizeof(const u8) )
-        return actionNumArgs[actionType];
-    else
-        return ExtendedNumActionArgs(actionType);
-}
-
 // protected
 
 bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
@@ -403,7 +349,7 @@ void TextTrigCompiler::CleanText(std::string & text)
         text = "";
 }
 
-bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error)
+bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<Chk::TriggerPtr> & output, std::stringstream & error)
 {
     text.push_back('\0'); // Add a terminating null character
 
@@ -425,12 +371,12 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
 
     Chk::Condition::VirtualType conditionId;
     Chk::Action::VirtualType actionId;
+    std::shared_ptr<Chk::Trigger> currTrig = nullptr;
+    Chk::Condition* currCondition = nullptr;
+    Chk::Action* currAction = nullptr;
 
     while ( pos < text.size() )
     {
-        std::shared_ptr<Chk::Trigger> currTrig = std::shared_ptr<Chk::Trigger>(new Chk::Trigger());
-        Chk::Condition* currCondition = &currTrig->condition(0);
-        Chk::Action* currAction = &currTrig->action(0);
 
         if ( text[pos] == '\15' ) // Line End
         {
@@ -443,7 +389,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
             {
             case 0: //      trigger
                     // or   %NULL
-                if ( !ParsePartZero(text, error, pos, line, expecting) )
+                if ( !ParsePartZero(text, currTrig, currCondition, currAction, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -531,6 +477,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
                 numConditions = 0;
                 numActions = 0;
 
+                logger.trace() << "Pushing: " << output.size() << std::endl;
                 output.push_back(currTrig);
                 expecting = 0;
                 if ( text[pos] == '\0' ) // End of Text
@@ -546,7 +493,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<std::shared_
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      trigger
     // or   %NULL
@@ -576,6 +523,7 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, std::stringstrea
     }
     else if ( text[pos] == '\0' ) // End of text
     {
+        logger.trace("End of text");
         pos ++;
     }
     else
@@ -583,6 +531,10 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, std::stringstrea
         error << "Line: " << line << std::endl << std::endl << "Expected: \"Trigger\" or End of Text";
         return false;
     }
+    logger.trace("New trigger");
+    currTrig = Chk::TriggerPtr(new Chk::Trigger());
+    currCondition = &currTrig->conditions[0];
+    currAction = &currTrig->actions[0];
     return true;
 }
 
@@ -741,6 +693,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags) )
             {
+                argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
@@ -835,6 +788,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags) )
             {
+                argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Condition Max Exceeded!";
@@ -1022,6 +976,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             if ( ParseAction(text, pos, actionEnd, true, actionId, flags) )
             {
+                argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
@@ -1077,6 +1032,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             if ( ParseAction(text, pos, actionEnd, false, actionId, flags) )
             {
+                argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
                 {
                     error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
@@ -1427,7 +1383,8 @@ bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end
 
     ParseConditionName(arg, conditionType);
 
-    flags = defaultConditionFlags(ExtendedToRegularCID(conditionType));
+    flags = Chk::Condition::getDefaultFlags(conditionType);
+    flags = Chk::Condition::defaultFlags[0];
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
@@ -1871,7 +1828,7 @@ bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, b
         break;
     }
 
-    flags = defaultActionFlags(ExtendedToRegularAID(actionType));
+    flags = Chk::Action::getDefaultFlags(actionType);
 
     return actionType != Chk::Action::VirtualType::NoAction;
 }
@@ -3293,30 +3250,6 @@ Chk::Action::Type TextTrigCompiler::ExtendedToRegularAID(Chk::Action::VirtualTyp
         break;
     }
     return (Chk::Action::Type)actionType;
-}
-
-s32 TextTrigCompiler::ExtendedNumConditionArgs(Chk::Condition::VirtualType conditionType)
-{
-    switch ( conditionType )
-    {
-    case Chk::Condition::VirtualType::Custom:
-        return 9;
-    case Chk::Condition::VirtualType::Memory:
-        return 3;
-    }
-    return 0;
-}
-
-s32 TextTrigCompiler::ExtendedNumActionArgs(Chk::Action::VirtualType actionType)
-{
-    switch ( actionType )
-    {
-    case Chk::Action::VirtualType::Custom:
-        return 11;
-    case Chk::Action::VirtualType::SetMemory:
-        return 3;
-    }
-    return 0;
 }
 
 // private

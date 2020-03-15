@@ -1,6 +1,10 @@
 #include "MainPlot.h"
 #include "../../Chkdraft.h"
 
+enum_t(Id, u32, {
+    Logger = ID_FIRST
+});
+
 MainPlot::~MainPlot()
 {
 
@@ -21,8 +25,11 @@ LRESULT MainPlot::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         case WM_CREATE:
+        {
             leftBar.CreateThis(hWnd);
-            break;
+            loggerWindow.CreateThis(hWnd, leftBar.Width(), 0, 100, 100, true, Id::Logger);
+        }
+        break;
 
         case WM_ERASEBKGND:
             if ( CM == nullptr )

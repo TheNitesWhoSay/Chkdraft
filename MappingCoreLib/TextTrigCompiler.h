@@ -53,10 +53,6 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
         bool ParseActionName(std::string text, Chk::Action::Type & actionType);
         bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
-        static u8 defaultConditionFlags(Chk::Condition::Type conditionType);
-        static u8 defaultActionFlags(Chk::Action::Type actionType);
-        static u8 numConditionArgs(Chk::Condition::VirtualType conditionType);
-        static u8 numActionArgs(Chk::Action::VirtualType actionType);
 
 
     protected:
@@ -66,7 +62,7 @@ class TextTrigCompiler : public StaticTrigComponentParser
         void CleanText(std::string & text); // Remove spacing and standardize line endings
 
         bool ParseTriggers(std::string & text, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
-        inline bool ParsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool ParsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartOne(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, size_t & playerEnd, size_t & lineEnd);
         inline bool ParsePartTwo(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
         inline bool ParsePartThree(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
@@ -108,9 +104,6 @@ class TextTrigCompiler : public StaticTrigComponentParser
         Chk::Condition::Type ExtendedToRegularCID(Chk::Condition::VirtualType extendedConditionType); // Returns the conditionType the extended condition is based on
         Chk::Action::Type ExtendedToRegularAID(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
 
-        static s32 ExtendedNumConditionArgs(Chk::Condition::VirtualType extendedConditionType); // Returns the number of arguments for the extended condition
-        static s32 ExtendedNumActionArgs(Chk::Action::VirtualType extendedActionType); // Returns the number of arguments for the extended action
-
 
     private:
 
@@ -128,9 +121,6 @@ class TextTrigCompiler : public StaticTrigComponentParser
 
         std::unordered_multimap<size_t, StringTableNode> newExtendedStringTable; // Extended string hash map
         std::vector<StringTableNode*> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
-
-        //bool useNextString(u32 & index);
-        //bool useNextExtendedString(u32 & index);
 
         bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable

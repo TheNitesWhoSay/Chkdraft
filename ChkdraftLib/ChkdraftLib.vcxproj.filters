@@ -344,6 +344,9 @@
     <ClInclude Include="Mapping\DataFileBrowsers.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\ChkdControls\StreamEditControl.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -555,6 +558,9 @@
     </ClCompile>
     <ClCompile Include="Mapping\DataFileBrowsers.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\ChkdControls\StreamEditControl.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

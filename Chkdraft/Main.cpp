@@ -1,9 +1,5 @@
 #include "../ChkdraftLib/Chkdraft.h"
 
-#ifdef SHOW_CLI
-CLI cli; // Open a command line interface that works with cin and cout
-#endif
-
 Logger logger; // The primary logger
 
 Chkdraft chkd; // The main instance of Chkdraft

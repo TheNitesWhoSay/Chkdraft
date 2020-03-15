@@ -66,6 +66,7 @@
     <ClInclude Include="Windows\ChkdControls\MoveTo.h" />
     <ClInclude Include="Windows\ChkdControls\PeerListBox.h" />
     <ClInclude Include="Windows\ChkdControls\PlayerDropdown.h" />
+    <ClInclude Include="Windows\ChkdControls\StreamEditControl.h" />
     <ClInclude Include="Windows\ChkdControls\Suggestions.h" />
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
@@ -139,6 +140,7 @@
     <ClCompile Include="Windows\ChkdControls\MoveTo.cpp" />
     <ClCompile Include="Windows\ChkdControls\PeerListBox.cpp" />
     <ClCompile Include="Windows\ChkdControls\PlayerDropdown.cpp" />
+    <ClCompile Include="Windows\ChkdControls\StreamEditControl.cpp" />
     <ClCompile Include="Windows\ChkdControls\Suggestions.cpp" />
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />

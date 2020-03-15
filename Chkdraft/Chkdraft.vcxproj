@@ -317,6 +317,9 @@
   <ItemGroup>
     <ResourceCompile Include="..\ChkdraftLib\Resource.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ChkdraftLib\CommonFiles\Resource.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

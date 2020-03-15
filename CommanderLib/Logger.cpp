@@ -2,6 +2,52 @@
 #include <string>
 #include <ctime>
 
+#ifdef ENSURE_CONSOLE_PRESENT
+Console Console::console = Console();
+
+Console::Console() : consoleIn(NULL), consoleOut(NULL)
+{
+    if ( ::GetConsoleWindow() == NULL )
+    {
+        if ( ::AllocConsole() != 0 )
+        {
+            if ( ::freopen_s(&consoleIn, "CONIN$", "r", stdin) == 0 )
+                std::cin.clear();
+            if ( ::freopen_s(&consoleOut, "CONOUT$", "w", stdout) == 0 )
+                std::cout.clear();
+        }
+    }
+}
+
+Console::~Console()
+{
+    if ( consoleIn != NULL )
+        ::fclose(consoleIn);
+
+    if ( consoleOut != NULL )
+        ::fclose(consoleOut);
+
+    ::FreeConsole();
+}
+
+void Console::setVisible(bool visible, HWND handle)
+{
+    if ( handle != NULL )
+    {
+        if ( visible )
+            ::ShowWindow(handle, SW_SHOW);
+        else
+            ::ShowWindow(handle, SW_HIDE);
+    }
+}
+
+void Console::toggleVisible()
+{
+    HWND handle = ::GetConsoleWindow();
+    setVisible(!::IsWindowVisible(handle), handle);
+}
+#endif
+
 Logger::Logger(LogLevel logLevel) :
     logLevel(logLevel), outputStream(std::shared_ptr<std::ostream>(&std::cout, [](std::ostream*){})), aggregator(nullptr),
     streamLogLevel(logLevel), std::ostream(this)

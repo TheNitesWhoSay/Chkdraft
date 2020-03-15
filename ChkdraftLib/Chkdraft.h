@@ -55,6 +55,7 @@ class Chkdraft : public WinLib::ClassWindow
 
 /*    Setup     */  bool CreateThis();
                     void ParseCmdLine(LPSTR lpCmdLine);
+                    void toggleLogger();
 
 /*  Preprocess  */  bool DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam);
                     void KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

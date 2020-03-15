@@ -137,12 +137,28 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                   rcStatus.top-rcTool.bottom+border*2, 
                                   SWP_NOZORDER
                                 );
+                    
+
+                int xBorder = GetSystemMetrics(SM_CXSIZEFRAME) - 1,
+                    yBorder = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
+                int x = rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2;
+                int y = rcMain.bottom-rcMain.top+2*yBorder+1-chkd.mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top);
+                int width = rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2)+xBorder+4;
+                int height = chkd.mainPlot.loggerWindow.Height();
+
+                // Fit logger to the area between the left bar and right edge without changing the height
+                SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, x, y,
+                    width, height,
+                    SWP_NOZORDER | SWP_NOACTIVATE);
+
+
+
                 // Fit the map MDI window to the area right of the left bar and between the toolbar and statusbar
                     SetWindowPos( chkd.maps.getHandle(), NULL,
                                   rcLeftBar.right-rcLeftBar.left-border-2,
                                   rcTool.bottom-rcTool.top,
                                   rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+border+2,
-                                  rcStatus.top-rcTool.bottom+2,
+                                  chkd.mainPlot.loggerWindow.Top(),
                                   SWP_NOZORDER);
                 // Fit the minimap to the center of the top part of the left bar
                     SetWindowPos(hMiniMap, NULL, (rcLeftBar.right-rcLeftBar.left-(132+4+border*2))/2, 3, 132, 132, SWP_NOZORDER);

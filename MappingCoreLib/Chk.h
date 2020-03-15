@@ -488,6 +488,8 @@ namespace Chk {
         static const Argument & getTextArg(VirtualType conditionType, size_t argIndex);
         static ArgType getTextArgType(Type conditionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType conditionType, size_t argIndex);
+        static u8 getDefaultFlags(Type conditionType);
+        static u8 getDefaultFlags(VirtualType conditionType);
         
         static Argument noArg;
         static Argument classicArguments[NumConditionTypes][MaxArguments];
@@ -761,6 +763,8 @@ namespace Chk {
         static const Argument & getTextArg(VirtualType actionType, size_t argIndex);
         static ArgType getTextArgType(Type actionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
+        static u8 getDefaultFlags(Type actionType);
+        static u8 getDefaultFlags(VirtualType actionType);
         inline bool locationUsed(size_t locationId);
         inline bool stringUsed(size_t stringId);
         inline bool gameStringUsed(size_t stringId);

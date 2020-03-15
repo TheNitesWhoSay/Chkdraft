@@ -31,4 +31,7 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ChkdraftLib\CommonFiles\Resource.h" />
+  </ItemGroup>
 </Project>

@@ -333,7 +333,7 @@ void TrigActionsWindow::ChangeActionType(Chk::Action & action, Chk::Action::Type
         else
             action.type2 = 0;
 
-        action.flags = TextTrigCompiler::defaultActionFlags(newType);
+        action.flags = Chk::Action::getDefaultFlags(newType);
         action.padding = 0;
         action.maskFlag = Chk::Action::MaskFlag::Disabled;
     }

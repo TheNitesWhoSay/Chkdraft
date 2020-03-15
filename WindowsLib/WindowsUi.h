@@ -18,6 +18,7 @@
 #include "ListBoxControl.h"
 #include "ListViewControl.h"
 #include "RadioButtonControl.h"
+#include "RichEditControl.h"
 #include "StatusControl.h"
 #include "TabControl.h"
 #include "TextControl.h"

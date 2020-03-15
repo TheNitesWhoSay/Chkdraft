@@ -6,6 +6,28 @@
 #include <memory>
 #include <string>
 
+#ifdef _WIN32
+#define ENSURE_CONSOLE_PRESENT
+#endif
+
+#ifdef ENSURE_CONSOLE_PRESENT
+#include <Windows.h>
+class Console
+{
+    public:
+        ~Console();
+        static void setVisible(bool visible, HWND handle = ::GetConsoleWindow());
+        static void toggleVisible();
+
+    private:
+        Console();
+        static Console console;
+
+        FILE* consoleIn;
+        FILE* consoleOut;
+};
+#endif
+
 #ifndef enum_t
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope

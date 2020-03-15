@@ -125,6 +125,9 @@
     <ClInclude Include="Painting.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="RichEditControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsItem.cpp">
@@ -201,6 +204,9 @@
     </ClCompile>
     <ClCompile Include="Painting.cpp">
       <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="RichEditControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
