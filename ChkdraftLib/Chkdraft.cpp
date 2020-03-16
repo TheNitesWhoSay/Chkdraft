@@ -52,9 +52,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     scData.Load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
+    UpdateLogLevelCheckmarks(logger.getLogLevel());
     ShowWindow(getHandle(), nCmdShow);
-    logFile.setAggregator(nullptr);
-    Console::setVisible(false);
+    logFile.setAggregator(nullptr); // Stop aggregating messages to console
+    Console::setVisible(false); // Remove the console
     UpdateWindow();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
@@ -224,10 +225,8 @@ void Chkdraft::OpenLogFileDirectory()
     WinLib::executeOpen(GetSystemFileDirectory(logFilePath, false), result);
 }
 
-void Chkdraft::SetLogLevel(LogLevel newLogLevel)
+void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 {
-    logger.setLogLevel(newLogLevel);
-
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, false);
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_FATAL, false);
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_ERROR, false);
@@ -237,7 +236,7 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_TRACE, false);
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_ALL, false);
 
-    switch ( newLogLevel )
+    switch ( logLevel )
     {
         case LogLevel::Off: chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, true); break;
         case LogLevel::Fatal: chkd.mainMenu.SetCheck(ID_LOGLEVEL_FATAL, true); break;
@@ -248,6 +247,11 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
         case LogLevel::Trace: chkd.mainMenu.SetCheck(ID_LOGLEVEL_TRACE, true); break;
         case LogLevel::All: chkd.mainMenu.SetCheck(ID_LOGLEVEL_ALL, true); break;
     }
+}
+
+void Chkdraft::SetLogLevel(LogLevel newLogLevel)
+{
+    logger.setLogLevel(newLogLevel);
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
