@@ -139,7 +139,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // Fit the map MDI window to the area right of the left bar and between the toolbar and statusbar
                 SetWindowPos(chkd.maps.getHandle(), NULL, rcLeftBar.right-rcLeftBar.left-xBorder+1, rcTool.bottom-rcTool.top,
-                    rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder-1, chkd.mainPlot.loggerWindow.Top(), SWP_NOZORDER);
+                    rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder-1, chkd.mainPlot.loggerWindow.IsVisible() ? chkd.mainPlot.loggerWindow.Top() : rcStatus.top - rcTool.bottom, SWP_NOZORDER);
 
                 // Fit the minimap to the center of the top part of the left bar
                 SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2, 3, 132, 132, SWP_NOZORDER);

@@ -14,15 +14,20 @@ class LoggerWindow : public WinLib::ClassWindow, public std::ostream, public std
         virtual ~LoggerWindow();
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id);
 
+        bool IsVisible();
+        void ToggleVisible();
+        void ToggleLineNumbers();
+
     protected:
         virtual int sync();
         virtual int overflow(int c);
         void SizeSubWindows();
-        void ToggleLineNumbers();
+
         virtual void ContextMenu(int x, int y);
         virtual LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     
     private:
+        bool isVisible;
         bool showLineNumbers;
         u64 lineNumber;
         std::deque<size_t> lineStart;

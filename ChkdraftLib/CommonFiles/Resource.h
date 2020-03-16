@@ -313,13 +313,15 @@
 #define ID_LOGLEVEL_DEBUG               40650
 #define ID_LOGLEVEL_TRACE               40651
 #define ID_LOGLEVEL_ALL                 40652
+#define ID_LOGGER_TOGGLELOGGER          40653
+#define ID_LOGGER_TOGGLELINENUMBERS     40654
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        155
-#define _APS_NEXT_COMMAND_VALUE         40653
+#define _APS_NEXT_COMMAND_VALUE         40655
 #define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

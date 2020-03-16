@@ -53,6 +53,8 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     scData.Load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
     ShowWindow(getHandle(), nCmdShow);
+    logFile.setAggregator(nullptr);
+    Console::setVisible(false);
     UpdateWindow();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
@@ -94,9 +96,10 @@ void Chkdraft::SetupLogging()
     std::string loggerPath;
     if ( GetLoggerPath(loggerPath) )
     {
-        std::string logFilePath = loggerPath + Logger::getTimestamp();
+        logFilePath = loggerPath + Logger::getTimestamp();
+        std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger());
+        logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
-        Console::setVisible(false);
         logger.info("Setting log file to: " + logFilePath);
         logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath), [](std::ostream* os) {
             if ( os != nullptr ) { // Close and delete when output stream goes out of scope
@@ -104,6 +107,7 @@ void Chkdraft::SetupLogging()
                 delete os;
             }
         }));
+        logFile.setAggregator(stdOut);
         logger.setAggregator(logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
         logger.info() << "Chkdraft version: " << GetFullVersionString() << std::endl;
     }
@@ -167,6 +171,83 @@ void Chkdraft::SetCurrDialog(HWND hDialog)
 void Chkdraft::SetEditFocused(bool editFocused)
 {
     this->editFocused = editFocused;
+}
+
+void Chkdraft::SizeSubWindows()
+{
+    mainToolbar.AutoSize();
+    statusBar.AutoSize();
+
+    // Get the size of the client area, toolbar, status bar, and left bar
+    RECT rcMain, rcTool, rcStatus, rcLeftBar;
+    GetClientRect(getHandle(), &rcMain);
+    GetWindowRect(mainToolbar.getHandle(), &rcTool);
+    GetWindowRect(statusBar.getHandle(), &rcStatus);
+    GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
+
+    int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
+        yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
+
+    // Fit plot to the area between the toolbar and statusbar
+    SetWindowPos(mainPlot.getHandle(), NULL, 0, rcTool.bottom - rcTool.top,
+        rcMain.right - rcMain.left, rcMain.bottom - rcMain.top - (rcTool.bottom - rcTool.top) - (rcStatus.bottom - rcStatus.top),
+        SWP_NOZORDER | SWP_NOACTIVATE);
+
+    // Fit left bar to the area between the toolbar and statusbar without changing width
+    SetWindowPos(mainPlot.leftBar.getHandle(), NULL, 1-xBorder, 1-yBorder,
+        rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + (yBorder-1) * 2,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+
+    // Fit logger to the area between the left bar and right edge without changing the height
+    SetWindowPos(mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,
+        rcMain.bottom-rcMain.top+2*yBorder-1-mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top),
+        rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left) + 4*xBorder+5, mainPlot.loggerWindow.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
+
+    // Fit the map MDIClient to the area right of the left bar and between the toolbar and logger
+    SetWindowPos(maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder + 1, rcTool.bottom - rcTool.top,
+        rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, mainPlot.loggerWindow.IsVisible() ? mainPlot.loggerWindow.Top() : rcStatus.top - rcTool.bottom,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(maps.getHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+
+    RedrawWindow(statusBar.getHandle(), NULL, NULL, RDW_INVALIDATE);
+}
+
+void Chkdraft::OpenLogFile()
+{
+    int result = 0;
+    WinLib::executeOpen(logFilePath, result);
+}
+
+void Chkdraft::OpenLogFileDirectory()
+{
+    int result = 0;
+    WinLib::executeOpen(GetSystemFileDirectory(logFilePath, false), result);
+}
+
+void Chkdraft::SetLogLevel(LogLevel newLogLevel)
+{
+    logger.setLogLevel(newLogLevel);
+
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_FATAL, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_ERROR, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_WARN, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_INFO, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_DEBUG, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_TRACE, false);
+    chkd.mainMenu.SetCheck(ID_LOGLEVEL_ALL, false);
+
+    switch ( newLogLevel )
+    {
+        case LogLevel::Off: chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, true); break;
+        case LogLevel::Fatal: chkd.mainMenu.SetCheck(ID_LOGLEVEL_FATAL, true); break;
+        case LogLevel::Error: chkd.mainMenu.SetCheck(ID_LOGLEVEL_ERROR, true); break;
+        case LogLevel::Warn: chkd.mainMenu.SetCheck(ID_LOGLEVEL_WARN, true); break;
+        case LogLevel::Info: chkd.mainMenu.SetCheck(ID_LOGLEVEL_INFO, true); break;
+        case LogLevel::Debug: chkd.mainMenu.SetCheck(ID_LOGLEVEL_DEBUG, true); break;
+        case LogLevel::Trace: chkd.mainMenu.SetCheck(ID_LOGLEVEL_TRACE, true); break;
+        case LogLevel::All: chkd.mainMenu.SetCheck(ID_LOGLEVEL_ALL, true); break;
+    }
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
@@ -450,6 +531,20 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_UNITS_UNITSSNAPTOGRID: CM->ToggleUnitSnap(); break;
     case ID_UNITS_ALLOWSTACK: CM->ToggleUnitStack(); break;
 
+        // Logger
+    case ID_LOGGER_TOGGLELOGGER: mainPlot.loggerWindow.ToggleVisible(); break;
+    case ID_LOGGER_TOGGLELINENUMBERS: mainPlot.loggerWindow.ToggleLineNumbers(); break;
+    case ID_LOGGER_OPENLOGFILE: OpenLogFile(); break;
+    case ID_LOGGER_OPENLOGFILEDIRECTORY: OpenLogFileDirectory(); break;
+    case ID_LOGLEVEL_OFF: chkd.SetLogLevel(LogLevel::Off); break;
+    case ID_LOGLEVEL_FATAL: chkd.SetLogLevel(LogLevel::Fatal); break;
+    case ID_LOGLEVEL_ERROR: chkd.SetLogLevel(LogLevel::Error); break;
+    case ID_LOGLEVEL_WARN: chkd.SetLogLevel(LogLevel::Warn); break;
+    case ID_LOGLEVEL_INFO: chkd.SetLogLevel(LogLevel::Info); break;
+    case ID_LOGLEVEL_DEBUG: chkd.SetLogLevel(LogLevel::Debug); break;
+    case ID_LOGLEVEL_TRACE: chkd.SetLogLevel(LogLevel::Trace); break;
+    case ID_LOGLEVEL_ALL: chkd.SetLogLevel(LogLevel::All); break;
+
         // Locations
     case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToTile); break;
     case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToGrid); break;
@@ -599,45 +694,6 @@ void Chkdraft::RestoreDialogs()
     ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
     ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     ShowWindow(trigEditorWindow.getHandle(), SW_SHOW);
-}
-
-void Chkdraft::SizeSubWindows()
-{
-    mainToolbar.AutoSize();
-    statusBar.AutoSize();
-
-    // Get the size of the client area, toolbar, status bar, and left bar
-    RECT rcMain, rcTool, rcStatus, rcLeftBar;
-    GetClientRect(getHandle(), &rcMain);
-    GetWindowRect(mainToolbar.getHandle(), &rcTool);
-    GetWindowRect(statusBar.getHandle(), &rcStatus);
-    GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
-
-    int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
-        yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
-
-    // Fit plot to the area between the toolbar and statusbar
-    SetWindowPos(mainPlot.getHandle(), NULL, 0, rcTool.bottom - rcTool.top,
-        rcMain.right - rcMain.left, rcMain.bottom - rcMain.top - (rcTool.bottom - rcTool.top) - (rcStatus.bottom - rcStatus.top),
-        SWP_NOZORDER | SWP_NOACTIVATE);
-
-    // Fit left bar to the area between the toolbar and statusbar without changing width
-    SetWindowPos(mainPlot.leftBar.getHandle(), NULL, 1-xBorder, 1-yBorder,
-        rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + (yBorder-1) * 2,
-        SWP_NOZORDER | SWP_NOACTIVATE);
-
-    // Fit logger to the area between the left bar and right edge without changing the height
-    SetWindowPos(mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,
-        rcMain.bottom-rcMain.top+2*yBorder-1-mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top),
-        rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left) + 4*xBorder+5, mainPlot.loggerWindow.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
-
-    // Fit the map MDIClient to the area right of the left bar and between the toolbar and logger
-    SetWindowPos(maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder + 1, rcTool.bottom - rcTool.top,
-        rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, mainPlot.loggerWindow.Top(),
-        SWP_NOZORDER | SWP_NOACTIVATE);
-    SetWindowPos(maps.getHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-
-    RedrawWindow(statusBar.getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 void Chkdraft::OpenMapSettings(u16 menuId)

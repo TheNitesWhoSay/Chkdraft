@@ -6,7 +6,7 @@ enum_t(Id, u32, {
     RichText
 });
 
-LoggerWindow::LoggerWindow() : std::ostream((std::streambuf*)this), lineNumber(1), showLineNumbers(true)
+LoggerWindow::LoggerWindow() : std::ostream((std::streambuf*)this), lineNumber(1), showLineNumbers(true), isVisible(true)
 {
 
 }
@@ -42,7 +42,50 @@ bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
     }
     return false;
 }
-    
+ 
+bool LoggerWindow::IsVisible()
+{
+    return isVisible;
+}
+
+void LoggerWindow::ToggleVisible()
+{
+    if ( isVisible )
+    {
+        isVisible = false;
+        ClassWindow::Hide();
+        chkd.mainMenu.SetText(ID_LOGGER_TOGGLELOGGER, "Show Logger");
+        chkd.SizeSubWindows();
+    }
+    else
+    {
+        isVisible = true;
+        ClassWindow::Show();
+        chkd.mainMenu.SetText(ID_LOGGER_TOGGLELOGGER, "Hide Logger");
+        chkd.SizeSubWindows();
+    }
+}
+
+void LoggerWindow::ToggleLineNumbers()
+{
+    if ( showLineNumbers )
+    {
+        lineNumbers.SetRedraw(false);
+        chkd.mainMenu.SetText(ID_LOGGER_TOGGLELINENUMBERS, "Show Line Numbers");
+        lineNumbers.Hide();
+    }
+    else
+    {
+        lineNumbers.SetRedraw(true);
+        chkd.mainMenu.SetText(ID_LOGGER_TOGGLELINENUMBERS, "Hide Line Numbers");
+        lineNumbers.Show();
+    }
+
+    showLineNumbers = !showLineNumbers;
+    SizeSubWindows();
+    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
+}
+
 int LoggerWindow::sync()
 {
     return 0;
@@ -113,24 +156,6 @@ void LoggerWindow::SizeSubWindows()
     richText.RedrawThis();
 }
     
-void LoggerWindow::ToggleLineNumbers()
-{
-    if ( showLineNumbers )
-    {
-        lineNumbers.SetRedraw(false);
-        lineNumbers.Hide();
-    }
-    else
-    {
-        lineNumbers.SetRedraw(true);
-        lineNumbers.Show();
-    }
-
-    showLineNumbers = !showLineNumbers;
-    SizeSubWindows();
-    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_ERASE);
-}
-    
 void LoggerWindow::ContextMenu(int x, int y)
 {
     HMENU hMenu = ::CreatePopupMenu();
@@ -143,17 +168,34 @@ void LoggerWindow::ContextMenu(int x, int y)
     AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
     HMENU hLogLevel = CreatePopupMenu();
     AppendMenu(hMenu, MF_STRING|MF_POPUP, (UINT_PTR)hLogLevel, icux::toUistring("Log Level").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelOff, icux::toUistring("[0] Off").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelFatal, icux::toUistring("[100] Fatal").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelError, icux::toUistring("[200] Error").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelWarn, icux::toUistring("[300] Warn").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelInfo, icux::toUistring("[400] Info").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelDebug, icux::toUistring("[500] Debug").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelTrace, icux::toUistring("[600] Trace").c_str());
-    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelAll, icux::toUistring("[-1] All").c_str());
+
+    LogLevel logLevel = logger.getLogLevel();
+    AppendMenu(hLogLevel, logLevel == LogLevel::Off ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelOff, icux::toUistring("[0] Off").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Fatal ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelFatal, icux::toUistring("[100] Fatal").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Error ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelError, icux::toUistring("[200] Error").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Warn ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelWarn, icux::toUistring("[300] Warn").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Info ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelInfo, icux::toUistring("[400] Info").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Debug ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelDebug, icux::toUistring("[500] Debug").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::Trace ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelTrace, icux::toUistring("[600] Trace").c_str());
+    AppendMenu(hLogLevel, logLevel == LogLevel::All ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelAll, icux::toUistring("[-1] All").c_str());
+
     BOOL result = TrackPopupMenu(hMenu, TPM_RETURNCMD, x, y, 0, getHandle(), NULL);
-    if ( result == ContextMenuItem::ToggleLineNumbers )
-        ToggleLineNumbers();
+    switch ( result )
+    {
+        case ContextMenuItem::HideLogger: ToggleVisible(); break;
+        case ContextMenuItem::ToggleLineNumbers: ToggleLineNumbers(); break;
+        case ContextMenuItem::OpenLogFile: chkd.OpenLogFile(); break;
+        case ContextMenuItem::OpenLogFileDirectory: chkd.OpenLogFileDirectory(); break;
+
+        case ContextMenuItem::LogLevelOff: chkd.SetLogLevel(LogLevel::Off); break;
+        case ContextMenuItem::LogLevelFatal: chkd.SetLogLevel(LogLevel::Fatal); break;
+        case ContextMenuItem::LogLevelError: chkd.SetLogLevel(LogLevel::Error); break;
+        case ContextMenuItem::LogLevelWarn: chkd.SetLogLevel(LogLevel::Warn); break;
+        case ContextMenuItem::LogLevelInfo: chkd.SetLogLevel(LogLevel::Info); break;
+        case ContextMenuItem::LogLevelDebug: chkd.SetLogLevel(LogLevel::Debug); break;
+        case ContextMenuItem::LogLevelTrace: chkd.SetLogLevel(LogLevel::Trace); break;
+        case ContextMenuItem::LogLevelAll: chkd.SetLogLevel(LogLevel::All); break;
+    }
 }
 
 LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -182,7 +224,7 @@ LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // Fit the map MDIClient to the area right of the left bar and between the toolbar and logger
                 SetWindowPos(chkd.maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder + 1, rcTool.bottom - rcTool.top,
-                    rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, chkd.mainPlot.loggerWindow.Top(), SWP_NOZORDER | SWP_NOACTIVATE);
+                    rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, chkd.mainPlot.loggerWindow.IsVisible() ? chkd.mainPlot.loggerWindow.Top() : rcStatus.top - rcTool.bottom, SWP_NOZORDER | SWP_NOACTIVATE);
                 SetWindowPos(chkd.maps.getHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
 
                 SizeSubWindows();

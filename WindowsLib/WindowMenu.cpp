@@ -1,4 +1,5 @@
 #include "WindowMenu.h"
+#include "../IcuLib/SimpleIcu.h"
 
 namespace WinLib {
 
@@ -24,6 +25,22 @@ namespace WinLib {
             CheckMenuItem(hMenu, itemId, MF_CHECKED);
         else
             CheckMenuItem(hMenu, itemId, MF_UNCHECKED);
+    }
+    
+    void WindowMenu::SetText(u32 itemId, const std::string & text)
+    {
+        MENUITEMINFO menuItemInfo = {};
+        menuItemInfo.cbSize = sizeof(MENUITEMINFO);
+        menuItemInfo.fMask = MIIM_ID;
+        if ( GetMenuItemInfo(hMenu, itemId, FALSE, &menuItemInfo) != 0 )
+        {
+            auto uiText = icux::toUistring(text);
+            menuItemInfo.fMask = MIIM_STRING;
+            menuItemInfo.dwTypeData = (LPWSTR)uiText.c_str();
+            SetMenuItemInfo(hMenu, itemId, FALSE, &menuItemInfo);
+        }
+        
+
     }
 
 }

@@ -258,6 +258,7 @@ bool MapFile::OpenMapFile(const std::string & filePath)
         }
         else if ( extension == ".chk" )
         {
+            this->mapFilePath = filePath;
             std::ifstream chk(filePath, std::ios_base::binary|std::ios_base::in);
             if ( Scenario::read(chk) )
             {

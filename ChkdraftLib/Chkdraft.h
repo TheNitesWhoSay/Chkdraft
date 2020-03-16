@@ -50,6 +50,10 @@ class Chkdraft : public WinLib::ClassWindow
 
 /*   UI Accel   */  void SetCurrDialog(HWND hDialog);
                     void SetEditFocused(bool editFocused);
+                    void SizeSubWindows();
+                    void OpenLogFile();
+                    void OpenLogFileDirectory();
+                    void SetLogLevel(LogLevel newLogLevel);
 
     protected:
 
@@ -69,12 +73,13 @@ class Chkdraft : public WinLib::ClassWindow
 
 /*     Data     */  HWND currDialog;
                     bool editFocused;
+                    Logger stdOut;
                     Logger logFile;
+                    std::string logFilePath;
 
 /* Priv Methods */  bool CreateSubWindows();
                     void MinimizeDialogs();
                     void RestoreDialogs();
-                    void SizeSubWindows();
                     void UseDragFile(const std::string & fileName);
                     void OpenMapSettings(u16 menuId);
                     void OpenWebPage(const std::string & address);

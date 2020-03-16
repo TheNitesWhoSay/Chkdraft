@@ -18,6 +18,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
     minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
+    SetWinText(MapFile::GetFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -31,6 +32,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
     minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
+    SetWinText(MapFile::GetFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;

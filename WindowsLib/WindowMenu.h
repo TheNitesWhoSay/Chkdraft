@@ -14,6 +14,7 @@ namespace WinLib {
 
             bool FindThis(HWND hParent);
             void SetCheck(u32 itemId, bool checked);
+            void SetText(u32 itemId, const std::string & text);
         
         private:
             HMENU hMenu;
