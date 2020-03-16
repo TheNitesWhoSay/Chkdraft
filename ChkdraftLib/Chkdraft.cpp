@@ -54,8 +54,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     InitCommonControls();
     UpdateLogLevelCheckmarks(logger.getLogLevel());
     ShowWindow(getHandle(), nCmdShow);
-    logFile.setAggregator(nullptr); // Stop aggregating messages to console
+    logFile.setAggregator(nullptr); // Stop aggregating messages to std::out
+#ifdef HAS_CONSOLE
     Console::setVisible(false); // Remove the console
+#endif
     UpdateWindow();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
@@ -471,7 +473,7 @@ void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
 
 void Chkdraft::toggleLogger()
 {
-#ifdef ENSURE_CONSOLE_PRESENT
+#ifdef HAS_CONSOLE
     Console::toggleVisible();
 #endif
 }

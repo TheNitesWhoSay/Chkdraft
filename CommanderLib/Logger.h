@@ -7,10 +7,12 @@
 #include <string>
 
 #ifdef _WIN32
-#define ENSURE_CONSOLE_PRESENT
+#ifdef _DEBUG
+#define HAS_CONSOLE
+#endif
 #endif
 
-#ifdef ENSURE_CONSOLE_PRESENT
+#ifdef HAS_CONSOLE
 #include <Windows.h>
 class Console
 {

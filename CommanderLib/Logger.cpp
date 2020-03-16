@@ -2,7 +2,7 @@
 #include <string>
 #include <ctime>
 
-#ifdef ENSURE_CONSOLE_PRESENT
+#ifdef HAS_CONSOLE
 Console Console::console = Console();
 
 Console::Console() : consoleIn(NULL), consoleOut(NULL)
