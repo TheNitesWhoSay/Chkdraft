@@ -119,58 +119,36 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_SIZE:
             {
-                HWND hTree = mainTree.getHandle();
-                HWND hMiniMap = miniMap.getHandle();
+                // Get the size of the client area, toolbar, status bar, and left bar
                 RECT rcMain, rcTool, rcStatus, rcLeftBar;
+                GetClientRect(chkd.getHandle(), &rcMain);
+                GetWindowRect(chkd.mainToolbar.getHandle(), &rcTool);
+                GetWindowRect(chkd.statusBar.getHandle(), &rcStatus);
+                GetWindowRect(hWnd, &rcLeftBar);
 
-                //Get the size of the client area, toolbar, status bar, and left bar
-                    GetClientRect(chkd.getHandle(), &rcMain);
-                    GetWindowRect(chkd.mainToolbar.getHandle(), &rcTool);
-                    GetWindowRect(chkd.statusBar.getHandle(), &rcStatus);
-                    GetWindowRect(hWnd, &rcLeftBar);
+                int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
+                    yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
 
-                int border = GetSystemMetrics(SM_CXSIZEFRAME)-1;
                 // Interrupt any attempt to vertically resize the left bar
-                    SetWindowPos( hWnd, NULL,
-                                  -border, -border,
-                                  rcLeftBar.right-rcLeftBar.left,
-                                  rcStatus.top-rcTool.bottom+border*2, 
-                                  SWP_NOZORDER
-                                );
-                    
-
-                int xBorder = GetSystemMetrics(SM_CXSIZEFRAME) - 1,
-                    yBorder = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
-                int x = rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2;
-                int y = rcMain.bottom-rcMain.top+2*yBorder+1-chkd.mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top);
-                int width = rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2)+xBorder+4;
-                int height = chkd.mainPlot.loggerWindow.Height();
+                SetWindowPos(hWnd, NULL, 1-xBorder, 1-yBorder, rcLeftBar.right-rcLeftBar.left, rcStatus.top-rcTool.bottom + 2*(yBorder-1), SWP_NOZORDER);
 
                 // Fit logger to the area between the left bar and right edge without changing the height
-                SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, x, y,
-                    width, height,
-                    SWP_NOZORDER | SWP_NOACTIVATE);
-
-
+                SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,
+                    rcMain.bottom-rcMain.top+2*yBorder-1-chkd.mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top),
+                    rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left) + 4*xBorder+5, chkd.mainPlot.loggerWindow.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 
                 // Fit the map MDI window to the area right of the left bar and between the toolbar and statusbar
-                    SetWindowPos( chkd.maps.getHandle(), NULL,
-                                  rcLeftBar.right-rcLeftBar.left-border-2,
-                                  rcTool.bottom-rcTool.top,
-                                  rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+border+2,
-                                  chkd.mainPlot.loggerWindow.Top(),
-                                  SWP_NOZORDER);
+                SetWindowPos(chkd.maps.getHandle(), NULL, rcLeftBar.right-rcLeftBar.left-xBorder+1, rcTool.bottom-rcTool.top,
+                    rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder-1, chkd.mainPlot.loggerWindow.Top(), SWP_NOZORDER);
+
                 // Fit the minimap to the center of the top part of the left bar
-                    SetWindowPos(hMiniMap, NULL, (rcLeftBar.right-rcLeftBar.left-(132+4+border*2))/2, 3, 132, 132, SWP_NOZORDER);
-                //Fit the tree to the bottom part of the left bar
-                    GetClientRect(hWnd, &rcLeftBar);
-                    SetWindowPos(hTree, NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, rcLeftBar.bottom-rcLeftBar.top-146/*rcStatus.top-rcTool.bottom-146*/, SWP_NOZORDER);
+                SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2, 3, 132, 132, SWP_NOZORDER);
+
+                // Fit the tree to the bottom part of the left bar
+                GetClientRect(hWnd, &rcLeftBar);
+                SetWindowPos(mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, rcLeftBar.bottom-rcLeftBar.top-146, SWP_NOZORDER);
             }
             break;
-
-        //case WM_SIZING:
-        //  SendMessage(hWnd, WM_SIZE, wParam, lParam);
-        //  break;
 
         case WM_GETMINMAXINFO:
             {

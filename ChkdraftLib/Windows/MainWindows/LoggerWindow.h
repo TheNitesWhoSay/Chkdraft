@@ -33,7 +33,19 @@ class LoggerWindow : public WinLib::ClassWindow, public std::ostream, public std
         WinLib::RichEditControl richText;
 
         enum_t(ContextMenuItem, UINT, {
-            ToggleLineNumbers = 1
+            HideLogger = 1,
+            ToggleLineNumbers,
+            OpenLogFile,
+            OpenLogFileDirectory,
+            LogLevel,
+            LogLevelOff,
+            LogLevelFatal,
+            LogLevelError,
+            LogLevelWarn,
+            LogLevelInfo,
+            LogLevelDebug,
+            LogLevelTrace,
+            LogLevelAll
         });
 };
 

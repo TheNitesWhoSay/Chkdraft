@@ -603,19 +603,18 @@ void Chkdraft::RestoreDialogs()
 
 void Chkdraft::SizeSubWindows()
 {
-    RECT rcMain, rcTool, rcStatus, rcLeftBar;
-
     mainToolbar.AutoSize();
     statusBar.AutoSize();
 
     // Get the size of the client area, toolbar, status bar, and left bar
+    RECT rcMain, rcTool, rcStatus, rcLeftBar;
     GetClientRect(getHandle(), &rcMain);
     GetWindowRect(mainToolbar.getHandle(), &rcTool);
     GetWindowRect(statusBar.getHandle(), &rcStatus);
     GetWindowRect(mainPlot.leftBar.getHandle(), &rcLeftBar);
 
-    int xBorder = GetSystemMetrics(SM_CXSIZEFRAME) - 1,
-        yBorder = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
+    int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
+        yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
 
     // Fit plot to the area between the toolbar and statusbar
     SetWindowPos(mainPlot.getHandle(), NULL, 0, rcTool.bottom - rcTool.top,
@@ -623,28 +622,20 @@ void Chkdraft::SizeSubWindows()
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // Fit left bar to the area between the toolbar and statusbar without changing width
-    SetWindowPos(mainPlot.leftBar.getHandle(), HWND_TOPMOST, 0, 0, 0, 0,
-        SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-    SetWindowPos(mainPlot.leftBar.getHandle(), NULL, -xBorder, -yBorder,
-        rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + yBorder * 2,
+    SetWindowPos(mainPlot.leftBar.getHandle(), NULL, 1-xBorder, 1-yBorder,
+        rcLeftBar.right - rcLeftBar.left, rcStatus.top - rcTool.bottom + (yBorder-1) * 2,
         SWP_NOZORDER | SWP_NOACTIVATE);
-
-    int x = rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2;
-    int y = rcMain.bottom-rcMain.top+2*yBorder+1-mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top);
-    int width = rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2)+xBorder+4;
-    int height = mainPlot.loggerWindow.Height();
 
     // Fit logger to the area between the left bar and right edge without changing the height
-    SetWindowPos(mainPlot.loggerWindow.getHandle(), NULL, x, y,
-        width, height,
-        SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,
+        rcMain.bottom-rcMain.top+2*yBorder-1-mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top),
+        rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left) + 4*xBorder+5, mainPlot.loggerWindow.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 
     // Fit the map MDIClient to the area right of the left bar and between the toolbar and logger
-    SetWindowPos(maps.getHandle(), HWND_TOP, 0, 0, 0, 0,
-        SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-    SetWindowPos(maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder - 2, rcTool.bottom - rcTool.top,
-        rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder + 2, mainPlot.loggerWindow.Top(),
+    SetWindowPos(maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder + 1, rcTool.bottom - rcTool.top,
+        rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, mainPlot.loggerWindow.Top(),
         SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(maps.getHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
 
     RedrawWindow(statusBar.getHandle(), NULL, NULL, RDW_INVALIDATE);
 }

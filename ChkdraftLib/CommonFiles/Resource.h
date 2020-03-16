@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\Users\Justin\Documents\Visual Studio 2017\Projects\Chkdraft\Chkdraft\Resource.rc
+// Used by C:\Users\Justin\source\repos\Chkdraft\ChkdraftLib\Resource.rc
 //
 #define IDR_MAIN_MENU                   101
 #define IDR_TRIG_MENU                   102
@@ -297,13 +297,29 @@
 #define ID_TOOLS_LITTRIGGERS            40634
 #define ID_OPTIONS_USEADDRESSESFORMEMORY 40635
 #define ID_CUTCOPYPASTE_FILLSIMILARTILES 40636
+#define ID_VIEW_LOGGER                  40637
+#define ID_LOGGER_HIDELOGGER            40638
+#define ID_LOGGER_HIDELINENUMBERS       40639
+#define ID_LOGGER_OPENLOGFILE           40640
+#define ID_LOGGER_OPENLOGFILEDIRECTORY  40641
+#define ID_LOGGER_LOGLEVEL              40642
+#define ID_LOGGER_FILELOGLEVEL          40643
+#define ID_LOGLEVEL_OFF                 40644
+#define ID_LOGLEVEL_NONE                40645
+#define ID_LOGLEVEL_FATAL               40646
+#define ID_LOGLEVEL_ERROR               40647
+#define ID_LOGLEVEL_WARN                40648
+#define ID_LOGLEVEL_INFO                40649
+#define ID_LOGLEVEL_DEBUG               40650
+#define ID_LOGLEVEL_TRACE               40651
+#define ID_LOGLEVEL_ALL                 40652
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        155
-#define _APS_NEXT_COMMAND_VALUE         40637
+#define _APS_NEXT_COMMAND_VALUE         40653
 #define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

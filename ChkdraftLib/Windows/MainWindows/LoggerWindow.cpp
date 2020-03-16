@@ -19,7 +19,7 @@ LoggerWindow::~LoggerWindow()
 bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "NumberedEdit", NULL, false) &&
-        ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, x, y, width, height, hParent, (HMENU)id) )
+        ClassWindow::CreateClassWindow(0, "", WS_CHILD|WS_THICKFRAME, x, y, width, height, hParent, (HMENU)id) )
     {
         s32 lineNumberTextWidth = 50;
         s32 lineNumberMarginWidth = 20;
@@ -27,8 +27,8 @@ bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
         s32 textLeft = lineNumberControlWidth+3;
         s32 textWidth = cliWidth()-textLeft;
         s32 textHeight = cliHeight();
-        richText.CreateThis(getHandle(), textLeft, 0, textWidth, textHeight, readOnly, true, Id::RichText);
-        lineNumbers.CreateThis(getHandle(), 0, 0, lineNumberControlWidth, textHeight, true, false, Id::LineNumbers);
+        richText.CreateThis(getHandle(), textLeft-1, 0, textWidth+1, textHeight, readOnly, true, Id::RichText);
+        lineNumbers.CreateThis(getHandle(), -1, 0, lineNumberControlWidth+1, textHeight, true, false, Id::LineNumbers);
         PARAFORMAT paraFormat = {};
         paraFormat.cbSize = sizeof(PARAFORMAT);
         paraFormat.dwMask = PFM_ALIGNMENT;
@@ -134,8 +134,23 @@ void LoggerWindow::ToggleLineNumbers()
 void LoggerWindow::ContextMenu(int x, int y)
 {
     HMENU hMenu = ::CreatePopupMenu();
+    AppendMenu(hMenu, MF_STRING, ContextMenuItem::HideLogger, icux::toUistring("Hide Logger").c_str());
     auto displayLineNumbers = icux::toUistring(showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers");
     AppendMenu(hMenu, MF_STRING, ContextMenuItem::ToggleLineNumbers, displayLineNumbers.c_str());
+    AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
+    AppendMenu(hMenu, MF_STRING, ContextMenuItem::OpenLogFile, icux::toUistring("Open Log File").c_str());
+    AppendMenu(hMenu, MF_STRING, ContextMenuItem::OpenLogFileDirectory, icux::toUistring("Open Log File Directory").c_str());
+    AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
+    HMENU hLogLevel = CreatePopupMenu();
+    AppendMenu(hMenu, MF_STRING|MF_POPUP, (UINT_PTR)hLogLevel, icux::toUistring("Log Level").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelOff, icux::toUistring("[0] Off").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelFatal, icux::toUistring("[100] Fatal").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelError, icux::toUistring("[200] Error").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelWarn, icux::toUistring("[300] Warn").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelInfo, icux::toUistring("[400] Info").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelDebug, icux::toUistring("[500] Debug").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelTrace, icux::toUistring("[600] Trace").c_str());
+    AppendMenu(hLogLevel, MF_STRING, ContextMenuItem::LogLevelAll, icux::toUistring("[-1] All").c_str());
     BOOL result = TrackPopupMenu(hMenu, TPM_RETURNCMD, x, y, 0, getHandle(), NULL);
     if ( result == ContextMenuItem::ToggleLineNumbers )
         ToggleLineNumbers();
@@ -150,37 +165,34 @@ LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case WM_SIZE:
             {
-                RECT rcMain, rcTool, rcStatus, rcLeftBar;
-
                 // Get the size of the client area, toolbar, status bar, and left bar
+                RECT rcMain, rcTool, rcStatus, rcLeftBar;
                 GetClientRect(chkd.getHandle(), &rcMain);
                 GetWindowRect(chkd.mainToolbar.getHandle(), &rcTool);
                 GetWindowRect(chkd.statusBar.getHandle(), &rcStatus);
                 GetWindowRect(chkd.mainPlot.leftBar.getHandle(), &rcLeftBar);
 
-                int xBorder = GetSystemMetrics(SM_CXSIZEFRAME) - 1,
-                    yBorder = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
-
-                int x = rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2;
-                int y = rcMain.bottom-rcMain.top+2*yBorder+1-chkd.mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top);
-                int width = rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left - 3*xBorder - 2)+xBorder+4;
-                int height = chkd.mainPlot.loggerWindow.Height();
+                int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
+                    yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
 
                 // Fit logger to the area between the left bar and right edge without changing the height
-                SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, x, y,
-                    width, height,
-                    SWP_NOZORDER | SWP_NOACTIVATE);
+                SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,
+                    rcMain.bottom-rcMain.top+2*yBorder-1-chkd.mainPlot.loggerWindow.Height()-(rcStatus.bottom-rcStatus.top)-(rcTool.bottom-rcTool.top),
+                    rcMain.right - rcMain.left - (rcLeftBar.right - rcLeftBar.left) + 4*xBorder + 5, ClassWindow::Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 
                 // Fit the map MDIClient to the area right of the left bar and between the toolbar and logger
-                SetWindowPos(chkd.maps.getHandle(), HWND_TOP, 0, 0, 0, 0,
-                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-                SetWindowPos(chkd.maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder - 2, rcTool.bottom - rcTool.top,
-                    rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder + 2, chkd.mainPlot.loggerWindow.Top(),
-                    SWP_NOZORDER | SWP_NOACTIVATE);
+                SetWindowPos(chkd.maps.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - xBorder + 1, rcTool.bottom - rcTool.top,
+                    rcMain.right - rcMain.left - rcLeftBar.right + rcLeftBar.left + xBorder - 1, chkd.mainPlot.loggerWindow.Top(), SWP_NOZORDER | SWP_NOACTIVATE);
+                SetWindowPos(chkd.maps.getHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
 
                 SizeSubWindows();
                 return 0;
             }
+            break;
+        case WM_PAINT:
+            LRESULT result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
+            RedrawWindow(chkd.mainPlot.leftBar.getHandle(), NULL, NULL, RDW_INVALIDATE|RDW_FRAME|RDW_UPDATENOW);
+            return result;
             break;
     }
     return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
