@@ -73,7 +73,6 @@ class Chkdraft : public WinLib::ClassWindow
 
 /*     Data     */  HWND currDialog;
                     bool editFocused;
-                    Logger stdOut;
                     Logger logFile;
                     std::string logFilePath;
 
