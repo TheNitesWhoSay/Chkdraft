@@ -13,6 +13,7 @@ class LoggerWindow : public WinLib::ClassWindow, public std::ostream, public std
         LoggerWindow();
         virtual ~LoggerWindow();
         bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id);
+        void Refresh();
 
         bool IsVisible();
         void ToggleVisible();

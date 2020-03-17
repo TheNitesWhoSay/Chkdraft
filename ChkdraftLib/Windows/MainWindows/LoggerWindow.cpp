@@ -42,6 +42,23 @@ bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
     }
     return false;
 }
+
+void LoggerWindow::Refresh()
+{
+    std::string lineNumbers = "";
+    size_t totalLines = lineStart.size();
+    size_t firstLine = lineNumber-totalLines;
+    for ( size_t i=0; i<totalLines; i++ )
+    {
+        if ( i > 0 )
+            lineNumbers += '\n';
+
+        lineNumbers += std::to_string(firstLine+i);
+    }
+    this->lineNumbers.SetText(icux::toUistring(lineNumbers));
+    richText.SetText(prevLines);
+    richText.ScrollBottom();
+}
  
 bool LoggerWindow::IsVisible()
 {

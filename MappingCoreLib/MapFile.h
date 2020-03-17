@@ -108,6 +108,8 @@ enum class SaveType
     Unknown // Have this higher than all other SaveTypes
 };
 
+std::string saveTypeToStr(const SaveType & saveType);
+
 enum class SoundStatus
 {
     PendingMatch,

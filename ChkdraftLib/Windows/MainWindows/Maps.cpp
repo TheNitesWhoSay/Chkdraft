@@ -100,6 +100,8 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
         return false;
     }
 
+    logger.info("Creating new map...");
+    auto start = std::chrono::high_resolution_clock::now();
     GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height));
     if ( newMap != nullptr )
     {
@@ -114,6 +116,9 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
             EnableMapping();
             Focus(newMap);
             currentlyActiveMap->Redraw(true);
+    
+            auto finish = std::chrono::high_resolution_clock::now();
+            logger.info() << "New map created in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
             return true;
         }
         else

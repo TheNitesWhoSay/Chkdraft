@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <SimpleIcu.h>
 #include <sstream>
+#include <chrono>
 
 std::hash<std::string> MapFile::strHash;
 std::map<size_t, std::string> MapFile::virtualSoundTable;
@@ -72,7 +73,8 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
         CHKD_ERR("Cannot save protected maps!");
     else if ( !saveFilePath.empty() )
     {
-        logger.info() << "Saving to: " << saveFilePath << " with saveType: " << (int)saveType << std::endl;
+        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\"" << std::endl;
+        auto start = std::chrono::high_resolution_clock::now();
         bool versionCorrect = true;
         if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
@@ -106,6 +108,9 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
                         MpqFile::setUpdatingListFile(updateListFile);
                         MpqFile::close();
                         mapFilePath = saveFilePath;
+                        
+                        auto finish = std::chrono::high_resolution_clock::now();
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
                     }
                     else
@@ -126,6 +131,8 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
                     if ( outFile.good() )
                     {
                         mapFilePath = saveFilePath;
+                        auto finish = std::chrono::high_resolution_clock::now();
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
                     }
                     else
@@ -154,6 +161,8 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         std::string newMapFilePath;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
             getSaveDetails(saveType, newMapFilePath, overwriting, fileBrowser);
+        else if ( !saveAs )
+            newMapFilePath = mapFilePath;
 
         if ( !newMapFilePath.empty() )
             return save(newMapFilePath, updateListFile, lockAnywhere, autoDefragmentLocations);
@@ -221,6 +230,8 @@ bool MapFile::OpenTemporaryMpq()
 
 bool MapFile::OpenMapFile(const std::string & filePath)
 {
+    logger.info() << "Opening map file: " << filePath << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     std::string extension = GetSystemFileExtension(filePath);
     if ( !extension.empty() )
     {
@@ -245,7 +256,9 @@ bool MapFile::OpenMapFile(const std::string & filePath)
                         saveType = SaveType::HybridScm; // Hybrid
                     else
                         saveType = SaveType::ExpansionScx; // Expansion
-
+                    
+                    auto finish = std::chrono::high_resolution_clock::now();
+                    logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                     return true;
                 }
                 else
@@ -268,7 +281,9 @@ bool MapFile::OpenMapFile(const std::string & filePath)
                     saveType = SaveType::HybridChk; // Hybrid chk
                 else
                     saveType = SaveType::ExpansionChk; // Expansion chk
-                    
+                
+                auto finish = std::chrono::high_resolution_clock::now();
+                logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                 return true;
             }
             else
@@ -773,6 +788,25 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
         }
     }
     return false;
+}
+
+std::string saveTypeToStr(const SaveType & saveType)
+{
+    switch ( saveType )
+    {
+        case SaveType::StarCraftScm: return "StarCraft Map(*.scm)"; break;
+        case SaveType::HybridScm: return "StarCraft Hybrid Map(*.scm)"; break;
+        case SaveType::ExpansionScx: return "BroodWar Map(*.scx)"; break;
+        case SaveType::StarCraftChk: return "Raw StarCraft Map(*.chk)"; break;
+        case SaveType::HybridChk: return "Raw StarCraft Hybrid Map(*.chk)"; break;
+        case SaveType::ExpansionChk: return "Raw BroodWar Map(*.chk)"; break;
+        case SaveType::AllScm: return "All Scm"; break;
+        case SaveType::AllScx: return "All Scx"; break;
+        case SaveType::AllChk: return "All Chk"; break;
+        case SaveType::AllMaps: return "All Maps"; break;
+        case SaveType::AllFiles: return "All Files"; break;
+        default: return "Unknown"; break;
+    }
 }
 
 std::vector<FilterEntry<SaveType>> getOpenMapFilters()

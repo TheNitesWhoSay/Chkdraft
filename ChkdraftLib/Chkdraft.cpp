@@ -34,7 +34,7 @@ void Chkdraft::OnLoadTest()
     }*/
 }
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr)
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
 {
     
 }
@@ -49,7 +49,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     SetupLogging();
     if ( !CreateThis() )
         return 1;
-
+    
     scData.Load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
     UpdateLogLevelCheckmarks(logger.getLogLevel());
@@ -58,6 +58,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 #ifdef HAS_CONSOLE
     Console::setVisible(false); // Remove the console
 #endif
+    mainPlot.loggerWindow.Refresh();
     UpdateWindow();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
@@ -100,7 +101,7 @@ void Chkdraft::SetupLogging()
     if ( GetLoggerPath(loggerPath) )
     {
         logFilePath = loggerPath + Logger::getTimestamp();
-        std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger());
+        std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger(logger.getLogLevel()));
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
         logger.info("Setting log file to: " + logFilePath);
@@ -254,6 +255,8 @@ void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 void Chkdraft::SetLogLevel(LogLevel newLogLevel)
 {
     logger.setLogLevel(newLogLevel);
+    Settings::logLevel = newLogLevel;
+    Settings::updateSettingsFile();
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)

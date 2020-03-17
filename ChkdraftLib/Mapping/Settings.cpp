@@ -4,6 +4,7 @@ std::string Settings::starCraftPath("");
 std::string Settings::starDatPath("");
 std::string Settings::brooDatPath("");
 std::string Settings::patchRtPath("");
+u32 Settings::logLevel(LogLevel::Info);
 u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
 
@@ -88,6 +89,12 @@ bool GetSettingsPath(std::string & outFilePath)
     return false;
 }
 
+u32 Settings::getLogLevel()
+{
+    readSettingsFile();
+    return logLevel;
+}
+
 bool Settings::readSettingsFile()
 {
     bool success = false;
@@ -115,6 +122,12 @@ bool Settings::readSettingsFile()
                     brooDatPath = value;
                 else if ( key == "patchRtPath" )
                     patchRtPath = value;
+                else if ( key == "logLevel" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) )
+                        logLevel = temp;
+                }
                 else if ( key == "deathTableStart" )
                 {
                     u32 temp = 0;
@@ -153,6 +166,7 @@ bool Settings::updateSettingsFile()
             << "starDatPath=" << starDatPath << std::endl
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl
+            << "logLevel=" << logLevel << std::endl
             << "deathTableStart=0x" << std::hex << std::uppercase << deathTableStart << std::dec << std::nouppercase << std::endl
             << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl;
         loadFile.close();

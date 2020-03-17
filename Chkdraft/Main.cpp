@@ -1,6 +1,12 @@
 #include "../ChkdraftLib/Chkdraft.h"
+#include "../ChkdraftLib/Mapping/Settings.h"
 
-Logger logger; // The primary logger
+#ifdef _DEBUG
+Logger logger(LogLevel::All); // The primary logger
+#else
+Logger logger((LogLevel)Settings::getLogLevel()); // The primary logger
+#endif
+
 
 Chkdraft chkd; // The main instance of Chkdraft
 

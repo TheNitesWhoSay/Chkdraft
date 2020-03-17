@@ -1,4 +1,5 @@
 #include "Sc.h"
+#include <chrono>
 
 const std::string Sc::DataFile::starCraftFileName = "StarCraft.exe";
 const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";
@@ -165,6 +166,7 @@ FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
 
 bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<u8> unitData;
     if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\units.dat", unitData) )
     {
@@ -249,7 +251,9 @@ bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
         flingies.push_back(Sc::Unit::FlingyDatEntry { flingyDat.sprite[i], flingyDat.topSpeed[i], flingyDat.acceleration[i],
             flingyDat.haltDistance[i], flingyDat.turnRadius[i], flingyDat.unused[i], flingyDat.moveControl[i] });
     }
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Unit loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
@@ -1644,10 +1648,13 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 
 bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
     for ( size_t i=0; i<NumTilesets; i++ )
         success &= tilesets[i].load(orderedSourceFiles, TilesetNames[i]);
     
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return success;
 }
 
@@ -1661,6 +1668,7 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
 
 bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<u8> weaponData;
     if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\weapons.dat", weaponData) )
     {
@@ -1698,7 +1706,9 @@ bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
                 weaponDat.targetErrorMessage[i], weaponDat.icon[i] });
         }
     }
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Weapon loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
@@ -1848,7 +1858,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName)
 #include <chrono>
 bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
-    logger.info("Loading GRPs...");
+    logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
     TblFile tblFile;
     if ( !tblFile.load(orderedSourceFiles, "arr\\images.tbl") )
@@ -1882,9 +1892,6 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 
     if ( numStrings == 0 )
         logger.warn() << "images.tbl was empty, no grps were loaded!" << std::endl;
-    
-    auto finish = std::chrono::high_resolution_clock::now();
-    logger.info() << "GRP loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
 
     std::vector<u8> imageData;
     if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat", imageData) )
@@ -1929,7 +1936,9 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
             spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To129],
             spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To129] });
     }
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Sprite loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
@@ -1974,6 +1983,7 @@ size_t Sc::Sprite::numSprites()
 
 bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<u8> upgradeData;
     if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\upgrades.dat", upgradeData) )
     {
@@ -2007,7 +2017,9 @@ bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
                 upgradeDat.maxRepeats[i], u8(0) });
         }
     }
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Upgrade loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
@@ -2021,6 +2033,7 @@ const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType)
 
 bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<u8> techData;
     if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\techdata.dat", techData) )
     {
@@ -2052,7 +2065,9 @@ bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
                 techDat.unknown[i], techDat.icon[i], techDat.label[i], techDat.race[i], techDat.unused[i], u8(0) });
         }
     }
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "Tech loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
@@ -3310,6 +3325,9 @@ bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std
 bool Sc::Data::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
+    auto start = std::chrono::high_resolution_clock::now();
+    logger.debug("Loading StarCraft Data...");
+
     if ( dataFileBrowser == nullptr )
         return false;
 
@@ -3353,7 +3371,9 @@ bool Sc::Data::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unorder
 
     if ( !ai.load(orderedSourceFiles, statTxt) )
         CHKD_ERR("Failed to load AiScripts");
-
+    
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.debug() << "StarCraft data loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
