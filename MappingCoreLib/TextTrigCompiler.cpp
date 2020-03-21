@@ -234,9 +234,9 @@ void TextTrigCompiler::CleanText(std::string & text)
             if ( text[pos] == '/' ) // Found a comment
             {
                 size_t newPos = text.find('\n', pos); // Check for nearby LF
-                if ( newPos != std::string::npos ) newPos = text.find('\r', pos); // Check for nearby CR (should be checked after LF)
-                if ( newPos != std::string::npos ) newPos = text.find('\13', pos); // Check for nearby VT
-                if ( newPos != std::string::npos ) newPos = text.find('\14', pos); // Check for nearby FF
+                if ( newPos == std::string::npos ) newPos = text.find('\r', pos); // Check for nearby CR (should be checked after LF)
+                if ( newPos == std::string::npos ) newPos = text.find('\13', pos); // Check for nearby VT
+                if ( newPos == std::string::npos ) newPos = text.find('\14', pos); // Check for nearby FF
 
                 if ( newPos != std::string::npos )
                     pos = newPos; // Skip (delete) contents until line ending
@@ -254,78 +254,7 @@ void TextTrigCompiler::CleanText(std::string & text)
 
             while ( pos < closeQuotePos )
             {
-                char curr = text[pos];
-                if ( curr == '\\' ) // Escape Character
-                {
-                    pos++;
-                    if ( text[pos] == 'x' )
-                    {
-                        pos++;
-                        pos++; // First num should always be 0
-
-                        char targetVal = 0;
-
-                        if ( text[pos] >= '0' && text[pos] <= '9' )
-                            targetVal += 16 * (text[pos] - '0');
-                        else if ( text[pos] >= 'A' && text[pos] <= 'F' )
-                            targetVal += 16 * (text[pos] - 'A' + 10);
-
-                        pos++;
-
-                        if ( text[pos] >= '0' && text[pos] <= '9' )
-                            targetVal += text[pos] - '0';
-                        else if ( text[pos] >= 'A' && text[pos] <= 'F' )
-                            targetVal += text[pos] - 'A' + 10;
-
-                        dest += targetVal;
-                    }
-                    else if ( text[pos] == 'r' )
-                    {
-                        dest += '\r';
-                    }
-                    else if ( text[pos] == 'n' )
-                    {
-                        dest += '\n';
-                    }
-                    else if ( text[pos] == 't' )
-                    {
-                        dest += '\t';
-                    }
-                    else if ( text[pos] == '\"' )
-                    {
-                        dest += '\\';
-                        dest += '\"';
-                    }
-                    else
-                        dest += text[pos];
-                }
-                else if ( curr == '<' && text[pos + 3] == '>' &&
-                    (text[pos+1] >= '0' && text[pos+1] <= '9' ||
-                        text[pos+1] >= 'A' && text[pos+1] <= 'F') &&
-                        (text[pos + 2] >= '0' && text[pos + 2] <= '9' ||
-                            text[pos + 2] >= 'A' && text[pos + 2] <= 'F') )
-                {
-                    pos++;
-                    char targetVal = 0;
-
-                    if ( text[pos] >= '0' && text[pos] <= '9' )
-                        targetVal += 16 * (text[pos] - '0');
-                    else if ( text[pos] >= 'A' && text[pos] <= 'F' )
-                        targetVal += 16 * (text[pos] - 'A' + 10);
-
-                    pos++;
-
-                    if ( text[pos] >= '0' && text[pos] <= '9' )
-                        targetVal += text[pos] - '0';
-                    else if ( text[pos] >= 'A' && text[pos] <= 'F' )
-                        targetVal += text[pos] - 'A' + 10;
-
-                    dest += targetVal;
-                    pos++;
-                }
-                else
-                    dest += curr;
-
+                dest += text[pos];
                 pos++;
             }
 
@@ -377,7 +306,6 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<Chk::Trigger
 
     while ( pos < text.size() )
     {
-
         if ( text[pos] == '\15' ) // Line End
         {
             pos += 2;
@@ -477,7 +405,6 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<Chk::Trigger
                 numConditions = 0;
                 numActions = 0;
 
-                logger.trace() << "Pushing: " << output.size() << std::endl;
                 output.push_back(currTrig);
                 expecting = 0;
                 if ( text[pos] == '\0' ) // End of Text
@@ -523,7 +450,6 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr 
     }
     else if ( text[pos] == '\0' ) // End of text
     {
-        logger.trace("End of text");
         pos ++;
     }
     else
@@ -531,7 +457,6 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr 
         error << "Line: " << line << std::endl << std::endl << "Expected: \"Trigger\" or End of Text";
         return false;
     }
-    logger.trace("New trigger");
     currTrig = Chk::TriggerPtr(new Chk::Trigger());
     currCondition = &currTrig->conditions[0];
     currAction = &currTrig->actions[0];
@@ -676,12 +601,12 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     // or   }
     if ( text[pos] == ';' ) // Disabled condition
     {
+        pos ++;
         while ( text[pos] == '\15' )
         {
             pos += 2;
             line ++;
         }
-        pos ++;
         conditionEnd = text.find('(', pos);
         if ( conditionEnd != std::string::npos )
         {
@@ -1942,8 +1867,8 @@ bool TextTrigCompiler::ParseActionArg(std::string & text, Chk::Action & currActi
         case Chk::Action::ArgType::CUWP:
         case Chk::Action::ArgType::Percent:
         case Chk::Action::ArgType::Amount:
-            returnMsg( ParseLong(textPtr, currAction.number, pos, end),
-                "Expected: 4-byte number" );
+            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? ParseByte(textPtr, currAction.type2, pos, end) : ParseLong(textPtr, currAction.number, pos, end)),
+                (arg.field == Chk::Action::ArgField::Type2 ? "Expected: 1-byte number" : "Expected: 4-byte number" ));
         case Chk::Action::ArgType::ScoreType:
             returnMsg( ParseScoreType(text, currAction.type, pos, end) ||
                 ParseShort(textPtr, currAction.type, pos, end),
@@ -2081,10 +2006,9 @@ bool TextTrigCompiler::ParseString(std::string & text, u32 & dest, size_t pos, s
     {
         const char* stringPtr = &text.c_str()[pos];
         char temp = stringPtr[size];
-        EscString escStr(stringPtr, size);
-
+        EscString escString(stringPtr, size);
         RawString rawString;
-        ConvertStr(escStr, rawString);
+        ConvertStr(escString, rawString);
 
         size_t hash = strHash(rawString);
         auto matches = newStringTable.equal_range(hash);
@@ -2092,16 +2016,16 @@ bool TextTrigCompiler::ParseString(std::string & text, u32 & dest, size_t pos, s
         {
             for ( auto it = matches.first; it != matches.second; ++it )
             {
-                StringTableNode & node = it->second;
-                if ( node.scStr->compare(rawString) == 0 )
+                StringTableNodePtr & node = it->second;
+                if ( node->scStr->compare(rawString) == 0 )
                 {
-                    if ( node.unused )
-                        node.unused = false;
+                    if ( node->unused )
+                        node->unused = false;
 
-                    if ( node.stringId == Chk::StringId::NoString )
-                        node.assignees.push_back(&dest);
+                    if ( node->stringId == Chk::StringId::NoString )
+                        node->assignees.push_back(&dest);
                     else
-                        dest = node.stringId;
+                        dest = node->stringId;
 
                     return true;
                 }
@@ -2109,11 +2033,13 @@ bool TextTrigCompiler::ParseString(std::string & text, u32 & dest, size_t pos, s
         }
 
         // No matches
-        StringTableNode node;
-        node.unused = false;
-        node.scStr = ScStrPtr(new ScStr(rawString));
-        node.stringId = 0;
-        node.assignees.push_back(&dest);
+        StringTableNodePtr node = StringTableNodePtr(new StringTableNode());
+        node->unused = false;
+        node->scStr = ScStrPtr(new ScStr(rawString));
+        node->stringId = 0;
+        node->assignees.push_back(&dest);
+        newStringTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(rawString), node));
+        unassignedStrings.push_back(node);
         return true;
     }
     return false;
@@ -2147,21 +2073,23 @@ bool TextTrigCompiler::ParseLocationName(std::string & text, u32 & dest, size_t 
     if ( pos+size <= text.length() )
     {
         const char* locStringPtr = &text.c_str()[pos];
-        std::string str(locStringPtr, size);
+        EscString escString(locStringPtr, size);
+        RawString rawString;
+        ConvertStr(escString, rawString);
 
-        if ( str.compare("anywhere") == 0 ) // Capitalize lower-case anywhere's
+        if ( rawString.compare("anywhere") == 0 ) // Capitalize lower-case anywhere's
         {
             text[pos] = 'A';
-            str[pos] = 'A';
+            rawString[pos] = 'A';
         }
 
         // Grab the string hash
-        size_t hash = strHash(str);
+        size_t hash = strHash(rawString);
         size_t numMatching = locationTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             LocationTableNode & node = locationTable.find(hash)->second;
-            if ( node.locationName.compare(str) == 0 )
+            if ( node.locationName.compare(rawString) == 0 )
             {
                 dest = node.locationId;
                 success = true;
@@ -2173,7 +2101,7 @@ bool TextTrigCompiler::ParseLocationName(std::string & text, u32 & dest, size_t 
             foreachin(pair, range)
             {
                 LocationTableNode & node = pair->second;
-                if ( node.locationName.compare(str) == 0 )
+                if ( node.locationName.compare(rawString) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
@@ -2637,13 +2565,16 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, Sc::Unit::Type & dest, 
 
         if ( !success ) // Now search the unit name table
         {
-            std::string str(unitNamePtr);
-            size_t hash = strHash(str);
+            EscString escString(unitNamePtr, size);
+            RawString rawString;
+            ConvertStr(escString, rawString);
+
+            size_t hash = strHash(rawString);
             size_t numMatching = unitTable.count(hash);
             if ( numMatching == 1 )
             { // Should guarentee that you can find at least one entry
                 UnitTableNode & node = unitTable.find(hash)->second;
-                if ( node.unitName.compare(unitNamePtr) == 0 )
+                if ( node.unitName.compare(rawString) == 0 )
                 {
                     dest = node.unitType;
                     success = true;
@@ -2655,7 +2586,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, Sc::Unit::Type & dest, 
                 foreachin(pair, range)
                 {
                     UnitTableNode & node = pair->second;
-                    if ( node.unitName.compare(unitNamePtr) == 0 )
+                    if ( node.unitName.compare(rawString) == 0 )
                     {
                         if ( success == false ) // If no matches have previously been found
                         {
@@ -2711,13 +2642,14 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, Sc::Unit::Type & dest, 
                 else if ( strcmp(&unit[1], "NDEPENDENT STARPORT"               ) == 0 ) { dest = Sc::Unit::Type::IndependentStarport_Unused; success = true; }
                 else if ( strcmp(&unit[1], "NFESTED DURAN"                     ) == 0 ) { dest = Sc::Unit::Type::InfestedDuran; success = true; }
                 else if ( strcmp(&unit[1], "NFESTED KERRIGAN (INFESTED TERRAN)") == 0 ) { dest = Sc::Unit::Type::InfestedKerrigan_InfestedTerran; success = true; }
+                else if ( strcmp(&unit[1], "NVALID UNIT"                       ) == 0 ) { dest = Sc::Unit::Type::Id228; success = true; }
                 break;
             case 'J':
                 if ( strcmp(&unit[1], "UMP GATE") == 0 ) { dest = Sc::Unit::Type::IndependentJumpGate_Unused; success = true; }
                 break;
             case 'K':
                 if      ( strcmp(&unit[1], "AKARU (TWILIGHT)"         ) == 0 ) { dest = Sc::Unit::Type::Kakaru_TwilightCritter; success = true; }
-                else if ( strcmp(&unit[1], "YADARIN CRYSTAL FORMATION") == 0 ) { dest = Sc::Unit::Type::KhaydarinCrystalFormation; success = true; }
+                else if ( strcmp(&unit[1], "YADARIN CRYSTAL FORMATION") == 0 ) { dest = Sc::Unit::Type::KhadarinCrystalFormation_Unused; success = true; }
                 break;
             case 'M':
                 if      ( strcmp(&unit[1], "INING PLATFORM"       ) == 0 ) { dest = Sc::Unit::Type::MiningPlatform_Unused; success = true; }
@@ -3016,13 +2948,16 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, u32 & dest, size_t pos, s
         const char* groupStrPtr = &text.c_str()[pos];
 
         // Grab the string hash
-        std::string str(groupStrPtr, size);
-        size_t hash = strHash(str);
+        EscString escString(groupStrPtr, size);
+        RawString rawString;
+        ConvertStr(escString, rawString);
+
+        size_t hash = strHash(rawString);
         size_t numMatching = groupTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             GroupTableNode & node = groupTable.find(hash)->second;
-            if ( node.groupName.compare(str) == 0 )
+            if ( node.groupName.compare(rawString) == 0 )
             {
                 dest = node.groupId;
                 success = true;
@@ -3034,7 +2969,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, u32 & dest, size_t pos, s
             foreachin(pair, range)
             {
                 GroupTableNode & node = pair->second;
-                if ( node.groupName.compare(str) == 0 )
+                if ( node.groupName.compare(rawString) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
                     {
@@ -3102,13 +3037,16 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, u8 & dest, size_t pos, si
 
         if ( !success ) // Otherwise search switch name table
         {
-            std::string str(switchNamePtr, size);
-            size_t hash = strHash(str);
+            EscString escString(switchNamePtr, size);
+            RawString rawString;
+            ConvertStr(escString, rawString);
+
+            size_t hash = strHash(rawString);
             size_t numMatching = switchTable.count(hash);
             if ( numMatching == 1 )
             { // Should guarentee that you can find at least one entry
                 SwitchTableNode & node = switchTable.find(hash)->second;
-                if ( node.switchName.compare(str) == 0 )
+                if ( node.switchName.compare(rawString) == 0 )
                 {
                     dest = node.switchId;
                     success = true;
@@ -3120,7 +3058,7 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, u8 & dest, size_t pos, si
                 foreachin(pair, range)
                 {
                     SwitchTableNode & node = pair->second;
-                    if ( node.switchName.compare(str) == 0 )
+                    if ( node.switchName.compare(rawString) == 0 )
                     {
                         if ( success == false ) // If no matches have previously been found
                         {
@@ -3176,15 +3114,17 @@ bool TextTrigCompiler::ParseScript(std::string & text, u32 & dest, size_t pos, s
     if ( pos+size <= text.size() )
     {
         const char* scriptStringPtr = &text.c_str()[pos];
-        std::string str(scriptStringPtr, size);
+        EscString escString(scriptStringPtr, size);
+        RawString rawString;
+        ConvertStr(escString, rawString);
 
         // Grab the string hash
-        size_t hash = strHash(str);
+        size_t hash = strHash(rawString);
         size_t numMatching = scriptTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
             ScriptTableNode & node = scriptTable.find(hash)->second;
-            if ( node.scriptName.compare(str) == 0 )
+            if ( node.scriptName.compare(rawString) == 0 )
             {
                 dest = node.scriptId;
                 success = true;
@@ -3196,7 +3136,7 @@ bool TextTrigCompiler::ParseScript(std::string & text, u32 & dest, size_t pos, s
             foreachin(pair, range)
             {
                 ScriptTableNode & node = pair->second;
-                if ( node.scriptName.compare(str) == 0 && success == false ) // Compare equal and no prev matches
+                if ( node.scriptName.compare(rawString) == 0 && success == false ) // Compare equal and no prev matches
                 {
                     dest = node.scriptId;
                     success = true;
@@ -3221,7 +3161,7 @@ bool TextTrigCompiler::ParseScript(std::string & text, u32 & dest, size_t pos, s
 
         if ( isQuoted || hasNonNumericCharacter )
         {
-            dest = text[pos];
+            dest = (u32 &)text[pos];
             success = true;
         }
     }
@@ -3303,7 +3243,7 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
             RawStringPtr locationName = map->strings.getString<RawString>(loc->stringId);
             if ( locationName != nullptr )
             {
-                locNode.locationId = u8(i+1);
+                locNode.locationId = u8(i);
                 locNode.locationName = *locationName;
                 locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
@@ -3357,7 +3297,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     GroupTableNode groupNode;
     for ( u32 i=0; i<4; i++ )
     {
-        ChkdStringPtr forceName = map->strings.getForceName<ChkdString>((Chk::Force)i);
+        RawStringPtr forceName = map->strings.getForceName<RawString>((Chk::Force)i);
         if ( forceName != nullptr )
         {
             groupNode.groupId = i + 18;
@@ -3368,7 +3308,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
+bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
     std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
     u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
@@ -3381,11 +3321,11 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<
             RawStringPtr rawString = map->strings.getString<RawString>(stringId, scope);
             if ( rawString != nullptr )
             {
-                StringTableNode node;
-                node.unused = false;
-                node.scStr = ScStrPtr(new ScStr(*rawString));
-                node.stringId = (u32)stringId;
-                stringHashTable.insert(std::pair<size_t, StringTableNode>(strHash(*rawString), node));
+                StringTableNodePtr node = StringTableNodePtr(new StringTableNode());
+                node->unused = false;
+                node->scStr = ScStrPtr(new ScStr(*rawString));
+                node->stringId = (u32)stringId;
+                stringHashTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(*rawString), node));
             }
         }
     }
@@ -3417,7 +3357,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<
     return true;
 }
 
-void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
+void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
     RawStringPtr rawString = scenario.strings.getString<RawString>(stringId, scope);
     if ( rawString != nullptr )
@@ -3429,11 +3369,11 @@ void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_mul
         {
             for ( auto it = matches.first; it != matches.second; ++it )
             {
-                if ( it->second.stringId == stringId && it->second.scStr->compare(*rawString) == 0 )
+                if ( it->second->stringId == stringId && it->second->scStr->compare(*rawString) == 0 )
                 {
                     exists = true;
-                    if ( it->second.unused && !inReplacedRange )
-                        it->second.unused = false;
+                    if ( it->second->unused && !inReplacedRange )
+                        it->second->unused = false;
 
                     break;
                 }
@@ -3442,11 +3382,11 @@ void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_mul
 
         if ( !exists )
         {
-            StringTableNode node;
-            node.unused = inReplacedRange;
-            node.scStr = ScStrPtr(new ScStr(*rawString));
-            node.stringId = stringId;
-            stringHashTable.insert(std::pair<size_t, StringTableNode>(strHash(*rawString), node));
+            StringTableNodePtr node = StringTableNodePtr(new StringTableNode());
+            node->unused = inReplacedRange;
+            node->scStr = ScStrPtr(new ScStr(*rawString));
+            node->stringId = stringId;
+            stringHashTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(*rawString), node));
         }
     }
 }
@@ -3500,6 +3440,7 @@ bool TextTrigCompiler::BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, 
     return success;
 }
 
+// Finds the position of the close quote
 size_t findStringEnd(const std::string & str, size_t pos)
 {
     size_t strSize = str.size();
@@ -3524,10 +3465,17 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character)
     size_t strSize = str.size();
     while ( pos < strSize )
     {
-        size_t nextQuote = str.find('\"', pos);
+        size_t nextQuote = str.find('\"', pos); // Next OPEN quote
         if ( pos == nextQuote )
-            nextQuote = str.find('\"', ++pos);
+        {
+            nextQuote = str.find('\"', ++pos); // Next CLOSE quote
+            while ( nextQuote != std::string::npos && str[nextQuote-1] == '\"' ) // If escaped, find next
+                nextQuote = str.find('\"', nextQuote+1);
 
+            if ( nextQuote != std::string::npos )
+                return findNextUnquoted(str, nextQuote+1, character);
+        }
+        
         size_t nextChar = str.find(character, pos);
         if ( nextChar == std::string::npos )
             return std::string::npos;
@@ -3535,9 +3483,11 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character)
             return nextChar;
         else
         {
-            pos = findStringEnd(str, pos);
+            pos = findStringEnd(str, nextQuote);
             if ( pos == std::string::npos )
                 return std::string::npos;
+            else
+                pos++;
         }
     }
     return std::string::npos;
@@ -3556,7 +3506,7 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character, cha
             if ( pos == std::string::npos )
                 return std::string::npos;
         }
-        else if ( curr == terminator )
+        else if ( curr == terminator && (pos == 0 || cStr[pos-1] != '\\') )
             return std::string::npos;
         else if ( curr == character )
             return pos;

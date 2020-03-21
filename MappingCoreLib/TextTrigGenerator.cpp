@@ -1050,15 +1050,7 @@ bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
         {
             EscString newString;
             for ( auto & character : *str )
-            {
-                if ( character == '\"' )
-                {
-                    newString.push_back('\\');
-                    newString.push_back('\"');
-                }
-                else
-                    newString.push_back(character);
-            }
+                newString.push_back(character);
 
             if ( quoteArgs )
                 stringTable.push_back( "\"" + newString + "\"" );

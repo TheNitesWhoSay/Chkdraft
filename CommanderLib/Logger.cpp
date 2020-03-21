@@ -284,6 +284,11 @@ int Logger::sync()
 
 int Logger::overflow(int c)
 {
+#ifdef _WIN32
+    if ( c == '\r' ) // Text read from windows will occasionally have \r\n, the \n automatically becomes \r\n so the output becomes \r\r\n, skip \r to fix
+        return 0;
+#endif
+
     if ( outputStream != nullptr && streamLogLevel <= logLevel && streamLogLevel > LogLevel::Off )
         outputStream->put(c);
 

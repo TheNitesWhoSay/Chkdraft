@@ -20,10 +20,6 @@ struct SwitchTableNode {
     RawString switchName;
     u8 switchId;
 };
-struct WavTableNode {
-    RawString wavName;
-    u32 wavId;
-};
 struct GroupTableNode {
     RawString groupName;
     u32 groupId;
@@ -38,6 +34,7 @@ struct StringTableNode {
     u32 stringId;
     std::vector<u32*> assignees;
 };
+using StringTableNodePtr = std::shared_ptr<StringTableNode>;
 
 class TextTrigCompiler : public StaticTrigComponentParser
 {
@@ -116,19 +113,19 @@ class TextTrigCompiler : public StaticTrigComponentParser
         std::unordered_multimap<size_t, GroupTableNode> groupTable; // Group/Player hash map
         std::unordered_multimap<size_t, ScriptTableNode> scriptTable; // Script hash map
 
-        std::unordered_multimap<size_t, StringTableNode> newStringTable; // String hash map
-        std::vector<StringTableNode*> unassignedStrings; // Strings in stringTable that have yet to be assigned stringIds
+        std::unordered_multimap<size_t, StringTableNodePtr> newStringTable; // String hash map
+        std::vector<StringTableNodePtr> unassignedStrings; // Strings in stringTable that have yet to be assigned stringIds
 
-        std::unordered_multimap<size_t, StringTableNode> newExtendedStringTable; // Extended string hash map
-        std::vector<StringTableNode*> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
+        std::unordered_multimap<size_t, StringTableNodePtr> newExtendedStringTable; // Extended string hash map
+        std::vector<StringTableNodePtr> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
 
         bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
         bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
         bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
         bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
         bool PrepScriptTable(Sc::Data & scData); // Fills scriptTable
-        bool PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
-        void PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNode> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+        bool PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
+        void PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
         bool PrepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
 
         bool BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error); // Builds the new TRIG and STR sections
