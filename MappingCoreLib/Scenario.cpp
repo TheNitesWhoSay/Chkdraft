@@ -316,8 +316,6 @@ bool Scenario::read(std::istream & is)
     Chk::Version version = versions.ver->getVersion();
 
     // TODO: More validation
-
-    logger.info("Scenario parsed successfully!");
     return true;
 }
 

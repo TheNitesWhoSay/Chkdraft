@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <chrono>
 #undef PlaySound
 
 TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
@@ -21,6 +22,8 @@ TextTrigCompiler::~TextTrigCompiler()
 
 bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
+    logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     if ( !LoadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
         return false;
 
@@ -37,6 +40,8 @@ bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::
             if ( BuildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
             {
                 chk->triggers.trig->swap(triggers);
+                auto finish = std::chrono::high_resolution_clock::now();
+                logger.info() << "Trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                 return true;
             }
             else
@@ -224,9 +229,8 @@ void TextTrigCompiler::CleanText(std::string & text)
                 pos++; // Increment position and continue to LF case
                        // Else continue to the LF case
         case '\n': // LF (line ending)
-        case '\13': // VT (line ending)
-        case '\14': // FF (line ending)
-            dest += '\r';
+        case '\v': // VT (line ending)
+        case '\f': // FF (line ending)
             dest += '\n';
             break;
 
@@ -234,9 +238,9 @@ void TextTrigCompiler::CleanText(std::string & text)
             if ( text[pos] == '/' ) // Found a comment
             {
                 size_t newPos = text.find('\n', pos); // Check for nearby LF
-                if ( newPos == std::string::npos ) newPos = text.find('\r', pos); // Check for nearby CR (should be checked after LF)
-                if ( newPos == std::string::npos ) newPos = text.find('\13', pos); // Check for nearby VT
-                if ( newPos == std::string::npos ) newPos = text.find('\14', pos); // Check for nearby FF
+                if ( newPos == std::string::npos ) newPos = text.find('\r', pos); // Check for nearby CR (should be checked only if LF not found)
+                if ( newPos == std::string::npos ) newPos = text.find('\v', pos); // Check for nearby VT
+                if ( newPos == std::string::npos ) newPos = text.find('\f', pos); // Check for nearby FF
 
                 if ( newPos != std::string::npos )
                     pos = newPos; // Skip (delete) contents until line ending
@@ -248,16 +252,12 @@ void TextTrigCompiler::CleanText(std::string & text)
         case '\"': // Found a string
         {
             dest += '\"';
-
-            size_t searchStart = pos;
-            size_t closeQuotePos = findStringEnd(text, searchStart);
-
+            size_t closeQuotePos = findStringEnd(text, pos);
             while ( pos < closeQuotePos )
             {
                 dest += text[pos];
                 pos++;
             }
-
             dest += '\"';
             pos = closeQuotePos+1;
         }
@@ -306,9 +306,9 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::deque<Chk::Trigger
 
     while ( pos < text.size() )
     {
-        if ( text[pos] == '\15' ) // Line End
+        if ( text[pos] == '\n' ) // Line End
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
         else
@@ -432,9 +432,9 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr 
     else if ( text.compare(pos, 7, "TRIGGER") == 0 )
     {
         pos += 7;
-        while ( text[pos] == '\r' )
+        while ( text[pos] == '\n' )
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
         if ( text[pos] == '(' )
@@ -482,7 +482,7 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, Chk::Trigger & ou
 
         if ( playerEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\15');
+            lineEnd = findNextUnquoted(text, pos, '\n');
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length(); // Text ends on this line
 
@@ -491,9 +491,9 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, Chk::Trigger & ou
             if ( ParseExecutingPlayer(text, output, pos, playerEnd) )
             {
                 pos = playerEnd;
-                while ( text[pos] == '\15' )
+                while ( text[pos] == '\n' )
                 {
-                    pos += 2;
+                    pos ++;
                     line ++;
                 }
                 if ( text[pos] == ')' )
@@ -564,9 +564,9 @@ inline bool TextTrigCompiler::ParsePartThree(std::string & text, Chk::Trigger & 
         if ( hasConditions || text.compare(pos, 7, "ACTIONS") == 0 )
         {
             pos += hasConditions ? 10 : 7;
-            while ( text[pos] == '\15' )
+            while ( text[pos] == '\n' )
             {
-                pos += 2;
+                pos ++;
                 line ++;
             }
 
@@ -602,15 +602,15 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     if ( text[pos] == ';' ) // Disabled condition
     {
         pos ++;
-        while ( text[pos] == '\15' )
+        while ( text[pos] == '\n' )
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
         conditionEnd = text.find('(', pos);
         if ( conditionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\r');
+            lineEnd = findNextUnquoted(text, pos, '\n');
             if ( lineEnd != std::string::npos )
                 lineEnd = text.size();
 
@@ -633,9 +633,9 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 numConditions ++;
 
                 pos = conditionEnd;
-                while ( text[pos] == '\r' )
+                while ( text[pos] == '\n' )
                 {
-                    pos += 2;
+                    pos ++;
                     line ++;
                 }
 
@@ -670,9 +670,9 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     else if ( text.compare(pos, 7, "ACTIONS") == 0 ) // End conditions
     {
         pos += 7;
-        while ( text[pos] == '\r' )
+        while ( text[pos] == '\n' )
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
         if ( text[pos] == ':' )
@@ -705,7 +705,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
         conditionEnd = text.find('(', pos);
         if ( conditionEnd != std::string::npos ) // Has a condition or an error
         {
-            lineEnd = text.find('\15', pos);
+            lineEnd = text.find('\n', pos);
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length();
 
@@ -728,9 +728,9 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 numConditions ++;
 
                 pos = conditionEnd;
-                while ( text[pos] == '\15' )
+                while ( text[pos] == '\n' )
                 {
-                    pos += 2;
+                    pos ++;
                     line ++;
                 }
 
@@ -777,9 +777,9 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, Chk::Trigger & o
         }
 
         pos ++;
-        while ( text[pos] == '\15' )
+        while ( text[pos] == '\n' )
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
 
@@ -893,7 +893,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
         actionEnd = text.find('(', pos);
         if ( actionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\15');
+            lineEnd = findNextUnquoted(text, pos, '\n');
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length();
 
@@ -949,7 +949,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
         actionEnd = text.find('(', pos);
         if ( actionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\15');
+            lineEnd = findNextUnquoted(text, pos, '\n');
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length();
 
@@ -1006,9 +1006,9 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, Chk::Trigger & 
         }
 
         pos ++;
-        while ( text[pos] == '\15' )
+        while ( text[pos] == '\n' )
         {
-            pos += 2;
+            pos ++;
             line ++;
         }
 
@@ -3440,20 +3440,16 @@ bool TextTrigCompiler::BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, 
     return success;
 }
 
-// Finds the position of the close quote
 size_t findStringEnd(const std::string & str, size_t pos)
 {
     size_t strSize = str.size();
     while ( pos < strSize )
     {
         size_t nextQuote = str.find('\"', pos);
-        if ( pos == nextQuote )
-            nextQuote = str.find('\"', ++pos);
-
         if ( nextQuote == std::string::npos )
             return std::string::npos;
         else if ( nextQuote > 0 && str[nextQuote-1] == '\\' ) // Escaped quote
-            pos = nextQuote;
+            pos = nextQuote+1;
         else  // Terminating quote
             return nextQuote;
     }
@@ -3462,33 +3458,19 @@ size_t findStringEnd(const std::string & str, size_t pos)
 
 size_t findNextUnquoted(const std::string & str, size_t pos, char character)
 {
+    const char * cStr = str.c_str();
     size_t strSize = str.size();
-    while ( pos < strSize )
+    for ( ; pos<strSize; pos++ )
     {
-        size_t nextQuote = str.find('\"', pos); // Next OPEN quote
-        if ( pos == nextQuote )
+        char curr = cStr[pos];
+        if ( curr == '\"' )
         {
-            nextQuote = str.find('\"', ++pos); // Next CLOSE quote
-            while ( nextQuote != std::string::npos && str[nextQuote-1] == '\"' ) // If escaped, find next
-                nextQuote = str.find('\"', nextQuote+1);
-
-            if ( nextQuote != std::string::npos )
-                return findNextUnquoted(str, nextQuote+1, character);
-        }
-        
-        size_t nextChar = str.find(character, pos);
-        if ( nextChar == std::string::npos )
-            return std::string::npos;
-        else if ( nextQuote == std::string::npos || nextChar < nextQuote )
-            return nextChar;
-        else
-        {
-            pos = findStringEnd(str, nextQuote);
+            pos = findStringEnd(str, pos+1);
             if ( pos == std::string::npos )
                 return std::string::npos;
-            else
-                pos++;
         }
+        else if ( curr == character )
+            return pos;
     }
     return std::string::npos;
 }
@@ -3502,7 +3484,7 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character, cha
         char curr = cStr[pos];
         if ( curr == '\"' )
         {
-            pos = findStringEnd(str, pos);
+            pos = findStringEnd(str, pos+1);
             if ( pos == std::string::npos )
                 return std::string::npos;
         }

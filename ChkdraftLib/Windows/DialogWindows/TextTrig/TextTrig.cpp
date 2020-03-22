@@ -27,7 +27,10 @@ void TextTrigWindow::RefreshWindow()
     std::string trigString;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( textTrigs.GenerateTextTrigs(CM, trigString) )
+    {
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
+        logger.info() << "Refreshed text trig window contents" << std::endl;
+    }
     else
         Error("Failed to generate text triggers.");
 }

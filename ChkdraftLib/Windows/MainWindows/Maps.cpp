@@ -116,9 +116,9 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
             EnableMapping();
             Focus(newMap);
             currentlyActiveMap->Redraw(true);
-    
+            
             auto finish = std::chrono::high_resolution_clock::now();
-            logger.info() << "New map created in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+            logger.info() << "New map [ID:" << newMap->getMapId() << "] created in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
             return true;
         }
         else
@@ -133,7 +133,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
 
 bool Maps::OpenMap(const std::string & fileName)
 {
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
+    auto newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
     if ( newMap != nullptr && !newMap->empty() )
     {
         AddMap(newMap);
@@ -152,6 +152,7 @@ bool Maps::OpenMap(const std::string & fileName)
             currentlyActiveMap->Scroll(true, true, false);
             currentlyActiveMap->Redraw(true);
             currentlyActiveMap->refreshScenario();
+            logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
             return true;
         } 
         else
@@ -185,6 +186,7 @@ bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
             currentlyActiveMap->Scroll(true, true, false);
             currentlyActiveMap->Redraw(true);
             currentlyActiveMap->refreshScenario();
+            logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
             return true;
         }
         Error("Failed to create MDI Child Window!");
@@ -220,7 +222,11 @@ void Maps::CloseMap(HWND hMap)
 
 void Maps::CloseActive()
 {
-    SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
+    if ( currentlyActiveMap != nullptr )
+    {
+        if ( currentlyActiveMap->CanExit() )
+            SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
+    }
 }
 
 void Maps::UpdateTreeView()
@@ -645,7 +651,9 @@ bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)
         if ( guiMap == currentlyActiveMap )
             currentlyActiveMap = nullptr;
 
+        std::string mapFilePath = guiMap->getFilePath();
         openMaps.erase(toDelete);
+        logger.info() << "Closed map [ID:" << toDelete << "] " << (mapFilePath.empty() ? "(Untitled)" : mapFilePath.c_str()) << std::endl;
         return true;
     }
 

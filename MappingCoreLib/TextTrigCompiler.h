@@ -131,9 +131,23 @@ class TextTrigCompiler : public StaticTrigComponentParser
         bool BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error); // Builds the new TRIG and STR sections
 };
 
+// Returns the position of the next unescaped quote, pos must be greater than the position of the string's open quote, returns npos on failure
 size_t findStringEnd(const std::string & str, size_t pos);
+
+/** Returns the position of the next instance of 'character' outside quotes, npos if not found
+    pos must be the position of a character that is not quoted,
+    pos may be the position of an open quote, and may not be the position of a close quote
+    'character' must not be a quote (U+0022) */
 size_t findNextUnquoted(const std::string & str, size_t pos, char character);
+
+/** Returns the position of the next instance of 'character' outside quotes, npos if not found
+    pos must be the position of a character that is not quoted,
+    pos may be the position of an open quote, and may not be the position of a close quote
+    'character' must not be a quote (U+0022)
+    if an unquoted 'terminator' is found before 'character', then npos is returned */
 size_t findNextUnquoted(const std::string & str, size_t pos, char character, char terminator);
+
+/** Returns whether str spanning from [pos, pos+count) equals the string pointed to by "other" */
 bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other);
 
 #endif

@@ -1,6 +1,7 @@
 #include "TextTrigGenerator.h"
 #include "Math.h"
 #include <string>
+#include <chrono>
 
 std::vector<std::string> textFlags = { "Don't Always Display", "Always Display" };
 std::vector<std::string> scoreTypes = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };
@@ -26,9 +27,17 @@ TextTrigGenerator::~TextTrigGenerator()
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string & trigString)
 {
-    return map != nullptr &&
+    logger.info() << "Starting text trig generation..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    if ( map != nullptr &&
         LoadScenario(map, true, false) &&
-        BuildTextTrigs(map, trigString);
+        BuildTextTrigs(map, trigString) )
+    {
+        auto finish = std::chrono::high_resolution_clock::now();
+        logger.info() << "Text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+        return true;
+    }
+    return false;
 }
 
 bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString)
