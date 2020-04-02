@@ -7,17 +7,21 @@ StaticTrigComponentParser::~StaticTrigComponentParser()
 
 }
 
-bool StaticTrigComponentParser::ParseNumericComparison(const char* text, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseNumericComparison(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
     size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     text = &text[pos];
@@ -53,17 +57,21 @@ bool StaticTrigComponentParser::ParseNumericComparison(const char* text, Chk::Co
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchState(const char* text, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseSwitchState(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
     size_t size = end-pos;
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 7 )
@@ -101,7 +109,7 @@ bool StaticTrigComponentParser::ParseSwitchState(const char* text, Chk::Conditio
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSpecialUnitAmount(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseSpecialUnitAmount(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // All
 {
     size_t size = end-pos;
@@ -109,10 +117,14 @@ bool StaticTrigComponentParser::ParseSpecialUnitAmount(const char* text, u8 & de
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 3 )
@@ -143,7 +155,7 @@ bool StaticTrigComponentParser::ParseSpecialUnitAmount(const char* text, u8 & de
         return false;
 }
 
-bool StaticTrigComponentParser::ParseAllianceStatus(const char* text, u16 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseAllianceStatus(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
     // Ally, Enemy, Allied Victory
 {
     size_t size = end-pos;
@@ -151,10 +163,14 @@ bool StaticTrigComponentParser::ParseAllianceStatus(const char* text, u16 & dest
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 14 )
@@ -190,24 +206,28 @@ bool StaticTrigComponentParser::ParseAllianceStatus(const char* text, u16 & dest
     return success;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(const std::string & text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
     size_t size = end-pos;
+    const char* srcStr = &text.c_str()[pos];
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            srcStr = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
     
     if ( size < 1 || size > 11 )
         return false;
 
     char resource[12] = { };
-    const char* srcStr = &text.c_str()[pos];
 
     // Take uppercase copy of argument
     size_t numSkipped = 0;
@@ -236,24 +256,28 @@ bool StaticTrigComponentParser::ParseResourceType(const std::string & text, u8 &
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(const std::string & text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
     size_t size = end-pos;
+    const char* srcStr = &text.c_str()[pos];
     if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            srcStr = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
     
     if ( size < 1 || size > 19 )
         return false;
 
     char score[20] = { };
-    const char* srcStr = &text.c_str()[pos];
 
     // Take uppercase copy of argument
     size_t numSkipped = 0;
@@ -295,7 +319,7 @@ bool StaticTrigComponentParser::ParseScoreType(const std::string & text, u8 & de
     return success;
 }
 
-bool StaticTrigComponentParser::ParseTextDisplayFlag(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseTextDisplayFlag(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Always Display, Don't Always Display
 {
     size_t size = end-pos;
@@ -303,10 +327,14 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(const char* text, u8 & dest
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 20 )
@@ -341,7 +369,7 @@ bool StaticTrigComponentParser::ParseTextDisplayFlag(const char* text, u8 & dest
     return success;
 }
 
-bool StaticTrigComponentParser::ParseNumericModifier(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseNumericModifier(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Add, subtract, set to
 {
     size_t size = end-pos;
@@ -349,10 +377,14 @@ bool StaticTrigComponentParser::ParseNumericModifier(const char* text, u8 & dest
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 8 )
@@ -390,7 +422,7 @@ bool StaticTrigComponentParser::ParseNumericModifier(const char* text, u8 & dest
     return success;
 }
 
-bool StaticTrigComponentParser::ParseSwitchMod(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseSwitchMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Set, clear, toggle, randomize
 {
     size_t size = end-pos;
@@ -398,10 +430,14 @@ bool StaticTrigComponentParser::ParseSwitchMod(const char* text, u8 & dest, size
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 9 )
@@ -442,7 +478,7 @@ bool StaticTrigComponentParser::ParseSwitchMod(const char* text, u8 & dest, size
     return success;
 }
 
-bool StaticTrigComponentParser::ParseStateMod(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseStateMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Disable, Disabled, Enable, Enabled, Toggle
 {
     size_t size = end-pos;
@@ -450,10 +486,14 @@ bool StaticTrigComponentParser::ParseStateMod(const char* text, u8 & dest, size_
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 8 )
@@ -493,7 +533,7 @@ bool StaticTrigComponentParser::ParseStateMod(const char* text, u8 & dest, size_
     return success;
 }
 
-bool StaticTrigComponentParser::ParseOrder(const char* text, u8 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseOrder(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Attack, move, patrol
 {
     size_t size = end-pos;
@@ -501,10 +541,14 @@ bool StaticTrigComponentParser::ParseOrder(const char* text, u8 & dest, size_t p
     {
         if ( size < 2 )
             return false;
-
-        pos ++;
-        end --;
-        size -= 2;
+        else
+        {
+            RawString & rawString = stringContents[nextString];
+            text = rawString.c_str();
+            nextString ++;
+            pos = 0;
+            end = rawString.length();
+        }
     }
 
     if ( size < 1 || size > 6 )
@@ -553,18 +597,18 @@ bool StaticTrigComponentParser::ParseMemoryAddress(const char* text, u32 & dest,
     return false;
 }
 
-bool StaticTrigComponentParser::ParseResourceType(const std::string & text, u16 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
-    bool success = ParseResourceType(text, temp, pos, end);
+    bool success = ParseResourceType(text, stringContents, nextString, temp, pos, end);
     dest = temp;
     return success;
 }
 
-bool StaticTrigComponentParser::ParseScoreType(const std::string & text, u16 & dest, size_t pos, size_t end)
+bool StaticTrigComponentParser::ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
-    bool success = ParseScoreType(text, temp, pos, end);
+    bool success = ParseScoreType(text, stringContents, nextString, temp, pos, end);
     dest = temp;
     return success;
 }
