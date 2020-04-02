@@ -9,7 +9,7 @@ void IgnoreErr(const std::string & file, unsigned int line, const std::string ms
 
 void PrintError(const std::string & file, unsigned int line, const std::string msg, ...)
 {
-    throw std::exception("He's dead jim");
+
 }
 
 /* Templates */ #endif

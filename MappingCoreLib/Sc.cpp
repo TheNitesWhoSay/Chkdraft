@@ -3334,7 +3334,7 @@ bool Sc::Data::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unorder
     const std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
     {
-        CHKD_ERR("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
+        logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
     

@@ -8,6 +8,12 @@
     <Filter Include="Source Files\%2a">
       <UniqueIdentifier>{69dd91ea-5e11-4348-9bca-4898c6c283a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{1245f386-a1db-4f5b-b265-52ea77a71bf9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\%2a">
+      <UniqueIdentifier>{fe2f3af9-29ce-4566-a5e8-8abcb48a379a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MappingCoreTestMain.cpp">
@@ -22,5 +28,13 @@
     <ClCompile Include="TextTrigCompilerTest.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
+    <ClCompile Include="TestAssets.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TestAssets.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
