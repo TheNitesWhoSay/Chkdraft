@@ -22,7 +22,6 @@
 #include "Scenario.h" // Resources for working with scenarios - scenario are the core piece of a map and describe their versioning, strings, player information, terrain, units, locations, properties, triggers and more
 #include "Sections.h" // Defines sections which encapsulate the storage structures defined in the Chk
 
-#include "StaticTrigComponentParser.h" // Provides the means to parse any non-dynamic fields related to text triggers
 #include "TextTrigCompiler.h" // Provides the means to compile text triggers into a scenario file
 #include "TextTrigGenerator.h" // Provides the means to turn triggers into text 
 

@@ -24,20 +24,8 @@
     <Filter Include="Header Files\StarCraft">
       <UniqueIdentifier>{cbf2e9bf-1d54-42a6-8fcb-a92683ea2cc4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\StarCraft\Trigger Text">
-      <UniqueIdentifier>{c747c7dc-95ed-4f48-a0d5-230f9df2aadb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\StarCraft">
       <UniqueIdentifier>{b84d5c95-83a3-4f61-83e8-d53ab0b39de3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\StarCraft\Trigger Text">
-      <UniqueIdentifier>{7c2c3f6f-ed93-4946-8de5-a1a00576f078}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\StarCraft\%2a">
-      <UniqueIdentifier>{f6951f05-b632-49e3-b259-153fc2f33a6d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\StarCraft\%2a">
-      <UniqueIdentifier>{6a8cefc2-b858-4ff0-8251-1379ecd752cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -50,15 +38,6 @@
     <ClInclude Include="sha256.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="StaticTrigComponentParser.h">
-      <Filter>Header Files\StarCraft\Trigger Text</Filter>
-    </ClInclude>
-    <ClInclude Include="TextTrigCompiler.h">
-      <Filter>Header Files\StarCraft\Trigger Text</Filter>
-    </ClInclude>
-    <ClInclude Include="TextTrigGenerator.h">
-      <Filter>Header Files\StarCraft\Trigger Text</Filter>
-    </ClInclude>
     <ClInclude Include="ArchiveFile.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
@@ -68,29 +47,35 @@
     <ClInclude Include="FileBrowser.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="Sections.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Scenario.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="MpqFile.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Sc.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="MapFile.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="EscapeStrings.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
-    <ClInclude Include="Chk.h">
-      <Filter>Header Files\StarCraft\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="StringBuffer.h">
       <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigCompiler.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigGenerator.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Sections.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Scenario.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Sc.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="MpqFile.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="MapFile.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Chk.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="EscapeStrings.h">
+      <Filter>Header Files\StarCraft</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -99,15 +84,6 @@
     </ClCompile>
     <ClCompile Include="sha256.cpp">
       <Filter>Source Files\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="StaticTrigComponentParser.cpp">
-      <Filter>Source Files\StarCraft\Trigger Text</Filter>
-    </ClCompile>
-    <ClCompile Include="TextTrigCompiler.cpp">
-      <Filter>Source Files\StarCraft\Trigger Text</Filter>
-    </ClCompile>
-    <ClCompile Include="TextTrigGenerator.cpp">
-      <Filter>Source Files\StarCraft\Trigger Text</Filter>
     </ClCompile>
     <ClCompile Include="SystemIO.cpp">
       <Filter>Source Files\System</Filter>
@@ -119,25 +95,31 @@
       <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="Sections.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
-    </ClCompile>
-    <ClCompile Include="Sc.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="Scenario.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="Sc.cpp">
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="MpqFile.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="MapFile.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="EscapeStrings.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="Chk.cpp">
-      <Filter>Source Files\StarCraft\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigGenerator.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigCompiler.cpp">
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

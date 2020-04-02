@@ -314,7 +314,6 @@
     <ClInclude Include="ArchiveFile.h" />
     <ClInclude Include="Scenario.h" />
     <ClInclude Include="sha256.h" />
-    <ClInclude Include="StaticTrigComponentParser.h" />
     <ClInclude Include="TextTrigCompiler.h" />
     <ClInclude Include="TextTrigGenerator.h" />
   </ItemGroup>
@@ -331,7 +330,6 @@
     <ClCompile Include="ArchiveFile.cpp" />
     <ClCompile Include="Scenario.cpp" />
     <ClCompile Include="sha256.cpp" />
-    <ClCompile Include="StaticTrigComponentParser.cpp" />
     <ClCompile Include="TextTrigCompiler.cpp" />
     <ClCompile Include="TextTrigGenerator.cpp" />
   </ItemGroup>
