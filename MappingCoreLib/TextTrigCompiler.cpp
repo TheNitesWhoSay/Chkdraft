@@ -2956,20 +2956,8 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & 
 
     if ( size < 12 )
     {
-        // Take an upper case copy of the name
-        char sw[12] = { };
-        size_t numSkipped = 0;
-        for ( size_t i=0; i<size; i++ )
-        {
-            char currChar = switchNamePtr[i];
-            if ( currChar > 96 && currChar < 123 )
-                sw[i-numSkipped] = currChar - 32;
-            else if ( currChar != ' ' )
-                sw[i-numSkipped] = currChar;
-            else
-                numSkipped ++;
-        }
-        sw[size] = '\0';
+        std::array<char, 12> sw;
+        copyUpperCaseNoSpace(sw, str);
 
         // Check if it's a standard switch name
         if ( sw[0] == 'S' && sw[1] == 'W' && sw[2] == 'I' &&
