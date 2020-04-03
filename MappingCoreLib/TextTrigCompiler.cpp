@@ -106,7 +106,7 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     else
     {
         u32 temp = 0;
-        if ( ParseLong(txcd.c_str(), temp, 0, txcd.size()) )
+        if ( ParseLong(txcd, temp, 0, txcd.size()) )
         {
             if ( ((s32)temp) < 0 )
                 conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
@@ -157,7 +157,7 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     else
     {
         u32 temp = 0;
-        if ( ParseLong(txac.c_str(), temp, 0, txac.size()) )
+        if ( ParseLong(txac, temp, 0, txac.size()) )
         {
             if ( ((s32)temp) < 0 )
                 actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
@@ -1175,7 +1175,7 @@ bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, std::vector<RawS
         group < 27 )
     {
         u8 appendedValue;
-        if ( !ParseByte(text.c_str(), appendedValue, separator+1, end) )
+        if ( !ParseByte(text, appendedValue, separator+1, end) )
             appendedValue = 1;
 
         currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
@@ -1772,8 +1772,6 @@ bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, b
 
 bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, Chk::Condition::Argument argument, std::stringstream & error)
 {
-    const char* textPtr = text.c_str();
-
     // returns whether the condition was true and prints msg to the error message if false
 #define returnMsg(condition, msg)                           \
     if ( condition )                                        \
@@ -1788,62 +1786,62 @@ bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawStri
     {
         case Chk::Condition::ArgType::Unit:
             returnMsg( ParseUnitName(text, stringContents, nextString, currCondition.unitType, pos, end) ||
-                ParseShort(textPtr, (u16 &)currCondition.unitType, pos, end),
+                ParseShort(text, (u16 &)currCondition.unitType, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Condition::ArgType::Location:
             returnMsg( ParseLocationName(text, stringContents, nextString, currCondition.locationId, pos, end) ||
-                ParseLong(textPtr, currCondition.locationId, pos, end),
+                ParseLong(text, currCondition.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Condition::ArgType::Player:
             returnMsg( ParsePlayer(text, stringContents, nextString, currCondition.player, pos, end) ||
-                ParseLong(textPtr, currCondition.player, pos, end),
+                ParseLong(text, currCondition.player, pos, end),
                 "Expected: Player/group name or 4-byte id" );
         case Chk::Condition::ArgType::Amount:
-            returnMsg( ParseLong(textPtr, currCondition.amount, pos, end),
+            returnMsg( ParseLong(text, currCondition.amount, pos, end),
                 "Expected: 4-byte amount" );
         case Chk::Condition::ArgType::NumericComparison:
-            returnMsg( ParseNumericComparison(textPtr, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
+            returnMsg( ParseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                ParseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Numeric comparison or 1-byte comparisonID" );
         case Chk::Condition::ArgType::ResourceType:
-            returnMsg( ParseResourceType(textPtr, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+            returnMsg( ParseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                ParseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Resource type or 1-byte resourceID" );
         case Chk::Condition::ArgType::ScoreType:
             returnMsg( ParseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+                ParseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Condition::ArgType::Switch:
             returnMsg( ParseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(textPtr, currCondition.typeIndex, pos, end),
+                ParseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Switch name or 1-byte switchID" );
         case Chk::Condition::ArgType::SwitchState:
-            returnMsg( ParseSwitchState(textPtr, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end),
+            returnMsg( ParseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                ParseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Switch state or 1-byte comparisonID" );
         case Chk::Condition::ArgType::Comparison: // NumericComparison, SwitchState
-            returnMsg( ParseByte(textPtr, (u8 &)currCondition.comparison, pos, end) ||
-                ParseNumericComparison(textPtr, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseSwitchState(textPtr, stringContents, nextString, currCondition.comparison, pos, end),
+            returnMsg( ParseByte(text, (u8 &)currCondition.comparison, pos, end) ||
+                ParseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                ParseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end),
                 "Expected: 1-byte comparison" );
         case Chk::Condition::ArgType::ConditionType:
-            returnMsg( ParseByte(textPtr, (u8 &)currCondition.conditionType, pos, end),
+            returnMsg( ParseByte(text, (u8 &)currCondition.conditionType, pos, end),
                 "Expected: 1-byte conditionID" );
         case Chk::Condition::ArgType::TypeIndex: // ResourceType, ScoreType, Switch
-            returnMsg( ParseByte(textPtr, currCondition.typeIndex, pos, end) ||
+            returnMsg( ParseByte(text, currCondition.typeIndex, pos, end) ||
                 ParseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 ParseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 ParseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end),
                 "Expected: 1-byte typeId, resource type, score type, or switch name" );
         case Chk::Condition::ArgType::Flags:
-            returnMsg( ParseByte(textPtr, currCondition.flags, pos, end),
+            returnMsg( ParseByte(text, currCondition.flags, pos, end),
                 "Expected: 1-byte flags" );
         case Chk::Condition::ArgType::MaskFlag:
-            returnMsg( ParseShort(textPtr, (u16 &)currCondition.maskFlag, pos, end),
+            returnMsg( ParseShort(text, (u16 &)currCondition.maskFlag, pos, end),
                 "Expected: 2-byte internal data" );
         case Chk::Condition::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currCondition.player, pos, end, deathTableOffset) ||
-                !useAddressesForMemory && ParseLong(textPtr, currCondition.player, pos, end)),
+            returnMsg( (useAddressesForMemory && ParseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && ParseLong(text, currCondition.player, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
@@ -1852,116 +1850,114 @@ bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawStri
 
 bool TextTrigCompiler::ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument arg, std::stringstream & error)
 {
-    const char* textPtr = text.c_str();
-    
     switch ( arg.type )
     {
         case Chk::Action::ArgType::Location:
             returnMsg( ParseLocationName(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
-                ParseLong(textPtr, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
+                ParseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Action::ArgType::String:
             returnMsg( ParseString(text, stringContents, nextString, currAction.stringId, pos, end) ||
-                ParseLong(textPtr, currAction.stringId, pos, end),
+                ParseLong(text, currAction.stringId, pos, end),
                 "Expected: String or stringNum" );
         case Chk::Action::ArgType::Player:
             returnMsg( ParsePlayer(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
-                ParseLong(textPtr, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
+                ParseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
                 "Expected: Group name or 4-byte groupID" );
         case Chk::Action::ArgType::Unit:
             returnMsg( ParseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
-                ParseShort(textPtr, (u16 &)currAction.type, pos, end),
+                ParseShort(text, (u16 &)currAction.type, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Action::ArgType::NumUnits:
-            returnMsg( ParseSpecialUnitAmount(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg( ParseSpecialUnitAmount(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: 1-byte number" );
         case Chk::Action::ArgType::CUWP:
         case Chk::Action::ArgType::Percent:
         case Chk::Action::ArgType::Amount:
-            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? ParseByte(textPtr, currAction.type2, pos, end) : ParseLong(textPtr, currAction.number, pos, end)),
+            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? ParseByte(text, currAction.type2, pos, end) : ParseLong(text, currAction.number, pos, end)),
                 (arg.field == Chk::Action::ArgField::Type2 ? "Expected: 1-byte number" : "Expected: 4-byte number" ));
         case Chk::Action::ArgType::ScoreType:
             returnMsg( ParseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(textPtr, currAction.type, pos, end),
+                ParseShort(text, currAction.type, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Action::ArgType::ResourceType:
             returnMsg( ParseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(textPtr, currAction.type, pos, end),
+                ParseShort(text, currAction.type, pos, end),
                 "Expected: Resource type or 2-byte number" );
         case Chk::Action::ArgType::StateMod:
-            returnMsg( ParseStateMod(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg( ParseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: State modifier or 1-byte number" );
         case Chk::Action::ArgType::Order:
-            returnMsg ( ParseOrder(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg ( ParseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: Order or 1-byte number" );
         case Chk::Action::ArgType::Sound:
             returnMsg( ParseWavName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
-                ParseLong(textPtr, currAction.soundStringId, pos, end),
+                ParseLong(text, currAction.soundStringId, pos, end),
                 "Expected: Wav name or 4-byte wavID" );
         case Chk::Action::ArgType::Duration:
-            returnMsg( ParseLong(textPtr, currAction.time, pos, end),
+            returnMsg( ParseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );
         case Chk::Action::ArgType::Script:
             returnMsg ( ParseScript(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(textPtr, currAction.number, pos, end),
+                ParseLong(text, currAction.number, pos, end),
                 "Expected: Script name or 4-byte script num" );
         case Chk::Action::ArgType::AllyState:
-            returnMsg( ParseAllianceStatus(textPtr, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(textPtr, currAction.type, pos, end),
+            returnMsg( ParseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
+                ParseShort(text, currAction.type, pos, end),
                 "Expected: Alliance status or 2-byte number" );
         case Chk::Action::ArgType::NumericMod:
-            returnMsg( ParseNumericModifier(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg( ParseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: Numeric modifier or 1-byte number" );
         case Chk::Action::ArgType::Switch:
             returnMsg ( ParseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(textPtr, currAction.number, pos, end),
+                ParseLong(text, currAction.number, pos, end),
                 "Expected: Switch name or 4-byte number" );
         case Chk::Action::ArgType::SwitchMod:
-            returnMsg ( ParseSwitchMod(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg ( ParseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier or 1-byte number" );
         case Chk::Action::ArgType::ActionType:
-            returnMsg( ParseByte(textPtr, (u8 &)currAction.actionType, pos, end),
+            returnMsg( ParseByte(text, (u8 &)currAction.actionType, pos, end),
                 "Expected: 1-byte actionID" );
         case Chk::Action::ArgType::TextFlags:
         case Chk::Action::ArgType::Flags:
-            returnMsg( ParseTextDisplayFlag(textPtr, stringContents, nextString, currAction.flags, pos, end) ||
-                ParseByte(textPtr, currAction.flags, pos, end),
+            returnMsg( ParseTextDisplayFlag(text, stringContents, nextString, currAction.flags, pos, end) ||
+                ParseByte(text, currAction.flags, pos, end),
                 "Expected: Always display text flags or 1-byte flag data" );
         case Chk::Action::ArgType::Number: // Amount, Group2, LocDest, UnitPropNum, ScriptNum
             returnMsg( ParsePlayer(text, stringContents, nextString, currAction.number, pos, end) ||
                 ParseLocationName(text, stringContents, nextString, currAction.number, pos, end) ||
                 ParseScript(text, stringContents, nextString, currAction.number, pos, end) ||
                 ParseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(textPtr, currAction.number, pos, end),
+                ParseLong(text, currAction.number, pos, end),
                 "Expected: Group, location, script, switch, or 4-byte number" );
         case Chk::Action::ArgType::TypeIndex: // Unit, ScoreType, ResourceType, AllianceStatus
             returnMsg( ParseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
                 ParseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
                 ParseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseAllianceStatus(textPtr, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(textPtr, currAction.type, pos, end),
+                ParseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
+                ParseShort(text, currAction.type, pos, end),
                 "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
         case Chk::Action::ArgType::SecondaryTypeIndex: // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-            returnMsg( ParseSwitchMod(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseOrder(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseNumericModifier(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseStateMod(textPtr, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(textPtr, currAction.type2, pos, end),
+            returnMsg( ParseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                ParseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier, order, numeric modifier, state modifier, or 1-byte number" );
         case Chk::Action::ArgType::Padding:
-            returnMsg( ParseByte(textPtr, currAction.padding, pos, end),
+            returnMsg( ParseByte(text, currAction.padding, pos, end),
                 "Expected: 1-byte padding" );
         case Chk::Action::ArgType::MaskFlag:
-            returnMsg( ParseShort(textPtr, (u16 &)currAction.maskFlag, pos, end),
+            returnMsg( ParseShort(text, (u16 &)currAction.maskFlag, pos, end),
                 "Expected: 2-byte mask flag" );
         case Chk::Action::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && ParseMemoryAddress(textPtr, currAction.group, pos, end, deathTableOffset) ||
-                !useAddressesForMemory && ParseLong(textPtr, currAction.group, pos, end)),
+            returnMsg( (useAddressesForMemory && ParseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && ParseLong(text, currAction.group, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
@@ -1984,8 +1980,7 @@ bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_
             arg.push_back(character);
     }
 
-    const char* argData = arg.c_str();
-    return ParseBinaryLong(argData, flags, 0, arg.size());
+    return ParseBinaryLong(arg, flags, 0, arg.size());
 }
 
 bool TextTrigCompiler::ParseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
@@ -2033,7 +2028,7 @@ bool TextTrigCompiler::ParseString(std::string & text, std::vector<RawString> & 
         return true;
     }
     else
-        return ParseLong(text.c_str(), dest, pos, end);
+        return ParseLong(text, dest, pos, end);
 }
 
 bool TextTrigCompiler::ParseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
@@ -2049,7 +2044,7 @@ bool TextTrigCompiler::ParseLocationName(std::string & text, std::vector<RawStri
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseLong(text.c_str(), dest, pos, end) )
+    else if ( ParseLong(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2108,7 +2103,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> 
         pos = 0;
         end = str.size();
     }
-    else if ( ParseShort(text.c_str(), (u16 &)dest, pos, end) )
+    else if ( ParseShort(text, (u16 &)dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2694,7 +2689,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseLong(text.c_str(), dest, pos, end) )
+    else if ( ParseLong(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2949,7 +2944,7 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & 
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseByte(text.c_str(), dest, pos, end) )
+    else if ( ParseByte(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -3126,146 +3121,51 @@ Chk::Action::Type TextTrigCompiler::ExtendedToRegularAID(Chk::Action::VirtualTyp
     return (Chk::Action::Type)actionType;
 }
 
-bool TextTrigCompiler::ParseNumericComparison(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 12> comparison = {};
+    copyUpperCaseNoSpace(comparison, text, stringContents, nextString, pos, end);
 
-    text = &text[pos];
-
-    if ( size < 1 || size > 8 )
-        return false;
-
-    char comparison[12] = { };
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( text[i] >= 'a' && text[i] <= 'z' )
-            comparison[i-numSkipped] = text[i] - 32;
-        else if ( text[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = text[i];
-        else
-            numSkipped ++;
-    }
-    comparison[size] = '\0';
-    bool success = false;
     switch ( comparison[0] )
     {
         case 'A':
-            if      ( strcmp(&comparison[1], "TLEAST") == 0 ) { dest = Chk::Condition::Comparison::AtLeast; success = true; }
-            else if ( strcmp(&comparison[1], "TMOST" ) == 0 ) { dest = Chk::Condition::Comparison::AtMost; success = true; }
+            if      ( strcmp(&comparison[1], "TLEAST") == 0 ) { dest = Chk::Condition::Comparison::AtLeast; return true; }
+            else if ( strcmp(&comparison[1], "TMOST" ) == 0 ) { dest = Chk::Condition::Comparison::AtMost; return true; }
             break;
         case 'E':
-            if ( strcmp(&comparison[1], "XACTLY") == 0 ) { dest = Chk::Condition::Comparison::Exactly; success = true; }
+            if ( strcmp(&comparison[1], "XACTLY") == 0 ) { dest = Chk::Condition::Comparison::Exactly; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseSwitchState(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 8> switchState = {};
+    copyUpperCaseNoSpace(switchState, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 7 )
-        return false;
-
-    char comparison[8] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( switchState[0] )
     {
         case 'C':
-            if ( strcmp(&comparison[1], "LEARED") == 0 ) { dest = Chk::Condition::Comparison::NotSet; success = true; }
+            if ( strcmp(&switchState[1], "LEARED") == 0 ) { dest = Chk::Condition::Comparison::NotSet; return true; }
             break;
         case 'N':
-            if ( strcmp(&comparison[1], "OTSET") == 0 ) { dest = Chk::Condition::Comparison::NotSet; success = true; }
+            if ( strcmp(&switchState[1], "OTSET") == 0 ) { dest = Chk::Condition::Comparison::NotSet; return true; }
             break;
         case 'S':
-            if ( strcmp(&comparison[1], "ET") == 0 ) { dest = Chk::Condition::Comparison::Set; success = true; }
+            if ( strcmp(&switchState[1], "ET") == 0 ) { dest = Chk::Condition::Comparison::Set; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseSpecialUnitAmount(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // All
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 4> specialUnitAmount = {};
+    copyUpperCaseNoSpace(specialUnitAmount, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 3 )
-        return false;
-
-    char comparison[4] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    if ( strcmp(comparison, "ALL") == 0 )
+    if ( strcmp(&specialUnitAmount[0], "ALL") == 0 )
     {
         dest = 0;
         return true;
@@ -3274,438 +3174,180 @@ bool TextTrigCompiler::ParseSpecialUnitAmount(const char* text, std::vector<RawS
         return false;
 }
 
-bool TextTrigCompiler::ParseAllianceStatus(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
     // Ally, Enemy, Allied Victory
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 16> allianceStatus = {};
+    copyUpperCaseNoSpace(allianceStatus, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 14 )
-        return false;
-
-    char comparison[16] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( allianceStatus[0] )
     {
         case 'A':
-            if      ( strcmp(&comparison[1], "LLIEDVICTORY") == 0 ) { dest = 2; success = true; }
-            else if ( strcmp(&comparison[1], "LLY"         ) == 0 ) { dest = 1; success = true; }
+            if      ( strcmp(&allianceStatus[1], "LLIEDVICTORY") == 0 ) { dest = 2; return true; }
+            else if ( strcmp(&allianceStatus[1], "LLY"         ) == 0 ) { dest = 1; return true; }
             break;
         case 'E':
-            if ( strcmp(&comparison[1], "NEMY") == 0 ) { dest = 0; success = true; }
+            if ( strcmp(&allianceStatus[1], "NEMY") == 0 ) { dest = 0; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
 bool TextTrigCompiler::ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
-    size_t size = end-pos;
-    const char* srcStr = &text.c_str()[pos];
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            srcStr = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
-    
-    if ( size < 1 || size > 11 )
-        return false;
+    std::array<char, 12> resourceType = {};
+    copyUpperCaseNoSpace(resourceType, text, stringContents, nextString, pos, end);
 
-    char resource[12] = { };
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            resource[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            resource[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    resource[size] = '\0';
-    bool success = false;
-    switch ( resource[0] )
+    switch ( resourceType[0] )
     {
         case 'O':
-            if      ( strcmp(&resource[1], "RE"      ) == 0 ) { dest = 0; success = true; }
-            else if ( strcmp(&resource[1], "REANDGAS") == 0 ) { dest = 2; success = true; }
+            if      ( strcmp(&resourceType[1], "RE"      ) == 0 ) { dest = 0; return true; }
+            else if ( strcmp(&resourceType[1], "REANDGAS") == 0 ) { dest = 2; return true; }
             break;
         case 'G':
-            if ( strcmp(&resource[1], "AS") == 0 ) { dest = 1; success = true; }
+            if ( strcmp(&resourceType[1], "AS") == 0 ) { dest = 1; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
 bool TextTrigCompiler::ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
-    size_t size = end-pos;
-    const char* srcStr = &text.c_str()[pos];
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            srcStr = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
-    
-    if ( size < 1 || size > 19 )
-        return false;
+    std::array<char, 20> scoreType = {};
+    copyUpperCaseNoSpace(scoreType, text, stringContents, nextString, pos, end);
 
-    char score[20] = { };
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<20; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            score[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            score[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    score[size] = '\0';
-    bool success = false;
-    switch ( score[0] )
+    switch ( scoreType[0] )
     {
         case 'B':
-            if ( strcmp(&score[1], "UILDINGS") == 0 ) { dest = 2; success = true; }
+            if ( strcmp(&scoreType[1], "UILDINGS") == 0 ) { dest = 2; return true; }
             break;
         case 'C':
-            if ( strcmp(&score[1], "USTOM") == 0 ) { dest = 7; success = true; }
+            if ( strcmp(&scoreType[1], "USTOM") == 0 ) { dest = 7; return true; }
             break;
         case 'K':
-            if      ( strcmp(&score[1], "ILLS"          ) == 0 ) { dest = 4; success = true; }
-            else if ( strcmp(&score[1], "ILLSANDRAZINGS") == 0 ) { dest = 6; success = true; }
+            if      ( strcmp(&scoreType[1], "ILLS"          ) == 0 ) { dest = 4; return true; }
+            else if ( strcmp(&scoreType[1], "ILLSANDRAZINGS") == 0 ) { dest = 6; return true; }
             break;
         case 'R':
-            if ( strcmp(&score[1], "AZINGS") == 0 ) { dest = 5; success = true; }
+            if ( strcmp(&scoreType[1], "AZINGS") == 0 ) { dest = 5; return true; }
             break;
         case 'T':
-            if ( strcmp(&score[1], "OTAL") == 0 ) { dest = 0; success = true; }
+            if ( strcmp(&scoreType[1], "OTAL") == 0 ) { dest = 0; return true; }
             break;
         case 'U':
-            if      ( strcmp(&score[1], "NITS"            ) == 0 ) { dest = 1; success = true; }
-            else if ( strcmp(&score[1], "NITSANDBUILDINGS") == 0 ) { dest = 3; success = true; }
+            if      ( strcmp(&scoreType[1], "NITS"            ) == 0 ) { dest = 1; return true; }
+            else if ( strcmp(&scoreType[1], "NITSANDBUILDINGS") == 0 ) { dest = 3; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseTextDisplayFlag(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Always Display, Don't Always Display
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 24> textDisplayFlag = {};
+    copyUpperCaseNoSpace(textDisplayFlag, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 20 )
-        return false;
-
-    char comparison[24] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( textDisplayFlag[0] )
     {
         case 'A':
-            if ( strcmp(&comparison[1], "LWAYSDISPLAY") == 0 ) { dest |= Chk::Action::Flags::AlwaysDisplay; success = true; }
+            if ( strcmp(&textDisplayFlag[1], "LWAYSDISPLAY") == 0 ) { dest |= Chk::Action::Flags::AlwaysDisplay; return true; }
             break;
         case 'D':
-            if ( strcmp(&comparison[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= Chk::Action::Flags::xAlwaysDisplay; success = true; }
+            if ( strcmp(&textDisplayFlag[1], "ON'TALWAYSDISPLAY") == 0 ) { dest &= Chk::Action::Flags::xAlwaysDisplay; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseNumericModifier(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Add, subtract, set to
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 12> numericModifier = {};
+    copyUpperCaseNoSpace(numericModifier, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 8 )
-    {
-        return false;
-    }
-
-    char comparison[12] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( numericModifier[0] )
     {
         case 'A':
-            if ( strcmp(&comparison[1], "DD") == 0 ) { dest = 8; success = true; }
+            if ( strcmp(&numericModifier[1], "DD") == 0 ) { dest = 8; return true; }
             break;
         case 'S':
-            if      ( strcmp(&comparison[1], "ETTO"   ) == 0 ) { dest = 7; success = true; }
-            else if ( strcmp(&comparison[1], "UBTRACT") == 0 ) { dest = 9; success = true; }
+            if      ( strcmp(&numericModifier[1], "ETTO"   ) == 0 ) { dest = 7; return true; }
+            else if ( strcmp(&numericModifier[1], "UBTRACT") == 0 ) { dest = 9; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseSwitchMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Set, clear, toggle, randomize
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 10> switchMod = {};
+    copyUpperCaseNoSpace(switchMod, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 9 )
-        return false;
-
-    char comparison[10] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( switchMod[0] )
     {
         case 'C':
-            if ( strcmp(&comparison[1], "LEAR") == 0 ) { dest = 5; success = true; }
+            if ( strcmp(&switchMod[1], "LEAR") == 0 ) { dest = 5; return true; }
             break;
         case 'R':
-            if ( strcmp(&comparison[1], "ANDOMIZE") == 0 ) { dest = 11; success = true; }
+            if ( strcmp(&switchMod[1], "ANDOMIZE") == 0 ) { dest = 11; return true; }
             break;
         case 'S':
-            if ( strcmp(&comparison[1], "ET") == 0 ) { dest = 4; success = true; }
+            if ( strcmp(&switchMod[1], "ET") == 0 ) { dest = 4; return true; }
             break;
         case 'T':
-            if ( strcmp(&comparison[1], "OGGLE") == 0 ) { dest = 6; success = true; }
+            if ( strcmp(&switchMod[1], "OGGLE") == 0 ) { dest = 6; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseStateMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Disable, Disabled, Enable, Enabled, Toggle
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 12> stateMod = {};
+    copyUpperCaseNoSpace(stateMod, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 8 )
-        return false;
-
-    char comparison[12] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( stateMod[0] )
     {
         case 'D':
-            if      ( strcmp(&comparison[1], "ISABLE" ) == 0 ) { dest = 5; success = true; }
-            else if ( strcmp(&comparison[1], "ISABLED") == 0 ) { dest = 5; success = true; }
+            if      ( strcmp(&stateMod[1], "ISABLE" ) == 0 ) { dest = 5; return true; }
+            else if ( strcmp(&stateMod[1], "ISABLED") == 0 ) { dest = 5; return true; }
             break;
         case 'E':
-            if      ( strcmp(&comparison[1], "NABLE" ) == 0 ) { dest = 4; success = true; }
-            else if ( strcmp(&comparison[1], "NABLED") == 0 ) { dest = 4; success = true; }
+            if      ( strcmp(&stateMod[1], "NABLE" ) == 0 ) { dest = 4; return true; }
+            else if ( strcmp(&stateMod[1], "NABLED") == 0 ) { dest = 4; return true; }
             break;
         case 'T':
-            if ( strcmp(&comparison[1], "OGGLE") == 0 ) { dest = 6; success = true; }
+            if ( strcmp(&stateMod[1], "OGGLE") == 0 ) { dest = 6; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseOrder(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Attack, move, patrol
 {
-    size_t size = end-pos;
-    if ( text[pos] == '\"' ) // Quoted argument, ignore the quotes
-    {
-        if ( size < 2 )
-            return false;
-        else
-        {
-            RawString & rawString = stringContents[nextString];
-            text = rawString.c_str();
-            nextString ++;
-            pos = 0;
-            end = rawString.length();
-        }
-    }
+    std::array<char, 8> order = {};
+    copyUpperCaseNoSpace(order, text, stringContents, nextString, pos, end);
 
-    if ( size < 1 || size > 6 )
-        return false;
-
-    char comparison[8] = { };
-    const char* srcStr = &text[pos];
-
-    // Take uppercase copy of argument
-    size_t numSkipped = 0;
-    for ( size_t i=0; i<size; i++ )
-    {
-        if ( srcStr[i] >= 'a' && srcStr[i] <= 'z' )
-            comparison[i-numSkipped] = srcStr[i] - 32;
-        else if ( srcStr[i] != ' ' ) // also ignore spacing
-            comparison[i-numSkipped] = srcStr[i];
-        else
-            numSkipped ++;
-    }
-
-    comparison[size] = '\0';
-    bool success = false;
-    switch ( comparison[0] )
+    switch ( order[0] )
     {
         case 'A':
-            if ( strcmp(&comparison[1], "TTACK") == 0 ) { dest = 2; success = true; }
+            if ( strcmp(&order[1], "TTACK") == 0 ) { dest = 2; return true; }
             break;
         case 'M':
-            if ( strcmp(&comparison[1], "OVE") == 0 ) { dest = 0; success = true; }
+            if ( strcmp(&order[1], "OVE") == 0 ) { dest = 0; return true; }
             break;
         case 'P':
-            if ( strcmp(&comparison[1], "ATROL") == 0 ) { dest = 1; success = true; }
+            if ( strcmp(&order[1], "ATROL") == 0 ) { dest = 1; return true; }
             break;
     }
-    return success;
+    return false;
 }
 
-bool TextTrigCompiler::ParseMemoryAddress(const char* text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
+bool TextTrigCompiler::ParseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
 {
     u32 temp = 0;
     if ( ParseLong(text, temp, pos, end) )
@@ -3732,7 +3374,7 @@ bool TextTrigCompiler::ParseScoreType(const std::string & text, std::vector<RawS
     return success;
 }
 
-bool TextTrigCompiler::ParseBinaryLong(const char* text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 33 )
@@ -3769,7 +3411,7 @@ bool TextTrigCompiler::ParseBinaryLong(const char* text, u32 & dest, size_t pos,
     return false;
 }
 
-bool TextTrigCompiler::ParseLong(const char* text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 12 )
@@ -3801,33 +3443,7 @@ bool TextTrigCompiler::ParseLong(const char* text, u32 & dest, size_t pos, size_
     return false;
 }
 
-bool TextTrigCompiler::ParseTriplet(const char* text, u8* dest, size_t pos, size_t end)
-{
-    u32 val;
-    bool isNegative = false;
-
-    if ( text[pos] == '-' ) // isNegative
-    {
-        pos ++;
-        isNegative = true;
-    }
-
-    if ( ParseLong(text, val, pos, end) )
-    {
-        if ( isNegative )
-            val = 0x1000000 - val;
-        
-        dest[2] = u8(val/0x10000);
-        val /= 0x10000;
-        dest[1] = u8(val/0x100);
-        val /= 0x100;
-        dest[0] = u8(val);
-        return true;
-    }
-    return false;
-}
-
-bool TextTrigCompiler::ParseShort(const char* text, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseShort(const std::string & text, u16 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 7 )
@@ -3859,7 +3475,7 @@ bool TextTrigCompiler::ParseShort(const char* text, u16 & dest, size_t pos, size
     return false;
 }
 
-bool TextTrigCompiler::ParseByte(const char* text, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::ParseByte(const std::string & text, u8 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 5 )
@@ -3892,32 +3508,6 @@ bool TextTrigCompiler::ParseByte(const char* text, u8 & dest, size_t pos, size_t
 }
 
 // private
-
-/*bool TextTrigCompiler::useNextString(u32 & index)
-{
-    for ( size_t i=1; i>0 && i<Chk::MaxStrings; i++ )
-    {
-        if ( !stringUsed[i] )
-        {
-            index = (u32)i;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool TextTrigCompiler::useNextExtendedString(u32 & index)
-{
-    for ( size_t i=1; i>0 && i<Chk::MaxStrings; i++ )
-    {
-        if ( !extendedStringUsed[i] )
-        {
-            index = (u32)i;
-            return true;
-        }
-    }
-    return false;
-}*/
 
 bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
 {

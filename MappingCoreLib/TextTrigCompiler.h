@@ -101,27 +101,30 @@ class TextTrigCompiler
         Chk::Action::Type ExtendedToRegularAID(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
 
         // Static components
-        bool ParseNumericComparison(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // At least, at most, exactly
-        bool ParseSwitchState(const char* text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // Set, cleared
-        bool ParseSpecialUnitAmount(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // All
-        bool ParseAllianceStatus(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Ally, Enemy, Allied Victory
+        bool ParseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // At least, at most, exactly
+        bool ParseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // Set, cleared
+        bool ParseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // All
+        bool ParseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Ally, Enemy, Allied Victory
         bool ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Ore, Gas, Ore and Gas
         bool ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Total, Units, Buildings, Units and Buildings, Kill, Razings, Kill and Razing, Custom
-        bool ParseTextDisplayFlag(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Always Display, Don't Always Display
-        bool ParseNumericModifier(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Add, subtract, set to
-        bool ParseSwitchMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Set, clear, toggle, randomize
-        bool ParseStateMod(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Disable, Enable, Toggle
-        bool ParseOrder(const char* text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Attack, move, patrol
-        bool ParseMemoryAddress(const char* text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset);
+        bool ParseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Always Display, Don't Always Display
+        bool ParseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Add, subtract, set to
+        bool ParseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Set, clear, toggle, randomize
+        bool ParseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Disable, Enable, Toggle
+        bool ParseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Attack, move, patrol
+        bool ParseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset);
 
         bool ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte resource types
         bool ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte score types
 
-        bool ParseBinaryLong(const char* text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte binary int from the given position in the 
-        bool ParseLong(const char* text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte int from the given position in the text
-        bool ParseTriplet(const char* text, u8* dest, size_t pos, size_t end); // Grabs a 3-byte int from the given position in the text
-        bool ParseShort(const char* text, u16 & dest, size_t pos, size_t end); // Grabs a 2-byte int from the given position in the text
-        bool ParseByte(const char* text, u8 & dest, size_t pos, size_t end); // Grabs a 1-byte int from the given position in the text
+        bool ParseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte binary int from the given position in the 
+        bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte int from the given position in the text
+        bool ParseShort(const std::string & text, u16 & dest, size_t pos, size_t end); // Grabs a 2-byte int from the given position in the text
+        bool ParseByte(const std::string & text, u8 & dest, size_t pos, size_t end); // Grabs a 1-byte int from the given position in the text
+
+        template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source);
+        template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source, size_t pos, size_t end);
+        template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, size_t pos, size_t end);
 
     private:
 
@@ -170,5 +173,58 @@ size_t findNextUnquoted(const std::string & str, size_t pos, char character, cha
 
 /** Returns whether str spanning from [pos, pos+count) equals the string pointed to by "other" */
 bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other);
+
+
+
+template <size_t N>
+inline void TextTrigCompiler::copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source)
+{
+    const char* src = source.c_str();
+    size_t size = source.size();
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
+    {
+        const char & currChar = src[i];
+        if ( currChar >= 'a' && currChar <= 'z' )
+            dest[i-numSkipped] = currChar - 32;
+        else if ( currChar != ' ' )
+            dest[i-numSkipped] = currChar;
+        else
+            numSkipped ++;
+    }
+    dest[size] = '\0';
+}
+
+template <size_t N>
+inline void TextTrigCompiler::copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source, size_t pos, size_t end)
+{
+    const char* src = &source.c_str()[pos];
+    size_t size = end-pos;
+    size_t numSkipped = 0;
+    for ( size_t i=0; i<size; i++ )
+    {
+        const char & currChar = src[i];
+        if ( currChar >= 'a' && currChar <= 'z' )
+            dest[i-numSkipped] = currChar - 32;
+        else if ( currChar != ' ' )
+            dest[i-numSkipped] = currChar;
+        else
+            numSkipped ++;
+    }
+    dest[size] = '\0';
+}
+
+template <size_t N>
+inline void TextTrigCompiler::copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, size_t pos, size_t end)
+{
+    if ( text[pos] == '\"' ) // Quoted argument, take off stringContents
+    {
+        RawString & rawString = stringContents[nextString];
+        nextString ++;
+        copyUpperCaseNoSpace(dest, rawString);
+    }
+    else
+        copyUpperCaseNoSpace(dest, text, pos, end);
+}
 
 #endif
