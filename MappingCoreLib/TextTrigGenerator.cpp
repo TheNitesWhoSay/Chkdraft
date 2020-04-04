@@ -620,7 +620,7 @@ inline void TextTrigGenerator::appendPlayer(StringBuffer & output, const size_t 
 
 inline void TextTrigGenerator::appendAmount(StringBuffer & output, const u32 & amount)
 {
-    output += amount;
+    output << amount;
 }
 
 inline void TextTrigGenerator::appendUnit(StringBuffer & output, const Sc::Unit::Type & unitType)
@@ -971,20 +971,17 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
         if ( forceName != nullptr )
         {
             if ( quoteArgs )
-                groupName = "\"" + *forceName + "\"";
+                groupTable.push_back("\"" + *forceName + "\"");
+            else
+                groupTable.push_back(*forceName);
 
-            groupTable.push_back( groupName );
         }
         else
         {
-            char forceName[12];
             if ( quoteArgs )
-                groupName = "\"Force " + std::to_string(i) + "\"";
+                groupTable.push_back("\"Force " + std::to_string(i) + "\"");
             else
-                groupName = "Force " + std::to_string(i);
-
-            groupName = forceName;
-            groupTable.push_back( groupName );
+                groupTable.push_back("Force " + std::to_string(i));
         }
     }
 

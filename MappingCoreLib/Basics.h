@@ -242,30 +242,14 @@ inline std::string to_hex_string(const T & t)
     return std::string(buf);
 }
 
-class StringBuffer : public std::vector<char>
-{
-    public:
-        using std::vector<char>::vector;
-        virtual ~StringBuffer() {}
-
-        inline void operator+=(const char & c) { push_back(c); }
-        template <size_t N> inline void operator+=(const char (& str)[N]) { insert(end(), &str[0], &str[N-1]); }
-        inline void operator+=(const std::string & str) { insert(end(), str.begin(), str.end()); }
-        template <typename T> inline void operator+=(const T & t) { (*this) += std::to_string(t); }
-
-        inline char* c_str() {
-            if ( empty() || back() != '\0' )
-                push_back('\0');
-
-            return &(*this)[0];
-        }
-        inline std::string str() {
-            if ( empty() || back() != '\0' )
-                push_back('\0');
-
-            return std::string(begin(), end());
-        }
-};
+// TODO: Delete this once including reflection
+template <typename T> struct promote_char { using type = T; };
+template <> struct promote_char<char> { using type = int; };
+template <> struct promote_char<signed char> { using type = int; };
+template <> struct promote_char<unsigned char> { using type = int; };
+template <> struct promote_char<const char> { using type = const int; };
+template <> struct promote_char<const signed char> { using type = const int; };
+template <> struct promote_char<const unsigned char> { using type = const int; };
 
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope

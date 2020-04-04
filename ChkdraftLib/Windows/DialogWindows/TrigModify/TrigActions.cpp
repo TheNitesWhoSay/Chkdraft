@@ -387,6 +387,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
+    bool hasSuggestion = !suggestionString.empty();
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
@@ -443,9 +444,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex)) ||
-                        (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex));
+                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                        (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
+                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
                 }
 
                 if ( newScriptNum != 0 )
@@ -458,9 +459,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             {
                 Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex)) ||
-                    (ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex));
+                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                    (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
+                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
             }
 
             if ( madeChange )

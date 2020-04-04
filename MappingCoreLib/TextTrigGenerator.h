@@ -2,9 +2,12 @@
 #define TEXTTRIGGENERATOR_H
 #include "Basics.h"
 #include "Scenario.h"
+#include "StringBuffer.h"
 #include <vector>
 #include <string>
 #include <map>
+
+using namespace BufferedStream;
 
 class TextTrigGenerator
 {
@@ -80,7 +83,13 @@ class TextTrigGenerator
         inline void appendNumericModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & numericModifier);
         inline void appendScript(StringBuffer & output, const Sc::Ai::ScriptId & scriptId);
         inline void appendNumUnits(StringBuffer & output, const Chk::Action::NumUnits & numUnits);
-        template<typename T> inline void appendNumber(StringBuffer & output, const T & number) { output += number; }
+        template<typename T> inline void appendNumber(StringBuffer & output, const T & number)
+        {
+            if constexpr ( std::is_enum<T>::value )
+                output.appendNumber((typename promote_char<typename std::underlying_type<T>::type>::type)number);
+            else
+                output.appendNumber((typename promote_char<T>::type)number);
+        }
         inline void appendConditionMaskFlag(StringBuffer & output, const Chk::Condition::MaskFlag & maskFlag);
         inline void appendActionMaskFlag(StringBuffer & output, const Chk::Action::MaskFlag & maskFlag);
         inline void appendMemory(StringBuffer & output, const u32 & memory);

@@ -57,6 +57,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
+    trigText.clear();
     if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
         editText.SetText(trigText);
     else

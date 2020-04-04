@@ -317,15 +317,16 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
 {
     RawString rawUpdateText, rawSuggestText;
     std::string suggestionString = suggestions.Take();
+    bool hasSuggestion = !suggestionString.empty();
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( trig != nullptr )
     {
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig->condition(conditionNum).conditionType, argNum);
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
-               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex) ) ||
-             ( ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
-               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex) ) )
+               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, hasSuggestion) ) ||
+             ( hasSuggestion && ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
+               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, false) ) )
         {
             if ( refreshImmediately )
                 RefreshConditionAreas();

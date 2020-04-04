@@ -1,6 +1,7 @@
 #include "TextTrigCompiler.h"
 #include "EscapeStrings.h"
 #include "Math.h"
+#include "StringBuffer.h"
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -9,6 +10,8 @@
 #include <vector>
 #include <chrono>
 #undef PlaySound
+
+using namespace BufferedStream;
 
 TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
@@ -90,11 +93,11 @@ bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::TriggerPtr trigge
 
 bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type & conditionType)
 {
-    std::string txcd = text;
     std::vector<RawString> stringContents;
     CleanText(text, stringContents);
     Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
-    if ( ParseConditionName(txcd, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
+
+    if ( ParseConditionName(text, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
     {
         if ( ((s32)newConditionType) < 0 )
             conditionType = ExtendedToRegularCID(newConditionType);
@@ -106,7 +109,7 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     else
     {
         u32 temp = 0;
-        if ( ParseLong(txcd, temp, 0, txcd.size()) )
+        if ( ParseLong(text, temp, 0, text.size()) )
         {
             if ( ((s32)temp) < 0 )
                 conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
@@ -119,33 +122,43 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
+bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
-    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
+    u32 dataTypesToLoad = 0;
+    switch ( argument.type )
+    {
+        case Chk::Condition::ArgType::Unit: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+        case Chk::Condition::ArgType::Location: dataTypesToLoad |= ScenarioDataFlag::Locations; break;
+        case Chk::Condition::ArgType::Player: dataTypesToLoad |= ScenarioDataFlag::Groups; break;
+        case Chk::Condition::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
+        case Chk::Condition::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
+    }
+
+    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return false;
 
     std::string txcd = conditionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { conditionArgText };
     size_t nextString = 0;
-    if ( ParseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size()-1, (Chk::Condition::VirtualType)condition.conditionType, argument, argumentError) )
+    if ( ParseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), (Chk::Condition::VirtualType)condition.conditionType, argument, argumentError) )
         return true;
     else
     {
         std::stringstream errorMessage;
-        errorMessage << "Unable to parse condition. " << argumentError.str();
-        CHKD_ERR(errorMessage.str());
+        errorMessage << "Unable to parse condition arg: \"" << conditionArgText << "\"" << argumentError.str();
+        if ( !silent )
+            CHKD_ERR(errorMessage.str());
     }
     return false;
 }
 
 bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & actionType)
 {
-    std::string txac = text;
     std::vector<RawString> stringContents;
     CleanText(text, stringContents);
     Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
-    if ( ParseActionName(txac, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
+    if ( ParseActionName(text, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
     {
         if ( ((s32)newActionType) < 0 )
             actionType = ExtendedToRegularAID(newActionType);
@@ -157,7 +170,7 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     else
     {
         u32 temp = 0;
-        if ( ParseLong(txac, temp, 0, txac.size()) )
+        if ( ParseLong(text, temp, 0, text.size()) )
         {
             if ( ((s32)temp) < 0 )
                 actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
@@ -170,37 +183,62 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
+bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
-    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
+    u32 dataTypesToLoad = 0;
+    switch ( argument.type )
+    {
+        case Chk::Action::ArgType::Location: dataTypesToLoad |= ScenarioDataFlag::Locations; break;
+        case Chk::Action::ArgType::String: dataTypesToLoad |= ScenarioDataFlag::Strings; break;
+        case Chk::Action::ArgType::Player: dataTypesToLoad |= ScenarioDataFlag::Groups; break;
+        case Chk::Action::ArgType::Unit: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+        case Chk::Action::ArgType::Script: dataTypesToLoad |= ScenarioDataFlag::Scripts; break;
+        case Chk::Action::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
+        case Chk::Action::ArgType::Number: dataTypesToLoad |= ScenarioDataFlag::Groups | ScenarioDataFlag::Locations | ScenarioDataFlag::Scripts; break;
+        case Chk::Action::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+    }
+
+    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return false;
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( ParseActionArg(txac, stringContents, nextString, action, 0, txac.size() - 1, (Chk::Action::VirtualType)action.actionType, argument, argumentError) )
+    if ( ParseActionArg(txac, stringContents, nextString, action, 0, txac.size(), (Chk::Action::VirtualType)action.actionType, argument, argumentError) )
         return true;
     else
     {
         std::stringstream errorMessage;
-        errorMessage << "Unable to parse action. " << argumentError.str();
-        CHKD_ERR(errorMessage.str());
+        errorMessage << "Unable to parse action arg: \"" << actionArgText << "\"" << argumentError.str();
+        if ( !silent )
+            CHKD_ERR(errorMessage.str());
     }
     return false;
 }
 
 // protected
 
-bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
 {
     ClearCompiler();
+    
+    bool prepLocations = (dataTypes & ScenarioDataFlag::Locations) == ScenarioDataFlag::Locations;
+    bool prepUnits = (dataTypes & ScenarioDataFlag::Units) == ScenarioDataFlag::Units;
+    bool prepSwitches = (dataTypes & ScenarioDataFlag::Switches) == ScenarioDataFlag::Switches;
+    bool prepGroups = (dataTypes & ScenarioDataFlag::Groups) == ScenarioDataFlag::Groups;
+    bool prepScripts = (dataTypes & ScenarioDataFlag::Scripts) == ScenarioDataFlag::Scripts;
+    bool prepRegularStrings = (dataTypes & ScenarioDataFlag::StandardStrings) == ScenarioDataFlag::StandardStrings;
+    bool prepExtendedStrings = (dataTypes & ScenarioDataFlag::ExtendedStrings) == ScenarioDataFlag::ExtendedStrings;
 
     return
-        PrepLocationTable(chk) && PrepUnitTable(chk) && PrepSwitchTable(chk) &&
-        PrepGroupTable(chk) && PrepScriptTable(scData) &&
-        PrepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game) &&
-        PrepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor);
+        (!prepLocations || PrepLocationTable(chk)) &&
+        (!prepUnits || PrepUnitTable(chk)) &&
+        (!prepSwitches || PrepSwitchTable(chk)) &&
+        (!prepGroups || PrepGroupTable(chk)) &&
+        (!prepScripts || PrepScriptTable(scData)) &&
+        (!prepRegularStrings || PrepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
+        (!prepExtendedStrings || PrepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
 }
 
 void TextTrigCompiler::ClearCompiler()
@@ -281,8 +319,8 @@ void TextTrigCompiler::CleanText(std::string & text, std::vector<RawString> & st
         }
     }
 
-    if ( !dest.empty() )
-        text.assign(dest.begin(), dest.end());
+    if ( dest.size() > 0 )
+        text = dest.str();
     else
         text = "";
 
@@ -1189,7 +1227,7 @@ bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(std::string & arg, Chk::Condition::VirtualType & conditionType)
+bool TextTrigCompiler::ParseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType)
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -1326,7 +1364,7 @@ bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseActionName(std::string & arg, Chk::Action::VirtualType & actionType)
+bool TextTrigCompiler::ParseActionName(const std::string & arg, Chk::Action::VirtualType & actionType)
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -2699,7 +2737,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
     {
         char character = str[i];
-        if ( character > 96 && character < 123 ) // lower-case
+        if ( character >= 'a' && character <= 'z' ) // lower-case
             upperStr.push_back(character-32); // Capitalize
         else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
             upperStr.push_back(character);

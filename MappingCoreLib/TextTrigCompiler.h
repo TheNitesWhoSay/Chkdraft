@@ -39,6 +39,19 @@ class TextTrigCompiler
 {
     public:
 
+        enum_t(ScenarioDataFlag, u32, {
+            None = 0,
+            Locations = BIT_0,
+            Units = BIT_1,
+            Switches = BIT_2,
+            Groups = BIT_3,
+            Scripts = BIT_4,
+            StandardStrings = BIT_5,
+            ExtendedStrings = BIT_6,
+            Strings = StandardStrings | ExtendedStrings,
+            All = u32_max
+        });
+
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
         virtual ~TextTrigCompiler();
         bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
@@ -46,14 +59,14 @@ class TextTrigCompiler
 
         // Attempts to compile the condition argument at argIndex into the given condition
         bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
-        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
+        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
         bool ParseActionName(std::string text, Chk::Action::Type & actionType);
-        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex);
+        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
 
 
     protected:
 
-        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Sets up all the data needed for a run of the compiler
+        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
         void ClearCompiler(); // Clears data loaded for a run of the compiler
         void CleanText(std::string & text, std::vector<RawString> & stringContents); // Remove spacing and standardize line endings
 
@@ -79,9 +92,9 @@ class TextTrigCompiler
         inline bool ParsePartEleven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
 
         bool ParseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end); // Parse a player that the trigger is executed by
-        bool ParseConditionName(std::string & arg, Chk::Condition::VirtualType & conditionType);
+        bool ParseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType);
         bool ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags); // Find the equivilant conditionType
-        bool ParseActionName(std::string & arg, Chk::Action::VirtualType & actionType);
+        bool ParseActionName(const std::string & arg, Chk::Action::VirtualType & actionType);
         bool ParseAction(std::string & text, size_t pos, size_t end, bool disabled, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
         bool ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
         bool ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument argument, std::stringstream & error); // Parse an argument belonging to an action
