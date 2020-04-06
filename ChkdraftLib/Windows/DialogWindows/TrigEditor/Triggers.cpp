@@ -2,6 +2,7 @@
 #include "../../../Chkdraft.h"
 #include "../../ChkdControls/MoveTo.h"
 #include "../../../Mapping/Settings.h"
+#include "../../../Mapping/Graphics.h"
 #include <string>
 
 #undef PlaySound
@@ -844,6 +845,7 @@ void TriggersWindow::RefreshGroupList()
 
 void TriggersWindow::RefreshTrigList()
 {
+    auto start = std::chrono::high_resolution_clock::now();
     listTriggers.SetRedraw(false);
     listTriggers.ClearItems();
     numVisibleTrigs = 0;
@@ -867,7 +869,7 @@ void TriggersWindow::RefreshTrigList()
             }
         }
     }
-
+    
     listTriggers.SetRedraw(true);
     if ( toSelect == -1 || !listTriggers.SetCurSel(toSelect) ) // Attempt selection
     {
@@ -875,6 +877,8 @@ void TriggersWindow::RefreshTrigList()
         if ( trigModifyWindow.getHandle() != NULL )
             trigModifyWindow.DestroyThis();
     }
+    auto finish = std::chrono::high_resolution_clock::now();
+    logger.trace() << "Trigger list refresh completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
 }
 
 bool TriggersWindow::SelectTrigListItem(int item)
@@ -1106,6 +1110,24 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Sc
         RawStringPtr str = chk->strings.getString<RawString>(commentStringId);
         if ( str != nullptr )
         {
+            size_t hash = strHash(*str);
+            auto matches = commentSizeTable.equal_range(hash);
+            if ( matches.first != commentSizeTable.end() && matches.first->first == hash )
+            {
+                for ( auto it = matches.first; it != matches.second; ++it )
+                {
+                    CommentSize & commentSize = it->second;
+                    if ( commentSize.str.compare(*str) == 0 )
+                    {
+                        width = commentSize.width;
+                        height = commentSize.height;
+                        return false;
+                    }
+                }
+            }
+
+            CommentSize commentSize = { *str, 0, 0 };
+
             size_t endOfLine = str->find("\r\n");
             if ( endOfLine != std::string::npos )
                 str->insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
@@ -1116,6 +1138,9 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Sc
             {
                 width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
                 height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+                commentSize.width = width;
+                commentSize.height = height;
+                commentSizeTable.insert(std::pair<size_t, CommentSize>(hash, commentSize));
             }
         }
     }
@@ -1129,7 +1154,7 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Sc
             height = TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
 
             UINT strWidth, strHeight;
-            if ( GetStringDrawSize(hDC, strWidth, strHeight, str) )
+            if ( GetStringDrawSize(hDC, strWidth, strHeight, str, trigLineSizeTable) )
             {
                 UINT newWidth = strWidth+TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
                 if ( newWidth > width )
@@ -1332,6 +1357,8 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             {
                 textTrigGenerator.LoadScenario(CM);
                 trigListDC = listTriggers.getDC();
+                commentSizeTable.clear();
+                trigLineSizeTable.clear();
             }
             break;
 

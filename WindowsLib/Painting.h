@@ -1,7 +1,9 @@
 #ifndef PAINTING_H
 #define PAINTING_H
+#include "../IcuLib/SimpleIcu.h"
 #include "DataTypes.h"
 #include <Windows.h>
+#include <unordered_map>
 #include <string>
 #include <memory>
 
@@ -43,9 +45,19 @@ namespace WinLib {
 
             PaintFont();
     };
+    
+    struct LineSize {
+        icux::uistring str;
+        s32 width;
+        s32 height;
+
+        static std::hash<icux::uistring> strHash;
+    };
 
     bool getTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height);
     bool getTabTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height);
+    bool getTabTextExtent(HDC hdc, const icux::codepoint* text, const size_t length, s32 & width, s32 & height);
+    bool getTabTextExtent(HDC hdc, const icux::codepoint* text, const size_t length, s32 & width, s32 & height, std::unordered_multimap<size_t, LineSize> & lineCache);
     bool drawText(HDC hdc, const std::string & text, int x, int y, RECT & rect, bool clipped, bool opaque);
     bool drawTabbedText(HDC hdc, const std::string & text, int x, int y);
 

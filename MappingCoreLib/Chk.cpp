@@ -1167,7 +1167,7 @@ size_t Chk::Trigger::getComment()
     for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
     {
         if ( actions[i].actionType == Chk::Action::Type::Comment && !actions[i].isDisabled() )
-            actions[i].stringId;
+            return actions[i].stringId;
     }
     return Chk::StringId::NoString;
 }

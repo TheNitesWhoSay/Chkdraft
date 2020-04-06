@@ -1,6 +1,7 @@
 #include "Painting.h"
 #include <SimpleIcu.h>
 #include "../CommanderLib/Logger.h"
+#include <chrono>
 
 extern Logger logger;
 
@@ -94,6 +95,8 @@ namespace WinLib {
     {
     
     }
+    
+    std::hash<icux::uistring> LineSize::strHash;
 
     bool getTextExtent(HDC hdc, const std::string & text, s32 & width, s32 & height)
     {
@@ -126,6 +129,65 @@ namespace WinLib {
             {
                 width = LOWORD(result);
                 height = HIWORD(result);
+                return true;
+            }
+        }
+        else // Empty text
+        {
+            width = 0;
+            height = 0;
+        }
+        return false;
+    }
+
+    bool getTabTextExtent(HDC hdc, const icux::codepoint* text, const size_t length, s32 & width, s32 & height)
+    {
+        if ( length > 0 )
+        {
+            DWORD result = GetTabbedTextExtent(hdc, text, (int)length, 0, NULL);
+            if ( result != 0 )
+            {
+                width = LOWORD(result);
+                height = HIWORD(result);
+                return true;
+            }
+        }
+        else // Empty text
+        {
+            width = 0;
+            height = 0;
+        }
+        return false;
+    }
+
+    bool getTabTextExtent(HDC hdc, const icux::codepoint* text, const size_t length, s32 & width, s32 & height, std::unordered_multimap<size_t, LineSize> & lineCache)
+    {
+        if ( length > 0 )
+        {
+            icux::uistring uiString(text, length);
+            size_t hash = LineSize::strHash(uiString);
+            auto matches = lineCache.equal_range(hash);
+            if ( matches.first != lineCache.end() && matches.first->first == hash )
+            {
+                for ( auto it = matches.first; it != matches.second; ++it )
+                {
+                    LineSize & lineSize = it->second;
+                    if ( lineSize.str.compare(uiString) == 0 )
+                    {
+                        width = lineSize.width;
+                        height = lineSize.height;
+                        return true;
+                    }
+                }
+            }
+
+            DWORD result = GetTabbedTextExtent(hdc, text, (int)length, 0, NULL);
+            if ( result != 0 )
+            {
+                width = LOWORD(result);
+                height = HIWORD(result);
+                LineSize lineSize = { uiString, width, height };
+                lineCache.insert(std::pair<size_t, LineSize>(hash, lineSize));
                 return true;
             }
         }

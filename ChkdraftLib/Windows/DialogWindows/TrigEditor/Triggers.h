@@ -5,6 +5,7 @@
 #include "../../../../MappingCoreLib/MappingCore.h"
 #include "../../ChkdControls/PeerListBox.h"
 #include "../TrigModify/TrigModify.h"
+#include <unordered_map>
 #include <string>
 
 class TriggersWindow : public WinLib::ClassWindow
@@ -81,6 +82,14 @@ class TriggersWindow : public WinLib::ClassWindow
         WinLib::ListBoxControl listTriggers;
         TextTrigGenerator textTrigGenerator; // Text trig generator for assisting trigger display
         HDC trigListDC; // Trig list HDC for speeding up trigger measurement
+        std::hash<std::string> strHash; // A hasher to help generate tables
+        struct CommentSize {
+            std::string str;
+            UINT width;
+            UINT height;
+        };
+        std::unordered_multimap<size_t, CommentSize> commentSizeTable;
+        std::unordered_multimap<size_t, WinLib::LineSize> trigLineSizeTable;
 
         bool ShowTrigger(Chk::Trigger* trigger); // Checks if trigger should currently be shown
         void ClearGroups();

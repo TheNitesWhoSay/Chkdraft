@@ -1,7 +1,9 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 #include "../CommonFiles/CommonFiles.h"
+#include "../../WindowsLib/WindowsUi.h"
 #include "Clipboard.h"
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <array>
@@ -178,7 +180,9 @@ void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, std::string str);
 
 void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, std::string str);
+bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str);
+
+bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache);
 
 void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
 

@@ -257,7 +257,7 @@ void TextTrigCompiler::ClearCompiler()
 
 void TextTrigCompiler::CleanText(std::string & text, std::vector<RawString> & stringContents)
 {
-    logger.info() << "Starting text trig cleaning" << std::endl;
+    logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     size_t pos = 0;
     bool inString = false;
@@ -325,7 +325,7 @@ void TextTrigCompiler::CleanText(std::string & text, std::vector<RawString> & st
         text = "";
 
     auto finish = std::chrono::high_resolution_clock::now();
-    logger.info() << "Finished text trig cleaning in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+    logger.debug() << "Finished text trig cleaning in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
 }
 
 bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<Chk::TriggerPtr> & output, std::stringstream & error)

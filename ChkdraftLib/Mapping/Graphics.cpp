@@ -1717,75 +1717,108 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
     }
 }
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, std::string str)
+bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str)
 {
     // This method is very time sensative and should be optimized as much as possible
     width = 0;
     height = 0;
+    if ( str.empty() )
+        return false;
 
     s32 lineWidth = 0, lineHeight = 0;
+    
+    constexpr icux::codepoint carriageReturn = (icux::codepoint)'\r';
+    constexpr icux::codepoint lineFeed = (icux::codepoint)'\n';
+    
+    auto sysStr = icux::toUistring(str);
+    const size_t codepointCount = sysStr.length();
+    size_t lineStart = 0;
+    icux::codepoint* rawStr = &sysStr[0];
+    icux::codepoint* currLine = rawStr;
 
-    size_t start = 0,
-           loc,
-           max = str.size(),
-           npos = std::string::npos;
-
-    loc = str.find("\r\n");
-    if ( loc != npos ) // Has new lines
+    for ( size_t i=0; i<codepointCount; i++ )
     {
-        // Do first line
-        std::string firstLine = str.substr(0, loc);
-        if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) )
+        if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
         {
-            start = loc+2;
-            height += lineHeight;
-            if ( lineWidth > LONG(width) )
-                width = UINT(lineWidth);
-
-            do // Do subsequent lines
+            rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
+            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) )
             {
-                loc = str.find("\r\n", start);
-                if ( loc != npos )
-                {
-                    std::string line = " ";
-                    if ( loc-start > 0 )
-                        line = str.substr(start, loc-start);
-                    start = loc+2;
-                    if ( WinLib::getTabTextExtent(hDC, line, lineWidth, lineHeight) )
-                    {
-                        height += lineHeight;
-                        if ( lineWidth > LONG(width) )
-                            width = UINT(lineWidth);
-                    }
-                    else
-                        break;
-                }
-                else
-                {
-                    // Do last line
-                    std::string lastLine = str.substr(start, max-start);
-                    if ( WinLib::getTabTextExtent(hDC, lastLine, lineWidth, lineHeight) )
-                    {
-                        height += lineHeight;
-                        if ( lineWidth > LONG(width) )
-                            width = UINT(lineWidth);
-                    }
-                    break;
-                }
-            } while ( start < max );
+                height += lineHeight;
+                if ( lineWidth > s32(width) )
+                    width = UINT(lineWidth);
+            }
+            else
+                return false;
 
-            return true;
+            i++; // Advance from position of carriageReturn to position of lineFeed
+            lineStart = i+1;
+            currLine = lineStart < codepointCount ? &rawStr[lineStart] : nullptr; // Set currLine to begin at the character after lineFeed if present
         }
     }
-    else if ( WinLib::getTabTextExtent(hDC, str, lineWidth, lineHeight) )
-    {
-        height += lineHeight;
-        if ( lineWidth > LONG(width) )
-            width = UINT(lineWidth);
 
-        return true;
+    // If currLine != nullptr, then either the last character(s) were not line endings or there were no line endings, process last line
+    if ( currLine != nullptr )
+    {
+        if ( !WinLib::getTabTextExtent(hDC, currLine, codepointCount-lineStart, lineWidth, lineHeight) )
+            return false;
+
+        height += lineHeight;
+        if ( lineWidth > s32(width) )
+            width = UINT(lineWidth);
     }
-    return false;
+    return true;
+}
+
+bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache)
+{
+    // This method is very time sensative and should be optimized as much as possible
+    width = 0;
+    height = 0;
+    if ( str.empty() )
+        return false;
+
+    s32 lineWidth = 0, lineHeight = 0;
+    
+    constexpr icux::codepoint carriageReturn = (icux::codepoint)'\r';
+    constexpr icux::codepoint lineFeed = (icux::codepoint)'\n';
+    
+    auto sysStr = icux::toUistring(str);
+    const size_t codepointCount = sysStr.length();
+    size_t lineStart = 0;
+    icux::codepoint* rawStr = &sysStr[0];
+    icux::codepoint* currLine = rawStr;
+
+    for ( size_t i=0; i<codepointCount; i++ )
+    {
+        if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
+        {
+            rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
+            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight, lineCache) )
+            {
+                height += lineHeight;
+                if ( lineWidth > s32(width) )
+                    width = UINT(lineWidth);
+            }
+            else
+                return false;
+
+            i++; // Advance from position of carriageReturn to position of lineFeed
+            lineStart = i+1;
+            currLine = lineStart < codepointCount ? &rawStr[lineStart] : nullptr; // Set currLine to begin at the character after lineFeed if present
+        }
+    }
+
+    // If currLine != nullptr, then either the last character(s) were not line endings or there were no line endings, process last line
+    if ( currLine != nullptr )
+    {
+        if ( !WinLib::getTabTextExtent(hDC, currLine, codepointCount-lineStart, lineWidth, lineHeight, lineCache) )
+            return false;
+
+        height += lineHeight;
+        if ( lineWidth > s32(width) )
+            width = UINT(lineWidth);
+    }
+    return true;
 }
 
 void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)

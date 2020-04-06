@@ -28,8 +28,10 @@ void TextTrigWindow::RefreshWindow()
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( textTrigs.GenerateTextTrigs(CM, trigString) )
     {
+        auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
-        logger.info() << "Refreshed text trig window contents" << std::endl;
+        auto finish = std::chrono::high_resolution_clock::now();
+        logger.debug() << "Windows updated textbox contents in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     }
     else
         Error("Failed to generate text triggers.");
