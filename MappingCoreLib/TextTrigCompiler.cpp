@@ -527,12 +527,12 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
     }
     else
     {
-        size_t nextComma = findNextUnquoted(text, pos, ',', '{');
-        playerEnd = nextComma != std::string::npos ? nextComma : findNextUnquoted(text, pos, ')', '{');
+        size_t nextComma = findNext(text, pos, ',', '{');
+        playerEnd = nextComma != std::string::npos ? nextComma : findNext(text, pos, ')', '{');
 
         if ( playerEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\n');
+            lineEnd = text.find('\n', pos);
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length(); // Text ends on this line
 
@@ -660,7 +660,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
         conditionEnd = text.find('(', pos);
         if ( conditionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\n');
+            lineEnd = text.find('\n', pos);
             if ( lineEnd != std::string::npos )
                 lineEnd = text.size();
 
@@ -851,7 +851,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
     }
     else if ( Chk::Condition::getTextArgType(conditionId, (size_t)argIndex+1) == Chk::Condition::ArgType::NoType )
     {
-        argEnd = findNextUnquoted(text, pos, ')');
+        argEnd = text.find(')', pos);
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
@@ -874,7 +874,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
     }
     else
     {
-        argEnd = findNextUnquoted(text, pos, ',');
+        argEnd = text.find(',', pos);
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
@@ -943,7 +943,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
         actionEnd = text.find('(', pos);
         if ( actionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\n');
+            lineEnd = text.find('\n', pos);
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length();
 
@@ -999,7 +999,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
         actionEnd = text.find('(', pos);
         if ( actionEnd != std::string::npos )
         {
-            lineEnd = findNextUnquoted(text, pos, '\n');
+            lineEnd = text.find('\n', pos);
             if ( lineEnd == std::string::npos )
                 lineEnd = text.length();
 
@@ -1080,7 +1080,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
     }
     else if ( Chk::Action::getTextArgType(actionId, (size_t)argIndex+1) == Chk::Action::ArgType::NoType )
     {
-        argEnd = findNextUnquoted(text, pos, ')');
+        argEnd = text.find(')', pos);
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
@@ -1103,7 +1103,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
     }
     else
     {
-        argEnd = findNextUnquoted(text, pos, ',');
+        argEnd = text.find(',', pos);
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
@@ -1207,7 +1207,7 @@ inline bool TextTrigCompiler::ParsePartEleven(std::string & text, Chk::Trigger &
 bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end)
 {
     u32 group;
-    size_t separator = findNextUnquoted(text, pos, ':');
+    size_t separator = text.find(':', pos);
     if ( separator != std::string::npos &&
         ParsePlayer(text, stringContents, nextString, group, pos, separator) &&
         group < 27 )
@@ -3771,42 +3771,17 @@ size_t findStringEnd(const std::string & str, size_t pos)
     return std::string::npos;
 }
 
-size_t findNextUnquoted(const std::string & str, size_t pos, char character)
+size_t findNext(const std::string & str, size_t pos, char character, char terminator)
 {
-    const char * cStr = str.c_str();
+    const char* cStr = str.c_str();
     size_t strSize = str.size();
     for ( ; pos<strSize; pos++ )
     {
         char curr = cStr[pos];
-        if ( curr == '\"' )
-        {
-            pos = findStringEnd(str, pos+1);
-            if ( pos == std::string::npos )
-                return std::string::npos;
-        }
-        else if ( curr == character )
+        if ( curr == character )
             return pos;
-    }
-    return std::string::npos;
-}
-
-size_t findNextUnquoted(const std::string & str, size_t pos, char character, char terminator)
-{
-    const char * cStr = str.c_str();
-    size_t strSize = str.size();
-    for ( ; pos<strSize; pos++ )
-    {
-        char curr = cStr[pos];
-        if ( curr == '\"' )
-        {
-            pos = findStringEnd(str, pos+1);
-            if ( pos == std::string::npos )
-                return std::string::npos;
-        }
-        else if ( curr == terminator && (pos == 0 || cStr[pos-1] != '\\') )
+        else if ( curr == terminator )
             return std::string::npos;
-        else if ( curr == character )
-            return pos;
     }
     return std::string::npos;
 }
