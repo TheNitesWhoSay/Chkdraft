@@ -175,9 +175,6 @@ size_t findStringEnd(const std::string & str, size_t pos);
     if 'terminator' is found before 'character', then npos is returned */
 size_t findNext(const std::string & str, size_t pos, char character, char terminator);
 
-/** Returns whether str spanning from [pos, pos+count) equals the string pointed to by "other" */
-bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other);
-
 
 
 template <size_t N>

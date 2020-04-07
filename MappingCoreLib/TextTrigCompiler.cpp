@@ -2022,7 +2022,7 @@ bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_
 
 bool TextTrigCompiler::ParseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
-    if ( compareCaseless(text, pos, 9, "No String") )
+    if ( text.compare(pos, end-pos, "NOSTRING") == 0 )
     {
         dest = 0;
         return true;
@@ -2708,7 +2708,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> 
 
 bool TextTrigCompiler::ParseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
-    if ( compareCaseless(text, 0, 6, "No WAV") )
+    if ( text.compare(pos, end-pos, "NOWAV") == 0  )
     {
         dest = 0;
         return true;
@@ -2748,7 +2748,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         currChar = upperStr[1];
         if ( currChar == 'L' )
         {
-            if ( compareCaseless(upperStr, 2, 4, "AYER") )
+            if ( upperStr.compare(2, 4, "AYER") == 0 )
             {
                 const char* argPtr = &upperStr.c_str()[6];
                 if ( number = atoi(argPtr) ) // Player number
@@ -2779,7 +2779,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         currChar = upperStr[1];
         if ( currChar == 'O' )
         {
-            if ( compareCaseless(upperStr, 2, 3, "RCE") )
+            if ( upperStr.compare(2, 3, "RCE") == 0 )
             {
                 const char* argPtr = &upperStr.c_str()[5];
 
@@ -2792,7 +2792,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
                     }
                 }
             }
-            else if ( compareCaseless(upperStr, 2, 2, "ES") ) // Foes
+            else if ( upperStr.compare(2, 2, "ES") == 0 ) // Foes
             {
                 dest = 14;
                 return true;
@@ -2817,12 +2817,12 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         currChar = upperStr[1];
         if ( currChar == 'L' )
         {
-            if ( compareCaseless(upperStr, 2, 8, "LPLAYERS") ) // All players
+            if ( upperStr.compare(2, 8, "LPLAYERS") == 0 ) // All players
             {
                 dest = 17;
                 return true;
             }
-            else if ( compareCaseless(upperStr, 2, 4, "LIES") ) // Allies
+            else if ( upperStr.compare(2, 4, "LIES") == 0 ) // Allies
             {
                 dest = 15;
                 return true;
@@ -2836,7 +2836,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     }
     else if ( currChar == 'C' )
     {
-        if ( compareCaseless(upperStr, 1, 12, "URRENTPLAYER") ) // Current player
+        if ( upperStr.compare(1, 12, "URRENTPLAYER") == 0 ) // Current player
         {
             dest = 13;
             return true;
@@ -3038,7 +3038,7 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & 
 
 bool TextTrigCompiler::ParseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
-    if ( compareCaseless(text, pos, 8, "NOSCRIPT") || compareCaseless(text, pos, 9, "No Script") )
+    if ( text.compare(pos, end-pos, "NOSCRIPT") == 0 )
     {
         dest = 0;
         return true;
@@ -3767,20 +3767,4 @@ size_t findNext(const std::string & str, size_t pos, char character, char termin
             return std::string::npos;
     }
     return std::string::npos;
-}
-
-bool compareCaseless(const std::string & str, size_t pos, size_t count, const char* other)
-{
-    size_t limit = pos+count;
-    if ( limit <= str.size() )
-    {
-        const char* cStr = &str.c_str()[pos];
-        for ( size_t i=0; i<count; i++ )
-        {
-            if ( cStr[i] != other[i] )
-                return false;
-        }
-        return true;
-    }
-    return false;
 }
