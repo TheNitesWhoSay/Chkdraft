@@ -58,7 +58,7 @@ bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string & text, Chk::TriggerPtr trigger, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
+bool TextTrigCompiler::CompileTrigger(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
 {
     if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
@@ -141,7 +141,7 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Cond
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { conditionArgText };
     size_t nextString = 0;
-    if ( ParseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), (Chk::Condition::VirtualType)condition.conditionType, argument, argumentError) )
+    if ( ParseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError) )
         return true;
     else
     {
@@ -205,7 +205,7 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Ar
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( ParseActionArg(txac, stringContents, nextString, action, 0, txac.size(), (Chk::Action::VirtualType)action.actionType, argument, argumentError) )
+    if ( ParseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError) )
         return true;
     else
     {
@@ -381,7 +381,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
                 break;
 
             case 2: //      {
-                if ( !ParsePartTwo(text, *currTrig, error, pos, line, expecting) )
+                if ( !ParsePartTwo(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -389,7 +389,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
                     // or   actions:
                     // or   flags:
                     // or   }
-                if ( !ParsePartThree(text, *currTrig, error, pos, line, expecting) )
+                if ( !ParsePartThree(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -406,14 +406,14 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
             case 5: //      );
                     // or   %ConditionArg,
                     // or   %ConditionArg);
-                if ( !ParsePartFive(text, stringContents, nextString, *currTrig, error, pos, line, expecting, argIndex, argEnd, currCondition, conditionId) )
+                if ( !ParsePartFive(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currCondition, conditionId) )
                     return false;
                 break;
 
             case 6: //      actions:
                     // or   flags:
                     // or   }
-                if ( !ParsePartSix(text, *currTrig, error, pos, line, expecting) )
+                if ( !ParsePartSix(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -429,13 +429,13 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
             case 8: //      );
                     // or   %ActionArg,
                     // or   %ActionArg);
-                if ( !ParsePartEight(text, stringContents, nextString, *currTrig, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
+                if ( !ParsePartEight(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
                     return false;
                 break;
 
             case 9: //      }
                     // or   flags:,
-                if ( !ParsePartNine(text, *currTrig, error, pos, line, expecting) )
+                if ( !ParsePartNine(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -446,7 +446,7 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
                 break;
 
             case 11: //     }
-                if ( !ParsePartEleven(text, *currTrig, error, pos, line, expecting) )
+                if ( !ParsePartEleven(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -566,7 +566,7 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      {
     if ( text[pos] == '{' )
@@ -582,7 +582,7 @@ inline bool TextTrigCompiler::ParsePartTwo(std::string & text, Chk::Trigger & ou
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      conditions:
     // or   actions:
@@ -666,7 +666,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, true, conditionId, flags) )
+            if ( ParseCondition(text, pos, conditionEnd, conditionId, flags) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -761,7 +761,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, false, conditionId, flags) )
+            if ( ParseCondition(text, pos, conditionEnd, conditionId, flags) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -810,7 +810,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
+inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
     Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionId)
 {
     //      );
@@ -855,7 +855,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, conditionId, argument, argumentError) )
+            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd;
                 argIndex ++;
@@ -878,7 +878,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, conditionId, argument, argumentError) )
+            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd+1;
                 argIndex ++;
@@ -898,7 +898,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      actions:
     // or   flags:
@@ -937,7 +937,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
     // or   ;%ActionName(
     // or   flags:
     // or   }
-    if ( text[pos] == ';' )
+    if ( text[pos] == ';' ) // Disabled action
     {
         pos ++;
         actionEnd = text.find('(', pos);
@@ -949,7 +949,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, true, actionId, flags) )
+            if ( ParseAction(text, pos, actionEnd, actionId, flags) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -1005,7 +1005,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, false, actionId, flags) )
+            if ( ParseAction(text, pos, actionEnd, actionId, flags) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -1039,7 +1039,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
     u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
 {
     //      );
@@ -1084,7 +1084,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, actionId, argument, argumentError) )
+            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd;
                 argIndex ++;
@@ -1107,7 +1107,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, actionId, argument, argumentError) )
+            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd+1;
                 argIndex ++;
@@ -1128,7 +1128,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartNine(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      }
     // or   flags:,
@@ -1188,7 +1188,7 @@ inline bool TextTrigCompiler::ParsePartTen(std::string & text, Chk::Trigger & ou
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::ParsePartEleven(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
 {
     //      }
     if ( text[pos] == '}' )
@@ -1339,7 +1339,7 @@ bool TextTrigCompiler::ParseConditionName(const std::string & arg, Chk::Conditio
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, bool disabled, Chk::Condition::VirtualType & conditionType, u8 & flags)
+bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags)
 {
     conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
@@ -1359,7 +1359,6 @@ bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end
     ParseConditionName(arg, conditionType);
 
     flags = Chk::Condition::getDefaultFlags(conditionType);
-    flags = Chk::Condition::defaultFlags[0];
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
@@ -1577,7 +1576,7 @@ bool TextTrigCompiler::ParseActionName(const std::string & arg, Chk::Action::Vir
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, bool diabled, Chk::Action::VirtualType & actionType, u8 & flags)
+bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags)
 {
     actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
@@ -1808,7 +1807,7 @@ bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, b
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::VirtualType conditionType, Chk::Condition::Argument argument, std::stringstream & error)
+bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
 {
     // returns whether the condition was true and prints msg to the error message if false
 #define returnMsg(condition, msg)                           \
@@ -1886,7 +1885,7 @@ bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawStri
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::VirtualType actionType, Chk::Action::Argument arg, std::stringstream & error)
+bool TextTrigCompiler::ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error)
 {
     switch ( arg.type )
     {
@@ -2752,9 +2751,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
             if ( compareCaseless(upperStr, 2, 4, "AYER") )
             {
                 const char* argPtr = &upperStr.c_str()[6];
-                if ( number = atoi(argPtr) )
+                if ( number = atoi(argPtr) ) // Player number
                 {
-                    // Do something with player number
                     if ( number < 13 && number > 0 )
                     {
                         dest = number-1;
@@ -2766,9 +2764,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         else if ( currChar > 47 && currChar < 58 ) // Number
         {
             const char* argPtr = &upperStr.c_str()[2];
-            if ( number = atoi(argPtr) )
+            if ( number = atoi(argPtr) ) // Player number
             {
-                // Do something with player number
                 if ( number < 13 && number > 0 )
                 {
                     dest = number-1;
@@ -2786,9 +2783,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
             {
                 const char* argPtr = &upperStr.c_str()[5];
 
-                if ( number = atoi(argPtr) )
+                if ( number = atoi(argPtr) ) // Force number
                 {
-                    // Do something with force number
                     if ( number < 5 )
                     {
                         dest = number+17;
@@ -2796,9 +2792,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
                     }
                 }
             }
-            else if ( compareCaseless(upperStr, 2, 2, "ES") )
+            else if ( compareCaseless(upperStr, 2, 2, "ES") ) // Foes
             {
-                // Do something with foes
                 dest = 14;
                 return true;
             }
@@ -2807,9 +2802,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         {
             const char* argPtr = &upperStr.c_str()[2];
 
-            if ( number = atoi(argPtr) )
+            if ( number = atoi(argPtr) ) // Force number
             {
-                // Do something with force number
                 if ( number < 5 )
                 {
                     dest = number+17;
@@ -2823,37 +2817,32 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         currChar = upperStr[1];
         if ( currChar == 'L' )
         {
-            if ( compareCaseless(upperStr, 2, 8, "LPLAYERS") )
+            if ( compareCaseless(upperStr, 2, 8, "LPLAYERS") ) // All players
             {
-                // Do something with all players
                 dest = 17;
                 return true;
             }
-            else if ( compareCaseless(upperStr, 2, 4, "LIES") )
+            else if ( compareCaseless(upperStr, 2, 4, "LIES") ) // Allies
             {
-                // Do something with allies
                 dest = 15;
                 return true;
             }
         }
-        else if ( currChar == 'P' )
+        else if ( currChar == 'P' ) // All players
         {
-            // Do something with all players
             dest = 17;
             return true;
         }
     }
     else if ( currChar == 'C' )
     {
-        if ( compareCaseless(upperStr, 1, 12, "URRENTPLAYER") )
+        if ( compareCaseless(upperStr, 1, 12, "URRENTPLAYER") ) // Current player
         {
-            // Do something with current player
             dest = 13;
             return true;
         }
-        else if ( upperStr[1] == 'P' )
+        else if ( upperStr[1] == 'P' ) // CP - Current player
         {
-            // Do something with current player
             dest = 13;
             return true;
         }
@@ -2863,9 +2852,8 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         if ( upperStr.compare(1, 2, "D:") == 0 )
         {
             const char* argPtr = &upperStr.c_str()[3];
-            if ( number = atoi(argPtr) )
+            if ( number = atoi(argPtr) ) // Player number
             {
-                // Do something with player number
                 dest = number;
                 return true;
             }
@@ -2873,61 +2861,56 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     }
     else if ( currChar == 'N' )
     {
-        if ( upperStr.compare(1, 13, "EUTRALPLAYERS") == 0 )
+        if ( upperStr.compare(1, 13, "EUTRALPLAYERS") == 0 ) // Neutral players
         {
-            // Do something with Neutral Players
             dest = 16;
             return true;
         }
-        else if ( upperStr.compare(1, 22, "ONALLIEDVICTORYPLAYERS") == 0 )
+        else if ( upperStr.compare(1, 22, "ONALLIEDVICTORYPLAYERS") == 0 ) // Non-allied victory players
         {
-            // Do something with non allied victory players
             dest = 26;
             return true;
         }
-        else if ( upperStr.compare(1, 3, "ONE") == 0 )
+        else if ( upperStr.compare(1, 3, "ONE") == 0 ) // None
         {
-            // Do something with 'none' players (ID:12)
             dest = 12;
             return true;
         }
-        else if ( upperStr.compare(1, 11, "ONAVPLAYERS") == 0 )
+        else if ( upperStr.compare(1, 11, "ONAVPLAYERS") == 0 ) // Non-allied victory players
         {
-            // Do something with non av players
             dest = 26;
             return true;
         }
     }
     else if ( currChar == 'U' )
     {
-        if ( upperStr.compare(1, 13, "NKNOWN/UNUSED") == 0 )
+        if ( upperStr.compare(1, 13, "NKNOWN/UNUSED") == 0 ) // Unknown/unused
         {
-            // Do something with Unknown/Unused
             dest = 12;
             return true;
         }
-        else if ( upperStr.compare(1, 6, "NUSED1") == 0 )
+        else if ( upperStr.compare(1, 6, "NUSED1") == 0 ) // Unused 1
         {
             dest = 22;
             return true;
         }
-        else if ( upperStr.compare(1, 6, "NUSED2") == 0 )
+        else if ( upperStr.compare(1, 6, "NUSED2") == 0 ) // Unused 2
         {
             dest = 23;
             return true;
         }
-        else if ( upperStr.compare(1, 6, "NUSED3") == 0 )
+        else if ( upperStr.compare(1, 6, "NUSED3") == 0 ) // Unused 3
         {
             dest = 24;
             return true;
         }
-        else if ( upperStr.compare(1, 6, "NUSED4") == 0 )
+        else if ( upperStr.compare(1, 6, "NUSED4") == 0 ) // Unused 4
         {
             dest = 25;
             return true;
         }
     }
-    else if ( currChar > 47 && currChar < 58 ) // pure number
+    else if ( currChar > 47 && currChar < 58 ) // Pure number
     {
         const char* argPtr = upperStr.c_str();
         if ( number = atoi(argPtr) )
