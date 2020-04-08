@@ -23,25 +23,25 @@ TextTrigCompiler::~TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+bool TextTrigCompiler::compileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( !LoadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
+    if ( !loadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
         return false;
 
     try
     {
         std::vector<RawString> stringContents;
-        CleanText(text, stringContents);
+        cleanText(text, stringContents);
 
         std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
         std::stringstream buildError;
 
-        if ( ParseTriggers(text, stringContents, triggers, compilerError) )
+        if ( parseTriggers(text, stringContents, triggers, compilerError) )
         {
-            if ( BuildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
+            if ( buildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
             {
                 chk->triggers.trig->swap(triggers);
                 auto finish = std::chrono::high_resolution_clock::now();
@@ -58,25 +58,25 @@ bool TextTrigCompiler::CompileTriggers(std::string & text, ScenarioPtr chk, Sc::
     return false;
 }
 
-bool TextTrigCompiler::CompileTrigger(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
+bool TextTrigCompiler::compileTrigger(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1) )
+    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
 
     try
     {
         std::vector<RawString> stringContents;
-        CleanText(text, stringContents);
+        cleanText(text, stringContents);
         std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
         std::stringstream buildError;
 
-        if ( ParseTriggers(text, stringContents, triggers, compilerError) )
+        if ( parseTriggers(text, stringContents, triggers, compilerError) )
         {
             if ( triggers.size() == 1 )
             {
 
-                if ( BuildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
+                if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
                     return true;
                 else
                     compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
@@ -91,16 +91,16 @@ bool TextTrigCompiler::CompileTrigger(std::string & text, ScenarioPtr chk, Sc::D
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type & conditionType)
+bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType)
 {
     std::vector<RawString> stringContents;
-    CleanText(text, stringContents);
+    cleanText(text, stringContents);
     Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
 
-    if ( ParseConditionName(text, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
+    if ( parseConditionName(text, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
     {
         if ( ((s32)newConditionType) < 0 )
-            conditionType = ExtendedToRegularCID(newConditionType);
+            conditionType = extendedToRegularConditionType(newConditionType);
         else
             conditionType = (Chk::Condition::Type)newConditionType;
 
@@ -109,10 +109,10 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     else
     {
         u32 temp = 0;
-        if ( ParseLong(text, temp, 0, text.size()) )
+        if ( parseLong(text, temp, 0, text.size()) )
         {
             if ( ((s32)temp) < 0 )
-                conditionType = ExtendedToRegularCID((Chk::Condition::VirtualType)temp);
+                conditionType = extendedToRegularConditionType((Chk::Condition::VirtualType)temp);
             else
                 conditionType = (Chk::Condition::Type)temp;
 
@@ -122,7 +122,7 @@ bool TextTrigCompiler::ParseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
+bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -134,14 +134,14 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Cond
         case Chk::Condition::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
     }
 
-    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return false;
 
     std::string txcd = conditionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { conditionArgText };
     size_t nextString = 0;
-    if ( ParseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError) )
+    if ( parseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError) )
         return true;
     else
     {
@@ -153,15 +153,15 @@ bool TextTrigCompiler::ParseConditionArg(std::string conditionArgText, Chk::Cond
     return false;
 }
 
-bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & actionType)
+bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType)
 {
     std::vector<RawString> stringContents;
-    CleanText(text, stringContents);
+    cleanText(text, stringContents);
     Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
-    if ( ParseActionName(text, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
+    if ( parseActionName(text, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
     {
         if ( ((s32)newActionType) < 0 )
-            actionType = ExtendedToRegularAID(newActionType);
+            actionType = extendedToRegularActionType(newActionType);
         else
             actionType = (Chk::Action::Type)newActionType;
 
@@ -170,10 +170,10 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     else
     {
         u32 temp = 0;
-        if ( ParseLong(text, temp, 0, text.size()) )
+        if ( parseLong(text, temp, 0, text.size()) )
         {
             if ( ((s32)temp) < 0 )
-                actionType = ExtendedToRegularAID((Chk::Action::VirtualType)temp);
+                actionType = extendedToRegularActionType((Chk::Action::VirtualType)temp);
             else
                 actionType = (Chk::Action::Type)temp;
 
@@ -183,7 +183,7 @@ bool TextTrigCompiler::ParseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
+bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -198,14 +198,14 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Ar
         case Chk::Action::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Units; break;
     }
 
-    if ( !LoadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return false;
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( ParseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError) )
+    if ( parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError) )
         return true;
     else
     {
@@ -219,9 +219,9 @@ bool TextTrigCompiler::ParseActionArg(std::string actionArgText, Chk::Action::Ar
 
 // protected
 
-bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
+bool TextTrigCompiler::loadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
 {
-    ClearCompiler();
+    clearCompiler();
     
     bool prepLocations = (dataTypes & ScenarioDataFlag::Locations) == ScenarioDataFlag::Locations;
     bool prepUnits = (dataTypes & ScenarioDataFlag::Units) == ScenarioDataFlag::Units;
@@ -232,16 +232,16 @@ bool TextTrigCompiler::LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t t
     bool prepExtendedStrings = (dataTypes & ScenarioDataFlag::ExtendedStrings) == ScenarioDataFlag::ExtendedStrings;
 
     return
-        (!prepLocations || PrepLocationTable(chk)) &&
-        (!prepUnits || PrepUnitTable(chk)) &&
-        (!prepSwitches || PrepSwitchTable(chk)) &&
-        (!prepGroups || PrepGroupTable(chk)) &&
-        (!prepScripts || PrepScriptTable(scData)) &&
-        (!prepRegularStrings || PrepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
-        (!prepExtendedStrings || PrepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
+        (!prepLocations || prepLocationTable(chk)) &&
+        (!prepUnits || prepUnitTable(chk)) &&
+        (!prepSwitches || prepSwitchTable(chk)) &&
+        (!prepGroups || prepGroupTable(chk)) &&
+        (!prepScripts || prepScriptTable(scData)) &&
+        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
+        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
 }
 
-void TextTrigCompiler::ClearCompiler()
+void TextTrigCompiler::clearCompiler()
 {
     locationTable.clear();
     unitTable.clear();
@@ -255,7 +255,7 @@ void TextTrigCompiler::ClearCompiler()
     newExtendedStringTable.clear();
 }
 
-void TextTrigCompiler::CleanText(std::string & text, std::vector<RawString> & stringContents)
+void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents)
 {
     logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -328,7 +328,7 @@ void TextTrigCompiler::CleanText(std::string & text, std::vector<RawString> & st
     logger.debug() << "Finished text trig cleaning in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
 }
 
-bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<Chk::TriggerPtr> & output, std::stringstream & error)
+bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<Chk::TriggerPtr> & output, std::stringstream & error)
 {
     text.push_back('\0'); // Add a terminating null character
 
@@ -342,8 +342,8 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
         argEnd = 0,
         nextString = 0;
 
-    u32 expecting = 0,
-        line = 1,
+    Expecting expecting = Expecting::Trigger_EndOfText;
+    u32 line = 1,
         argIndex = 0,
         numConditions = 0,
         numActions = 0;
@@ -365,98 +365,110 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
         {
             switch ( expecting )
             {
-            case 0: //      trigger
-                    // or   %NULL
-                if ( !ParsePartZero(text, currTrig, currCondition, currAction, error, pos, line, expecting) )
+            case Expecting::Trigger_EndOfText:
+                //      trigger
+                // or   %NULL
+                if ( !parsePartZero(text, currTrig, currCondition, currAction, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 1: //      %PlayerName,
-                    // or   %PlayerName:Value,
-                    // or   %PlayerName:Value)
-                    // or   %PlayerName)
-                    // or   )
-                if ( !ParsePartOne(text, stringContents, nextString, *currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
+            case Expecting::Player_EndOfPlayers:
+                //      %PlayerName,
+                // or   %PlayerName:Value,
+                // or   %PlayerName:Value)
+                // or   %PlayerName)
+                // or   )
+                if ( !parsePartOne(text, stringContents, nextString, *currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
                     return false;
                 break;
 
-            case 2: //      {
-                if ( !ParsePartTwo(text, error, pos, line, expecting) )
+            case Expecting::OpenTriggerBody:
+                //      {
+                if ( !parsePartTwo(text, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 3: //      conditions:
-                    // or   actions:
-                    // or   flags:
-                    // or   }
-                if ( !ParsePartThree(text, error, pos, line, expecting) )
+            case Expecting::SectionStart_EndOfTrigger:
+                //      conditions:
+                // or   actions:
+                // or   flags:
+                // or   }
+                if ( !parsePartThree(text, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 4: //      %ConditionName(
-                    // or   ;%ConditionName(
-                    // or   actions:
-                    // or   flags:
-                    // or   }
-                if ( !ParsePartFour(text, *currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
+            case Expecting::ConditionStart_NonConditionSectionStart:
+                //      %ConditionName(
+                // or   ;%ConditionName(
+                // or   actions:
+                // or   flags:
+                // or   }
+                if ( !parsePartFour(text, *currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
                     flags, argIndex, numConditions, currCondition) )
                     return false;
                 break;
 
-            case 5: //      );
-                    // or   %ConditionArg,
-                    // or   %ConditionArg);
-                if ( !ParsePartFive(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currCondition, conditionId) )
+            case Expecting::ConditionArg_EndOfCondition:
+                //      );
+                // or   %ConditionArg,
+                // or   %ConditionArg);
+                if ( !parsePartFive(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currCondition, conditionId) )
                     return false;
                 break;
 
-            case 6: //      actions:
-                    // or   flags:
-                    // or   }
-                if ( !ParsePartSix(text, error, pos, line, expecting) )
+            case Expecting::NonConditionSectionStart_EndOfTrigger:
+                //      actions:
+                // or   flags:
+                // or   }
+                if ( !parsePartSix(text, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 7: //      %ActionName(
-                    // or   ;%ActionName(
-                    // or   flags:
-                    // or   }
-                if ( !ParsePartSeven(text, *currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
+            case Expecting::ActionStart_FlagSectionStart_EndOfTrigger:
+                //      %ActionName(
+                // or   ;%ActionName(
+                // or   flags:
+                // or   }
+                if ( !parsePartSeven(text, *currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
                     actionId, argIndex, numActions, currAction) )
                     return false;
                 break;
 
-            case 8: //      );
-                    // or   %ActionArg,
-                    // or   %ActionArg);
-                if ( !ParsePartEight(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
+            case Expecting::ActionArg_EndOfAction:
+                //      );
+                // or   %ActionArg,
+                // or   %ActionArg);
+                if ( !parsePartEight(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
                     return false;
                 break;
 
-            case 9: //      }
-                    // or   flags:,
-                if ( !ParsePartNine(text, error, pos, line, expecting) )
+            case Expecting::FlagSectionStart_EndOfTrigger:
+                //      }
+                // or   flags:,
+                if ( !parsePartNine(text, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 10: //     ;
-                     // or  %32BitFlags;
-                if ( !ParsePartTen(text, *currTrig, error, pos, line, expecting, flagsEnd) )
+            case Expecting::ExecutionFlags:
+                //     ;
+                // or  %32BitFlags;
+                if ( !parsePartTen(text, *currTrig, error, pos, line, expecting, flagsEnd) )
                     return false;
                 break;
 
-            case 11: //     }
-                if ( !ParsePartEleven(text, error, pos, line, expecting) )
+            case Expecting::EndOfTrigger:
+                //     }
+                if ( !parsePartEleven(text, error, pos, line, expecting) )
                     return false;
                 break;
 
-            case 12: // Trigger end was found, reset
+            case Expecting::Last: // Trigger end was found, reset
             {
                 numConditions = 0;
                 numActions = 0;
 
                 output.push_back(currTrig);
-                expecting = 0;
+                expecting = Expecting::Trigger_EndOfText;
                 if ( text[pos] == '\0' ) // End of Text
                 {
                     error << "Success!";
@@ -470,14 +482,14 @@ bool TextTrigCompiler::ParseTriggers(std::string & text, std::vector<RawString> 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      trigger
     // or   %NULL
     if ( text.compare(pos, 8, "TRIGGER(") == 0 )
     {
         pos += 8;
-        expecting ++;
+        expecting = Expecting::Player_EndOfPlayers;
     }
     else if ( text.compare(pos, 7, "TRIGGER") == 0 )
     {
@@ -490,7 +502,7 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr 
         if ( text[pos] == '(' )
         {
             pos ++;
-            expecting ++;
+            expecting = Expecting::Player_EndOfPlayers;
         }
         else
         {
@@ -513,7 +525,7 @@ inline bool TextTrigCompiler::ParsePartZero(std::string & text, Chk::TriggerPtr 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, size_t & playerEnd, size_t & lineEnd)
+inline bool TextTrigCompiler::parsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, size_t & playerEnd, size_t & lineEnd)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -523,7 +535,7 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
     if ( text[pos] == ')' ) // No players
     {
         pos ++;
-        expecting ++;
+        expecting = Expecting::OpenTriggerBody;
     }
     else
     {
@@ -538,7 +550,7 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
 
             playerEnd = std::min(playerEnd, lineEnd);
 
-            if ( ParseExecutingPlayer(text, stringContents, nextString, output, pos, playerEnd) )
+            if ( parseExecutingPlayer(text, stringContents, nextString, output, pos, playerEnd) )
             {
                 pos = playerEnd;
                 while ( text[pos] == '\n' )
@@ -547,7 +559,7 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
                     line ++;
                 }
                 if ( text[pos] == ')' )
-                    expecting ++;
+                    expecting = Expecting::OpenTriggerBody;
 
                 pos ++;
             }
@@ -566,13 +578,13 @@ inline bool TextTrigCompiler::ParsePartOne(std::string & text, std::vector<RawSt
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      {
     if ( text[pos] == '{' )
     {
         pos ++;
-        expecting ++;
+        expecting = Expecting::SectionStart_EndOfTrigger;
     }
     else
     {
@@ -582,7 +594,7 @@ inline bool TextTrigCompiler::ParsePartTwo(std::string & text, std::stringstream
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      conditions:
     // or   actions:
@@ -591,22 +603,22 @@ inline bool TextTrigCompiler::ParsePartThree(std::string & text, std::stringstre
     if ( text.compare(pos, 11, "CONDITIONS:") == 0 )
     {
         pos += 11;
-        expecting ++;
+        expecting = Expecting::ConditionStart_NonConditionSectionStart;
     }
     else if ( text.compare(pos, 8, "ACTIONS:") == 0 )
     {
         pos += 8;
-        expecting += 4;
+        expecting = Expecting::ActionStart_FlagSectionStart_EndOfTrigger;
     }
     else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
-        expecting += 7;
+        expecting = Expecting::ExecutionFlags;
     }
     else if ( text[pos] == '}' )
     {
         pos ++;
-        expecting = 12;
+        expecting = Expecting::Last;
     }
     else
     {
@@ -623,7 +635,7 @@ inline bool TextTrigCompiler::ParsePartThree(std::string & text, std::stringstre
             if ( text[pos] == ':' ) 
             {
                 pos ++;
-                expecting += hasConditions ? 1 : 4;
+                expecting = hasConditions ? Expecting::ConditionStart_NonConditionSectionStart : Expecting::ActionStart_FlagSectionStart_EndOfTrigger;
             }
             else
             {
@@ -640,7 +652,7 @@ inline bool TextTrigCompiler::ParsePartThree(std::string & text, std::stringstre
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argIndex, u32 & numConditions,
     Chk::Condition* & currCondition)
 {
@@ -666,7 +678,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, conditionId, flags) )
+            if ( parseCondition(text, pos, conditionEnd, conditionId, flags) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -677,7 +689,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 currCondition = &output.condition(numConditions);
                 currCondition->flags = flags | Chk::Condition::Flags::Disabled;
                 if ( (s32)conditionId < 0 )
-                    currCondition->conditionType = ExtendedToRegularCID(conditionId);
+                    currCondition->conditionType = extendedToRegularConditionType(conditionId);
                 else
                     currCondition->conditionType = (Chk::Condition::Type)conditionId;
                 numConditions ++;
@@ -692,7 +704,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 if ( text[pos] == '(' )
                 {
                     pos ++;
-                    expecting ++;
+                    expecting = Expecting::ConditionArg_EndOfCondition;
                 }
                 else
                 {
@@ -715,7 +727,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     else if ( text[pos] == '}' ) // End trigger
     {
         pos ++;
-        expecting = 12;
+        expecting = Expecting::Last;
     }
     else if ( text.compare(pos, 7, "ACTIONS") == 0 ) // End conditions
     {
@@ -728,7 +740,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
         if ( text[pos] == ':' )
         {
             pos ++;
-            expecting = 7;
+            expecting = Expecting::ActionStart_FlagSectionStart_EndOfTrigger;
         }
         else
         {
@@ -742,7 +754,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
         if ( text[pos] == ':' )
         {
             pos ++;
-            expecting = 10;
+            expecting = Expecting::ExecutionFlags;
         }
         else
         {
@@ -761,7 +773,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( ParseCondition(text, pos, conditionEnd, conditionId, flags) )
+            if ( parseCondition(text, pos, conditionEnd, conditionId, flags) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -772,7 +784,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 currCondition = &output.condition(numConditions);
                 currCondition->flags = flags;
                 if ( (s32)conditionId < 0 )
-                    currCondition->conditionType = ExtendedToRegularCID(conditionId);
+                    currCondition->conditionType = extendedToRegularConditionType(conditionId);
                 else
                     currCondition->conditionType = (Chk::Condition::Type)conditionId;
                 numConditions ++;
@@ -787,7 +799,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
                 if ( text[pos] == '(' )
                 {
                     pos ++;
-                    expecting ++;
+                    expecting = Expecting::ConditionArg_EndOfCondition;
                 }
                 else
                 {
@@ -810,7 +822,7 @@ inline bool TextTrigCompiler::ParsePartFour(std::string & text, Chk::Trigger & o
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
+inline bool TextTrigCompiler::parsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, u32 & argIndex, size_t & argEnd,
     Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionId)
 {
     //      );
@@ -836,7 +848,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
         if ( text[pos] == ';' )
         {
             pos ++;
-            expecting --;
+            expecting = Expecting::ConditionStart_NonConditionSectionStart;
         }
         else
         {
@@ -855,7 +867,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
+            if ( parseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd;
                 argIndex ++;
@@ -878,7 +890,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
+            if ( parseConditionArg(text, stringContents, nextString, *currCondition, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd+1;
                 argIndex ++;
@@ -898,7 +910,7 @@ inline bool TextTrigCompiler::ParsePartFive(std::string & text, std::vector<RawS
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      actions:
     // or   flags:
@@ -906,17 +918,17 @@ inline bool TextTrigCompiler::ParsePartSix(std::string & text, std::stringstream
     if ( text[pos] == '}' )
     {
         pos ++;
-        expecting = 12;
+        expecting = Expecting::Last;
     }
     else if ( text.compare(pos, 8, "ACTIONS:") == 0 )
     {
         pos += 8;
-        expecting ++;
+        expecting = Expecting::ActionStart_FlagSectionStart_EndOfTrigger;
     }
     else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
-        expecting = 10;
+        expecting = Expecting::ExecutionFlags;
     }
     else
     {
@@ -929,7 +941,7 @@ inline bool TextTrigCompiler::ParsePartSix(std::string & text, std::stringstream
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argIndex, u32 & numActions,
     Chk::Action* & currAction)
 {
@@ -949,7 +961,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, actionId, flags) )
+            if ( parseAction(text, pos, actionEnd, actionId, flags) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -960,13 +972,13 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
                 currAction = &output.action(numActions);
                 currAction->flags = flags | Chk::Action::Flags::Disabled;
                 if ( actionId < 0 )
-                    currAction->actionType = ExtendedToRegularAID(actionId);
+                    currAction->actionType = extendedToRegularActionType(actionId);
                 else
                     currAction->actionType = (Chk::Action::Type)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
-                expecting ++;
+                expecting = Expecting::ActionArg_EndOfAction;
             }
             else
             {
@@ -978,7 +990,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
     else if ( text[pos] == '}' )
     {
         pos ++;
-        expecting = 12;
+        expecting = Expecting::Last;
     }
     else if ( text.compare(pos, 5, "FLAGS") == 0 ) // End actions
     {
@@ -986,7 +998,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
         if ( text[pos] == ':' )
         {
             pos ++;
-            expecting = 10;
+            expecting = Expecting::ExecutionFlags;
         }
         else
         {
@@ -1005,7 +1017,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( ParseAction(text, pos, actionEnd, actionId, flags) )
+            if ( parseAction(text, pos, actionEnd, actionId, flags) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -1016,13 +1028,13 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
                 currAction = &output.action(numActions);
                 currAction->flags = flags;
                 if ( (s32)actionId < 0 )
-                    currAction->actionType = ExtendedToRegularAID(actionId);
+                    currAction->actionType = extendedToRegularActionType(actionId);
                 else
                     currAction->actionType = (Chk::Action::Type)actionId;
                 numActions ++;
 
                 pos = actionEnd+1;
-                expecting ++;
+                expecting = Expecting::ActionArg_EndOfAction;
             }
             else
             {
@@ -1039,7 +1051,7 @@ inline bool TextTrigCompiler::ParsePartSeven(std::string & text, Chk::Trigger & 
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+inline bool TextTrigCompiler::parsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
 {
     //      );
@@ -1065,7 +1077,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
         if ( text[pos] == ';' )
         {
             pos ++;
-            expecting --;
+            expecting = Expecting::ActionStart_FlagSectionStart_EndOfTrigger;
         }
         else
         {
@@ -1084,7 +1096,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
+            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd;
                 argIndex ++;
@@ -1107,7 +1119,7 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( ParseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
+            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
             {
                 pos = argEnd+1;
                 argIndex ++;
@@ -1128,19 +1140,19 @@ inline bool TextTrigCompiler::ParsePartEight(std::string & text, std::vector<Raw
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartNine(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartNine(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      }
     // or   flags:,
     if ( text[pos] == '}' )
     {
         pos ++;
-        expecting = 12;
+        expecting = Expecting::Last;
     }
     else if ( text.compare(pos, 6, "FLAGS:") == 0 )
     {
         pos += 6;
-        expecting ++;
+        expecting = Expecting::ExecutionFlags;
     }
     else
     {
@@ -1153,7 +1165,7 @@ inline bool TextTrigCompiler::ParsePartNine(std::string & text, std::stringstrea
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+inline bool TextTrigCompiler::parsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     size_t & flagsEnd)
 {
     //      ;
@@ -1161,17 +1173,17 @@ inline bool TextTrigCompiler::ParsePartTen(std::string & text, Chk::Trigger & ou
     if ( text[pos] == ';' )
     {
         pos ++;
-        expecting ++;
+        expecting = Expecting::EndOfTrigger;
     }
     else
     {
         flagsEnd = text.find(';', pos);
         if ( flagsEnd != std::string::npos )
         {
-            if ( ParseExecutionFlags(text, pos, flagsEnd, output.flags) )
+            if ( parseExecutionFlags(text, pos, flagsEnd, output.flags) )
             {
                 pos = flagsEnd+1;
-                expecting ++;
+                expecting = Expecting::EndOfTrigger;
             }
             else
             {
@@ -1188,13 +1200,13 @@ inline bool TextTrigCompiler::ParsePartTen(std::string & text, Chk::Trigger & ou
     return true;
 }
 
-inline bool TextTrigCompiler::ParsePartEleven(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting)
+inline bool TextTrigCompiler::parsePartEleven(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      }
     if ( text[pos] == '}' )
     {
         pos ++;
-        expecting ++;
+        expecting = Expecting::Last;
     }
     else
     {
@@ -1204,22 +1216,22 @@ inline bool TextTrigCompiler::ParsePartEleven(std::string & text, std::stringstr
     return true;
 }
 
-bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end)
+bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end)
 {
     u32 group;
     size_t separator = text.find(':', pos);
     if ( separator != std::string::npos &&
-        ParsePlayer(text, stringContents, nextString, group, pos, separator) &&
-        group < 27 )
+        parsePlayer(text, stringContents, nextString, group, pos, separator) &&
+        group < Sc::Player::TotalOwners )
     {
         u8 appendedValue;
-        if ( !ParseByte(text, appendedValue, separator+1, end) )
+        if ( !parseByte(text, appendedValue, separator+1, end) )
             appendedValue = 1;
 
         currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
         return true;
     }
-    else if ( ParsePlayer(text, stringContents, nextString, group, pos, end) && group < 27 )
+    else if ( parsePlayer(text, stringContents, nextString, group, pos, end) && group < 27 )
     {
         currTrig.owners[group] = Chk::Trigger::Owned::Yes;
         return true;
@@ -1227,7 +1239,7 @@ bool TextTrigCompiler::ParseExecutingPlayer(std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::ParseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType)
+bool TextTrigCompiler::parseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType)
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -1339,7 +1351,7 @@ bool TextTrigCompiler::ParseConditionName(const std::string & arg, Chk::Conditio
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags)
+bool TextTrigCompiler::parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags)
 {
     conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
@@ -1356,14 +1368,14 @@ bool TextTrigCompiler::ParseCondition(std::string & text, size_t pos, size_t end
             arg.push_back(character);
     }
 
-    ParseConditionName(arg, conditionType);
+    parseConditionName(arg, conditionType);
 
     flags = Chk::Condition::getDefaultFlags(conditionType);
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::ParseActionName(const std::string & arg, Chk::Action::VirtualType & actionType)
+bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType)
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -1576,7 +1588,7 @@ bool TextTrigCompiler::ParseActionName(const std::string & arg, Chk::Action::Vir
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags)
+bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags)
 {
     actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
@@ -1807,7 +1819,7 @@ bool TextTrigCompiler::ParseAction(std::string & text, size_t pos, size_t end, C
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
+bool TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
 {
     // returns whether the condition was true and prints msg to the error message if false
 #define returnMsg(condition, msg)                           \
@@ -1822,186 +1834,186 @@ bool TextTrigCompiler::ParseConditionArg(std::string & text, std::vector<RawStri
     switch ( argType )
     {
         case Chk::Condition::ArgType::Unit:
-            returnMsg( ParseUnitName(text, stringContents, nextString, currCondition.unitType, pos, end) ||
-                ParseShort(text, (u16 &)currCondition.unitType, pos, end),
+            returnMsg( parseUnitName(text, stringContents, nextString, currCondition.unitType, pos, end) ||
+                parseShort(text, (u16 &)currCondition.unitType, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Condition::ArgType::Location:
-            returnMsg( ParseLocationName(text, stringContents, nextString, currCondition.locationId, pos, end) ||
-                ParseLong(text, currCondition.locationId, pos, end),
+            returnMsg( parseLocationName(text, stringContents, nextString, currCondition.locationId, pos, end) ||
+                parseLong(text, currCondition.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Condition::ArgType::Player:
-            returnMsg( ParsePlayer(text, stringContents, nextString, currCondition.player, pos, end) ||
-                ParseLong(text, currCondition.player, pos, end),
+            returnMsg( parsePlayer(text, stringContents, nextString, currCondition.player, pos, end) ||
+                parseLong(text, currCondition.player, pos, end),
                 "Expected: Player/group name or 4-byte id" );
         case Chk::Condition::ArgType::Amount:
-            returnMsg( ParseLong(text, currCondition.amount, pos, end),
+            returnMsg( parseLong(text, currCondition.amount, pos, end),
                 "Expected: 4-byte amount" );
         case Chk::Condition::ArgType::NumericComparison:
-            returnMsg( ParseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseByte(text, (u8 &)currCondition.comparison, pos, end),
+            returnMsg( parseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                parseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Numeric comparison or 1-byte comparisonID" );
         case Chk::Condition::ArgType::ResourceType:
-            returnMsg( ParseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(text, currCondition.typeIndex, pos, end),
+            returnMsg( parseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Resource type or 1-byte resourceID" );
         case Chk::Condition::ArgType::ScoreType:
-            returnMsg( ParseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(text, currCondition.typeIndex, pos, end),
+            returnMsg( parseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Condition::ArgType::Switch:
-            returnMsg( ParseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseByte(text, currCondition.typeIndex, pos, end),
+            returnMsg( parseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Switch name or 1-byte switchID" );
         case Chk::Condition::ArgType::SwitchState:
-            returnMsg( ParseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseByte(text, (u8 &)currCondition.comparison, pos, end),
+            returnMsg( parseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                parseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Switch state or 1-byte comparisonID" );
         case Chk::Condition::ArgType::Comparison: // NumericComparison, SwitchState
-            returnMsg( ParseByte(text, (u8 &)currCondition.comparison, pos, end) ||
-                ParseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
-                ParseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end),
+            returnMsg( parseByte(text, (u8 &)currCondition.comparison, pos, end) ||
+                parseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+                parseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end),
                 "Expected: 1-byte comparison" );
         case Chk::Condition::ArgType::ConditionType:
-            returnMsg( ParseByte(text, (u8 &)currCondition.conditionType, pos, end),
+            returnMsg( parseByte(text, (u8 &)currCondition.conditionType, pos, end),
                 "Expected: 1-byte conditionID" );
         case Chk::Condition::ArgType::TypeIndex: // ResourceType, ScoreType, Switch
-            returnMsg( ParseByte(text, currCondition.typeIndex, pos, end) ||
-                ParseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
-                ParseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end),
+            returnMsg( parseByte(text, currCondition.typeIndex, pos, end) ||
+                parseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                parseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+                parseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end),
                 "Expected: 1-byte typeId, resource type, score type, or switch name" );
         case Chk::Condition::ArgType::Flags:
-            returnMsg( ParseByte(text, currCondition.flags, pos, end),
+            returnMsg( parseByte(text, currCondition.flags, pos, end),
                 "Expected: 1-byte flags" );
         case Chk::Condition::ArgType::MaskFlag:
-            returnMsg( ParseShort(text, (u16 &)currCondition.maskFlag, pos, end),
+            returnMsg( parseShort(text, (u16 &)currCondition.maskFlag, pos, end),
                 "Expected: 2-byte internal data" );
         case Chk::Condition::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && ParseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
-                !useAddressesForMemory && ParseLong(text, currCondition.player, pos, end)),
+            returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && parseLong(text, currCondition.player, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return false;
 }
 
-bool TextTrigCompiler::ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error)
+bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error)
 {
     switch ( arg.type )
     {
         case Chk::Action::ArgType::Location:
-            returnMsg( ParseLocationName(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
-                ParseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
+            returnMsg( parseLocationName(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
+                parseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Action::ArgType::String:
-            returnMsg( ParseString(text, stringContents, nextString, currAction.stringId, pos, end) ||
-                ParseLong(text, currAction.stringId, pos, end),
+            returnMsg( parseString(text, stringContents, nextString, currAction.stringId, pos, end) ||
+                parseLong(text, currAction.stringId, pos, end),
                 "Expected: String or stringNum" );
         case Chk::Action::ArgType::Player:
-            returnMsg( ParsePlayer(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
-                ParseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
+            returnMsg( parsePlayer(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
+                parseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
                 "Expected: Group name or 4-byte groupID" );
         case Chk::Action::ArgType::Unit:
-            returnMsg( ParseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
-                ParseShort(text, (u16 &)currAction.type, pos, end),
+            returnMsg( parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
+                parseShort(text, (u16 &)currAction.type, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Action::ArgType::NumUnits:
-            returnMsg( ParseSpecialUnitAmount(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg( parseSpecialUnitAmount(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: 1-byte number" );
         case Chk::Action::ArgType::CUWP:
         case Chk::Action::ArgType::Percent:
         case Chk::Action::ArgType::Amount:
-            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? ParseByte(text, currAction.type2, pos, end) : ParseLong(text, currAction.number, pos, end)),
+            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? parseByte(text, currAction.type2, pos, end) : parseLong(text, currAction.number, pos, end)),
                 (arg.field == Chk::Action::ArgField::Type2 ? "Expected: 1-byte number" : "Expected: 4-byte number" ));
         case Chk::Action::ArgType::ScoreType:
-            returnMsg( ParseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(text, currAction.type, pos, end),
+            returnMsg( parseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseShort(text, currAction.type, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Action::ArgType::ResourceType:
-            returnMsg( ParseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(text, currAction.type, pos, end),
+            returnMsg( parseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseShort(text, currAction.type, pos, end),
                 "Expected: Resource type or 2-byte number" );
         case Chk::Action::ArgType::StateMod:
-            returnMsg( ParseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg( parseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: State modifier or 1-byte number" );
         case Chk::Action::ArgType::Order:
-            returnMsg ( ParseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg ( parseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: Order or 1-byte number" );
         case Chk::Action::ArgType::Sound:
-            returnMsg( ParseWavName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
-                ParseLong(text, currAction.soundStringId, pos, end),
+            returnMsg( parseWavName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
+                parseLong(text, currAction.soundStringId, pos, end),
                 "Expected: Wav name or 4-byte wavID" );
         case Chk::Action::ArgType::Duration:
-            returnMsg( ParseLong(text, currAction.time, pos, end),
+            returnMsg( parseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );
         case Chk::Action::ArgType::Script:
-            returnMsg ( ParseScript(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(text, currAction.number, pos, end),
+            returnMsg ( parseScript(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseLong(text, currAction.number, pos, end),
                 "Expected: Script name or 4-byte script num" );
         case Chk::Action::ArgType::AllyState:
-            returnMsg( ParseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(text, currAction.type, pos, end),
+            returnMsg( parseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseShort(text, currAction.type, pos, end),
                 "Expected: Alliance status or 2-byte number" );
         case Chk::Action::ArgType::NumericMod:
-            returnMsg( ParseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg( parseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: Numeric modifier or 1-byte number" );
         case Chk::Action::ArgType::Switch:
-            returnMsg ( ParseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(text, currAction.number, pos, end),
+            returnMsg ( parseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseLong(text, currAction.number, pos, end),
                 "Expected: Switch name or 4-byte number" );
         case Chk::Action::ArgType::SwitchMod:
-            returnMsg ( ParseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg ( parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier or 1-byte number" );
         case Chk::Action::ArgType::ActionType:
-            returnMsg( ParseByte(text, (u8 &)currAction.actionType, pos, end),
+            returnMsg( parseByte(text, (u8 &)currAction.actionType, pos, end),
                 "Expected: 1-byte actionID" );
         case Chk::Action::ArgType::TextFlags:
         case Chk::Action::ArgType::Flags:
-            returnMsg( ParseTextDisplayFlag(text, stringContents, nextString, currAction.flags, pos, end) ||
-                ParseByte(text, currAction.flags, pos, end),
+            returnMsg( parseTextDisplayFlag(text, stringContents, nextString, currAction.flags, pos, end) ||
+                parseByte(text, currAction.flags, pos, end),
                 "Expected: Always display text flags or 1-byte flag data" );
         case Chk::Action::ArgType::Number: // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-            returnMsg( ParsePlayer(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLocationName(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseScript(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
-                ParseLong(text, currAction.number, pos, end),
+            returnMsg( parsePlayer(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseLocationName(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseScript(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
+                parseLong(text, currAction.number, pos, end),
                 "Expected: Group, location, script, switch, or 4-byte number" );
         case Chk::Action::ArgType::TypeIndex: // Unit, ScoreType, ResourceType, AllianceStatus
-            returnMsg( ParseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
-                ParseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
-                ParseShort(text, currAction.type, pos, end),
+            returnMsg( parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
+                parseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
+                parseShort(text, currAction.type, pos, end),
                 "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
         case Chk::Action::ArgType::SecondaryTypeIndex: // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-            returnMsg( ParseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
-                ParseByte(text, currAction.type2, pos, end),
+            returnMsg( parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+                parseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier, order, numeric modifier, state modifier, or 1-byte number" );
         case Chk::Action::ArgType::Padding:
-            returnMsg( ParseByte(text, currAction.padding, pos, end),
+            returnMsg( parseByte(text, currAction.padding, pos, end),
                 "Expected: 1-byte padding" );
         case Chk::Action::ArgType::MaskFlag:
-            returnMsg( ParseShort(text, (u16 &)currAction.maskFlag, pos, end),
+            returnMsg( parseShort(text, (u16 &)currAction.maskFlag, pos, end),
                 "Expected: 2-byte mask flag" );
         case Chk::Action::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && ParseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
-                !useAddressesForMemory && ParseLong(text, currAction.group, pos, end)),
+            returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
+                !useAddressesForMemory && parseLong(text, currAction.group, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return false;
 }
 
-bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags)
+bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags)
 {
     flags = 0;
 
@@ -2017,10 +2029,10 @@ bool TextTrigCompiler::ParseExecutionFlags(std::string & text, size_t pos, size_
             arg.push_back(character);
     }
 
-    return ParseBinaryLong(arg, flags, 0, arg.size());
+    return parseBinaryLong(arg, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::ParseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     if ( text.compare(pos, end-pos, "NOSTRING") == 0 )
     {
@@ -2065,10 +2077,10 @@ bool TextTrigCompiler::ParseString(std::string & text, std::vector<RawString> & 
         return true;
     }
     else
-        return ParseLong(text, dest, pos, end);
+        return parseLong(text, dest, pos, end);
 }
 
-bool TextTrigCompiler::ParseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     std::string str;
     if ( text.compare(pos, end-pos, "NOLOCATION") == 0 )
@@ -2081,7 +2093,7 @@ bool TextTrigCompiler::ParseLocationName(std::string & text, std::vector<RawStri
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseLong(text, dest, pos, end) )
+    else if ( parseLong(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2127,7 +2139,7 @@ bool TextTrigCompiler::ParseLocationName(std::string & text, std::vector<RawStri
     return success;
 }
 
-bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end)
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
@@ -2140,7 +2152,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> 
         pos = 0;
         end = str.size();
     }
-    else if ( ParseShort(text, (u16 &)dest, pos, end) )
+    else if ( parseShort(text, (u16 &)dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2216,7 +2228,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> 
             break;
         case 'I':
             if ( unit[1] == 'D' && unit[2] == ':' )
-                success = ParseShort(unit, (u16 &)dest, 3, size);
+                success = parseShort(unit, (u16 &)dest, 3, size);
             else if ( strcmp(&unit[1], "NDEPENDENT COMMAND CENTER (UNUSED)"  ) == 0 ) { dest = Sc::Unit::Type::IndependentCommandCenter_Unused; success = true; }
             else if ( strcmp(&unit[1], "NDEPENDENT JUMP GATE (UNUSED)"       ) == 0 ) { dest = Sc::Unit::Type::IndependentJumpGate_Unused; success = true; }
             else if ( strcmp(&unit[1], "NDEPENDENT STARPORT (UNUSED)"        ) == 0 ) { dest = Sc::Unit::Type::IndependentStarport_Unused; success = true; }
@@ -2706,7 +2718,7 @@ bool TextTrigCompiler::ParseUnitName(std::string & text, std::vector<RawString> 
     return success;
 }
 
-bool TextTrigCompiler::ParseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     if ( text.compare(pos, end-pos, "NOWAV") == 0  )
     {
@@ -2714,10 +2726,10 @@ bool TextTrigCompiler::ParseWavName(std::string & text, std::vector<RawString> &
         return true;
     }
     else
-        return ParseString(text, stringContents, nextString, dest, pos, end);
+        return parseString(text, stringContents, nextString, dest, pos, end);
 }
 
-bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     std::string str;
     u32 number = 0;
@@ -2726,7 +2738,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseLong(text, dest, pos, end) )
+    else if ( parseLong(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -2755,7 +2767,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
                 {
                     if ( number < 13 && number > 0 )
                     {
-                        dest = number-1;
+                        dest = number - 1;
                         return true;
                     }
                 }
@@ -2768,7 +2780,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
             {
                 if ( number < 13 && number > 0 )
                 {
-                    dest = number-1;
+                    dest = number - 1;
                     return true;
                 }
             }
@@ -2787,14 +2799,14 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
                 {
                     if ( number < 5 )
                     {
-                        dest = number+17;
+                        dest = number - 1 + Sc::Player::Id::Force1;
                         return true;
                     }
                 }
             }
             else if ( upperStr.compare(2, 2, "ES") == 0 ) // Foes
             {
-                dest = 14;
+                dest = Sc::Player::Id::Foes;
                 return true;
             }
         }
@@ -2806,7 +2818,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
             {
                 if ( number < 5 )
                 {
-                    dest = number+17;
+                    dest = number - 1 + Sc::Player::Id::Force1;
                     return true;
                 }
             }
@@ -2819,18 +2831,18 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
         {
             if ( upperStr.compare(2, 8, "LPLAYERS") == 0 ) // All players
             {
-                dest = 17;
+                dest = Sc::Player::Id::AllPlayers;
                 return true;
             }
             else if ( upperStr.compare(2, 4, "LIES") == 0 ) // Allies
             {
-                dest = 15;
+                dest = Sc::Player::Id::Allies;
                 return true;
             }
         }
         else if ( currChar == 'P' ) // All players
         {
-            dest = 17;
+            dest = Sc::Player::Id::AllPlayers;
             return true;
         }
     }
@@ -2838,12 +2850,12 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     {
         if ( upperStr.compare(1, 12, "URRENTPLAYER") == 0 ) // Current player
         {
-            dest = 13;
+            dest = Sc::Player::Id::CurrentPlayer;
             return true;
         }
         else if ( upperStr[1] == 'P' ) // CP - Current player
         {
-            dest = 13;
+            dest = Sc::Player::Id::CurrentPlayer;
             return true;
         }
     }
@@ -2863,22 +2875,22 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     {
         if ( upperStr.compare(1, 13, "EUTRALPLAYERS") == 0 ) // Neutral players
         {
-            dest = 16;
+            dest = Sc::Player::Id::NeutralPlayers;
             return true;
         }
         else if ( upperStr.compare(1, 22, "ONALLIEDVICTORYPLAYERS") == 0 ) // Non-allied victory players
         {
-            dest = 26;
+            dest = Sc::Player::Id::NonAlliedVictoryPlayers;
             return true;
         }
         else if ( upperStr.compare(1, 3, "ONE") == 0 ) // None
         {
-            dest = 12;
+            dest = Sc::Player::Id::None;
             return true;
         }
         else if ( upperStr.compare(1, 11, "ONAVPLAYERS") == 0 ) // Non-allied victory players
         {
-            dest = 26;
+            dest = Sc::Player::Id::NonAlliedVictoryPlayers;
             return true;
         }
     }
@@ -2886,27 +2898,27 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     {
         if ( upperStr.compare(1, 13, "NKNOWN/UNUSED") == 0 ) // Unknown/unused
         {
-            dest = 12;
+            dest = Sc::Player::Id::None;
             return true;
         }
         else if ( upperStr.compare(1, 6, "NUSED1") == 0 ) // Unused 1
         {
-            dest = 22;
+            dest = Sc::Player::Id::Unused1;
             return true;
         }
         else if ( upperStr.compare(1, 6, "NUSED2") == 0 ) // Unused 2
         {
-            dest = 23;
+            dest = Sc::Player::Id::Unused2;
             return true;
         }
         else if ( upperStr.compare(1, 6, "NUSED3") == 0 ) // Unused 3
         {
-            dest = 24;
+            dest = Sc::Player::Id::Unused3;
             return true;
         }
         else if ( upperStr.compare(1, 6, "NUSED4") == 0 ) // Unused 4
         {
-            dest = 25;
+            dest = Sc::Player::Id::Unused4;
             return true;
         }
     }
@@ -2957,7 +2969,7 @@ bool TextTrigCompiler::ParsePlayer(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
@@ -2965,7 +2977,7 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & 
         str = stringContents[nextString];
         nextString ++;
     }
-    else if ( ParseByte(text, dest, pos, end) )
+    else if ( parseByte(text, dest, pos, end) )
         return true;
     else
         str = text.substr(pos, end-pos);
@@ -3028,15 +3040,15 @@ bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::ParseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
-    bool success = ParseSwitch(text, stringContents, nextString, temp, pos, end);
+    bool success = parseSwitch(text, stringContents, nextString, temp, pos, end);
     dest = temp;
     return success;
 }
 
-bool TextTrigCompiler::ParseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     if ( text.compare(pos, end-pos, "NOSCRIPT") == 0 )
     {
@@ -3106,7 +3118,7 @@ bool TextTrigCompiler::ParseScript(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-Chk::Condition::Type TextTrigCompiler::ExtendedToRegularCID(Chk::Condition::VirtualType conditionType)
+Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condition::VirtualType conditionType)
 {
     switch ( conditionType )
     {
@@ -3118,7 +3130,7 @@ Chk::Condition::Type TextTrigCompiler::ExtendedToRegularCID(Chk::Condition::Virt
     return (Chk::Condition::Type)conditionType;
 }
 
-Chk::Action::Type TextTrigCompiler::ExtendedToRegularAID(Chk::Action::VirtualType actionType)
+Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::VirtualType actionType)
 {
     switch ( actionType )
     {
@@ -3130,7 +3142,7 @@ Chk::Action::Type TextTrigCompiler::ExtendedToRegularAID(Chk::Action::VirtualTyp
     return (Chk::Action::Type)actionType;
 }
 
-bool TextTrigCompiler::ParseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
     std::array<char, 12> comparison = {};
     copyUpperCaseNoSpace(comparison, text, stringContents, nextString, pos, end);
@@ -3148,7 +3160,7 @@ bool TextTrigCompiler::ParseNumericComparison(const std::string & text, std::vec
     return false;
 }
 
-bool TextTrigCompiler::ParseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
 {
     std::array<char, 8> switchState = {};
     copyUpperCaseNoSpace(switchState, text, stringContents, nextString, pos, end);
@@ -3168,7 +3180,7 @@ bool TextTrigCompiler::ParseSwitchState(const std::string & text, std::vector<Ra
     return false;
 }
 
-bool TextTrigCompiler::ParseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // All
 {
     std::array<char, 4> specialUnitAmount = {};
@@ -3176,14 +3188,14 @@ bool TextTrigCompiler::ParseSpecialUnitAmount(const std::string & text, std::vec
 
     if ( strcmp(&specialUnitAmount[0], "ALL") == 0 )
     {
-        dest = 0;
+        dest = Chk::Action::NumUnits::All;
         return true;
     }
     else
         return false;
 }
 
-bool TextTrigCompiler::ParseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
     // Ally, Enemy, Allied Victory
 {
     std::array<char, 16> allianceStatus = {};
@@ -3192,17 +3204,17 @@ bool TextTrigCompiler::ParseAllianceStatus(const std::string & text, std::vector
     switch ( allianceStatus[0] )
     {
         case 'A':
-            if      ( strcmp(&allianceStatus[1], "LLIEDVICTORY") == 0 ) { dest = 2; return true; }
-            else if ( strcmp(&allianceStatus[1], "LLY"         ) == 0 ) { dest = 1; return true; }
+            if      ( strcmp(&allianceStatus[1], "LLIEDVICTORY") == 0 ) { dest = Chk::Action::AllianceStatus::AlliedVictory; return true; }
+            else if ( strcmp(&allianceStatus[1], "LLY"         ) == 0 ) { dest = Chk::Action::AllianceStatus::Ally; return true; }
             break;
         case 'E':
-            if ( strcmp(&allianceStatus[1], "NEMY") == 0 ) { dest = 0; return true; }
+            if ( strcmp(&allianceStatus[1], "NEMY") == 0 ) { dest = Chk::Action::AllianceStatus::Enemy; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
     std::array<char, 12> resourceType = {};
     copyUpperCaseNoSpace(resourceType, text, stringContents, nextString, pos, end);
@@ -3210,17 +3222,17 @@ bool TextTrigCompiler::ParseResourceType(const std::string & text, std::vector<R
     switch ( resourceType[0] )
     {
         case 'O':
-            if      ( strcmp(&resourceType[1], "RE"      ) == 0 ) { dest = 0; return true; }
-            else if ( strcmp(&resourceType[1], "REANDGAS") == 0 ) { dest = 2; return true; }
+            if      ( strcmp(&resourceType[1], "RE"      ) == 0 ) { dest = Chk::Trigger::ResourceType::Ore; return true; }
+            else if ( strcmp(&resourceType[1], "REANDGAS") == 0 ) { dest = Chk::Trigger::ResourceType::OreAndGas; return true; }
             break;
         case 'G':
-            if ( strcmp(&resourceType[1], "AS") == 0 ) { dest = 1; return true; }
+            if ( strcmp(&resourceType[1], "AS") == 0 ) { dest = Chk::Trigger::ResourceType::Gas; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
 {
     std::array<char, 20> scoreType = {};
     copyUpperCaseNoSpace(scoreType, text, stringContents, nextString, pos, end);
@@ -3228,30 +3240,30 @@ bool TextTrigCompiler::ParseScoreType(const std::string & text, std::vector<RawS
     switch ( scoreType[0] )
     {
         case 'B':
-            if ( strcmp(&scoreType[1], "UILDINGS") == 0 ) { dest = 2; return true; }
+            if ( strcmp(&scoreType[1], "UILDINGS") == 0 ) { dest = Chk::Trigger::ScoreType::Buildings; return true; }
             break;
         case 'C':
-            if ( strcmp(&scoreType[1], "USTOM") == 0 ) { dest = 7; return true; }
+            if ( strcmp(&scoreType[1], "USTOM") == 0 ) { dest = Chk::Trigger::ScoreType::Custom; return true; }
             break;
         case 'K':
-            if      ( strcmp(&scoreType[1], "ILLS"          ) == 0 ) { dest = 4; return true; }
-            else if ( strcmp(&scoreType[1], "ILLSANDRAZINGS") == 0 ) { dest = 6; return true; }
+            if      ( strcmp(&scoreType[1], "ILLS"          ) == 0 ) { dest = Chk::Trigger::ScoreType::Kills; return true; }
+            else if ( strcmp(&scoreType[1], "ILLSANDRAZINGS") == 0 ) { dest = Chk::Trigger::ScoreType::KillsAndRazings; return true; }
             break;
         case 'R':
-            if ( strcmp(&scoreType[1], "AZINGS") == 0 ) { dest = 5; return true; }
+            if ( strcmp(&scoreType[1], "AZINGS") == 0 ) { dest = Chk::Trigger::ScoreType::Razings; return true; }
             break;
         case 'T':
-            if ( strcmp(&scoreType[1], "OTAL") == 0 ) { dest = 0; return true; }
+            if ( strcmp(&scoreType[1], "OTAL") == 0 ) { dest = Chk::Trigger::ScoreType::Total; return true; }
             break;
         case 'U':
-            if      ( strcmp(&scoreType[1], "NITS"            ) == 0 ) { dest = 1; return true; }
-            else if ( strcmp(&scoreType[1], "NITSANDBUILDINGS") == 0 ) { dest = 3; return true; }
+            if      ( strcmp(&scoreType[1], "NITS"            ) == 0 ) { dest = Chk::Trigger::ScoreType::Units; return true; }
+            else if ( strcmp(&scoreType[1], "NITSANDBUILDINGS") == 0 ) { dest = Chk::Trigger::ScoreType::UnitsAndBuildings; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Always Display, Don't Always Display
 {
     std::array<char, 24> textDisplayFlag = {};
@@ -3269,7 +3281,7 @@ bool TextTrigCompiler::ParseTextDisplayFlag(const std::string & text, std::vecto
     return false;
 }
 
-bool TextTrigCompiler::ParseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Add, subtract, set to
 {
     std::array<char, 12> numericModifier = {};
@@ -3278,17 +3290,17 @@ bool TextTrigCompiler::ParseNumericModifier(const std::string & text, std::vecto
     switch ( numericModifier[0] )
     {
         case 'A':
-            if ( strcmp(&numericModifier[1], "DD") == 0 ) { dest = 8; return true; }
+            if ( strcmp(&numericModifier[1], "DD") == 0 ) { dest = Chk::Trigger::ValueModifier::Add; return true; }
             break;
         case 'S':
-            if      ( strcmp(&numericModifier[1], "ETTO"   ) == 0 ) { dest = 7; return true; }
-            else if ( strcmp(&numericModifier[1], "UBTRACT") == 0 ) { dest = 9; return true; }
+            if      ( strcmp(&numericModifier[1], "ETTO"   ) == 0 ) { dest = Chk::Trigger::ValueModifier::SetTo; return true; }
+            else if ( strcmp(&numericModifier[1], "UBTRACT") == 0 ) { dest = Chk::Trigger::ValueModifier::Subtract; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Set, clear, toggle, randomize
 {
     std::array<char, 10> switchMod = {};
@@ -3297,22 +3309,22 @@ bool TextTrigCompiler::ParseSwitchMod(const std::string & text, std::vector<RawS
     switch ( switchMod[0] )
     {
         case 'C':
-            if ( strcmp(&switchMod[1], "LEAR") == 0 ) { dest = 5; return true; }
+            if ( strcmp(&switchMod[1], "LEAR") == 0 ) { dest = Chk::Trigger::ValueModifier::Clear; return true; }
             break;
         case 'R':
-            if ( strcmp(&switchMod[1], "ANDOMIZE") == 0 ) { dest = 11; return true; }
+            if ( strcmp(&switchMod[1], "ANDOMIZE") == 0 ) { dest = Chk::Trigger::ValueModifier::Randomize; return true; }
             break;
         case 'S':
-            if ( strcmp(&switchMod[1], "ET") == 0 ) { dest = 4; return true; }
+            if ( strcmp(&switchMod[1], "ET") == 0 ) { dest = Chk::Trigger::ValueModifier::Set; return true; }
             break;
         case 'T':
-            if ( strcmp(&switchMod[1], "OGGLE") == 0 ) { dest = 6; return true; }
+            if ( strcmp(&switchMod[1], "OGGLE") == 0 ) { dest = Chk::Trigger::ValueModifier::Toggle; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Disable, Disabled, Enable, Enabled, Toggle
 {
     std::array<char, 12> stateMod = {};
@@ -3321,21 +3333,21 @@ bool TextTrigCompiler::ParseStateMod(const std::string & text, std::vector<RawSt
     switch ( stateMod[0] )
     {
         case 'D':
-            if      ( strcmp(&stateMod[1], "ISABLE" ) == 0 ) { dest = 5; return true; }
-            else if ( strcmp(&stateMod[1], "ISABLED") == 0 ) { dest = 5; return true; }
+            if      ( strcmp(&stateMod[1], "ISABLE" ) == 0 ) { dest = Chk::Trigger::ValueModifier::Disable; return true; }
+            else if ( strcmp(&stateMod[1], "ISABLED") == 0 ) { dest = Chk::Trigger::ValueModifier::Disabled; return true; }
             break;
         case 'E':
-            if      ( strcmp(&stateMod[1], "NABLE" ) == 0 ) { dest = 4; return true; }
-            else if ( strcmp(&stateMod[1], "NABLED") == 0 ) { dest = 4; return true; }
+            if      ( strcmp(&stateMod[1], "NABLE" ) == 0 ) { dest = Chk::Trigger::ValueModifier::Enable; return true; }
+            else if ( strcmp(&stateMod[1], "NABLED") == 0 ) { dest = Chk::Trigger::ValueModifier::Enabled; return true; }
             break;
         case 'T':
-            if ( strcmp(&stateMod[1], "OGGLE") == 0 ) { dest = 6; return true; }
+            if ( strcmp(&stateMod[1], "OGGLE") == 0 ) { dest = Chk::Trigger::ValueModifier::Toggle; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
     // Attack, move, patrol
 {
     std::array<char, 8> order = {};
@@ -3344,22 +3356,22 @@ bool TextTrigCompiler::ParseOrder(const std::string & text, std::vector<RawStrin
     switch ( order[0] )
     {
         case 'A':
-            if ( strcmp(&order[1], "TTACK") == 0 ) { dest = 2; return true; }
+            if ( strcmp(&order[1], "TTACK") == 0 ) { dest = Chk::Action::Order::Attack; return true; }
             break;
         case 'M':
-            if ( strcmp(&order[1], "OVE") == 0 ) { dest = 0; return true; }
+            if ( strcmp(&order[1], "OVE") == 0 ) { dest = Chk::Action::Order::Move; return true; }
             break;
         case 'P':
-            if ( strcmp(&order[1], "ATROL") == 0 ) { dest = 1; return true; }
+            if ( strcmp(&order[1], "ATROL") == 0 ) { dest = Chk::Action::Order::Patrol; return true; }
             break;
     }
     return false;
 }
 
-bool TextTrigCompiler::ParseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
+bool TextTrigCompiler::parseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
 {
     u32 temp = 0;
-    if ( ParseLong(text, temp, pos, end) )
+    if ( parseLong(text, temp, pos, end) )
     {
         dest = (temp/4*4-deathTableOffset)/4;
         return true;
@@ -3367,23 +3379,23 @@ bool TextTrigCompiler::ParseMemoryAddress(const std::string & text, u32 & dest, 
     return false;
 }
 
-bool TextTrigCompiler::ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
-    bool success = ParseResourceType(text, stringContents, nextString, temp, pos, end);
+    bool success = parseResourceType(text, stringContents, nextString, temp, pos, end);
     dest = temp;
     return success;
 }
 
-bool TextTrigCompiler::ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
 {
     u8 temp = 0;
-    bool success = ParseScoreType(text, stringContents, nextString, temp, pos, end);
+    bool success = parseScoreType(text, stringContents, nextString, temp, pos, end);
     dest = temp;
     return success;
 }
 
-bool TextTrigCompiler::ParseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 33 )
@@ -3420,7 +3432,7 @@ bool TextTrigCompiler::ParseBinaryLong(const std::string & text, u32 & dest, siz
     return false;
 }
 
-bool TextTrigCompiler::ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 12 )
@@ -3452,7 +3464,7 @@ bool TextTrigCompiler::ParseLong(const std::string & text, u32 & dest, size_t po
     return false;
 }
 
-bool TextTrigCompiler::ParseShort(const std::string & text, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseShort(const std::string & text, u16 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 7 )
@@ -3484,7 +3496,7 @@ bool TextTrigCompiler::ParseShort(const std::string & text, u16 & dest, size_t p
     return false;
 }
 
-bool TextTrigCompiler::ParseByte(const std::string & text, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos, size_t end)
 {
     size_t size = end - pos;
     if ( size < 5 )
@@ -3518,7 +3530,7 @@ bool TextTrigCompiler::ParseByte(const std::string & text, u8 & dest, size_t pos
 
 // private
 
-bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
+bool TextTrigCompiler::prepLocationTable(ScenarioPtr map)
 {
     LocationTableNode locNode = {};
     locationTable.reserve(map->layers.numLocations()+1);
@@ -3551,7 +3563,7 @@ bool TextTrigCompiler::PrepLocationTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
+bool TextTrigCompiler::prepUnitTable(ScenarioPtr map)
 {
     UnitTableNode unitNode = {};
     u16 stringId = 0;
@@ -3569,11 +3581,11 @@ bool TextTrigCompiler::PrepUnitTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
+bool TextTrigCompiler::prepSwitchTable(ScenarioPtr map)
 {
     SwitchTableNode switchNode = {};
     size_t stringId = 0;
-    for ( size_t switchIndex=0; switchIndex<256; switchIndex++ )
+    for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
         size_t switchNameStringId = map->triggers.getSwitchNameStringId(switchIndex);
         if ( switchNameStringId != Chk::StringId::NoString )
@@ -3590,10 +3602,10 @@ bool TextTrigCompiler::PrepSwitchTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
+bool TextTrigCompiler::prepGroupTable(ScenarioPtr map)
 {
     GroupTableNode groupNode = {};
-    for ( u32 i=0; i<4; i++ )
+    for ( u32 i=0; i<Chk::TotalForces; i++ )
     {
         RawStringPtr forceName = map->strings.getForceName<RawString>((Chk::Force)i);
         if ( forceName != nullptr )
@@ -3606,7 +3618,7 @@ bool TextTrigCompiler::PrepGroupTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
+bool TextTrigCompiler::prepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
     std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
     u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
@@ -3643,10 +3655,10 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<
                 if ( actionType < Chk::Action::NumActionTypes )
                 {
                     if ( Chk::Action::actionUsesStringArg[actionType] && action.stringId > 0 )
-                        PrepTriggerString(*map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
+                        prepTriggerString(*map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
 
                     if ( Chk::Action::actionUsesSoundArg[actionType] && action.soundStringId > 0 )
-                        PrepTriggerString(*map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
+                        prepTriggerString(*map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
                 }
             }
         }
@@ -3655,7 +3667,7 @@ bool TextTrigCompiler::PrepStringTable(ScenarioPtr map, std::unordered_multimap<
     return true;
 }
 
-void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
+void TextTrigCompiler::prepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
     RawStringPtr rawString = scenario.strings.getString<RawString>(stringId, scope);
     if ( rawString != nullptr )
@@ -3689,7 +3701,7 @@ void TextTrigCompiler::PrepTriggerString(Scenario & scenario, std::unordered_mul
     }
 }
 
-bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
+bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
 {
     std::string aiName;
     size_t numScripts = scData.ai.numEntries();
@@ -3703,7 +3715,7 @@ bool TextTrigCompiler::PrepScriptTable(Sc::Data & scData)
     return true;
 }
 
-bool TextTrigCompiler::BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error)
+bool TextTrigCompiler::buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error)
 {
     auto strBackup = scenario->strings.backup();
     std::deque<Chk::TriggerPtr> replacedTriggers = scenario->triggers.replaceRange(trigIndexBegin, trigIndexEnd, triggers);

@@ -833,7 +833,7 @@ namespace Chk {
             Enabled = 4,
             Set = 4,
             Disable = 5,
-            Diabled = 5,
+            Disabled = 5,
             Clear = 5,
             Toggle = 6,
             SetTo = 7,

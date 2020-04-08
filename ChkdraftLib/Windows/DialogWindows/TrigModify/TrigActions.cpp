@@ -60,21 +60,21 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( trig != nullptr && ttg.LoadScenario(CM) )
+    if ( trig != nullptr && ttg.loadScenario(CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
             Chk::Action & action = trig->action(y);
             if ( action.actionType > Chk::Action::Type::NoAction && action.actionType <= Chk::Action::Type::LastAction )
             {
-                gridActions.item(1, y).SetText(ttg.GetActionName(action.actionType));
+                gridActions.item(1, y).SetText(ttg.getActionName(action.actionType));
                 for ( u8 x = 0; x<Chk::Action::MaxArguments; x++ )
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(action.actionType, x);
                     if ( argument.type != Chk::Action::ArgType::NoType )
                     {
                         gridActions.item(x + 2, y).SetDisabled(false);
-                        gridActions.item(x + 2, y).SetText(ttg.GetActionArgument(action, argument));
+                        gridActions.item(x + 2, y).SetText(ttg.getActionArgument(action, argument));
                     }
                     else
                     {
@@ -364,7 +364,7 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newTe
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
-    if ( ttc.ParseActionName(newText, newType) || ttc.ParseActionName(suggestions.Take(), newType) )
+    if ( ttc.parseActionName(newText, newType) || ttc.parseActionName(suggestions.Take(), newType) )
     {
         if ( trig != nullptr )
         {
@@ -444,9 +444,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                     madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                        ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
                         (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                            ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
+                            ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
                 }
 
                 if ( newScriptNum != 0 )
@@ -459,9 +459,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             {
                 Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
                 madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.ParseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                    ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
                     (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.ParseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
+                        ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
             }
 
             if ( madeChange )
@@ -527,9 +527,9 @@ void TrigActionsWindow::DrawSelectedAction()
             {
                 u8 actionNum = (u8)focusedY;
                 TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
-                ttg.LoadScenario(CM);
+                ttg.loadScenario(CM);
                 ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, &(*trig), ttg);
-                ttg.ClearScenario();
+                ttg.clearScenario();
 
                 UINT width = 0, height = 0;
                 GetStringDrawSize(hDC, width, height, str);

@@ -25,13 +25,13 @@ TextTrigGenerator::~TextTrigGenerator()
 
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string & trigString)
+bool TextTrigGenerator::generateTextTrigs(ScenarioPtr map, std::string & trigString)
 {
     logger.info() << "Starting text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     if ( map != nullptr &&
-        LoadScenario(map, true, false) &&
-        BuildTextTrigs(map, trigString) )
+        loadScenario(map, true, false) &&
+        buildTextTrigs(map, trigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -40,24 +40,24 @@ bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, std::string & trigStr
     return false;
 }
 
-bool TextTrigGenerator::GenerateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString)
+bool TextTrigGenerator::generateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString)
 {
     if ( map != nullptr )
     {
         Chk::TriggerPtr trig = map->triggers.getTrigger(trigIndex);
         if ( trig != nullptr )
-            return LoadScenario(map, true, false) && BuildTextTrig(*trig, trigString);
+            return loadScenario(map, true, false) && buildTextTrig(*trig, trigString);
     }
     return false;
 }
 
-bool TextTrigGenerator::LoadScenario(ScenarioPtr map)
+bool TextTrigGenerator::loadScenario(ScenarioPtr map)
 {
     return map != nullptr &&
-           LoadScenario(map, false, true);
+           loadScenario(map, false, true);
 }
 
-void TextTrigGenerator::ClearScenario()
+void TextTrigGenerator::clearScenario()
 {
     stringTable.clear();
     extendedStringTable.clear();
@@ -67,7 +67,7 @@ void TextTrigGenerator::ClearScenario()
     groupTable.clear();
 }
 
-std::string TextTrigGenerator::GetConditionName(Chk::Condition::Type conditionType)
+std::string TextTrigGenerator::getConditionName(Chk::Condition::Type conditionType)
 {
     if ( size_t(conditionType) < conditionTable.size() )
         return conditionTable[conditionType];
@@ -75,21 +75,21 @@ std::string TextTrigGenerator::GetConditionName(Chk::Condition::Type conditionTy
         return std::to_string((int)conditionType);
 }
 
-std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, size_t textArgumentIndex)
+std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex)
 {
     StringBuffer output;
     appendConditionArgument(output, condition, Chk::Condition::getTextArg(condition.conditionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::GetConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument)
+std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument)
 {
     StringBuffer output;
     appendConditionArgument(output, condition, argument);
     return output.str();
 }
 
-std::string TextTrigGenerator::GetActionName(Chk::Action::Type actionType)
+std::string TextTrigGenerator::getActionName(Chk::Action::Type actionType)
 {
     if ( size_t(actionType) < actionTable.size() )
         return actionTable[actionType];
@@ -97,21 +97,21 @@ std::string TextTrigGenerator::GetActionName(Chk::Action::Type actionType)
         return std::to_string((int)actionType);
 }
 
-std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, size_t textArgumentIndex)
+std::string TextTrigGenerator::getActionArgument(Chk::Action & action, size_t textArgumentIndex)
 {
     StringBuffer output;
     appendActionArgument(output, action, Chk::Action::getTextArg(action.actionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::GetActionArgument(Chk::Action & action, Chk::Action::Argument argument)
+std::string TextTrigGenerator::getActionArgument(Chk::Action & action, Chk::Action::Argument argument)
 {
     StringBuffer output;
     appendActionArgument(output, action, argument);
     return output.str();
 }
 
-ChkdString TextTrigGenerator::GetTrigLocation(size_t locationId)
+ChkdString TextTrigGenerator::getTrigLocation(size_t locationId)
 {
     if ( locationId > 0 && locationId < locationTable.size() )
         return SingleLineChkdString(locationTable[locationId]);
@@ -119,7 +119,7 @@ ChkdString TextTrigGenerator::GetTrigLocation(size_t locationId)
         return ChkdString(std::to_string(locationId));
 }
 
-ChkdString TextTrigGenerator::GetTrigString(size_t stringId)
+ChkdString TextTrigGenerator::getTrigString(size_t stringId)
 {
     if ( stringId == Chk::StringId::NoString )
         return SingleLineChkdString("No String");
@@ -134,15 +134,15 @@ ChkdString TextTrigGenerator::GetTrigString(size_t stringId)
         return ChkdString(std::to_string(stringId));
 }
 
-ChkdString TextTrigGenerator::GetTrigWav(size_t stringId)
+ChkdString TextTrigGenerator::getTrigWav(size_t stringId)
 {
     if ( stringId == 0 )
         return ChkdString("No WAV");
     else
-        return GetTrigString(stringId);
+        return getTrigString(stringId);
 }
 
-ChkdString TextTrigGenerator::GetTrigPlayer(size_t playerIndex)
+ChkdString TextTrigGenerator::getTrigPlayer(size_t playerIndex)
 {
     if ( playerIndex < groupTable.size() )
         return groupTable[playerIndex].c_str();
@@ -150,7 +150,7 @@ ChkdString TextTrigGenerator::GetTrigPlayer(size_t playerIndex)
         return ChkdString(std::to_string(playerIndex));
 }
 
-ChkdString TextTrigGenerator::GetTrigUnit(Sc::Unit::Type unitType)
+ChkdString TextTrigGenerator::getTrigUnit(Sc::Unit::Type unitType)
 {
     if ( unitType < unitTable.size() )
         return unitTable[unitType];
@@ -158,7 +158,7 @@ ChkdString TextTrigGenerator::GetTrigUnit(Sc::Unit::Type unitType)
         return ChkdString(std::to_string(unitType));
 }
 
-ChkdString TextTrigGenerator::GetTrigSwitch(size_t switchIndex)
+ChkdString TextTrigGenerator::getTrigSwitch(size_t switchIndex)
 {
     if ( switchIndex < switchTable.size() )
         return switchTable[switchIndex];
@@ -166,7 +166,7 @@ ChkdString TextTrigGenerator::GetTrigSwitch(size_t switchIndex)
         return ChkdString(std::to_string(switchIndex));
 }
 
-std::string TextTrigGenerator::GetTrigScoreType(Chk::Trigger::ScoreType scoreType)
+std::string TextTrigGenerator::getTrigScoreType(Chk::Trigger::ScoreType scoreType)
 {
     const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
     if ( scoreType < sizeof(scoreTypes) / sizeof(const char*) )
@@ -175,7 +175,7 @@ std::string TextTrigGenerator::GetTrigScoreType(Chk::Trigger::ScoreType scoreTyp
         return std::to_string((int)scoreType);
 }
 
-std::string TextTrigGenerator::GetTrigResourceType(Chk::Trigger::ResourceType resourceType)
+std::string TextTrigGenerator::getTrigResourceType(Chk::Trigger::ResourceType resourceType)
 {
     const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
     if ( resourceType < sizeof(resourceTypes) / sizeof(const char*) )
@@ -184,7 +184,7 @@ std::string TextTrigGenerator::GetTrigResourceType(Chk::Trigger::ResourceType re
         return std::to_string((int)resourceType);
 }
 
-std::string TextTrigGenerator::GetTrigOrder(Chk::Action::Order order)
+std::string TextTrigGenerator::getTrigOrder(Chk::Action::Order order)
 {
     const char* orderTypes[] = { "move", "patrol", "attack" };
     if ( order < sizeof(orderTypes) / sizeof(const char*) )
@@ -193,7 +193,7 @@ std::string TextTrigGenerator::GetTrigOrder(Chk::Action::Order order)
         return std::to_string((int)order);
 }
 
-std::string TextTrigGenerator::GetTrigStateModifier(Chk::Trigger::ValueModifier stateModifier)
+std::string TextTrigGenerator::getTrigStateModifier(Chk::Trigger::ValueModifier stateModifier)
 {
     const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
     if ( stateModifier < sizeof(stateModifiers) / sizeof(const char*) )
@@ -202,7 +202,7 @@ std::string TextTrigGenerator::GetTrigStateModifier(Chk::Trigger::ValueModifier 
         return std::to_string((int)stateModifier);
 }
 
-std::string TextTrigGenerator::GetTrigSwitchState(Chk::Trigger::ValueModifier switchState)
+std::string TextTrigGenerator::getTrigSwitchState(Chk::Trigger::ValueModifier switchState)
 {
     const char* switchStates[] = { "0", "1", "Set", "Cleared" };
     if ( switchState < sizeof(switchStates) / sizeof(const char*) )
@@ -211,7 +211,7 @@ std::string TextTrigGenerator::GetTrigSwitchState(Chk::Trigger::ValueModifier sw
         return std::to_string((int)switchState);
 }
 
-std::string TextTrigGenerator::GetTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier)
+std::string TextTrigGenerator::getTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier)
 {
     const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
     if ( switchModifier < sizeof(switchModifiers) / sizeof(const char*) )
@@ -220,7 +220,7 @@ std::string TextTrigGenerator::GetTrigSwitchModifier(Chk::Trigger::ValueModifier
         return std::to_string((int)switchModifier);
 }
 
-std::string TextTrigGenerator::GetTrigAllyState(Chk::Action::AllianceStatus allyState)
+std::string TextTrigGenerator::getTrigAllyState(Chk::Action::AllianceStatus allyState)
 {
     const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
     if ( allyState < sizeof(allyStates) / sizeof(const char*) )
@@ -229,7 +229,7 @@ std::string TextTrigGenerator::GetTrigAllyState(Chk::Action::AllianceStatus ally
         return std::to_string(allyState);
 }
 
-std::string TextTrigGenerator::GetTrigNumericComparison(Chk::Condition::Comparison numericComparison)
+std::string TextTrigGenerator::getTrigNumericComparison(Chk::Condition::Comparison numericComparison)
 {
     const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
     if ( numericComparison < sizeof(numericComparisons) / sizeof(const char*) )
@@ -238,7 +238,7 @@ std::string TextTrigGenerator::GetTrigNumericComparison(Chk::Condition::Comparis
         return std::to_string((int)numericComparison);
 }
 
-std::string TextTrigGenerator::GetTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier)
+std::string TextTrigGenerator::getTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier)
 {
     const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
     if ( numericModifier < sizeof(numericModifiers) / sizeof(const char*) )
@@ -247,7 +247,7 @@ std::string TextTrigGenerator::GetTrigNumericModifier(Chk::Trigger::ValueModifie
         return std::to_string((int)numericModifier);
 }
 
-std::string TextTrigGenerator::GetTrigScript(Sc::Ai::ScriptId scriptId)
+std::string TextTrigGenerator::getTrigScript(Sc::Ai::ScriptId scriptId)
 {
     if ( scriptId == Sc::Ai::ScriptId::NoScript )
         return std::string("No Script");
@@ -259,7 +259,7 @@ std::string TextTrigGenerator::GetTrigScript(Sc::Ai::ScriptId scriptId)
     return std::string(script);
 }
 
-std::string TextTrigGenerator::GetTrigNumUnits(Chk::Action::NumUnits numUnits)
+std::string TextTrigGenerator::getTrigNumUnits(Chk::Action::NumUnits numUnits)
 {
     if ( numUnits == 0 )
         return std::string("All");
@@ -267,12 +267,12 @@ std::string TextTrigGenerator::GetTrigNumUnits(Chk::Action::NumUnits numUnits)
         return std::to_string(numUnits);
 }
 
-std::string TextTrigGenerator::GetTrigNumber(u32 number)
+std::string TextTrigGenerator::getTrigNumber(u32 number)
 {
     return std::to_string(number);
 }
 
-std::string TextTrigGenerator::GetTrigTextFlags(Chk::Action::Flags textFlags)
+std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags)
 {
     const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
     if      ( (textFlags&Chk::Action::Flags::AlwaysDisplay) == 0 )
@@ -285,20 +285,20 @@ std::string TextTrigGenerator::GetTrigTextFlags(Chk::Action::Flags textFlags)
 
 // protected
 
-bool TextTrigGenerator::LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::loadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
 {
     return map != nullptr &&
-           PrepConditionTable() &&
-           PrepActionTable() &&
-           PrepLocationTable(map, quoteArgs) &&
-           PrepUnitTable(map, quoteArgs, useCustomNames) &&
-           PrepSwitchTable(map, quoteArgs) &&
-           PrepGroupTable(map, quoteArgs) &&
-           PrepScriptTable(map, quoteArgs) &&
-           PrepStringTable(map, quoteArgs);
+           prepConditionTable() &&
+           prepActionTable() &&
+           prepLocationTable(map, quoteArgs) &&
+           prepUnitTable(map, quoteArgs, useCustomNames) &&
+           prepSwitchTable(map, quoteArgs) &&
+           prepGroupTable(map, quoteArgs) &&
+           prepScriptTable(map, quoteArgs) &&
+           prepStringTable(map, quoteArgs);
 }
 
-bool TextTrigGenerator::CorrectLineEndings(StringBuffer & buf)
+bool TextTrigGenerator::correctLineEndings(StringBuffer & buf)
 {
     char curr;
     size_t pos = 0;
@@ -330,23 +330,23 @@ bool TextTrigGenerator::CorrectLineEndings(StringBuffer & buf)
     return true;
 }
 
-bool TextTrigGenerator::BuildTextTrigs(ScenarioPtr scenario, std::string & trigString)
+bool TextTrigGenerator::buildTextTrigs(ScenarioPtr scenario, std::string & trigString)
 {
     StringBuffer output;
     appendTriggers(output, scenario);
-    CorrectLineEndings(output);
+    correctLineEndings(output);
     trigString = output.str();
-    ClearScenario();
+    clearScenario();
     return true;
 }
 
-bool TextTrigGenerator::BuildTextTrig(Chk::Trigger & trigger, std::string & trigString)
+bool TextTrigGenerator::buildTextTrig(Chk::Trigger & trigger, std::string & trigString)
 {
     StringBuffer output;
     appendTrigger(output, trigger);
-    CorrectLineEndings(output);
+    correctLineEndings(output);
     trigString += output.str();
-    ClearScenario();
+    clearScenario();
     return true;
 }
 
@@ -777,7 +777,7 @@ inline void TextTrigGenerator::appendTextFlags(StringBuffer & output, const Chk:
 
 // private
 
-bool TextTrigGenerator::PrepConditionTable()
+bool TextTrigGenerator::prepConditionTable()
 {
     if ( goodConditionTable )
         return true;
@@ -800,7 +800,7 @@ bool TextTrigGenerator::PrepConditionTable()
     return true;
 }
 
-bool TextTrigGenerator::PrepActionTable()
+bool TextTrigGenerator::prepActionTable()
 {
     if ( goodActionTable )
         return true;
@@ -831,7 +831,7 @@ bool TextTrigGenerator::PrepActionTable()
     return true;
 }
 
-bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepLocationTable(ScenarioPtr map, bool quoteArgs)
 {
     locationTable.clear();
     locationTable.push_back(EscString("No Location"));
@@ -867,7 +867,7 @@ bool TextTrigGenerator::PrepLocationTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::prepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
 {
     unitTable.clear();
 
@@ -897,7 +897,7 @@ bool TextTrigGenerator::PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
     return true;
 }
 
-bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepSwitchTable(ScenarioPtr map, bool quoteArgs)
 {
     switchTable.clear();
 
@@ -922,7 +922,7 @@ bool TextTrigGenerator::PrepSwitchTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
 {
     groupTable.clear();
 
@@ -994,7 +994,7 @@ bool TextTrigGenerator::PrepGroupTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepScriptTable(ScenarioPtr map, bool quoteArgs)
 {
     scriptTable.clear();
 
@@ -1036,7 +1036,7 @@ bool TextTrigGenerator::PrepScriptTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::PrepStringTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepStringTable(ScenarioPtr map, bool quoteArgs)
 {
     stringTable.clear();
     extendedStringTable.clear();

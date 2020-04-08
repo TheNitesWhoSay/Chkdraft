@@ -51,89 +51,104 @@ class TextTrigCompiler
             Strings = StandardStrings | ExtendedStrings,
             All = u32_max
         });
+        enum_t(Expecting, u32, {
+            Trigger_EndOfText = 0,
+            Player_EndOfPlayers = 1,
+            OpenTriggerBody = 2,
+            SectionStart_EndOfTrigger = 3,
+            ConditionStart_NonConditionSectionStart = 4,
+            ConditionArg_EndOfCondition = 5,
+            NonConditionSectionStart_EndOfTrigger = 6,
+            ActionStart_FlagSectionStart_EndOfTrigger = 7,
+            ActionArg_EndOfAction = 8,
+            FlagSectionStart_EndOfTrigger = 9,
+            ExecutionFlags = 10,
+            EndOfTrigger = 11,
+            Last = 12
+        });
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
         virtual ~TextTrigCompiler();
-        bool CompileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
-        bool CompileTrigger(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
+        bool compileTriggers(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
+        bool compileTrigger(std::string & trigText, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
         // Attempts to compile the condition argument at argIndex into the given condition
-        bool ParseConditionName(std::string text, Chk::Condition::Type & conditionType);
-        bool ParseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
-        bool ParseActionName(std::string text, Chk::Action::Type & actionType);
-        bool ParseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
+        bool parseConditionName(std::string text, Chk::Condition::Type & conditionType);
+        bool parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
+        bool parseActionName(std::string text, Chk::Action::Type & actionType);
+        bool parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
 
 
     protected:
 
-        bool LoadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
-        void ClearCompiler(); // Clears data loaded for a run of the compiler
-        void CleanText(std::string & text, std::vector<RawString> & stringContents); // Remove spacing and standardize line endings
+        bool loadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
+        void clearCompiler(); // Clears data loaded for a run of the compiler
+        void cleanText(std::string & text, std::vector<RawString> & stringContents); // Remove spacing and standardize line endings
 
-        bool ParseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
-        inline bool ParsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, size_t & playerEnd, size_t & lineEnd);
-        inline bool ParsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+        bool parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<std::shared_ptr<Chk::Trigger>> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
+        inline bool parsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, size_t & playerEnd, size_t & lineEnd);
+        inline bool parsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
             size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argIndex, u32 & numConditions,
             Chk::Condition* & currCondition);
-        inline bool ParsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting, u32 & argIndex, size_t & argEnd,
+        inline bool parsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, u32 & argIndex, size_t & argEnd,
             Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionType);
-        inline bool ParsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+        inline bool parsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
             u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions,
             Chk::Action* & currAction);
-        inline bool ParsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+        inline bool parsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
             u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType);
-        inline bool ParsePartNine(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
-        inline bool ParsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting,
+        inline bool parsePartNine(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parsePartTen(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
             size_t & flagsEnd);
-        inline bool ParsePartEleven(std::string & text, std::stringstream & error, size_t & pos, u32 & line, u32 & expecting);
+        inline bool parsePartEleven(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
 
-        bool ParseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end); // Parse a player that the trigger is executed by
-        bool ParseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType);
-        bool ParseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags); // Find the equivilant conditionType
-        bool ParseActionName(const std::string & arg, Chk::Action::VirtualType & actionType);
-        bool ParseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
-        bool ParseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
-        bool ParseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error); // Parse an argument belonging to an action
-        bool ParseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags);
+        bool parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end); // Parse a player that the trigger is executed by
+        bool parseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType);
+        bool parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags); // Find the equivilant conditionType
+        bool parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType);
+        bool parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
+        bool parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
+        bool parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error); // Parse an argument belonging to an action
+        bool parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags);
 
-        bool ParseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
-        bool ParseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a location in the map by its string
-        bool ParseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end); // Get a unitID using a unit name
-        bool ParseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a wav in the map by its string, redundant? remove me?
-        bool ParsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Get a groupID using a group/player name
-        bool ParseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Find a switch in the map by name (or standard name)
-        bool ParseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a script by name
+        bool parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a given string (not an extended string) in the map, prepare to add it if necessary
+        bool parseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a location in the map by its string
+        bool parseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end); // Get a unitID using a unit name
+        bool parseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a wav in the map by its string, redundant? remove me?
+        bool parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Get a groupID using a group/player name
+        bool parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Find a switch in the map by name (or standard name)
+        bool parseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Find a script by name
 
-        bool ParseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Accelerator for 4-byte switches
+        bool parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end); // Accelerator for 4-byte switches
 
-        Chk::Condition::Type ExtendedToRegularCID(Chk::Condition::VirtualType extendedConditionType); // Returns the conditionType the extended condition is based on
-        Chk::Action::Type ExtendedToRegularAID(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
+        Chk::Condition::Type extendedToRegularConditionType(Chk::Condition::VirtualType extendedConditionType); // Returns the conditionType the extended condition is based on
+        Chk::Action::Type extendedToRegularActionType(Chk::Action::VirtualType extendedActionType); // Returns the actionType the extended action is based on
 
         // Static components
-        bool ParseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // At least, at most, exactly
-        bool ParseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // Set, cleared
-        bool ParseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // All
-        bool ParseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Ally, Enemy, Allied Victory
-        bool ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Ore, Gas, Ore and Gas
-        bool ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Total, Units, Buildings, Units and Buildings, Kill, Razings, Kill and Razing, Custom
-        bool ParseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Always Display, Don't Always Display
-        bool ParseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Add, subtract, set to
-        bool ParseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Set, clear, toggle, randomize
-        bool ParseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Disable, Enable, Toggle
-        bool ParseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Attack, move, patrol
-        bool ParseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset);
+        bool parseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // At least, at most, exactly
+        bool parseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end); // Set, cleared
+        bool parseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // All
+        bool parseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Ally, Enemy, Allied Victory
+        bool parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Ore, Gas, Ore and Gas
+        bool parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Total, Units, Buildings, Units and Buildings, Kill, Razings, Kill and Razing, Custom
+        bool parseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Always Display, Don't Always Display
+        bool parseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Add, subtract, set to
+        bool parseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Set, clear, toggle, randomize
+        bool parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Disable, Enable, Toggle
+        bool parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end); // Attack, move, patrol
+        bool parseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset);
 
-        bool ParseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte resource types
-        bool ParseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte score types
+        bool parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte resource types
+        bool parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end); // Accelerator for 2-byte score types
 
-        bool ParseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte binary int from the given position in the 
-        bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte int from the given position in the text
-        bool ParseShort(const std::string & text, u16 & dest, size_t pos, size_t end); // Grabs a 2-byte int from the given position in the text
-        bool ParseByte(const std::string & text, u8 & dest, size_t pos, size_t end); // Grabs a 1-byte int from the given position in the text
+        bool parseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte binary int from the given position in the 
+        bool parseLong(const std::string & text, u32 & dest, size_t pos, size_t end); // Grabs a 4-byte int from the given position in the text
+        bool parseShort(const std::string & text, u16 & dest, size_t pos, size_t end); // Grabs a 2-byte int from the given position in the text
+        bool parseByte(const std::string & text, u8 & dest, size_t pos, size_t end); // Grabs a 1-byte int from the given position in the text
 
         template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source);
         template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source, size_t pos, size_t end);
@@ -156,16 +171,16 @@ class TextTrigCompiler
         std::unordered_multimap<size_t, StringTableNodePtr> newExtendedStringTable; // Extended string hash map
         std::vector<StringTableNodePtr> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
 
-        bool PrepLocationTable(ScenarioPtr map); // Fills locationTable
-        bool PrepUnitTable(ScenarioPtr map); // Fills unitTable
-        bool PrepSwitchTable(ScenarioPtr map); // Fills switchTable
-        bool PrepGroupTable(ScenarioPtr map); // Fills groupTable
-        bool PrepScriptTable(Sc::Data & scData); // Fills scriptTable
-        bool PrepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
-        void PrepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
-        bool PrepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
+        bool prepLocationTable(ScenarioPtr map); // Fills locationTable
+        bool prepUnitTable(ScenarioPtr map); // Fills unitTable
+        bool prepSwitchTable(ScenarioPtr map); // Fills switchTable
+        bool prepGroupTable(ScenarioPtr map); // Fills groupTable
+        bool prepScriptTable(Sc::Data & scData); // Fills scriptTable
+        bool prepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
+        void prepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+        bool prepExtendedStringTable(ScenarioPtr map); // Fills extendedStringUsed and extendedStringTable
 
-        bool BuildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error); // Builds the new TRIG and STR sections
+        bool buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error); // Builds the new TRIG and STR sections
 };
 
 // Returns the position of the next unescaped quote, pos must be greater than the position of the string's open quote, returns npos on failure

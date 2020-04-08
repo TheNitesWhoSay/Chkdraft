@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( textTrigs.GenerateTextTrigs(CM, trigString) )
+    if ( textTrigs.generateTextTrigs(CM, trigString) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
@@ -152,7 +152,7 @@ bool TextTrigWindow::CompileEditText(ScenarioPtr map)
         if ( editControl.GetWinText(trigText) )
         {
             TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.CompileTriggers(trigText, map, chkd.scData, 0, map->triggers.numTriggers()) )
+            if ( compiler.compileTriggers(trigText, map, chkd.scData, 0, map->triggers.numTriggers()) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

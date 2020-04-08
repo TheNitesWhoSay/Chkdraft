@@ -17,49 +17,49 @@ class TextTrigGenerator
         virtual ~TextTrigGenerator();
 
         // Places text trigs representative of the given TRIG section in trigString if successful
-        bool GenerateTextTrigs(ScenarioPtr map, std::string & trigString);
+        bool generateTextTrigs(ScenarioPtr map, std::string & trigString);
 
         // Places text trigs representative of the given trigger in trigString if successful
-        bool GenerateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString);
+        bool generateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString);
         
-        bool LoadScenario(ScenarioPtr map); // Loads data about the given scenario for use outside text trigs
+        bool loadScenario(ScenarioPtr map); // Loads data about the given scenario for use outside text trigs
 
-        void ClearScenario(); // Clears loaded scenario data
+        void clearScenario(); // Clears loaded scenario data
 
-        std::string GetConditionName(Chk::Condition::Type conditionType);
-        std::string GetConditionArgument(Chk::Condition & condition, size_t textArgumentIndex);
-        std::string GetConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument);
-        std::string GetActionName(Chk::Action::Type actionType);
-        std::string GetActionArgument(Chk::Action & action, size_t textArgumentIndex);
-        std::string GetActionArgument(Chk::Action & action, Chk::Action::Argument argument);
+        std::string getConditionName(Chk::Condition::Type conditionType);
+        std::string getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex);
+        std::string getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument);
+        std::string getActionName(Chk::Action::Type actionType);
+        std::string getActionArgument(Chk::Action & action, size_t textArgumentIndex);
+        std::string getActionArgument(Chk::Action & action, Chk::Action::Argument argument);
 
-        ChkdString GetTrigLocation(size_t locationId);
-        ChkdString GetTrigString(size_t stringId);
-        ChkdString GetTrigWav(size_t stringId);
-        ChkdString GetTrigPlayer(size_t playerIndex);
-        ChkdString GetTrigUnit(Sc::Unit::Type unitType);
-        ChkdString GetTrigSwitch(size_t switchIndex);
-        std::string GetTrigScoreType(Chk::Trigger::ScoreType scoreType);
-        std::string GetTrigResourceType(Chk::Trigger::ResourceType resourceType);
-        std::string GetTrigOrder(Chk::Action::Order order);
-        std::string GetTrigStateModifier(Chk::Trigger::ValueModifier stateModifier);
-        std::string GetTrigSwitchState(Chk::Trigger::ValueModifier switchState);
-        std::string GetTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier);
-        std::string GetTrigAllyState(Chk::Action::AllianceStatus allyState);
-        std::string GetTrigNumericComparison(Chk::Condition::Comparison numericComparison);
-        std::string GetTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier);
-        std::string GetTrigScript(Sc::Ai::ScriptId scriptId);
-        std::string GetTrigNumUnits(Chk::Action::NumUnits numUnits);
-        std::string GetTrigNumber(u32 number);
-        std::string GetTrigTextFlags(Chk::Action::Flags textFlags);
+        ChkdString getTrigLocation(size_t locationId);
+        ChkdString getTrigString(size_t stringId);
+        ChkdString getTrigWav(size_t stringId);
+        ChkdString getTrigPlayer(size_t playerIndex);
+        ChkdString getTrigUnit(Sc::Unit::Type unitType);
+        ChkdString getTrigSwitch(size_t switchIndex);
+        std::string getTrigScoreType(Chk::Trigger::ScoreType scoreType);
+        std::string getTrigResourceType(Chk::Trigger::ResourceType resourceType);
+        std::string getTrigOrder(Chk::Action::Order order);
+        std::string getTrigStateModifier(Chk::Trigger::ValueModifier stateModifier);
+        std::string getTrigSwitchState(Chk::Trigger::ValueModifier switchState);
+        std::string getTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier);
+        std::string getTrigAllyState(Chk::Action::AllianceStatus allyState);
+        std::string getTrigNumericComparison(Chk::Condition::Comparison numericComparison);
+        std::string getTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier);
+        std::string getTrigScript(Sc::Ai::ScriptId scriptId);
+        std::string getTrigNumUnits(Chk::Action::NumUnits numUnits);
+        std::string getTrigNumber(u32 number);
+        std::string getTrigTextFlags(Chk::Action::Flags textFlags);
     
     protected:
 
-        bool LoadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
-        bool CorrectLineEndings(StringBuffer & buf); // Corrects any improperly formatted line endings
+        bool loadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
+        bool correctLineEndings(StringBuffer & buf); // Corrects any improperly formatted line endings
         
-        bool BuildTextTrigs(ScenarioPtr scenario, std::string & trigString);
-        bool BuildTextTrig(Chk::Trigger & trigger, std::string & trigString);
+        bool buildTextTrigs(ScenarioPtr scenario, std::string & trigString);
+        bool buildTextTrig(Chk::Trigger & trigger, std::string & trigString);
         inline void appendTriggers(StringBuffer & output, ScenarioPtr scenario);
         inline void appendTrigger(StringBuffer & output, Chk::Trigger & trigger);
         inline void appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument);
@@ -112,14 +112,14 @@ class TextTrigGenerator
         bool goodConditionTable;
         bool goodActionTable;
 
-        bool PrepConditionTable(); // Fills conditionTable
-        bool PrepActionTable(); // Fills actionTable
-        bool PrepLocationTable(ScenarioPtr map, bool quoteArgs); // Fills locationTable
-        bool PrepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames); // Fills unitTable
-        bool PrepSwitchTable(ScenarioPtr map, bool quoteArgs); // Fills switchTable
-        bool PrepGroupTable(ScenarioPtr map, bool quoteArgs); // Fills groupTable
-        bool PrepScriptTable(ScenarioPtr map, bool quoteArgs); // Fills scriptTable
-        bool PrepStringTable(ScenarioPtr map, bool quoteArgs); // Fills stringTable
+        bool prepConditionTable(); // Fills conditionTable
+        bool prepActionTable(); // Fills actionTable
+        bool prepLocationTable(ScenarioPtr map, bool quoteArgs); // Fills locationTable
+        bool prepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames); // Fills unitTable
+        bool prepSwitchTable(ScenarioPtr map, bool quoteArgs); // Fills switchTable
+        bool prepGroupTable(ScenarioPtr map, bool quoteArgs); // Fills groupTable
+        bool prepScriptTable(ScenarioPtr map, bool quoteArgs); // Fills scriptTable
+        bool prepStringTable(ScenarioPtr map, bool quoteArgs); // Fills stringTable
 };
 
 #endif

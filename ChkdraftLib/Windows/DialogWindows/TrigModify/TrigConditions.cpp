@@ -56,7 +56,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( trig != nullptr && ttg.LoadScenario(CM) )
+    if ( trig != nullptr && ttg.loadScenario(CM) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -64,14 +64,14 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
             if ( condition.conditionType > Chk::Condition::Type::NoCondition && condition.conditionType < Chk::Condition::NumConditionTypes )
             {
                 gridConditions.item(1, y).SetDisabled(false);
-                gridConditions.item(1, y).SetText(ttg.GetConditionName(condition.conditionType));
+                gridConditions.item(1, y).SetText(ttg.getConditionName(condition.conditionType));
                 for ( u8 x=0; x<Chk::Condition::MaxArguments; x++ )
                 {
                     Chk::Condition::Argument argument = Chk::Condition::getClassicArg(condition.conditionType, x);
                     if ( argument.type != Chk::Condition::ArgType::NoType )
                     {
                         gridConditions.item(x + 2, y).SetDisabled(false);
-                        gridConditions.item(x+2, y).SetText(ttg.GetConditionArgument(condition, argument));
+                        gridConditions.item(x+2, y).SetText(ttg.getConditionArgument(condition, argument));
                     }
                     else
                     {
@@ -294,7 +294,7 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Condition::Type conditionType = Chk::Condition::Type::NoCondition;
-    if ( ttc.ParseConditionName(newText, conditionType) || ttc.ParseConditionName(suggestions.Take(), conditionType) )
+    if ( ttc.parseConditionName(newText, conditionType) || ttc.parseConditionName(suggestions.Take(), conditionType) )
     {
         if ( trig != nullptr )
         {
@@ -324,9 +324,9 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     {
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig->condition(conditionNum).conditionType, argNum);
         if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
-               ttc.ParseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, hasSuggestion) ) ||
+               ttc.parseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, hasSuggestion) ) ||
              ( hasSuggestion && ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
-               ttc.ParseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, false) ) )
+               ttc.parseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, false) ) )
         {
             if ( refreshImmediately )
                 RefreshConditionAreas();
@@ -389,9 +389,9 @@ void TrigConditionsWindow::DrawSelectedCondition()
                 u8 conditionNum = (u8)focusedY;
                 TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
                 std::string str;
-                ttg.LoadScenario(CM);
+                ttg.loadScenario(CM);
                 str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, &(*trig), ttg);
-                ttg.ClearScenario();
+                ttg.clearScenario();
 
                 UINT width = 0, height = 0;
                 GetStringDrawSize(hDC, width, height, str);

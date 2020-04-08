@@ -58,7 +58,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     trigText.clear();
-    if ( textTrigs.GenerateTextTrigs(CM, trigIndex, trigText) )
+    if ( textTrigs.generateTextTrigs(CM, trigIndex, trigText) )
         editText.SetText(trigText);
     else
         mb(trigIndex, "Failed to generate text triggers.");
@@ -159,7 +159,7 @@ bool TrigModifyTextWindow::CompileEditText(std::string & newText)
         if ( trigIndex < CM->triggers.numTriggers() )
         {
             TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.CompileTrigger(newText, CM, chkd.scData, trigIndex) )
+            if ( compiler.compileTrigger(newText, CM, chkd.scData, trigIndex) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");
