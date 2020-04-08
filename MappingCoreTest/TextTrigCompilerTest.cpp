@@ -14,14 +14,14 @@ void TestCircularity(Sc::Data & scData, MapFile mapFile)
 
     TextTrigGenerator ttg(true, 0x0058A364);
     std::string textTrigs;
-    EXPECT_TRUE(ttg.GenerateTextTrigs(scenarioPtr, textTrigs));
+    EXPECT_TRUE(ttg.generateTextTrigs(scenarioPtr, textTrigs));
 
     std::string preCompileTextTrigs = textTrigs;
 
     TextTrigCompiler ttc(true, 0x0058A364);
-    ttc.CompileTriggers(textTrigs, scenarioPtr, scData, 0, mapFile.triggers.numTriggers());
+    ttc.compileTriggers(textTrigs, scenarioPtr, scData, 0, mapFile.triggers.numTriggers());
 
-    EXPECT_TRUE(ttg.GenerateTextTrigs(scenarioPtr, textTrigs));
+    EXPECT_TRUE(ttg.generateTextTrigs(scenarioPtr, textTrigs));
     EXPECT_EQ(0, preCompileTextTrigs.compare(textTrigs));
 }
 
