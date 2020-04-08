@@ -25,16 +25,16 @@ bool hasExtension(const std::string & systemFilePath, const std::string & extens
         return systemFilePath.find_last_of(systemExtensionSeparator + extension) == systemFilePath.length() - extension.length() - 1;
 }
 
-std::string GetSystemFileSeparator()
+std::string getSystemFileSeparator()
 {
     std::filesystem::path::value_type separatorChar = std::filesystem::path::preferred_separator;
     icux::codepoint separatorArray[2] = {(icux::codepoint)separatorChar, icux::nullChar};
     return icux::toUtf8(icux::filestring(separatorArray));
 }
 
-std::string GetSystemFileName(const std::string & systemFilePath)
+std::string getSystemFileName(const std::string & systemFilePath)
 {
-    const std::string systemFileSeparator = GetSystemFileSeparator();
+    const std::string systemFileSeparator = getSystemFileSeparator();
     size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
     if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length()-systemFileSeparator.length() )
         return systemFilePath.substr(lastSeparator+systemFileSeparator.length(), systemFilePath.length());
@@ -42,22 +42,22 @@ std::string GetSystemFileName(const std::string & systemFilePath)
         return systemFilePath;
 }
 
-std::string GetSystemFileExtension(const std::string & systemFilePath)
+std::string getSystemFileExtension(const std::string & systemFilePath)
 {
     const std::string systemExtensionSeparator = ".";
     size_t lastExtensionSeparator = systemFilePath.find_last_of(systemExtensionSeparator);
     if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < systemFilePath.length()-systemExtensionSeparator.length() )
     {
-        size_t lastPathSeparator = systemFilePath.find_last_of(GetSystemFileSeparator());
+        size_t lastPathSeparator = systemFilePath.find_last_of(getSystemFileSeparator());
         if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
             return systemFilePath.substr(lastExtensionSeparator, systemFilePath.length() - lastExtensionSeparator); 
     }
     return "";
 }
 
-std::string GetSystemFileDirectory(const std::string & systemFilePath, bool includeTrailingSeparator)
+std::string getSystemFileDirectory(const std::string & systemFilePath, bool includeTrailingSeparator)
 {
-    const std::string systemFileSeparator = GetSystemFileSeparator();
+    const std::string systemFileSeparator = getSystemFileSeparator();
     size_t lastSeparator = systemFilePath.find_last_of(systemFileSeparator);
     if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length() )
     {
@@ -69,9 +69,9 @@ std::string GetSystemFileDirectory(const std::string & systemFilePath, bool incl
     return systemFilePath;
 }
 
-std::string MakeSystemFilePath(const std::string & systemDirectory, const std::string & fileName)
+std::string makeSystemFilePath(const std::string & systemDirectory, const std::string & fileName)
 {
-    const std::string systemFileSeparator = GetSystemFileSeparator();
+    const std::string systemFileSeparator = getSystemFileSeparator();
     size_t lastSeparator = systemDirectory.find_last_of(systemFileSeparator);
     if ( lastSeparator == systemDirectory.length() - systemFileSeparator.length() )
         return systemDirectory + fileName;
@@ -79,7 +79,7 @@ std::string MakeSystemFilePath(const std::string & systemDirectory, const std::s
         return systemDirectory + systemFileSeparator + fileName;
 }
 
-std::string MakeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension)
+std::string makeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension)
 {
     const std::string systemExtensionSeparator = ".";
     const bool extensionIncludesSeparator = extension.find_first_of(systemExtensionSeparator) == 0;
@@ -89,9 +89,9 @@ std::string MakeExtSystemFilePath(const std::string & systemFilePath, const std:
         return systemFilePath + systemExtensionSeparator + extension;
 }
 
-std::string MakeExtSystemFilePath(const std::string & systemDirectory, const std::string & fileName, const std::string & extension)
+std::string makeExtSystemFilePath(const std::string & systemDirectory, const std::string & fileName, const std::string & extension)
 {
-    const std::string systemFileSeparator = GetSystemFileSeparator();
+    const std::string systemFileSeparator = getSystemFileSeparator();
     const std::string systemExtensionSeparator = ".";
     size_t lastSeparator = systemDirectory.find_last_of(systemFileSeparator);
     const bool directoryIncludesSeparator = lastSeparator == systemDirectory.length() - systemFileSeparator.length();
@@ -112,14 +112,14 @@ std::string MakeExtSystemFilePath(const std::string & systemDirectory, const std
     }
 }
 
-std::string GetMpqFileSeparator()
+std::string getMpqFileSeparator()
 {
     return "\\";
 }
 
-std::string GetMpqFileName(const std::string & mpqFilePath)
+std::string getMpqFileName(const std::string & mpqFilePath)
 {
-    const std::string mpqFileSeparator = GetMpqFileSeparator();
+    const std::string mpqFileSeparator = getMpqFileSeparator();
     size_t lastSeparator = mpqFilePath.find_last_of(mpqFileSeparator);
     if ( lastSeparator >= 0 && lastSeparator+1 < mpqFilePath.length() )
         return mpqFilePath.substr(lastSeparator+1);
@@ -127,22 +127,22 @@ std::string GetMpqFileName(const std::string & mpqFilePath)
     return mpqFilePath;
 }
 
-std::string GetMpqFileExtension(const std::string & mpqFilePath)
+std::string getMpqFileExtension(const std::string & mpqFilePath)
 {
     const std::string mpqExtensionSeparator = ".";
     size_t lastExtensionSeparator = mpqFilePath.find_last_of(mpqExtensionSeparator);
     if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < mpqFilePath.length()-mpqExtensionSeparator.length() )
     {
-        size_t lastPathSeparator = mpqFilePath.find_last_of(GetMpqFileSeparator());
+        size_t lastPathSeparator = mpqFilePath.find_last_of(getMpqFileSeparator());
         if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
             return mpqFilePath.substr(lastExtensionSeparator, mpqFilePath.length() - lastExtensionSeparator); 
     }
     return "";
 }
 
-std::string MakeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName)
+std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName)
 {
-    const std::string mpqFileSeparator = GetMpqFileSeparator();
+    const std::string mpqFileSeparator = getMpqFileSeparator();
     size_t lastSeparator = mpqDirectory.find_last_of(mpqFileSeparator);
     if ( lastSeparator == mpqDirectory.length() - mpqFileSeparator.length() )
         return mpqDirectory + fileName;
@@ -150,7 +150,7 @@ std::string MakeMpqFilePath(const std::string & mpqDirectory, const std::string 
         return mpqDirectory + mpqFileSeparator + fileName;
 }
 
-std::string MakeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension)
+std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension)
 {
     const std::string mpqExtensionSeparator = ".";
     const bool extensionIncludesSeparator = extension.find_first_of(mpqExtensionSeparator) == 0;
@@ -160,7 +160,7 @@ std::string MakeExtMpqFilePath(const std::string & mpqFilePath, const std::strin
         return mpqFilePath + mpqExtensionSeparator + extension;
 }
 
-bool FindFile(const std::string & filePath)
+bool findFile(const std::string & filePath)
 {
     icux::filestring fFilePath = icux::toFilestring(filePath);
     if ( !filePath.empty() )
@@ -193,22 +193,22 @@ bool FindFile(const std::string & filePath)
     return false;
 }
 
-bool PatientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes)
+bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes)
 {
-    if ( FindFile(filePath) )
+    if ( findFile(filePath) )
         return true;
 
     for ( int i = 0; i < numWaitTimes; i++ )
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(waitTimes[i]));
-        if ( FindFile(filePath) )
+        if ( findFile(filePath) )
             return true;
     }
 
     return false;
 }
 
-bool FileToString(const std::string & fileName, std::string & str)
+bool fileToString(const std::string & fileName, std::string & str)
 {
     try {
         str.clear();
@@ -231,7 +231,7 @@ bool FileToString(const std::string & fileName, std::string & str)
     return false;
 }
 
-bool MakeFileCopy(const std::string & inFilePath, const std::string & outFilePath)
+bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath)
 {
     bool success = false;
     std::ifstream inFile;
@@ -262,7 +262,7 @@ bool MakeFileCopy(const std::string & inFilePath, const std::string & outFilePat
     return success;
 }
 
-bool MakeDirectory(const std::string & directory)
+bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
 #ifdef WINDOWS_UTF16
@@ -272,30 +272,30 @@ bool MakeDirectory(const std::string & directory)
 #endif
 }
 
-bool RemoveFile(const std::string & filePath)
+bool removeFile(const std::string & filePath)
 {
     icux::filestring sysFilePath = icux::toFilestring(filePath);
     // Return whether the file with the given filePath is not on the system
 #ifdef WINDOWS_UTF16
-    return filePath.empty() || _wremove(sysFilePath.c_str()) == 0 || !FindFile(filePath);
+    return filePath.empty() || _wremove(sysFilePath.c_str()) == 0 || !findFile(filePath);
 #else
     return sysFilePath.empty() || remove(sysFilePath.c_str()) == 0 || !FindFile(filePath);
 #endif
 }
 
-bool RemoveFiles(const std::string & firstFileName, const std::string & secondFileName)
+bool removeFiles(const std::string & firstFileName, const std::string & secondFileName)
 {
-    bool success = RemoveFile(firstFileName) && RemoveFile(secondFileName);
+    bool success = removeFile(firstFileName) && removeFile(secondFileName);
     return success;
 }
 
-bool RemoveFiles(const std::string & firstFileName, const std::string & secondFileName, const std::string & thirdFileName)
+bool removeFiles(const std::string & firstFileName, const std::string & secondFileName, const std::string & thirdFileName)
 {
-    bool success = RemoveFile(firstFileName) && RemoveFile(secondFileName) && RemoveFile(thirdFileName);
+    bool success = removeFile(firstFileName) && removeFile(secondFileName) && removeFile(thirdFileName);
     return success;
 }
 
-bool GetModuleDirectory(output_param std::string & moduleDirectory, bool includeTrailingSeparator)
+bool getModuleDirectory(output_param std::string & moduleDirectory, bool includeTrailingSeparator)
 {
 #ifdef _WIN32
     icux::codepoint cModulePath[MAX_PATH] = {};
@@ -305,7 +305,7 @@ bool GetModuleDirectory(output_param std::string & moduleDirectory, bool include
         auto lastBackslashPos = modulePath.find_last_of('\\');
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
         {
-            moduleDirectory = icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? GetSystemFileSeparator() : "");
+            moduleDirectory = icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemFileSeparator() : "");
             return true;
         }
     }
@@ -313,19 +313,19 @@ bool GetModuleDirectory(output_param std::string & moduleDirectory, bool include
     return false;
 }
 
-bool GetDefaultScPath(output_param std::string & data)
+bool getDefaultScPath(output_param std::string & data)
 {
     return ""; // TODO: Implement me
 }
 
-std::string GetDefaultScPath()
+std::string getDefaultScPath()
 {
     return ""; // TODO: Implement me
 }
 
 // Windows registry functions
 #ifdef _WIN32
-DWORD GetSubKeyString(HKEY hParentKey, const std::string & subKey, const std::string & valueName, std::string & data)
+DWORD getSubKeyString(HKEY hParentKey, const std::string & subKey, const std::string & valueName, std::string & data)
 {
     icux::filestring sysSubKey = icux::toFilestring(subKey);
     icux::filestring sysValueName = icux::toFilestring(valueName);
@@ -351,17 +351,17 @@ DWORD GetSubKeyString(HKEY hParentKey, const std::string & subKey, const std::st
     return errorCode; // Return success/error message
 }
 
-bool GetRegString(const std::string & subKey, const std::string & valueName, std::string & data)
+bool getRegString(const std::string & subKey, const std::string & valueName, std::string & data)
 {
-    DWORD errorCode = GetSubKeyString(HKEY_CURRENT_USER, subKey, valueName, data); // Try HKCU
+    DWORD errorCode = getSubKeyString(HKEY_CURRENT_USER, subKey, valueName, data); // Try HKCU
     if ( errorCode != ERROR_SUCCESS ) // Not found in HKCU
-        errorCode = GetSubKeyString(HKEY_LOCAL_MACHINE, subKey, valueName, data); // Try HKLM
+        errorCode = getSubKeyString(HKEY_LOCAL_MACHINE, subKey, valueName, data); // Try HKLM
 
     return errorCode == ERROR_SUCCESS;
 }
 #endif
 
-PromptResult GetYesNo(const std::string & text, const std::string & caption)
+PromptResult getYesNo(const std::string & text, const std::string & caption)
 {
 #ifdef _WIN32
     int result = MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring(caption).c_str(), MB_YESNO);
@@ -375,7 +375,7 @@ PromptResult GetYesNo(const std::string & text, const std::string & caption)
 #endif
 }
 
-PromptResult GetYesNoCancel(const std::string & text, const std::string & caption)
+PromptResult getYesNoCancel(const std::string & text, const std::string & caption)
 {
 #ifdef _WIN32
     int result = MessageBox(NULL, icux::toUistring(text).c_str(), icux::toUistring(caption).c_str(), MB_YESNOCANCEL);
@@ -390,7 +390,7 @@ PromptResult GetYesNoCancel(const std::string & text, const std::string & captio
 #endif
 }
 
-bool BrowseForFile(std::string & filePath, uint32_t & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
+bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
     const std::string & initialDirectory, const std::string & title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32
@@ -459,7 +459,7 @@ bool BrowseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
 #endif
 }
 
-bool BrowseForSave(std::string & filePath, uint32_t & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
+bool browseForSave(std::string & filePath, uint32_t & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
     const std::string & initialDirectory, const std::string & title, bool pathMustExist, bool provideOverwritePrompt)
 {
 #ifdef _WIN32

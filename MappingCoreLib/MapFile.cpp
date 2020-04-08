@@ -91,7 +91,7 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
 
         if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
-            if ( !saveAs || (saveAs && MakeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location
+            if ( !saveAs || (saveAs && makeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location
             {
                 std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                 Scenario::write(chk);
@@ -122,7 +122,7 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
         }
         else // Is a chk file or unrecognized format, write out chk file
         {
-            if ( RemoveFile(saveFilePath) ) // Remove any existing files of the same name
+            if ( removeFile(saveFilePath) ) // Remove any existing files of the same name
             {
                 std::ofstream outFile(icux::toFilestring(saveFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
                 if ( outFile.is_open() )
@@ -186,10 +186,10 @@ bool MapFile::OpenTemporaryMpq()
         do
         {
             // Try the nextAssetFileId filename
-            assetFilePath = MakeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
+            assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
             nextAssetFileId ++;
         }
-        while ( FindFile(assetFilePath) ); // Try again if the file already exists
+        while ( findFile(assetFilePath) ); // Try again if the file already exists
     }
 #endif
 
@@ -199,9 +199,9 @@ bool MapFile::OpenTemporaryMpq()
         {
             do
             {
-                assetFileDirectory = GetSystemFileDirectory(mapFilePath, true);
-                assetFilePath = MakeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
-            } while ( FindFile(assetFilePath) ); // Try again if the file already exists
+                assetFileDirectory = getSystemFileDirectory(mapFilePath, true);
+                assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
+            } while ( findFile(assetFilePath) ); // Try again if the file already exists
         }
         else // Use the C library to find an appropriate temporary location
         {
@@ -232,7 +232,7 @@ bool MapFile::OpenMapFile(const std::string & filePath)
 {
     logger.info() << "Opening map file: " << filePath << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    std::string extension = GetSystemFileExtension(filePath);
+    std::string extension = getSystemFileExtension(filePath);
     if ( !extension.empty() )
     {
         if ( extension == ".scm" || extension == ".scx" )
@@ -356,7 +356,7 @@ std::string MapFile::GetStandardSoundDir()
 bool MapFile::AddMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
-    if ( FindFile(assetSystemFilePath) )
+    if ( findFile(assetSystemFilePath) )
     {
         if ( OpenTemporaryMpq() )
         {
@@ -502,7 +502,7 @@ bool MapFile::AddSound(size_t stringId)
 bool MapFile::AddSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
     std::string mpqSoundDirectory = GetStandardSoundDir();
-    std::string mpqFilePath = MakeMpqFilePath(mpqSoundDirectory, GetSystemFileName(srcFilePath));
+    std::string mpqFilePath = makeMpqFilePath(mpqSoundDirectory, getSystemFileName(srcFilePath));
     return AddSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 
@@ -711,10 +711,10 @@ bool MapFile::IsInVirtualSoundList(const std::string & soundMpqPath)
 
 std::string MapFile::GetFileName()
 {
-    return GetSystemFileName(mapFilePath);
+    return getSystemFileName(mapFilePath);
 
     std::string sFilePath(mapFilePath);
-    std::string separator = GetSystemFileSeparator();
+    std::string separator = getSystemFileSeparator();
     auto lastBackslashPos = sFilePath.find_last_of('\\');
 
     if ( lastBackslashPos != std::string::npos && lastBackslashPos+1 < sFilePath.size() )
@@ -736,7 +736,7 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
         std::string newSaveFilePath;
         while ( fileBrowser->browseForSavePath(newSaveFilePath, newSaveType) )
         {
-            std::string extension = GetSystemFileExtension(newSaveFilePath);
+            std::string extension = getSystemFileExtension(newSaveFilePath);
             bool inferredExtension = extension.empty();
             if ( inferredExtension ) // No extension specified, infer based on the SaveType
             {
@@ -776,9 +776,9 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
                     newSaveType = SaveType::ExpansionScx; // Default to expansion scx
             }
 
-            bool fileExists = FindFile(newSaveFilePath);
+            bool fileExists = findFile(newSaveFilePath);
             bool mustConfirmOverwrite = fileExists && inferredExtension;
-            if ( !mustConfirmOverwrite || fileBrowser->confirmOverwrite(GetSystemFileName(newSaveFilePath) + " already exists.\nDo you want to replace it?") )
+            if ( !mustConfirmOverwrite || fileBrowser->confirmOverwrite(getSystemFileName(newSaveFilePath) + " already exists.\nDo you want to replace it?") )
             { // Either the save path was complete during browsing and the browser checked
                 saveType = newSaveType;
                 saveFilePath = newSaveFilePath;

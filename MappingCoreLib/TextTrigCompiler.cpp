@@ -303,7 +303,7 @@ void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
             size_t closeQuotePos = findStringEnd(text, pos);
             EscString escString = text.substr(pos, closeQuotePos-pos);
             RawString rawString;
-            ConvertStr(escString, rawString);
+            convertStr(escString, rawString);
             stringContents.push_back(rawString);
             dest += '\"';
             pos = closeQuotePos+1;

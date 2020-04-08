@@ -172,7 +172,7 @@ bool CndActGrid::BuildSelectionString(std::string & str)
                 if ( currItem.getTextLength() > 0 && currItem.getText(currItemText) )
                 {
                     SingleLineChkdString chkdString;
-                    if ( MakeChkdStr(currItemText, chkdString) )
+                    if ( makeChkdStr(currItemText, chkdString) )
                         ssSelection << currItemText;
                 }
             }

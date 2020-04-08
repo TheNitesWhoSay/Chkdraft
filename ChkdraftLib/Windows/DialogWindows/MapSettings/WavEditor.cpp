@@ -248,7 +248,7 @@ void WavEditorWindow::ExtractSoundButtonPressed()
         if ( wavMpqPath != nullptr )
         {
             u32 filterIndex = 0;
-            std::string saveFilePath = GetMpqFileName(*wavMpqPath);
+            std::string saveFilePath = getMpqFileName(*wavMpqPath);
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
@@ -276,11 +276,11 @@ void WavEditorWindow::BrowseButtonPressed()
 {
     OPENFILENAME ofn = { };
     std::vector<std::pair<std::string, std::string>> filtersAndLabels = { std::make_pair<std::string, std::string>("*.wav", "WAV File"), std::make_pair<std::string, std::string>("*.*", "All Files") };
-    std::string initPath = Settings::starCraftPath + GetSystemFileSeparator() + "Maps";
+    std::string initPath = Settings::starCraftPath + getSystemFileSeparator() + "Maps";
 
     u32 filterIndex = 0;
     std::string soundFilePath;
-    if ( BrowseForFile(soundFilePath, filterIndex, filtersAndLabels, initPath, "Open Sound", true, false) )
+    if ( browseForFile(soundFilePath, filterIndex, filtersAndLabels, initPath, "Open Sound", true, false) )
     {
         buttonPreviewPlaySound.DisableThis();
         listVirtualSounds.ClearSel();
@@ -313,7 +313,7 @@ void WavEditorWindow::AddFileButtonPressed()
         else
             addedWav = CM->AddSound(filePath, wavQuality, true);
     }
-    else if ( !useVirtualFile && FindFile(filePath) )
+    else if ( !useVirtualFile && findFile(filePath) )
     {
         if ( useCustomMpqString )
             addedWav = CM->AddSound(filePath, customMpqPath, wavQuality, false);
@@ -330,9 +330,9 @@ void WavEditorWindow::AddFileButtonPressed()
                 addedWav = CM->AddSound(customMpqPath, wavContents, wavQuality);
             else
             {
-                std::string mpqFileName = GetMpqFileName(filePath);
+                std::string mpqFileName = getMpqFileName(filePath);
                 std::string standardWavDir = MapFile::GetStandardSoundDir();
-                std::string mpqFilePath = MakeMpqFilePath(standardWavDir, mpqFileName);
+                std::string mpqFilePath = makeMpqFilePath(standardWavDir, mpqFileName);
                 addedWav = CM->AddSound(mpqFilePath, wavContents, wavQuality);
             }
         }

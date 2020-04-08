@@ -73,10 +73,10 @@ class SingleLineChkdString : public ChkdString
     All ASCII Characters < 32 or >= 127 are given a \xhh format,
         where hh is the corresponding hex string.
     Returns true and outEscString on success, false and an empty outEscString on faliure. */
-bool MakeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString);
-bool MakeEscStr(const RawString & inRawString, EscString & outEscString);
+bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString);
+bool makeEscStr(const RawString & inRawString, EscString & outEscString);
 
-bool GetSlashEscCodeChar(const std::string & escString, size_t escStringLength, size_t slashPos, char & character, size_t & lastCharPos);
+bool getSlashEscCodeChar(const std::string & escString, size_t escStringLength, size_t slashPos, char & character, size_t & lastCharPos);
 
 /** Parsing an EscString into a RawString uses these rules...
     All "\\a" in the EscString become "\a" in the RawString.
@@ -99,10 +99,10 @@ bool GetSlashEscCodeChar(const std::string & escString, size_t escStringLength, 
     All other characters/sequences are added as they are.
 
     Returns true and outRawString on success, false and an empty outRawString on faliure. */
-bool ParseEscStr(const EscString & inEscString, RawString & outRawString);
+bool parseEscStr(const EscString & inEscString, RawString & outRawString);
 /** Parses a EscString into RawBytes, same rules as ParseEscStr except...
     All "\\0" in the EscString become "\0" in the RawString. */
-bool ParseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes);
+bool parseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes);
 
 /** Makes a ChkdString from a RawString using these rules...
     All "\r\n" (paired only) and "\t" are added as normal.
@@ -113,10 +113,10 @@ bool ParseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes)
     All other characters >= 32 or < 127 are added as they are.
 
     Returns true and outChkdString on success, false and an empty outChkdString on faliure. */
-bool MakeChkdStr(const std::string & inRawString, size_t inRawStringLength, ChkdString & outChkdString);
-bool MakeChkdStr(const RawString & inRawString, ChkdString & outChkdString);
+bool makeChkdStr(const std::string & inRawString, size_t inRawStringLength, ChkdString & outChkdString);
+bool makeChkdStr(const RawString & inRawString, ChkdString & outChkdString);
 
-bool GetChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength, size_t lessThanPos, char & character, size_t & lastCharPos);
+bool getChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength, size_t lessThanPos, char & character, size_t & lastCharPos);
 
 /** Parses a ChkdString into a RawString using these rules...
     All "\\<" in the ChkdString become "<" in the RawString.
@@ -129,10 +129,10 @@ bool GetChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength,
     Upon finding any NUL characters escaped or otherwise this method fails.
 
     Returns true and outRawString on success, false and an empty outRawString on faliure. */
-bool ParseChkdStr(const ChkdString & inChkdString, RawString & outRawString);
+bool parseChkdStr(const ChkdString & inChkdString, RawString & outRawString);
 /** Parses a ChkdString into RawBytes, same rules as ParseChkdStr except...
     All "\\0" in the ChkdString become "\0" in the RawBytes. */
-bool ParseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawBytes);
+bool parseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawBytes);
 
 bool getOneCharHexVal(const char character, u8 & value);
 
@@ -150,6 +150,6 @@ typedef std::shared_ptr<ChkdString> ChkdStringPtr;
 typedef std::shared_ptr<SingleLineChkdString> SingleLineChkdStringPtr;
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const StringTypeIn & inString, StringTypeOut & outString);
+void convertStr(const StringTypeIn & inString, StringTypeOut & outString);
 
 #endif

@@ -42,7 +42,7 @@ class Selections
         void resetMoved() { moved = false; }
         bool hasMoved() { return moved; }
         bool startEqualsEndDrag() { return startDrag.x == endDrag.x && startDrag.y == endDrag.y; }
-        void sortDragPoints() { AscendingOrder(startDrag.x, endDrag.x); AscendingOrder(startDrag.y, endDrag.y); }
+        void sortDragPoints() { ascendingOrder(startDrag.x, endDrag.x); ascendingOrder(startDrag.y, endDrag.y); }
 
         void addTile(u16 value, u16 xc, u16 yc);
         void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);

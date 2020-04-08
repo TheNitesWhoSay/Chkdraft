@@ -16,14 +16,14 @@ bool TestAssets::LoadScData(Sc::Data & data)
     
     std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> dataFiles({
         { Sc::DataFile::Priority::StarDat, Sc::DataFile::Descriptor(Sc::DataFile::Priority::StarDat,
-            Sc::DataFile::starDatFileName, MakeSystemFilePath(scAssetPath, Sc::DataFile::starDatFileName), nullptr, false) },
+            Sc::DataFile::starDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::starDatFileName), nullptr, false) },
         { Sc::DataFile::Priority::BrooDat, Sc::DataFile::Descriptor(Sc::DataFile::Priority::BrooDat,
-            Sc::DataFile::brooDatFileName, MakeSystemFilePath(scAssetPath, Sc::DataFile::brooDatFileName), nullptr, false) },
+            Sc::DataFile::brooDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::brooDatFileName), nullptr, false) },
         { Sc::DataFile::Priority::PatchRt, Sc::DataFile::Descriptor(Sc::DataFile::Priority::PatchRt,
-            Sc::DataFile::patchRtFileName, MakeSystemFilePath(scAssetPath, Sc::DataFile::patchRtFileName), nullptr, false) },
+            Sc::DataFile::patchRtFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::patchRtFileName), nullptr, false) },
     });
 
-    bool loadedScData = data.Load(dataFileBrowser, dataFiles, GetDefaultScPath(), nullptr);
+    bool loadedScData = data.load(dataFileBrowser, dataFiles, getDefaultScPath(), nullptr);
     EXPECT_TRUE(loadedScData);
     return loadedScData;
 }

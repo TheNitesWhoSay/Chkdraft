@@ -159,7 +159,7 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
         Chk::Action & action = trig->action(actionNum);
         if ( action.actionType != Chk::Action::Type::NoAction )
         {
-            action.ToggleDisabled();
+            action.toggleDisabled();
 
             CM->notifyChange(false);
             RefreshWindow(trigIndex);
@@ -443,9 +443,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
-                    madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
+                    madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
                         ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
-                        (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
+                        (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
                             ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
                 }
 
@@ -458,9 +458,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             else
             {
                 Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
-                madeChange = (ParseChkdStr(chkdNewText, rawUpdateText) &&
+                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
                     ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
-                    (hasSuggestion && ParseChkdStr(chkdSuggestText, rawSuggestText) &&
+                    (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
                         ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
             }
 

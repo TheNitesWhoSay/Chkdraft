@@ -68,7 +68,7 @@ bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNot
         return true;
 
     close();
-    if ( createIfNotFound && !FindFile(filePath) )
+    if ( createIfNotFound && !findFile(filePath) )
         return create(filePath);
     else if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, (readOnly ? MPQ_OPEN_READ_ONLY : 0), &hMpq) )
     {

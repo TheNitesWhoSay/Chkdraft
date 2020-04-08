@@ -287,9 +287,9 @@ void StringEditorWindow::saveStrings()
     if ( fileBrowser.browseForSavePath(filePath, filterIndex) )
     {
         if ( filterIndex == 1 && !hasExtension(filePath, ".txt") )
-            filePath = MakeExtSystemFilePath(filePath, ".txt");
+            filePath = makeExtSystemFilePath(filePath, ".txt");
 
-        RemoveFile(filePath);
+        removeFile(filePath);
 
         std::ofstream outFile(filePath, std::ofstream::out);
         if ( outFile.is_open() )

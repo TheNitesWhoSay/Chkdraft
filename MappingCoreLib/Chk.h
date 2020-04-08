@@ -474,7 +474,7 @@ namespace Chk {
         u8 flags;
         MaskFlag maskFlag; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
 
-        void ToggleDisabled();
+        void toggleDisabled();
         bool isDisabled();
         inline bool locationUsed(size_t locationId);
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
@@ -754,7 +754,7 @@ namespace Chk {
         MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
         bool isDisabled() { return (flags & Flags::Disabled) == Flags::Disabled; }
-        void ToggleDisabled();
+        void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
         static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
         static ArgType getClassicArgType(Type actionType, size_t argIndex);

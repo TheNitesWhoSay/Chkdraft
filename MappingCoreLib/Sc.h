@@ -66,7 +66,7 @@ namespace Sc {
         public:
             virtual std::vector<MpqFilePtr> openScDataFiles(
                 const std::unordered_map<Priority, Descriptor> & dataFiles = getDefaultDataFiles(),
-                const std::string & expectedStarCraftDirectory = ::GetDefaultScPath(),
+                const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
             virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
@@ -2034,23 +2034,23 @@ namespace Sc {
         Pcx tselect;
         Pcx tminimap;
 
-        bool Load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
+        bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
-            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
         
         static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents);
         static bool GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
-            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
 
         static bool ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
         static bool ExtractAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
-            const std::string & expectedStarCraftDirectory = GetDefaultScPath(),
+            const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
     };
 };

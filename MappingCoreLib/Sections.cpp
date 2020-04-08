@@ -36,7 +36,7 @@ std::string ChkSection::getNameString(SectionName sectionName)
         return sectionNameStrings.find(SectionName::UNKNOWN)->second;
 }
 
-Section Allocate(const SectionName & sectionName)
+Section allocate(const SectionName & sectionName)
 {
     switch ( sectionName )
     {
@@ -109,7 +109,7 @@ Section ChkSection::read(std::multimap<SectionName, Section> & parsedSections, c
         throw NegativeSectionSize(sectionName);
 
     if ( loadBehavior == LoadBehavior::Standard )
-        section = Allocate(sectionName);
+        section = allocate(sectionName);
     else // if ( loadBehavior == LoadBehavior::Override || loadBehavior == LoadBehavior::Append )
     {
         auto sectionInstances = parsedSections.equal_range(sectionName);
@@ -119,7 +119,7 @@ Section ChkSection::read(std::multimap<SectionName, Section> & parsedSections, c
             overrideOrAppend = true;
         }
         else
-            section = Allocate(sectionName);
+            section = allocate(sectionName);
     }
 
     sizeRead = (Chk::SectionSize)section->read(sectionHeader, is, overrideOrAppend);
@@ -312,7 +312,7 @@ template <typename StringType>
 int ScStr::compare(const StringType & str)
 {
     RawString rawStr;
-    ConvertStr<StringType, RawString>(str, rawStr);
+    convertStr<StringType, RawString>(str, rawStr);
     return strcmp(this->str, rawStr.c_str());
 }
 template int ScStr::compare<RawString>(const RawString & str);
@@ -324,7 +324,7 @@ template <typename StringType>
 std::shared_ptr<StringType> ScStr::toString()
 {
     std::shared_ptr<StringType> destStr = std::shared_ptr<StringType>(new StringType());
-    ConvertStr<RawString, StringType>(str, *destStr);
+    convertStr<RawString, StringType>(str, *destStr);
     return destStr;
 }
 template std::shared_ptr<RawString> ScStr::toString<RawString>();
@@ -2266,7 +2266,7 @@ template <typename StringType> // Strings may be RawString (no escaping), EscStr
 size_t StrSection::addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
     RawString rawString;
-    ConvertStr<StringType, RawString>(str, rawString);
+    convertStr<StringType, RawString>(str, rawString);
 
     size_t stringId = findString<StringType>(str);
     if ( stringId != (size_t)Chk::StringId::NoString )
@@ -2293,7 +2293,7 @@ template <typename StringType> // Strings may be RawString (no escaping), EscStr
 void StrSection::replaceString(size_t stringId, const StringType & str)
 {
     RawString rawString;
-    ConvertStr<StringType, RawString>(str, rawString);
+    convertStr<StringType, RawString>(str, rawString);
 
     if ( stringId < strings.size() )
         strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));
@@ -5611,7 +5611,7 @@ template <typename StringType> // Strings may be RawString (no escaping), EscStr
 size_t KstrSection::addString(const StringType & str, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
     RawString rawString;
-    ConvertStr<StringType, RawString>(str, rawString);
+    convertStr<StringType, RawString>(str, rawString);
 
     size_t stringId = findString<StringType>(str);
     if ( stringId != (size_t)Chk::StringId::NoString )
@@ -5638,7 +5638,7 @@ template <typename StringType> // Strings may be RawString (no escaping), EscStr
 void KstrSection::replaceString(size_t stringId, const StringType & str)
 {
     RawString rawString;
-    ConvertStr<StringType, RawString>(str, rawString);
+    convertStr<StringType, RawString>(str, rawString);
 
     if ( stringId < strings.size() )
         strings[stringId] = ScStrPtr(new ScStr(rawString, StrProp()));

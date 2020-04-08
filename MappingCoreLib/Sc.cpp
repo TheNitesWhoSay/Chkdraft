@@ -96,13 +96,13 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
         std::string browsedFilePath = "";
         MpqFilePtr mpqFile = nullptr;
 
-        if ( !expectedFilePath.empty() && FindFile(expectedFilePath) )
+        if ( !expectedFilePath.empty() && findFile(expectedFilePath) )
             mpqFile = openDataFile(expectedFilePath, dataFileDescriptor);
         else if ( !skipStarCraftBrowse && expectedInScDirectory && (foundStarCraftDirectory || findStarCraftDirectory(starCraftDirectory, declinedStarCraftBrowse, expectedStarCraftDirectory, starCraftBrowser))
-            && FindFile(MakeSystemFilePath(starCraftDirectory, fileName)) )
+            && findFile(makeSystemFilePath(starCraftDirectory, fileName)) )
         {
             foundStarCraftDirectory = true;
-            mpqFile = openDataFile(MakeSystemFilePath(starCraftDirectory, fileName), dataFileDescriptor);
+            mpqFile = openDataFile(makeSystemFilePath(starCraftDirectory, fileName), dataFileDescriptor);
         }
         else if ( browser != nullptr && browser->promptTryBrowse("Failed to find " + fileName + " would you like to locate it manually?") && browser->browseForOpenPath(browsedFilePath, filterIndex) )
             mpqFile = openDataFile(browsedFilePath, dataFileDescriptor);
@@ -126,7 +126,7 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
 bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
-    if ( !expectedStarCraftDirectory.empty() && FindFile(MakeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
+    if ( !expectedStarCraftDirectory.empty() && findFile(makeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
     {
         starCraftDirectory = expectedStarCraftDirectory;
         return true;
@@ -137,7 +137,7 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string & st
         if ( starCraftBrowser->promptTryBrowse("Failed to find " + starCraftFileName + " would you like to locate it manually?") &&
             starCraftBrowser->browseForOpenPath(starCraftFilePath, filterIndex) )
         {
-            starCraftDirectory = GetSystemFileDirectory(starCraftFilePath, false);
+            starCraftDirectory = getSystemFileDirectory(starCraftFilePath, false);
             return true;
         }
         else
@@ -161,7 +161,7 @@ MpqFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath,
 
 FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
 {
-    return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), GetDefaultScPath()));
+    return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), getDefaultScPath()));
 }
 
 bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
@@ -1449,7 +1449,7 @@ const std::vector<std::string> Sc::Tech::names = {
     "Unused Tech (43)",
 };
 
-const std::string Sc::Ai::aiScriptBinPath = MakeExtMpqFilePath(MakeMpqFilePath("scripts", "AISCRIPT"), "BIN");
+const std::string Sc::Ai::aiScriptBinPath = makeExtMpqFilePath(makeMpqFilePath("scripts", "AISCRIPT"), "BIN");
 
 const std::string & Sc::Ai::Entry::getName(const TblFile & tblFile) const
 {
@@ -1543,12 +1543,12 @@ const std::vector<std::string> Sc::Terrain::TilesetNames = {
 bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName)
 {
     constexpr const char tilesetMpqDirectory[] = "tileset";
-    const std::string mpqFilePath = MakeMpqFilePath(tilesetMpqDirectory, tilesetName);
-    const std::string cv5FilePath = MakeExtMpqFilePath(mpqFilePath, "cv5");
-    const std::string vf4FilePath = MakeExtMpqFilePath(mpqFilePath, "vf4");
-    const std::string vr4FilePath = MakeExtMpqFilePath(mpqFilePath, "vr4");
-    const std::string vx4FilePath = MakeExtMpqFilePath(mpqFilePath, "vx4");
-    const std::string wpeFilePath = MakeExtMpqFilePath(mpqFilePath, "wpe");
+    const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
+    const std::string cv5FilePath = makeExtMpqFilePath(mpqFilePath, "cv5");
+    const std::string vf4FilePath = makeExtMpqFilePath(mpqFilePath, "vf4");
+    const std::string vr4FilePath = makeExtMpqFilePath(mpqFilePath, "vr4");
+    const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
+    const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
     
     std::vector<u8> cv5Data, vf4Data, vr4Data, vx4Data, wpeData;
 
@@ -1876,7 +1876,7 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     {
         const std::string & imageFilePath = tblFile.getString(i);
         Sc::Sprite::Grp grp;
-        if ( GetMpqFileExtension(imageFilePath).compare(".grp") == 0 )
+        if ( getMpqFileExtension(imageFilePath).compare(".grp") == 0 )
         {
             if ( grp.load(orderedSourceFiles, "unit\\" + imageFilePath) )
                 grps.push_back(grp);
@@ -3322,7 +3322,7 @@ bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std
     return false;
 }
 
-bool Sc::Data::Load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     auto start = std::chrono::high_resolution_clock::now();

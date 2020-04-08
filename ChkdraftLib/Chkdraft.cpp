@@ -50,7 +50,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     if ( !CreateThis() )
         return 1;
     
-    scData.Load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     InitCommonControls();
     UpdateLogLevelCheckmarks(logger.getLogLevel());
     ShowWindow(getHandle(), nCmdShow);
@@ -225,7 +225,7 @@ void Chkdraft::OpenLogFile()
 void Chkdraft::OpenLogFileDirectory()
 {
     int result = 0;
-    WinLib::executeOpen(GetSystemFileDirectory(logFilePath, false), result);
+    WinLib::executeOpen(getSystemFileDirectory(logFilePath, false), result);
 }
 
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)

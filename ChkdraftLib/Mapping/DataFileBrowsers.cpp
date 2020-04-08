@@ -74,5 +74,5 @@ std::string ChkdDataFileBrowser::getExpectedStarCraftDirectory()
     if ( !Settings::starCraftPath.empty() )
         return Settings::starCraftPath;
     else
-        return ::GetDefaultScPath();
+        return ::getDefaultScPath();
 }

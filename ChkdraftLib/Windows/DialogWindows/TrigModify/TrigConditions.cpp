@@ -126,7 +126,7 @@ void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
         Chk::Condition & condition = trig->condition(conditionNum);
         if ( condition.conditionType != Chk::Condition::Type::NoCondition )
         {
-            condition.ToggleDisabled();
+            condition.toggleDisabled();
 
             CM->notifyChange(false);
             RefreshWindow(trigIndex);
@@ -323,9 +323,9 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     if ( trig != nullptr )
     {
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig->condition(conditionNum).conditionType, argNum);
-        if ( ( ParseChkdStr(ChkdString(newText), rawUpdateText) &&
+        if ( ( parseChkdStr(ChkdString(newText), rawUpdateText) &&
                ttc.parseConditionArg(rawUpdateText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, hasSuggestion) ) ||
-             ( hasSuggestion && ParseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
+             ( hasSuggestion && parseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
                ttc.parseConditionArg(rawSuggestText, argument, trig->condition(conditionNum), CM, chkd.scData, trigIndex, false) ) )
         {
             if ( refreshImmediately )

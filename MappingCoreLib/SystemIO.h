@@ -31,36 +31,36 @@ using u64 = std::uint64_t;
 using s64 = std::int64_t;
 
 bool hasExtension(const std::string & systemFilePath, const std::string & extension);
-std::string GetSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /
-std::string GetSystemFileName(const std::string & systemFilePath); // Extracts the file name from a system file path
-std::string GetSystemFileExtension(const std::string & systemFilePath); // Extracts the file extension from a system file path, this will include the dot
-std::string GetSystemFileDirectory(const std::string & systemFilePath, bool includeTrailingSeparator = true); // Extracts the directory from a system file path
-std::string MakeSystemFilePath(const std::string & systemDirectory, const std::string & fileName); // Creates a file path ensuring the appropriate separator is used
-std::string MakeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension); // Creates a file path ensuring the appropriate extension is used
-std::string MakeExtSystemFilePath(const std::string & systemDirectory, const std::string & fileName, const std::string & extension); // Creates a file path ensuring the appropriate separator and extension is used
+std::string getSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /
+std::string getSystemFileName(const std::string & systemFilePath); // Extracts the file name from a system file path
+std::string getSystemFileExtension(const std::string & systemFilePath); // Extracts the file extension from a system file path, this will include the dot
+std::string getSystemFileDirectory(const std::string & systemFilePath, bool includeTrailingSeparator = true); // Extracts the directory from a system file path
+std::string makeSystemFilePath(const std::string & systemDirectory, const std::string & fileName); // Creates a file path ensuring the appropriate separator is used
+std::string makeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension); // Creates a file path ensuring the appropriate extension is used
+std::string makeExtSystemFilePath(const std::string & systemDirectory, const std::string & fileName, const std::string & extension); // Creates a file path ensuring the appropriate separator and extension is used
 
-std::string GetMpqFileSeparator(); // Gets the file separator used inside MPQ files (always \)
-std::string GetMpqFileName(const std::string & mpqFilePath); // Extracts the file name from a MPQ file path
-std::string GetMpqFileExtension(const std::string & mpqFilePath); // Extracts the file extension from a mpq file path, this will include the dot
-std::string MakeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName); // Creates a mpq file path ensuring the appropriate separator is used
-std::string MakeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
+std::string getMpqFileSeparator(); // Gets the file separator used inside MPQ files (always \)
+std::string getMpqFileName(const std::string & mpqFilePath); // Extracts the file name from a MPQ file path
+std::string getMpqFileExtension(const std::string & mpqFilePath); // Extracts the file extension from a mpq file path, this will include the dot
+std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName); // Creates a mpq file path ensuring the appropriate separator is used
+std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
 
-bool FindFile(const std::string & filePath);
-bool PatientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes);
+bool findFile(const std::string & filePath);
+bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes);
 
-bool FileToString(const std::string & fileName, std::string & str);
+bool fileToString(const std::string & fileName, std::string & str);
 
-bool MakeFileCopy(const std::string & inFilePath, const std::string & outFilePath);
-bool MakeDirectory(const std::string & directory);
+bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath);
+bool makeDirectory(const std::string & directory);
 
-bool RemoveFile(const std::string & filePath);
-bool RemoveFiles(const std::string & firstFileName, const std::string & secondFileName);
-bool RemoveFiles(const std::string & firstFileName, const std::string & secondFileName, const std::string & thirdFileName);
+bool removeFile(const std::string & filePath);
+bool removeFiles(const std::string & firstFileName, const std::string & secondFileName);
+bool removeFiles(const std::string & firstFileName, const std::string & secondFileName, const std::string & thirdFileName);
 
-bool GetModuleDirectory(output_param std::string & moduleDirectory, bool includeTrailingSeparator = false);
+bool getModuleDirectory(output_param std::string & moduleDirectory, bool includeTrailingSeparator = false);
 
-bool GetDefaultScPath(output_param std::string & data);
-std::string GetDefaultScPath();
+bool getDefaultScPath(output_param std::string & data);
+std::string getDefaultScPath();
 
 enum class PromptResult
 {
@@ -69,13 +69,13 @@ enum class PromptResult
     No,
     Cancel
 };
-PromptResult GetYesNo(const std::string & text, const std::string & caption);
-PromptResult GetYesNoCancel(const std::string & text, const std::string & caption);
+PromptResult getYesNo(const std::string & text, const std::string & caption);
+PromptResult getYesNoCancel(const std::string & text, const std::string & caption);
 
-bool BrowseForFile(inout_param std::string & filePath, inout_param u32 & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
+bool browseForFile(inout_param std::string & filePath, inout_param u32 & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
     const std::string & initialDirectory, const std::string & title, bool pathMustExist, bool provideOverwritePrompt);
 
-bool BrowseForSave(inout_param std::string & filePath, inout_param u32 & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
+bool browseForSave(inout_param std::string & filePath, inout_param u32 & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
     const std::string & initialDirectory, const std::string & title, bool pathMustExist, bool provideOverwritePrompt);
 
 #endif

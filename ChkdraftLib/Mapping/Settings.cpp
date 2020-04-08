@@ -43,9 +43,9 @@ bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 bool GetChkdPath(std::string & outChkdPath)
 {
     std::string moduleDirectory;
-    if ( GetModuleDirectory(moduleDirectory) )
+    if ( getModuleDirectory(moduleDirectory) )
     {
-        MakeDirectory(moduleDirectory + "\\chkd");
+        makeDirectory(moduleDirectory + "\\chkd");
         outChkdPath = moduleDirectory + std::string("\\chkd");
         return true;
     }
@@ -57,7 +57,7 @@ bool GetPreSavePath(std::string & outPreSavePath)
     std::string chkdPath;
     if ( GetChkdPath(chkdPath) )
     {
-        MakeDirectory(chkdPath + "\\Pre-Save");
+        makeDirectory(chkdPath + "\\Pre-Save");
         outPreSavePath = chkdPath + std::string("\\Pre-Save\\");
         return true;
     }
@@ -69,7 +69,7 @@ bool GetLoggerPath(std::string & outLoggerPath)
     std::string chkdPath;
     if ( GetChkdPath(chkdPath) )
     {
-        MakeDirectory(chkdPath + "\\Logs");
+        makeDirectory(chkdPath + "\\Logs");
         outLoggerPath = chkdPath + std::string("\\Logs\\");
         return true;
     }
@@ -79,10 +79,10 @@ bool GetLoggerPath(std::string & outLoggerPath)
 bool GetSettingsPath(std::string & outFilePath)
 {
     std::string moduleDirectory;
-    if ( GetModuleDirectory(moduleDirectory) )
+    if ( getModuleDirectory(moduleDirectory) )
     {
-        MakeDirectory(moduleDirectory + "\\chkd");
-        MakeDirectory(moduleDirectory + "\\chkd\\Settings");
+        makeDirectory(moduleDirectory + "\\chkd");
+        makeDirectory(moduleDirectory + "\\chkd\\Settings");
         outFilePath = moduleDirectory + std::string("\\chkd\\Settings\\");
         return true;
     }

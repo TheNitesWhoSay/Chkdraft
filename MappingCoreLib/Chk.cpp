@@ -952,7 +952,7 @@ Chk::Action & Chk::Trigger::action(size_t actionIndex)
         throw std::out_of_range("actionIndex " + std::to_string(actionIndex) + " exceeds max " + std::to_string(MaxActions-1));
 }
 
-void Chk::Condition::ToggleDisabled()
+void Chk::Condition::toggleDisabled()
 {
     if ( (flags & Flags::Disabled) == Flags::Disabled )
         flags &= Flags::xDisabled;
@@ -995,7 +995,7 @@ void Chk::Condition::deleteLocation(size_t locationId)
         this->locationId = Chk::LocationId::NoLocation;
 }
 
-void Chk::Action::ToggleDisabled()
+void Chk::Action::toggleDisabled()
 {
     if ( (flags & Flags::Disabled) == Flags::Disabled )
         flags &= Flags::xDisabled;

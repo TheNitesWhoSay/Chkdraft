@@ -133,7 +133,7 @@ bool LitWindow::WriteLitBat(std::string & luaDirectory, std::string & luaName, s
     std::string & textOutPath, std::string & trigOutName)
 {
     litBatPath = litDirectory + "chkd-LIT_LIT.bat";
-    RemoveFile(litBatPath);
+    removeFile(litBatPath);
     std::ofstream litBat(litBatPath);
     if ( litBat.is_open() )
     {
@@ -157,15 +157,15 @@ bool LitWindow::RunLit(ScenarioPtr map)
         std::string textPath(litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(litDirectory + trigName);
         if ( WriteLitBat(luaDirectory, luaName, litDirectory, litBatPath, textPath, trigName) )
         {
-            RemoveFiles(textPath, trigPath);
+            removeFiles(textPath, trigPath);
             int resultCode = 0;
             if ( WinLib::executeOpen(litBatPath, litDirectory, resultCode) )
             {
                 int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
                 std::string litTrigs;
-                bool foundLitText = PatientFindFile(textPath, 4, waitTimes) && FileToString(textPath, litText);
-                bool foundLitTrigs = FileToString(trigPath, litTrigs);
-                RemoveFiles(textPath, trigPath, litBatPath);
+                bool foundLitText = patientFindFile(textPath, 4, waitTimes) && fileToString(textPath, litText);
+                bool foundLitTrigs = fileToString(trigPath, litTrigs);
+                removeFiles(textPath, trigPath, litBatPath);
                 if ( foundLitTrigs )
                 {
                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
@@ -186,6 +186,6 @@ bool LitWindow::RunLit(ScenarioPtr map)
         else
             Error("Failed to write LIT.bat");
     }
-    RemoveFile(litBatPath);
+    removeFile(litBatPath);
     return false;
 }

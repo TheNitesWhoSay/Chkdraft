@@ -1759,8 +1759,8 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
         if ( selections.getLocationFlags() == LocSelFlags::None ) // Create location
         {
-            AscendingOrder(startX, endX);
-            AscendingOrder(startY, endY);
+            ascendingOrder(startX, endX);
+            ascendingOrder(startY, endY);
             SnapLocationDimensions(startX, startY, endX, endY, LocSnapFlags::SnapAll);
                                     
             Chk::LocationPtr newLocation = Chk::LocationPtr(new Chk::Location());
@@ -1990,14 +1990,14 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 bool GuiMap::GetBackupPath(time_t currTime, std::string & outFilePath)
 {
     std::string moduleDirectory;
-    if ( GetModuleDirectory(moduleDirectory) )
+    if ( getModuleDirectory(moduleDirectory) )
     {
         tm* currTimes = localtime(&currTime);
         int year = currTimes->tm_year + 1900, month = currTimes->tm_mon + 1, day = currTimes->tm_mday,
             hour = currTimes->tm_hour, minute = currTimes->tm_min, seconds = currTimes->tm_sec;
 
-        MakeDirectory(moduleDirectory + "\\chkd");
-        MakeDirectory(moduleDirectory + "\\chkd\\Backups");
+        makeDirectory(moduleDirectory + "\\chkd");
+        makeDirectory(moduleDirectory + "\\chkd\\Backups");
 
         outFilePath = moduleDirectory + std::string("\\chkd\\Backups\\") +
             std::to_string(year) + std::string(month <= 9 ? "-0" : "-") + std::to_string(month) +
@@ -2021,7 +2021,7 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
         if ( (lastBackupTime == -1 || difftime(lastBackupTime, currTime) >= minSecondsBetweenBackups) )
         {
             std::string backupPath;
-            if ( GetBackupPath(currTime, backupPath) && MakeFileCopy(MapFile::getFilePath(), backupPath) )
+            if ( GetBackupPath(currTime, backupPath) && makeFileCopy(MapFile::getFilePath(), backupPath) )
             {
                 lastBackupTime = currTime;
                 return true;

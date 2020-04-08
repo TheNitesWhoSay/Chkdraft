@@ -144,7 +144,7 @@ bool SingleLineChkdString::isOneLine()
     return true;
 }
 
-bool MakeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString)
+bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString)
 {
     outEscString.clear();
     try
@@ -187,12 +187,12 @@ bool MakeEscStr(const std::string & inRawString, size_t inRawStringLength, EscSt
     return false;
 }
 
-bool MakeEscStr(const RawString & inRawString, EscString & outEscString)
+bool makeEscStr(const RawString & inRawString, EscString & outEscString)
 {
-    return MakeEscStr(inRawString, inRawString.length(), outEscString);
+    return makeEscStr(inRawString, inRawString.length(), outEscString);
 }
 
-bool GetSlashEscCodeChar(const std::string & escString, size_t escStringLength, size_t slashPos, char & character, size_t & lastCharPos)
+bool getSlashEscCodeChar(const std::string & escString, size_t escStringLength, size_t slashPos, char & character, size_t & lastCharPos)
 {
     lastCharPos = 0;
     character = '\0';
@@ -269,7 +269,7 @@ bool GetSlashEscCodeChar(const std::string & escString, size_t escStringLength, 
     return false;
 }
 
-bool ParseEscStr(const EscString & inEscString, RawString & outRawString)
+bool parseEscStr(const EscString & inEscString, RawString & outRawString)
 {
     size_t strLength = inEscString.length(),
         lastEscCharPos = 0;
@@ -283,7 +283,7 @@ bool ParseEscStr(const EscString & inEscString, RawString & outRawString)
         {
             currChar = inEscString[i];
             if ( currChar == '\\' && // Escape sequence detected
-                GetSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) &&
+                getSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
@@ -304,7 +304,7 @@ bool ParseEscStr(const EscString & inEscString, RawString & outRawString)
     return false;
 }
 
-bool ParseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes)
+bool parseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes)
 {
     size_t strLength = inEscString.length(),
         lastEscCharPos = 0;
@@ -317,7 +317,7 @@ bool ParseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes)
         {
             currChar = inEscString[i];
             if ( currChar == '\\' && // Escape sequence detected
-                GetSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) )
+                getSlashEscCodeChar(inEscString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;
@@ -382,7 +382,7 @@ bool MakeOneLineChkdStr(const std::string & inRawString, size_t inRawStringLengt
     return false;
 }
 
-bool MakeChkdStr(const std::string & inRawString, size_t inRawStringLength, ChkdString & outChkdString)
+bool makeChkdStr(const std::string & inRawString, size_t inRawStringLength, ChkdString & outChkdString)
 {
     if ( outChkdString.isOneLine() )
         return MakeOneLineChkdStr(inRawString, inRawStringLength, outChkdString);
@@ -426,15 +426,15 @@ bool MakeChkdStr(const std::string & inRawString, size_t inRawStringLength, Chkd
     return false;
 }
 
-bool MakeChkdStr(const RawString & inRawString, ChkdString & outChkdString)
+bool makeChkdStr(const RawString & inRawString, ChkdString & outChkdString)
 {
     if ( outChkdString.isOneLine() )
         return MakeOneLineChkdStr(inRawString, inRawString.length(), outChkdString);
     else
-        return MakeChkdStr(inRawString, inRawString.length(), outChkdString);
+        return makeChkdStr(inRawString, inRawString.length(), outChkdString);
 }
 
-bool GetChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength, size_t lessThanPos, char & character, size_t & lastCharPos)
+bool getChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength, size_t lessThanPos, char & character, size_t & lastCharPos)
 {
     lastCharPos = 0;
     character = '\0';
@@ -470,7 +470,7 @@ bool GetChkdEscCodeChar(const std::string & chkdString, size_t chkdStringLength,
     return false;
 }
 
-bool ParseChkdStr(const ChkdString & inChkdString, RawString & outRawString)
+bool parseChkdStr(const ChkdString & inChkdString, RawString & outRawString)
 {
     size_t strLength = inChkdString.length(),
         lastEscCharPos = 0;
@@ -484,14 +484,14 @@ bool ParseChkdStr(const ChkdString & inChkdString, RawString & outRawString)
         {
             currChar = inChkdString[i];
             if ( currChar == '\\' && // Possible slash escape sequence
-                GetSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
+                getSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
                 i = lastEscCharPos;
             }
             else if ( currChar == '<' && /// Possible chkd escape sequence
-                GetChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
+                getChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) &&
                 escapedChar != '\0' )
             {
                 outRawString.push_back(escapedChar);
@@ -512,7 +512,7 @@ bool ParseChkdStr(const ChkdString & inChkdString, RawString & outRawString)
     return false;
 }
 
-bool ParseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawBytes)
+bool parseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawBytes)
 {
     size_t strLength = inChkdString.length(),
         lastEscCharPos = 0;
@@ -525,13 +525,13 @@ bool ParseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawByt
         {
             currChar = inChkdString[i];
             if ( currChar == '\\' && // Possible slash escape sequence
-                GetSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
+                getSlashEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;
             }
             else if ( currChar == '<' && /// Possible chkd escape sequence
-                GetChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
+                getChkdEscCodeChar(inChkdString, strLength, i, escapedChar, lastEscCharPos) )
             {
                 outRawBytes.push_back(escapedChar);
                 i = lastEscCharPos;
@@ -547,125 +547,125 @@ bool ParseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawByt
 }
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const RawString & inString, RawString & outString)
+void convertStr(const RawString & inString, RawString & outString)
 {
     outString = inString;
 }
-template void ConvertStr<RawString, RawString>(const RawString & inString, RawString & outString);
+template void convertStr<RawString, RawString>(const RawString & inString, RawString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const RawString & inString, EscString & outString)
+void convertStr(const RawString & inString, EscString & outString)
 {
-    MakeEscStr(inString, outString);
+    makeEscStr(inString, outString);
 }
-template void ConvertStr<RawString, EscString>(const RawString & inString, EscString & outString);
+template void convertStr<RawString, EscString>(const RawString & inString, EscString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const RawString & inString, ChkdString & outString)
+void convertStr(const RawString & inString, ChkdString & outString)
 {
-    MakeChkdStr(inString, outString);
+    makeChkdStr(inString, outString);
 }
-template void ConvertStr<RawString, ChkdString>(const RawString & inString, ChkdString & outString);
+template void convertStr<RawString, ChkdString>(const RawString & inString, ChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const RawString & inString, SingleLineChkdString & outString)
+void convertStr(const RawString & inString, SingleLineChkdString & outString)
 {
     MakeOneLineChkdStr(inString, inString.length(), outString);
 }
-template void ConvertStr<RawString, SingleLineChkdString>(const RawString & inString, SingleLineChkdString & outString);
+template void convertStr<RawString, SingleLineChkdString>(const RawString & inString, SingleLineChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const EscString & inString, RawString & outString)
+void convertStr(const EscString & inString, RawString & outString)
 {
-    ParseEscStr(inString, outString);
+    parseEscStr(inString, outString);
 }
-template void ConvertStr<EscString, RawString>(const EscString & inString, RawString & outString);
+template void convertStr<EscString, RawString>(const EscString & inString, RawString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const EscString & inString, EscString & outString)
+void convertStr(const EscString & inString, EscString & outString)
 {
     outString = inString;
 }
-template void ConvertStr<EscString, EscString>(const EscString & inString, EscString & outString);
+template void convertStr<EscString, EscString>(const EscString & inString, EscString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const EscString & inString, ChkdString & outString)
+void convertStr(const EscString & inString, ChkdString & outString)
 {
     RawString rawString;
-    ParseEscStr(inString, rawString);
-    MakeChkdStr(rawString, outString);
+    parseEscStr(inString, rawString);
+    makeChkdStr(rawString, outString);
 }
-template void ConvertStr<RawString, ChkdString>(const EscString & inString, ChkdString & outString);
+template void convertStr<RawString, ChkdString>(const EscString & inString, ChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const EscString & inString, SingleLineChkdString & outString)
+void convertStr(const EscString & inString, SingleLineChkdString & outString)
 {
     RawString rawString;
-    ParseEscStr(inString, rawString);
+    parseEscStr(inString, rawString);
     MakeOneLineChkdStr(rawString, rawString.length(), outString);
 }
-template void ConvertStr<RawString, SingleLineChkdString>(const EscString & inString, SingleLineChkdString & outString);
+template void convertStr<RawString, SingleLineChkdString>(const EscString & inString, SingleLineChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const ChkdString & inString, RawString & outString)
+void convertStr(const ChkdString & inString, RawString & outString)
 {
-    ParseChkdStr(inString, outString);
+    parseChkdStr(inString, outString);
 }
-template void ConvertStr<ChkdString, RawString>(const ChkdString & inString, RawString & outString);
+template void convertStr<ChkdString, RawString>(const ChkdString & inString, RawString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const ChkdString & inString, EscString & outString)
+void convertStr(const ChkdString & inString, EscString & outString)
 {
     RawString rawString;
-    ParseChkdStr(inString, rawString);
-    MakeEscStr(rawString, outString);
+    parseChkdStr(inString, rawString);
+    makeEscStr(rawString, outString);
 }
-template void ConvertStr<ChkdString, EscString>(const ChkdString & inString, EscString & outString);
+template void convertStr<ChkdString, EscString>(const ChkdString & inString, EscString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const ChkdString & inString, ChkdString & outString)
+void convertStr(const ChkdString & inString, ChkdString & outString)
 {
     outString = inString;
 }
-template void ConvertStr<ChkdString, ChkdString>(const ChkdString & inString, ChkdString & outString);
+template void convertStr<ChkdString, ChkdString>(const ChkdString & inString, ChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const ChkdString & inString, SingleLineChkdString & outString)
+void convertStr(const ChkdString & inString, SingleLineChkdString & outString)
 {
     RawString rawString;
-    ParseChkdStr(inString, rawString);
+    parseChkdStr(inString, rawString);
     MakeOneLineChkdStr(rawString, rawString.length(), outString);
 }
-template void ConvertStr<ChkdString, SingleLineChkdString>(const ChkdString & inString, SingleLineChkdString & outString);
+template void convertStr<ChkdString, SingleLineChkdString>(const ChkdString & inString, SingleLineChkdString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const SingleLineChkdString & inString, RawString & outString)
+void convertStr(const SingleLineChkdString & inString, RawString & outString)
 {
-    ParseChkdStr(inString, outString);
+    parseChkdStr(inString, outString);
 }
-template void ConvertStr<SingleLineChkdString, RawString>(const SingleLineChkdString & inString, RawString & outString);
+template void convertStr<SingleLineChkdString, RawString>(const SingleLineChkdString & inString, RawString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const SingleLineChkdString & inString, EscString & outString)
-{
-    RawString rawString;
-    ParseChkdStr(inString, rawString);
-    MakeEscStr(rawString, outString);
-}
-template void ConvertStr<SingleLineChkdString, EscString>(const SingleLineChkdString & inString, EscString & outString);
-
-template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const SingleLineChkdString & inString, ChkdString & outString)
+void convertStr(const SingleLineChkdString & inString, EscString & outString)
 {
     RawString rawString;
-    ParseChkdStr(inString, rawString);
-    MakeChkdStr(rawString, outString);
+    parseChkdStr(inString, rawString);
+    makeEscStr(rawString, outString);
 }
-template void ConvertStr<SingleLineChkdString, ChkdString>(const SingleLineChkdString & inString, ChkdString & outString);
+template void convertStr<SingleLineChkdString, EscString>(const SingleLineChkdString & inString, EscString & outString);
 
 template <typename StringTypeIn, typename StringTypeOut>
-void ConvertStr(const SingleLineChkdString & inString, SingleLineChkdString & outString)
+void convertStr(const SingleLineChkdString & inString, ChkdString & outString)
+{
+    RawString rawString;
+    parseChkdStr(inString, rawString);
+    makeChkdStr(rawString, outString);
+}
+template void convertStr<SingleLineChkdString, ChkdString>(const SingleLineChkdString & inString, ChkdString & outString);
+
+template <typename StringTypeIn, typename StringTypeOut>
+void convertStr(const SingleLineChkdString & inString, SingleLineChkdString & outString)
 {
     outString = inString;
 }
-template void ConvertStr<SingleLineChkdString, SingleLineChkdString>(const SingleLineChkdString & inString, SingleLineChkdString & outString);
+template void convertStr<SingleLineChkdString, SingleLineChkdString>(const SingleLineChkdString & inString, SingleLineChkdString & outString);
