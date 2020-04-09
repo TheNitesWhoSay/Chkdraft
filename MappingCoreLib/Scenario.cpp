@@ -1213,10 +1213,10 @@ template std::shared_ptr<SingleLineChkdString> Strings::getForceName<SingleLineC
 template <typename StringType>
 std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope)
 {
-    std::shared_ptr<StringType> mapUnitName = getString<StringType>(
+    std::shared_ptr<StringType> mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
         properties->getUnitNameStringId(unitType, useExp),
         properties->useExpansionUnitSettings(useExp) ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType),
-        storageScope);
+        storageScope) : nullptr;
 
     if ( mapUnitName != nullptr )
         return mapUnitName;
