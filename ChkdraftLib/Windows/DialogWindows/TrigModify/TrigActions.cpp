@@ -999,7 +999,7 @@ void TrigActionsWindow::ButtonEditWav()
                     size_t stringId = CM->strings.addString<ChkdString>(wavStr);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        CM->AddSound(stringId);
+                        CM->addSound(stringId);
                         action.soundStringId = (u32)stringId;
                         chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
                         break;

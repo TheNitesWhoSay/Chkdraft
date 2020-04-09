@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "TestAssets.h"
 
-bool GetPreSavePath(std::string & outPreSavePath)
+bool getPreSavePath(std::string & outPreSavePath)
 {
     return false;
 }

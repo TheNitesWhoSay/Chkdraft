@@ -17,7 +17,7 @@
 */
 
 #ifdef CHKDRAFT
-bool GetPreSavePath(std::string & outPreSavePath); // Gets path holding assets to be written to the map file on save
+bool getPreSavePath(std::string & outPreSavePath); // Gets path holding assets to be written to the map file on save
 #endif
 
 class SimpleMapBrowser;
@@ -29,9 +29,9 @@ using MapFilePtr = std::shared_ptr<MapFile>;
 class MapFile : public Scenario, public MpqFile // MapFile is a scenario file and usually an MpqFile
 {
     public:
-        MapFile(const std::string & filePath);
-        MapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-        MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64);
+        MapFile(const std::string & filePath); // Load map at filePath
+        MapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser()); // Load map selected from browser
+        MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64); // Create new map
 
         virtual ~MapFile();
         
@@ -39,30 +39,31 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         virtual bool save(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
             bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
-        bool LoadMapFile(const std::string & filePath);
-        bool LoadMapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
+        bool load(const std::string & filePath);
+        bool load(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
 
-        void SetSaveType(SaveType newSaveType);
+        void setSaveType(SaveType newSaveType);
 
         static std::string GetStandardSoundDir();
-        bool AddMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
-        bool AddMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
-        void RemoveMpqAsset(const std::string & assetMpqFilePath);
-        bool GetMpqAsset(const std::string & assetMpqFilePath, std::vector<u8> & outAssetBuffer);
-        bool ExtractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
-        virtual bool GetSound(u16 soundIndex, size_t & outStringId);
-        bool GetSound(size_t stringId, std::vector<u8> & outSoundData);
-        bool AddSound(size_t stringId); // Adds a sound string to the sound list
-        bool AddSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
-        bool AddSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
-        bool AddSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
-        virtual bool RemoveSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
-        virtual bool RemoveSoundByStringId(size_t stringId, bool removeIfUsed);
-        SoundStatus GetSoundStatus(size_t soundStringId);
-        bool GetSoundStatusMap(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
-        bool IsInVirtualSoundList(const std::string & soundMpqPath);
 
-        std::string GetFileName();
+        bool addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
+        bool addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
+        void removeMpqAsset(const std::string & assetMpqFilePath);
+        bool getMpqAsset(const std::string & assetMpqFilePath, std::vector<u8> & outAssetBuffer);
+        bool extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
+
+        bool getSound(size_t stringId, std::vector<u8> & outSoundData);
+        bool addSound(size_t stringId); // Adds a sound string to the sound list
+        bool addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
+        bool addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
+        bool addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
+        virtual bool removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
+        virtual bool removeSoundByStringId(size_t stringId, bool removeIfUsed);
+        SoundStatus getSoundStatus(size_t soundStringId);
+        bool getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
+        bool isInVirtualSoundList(const std::string & soundMpqPath);
+
+        std::string getFileName();
         virtual const std::string & getFilePath() const;
 
         static FileBrowserPtr<SaveType> getDefaultOpenMapBrowser();
@@ -82,9 +83,9 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         static std::map<size_t, std::string> virtualSoundTable;
         static u64 nextAssetFileId; // Changes are needed if this is accessed in a multi-threaded environment
 
-        bool OpenMapFile(const std::string & filePath);
-        bool OpenTemporaryMpq();
-        bool ProcessModifiedAssets(bool updateListfile);
+        bool openMapFile(const std::string & filePath);
+        bool openTemporaryMpq();
+        bool processModifiedAssets(bool updateListfile);
         
         MapFile();
 };

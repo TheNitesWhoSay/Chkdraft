@@ -125,7 +125,7 @@ void WavEditorWindow::UpdateWindowText()
         if ( wavEntry != wavMap.end() )
             wavIndex = wavEntry->second;
 
-        SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
+        SoundStatus wavStatus = CM->getSoundStatus(wavStringId);
 
         std::string wavStatusString = "";
         if ( wavStatus == SoundStatus::NoMatch )
@@ -185,7 +185,7 @@ void WavEditorWindow::PlaySoundButtonPressed()
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         std::vector<u8> wavBuffer;
-        if ( CM->GetSound(soundStringId, wavBuffer) )
+        if ( CM->getSound(soundStringId, wavBuffer) )
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)&wavBuffer[0], NULL, SND_ASYNC|SND_MEMORY);
@@ -196,7 +196,7 @@ void WavEditorWindow::PlaySoundButtonPressed()
         else
         {
             RawStringPtr soundString = CM->strings.getString<RawString>(soundStringId);
-            if ( soundString != nullptr && CM->IsInVirtualSoundList(*soundString) &&
+            if ( soundString != nullptr && CM->isInVirtualSoundList(*soundString) &&
                 Sc::Data::GetAsset(*soundString, wavBuffer, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
                     ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
             {
@@ -221,7 +221,7 @@ void WavEditorWindow::PlayVirtualSoundButtonPressed()
     std::string wavString = "";
     if ( listVirtualSounds.GetCurSelString(wavString) )
     {
-        if ( CM->IsInVirtualSoundList(wavString) && Sc::Data::GetAsset(wavString, wavBuffer,
+        if ( CM->isInVirtualSoundList(wavString) && Sc::Data::GetAsset(wavString, wavBuffer,
             Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
             ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
@@ -252,7 +252,7 @@ void WavEditorWindow::ExtractSoundButtonPressed()
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
-                SoundStatus soundStatus = CM->GetSoundStatus(soundStringId);
+                SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
                 if ( soundStatus == SoundStatus::VirtualFile )
                 {
                     if ( !Sc::Data::ExtractAsset(*wavMpqPath, saveFilePath, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
@@ -261,7 +261,7 @@ void WavEditorWindow::ExtractSoundButtonPressed()
                         Error("Error Extracting Asset!");
                     }
                 }
-                else if ( !CM->ExtractMpqAsset(*wavMpqPath, saveFilePath) )
+                else if ( !CM->extractMpqAsset(*wavMpqPath, saveFilePath) )
                     Error("Error Extracting Asset!");
             }
             else
@@ -306,34 +306,34 @@ void WavEditorWindow::AddFileButtonPressed()
 
     bool addedWav = false;
     std::string filePath = editFileName.GetWinText();
-    if ( useVirtualFile && CM->IsInVirtualSoundList(filePath) )
+    if ( useVirtualFile && CM->isInVirtualSoundList(filePath) )
     {
         if ( useCustomMpqString )
-            addedWav = CM->AddSound(filePath, customMpqPath, wavQuality, true);
+            addedWav = CM->addSound(filePath, customMpqPath, wavQuality, true);
         else
-            addedWav = CM->AddSound(filePath, wavQuality, true);
+            addedWav = CM->addSound(filePath, wavQuality, true);
     }
     else if ( !useVirtualFile && findFile(filePath) )
     {
         if ( useCustomMpqString )
-            addedWav = CM->AddSound(filePath, customMpqPath, wavQuality, false);
+            addedWav = CM->addSound(filePath, customMpqPath, wavQuality, false);
         else
-            addedWav = CM->AddSound(filePath, wavQuality, false);
+            addedWav = CM->addSound(filePath, wavQuality, false);
     }
-    else if ( !useVirtualFile && CM->IsInVirtualSoundList(filePath) )
+    else if ( !useVirtualFile && CM->isInVirtualSoundList(filePath) )
     {
         std::vector<u8> wavContents;
         if ( Sc::Data::GetAsset(filePath, wavContents, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
             ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
         {
             if ( useCustomMpqString )
-                addedWav = CM->AddSound(customMpqPath, wavContents, wavQuality);
+                addedWav = CM->addSound(customMpqPath, wavContents, wavQuality);
             else
             {
                 std::string mpqFileName = getMpqFileName(filePath);
                 std::string standardWavDir = MapFile::GetStandardSoundDir();
                 std::string mpqFilePath = makeMpqFilePath(standardWavDir, mpqFileName);
-                addedWav = CM->AddSound(mpqFilePath, wavContents, wavQuality);
+                addedWav = CM->addSound(mpqFilePath, wavContents, wavQuality);
             }
         }
         else
@@ -414,7 +414,7 @@ void WavEditorWindow::MapSoundSelectionChanged()
         u32 wavStringId = 0;
         if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
         {
-            SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
+            SoundStatus wavStatus = CM->getSoundStatus(wavStringId);
             if ( wavStatus == SoundStatus::PendingMatch || wavStatus == SoundStatus::CurrentMatch || wavStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
         }
@@ -496,11 +496,11 @@ void WavEditorWindow::DeleteSoundButtonPressed()
 
         if ( wavStringIdIsUsed )
         {
-            SoundStatus wavStatus = CM->GetSoundStatus(wavStringId);
+            SoundStatus wavStatus = CM->getSoundStatus(wavStringId);
             if ( wavStatus == SoundStatus::NoMatch || wavStatus == SoundStatus::NoMatchExtended )
             {
                 selectedSoundListIndex = -1;
-                CM->RemoveSoundByStringId(wavStringId, true);
+                CM->removeSoundByStringId(wavStringId, true);
                 CM->notifyChange(false);
                 CM->refreshScenario();
             }
@@ -520,7 +520,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundListIndex = -1;
-                    CM->RemoveSoundByStringId(wavStringId, true);
+                    CM->removeSoundByStringId(wavStringId, true);
                     CM->notifyChange(false);
                     CM->refreshScenario();
                 }
@@ -529,7 +529,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
         else
         {
             selectedSoundListIndex = -1;
-            CM->RemoveSoundByStringId(wavStringId, false);
+            CM->removeSoundByStringId(wavStringId, false);
             CM->notifyChange(false);
             CM->refreshScenario();
         }

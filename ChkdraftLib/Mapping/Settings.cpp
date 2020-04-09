@@ -52,7 +52,7 @@ bool GetChkdPath(std::string & outChkdPath)
     return false;
 }
 
-bool GetPreSavePath(std::string & outPreSavePath)
+bool getPreSavePath(std::string & outPreSavePath)
 {
     std::string chkdPath;
     if ( GetChkdPath(chkdPath) )

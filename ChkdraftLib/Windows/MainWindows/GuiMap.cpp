@@ -18,7 +18,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
     minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
-    SetWinText(MapFile::GetFileName());
+    SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -32,7 +32,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
     minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
-    SetWinText(MapFile::GetFileName());
+    SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -2003,7 +2003,7 @@ bool GuiMap::GetBackupPath(time_t currTime, std::string & outFilePath)
             std::to_string(year) + std::string(month <= 9 ? "-0" : "-") + std::to_string(month) +
             std::string(day <= 9 ? "-0" : "-") + std::to_string(day) + std::string(hour <= 9 ? " 0" : " ") +
             std::to_string(hour) + std::string(minute <= 9 ? "h0" : "h") + std::to_string(minute) +
-            std::string(seconds <= 9 ? "m0" : "m") + std::to_string(seconds) + std::string("s ") + std::string(GetFileName());
+            std::string(seconds <= 9 ? "m0" : "m") + std::to_string(seconds) + std::string("s ") + std::string(getFileName());
 
         return true;
     }
