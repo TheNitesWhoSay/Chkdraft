@@ -1034,9 +1034,13 @@ void TrigActionsWindow::ButtonEditUnitProperties()
         Chk::Cuwp newCuwp = {};
         if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
-            size_t newCuwpIndex = CM->triggers.addCuwp(newCuwp);
+            size_t newCuwpIndex = CM->triggers.addCuwp(newCuwp, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
+            {
                 action.number = (u32)newCuwpIndex;
+                CM->triggers.setCuwpUsed(newCuwpIndex, true);
+                RefreshWindow(trigIndex);
+            }
             else
                 Error("Unable to add CUWP, all 64 slots may be in use.");
         }

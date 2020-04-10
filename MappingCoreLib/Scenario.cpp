@@ -1223,7 +1223,7 @@ std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool d
     else if ( unitType < Sc::Unit::TotalTypes )
         return std::shared_ptr<StringType>(new StringType(Sc::Unit::defaultDisplayNames[unitType]));
     else
-        return std::shared_ptr<StringType>(new StringType("UnitID: " + std::to_string(unitType)));
+        return std::shared_ptr<StringType>(new StringType("ID:" + std::to_string(unitType)));
 }
 template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
 template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
@@ -3285,7 +3285,7 @@ void Triggers::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
     return uprp->setCuwp(cuwpIndex, cuwp);
 }
 
-size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding)
+size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding, size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
 {
     size_t found = uprp->findCuwp(cuwp);
     if ( found < Sc::Unit::MaxCuwps )
@@ -3293,7 +3293,7 @@ size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding)
     else
     {
         if ( fixUsageBeforeAdding )
-            fixCuwpUsage();
+            fixCuwpUsage(excludedTriggerIndex, excludedTriggerActionIndex);
 
         size_t nextUnused = upus->getNextUnusedCuwpIndex();
         if ( nextUnused < Sc::Unit::MaxCuwps )
@@ -3303,7 +3303,7 @@ size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding)
     }
 }
 
-void Triggers::fixCuwpUsage()
+void Triggers::fixCuwpUsage(size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
 {
     for ( size_t i=0; i<Sc::Unit::MaxCuwps; i++ )
         upus->setCuwpUsed(i, false);
@@ -3315,7 +3315,7 @@ void Triggers::fixCuwpUsage()
         for ( size_t actionIndex=0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
             Chk::Action & action = trigger->action(actionIndex);
-            if ( action.actionType == Chk::Action::Type::CreateUnitWithProperties && action.number < Sc::Unit::MaxCuwps )
+            if ( action.actionType == Chk::Action::Type::CreateUnitWithProperties && action.number < Sc::Unit::MaxCuwps && !(triggerIndex == excludedTriggerIndex && actionIndex == excludedTriggerActionIndex) )
                 upus->setCuwpUsed(action.number, true);
         }
     }

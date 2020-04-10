@@ -500,9 +500,9 @@ class Triggers : public LocationSynchronizer
 
         Chk::Cuwp getCuwp(size_t cuwpIndex);
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
-        size_t addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding = true);
+        size_t addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding = true, size_t excludedTriggerIndex = Chk::MaximumTriggers, size_t excludedTriggerActionIndex = Chk::Trigger::MaxActions);
         
-        void fixCuwpUsage();
+        void fixCuwpUsage(size_t excludedTriggerIndex = Chk::MaximumTriggers, size_t excludedTriggerActionIndex = Chk::Trigger::MaxActions);
         bool cuwpUsed(size_t cuwpIndex);
         void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
 
