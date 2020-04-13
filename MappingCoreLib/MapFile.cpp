@@ -122,7 +122,7 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
         }
         else // Is a chk file or unrecognized format, write out chk file
         {
-            if ( removeFile(saveFilePath) ) // Remove any existing files of the same name
+            if ( ::removeFile(saveFilePath) ) // Remove any existing files of the same name
             {
                 std::ofstream outFile(icux::toFilestring(saveFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
                 if ( outFile.is_open() )
@@ -189,7 +189,7 @@ bool MapFile::openTemporaryMpq()
             assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
             nextAssetFileId ++;
         }
-        while ( findFile(assetFilePath) ); // Try again if the file already exists
+        while ( ::findFile(assetFilePath) ); // Try again if the file already exists
     }
 #endif
 
@@ -201,7 +201,7 @@ bool MapFile::openTemporaryMpq()
             {
                 assetFileDirectory = getSystemFileDirectory(mapFilePath, true);
                 assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
-            } while ( findFile(assetFilePath) ); // Try again if the file already exists
+            } while ( ::findFile(assetFilePath) ); // Try again if the file already exists
         }
         else // Use the C library to find an appropriate temporary location
         {
@@ -356,7 +356,7 @@ std::string MapFile::GetStandardSoundDir()
 bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
-    if ( findFile(assetSystemFilePath) )
+    if ( ::findFile(assetSystemFilePath) )
     {
         if ( openTemporaryMpq() )
         {
@@ -770,7 +770,7 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
                     newSaveType = SaveType::ExpansionScx; // Default to expansion scx
             }
 
-            bool fileExists = findFile(newSaveFilePath);
+            bool fileExists = ::findFile(newSaveFilePath);
             bool mustConfirmOverwrite = fileExists && inferredExtension;
             if ( !mustConfirmOverwrite || fileBrowser->confirmOverwrite(getSystemFileName(newSaveFilePath) + " already exists.\nDo you want to replace it?") )
             { // Either the save path was complete during browsing and the browser checked
