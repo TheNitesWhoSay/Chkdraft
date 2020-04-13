@@ -74,13 +74,20 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
                 keepRunning = false;
             else
             {
-                bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-                if ( ::IsDialogMessage(currDialog, &msg) == FALSE )
+                try
                 {
-                    ::TranslateMessage(&msg);
-                    if ( !isDlgKey )
-                        KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-                    ::DispatchMessage(&msg);
+                    bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+                    if ( ::IsDialogMessage(currDialog, &msg) == FALSE )
+                    {
+                        ::TranslateMessage(&msg);
+                        if ( !isDlgKey )
+                            KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+                        ::DispatchMessage(&msg);
+                    }
+                }
+                catch ( std::exception & e )
+                {
+                    logger.error() << e.what() << std::endl;
                 }
             }
         }
