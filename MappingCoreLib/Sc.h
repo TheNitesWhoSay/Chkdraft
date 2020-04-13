@@ -841,7 +841,7 @@ namespace Sc {
     public:
         static constexpr size_t TotalOriginalTypes = 24;
         static constexpr size_t TotalTypes = 44;
-        enum class Type : u32 { // u32
+        enum_t(Type, u32, { // u32
             StimPacks = 0,
             Lockdown = 1,
             EMPShockwave = 2,
@@ -886,7 +886,7 @@ namespace Sc {
             UnusedTech_41 = 41,
             UnusedTech_42 = 42,
             UnusedTech_43 = 43
-        };
+        });
 
         static const std::vector<std::string> names;
 

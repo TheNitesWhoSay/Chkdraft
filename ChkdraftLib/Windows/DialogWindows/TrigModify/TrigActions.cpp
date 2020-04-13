@@ -687,10 +687,10 @@ void TrigActionsWindow::SuggestLocation()
             std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
             if ( locationName != nullptr )
                 suggestions.AddString(*locationName);
-            else
+            else if ( !loc->isBlank() )
             {
                 std::stringstream ssLoc;
-                ssLoc << "Location " << i;
+                ssLoc << i;
                 suggestions.AddString(ssLoc.str());
             }
         }
@@ -826,6 +826,7 @@ void TrigActionsWindow::SuggestWav()
                 suggestions.AddString(std::to_string(soundStringId));
         }
     }
+    suggestions.Show();
 }
 
 void TrigActionsWindow::SuggestDuration()

@@ -378,7 +378,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     if ( 15 * (u32)newTimeCost > 65535 ) // Overflow
                         CM->properties.setTechResearchTime((Sc::Tech::Type)selectedTech, 65535); // Set to max
                     else // Normal
-                        CM->properties.setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost * 15);
+                        CM->properties.setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost);
 
                     CM->notifyChange(false);
                 }
@@ -399,6 +399,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( HIWORD(wParam) == BN_CLICKED && selectedTech != -1 &&
                 SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED )
             {
+                CM->properties.setDefaultTechAvailable((Sc::Tech::Type)selectedTech, false);
                 CM->properties.setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, false);
                 CM->notifyChange(false);
                 RefreshWindow();

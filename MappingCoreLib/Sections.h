@@ -475,10 +475,10 @@ class UpgrSection : public StructSection<Chk::UPGR, false>
         size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType);
         size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType);
         bool playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex);
-        void setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 maxUpgradeLevel);
-        void setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 startUpgradeLevel);
-        void setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 maxUpgradeLevel);
-        void setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 startUpgradeLevel);
+        void setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel);
+        void setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel);
+        void setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel);
+        void setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel);
         void setPlayerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault);
 };
 

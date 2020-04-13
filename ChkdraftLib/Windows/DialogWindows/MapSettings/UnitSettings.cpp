@@ -171,13 +171,13 @@ void UnitSettingsWindow::RefreshWindow()
             editGasCost.SetEditNum<u16>(CM->properties.getUnitGasCost(selectedUnitType));
             if ( groundWeapon != 130 )
             {
-                editGroundDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)unitDat.groundWeapon));
-                editGroundBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+                editGroundDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)groundWeapon));
+                editGroundBonus.SetEditNum<u16>(CM->properties.getWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon));
             }
             if ( airWeapon != 130 && airWeapon != groundWeapon )
             {
-                editAirDamage.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
-                editAirBonus.SetEditNum<u16>(CM->properties.getUnitArmorLevel(selectedUnitType));
+                editAirDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)airWeapon));
+                editAirBonus.SetEditNum<u16>(CM->properties.getWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon));
             }
         }
 
@@ -193,7 +193,7 @@ void UnitSettingsWindow::RefreshWindow()
                 dropPlayerAvailability[i].SetSel(2);
         }
 
-        if ( CM->properties.getUnitNameStringId(selectedUnitType) != Chk::StringId::NoString )
+        if ( CM->properties.getUnitNameStringId(selectedUnitType) == Chk::StringId::NoString )
         {
             editUnitName.DisableThis();
             checkUseDefaultName.SetCheck(true);
@@ -766,11 +766,17 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             int sel = dropPlayerAvailability[player].GetSel();
 
             if ( sel == 0 ) // Default
-                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, dropPlayerAvailability[player].GetSel());
+                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, true);
             else if ( sel == 1 ) // Yes
+            {
+                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->properties.setUnitBuildable(selectedUnitType, player, true);
+            }
             else if ( sel == 2 ) // No
+            {
+                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->properties.setUnitBuildable(selectedUnitType, player, false);
+            }
 
             CM->notifyChange(false);
             RefreshWindow();

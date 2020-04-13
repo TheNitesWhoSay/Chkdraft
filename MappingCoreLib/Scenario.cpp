@@ -2530,6 +2530,11 @@ void Properties::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( weaponType < Sc::Weapon::TotalOriginal && unis != nullptr )
+                unis->setWeaponBaseDamage(weaponType, baseDamage);
+            if ( unix != nullptr )
+                unix->setWeaponBaseDamage(weaponType, baseDamage);
+            break;
         case Chk::UseExpSection::Both: unis->setWeaponBaseDamage(weaponType, baseDamage); unix->setWeaponBaseDamage(weaponType, baseDamage); break;
         case Chk::UseExpSection::Yes: unix->setWeaponBaseDamage(weaponType, baseDamage); break;
         case Chk::UseExpSection::No: unis->setWeaponBaseDamage(weaponType, baseDamage); break;
@@ -2543,6 +2548,11 @@ void Properties::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrade
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( weaponType < Sc::Weapon::TotalOriginal && unis != nullptr )
+                unis->setWeaponUpgradeDamage(weaponType, upgradeDamage);
+            if ( unix != nullptr )
+                unix->setWeaponUpgradeDamage(weaponType, upgradeDamage);
+            break;
         case Chk::UseExpSection::Both: unis->setWeaponUpgradeDamage(weaponType, upgradeDamage); unix->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
         case Chk::UseExpSection::Yes: unix->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
         case Chk::UseExpSection::No: unis->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
@@ -2671,6 +2681,11 @@ void Properties::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault);
+            if ( upgx != nullptr )
+                upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault);
+            break;
         case Chk::UseExpSection::Both: upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault); upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
         case Chk::UseExpSection::Yes: upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
         case Chk::UseExpSection::No: upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
@@ -2684,6 +2699,11 @@ void Properties::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 ba
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setBaseMineralCost(upgradeType, baseMineralCost);
+            if ( upgx != nullptr )
+                upgx->setBaseMineralCost(upgradeType, baseMineralCost);
+            break;
         case Chk::UseExpSection::Both: upgs->setBaseMineralCost(upgradeType, baseMineralCost); upgx->setBaseMineralCost(upgradeType, baseMineralCost); break;
         case Chk::UseExpSection::Yes: upgx->setBaseMineralCost(upgradeType, baseMineralCost); break;
         case Chk::UseExpSection::No: upgs->setBaseMineralCost(upgradeType, baseMineralCost); break;
@@ -2697,6 +2717,11 @@ void Properties::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setMineralCostFactor(upgradeType, mineralCostFactor);
+            if ( upgx != nullptr )
+                upgx->setMineralCostFactor(upgradeType, mineralCostFactor);
+            break;
         case Chk::UseExpSection::Both: upgs->setMineralCostFactor(upgradeType, mineralCostFactor); upgx->setMineralCostFactor(upgradeType, mineralCostFactor); break;
         case Chk::UseExpSection::Yes: upgx->setMineralCostFactor(upgradeType, mineralCostFactor); break;
         case Chk::UseExpSection::No: upgs->setMineralCostFactor(upgradeType, mineralCostFactor); break;
@@ -2710,6 +2735,11 @@ void Properties::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGa
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setBaseGasCost(upgradeType, baseGasCost);
+            if ( upgx != nullptr )
+                upgx->setBaseGasCost(upgradeType, baseGasCost);
+            break;
         case Chk::UseExpSection::Both: upgs->setBaseGasCost(upgradeType, baseGasCost); upgx->setBaseGasCost(upgradeType, baseGasCost); break;
         case Chk::UseExpSection::Yes: upgx->setBaseGasCost(upgradeType, baseGasCost); break;
         case Chk::UseExpSection::No: upgs->setBaseGasCost(upgradeType, baseGasCost); break;
@@ -2723,6 +2753,11 @@ void Properties::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasC
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setGasCostFactor(upgradeType, gasCostFactor);
+            if ( upgx != nullptr )
+                upgx->setGasCostFactor(upgradeType, gasCostFactor);
+            break;
         case Chk::UseExpSection::Both: upgs->setGasCostFactor(upgradeType, gasCostFactor); upgx->setGasCostFactor(upgradeType, gasCostFactor); break;
         case Chk::UseExpSection::Yes: upgx->setGasCostFactor(upgradeType, gasCostFactor); break;
         case Chk::UseExpSection::No: upgs->setGasCostFactor(upgradeType, gasCostFactor); break;
@@ -2736,6 +2771,11 @@ void Properties::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 b
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setBaseResearchTime(upgradeType, baseResearchTime);
+            if ( upgx != nullptr )
+                upgx->setBaseResearchTime(upgradeType, baseResearchTime);
+            break;
         case Chk::UseExpSection::Both: upgs->setBaseResearchTime(upgradeType, baseResearchTime); upgx->setBaseResearchTime(upgradeType, baseResearchTime); break;
         case Chk::UseExpSection::Yes: upgx->setBaseResearchTime(upgradeType, baseResearchTime); break;
         case Chk::UseExpSection::No: upgs->setBaseResearchTime(upgradeType, baseResearchTime); break;
@@ -2749,6 +2789,11 @@ void Properties::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
+                upgs->setResearchTimeFactor(upgradeType, researchTimeFactor);
+            if ( upgx != nullptr )
+                upgx->setResearchTimeFactor(upgradeType, researchTimeFactor);
+            break;
         case Chk::UseExpSection::Both: upgs->setResearchTimeFactor(upgradeType, researchTimeFactor); upgx->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
         case Chk::UseExpSection::Yes: upgx->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
         case Chk::UseExpSection::No: upgs->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
@@ -2800,13 +2845,18 @@ void Properties::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t player
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); pupx->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); break;
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
+                upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel);
+            if ( pupx != nullptr )
+                pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
+        case Chk::UseExpSection::No: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
         case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel) : upgr->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); break;
+            pupx != nullptr ? pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel) : upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel) : pupx->setMaxUpgradeLevel(upgradeType, playerIndex, (u8)maxUpgradeLevel); break;
+            upgr != nullptr ? upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel) : pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
     }
 }
 
@@ -2815,13 +2865,18 @@ void Properties::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t play
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: upgr->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); pupx->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); break;
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
+                upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel);
+            if ( pupx != nullptr )
+                pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
+        case Chk::UseExpSection::No: upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
         case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel) : upgr->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); break;
+            pupx != nullptr ? pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel) : upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel) : pupx->setStartUpgradeLevel(upgradeType, playerIndex, (u8)startUpgradeLevel); break;
+            upgr != nullptr ? upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel) : pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
     }
 }
 
@@ -2830,11 +2885,16 @@ void Properties::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: upgr->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); pupx->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::YesIfAvailable: pupx != nullptr ? pupx->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel) : upgr->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgr != nullptr ? upgr->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel) : pupx->setDefaultMaxUpgradeLevel(upgradeType, (u8)maxUpgradeLevel); break;
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
+                upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel);
+            if ( pupx != nullptr )
+                pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
+        case Chk::UseExpSection::No: upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
+        case Chk::UseExpSection::YesIfAvailable: pupx != nullptr ? pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel) : upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
+        case Chk::UseExpSection::NoIfOrigAvailable: upgr != nullptr ? upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel) : pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
     }
 }
 
@@ -2843,13 +2903,18 @@ void Properties::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: upgr->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); pupx->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); break;
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
+                upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel);
+            if ( pupx != nullptr )
+                pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
+        case Chk::UseExpSection::No: upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
         case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel) : upgr->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); break;
+            pupx != nullptr ? pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel) : upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel) : pupx->setDefaultStartUpgradeLevel(upgradeType, (u8)startUpgradeLevel); break;
+            upgr != nullptr ? upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel) : pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
     }
 }
 
@@ -2858,6 +2923,11 @@ void Properties::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeTy
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
+                upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault);
+            if ( pupx != nullptr )
+                pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault);
+            break;
         case Chk::UseExpSection::Both: upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
         case Chk::UseExpSection::Yes: pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
         case Chk::UseExpSection::No: upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
@@ -2953,6 +3023,11 @@ void Properties::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDef
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
+                tecs->setTechUsesDefaultSettings(techType, useDefault);
+            if ( tecx != nullptr )
+                tecx->setTechUsesDefaultSettings(techType, useDefault);
+            break;
         case Chk::UseExpSection::Both: tecs->setTechUsesDefaultSettings(techType, useDefault); tecx->setTechUsesDefaultSettings(techType, useDefault); break;
         case Chk::UseExpSection::Yes: tecx->setTechUsesDefaultSettings(techType, useDefault); break;
         case Chk::UseExpSection::No: tecs->setTechUsesDefaultSettings(techType, useDefault); break;
@@ -2966,6 +3041,11 @@ void Properties::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Ch
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
+                tecs->setTechMineralCost(techType, mineralCost);
+            if ( tecx != nullptr )
+                tecx->setTechMineralCost(techType, mineralCost);
+            break;
         case Chk::UseExpSection::Both: tecs->setTechMineralCost(techType, mineralCost); tecx->setTechMineralCost(techType, mineralCost); break;
         case Chk::UseExpSection::Yes: tecx->setTechMineralCost(techType, mineralCost); break;
         case Chk::UseExpSection::No: tecs->setTechMineralCost(techType, mineralCost); break;
@@ -2979,6 +3059,11 @@ void Properties::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseEx
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
+                tecs->setTechGasCost(techType, gasCost);
+            if ( tecx != nullptr )
+                tecx->setTechGasCost(techType, gasCost);
+            break;
         case Chk::UseExpSection::Both: tecs->setTechGasCost(techType, gasCost); tecx->setTechGasCost(techType, gasCost); break;
         case Chk::UseExpSection::Yes: tecx->setTechGasCost(techType, gasCost); break;
         case Chk::UseExpSection::No: tecs->setTechGasCost(techType, gasCost); break;
@@ -2992,6 +3077,11 @@ void Properties::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
+                tecs->setTechResearchTime(techType, researchTime);
+            if ( tecx != nullptr )
+                tecx->setTechResearchTime(techType, researchTime);
+            break;
         case Chk::UseExpSection::Both: tecs->setTechResearchTime(techType, researchTime); tecx->setTechResearchTime(techType, researchTime); break;
         case Chk::UseExpSection::Yes: tecx->setTechResearchTime(techType, researchTime); break;
         case Chk::UseExpSection::No: tecs->setTechResearchTime(techType, researchTime); break;
@@ -3005,6 +3095,11 @@ void Properties::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk:
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
+                tecs->setTechEnergyCost(techType, energyCost);
+            if ( tecx != nullptr )
+                tecx->setTechEnergyCost(techType, energyCost);
+            break;
         case Chk::UseExpSection::Both: tecs->setTechEnergyCost(techType, energyCost); tecx->setTechEnergyCost(techType, energyCost); break;
         case Chk::UseExpSection::Yes: tecx->setTechEnergyCost(techType, energyCost); break;
         case Chk::UseExpSection::No: tecs->setTechEnergyCost(techType, energyCost); break;
@@ -3056,6 +3151,11 @@ void Properties::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, b
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
+                ptec->setTechAvailable(techType, playerIndex, available);
+            if ( ptex != nullptr )
+                ptex->setTechAvailable(techType, playerIndex, available);
+            break;
         case Chk::UseExpSection::Both: ptec->setTechAvailable(techType, playerIndex, available); ptex->setTechAvailable(techType, playerIndex, available); break;
         case Chk::UseExpSection::Yes: ptex->setTechAvailable(techType, playerIndex, available); break;
         case Chk::UseExpSection::No: ptec->setTechAvailable(techType, playerIndex, available); break;
@@ -3069,6 +3169,11 @@ void Properties::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
+                ptec->setTechResearched(techType, playerIndex, researched);
+            if ( ptex != nullptr )
+                ptex->setTechResearched(techType, playerIndex, researched);
+            break;
         case Chk::UseExpSection::Both: ptec->setTechResearched(techType, playerIndex, researched); ptex->setTechResearched(techType, playerIndex, researched); break;
         case Chk::UseExpSection::Yes: ptex->setTechResearched(techType, playerIndex, researched); break;
         case Chk::UseExpSection::No: ptec->setTechResearched(techType, playerIndex, researched); break;
@@ -3082,6 +3187,11 @@ void Properties::setDefaultTechAvailable(Sc::Tech::Type techType, bool available
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
+                ptec->setDefaultTechAvailable(techType, available);
+            if ( ptex != nullptr )
+                ptex->setDefaultTechAvailable(techType, available);
+            break;
         case Chk::UseExpSection::Both: ptec->setDefaultTechAvailable(techType, available); ptex->setDefaultTechAvailable(techType, available); break;
         case Chk::UseExpSection::Yes: ptex->setDefaultTechAvailable(techType, available); break;
         case Chk::UseExpSection::No: ptec->setDefaultTechAvailable(techType, available); break;
@@ -3095,6 +3205,11 @@ void Properties::setDefaultTechResearched(Sc::Tech::Type techType, bool research
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
+                ptec->setDefaultTechResearched(techType, researched);
+            if ( ptex != nullptr )
+                ptex->setDefaultTechResearched(techType, researched);
+            break;
         case Chk::UseExpSection::Both: ptec->setDefaultTechResearched(techType, researched); ptex->setDefaultTechResearched(techType, researched); break;
         case Chk::UseExpSection::Yes: ptex->setDefaultTechResearched(techType, researched); break;
         case Chk::UseExpSection::No: ptec->setDefaultTechResearched(techType, researched); break;
@@ -3108,6 +3223,11 @@ void Properties::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
+                ptec->setPlayerUsesDefault(techType, playerIndex, useDefault);
+            if ( ptex != nullptr )
+                ptex->setPlayerUsesDefault(techType, playerIndex, useDefault);
+            break;
         case Chk::UseExpSection::Both: ptec->setPlayerUsesDefault(techType, playerIndex, useDefault); ptex->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
         case Chk::UseExpSection::Yes: ptex->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
         case Chk::UseExpSection::No: ptec->setPlayerUsesDefault(techType, playerIndex, useDefault); break;

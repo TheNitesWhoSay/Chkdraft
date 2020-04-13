@@ -1254,12 +1254,12 @@ bool UpgrSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t player
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-void UpgrSection::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 maxUpgradeLevel)
+void UpgrSection::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel)
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerMaxUpgradeLevel[upgradeType][playerIndex] = maxUpgradeLevel;
+            data->playerMaxUpgradeLevel[upgradeType][playerIndex] = (u8)maxUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
@@ -1267,12 +1267,12 @@ void UpgrSection::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playe
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-void UpgrSection::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, u8 startUpgradeLevel)
+void UpgrSection::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel)
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            data->playerStartUpgradeLevel[upgradeType][playerIndex] = startUpgradeLevel;
+            data->playerStartUpgradeLevel[upgradeType][playerIndex] = (u8)startUpgradeLevel;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the UPGR section!");
     }
@@ -1280,18 +1280,18 @@ void UpgrSection::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t pla
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-void UpgrSection::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 maxUpgradeLevel)
+void UpgrSection::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel)
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->defaultMaxLevel[upgradeType] = maxUpgradeLevel;
+        data->defaultMaxLevel[upgradeType] = (u8)maxUpgradeLevel;
     else
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-void UpgrSection::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, u8 startUpgradeLevel)
+void UpgrSection::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel)
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
-        data->defaultStartLevel[upgradeType] = startUpgradeLevel;
+        data->defaultStartLevel[upgradeType] = (u8)startUpgradeLevel;
     else
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
@@ -5123,8 +5123,8 @@ void TecxSection::setTechGasCost(Sc::Tech::Type techType, u16 gasCost)
 
 void TecxSection::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime)
 {
-    if ( (size_t)techType < Sc::Tech::TotalTypes )
-        data->researchTime[(size_t)techType] = researchTime;
+    if ( techType < Sc::Tech::TotalTypes )
+        data->researchTime[techType] = researchTime;
     else
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
