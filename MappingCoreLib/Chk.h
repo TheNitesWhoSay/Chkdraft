@@ -1208,7 +1208,7 @@ namespace Chk {
         u32 expUnitName[Sc::Unit::TotalTypes];
         u32 soundPath[Chk::TotalSounds];
         u32 switchName[Chk::TotalSwitches];
-        u32 locationName[Chk::TotalLocations+1];
+        u32 locationName[Chk::TotalLocations];
     };
 
     __declspec(align(1)) struct KSTR {

@@ -24,7 +24,7 @@ enum_t(Id, u32, {
 void Chkdraft::OnLoadTest()
 {
     /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
-    //maps.NewMap(128, 128, Tileset::TERRAIN_INSTALLATION, 0, 0);
+    //maps.NewMap(Sc::Terrain::Tileset::Installation, 64, 64);
     /*{
         //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 

@@ -1771,10 +1771,15 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             newLocation->elevationFlags = Chk::Location::Elevation::All;
 
             size_t newLocationId = layers.addLocation(newLocation);
-            strings.setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
-            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
-            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-            refreshScenario();
+            if ( newLocationId != Chk::LocationId::NoLocation )
+            {
+                strings.setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+                undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
+                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+                refreshScenario();
+            }
+            else
+                Error("Max Locations Reached!");
         }
         else // Move or resize location
         {

@@ -5622,7 +5622,7 @@ size_t KstrSection::addString(const StringType & str, StrSynchronizer & strSynch
     size_t nextUnusedStringId = getNextUnusedStringId(stringIdUsed, true);
         
     if ( nextUnusedStringId >= strings.size() )
-        setCapacity(nextUnusedStringId, strSynchronizer, autoDefragment);
+        setCapacity(nextUnusedStringId+1, strSynchronizer, autoDefragment);
     else if ( nextUnusedStringId == 0 )
         throw MaximumStringsExceeded();
 
