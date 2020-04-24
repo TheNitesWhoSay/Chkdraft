@@ -872,6 +872,9 @@ namespace Chk {
         void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
         void setPauseFlagged(bool pauseFlagged);
 
+        size_t getExtendedDataIndex();
+        void setExtendedDataIndex(size_t extendedDataIndex);
+
         size_t numUsedConditions();
         size_t numUsedActions();
         size_t getComment();
@@ -956,6 +959,49 @@ namespace Chk {
         Deprecated = 1,
         Current = 2
     });
+
+    __declspec(align(1)) struct ExtendedTrigData
+    {
+        u32 commentStringId; // 0 for unused
+        u32 notesStringId; // 0 for unused
+        u32 groupId; // 0xFFFFFFFF for none
+        u32 trigNum; // 0xFFFFFFFF for none
+        u32 maskId; // 0xFFFFFFFF for none
+    };
+
+    __declspec(align(1)) struct TriggerGroupHeader
+    {
+        enum_t(Flags, u32, {
+            groupExpanded = BIT_27,
+            groupHidden = BIT_28
+        });
+        u32 flags;
+        u32 templateInstanceId; // 1-based index of template details used to generate this group
+        u32 numTriggers; // Number of triggers in this group
+        u32 numGroups; // Number of groups in this group
+        u32 commentStringId; // 0 for unused
+        u32 notesStringId; // 0 for unused
+        u32 parentGroupId; // 0xFFFFFFFF if this is a top-level group
+        u32 bodyOffset; // Distance from section start to trigger group body, 0 if numTriggers+numGroups = 0
+    };
+
+    __declspec(align(1)) struct TriggerGroupBody
+    {
+        //u32 extendedTrigDataIndex[header.numTriggers];
+        //u32 groupIndex[header.numGroups];
+    };
+
+    __declspec(align(1)) struct TriggerGroup
+    {
+        bool groupExpanded;
+        bool groupHidden;
+        u32 templateInstanceId; // 1-based index of template details used to generate this group
+        u32 commentStringId; // 0 for unused
+        u32 notesStringId; // 0 for unused
+        u32 parentGroupId; // 0xFFFFFFFF if this is a top-level group
+        std::vector<u32> extendedTrigDataIndexes; // Extended trigger data indexes of triggers in this group
+        std::vector<u32> groupIndexes; // Indexes of sub-groups
+    };
 
     __declspec(align(1)) struct StringProperties {
         u8 red;
@@ -1219,6 +1265,25 @@ namespace Chk {
         // void[] stringData; // List of strings, each null terminated, starting with one NUL character
     }; // Size: 8+8*numStrings+stringDataSize (not validated)
     
+    enum_t(ExtendedTrigDataIndex, u32, {
+        None = 0xFFFFFFFF,
+        CheckExtended = 0xFEFEFEFE,
+        GetIndex = 0x00FFFFFF,
+        MaxIndex = 0x00FFFFFF
+    });
+
+    __declspec(align(1)) struct KTRG {
+        u32 version; // Current version: 2
+        //ExtendedTrigData extendedTrigData[numTrigs];
+    }; // Size: 4+20*numTrigs
+
+    __declspec(align(1)) struct KTGP {
+        u32 version; // Current version: 1
+        u32 numGroups; // The number of trigger groupings in this section
+        //TriggerGroupHeader headers[numGroups];
+        //TriggerGroupBody bodies[numGroups];
+    };
+
     enum_t(SectionName, u32, { // The section name values, as they appear in the binary scenario file
         TYPE = 1162893652, VER = 542262614, IVER = 1380275785, IVE2 = 843404873,
         VCOD = 1146045270, IOWN = 1314344777, OWNR = 1380865871, ERA = 541151813,

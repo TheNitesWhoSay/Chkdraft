@@ -39,7 +39,8 @@ class UpgrSection; class PtecSection; class UnitSection; class IsomSection; clas
 class Thg2Section; class MaskSection; class StrSection; class UprpSection; class UpusSection; class MrgnSection;
 class TrigSection; class MbrfSection; class SprpSection; class ForcSection; class WavSection; class UnisSection;
 class UpgsSection; class TecsSection; class SwnmSection; class ColrSection; class PupxSection; class PtexSection;
-class UnixSection; class UpgxSection; class TecxSection; class OstrSection; class KstrSection;
+class UnixSection; class UpgxSection; class TecxSection; class OstrSection; class KstrSection; class KtrgSection;
+class KtgpSection;
 typedef std::shared_ptr<TypeSection> TypeSectionPtr; typedef std::shared_ptr<VerSection> VerSectionPtr; typedef std::shared_ptr<IverSection> IverSectionPtr;
 typedef std::shared_ptr<Ive2Section> Ive2SectionPtr; typedef std::shared_ptr<VcodSection> VcodSectionPtr; typedef std::shared_ptr<IownSection> IownSectionPtr;
 typedef std::shared_ptr<OwnrSection> OwnrSectionPtr; typedef std::shared_ptr<EraSection> EraSectionPtr; typedef std::shared_ptr<DimSection> DimSectionPtr;
@@ -53,7 +54,8 @@ typedef std::shared_ptr<ForcSection> ForcSectionPtr; typedef std::shared_ptr<Wav
 typedef std::shared_ptr<UpgsSection> UpgsSectionPtr; typedef std::shared_ptr<TecsSection> TecsSectionPtr; typedef std::shared_ptr<SwnmSection> SwnmSectionPtr;
 typedef std::shared_ptr<ColrSection> ColrSectionPtr; typedef std::shared_ptr<PupxSection> PupxSectionPtr; typedef std::shared_ptr<PtexSection> PtexSectionPtr;
 typedef std::shared_ptr<UnixSection> UnixSectionPtr; typedef std::shared_ptr<UpgxSection> UpgxSectionPtr; typedef std::shared_ptr<TecxSection> TecxSectionPtr;
-typedef std::shared_ptr<OstrSection> OstrSectionPtr; typedef std::shared_ptr<KstrSection> KstrSectionPtr;
+typedef std::shared_ptr<OstrSection> OstrSectionPtr; typedef std::shared_ptr<KstrSection> KstrSectionPtr; typedef std::shared_ptr<KtrgSection> KtrgSectionPtr;
+typedef std::shared_ptr<KtgpSection> KtgpSectionPtr;
 
 
 
@@ -88,6 +90,8 @@ enum_t(SectionIndex, u32, { // The index at which a section appears in the defau
 
     OSTR = 39,
     KSTR = 40,
+    KTRG = 41,
+    KTGP = 42,
 
     UNKNOWN = u32_max
 });
@@ -1193,6 +1197,38 @@ class KstrSection : public DynamicSection<true>
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
         void loadString(const size_t & stringOffset, const size_t & sectionSize);
+};
+
+class KtrgSection : public DynamicSection<true>
+{
+    public:
+        static KtrgSectionPtr GetDefault();
+        KtrgSection();
+        virtual ~KtrgSection();
+
+    protected:
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+    private:
+        std::vector<Chk::ExtendedTrigData> extendedTrigData;
+};
+
+class KtgpSection : public DynamicSection<true>
+{
+    public:
+        static KtgpSectionPtr GetDefault();
+        KtgpSection();
+        virtual ~KtgpSection();
+
+    protected:
+        virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
+        virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
+        virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+    private:
+        std::vector<Chk::TriggerGroup> triggerGroups;
 };
 
 class StrProp {

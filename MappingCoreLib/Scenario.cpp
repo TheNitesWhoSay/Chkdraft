@@ -245,7 +245,13 @@ bool Scenario::read(std::istream & is)
             if ( sectionHeader.sizeInBytes >= 0 ) // Regular section
             {
                 Chk::SectionSize sizeRead = 0;
-                Section section = ChkSection::read(parsedSections, sectionHeader, chk, sizeRead);
+                Section section = nullptr;
+                try {
+                    section = ChkSection::read(parsedSections, sectionHeader, chk, sizeRead);
+                } catch ( std::exception & e ) {
+                    logger.error() << "Read of section " << ChkSection::getNameString(sectionHeader.name) << " failed with error: " << e.what() << std::endl;
+                    section = nullptr;
+                }
                 if ( section != nullptr && (chk.good() || chk.eof()) )
                 {
                     parsedSections.insert(std::pair<SectionName, Section>(sectionHeader.name, section));

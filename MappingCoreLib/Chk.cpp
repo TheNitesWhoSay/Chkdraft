@@ -1171,6 +1171,32 @@ void Chk::Trigger::setPauseFlagged(bool pauseFlagged)
         flags &= ~Flags::Paused;
 }
 
+size_t Chk::Trigger::getExtendedDataIndex()
+{
+    u32 possibleExtendedData = (u32 &)owners[22];
+    if ( (possibleExtendedData & ExtendedTrigDataIndex::CheckExtended) > 0 )
+    {
+        u32 extendedDataIndex = possibleExtendedData & ExtendedTrigDataIndex::GetIndex;
+        if ( extendedDataIndex > 0 )
+            return (size_t)extendedDataIndex;
+    }
+    return ExtendedTrigDataIndex::None;
+}
+
+void Chk::Trigger::setExtendedDataIndex(size_t extendedDataIndex)
+{
+    u32 sizedExtendedDataIndex = (u32)extendedDataIndex;
+    if ( sizedExtendedDataIndex == 0 || sizedExtendedDataIndex == 1 || sizedExtendedDataIndex == 256 ||
+        sizedExtendedDataIndex == 257 || sizedExtendedDataIndex == 65536 || sizedExtendedDataIndex == 65537 ||
+        sizedExtendedDataIndex == 65792 || sizedExtendedDataIndex == 65793 || sizedExtendedDataIndex > 0x00FFFFFF ||
+        sizedExtendedDataIndex > ExtendedTrigDataIndex::MaxIndex )
+    {
+        throw std::invalid_argument("Extended trigger data index " + std::to_string(sizedExtendedDataIndex) + " is invalid!");
+    }
+    else
+        (u32 &)owners[22] = (((u32 &)owners[22]) & 0x1010101) | (u32)extendedDataIndex;
+}
+
 size_t Chk::Trigger::numUsedConditions()
 {
     size_t total = 0;

@@ -91,6 +91,9 @@ Section allocate(const SectionName & sectionName)
 
         case SectionName::OSTR: return std::static_pointer_cast<ChkSection>(OstrSectionPtr(new OstrSection()));
         case SectionName::KSTR: return std::static_pointer_cast<ChkSection>(KstrSectionPtr(new KstrSection()));
+            
+        case SectionName::KTRG: return std::static_pointer_cast<ChkSection>(KtrgSectionPtr(new KtrgSection()));
+        case SectionName::KTGP: return std::static_pointer_cast<ChkSection>(KtgpSectionPtr(new KtgpSection()));
         
         case SectionName::UNKNOWN:
         default: return DataSectionPtr(new DataSection(sectionName));
@@ -171,7 +174,10 @@ std::vector<SectionName> ChkSection::sectionNames = {
     SectionName::SWNM, SectionName::COLR, SectionName::PUPx, SectionName::PTEx,
     SectionName::UNIx, SectionName::UPGx, SectionName::TECx,
 
+    SectionName::OSTR,
     SectionName::KSTR,
+    SectionName::KTRG,
+    SectionName::KTGP,
 
     SectionName::UNKNOWN
 };
@@ -197,8 +203,11 @@ std::unordered_map<SectionName, std::string> ChkSection::sectionNameStrings = {
     std::pair<SectionName, std::string>(SectionName::PUPx, "PUPx"), std::pair<SectionName, std::string>(SectionName::PTEx, "PTEx"),
     std::pair<SectionName, std::string>(SectionName::UNIx, "UNIx"), std::pair<SectionName, std::string>(SectionName::UPGx, "UPGx"),
     std::pair<SectionName, std::string>(SectionName::TECx, "TECx"),
-
+    
+    std::pair<SectionName, std::string>(SectionName::OSTR, "OSTR"),
     std::pair<SectionName, std::string>(SectionName::KSTR, "KSTR"),
+    std::pair<SectionName, std::string>(SectionName::KTRG, "KTRG"),
+    std::pair<SectionName, std::string>(SectionName::KTGP, "KTGP"),
 
     std::pair<SectionName, std::string>(SectionName::UNKNOWN, "UNKNOWN")
 };
@@ -243,8 +252,11 @@ std::unordered_map<SectionName, SectionIndex> ChkSection::sectionIndexes = {
     std::pair<SectionName, SectionIndex>(SectionName::UNIx, SectionIndex::UNIx),
     std::pair<SectionName, SectionIndex>(SectionName::UPGx, SectionIndex::UPGx),
     std::pair<SectionName, SectionIndex>(SectionName::TECx, SectionIndex::TECx),
-
+    
+    std::pair<SectionName, SectionIndex>(SectionName::OSTR, SectionIndex::OSTR),
     std::pair<SectionName, SectionIndex>(SectionName::KSTR, SectionIndex::KSTR),
+    std::pair<SectionName, SectionIndex>(SectionName::KTRG, SectionIndex::KTRG),
+    std::pair<SectionName, SectionIndex>(SectionName::KTGP, SectionIndex::KTGP),
 
     std::pair<SectionName, SectionIndex>(SectionName::UNKNOWN, SectionIndex::UNKNOWN)
 };
@@ -5972,6 +5984,177 @@ void KstrSection::loadString(const size_t & stringOffset, const size_t & section
         else // Character data would be out of bounds
             strings.push_back(nullptr);
     }
+}
+
+KtrgSectionPtr KtrgSection::GetDefault()
+{
+    KtrgSectionPtr newSection(new (std::nothrow) KtrgSection());
+    return newSection;
+}
+
+KtrgSection::KtrgSection() : DynamicSection<true>(SectionName::KTRG)
+{
+
+}
+
+KtrgSection::~KtrgSection()
+{
+
+}
+
+Chk::SectionSize KtrgSection::getSize(ScenarioSaver & scenarioSaver)
+{
+    return Chk::SectionSize(4+extendedTrigData.size()*sizeof(Chk::ExtendedTrigData));
+}
+
+std::streamsize KtrgSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
+{
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        size_t readNumExtendedTrigData = readSize/sizeof(Chk::ExtendedTrigData);
+        std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData);
+        is.read((char*)&extendedTrigDataBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+        this->extendedTrigData = extendedTrigDataBuffer;
+        return is.gcount();
+    }
+    return 0;
+}
+
+void KtrgSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
+    os.write((const char*)&extendedTrigData[0], std::streamsize(extendedTrigData.size()*sizeof(Chk::ExtendedTrigData)));
+}
+
+KtgpSectionPtr KtgpSection::GetDefault()
+{
+    KtgpSectionPtr newSection(new (std::nothrow) KtgpSection());
+    return newSection;
+}
+
+KtgpSection::KtgpSection() : DynamicSection<true>(SectionName::KTGP)
+{
+
+}
+
+KtgpSection::~KtgpSection()
+{
+
+}
+
+Chk::SectionSize KtgpSection::getSize(ScenarioSaver & scenarioSaver)
+{
+    Chk::SectionSize totalSize = triggerGroups.size()*sizeof(Chk::TriggerGroupHeader);
+    for ( Chk::TriggerGroup & triggerGroup : triggerGroups )
+        totalSize += Chk::SectionSize(4*triggerGroup.extendedTrigDataIndexes.size() + 4*triggerGroup.groupIndexes.size());
+
+    return totalSize;
+}
+
+std::streamsize KtgpSection::read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append)
+{
+    if ( sectionHeader.sizeInBytes < 0 )
+        throw NegativeSectionSize(sectionHeader.name);
+
+    size_t readSize = size_t(sectionHeader.sizeInBytes);
+    if ( readSize > 0 )
+    {
+        std::vector<u8> groupBytes(readSize);
+        is.read((char*)&groupBytes[0], std::streamsize(sectionHeader.sizeInBytes));
+        while ( groupBytes.size() < 4 )
+            groupBytes.push_back(u8(0));
+
+        u32 & version = (u32 &)groupBytes[0];
+        if ( version != 1 )
+            throw SectionValidationException(Chk::SectionName::KTGP, "Unrecognized version: " + std::to_string(version));
+
+        while ( groupBytes.size() < 8 )
+            groupBytes.push_back(u8(0));
+        
+        size_t numGroups = size_t((u32 &)groupBytes[4]);
+        Chk::TriggerGroup defaultTriggerGroup;
+        defaultTriggerGroup.groupExpanded = false;
+        defaultTriggerGroup.groupHidden = false;
+        defaultTriggerGroup.templateInstanceId = 0;
+        defaultTriggerGroup.commentStringId = 0;
+        defaultTriggerGroup.notesStringId = 0;
+        defaultTriggerGroup.parentGroupId = 0xFFFFFFFF;
+
+        triggerGroups.assign(numGroups, defaultTriggerGroup);
+        for ( size_t i=0; i<numGroups; i++ )
+        {
+            size_t headerStart = 8 + i*sizeof(Chk::TriggerGroupHeader);
+            size_t sizeRequired = headerStart + sizeof(Chk::TriggerGroupHeader);
+            if ( groupBytes.size() < sizeRequired )
+                groupBytes.insert(groupBytes.end(), sizeRequired-groupBytes.size(), u8(0));
+
+            Chk::TriggerGroupHeader & header = (Chk::TriggerGroupHeader &)groupBytes[headerStart];
+            Chk::TriggerGroup & triggerGroup = triggerGroups[i];
+            triggerGroup.groupExpanded = (header.flags & Chk::TriggerGroupHeader::Flags::groupExpanded) == Chk::TriggerGroupHeader::Flags::groupExpanded;
+            triggerGroup.groupHidden = (header.flags & Chk::TriggerGroupHeader::Flags::groupHidden) == Chk::TriggerGroupHeader::Flags::groupHidden;
+            triggerGroup.templateInstanceId = header.templateInstanceId;
+            triggerGroup.commentStringId = header.commentStringId;
+            triggerGroup.notesStringId = header.notesStringId;
+            triggerGroup.parentGroupId = header.parentGroupId;
+
+            if ( header.numTriggers > 0 && header.numGroups > 0 && header.bodyOffset > 0 )
+            {
+                sizeRequired = size_t(header.bodyOffset) + size_t(4*header.numTriggers) + size_t(4*header.numGroups);
+                if ( groupBytes.size() < sizeRequired )
+                    groupBytes.insert(groupBytes.end(), sizeRequired-groupBytes.size(), u8(0));
+
+                u32* body = (u32*)&groupBytes[header.bodyOffset];
+                size_t bodyIndex = 0;
+                for ( ; bodyIndex < header.numTriggers; bodyIndex++ )
+                    triggerGroup.extendedTrigDataIndexes.push_back(body[bodyIndex]);
+                for ( ; bodyIndex < size_t(header.numTriggers) + size_t(header.numGroups); bodyIndex++ )
+                    triggerGroup.groupIndexes.push_back(body[bodyIndex]);
+            }
+        }
+
+        return is.gcount();
+    }
+    return 0;
+}
+
+void KtgpSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
+{
+    u32 version = 1;
+    u32 numGroups = (u32)triggerGroups.size();
+    std::vector<Chk::TriggerGroupHeader> headers;
+    std::vector<u32> bodyData;
+
+    for ( size_t i=0; i<(size_t)numGroups; i++ )
+    {
+        const Chk::TriggerGroup & triggerGroup = triggerGroups[i];
+        Chk::TriggerGroupHeader header = {};
+        if ( triggerGroup.groupExpanded )
+            header.flags |= Chk::TriggerGroupHeader::Flags::groupExpanded;
+        if ( triggerGroup.groupHidden )
+            header.flags |= Chk::TriggerGroupHeader::Flags::groupHidden;
+
+        header.templateInstanceId = triggerGroup.templateInstanceId;
+        header.numTriggers = (u32)triggerGroup.extendedTrigDataIndexes.size();
+        header.numGroups = (u32)triggerGroup.groupIndexes.size();
+        header.commentStringId = triggerGroup.commentStringId;
+        header.notesStringId = triggerGroup.notesStringId;
+        header.parentGroupId = triggerGroup.parentGroupId;
+        header.bodyOffset = u32(numGroups*sizeof(Chk::TriggerGroupHeader)+bodyData.size());
+
+        for ( const u32 & extendedTrigDataIndex : triggerGroup.extendedTrigDataIndexes )
+            bodyData.push_back(extendedTrigDataIndex);
+
+        for ( const u32 & groupIndex : triggerGroup.groupIndexes )
+            bodyData.push_back(groupIndex);
+    }
+
+    os.write((const char*)&version, sizeof(u32));
+    os.write((const char*)&numGroups, sizeof(u32));
+    os.write((const char*)&headers[0], headers.size()*sizeof(Chk::TriggerGroupHeader));
+    os.write((const char*)&bodyData[0], bodyData.size()*sizeof(u32));
 }
 
 ScenarioSaver & ScenarioSaver::GetDefault()
