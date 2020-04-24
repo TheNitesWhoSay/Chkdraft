@@ -115,8 +115,8 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void NewSelection(u16 gridItemX, u16 gridItemY);
         void NewSuggestion(std::string & str);
 
-        ChkdString GetCurrentActionsString();
-        ChkdString GetCurrentActionsWav();
+        void GetCurrentActionString(ChkdStringPtr & gameString, ChkdStringPtr & editorString);
+        void GetCurrentActionSound(ChkdStringPtr & gameString, ChkdStringPtr & editorString);
 
         void Activate(WPARAM wParam, LPARAM lParam);
         LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

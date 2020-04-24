@@ -938,32 +938,50 @@ void TrigActionsWindow::DisableStringEdit()
 
 void TrigActionsWindow::ButtonEditString()
 {
-    ChkdString str = "";
-    if ( ChkdStringInputDialog::GetChkdString(str, GetCurrentActionsString(), getHandle()) )
+    int focusedX, focusedY;
+    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        int focusedX, focusedY;
-        Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-        if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+        Chk::Action & action = trig->action((u8)focusedY);
+        if ( action.hasStringArgument() )
         {
-            Chk::Action & action = trig->action((u8)focusedY);
-            Chk::Action::Type actionType = action.actionType;
+            ChkdStringPtr gameString, editorString;
+            GetCurrentActionString(gameString, editorString);
+            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Trigger, trigIndex, focusedY);
 
-            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+            if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
-                if ( argType == Chk::Action::ArgType::String )
+                if ( gameString != nullptr )
                 {
-                    size_t stringId = CM->strings.addString<ChkdString>(str);
+                    size_t stringId = CM->strings.addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
                         action.stringId = (u32)stringId;
-                        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-                        break;
                     }
                 }
+                else
+                    action.stringId = Chk::StringId::NoString;
             }
+            if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+            {
+                logger.warn() << "Extended string changed to: \"" << (editorString != nullptr ? *editorString : "(nullptr)") << "\" but extended trigger strings not yet implemented" << std::endl;
+                if ( editorString != nullptr )
+                {
+                    size_t stringId = Chk::StringId::NoString; // TODO: CM->strings.addString<ChkdString>(*gameString, Chk::Scope::Editor);
+                    if ( stringId != Chk::StringId::NoString )
+                    {
+                        // TODO: extendedSomething.stringId = stringId;
+                    }
+                }
+                else
+                    ; // TODO: extendedSomething.stringId = Chk::StringId::NoString;
+            }
+
+            if ( result > 0 )
+                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+
+            SetFocus(gridActions.getHandle());
         }
-        SetFocus(gridActions.getHandle());
     }
 }
 
@@ -981,32 +999,49 @@ void TrigActionsWindow::DisableWavEdit()
 
 void TrigActionsWindow::ButtonEditWav()
 {
-    ChkdString wavStr;
-    if ( ChkdStringInputDialog::GetChkdString(wavStr, GetCurrentActionsWav(), getHandle()) )
+    int focusedX, focusedY;
+    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        int focusedX = 0, focusedY = 0;
-        Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-        if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+        Chk::Action & action = trig->action((u8)focusedY);
+        if ( action.hasSoundArgument() )
         {
-            Chk::Action & action = trig->action((u8)focusedY);
-            Chk::Action::Type actionType = action.actionType;
+            ChkdStringPtr gameString, editorString;
+            GetCurrentActionSound(gameString, editorString);
+            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Trigger, trigIndex, focusedY);
 
-            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+            if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
-
-                if ( argType == Chk::Action::ArgType::Sound )
+                if ( gameString != nullptr )
                 {
-                    size_t stringId = CM->strings.addString<ChkdString>(wavStr);
+                    size_t stringId = CM->strings.addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        CM->addSound(stringId);
                         action.soundStringId = (u32)stringId;
-                        chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
-                        break;
                     }
                 }
+                else
+                    action.soundStringId = Chk::StringId::NoString;
             }
+            if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+            {
+                logger.warn() << "Extended sound string changed to: \"" << (editorString != nullptr ? *editorString : "(nullptr)") << "\" but extended trigger sound strings not yet implemented" << std::endl;
+                if ( editorString != nullptr )
+                {
+                    size_t stringId = Chk::StringId::NoString; // TODO: CM->strings.addString<ChkdString>(*gameString, Chk::Scope::Editor);
+                    if ( stringId != Chk::StringId::NoString )
+                    {
+                        // TODO: extendedSomething.soundStringId = stringId;
+                    }
+                }
+                else
+                    ; // TODO: extendedSomething.soundStringId = Chk::StringId::NoString;
+            }
+
+            if ( result > 0 )
+                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+
+            SetFocus(gridActions.getHandle());
         }
     }
 }
@@ -1165,7 +1200,7 @@ void TrigActionsWindow::NewSuggestion(std::string & str)
     gridActions.SetEditText(str);
 }
 
-ChkdString TrigActionsWindow::GetCurrentActionsString()
+void TrigActionsWindow::GetCurrentActionString(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
 {
     int focusedX, focusedY;
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
@@ -1178,16 +1213,14 @@ ChkdString TrigActionsWindow::GetCurrentActionsString()
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
             {
-                ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);
-                if ( dest != nullptr )
-                    return *dest;
+                gameString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Game);
+                editorString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Editor);
             }
         }
     }
-    return "";
 }
 
-ChkdString TrigActionsWindow::GetCurrentActionsWav()
+void TrigActionsWindow::GetCurrentActionSound(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
 {
     int focusedX, focusedY;
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
@@ -1200,13 +1233,11 @@ ChkdString TrigActionsWindow::GetCurrentActionsWav()
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
             {
-                ChkdStringPtr dest = CM->strings.getString<ChkdString>(action.stringId);
-                if ( dest != nullptr )
-                    return *dest;
+                gameString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Game);
+                editorString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Editor);
             }
         }
     }
-    return "";
 }
 
 LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

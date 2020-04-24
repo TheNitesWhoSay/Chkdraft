@@ -579,6 +579,26 @@ u8 Chk::Action::getDefaultFlags(VirtualType actionType)
         return getDefaultFlags((Action::Type)actionType);
 }
 
+bool Chk::Action::hasStringArgument()
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getClassicArgType(actionType, i) == Chk::Action::ArgType::String )
+            return true;
+    }
+    return false;
+}
+
+bool Chk::Action::hasSoundArgument()
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getClassicArgType(actionType, i) == Chk::Action::ArgType::Sound )
+            return true;
+    }
+    return false;
+}
+
 inline bool Chk::Action::locationUsed(size_t locationId)
 {
     return actionType < NumActionTypes &&

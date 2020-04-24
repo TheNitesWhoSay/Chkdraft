@@ -8,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <regex>
+#include "Windows/ChkdControls/ChkdStringInput.h"
 
 enum_t(Id, u32, {
     IDR_MAIN_TOOLBAR = ID_FIRST,
@@ -31,6 +32,24 @@ void Chkdraft::OnLoadTest()
         trigEditorWindow.ChangeTab(3);
 
         OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
+    }*/
+    
+    /*ChkdStringPtr gameString;
+    ChkdStringPtr editorString;
+    while ( true )
+    {
+        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::None, 0, 0);
+        std::string resultStr;
+        switch ( result )
+        {
+            case ChkdStringInputDialog::Result::BothStringsChanged: resultStr = "BothStringsChanged"; break;
+            case ChkdStringInputDialog::Result::GameStringChanged: resultStr = "GameStringChanged"; break;
+            case ChkdStringInputDialog::Result::EditorStringChanged: resultStr = "EditorStringChanged"; break;
+            default: resultStr = "NoStringChanged"; break;
+        }
+        logger.info() << "GetChkdString returned: " << resultStr << " with gameString: \""
+            << (gameString != nullptr ? *gameString : "(null)") << "\", and editorString: \""
+            << (editorString != nullptr ? *editorString : "(null)") << "\"" << std::endl;
     }*/
 }
 
@@ -741,7 +760,7 @@ void Chkdraft::OpenWebPage(const std::string & address)
 
 void Chkdraft::ComboEditChanged(HWND hCombo, u16 comboId)
 {
-    if ( hCombo = mainToolbar.playerBox.getHandle() )
+    if ( hCombo == mainToolbar.playerBox.getHandle() )
     {
         u8 newPlayer;
         if ( mainToolbar.playerBox.GetPlayerNum(newPlayer) )

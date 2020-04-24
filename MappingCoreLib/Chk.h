@@ -212,6 +212,8 @@ namespace Chk {
         Trigger = BIT_8,
         BriefingTrigger = BIT_9,
 
+        BothUnitSettings = OriginalUnitSettings | ExpansionUnitSettings,
+        TriggerActionSound = Trigger | Sound,
         xTrigger = x32BIT_8,
 
         All = u32_max
@@ -765,6 +767,8 @@ namespace Chk {
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
         static u8 getDefaultFlags(Type actionType);
         static u8 getDefaultFlags(VirtualType actionType);
+        bool hasStringArgument();
+        bool hasSoundArgument();
         inline bool locationUsed(size_t locationId);
         inline bool stringUsed(size_t stringId);
         inline bool gameStringUsed(size_t stringId);

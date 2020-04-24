@@ -80,6 +80,11 @@ namespace WinLib {
         else
             return WindowsItem::SetWinText(newText) != 0;
     }
+    
+    void EditControl::SetCaret(int caretPos)
+    {
+        ::SendMessage(getHandle(), EM_SETCARETINDEX, WPARAM(caretPos), 0);
+    }
 
     bool EditControl::CreateNumberBuddy(int minimumValue, int maximumValue)
     {

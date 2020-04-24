@@ -21,6 +21,7 @@ namespace WinLib {
             virtual void DisableThis();
 
             bool SetText(const std::string & newText); // Sets new text content
+            void SetCaret(int caretPos);
 
             template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
                 bool SetEditNum(numType num);
