@@ -18,9 +18,11 @@ namespace Chk {
 #pragma pack(push, 1)
 
     struct Unit; struct IsomEntry; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
+    struct ExtendedTrigData; struct TriggerGroup;
     using UnitPtr = std::shared_ptr<Unit>; using IsomEntryPtr = std::shared_ptr<IsomEntry>; using DoodadPtr = std::shared_ptr<Doodad>; using SpritePtr = std::shared_ptr<Sprite>;
     using CuwpPtr = std::shared_ptr<Cuwp>; using LocationPtr = std::shared_ptr<Location>; using ConditionPtr = std::shared_ptr<Condition>; using ActionPtr = std::shared_ptr<Action>;
-    using TriggerPtr = std::shared_ptr<Trigger>; using StringPropertiesPtr = std::shared_ptr<StringProperties>;
+    using TriggerPtr = std::shared_ptr<Trigger>; using StringPropertiesPtr = std::shared_ptr<StringProperties>; using ExtendedTrigDataPtr = std::shared_ptr<ExtendedTrigData>;
+    using TriggerGroupPtr = std::shared_ptr<TriggerGroup>;
 
     enum_t(Type, u32, { // u32
         RAWS = 0x53574152, // 1.04 StarCraft and above ("hybrid")
@@ -993,6 +995,12 @@ namespace Chk {
 
     __declspec(align(1)) struct TriggerGroup
     {
+        enum_t(Id, u32, {
+            TopLevelGroup = 0xFFFFFFFF
+        });
+
+        TriggerGroup();
+
         bool groupExpanded;
         bool groupHidden;
         u32 templateInstanceId; // 1-based index of template details used to generate this group

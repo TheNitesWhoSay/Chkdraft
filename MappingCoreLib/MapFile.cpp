@@ -89,6 +89,8 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
             return false;
         }
 
+        updateSaveSections();
+
         if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
             if ( !saveAs || (saveAs && makeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location

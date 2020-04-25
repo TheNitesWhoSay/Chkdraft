@@ -73,6 +73,8 @@ class Strings : public StrSynchronizer
 
         bool empty();
 
+        bool hasExtendedStrings();
+
         enum_t(RescopeFlag, u32, {
             RescopeSwitchNames = BIT_0,
             RescopeComments = BIT_1,
@@ -85,6 +87,9 @@ class Strings : public StrSynchronizer
         virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false);
         virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
         virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
+
+        StrProp getProperties(size_t editorStringId);
+        void setProperties(size_t editorStringId, const StrProp & strProp);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame); // Gets the string at stringId with formatting based on StringType
@@ -493,6 +498,8 @@ class Triggers : public LocationSynchronizer
         MbrfSectionPtr mbrf; // Mission briefing triggers
         SwnmSectionPtr swnm; // Switch names
         WavSectionPtr wav; // Sound names
+        KtrgSectionPtr ktrg; // Extended trigger data
+        KtgpSectionPtr ktgp; // Extended trigger groupings
 
         Triggers(bool useDefault = false);
 
@@ -587,6 +594,7 @@ class Scenario : ScenarioSaver
                                          includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
         bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
         
+        void updateSaveSections();
         bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
         virtual void setTileset(Sc::Terrain::Tileset tileset);
 

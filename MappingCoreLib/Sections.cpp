@@ -288,6 +288,12 @@ StrProp::StrProp(Chk::StringProperties stringProperties) :
     
 }
 
+StrProp::StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics)
+    : red(red), green(green), blue(blue), size(size), isUsed(isUsed), hasPriority(hasPriority), isBold(isBold), isUnderlined(isUnderlined), isItalics(isItalics)
+{
+
+}
+
 ScStr::ScStr(const std::string & str) : strProp()
 {
     for ( const char & c : str )
@@ -318,6 +324,11 @@ bool ScStr::empty()
 size_t ScStr::length()
 {
     return parentStr == nullptr ? allocation.size()-1 : strlen(str);
+}
+
+StrProp & ScStr::properties()
+{
+    return strProp;
 }
 
 template <typename StringType>
@@ -2637,13 +2648,13 @@ bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
     else
     {
         constexpr size_t maxStrings = (size_t(u16_max) - sizeof(u16))/sizeof(u16);
-        size_t numStrings = strings.size()-1; // Exclude string at index 0
+        size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
         if ( numStrings > maxStrings )
             throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
         
         size_t sizeAndOffsetSpaceAndNulSpace = sizeof(u16) + sizeof(u16)*numStrings + 1;
         size_t sectionSize = sizeAndOffsetSpaceAndNulSpace;
-        for ( size_t i=1; i<numStrings; i++ )
+        for ( size_t i=1; i<=numStrings; i++ )
         {
             if ( strings[i] != nullptr )
                 sectionSize += strings[i]->length();
@@ -2654,6 +2665,7 @@ bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
             throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-sizeAndOffsetSpaceAndNulSpace, maxStandardSize);
 
         stringBytes.assign(sizeof(u16)+sizeof(u16)*numStrings, u8(0));
+        (u16 &)stringBytes[0] = (u16)numStrings;
         u16 initialNulOffset = u16(stringBytes.size());
         stringBytes.push_back(u8('\0')); // Add initial NUL character
         for ( size_t i=1; i<=numStrings; i++ )
@@ -2663,7 +2675,7 @@ bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
             else
             {
                 (u16 &)stringBytes[sizeof(u16)*i] = u16(stringBytes.size());
-                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length());
+                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+(strings[i]->length()+1));
             }
         }
     }
@@ -2673,8 +2685,8 @@ bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
 void StrSection::syncBytesToStrings()
 {
     size_t numBytes = stringBytes.size();
-    u16 rawNumStrings = numBytes > 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
-    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u16)-1);
+    u16 rawNumStrings = numBytes >= 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 4 ? 0 : numBytes/2-1);
     strings.clear();
     strings.push_back(nullptr); // Fill the non-existant 0th stringId
 
@@ -5531,6 +5543,16 @@ KstrSection::~KstrSection()
 
 }
 
+bool KstrSection::empty()
+{
+    for ( auto & string : strings )
+    {
+        if ( string != nullptr )
+            return false;
+    }
+    return true;
+}
+
 size_t KstrSection::getCapacity()
 {
     return strings.size();
@@ -5555,6 +5577,17 @@ void KstrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdU
         if ( stringIdUsed[stringId] )
             stringIdUsed[stringId] = false;
     }
+}
+
+StrProp KstrSection::getProperties(size_t stringId)
+{
+    return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->properties() : StrProp();
+}
+
+void KstrSection::setProperties(size_t stringId, const StrProp & strProp)
+{
+    if ( stringId < strings.size() && strings[stringId] != nullptr )
+        strings[stringId]->properties() = strProp;
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
@@ -5881,24 +5914,27 @@ bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
         strSynchronizer->syncKstringsToBytes(strings, stringBytes);
     else
     {
-        constexpr size_t maxStrings = (size_t(u32_max) - 2*sizeof(u32))/sizeof(u32);
-        size_t numStrings = strings.size()-1; // Exclude string at index 0
+        constexpr size_t maxStrings = (size_t(s32_max) - 2*sizeof(u32))/sizeof(u32);
+        size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
         if ( numStrings > maxStrings )
-            throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
-        
-        size_t versionAndSizeAndOffsetAndNulSpace = 2*sizeof(u32) + sizeof(u32)*numStrings + 1;
-        size_t sectionSize = versionAndSizeAndOffsetAndNulSpace;
-        for ( size_t i=1; i<numStrings; i++ )
+            throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::KSTR), numStrings, maxStrings);
+
+        size_t stringPropertiesStart = 2*sizeof(u32)+2*numStrings;
+        size_t versionAndSizeAndOffsetAndStringPropertiesAndNulSpace = 2*sizeof(u32) + 2*sizeof(u32)*numStrings + 1;
+        size_t sectionSize = versionAndSizeAndOffsetAndStringPropertiesAndNulSpace;
+        for ( size_t i=1; i<=numStrings; i++ )
         {
             if ( strings[i] != nullptr )
                 sectionSize += strings[i]->length();
         }
 
-        constexpr size_t maxStandardSize = u32_max;
+        constexpr size_t maxStandardSize = s32_max;
         if ( sectionSize > maxStandardSize )
-            throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-versionAndSizeAndOffsetAndNulSpace, maxStandardSize);
+            throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
 
-        stringBytes.assign(sizeof(u32)+sizeof(u32)*numStrings, u8(0));
+        stringBytes.assign(2*sizeof(u32)+2*sizeof(u32)*numStrings, u8(0));
+        (u32 &)stringBytes[0] = 2;
+        (u32 &)stringBytes[sizeof(u32)] = (u32)numStrings;
         u32 initialNulOffset = u32(stringBytes.size());
         stringBytes.push_back(u8('\0')); // Add initial NUL character
         for ( size_t i=1; i<=numStrings; i++ )
@@ -5907,8 +5943,10 @@ bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
                 (u32 &)stringBytes[sizeof(u32)*i] = initialNulOffset;
             else
             {
-                (u32 &)stringBytes[sizeof(u32)*i] = u32(stringBytes.size());
-                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length());
+                auto prop = strings[i]->properties();
+                (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32 &)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
+                (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = u32(stringBytes.size());
+                stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length()+1);
             }
         }
     }
@@ -5930,17 +5968,25 @@ void KstrSection::syncBytesToStrings()
         rawNumStrings = u32((u16 &)stringBytes[0]);
     else if ( numBytes == 1 )
         rawNumStrings = u32(stringBytes[0]);
-
-    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes/sizeof(u32) >= 4 ? numBytes/sizeof(u32)-4 : 0);
+    
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/4);
+    size_t highestStringWithValidProperties = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/8);
+    size_t propertiesStartMinusFour = sizeof(u32)+sizeof(u32)*rawNumStrings;
     strings.clear();
     strings.push_back(nullptr); // Fill the non-existant 0th stringId
 
     size_t stringId = 1;
-    for ( ; stringId < highestStringWithValidOffset; ++stringId )
+    for ( ; stringId <= highestStringWithValidOffset; ++stringId )
     {
-        size_t offsetPos = sizeof(u32)*stringId;
+        size_t offsetPos = sizeof(u32)+sizeof(u32)*stringId;
         size_t stringOffset = size_t((u32 &)stringBytes[offsetPos]);
         loadString(stringOffset, numBytes);
+        if ( stringId <= highestStringWithValidProperties && strings[stringId] != nullptr )
+        {
+            size_t propertiesPos = propertiesStartMinusFour + sizeof(u32)*stringId;
+            Chk::StringProperties properties = (Chk::StringProperties &)stringBytes[propertiesPos];
+            strings[stringId]->properties() = StrProp(properties);
+        }
     }
     if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
     {
@@ -6002,6 +6048,11 @@ KtrgSection::~KtrgSection()
 
 }
 
+bool KtrgSection::empty()
+{
+    return extendedTrigData.size() < 3; // Indexes 0 and 1 are unused, so section is empty if size is less than 3
+}
+
 Chk::SectionSize KtrgSection::getSize(ScenarioSaver & scenarioSaver)
 {
     return Chk::SectionSize(4+extendedTrigData.size()*sizeof(Chk::ExtendedTrigData));
@@ -6018,7 +6069,9 @@ std::streamsize KtrgSection::read(const Chk::SectionHeader & sectionHeader, std:
         size_t readNumExtendedTrigData = readSize/sizeof(Chk::ExtendedTrigData);
         std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData);
         is.read((char*)&extendedTrigDataBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
-        this->extendedTrigData = extendedTrigDataBuffer;
+        for ( const Chk::ExtendedTrigData & extendedTrigData : extendedTrigDataBuffer )
+            this->extendedTrigData.push_back(Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData(extendedTrigData)));
+
         return is.gcount();
     }
     return 0;
@@ -6026,7 +6079,8 @@ std::streamsize KtrgSection::read(const Chk::SectionHeader & sectionHeader, std:
 
 void KtrgSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
-    os.write((const char*)&extendedTrigData[0], std::streamsize(extendedTrigData.size()*sizeof(Chk::ExtendedTrigData)));
+    for ( const Chk::ExtendedTrigDataPtr & extendedTrigData : this->extendedTrigData )
+        os.write((const char*)extendedTrigData.get(), std::streamsize(sizeof(Chk::ExtendedTrigData)));
 }
 
 KtgpSectionPtr KtgpSection::GetDefault()
@@ -6045,11 +6099,16 @@ KtgpSection::~KtgpSection()
 
 }
 
+bool KtgpSection::empty()
+{
+    return triggerGroups.empty();
+}
+
 Chk::SectionSize KtgpSection::getSize(ScenarioSaver & scenarioSaver)
 {
-    Chk::SectionSize totalSize = triggerGroups.size()*sizeof(Chk::TriggerGroupHeader);
-    for ( Chk::TriggerGroup & triggerGroup : triggerGroups )
-        totalSize += Chk::SectionSize(4*triggerGroup.extendedTrigDataIndexes.size() + 4*triggerGroup.groupIndexes.size());
+    Chk::SectionSize totalSize = Chk::SectionSize(triggerGroups.size()*sizeof(Chk::TriggerGroupHeader));
+    for ( Chk::TriggerGroupPtr & triggerGroup : triggerGroups )
+        totalSize += Chk::SectionSize(4*triggerGroup->extendedTrigDataIndexes.size() + 4*triggerGroup->groupIndexes.size());
 
     return totalSize;
 }
@@ -6075,15 +6134,7 @@ std::streamsize KtgpSection::read(const Chk::SectionHeader & sectionHeader, std:
             groupBytes.push_back(u8(0));
         
         size_t numGroups = size_t((u32 &)groupBytes[4]);
-        Chk::TriggerGroup defaultTriggerGroup;
-        defaultTriggerGroup.groupExpanded = false;
-        defaultTriggerGroup.groupHidden = false;
-        defaultTriggerGroup.templateInstanceId = 0;
-        defaultTriggerGroup.commentStringId = 0;
-        defaultTriggerGroup.notesStringId = 0;
-        defaultTriggerGroup.parentGroupId = 0xFFFFFFFF;
 
-        triggerGroups.assign(numGroups, defaultTriggerGroup);
         for ( size_t i=0; i<numGroups; i++ )
         {
             size_t headerStart = 8 + i*sizeof(Chk::TriggerGroupHeader);
@@ -6092,13 +6143,13 @@ std::streamsize KtgpSection::read(const Chk::SectionHeader & sectionHeader, std:
                 groupBytes.insert(groupBytes.end(), sizeRequired-groupBytes.size(), u8(0));
 
             Chk::TriggerGroupHeader & header = (Chk::TriggerGroupHeader &)groupBytes[headerStart];
-            Chk::TriggerGroup & triggerGroup = triggerGroups[i];
-            triggerGroup.groupExpanded = (header.flags & Chk::TriggerGroupHeader::Flags::groupExpanded) == Chk::TriggerGroupHeader::Flags::groupExpanded;
-            triggerGroup.groupHidden = (header.flags & Chk::TriggerGroupHeader::Flags::groupHidden) == Chk::TriggerGroupHeader::Flags::groupHidden;
-            triggerGroup.templateInstanceId = header.templateInstanceId;
-            triggerGroup.commentStringId = header.commentStringId;
-            triggerGroup.notesStringId = header.notesStringId;
-            triggerGroup.parentGroupId = header.parentGroupId;
+            Chk::TriggerGroupPtr triggerGroup = Chk::TriggerGroupPtr(new Chk::TriggerGroup());
+            triggerGroup->groupExpanded = (header.flags & Chk::TriggerGroupHeader::Flags::groupExpanded) == Chk::TriggerGroupHeader::Flags::groupExpanded;
+            triggerGroup->groupHidden = (header.flags & Chk::TriggerGroupHeader::Flags::groupHidden) == Chk::TriggerGroupHeader::Flags::groupHidden;
+            triggerGroup->templateInstanceId = header.templateInstanceId;
+            triggerGroup->commentStringId = header.commentStringId;
+            triggerGroup->notesStringId = header.notesStringId;
+            triggerGroup->parentGroupId = header.parentGroupId;
 
             if ( header.numTriggers > 0 && header.numGroups > 0 && header.bodyOffset > 0 )
             {
@@ -6109,10 +6160,12 @@ std::streamsize KtgpSection::read(const Chk::SectionHeader & sectionHeader, std:
                 u32* body = (u32*)&groupBytes[header.bodyOffset];
                 size_t bodyIndex = 0;
                 for ( ; bodyIndex < header.numTriggers; bodyIndex++ )
-                    triggerGroup.extendedTrigDataIndexes.push_back(body[bodyIndex]);
+                    triggerGroup->extendedTrigDataIndexes.push_back(body[bodyIndex]);
                 for ( ; bodyIndex < size_t(header.numTriggers) + size_t(header.numGroups); bodyIndex++ )
-                    triggerGroup.groupIndexes.push_back(body[bodyIndex]);
+                    triggerGroup->groupIndexes.push_back(body[bodyIndex]);
             }
+
+            this->triggerGroups.push_back(triggerGroup);
         }
 
         return is.gcount();
@@ -6129,25 +6182,25 @@ void KtgpSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 
     for ( size_t i=0; i<(size_t)numGroups; i++ )
     {
-        const Chk::TriggerGroup & triggerGroup = triggerGroups[i];
+        const Chk::TriggerGroupPtr & triggerGroup = triggerGroups[i];
         Chk::TriggerGroupHeader header = {};
-        if ( triggerGroup.groupExpanded )
+        if ( triggerGroup->groupExpanded )
             header.flags |= Chk::TriggerGroupHeader::Flags::groupExpanded;
-        if ( triggerGroup.groupHidden )
+        if ( triggerGroup->groupHidden )
             header.flags |= Chk::TriggerGroupHeader::Flags::groupHidden;
 
-        header.templateInstanceId = triggerGroup.templateInstanceId;
-        header.numTriggers = (u32)triggerGroup.extendedTrigDataIndexes.size();
-        header.numGroups = (u32)triggerGroup.groupIndexes.size();
-        header.commentStringId = triggerGroup.commentStringId;
-        header.notesStringId = triggerGroup.notesStringId;
-        header.parentGroupId = triggerGroup.parentGroupId;
+        header.templateInstanceId = triggerGroup->templateInstanceId;
+        header.numTriggers = (u32)triggerGroup->extendedTrigDataIndexes.size();
+        header.numGroups = (u32)triggerGroup->groupIndexes.size();
+        header.commentStringId = triggerGroup->commentStringId;
+        header.notesStringId = triggerGroup->notesStringId;
+        header.parentGroupId = triggerGroup->parentGroupId;
         header.bodyOffset = u32(numGroups*sizeof(Chk::TriggerGroupHeader)+bodyData.size());
 
-        for ( const u32 & extendedTrigDataIndex : triggerGroup.extendedTrigDataIndexes )
+        for ( const u32 & extendedTrigDataIndex : triggerGroup->extendedTrigDataIndexes )
             bodyData.push_back(extendedTrigDataIndex);
 
-        for ( const u32 & groupIndex : triggerGroup.groupIndexes )
+        for ( const u32 & groupIndex : triggerGroup->groupIndexes )
             bodyData.push_back(groupIndex);
     }
 

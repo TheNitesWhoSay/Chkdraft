@@ -1156,10 +1156,15 @@ class KstrSection : public DynamicSection<true>
         KstrSection();
         virtual ~KstrSection();
 
+        bool empty();
+
         size_t getCapacity();
 
         bool stringStored(size_t stringId);
         void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+
+        StrProp getProperties(size_t stringId);
+        void setProperties(size_t stringId, const StrProp & strProp);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
@@ -1206,13 +1211,15 @@ class KtrgSection : public DynamicSection<true>
         KtrgSection();
         virtual ~KtrgSection();
 
+        bool empty();
+
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        std::vector<Chk::ExtendedTrigData> extendedTrigData;
+        std::deque<Chk::ExtendedTrigDataPtr> extendedTrigData;
 };
 
 class KtgpSection : public DynamicSection<true>
@@ -1222,13 +1229,15 @@ class KtgpSection : public DynamicSection<true>
         KtgpSection();
         virtual ~KtgpSection();
 
+        bool empty();
+
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
-        std::vector<Chk::TriggerGroup> triggerGroups;
+        std::deque<Chk::TriggerGroupPtr> triggerGroups;
 };
 
 class StrProp {
@@ -1245,6 +1254,7 @@ class StrProp {
     
         StrProp();
         StrProp(Chk::StringProperties stringProperties);
+        StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics);
 };
 
 class ScStr
@@ -1257,6 +1267,8 @@ class ScStr
 
         bool empty();
         size_t length();
+
+        StrProp & properties();
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
         int compare(const StringType & str);

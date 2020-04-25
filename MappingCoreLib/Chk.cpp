@@ -1413,6 +1413,11 @@ void Chk::Trigger::alignActionsTop()
     }
 }
 
+Chk::TriggerGroup::TriggerGroup() : groupExpanded(false), groupHidden(false), templateInstanceId(0), commentStringId(0), notesStringId(0), parentGroupId(Id::TopLevelGroup)
+{
+
+}
+
 Chk::StringProperties::StringProperties()
     : Chk::StringProperties(0, 0, 0, false, false, false, false, false, 8)
 {

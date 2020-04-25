@@ -332,12 +332,15 @@ StrSynchronizerPtr Scenario::getStrSynchronizer()
 
 void Scenario::addSection(Section section)
 {
-    for ( auto & existing : allSections )
+    if ( section != nullptr )
     {
-        if ( section == existing )
-            return;
+        for ( auto & existing : allSections )
+        {
+            if ( section == existing )
+                return;
+        }
+        allSections.push_back(section);
     }
-    allSections.push_back(section);
 }
 
 void Scenario::removeSection(const SectionName & sectionName)
@@ -398,6 +401,21 @@ bool Scenario::deserialize(Chk::SerializedChk* data)
         std::copy(&data->data[0], &data->data[size], std::ostream_iterator<u8>(chk));
     }
     return false;
+}
+
+void Scenario::updateSaveSections()
+{
+    if ( strings.hasExtendedStrings() )
+    {
+        addSection(strings.ostr);
+        addSection(strings.kstr);
+    }
+
+    if ( triggers.ktrg != nullptr && !triggers.ktrg->empty() )
+        addSection(triggers.ktrg);
+
+    if ( triggers.ktgp != nullptr && !triggers.ktgp->empty() )
+        addSection(triggers.ktgp);
 }
 
 bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
@@ -606,6 +624,11 @@ bool Strings::empty()
     return sprp == nullptr && str == nullptr && ostr == nullptr && kstr == nullptr;
 }
 
+bool Strings::hasExtendedStrings()
+{
+    return ostr != nullptr && kstr != nullptr && !kstr->empty();
+}
+
 size_t Strings::getCapacity(Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Game )
@@ -732,6 +755,17 @@ void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, 
             }
             break;
     }
+}
+
+StrProp Strings::getProperties(size_t editorStringId)
+{
+    return kstr != nullptr ? kstr->getProperties(editorStringId) : StrProp();
+}
+
+void Strings::setProperties(size_t editorStringId, const StrProp & strProp)
+{
+    if ( kstr != nullptr )
+        kstr->setProperties(editorStringId, strProp);
 }
 
 template <typename StringType>
@@ -1471,34 +1505,39 @@ void Strings::syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8
         void[] stringData; // List of strings, each null terminated
     */
 
-    constexpr size_t maxStrings = (size_t(u32_max) - 2*sizeof(u32))/sizeof(u32);
-    size_t numStrings = strings.size()-1; // Exclude string at index 0
+    constexpr size_t maxStrings = (size_t(s32_max) - 2*sizeof(u32))/sizeof(u32);
+    size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
     if ( numStrings > maxStrings )
-        throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
-        
-    size_t versionAndSizeAndOffsetAndNulSpace = 2*sizeof(u32) + sizeof(u32)*numStrings + 1;
-    size_t sectionSize = versionAndSizeAndOffsetAndNulSpace;
-    for ( size_t i=1; i<numStrings; i++ )
+        throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::KSTR), numStrings, maxStrings);
+
+    size_t stringPropertiesStart = 2*sizeof(u32)+2*numStrings;
+    size_t versionAndSizeAndOffsetAndStringPropertiesAndNulSpace = 2*sizeof(u32) + 2*sizeof(u32)*numStrings + 1;
+    size_t sectionSize = versionAndSizeAndOffsetAndStringPropertiesAndNulSpace;
+    for ( size_t i=1; i<=numStrings; i++ )
     {
         if ( strings[i] != nullptr )
             sectionSize += strings[i]->length();
     }
 
-    constexpr size_t maxStandardSize = u32_max;
+    constexpr size_t maxStandardSize = s32_max;
     if ( sectionSize > maxStandardSize )
-        throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-versionAndSizeAndOffsetAndNulSpace, maxStandardSize);
+        throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
 
-    stringBytes.assign(sizeof(u32)+sizeof(u32)*numStrings, u8(0));
+    stringBytes.assign(2*sizeof(u32)+2*sizeof(u32)*numStrings, u8(0));
+    (u32 &)stringBytes[0] = 2;
+    (u32 &)stringBytes[sizeof(u32)] = (u32)numStrings;
     u32 initialNulOffset = u32(stringBytes.size());
     stringBytes.push_back(u8('\0')); // Add initial NUL character
-    for ( size_t i=1; i<numStrings; i++ )
+    for ( size_t i=1; i<=numStrings; i++ )
     {
         if ( strings[i] == nullptr )
-            (u32 &)stringBytes[sizeof(u32)*i] = initialNulOffset;
+            (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = initialNulOffset;
         else
         {
-            (u32 &)stringBytes[sizeof(u32)*i] = u32(stringBytes.size());
-            stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length());
+            auto prop = strings[i]->properties();
+            (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32 &)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
+            (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = u32(stringBytes.size());
+            stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length()+1);
         }
     }
 }
