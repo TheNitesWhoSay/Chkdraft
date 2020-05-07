@@ -63,7 +63,7 @@ void ChkdStringInputDialog::ExitDialog(ExitCode exitCode)
 }
 
 ChkdStringInputDialog::ChkdStringInputDialog() : initialGameString(nullptr), initialEditorString(nullptr),
-    stringUser(Chk::StringUserFlag::None), stringUserIndex(0), stringSubUserIndex(0), currTab(Tab::GameString), exitCode(ExitCode::None),
+    stringUser(Chk::StringUserFlag::None), stringUserIndex(0), stringSubUserIndex(0), userHasGameString(true), userHasEditorString(true), currTab(Tab::GameString), exitCode(ExitCode::None),
     gameStringWindow(*this), editorStringWindow(*this)
 {
 
@@ -78,15 +78,17 @@ ChkdStringInputDialog::Result ChkdStringInputDialog::InternalGetChkdString(HWND 
     this->stringUser = stringUser;
     this->stringUserIndex = stringUserIndex;
     this->stringSubUserIndex = stringSubUserIndex;
+    this->userHasGameString = stringUser != Chk::StringUserFlag::ExtendedTriggerComment && stringUser != Chk::StringUserFlag::ExtendedTriggerNotes;
+    this->userHasEditorString = stringUser != Chk::StringUserFlag::TriggerAction && stringUser != Chk::StringUserFlag::TriggerActionSound;
 
     CreateDialogBox(MAKEINTRESOURCE(IDD_INPUTCHKDSTR), hParent);
 
-    bool gameStringChanged = exitCode == ExitCode::Ok &&
+    bool gameStringChanged = exitCode == ExitCode::Ok && userHasGameString &&
         ((this->initialGameString == nullptr && this->newGameString != nullptr) ||
         (this->initialGameString != nullptr && this->newGameString == nullptr) ||
         (this->initialGameString != nullptr && this->newGameString != nullptr && this->initialGameString->compare(*this->newGameString) != 0));
 
-    bool editorStringChanged = exitCode == ExitCode::Ok &&
+    bool editorStringChanged = exitCode == ExitCode::Ok && userHasEditorString &&
         ((this->initialEditorString == nullptr && this->newEditorString != nullptr) ||
         (this->initialEditorString != nullptr && this->newEditorString == nullptr) ||
         (this->initialEditorString != nullptr && this->newEditorString != nullptr && this->initialEditorString->compare(*this->newEditorString) != 0));
@@ -119,18 +121,21 @@ void ChkdStringInputDialog::UpdateWindowText()
 
     switch ( stringUser )
     {
-    case Chk::StringUserFlag::ScenarioName: text += " - [Scenario Name]"; break;
-    case Chk::StringUserFlag::ScenarioDescription: text += " - [Scenario Description]"; break;
-    case Chk::StringUserFlag::Force: text += " - [Force #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::Location: text += " - [Location #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::OriginalUnitSettings: text += " - [Original Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::ExpansionUnitSettings: text += " - [Expansion Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::BothUnitSettings: text += " - [Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::Sound: text += " - [Sound #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::Switch: text += " - [Switch #" + std::to_string(stringUserIndex) + "]"; break;
-    case Chk::StringUserFlag::Trigger: text += " - [Trigger Text #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
-    case Chk::StringUserFlag::TriggerActionSound: text += " - [Trigger Sound #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
-    case Chk::StringUserFlag::BriefingTrigger: text += " - [Briefing Trigger #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
+        case Chk::StringUserFlag::ScenarioName: text += " - [Scenario Name]"; break;
+        case Chk::StringUserFlag::ScenarioDescription: text += " - [Scenario Description]"; break;
+        case Chk::StringUserFlag::Force: text += " - [Force #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::Location: text += " - [Location #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::OriginalUnitSettings: text += " - [Original Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::ExpansionUnitSettings: text += " - [Expansion Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::BothUnitSettings: text += " - [Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::Sound: text += " - [Sound #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::Switch: text += " - [Switch #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::TriggerAction: text += " - [Trigger Text #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
+        case Chk::StringUserFlag::TriggerActionSound: text += " - [Trigger Sound #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
+        case Chk::StringUserFlag::ExtendedTriggerComment: text += " - [Extended Trigger Comment #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::ExtendedTriggerNotes: text += " - [Extended Trigger Notes #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::BriefingTriggerAction: text += " - [Briefing Trigger #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
+        case Chk::StringUserFlag::BriefingTriggerActionSound: text += " - [Briefing Trigger Sound #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
     }
 
     SetWinText(text);
@@ -179,10 +184,16 @@ BOOL ChkdStringInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
     if ( msg == WM_INITDIALOG )
     {
         tabStringTypes.FindThis(hWnd, IDC_TAB_STRINGTYPES);
-        tabStringTypes.InsertTab(Id::TAB_GAME_STRING, "Game String");
-        tabStringTypes.InsertTab(Id::TAB_EDITOR_STRING, "Editor String");
-        gameStringWindow.CreateThis(tabStringTypes.getHandle(), Id::TAB_GAME_STRING);
-        editorStringWindow.CreateThis(tabStringTypes.getHandle(), Id::TAB_EDITOR_STRING);
+        if ( userHasGameString )
+        {
+            tabStringTypes.InsertTab(Id::TAB_GAME_STRING, "Game String");
+            gameStringWindow.CreateThis(tabStringTypes.getHandle(), Id::TAB_GAME_STRING);
+        }
+        if ( userHasEditorString )
+        {
+            tabStringTypes.InsertTab(Id::TAB_EDITOR_STRING, "Editor String");
+            editorStringWindow.CreateThis(tabStringTypes.getHandle(), Id::TAB_EDITOR_STRING);
+        }
         UpdateWindowText();
         ChangeTab(currTab);
         ReplaceChildFonts(defaultFont);

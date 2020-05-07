@@ -606,18 +606,18 @@ inline bool Chk::Action::locationUsed(size_t locationId)
          (actionUsesSecondaryLocationArg[actionType] && this->number == locationId));
 }
 
-inline bool Chk::Action::stringUsed(size_t stringId)
+inline bool Chk::Action::stringUsed(size_t stringId, u32 userMask)
 {
     return actionType < NumActionTypes &&
-        ((actionUsesStringArg[actionType] && this->stringId == stringId) ||
-         (actionUsesSoundArg[actionType] && this->soundStringId == stringId));
+        (((userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesStringArg[actionType] && this->stringId == stringId) ||
+         ((userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
-inline bool Chk::Action::gameStringUsed(size_t stringId)
+inline bool Chk::Action::gameStringUsed(size_t stringId, u32 userMask)
 {
     return actionType < NumActionTypes &&
-        ((actionUsesGameStringArg[actionType] && this->stringId == stringId) ||
-         (actionUsesSoundArg[actionType] && this->soundStringId == stringId));
+        (((userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesGameStringArg[actionType] && this->stringId == stringId) ||
+         ((userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
 inline bool Chk::Action::commentStringUsed(size_t stringId)
@@ -625,11 +625,11 @@ inline bool Chk::Action::commentStringUsed(size_t stringId)
     return actionType == Type::Comment && this->stringId == stringId;
 }
 
-inline bool Chk::Action::briefingStringUsed(size_t stringId)
+inline bool Chk::Action::briefingStringUsed(size_t stringId, u32 userMask)
 {
     return actionType < NumBriefingActionTypes &&
-        ((briefingActionUsesStringArg[actionType] && this->stringId == stringId) ||
-         (briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId));
+        (((userMask & Chk::StringUserFlag::BriefingTriggerAction) == Chk::StringUserFlag::BriefingTriggerAction && briefingActionUsesStringArg[actionType] && this->stringId == stringId) ||
+         ((userMask & Chk::StringUserFlag::BriefingTriggerActionSound) == Chk::StringUserFlag::BriefingTriggerActionSound && briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
 inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
@@ -644,26 +644,26 @@ inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & 
     }
 }
 
-inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     if ( actionType < NumActionTypes )
     {
-        if ( actionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
 
-inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     if ( actionType < NumActionTypes )
     {
-        if ( actionUsesGameStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesGameStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
@@ -674,14 +674,14 @@ inline void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & s
         stringIdUsed[stringId] = true;
 }
 
-inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     if ( actionType < NumBriefingActionTypes )
     {
-        if ( briefingActionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::BriefingTriggerAction) == Chk::StringUserFlag::BriefingTriggerAction && briefingActionUsesStringArg[actionType] && stringId > 0 && stringId < Chk::MaxStrings )
             stringIdUsed[stringId] = true;
 
-        if ( briefingActionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
+        if ( (userMask & Chk::StringUserFlag::BriefingTriggerActionSound) == Chk::StringUserFlag::BriefingTriggerActionSound && briefingActionUsesSoundArg[actionType] && soundStringId > 0 && soundStringId < Chk::MaxStrings )
             stringIdUsed[soundStringId] = true;
     }
 }
@@ -1244,21 +1244,21 @@ bool Chk::Trigger::locationUsed(size_t locationId)
     return false;
 }
 
-bool Chk::Trigger::stringUsed(size_t stringId)
+bool Chk::Trigger::stringUsed(size_t stringId, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
     {
-        if ( actions[i].stringUsed(stringId) )
+        if ( actions[i].stringUsed(stringId, userMask) )
             return true;
     }
     return false;
 }
 
-bool Chk::Trigger::gameStringUsed(size_t stringId)
+bool Chk::Trigger::gameStringUsed(size_t stringId, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
     {
-        if ( actions[i].gameStringUsed(stringId) )
+        if ( actions[i].gameStringUsed(stringId, userMask) )
             return true;
     }
     return false;
@@ -1274,11 +1274,11 @@ bool Chk::Trigger::commentStringUsed(size_t stringId)
     return false;
 }
 
-bool Chk::Trigger::briefingStringUsed(size_t stringId)
+bool Chk::Trigger::briefingStringUsed(size_t stringId, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
     {
-        if ( actions[i].briefingStringUsed(stringId) )
+        if ( actions[i].briefingStringUsed(stringId, userMask) )
             return true;
     }
     return false;
@@ -1293,16 +1293,16 @@ void Chk::Trigger::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locati
         actions[i].markUsedLocations(locationIdUsed);
 }
 
-void Chk::Trigger::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Chk::Trigger::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
-        actions[i].markUsedStrings(stringIdUsed);
+        actions[i].markUsedStrings(stringIdUsed, userMask);
 }
 
-void Chk::Trigger::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Chk::Trigger::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
-        actions[i].markUsedGameStrings(stringIdUsed);
+        actions[i].markUsedGameStrings(stringIdUsed, userMask);
 }
 
 void Chk::Trigger::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
@@ -1311,10 +1311,10 @@ void Chk::Trigger::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringI
         actions[i].markUsedCommentStrings(stringIdUsed);
 }
 
-void Chk::Trigger::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void Chk::Trigger::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( size_t i=0; i<MaxActions; i++ )
-        actions[i].markUsedBriefingStrings(stringIdUsed);
+        actions[i].markUsedBriefingStrings(stringIdUsed, userMask);
 }
 
 void Chk::Trigger::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)

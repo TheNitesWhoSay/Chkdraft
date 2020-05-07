@@ -3531,6 +3531,39 @@ std::deque<Chk::TriggerPtr> Triggers::replaceRange(size_t beginIndex, size_t end
     return trig->replaceRange(beginIndex, endIndex, triggers);
 }
 
+Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex, bool addIfNotFound)
+{
+    auto trigger = trig->getTrigger(triggerIndex);
+    if ( trigger != nullptr )
+    {
+        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
+        auto extendedTrigger = ktrg->getExtendedTrigger(extendedTrigDataIndex);
+        if ( extendedTrigger != nullptr )
+            return extendedTrigger;
+        else if ( addIfNotFound )
+        {
+            auto newExtendedTrigData = Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData());
+            if ( ktrg->addExtendedTrigger(newExtendedTrigData) != 0 )
+                return newExtendedTrigData;
+        }
+    }
+    return nullptr;
+}
+
+void Triggers::deleteTriggerExtension(size_t triggerIndex)
+{
+    auto trigger = trig->getTrigger(triggerIndex);
+    if ( trigger != nullptr )
+    {
+        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
+        if ( extendedTrigDataIndex != 0 )
+        {
+            trigger->setExtendedDataIndex(0);
+            ktrg->deleteExtendedTrigger(extendedTrigDataIndex);
+        }
+    }
+}
+
 size_t Triggers::numBriefingTriggers()
 {
     return mbrf->numBriefingTriggers();
@@ -3600,21 +3633,21 @@ bool Triggers::stringUsed(size_t stringId, u32 userMask)
 {
     return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
         (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger && mbrf->stringUsed(stringId);
+        (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->stringUsed(stringId, userMask) ||
+        (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId, userMask);
 }
 
 bool Triggers::gameStringUsed(size_t stringId, u32 userMask)
 {
-    return (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->gameStringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger && mbrf->stringUsed(stringId);
+    return (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->gameStringUsed(stringId, userMask) ||
+        (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId);
 }
 
 bool Triggers::editorStringUsed(size_t stringId, u32 userMask)
 {
     return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
         (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger && trig->commentStringUsed(stringId);
+        (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && trig->commentStringUsed(stringId);
 }
 
 void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
@@ -3630,19 +3663,19 @@ void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 
     if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
         swnm->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
-        trig->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
+        trig->markUsedStrings(stringIdUsed, userMask);
 
-    if ( (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger )
-        mbrf->markUsedStrings(stringIdUsed);
+    if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
+        mbrf->markUsedStrings(stringIdUsed, userMask);
 }
 
 void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
-    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
+    if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
         trig->markUsedGameStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::BriefingTrigger) == Chk::StringUserFlag::BriefingTrigger )
+    if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
         mbrf->markUsedStrings(stringIdUsed);
 }
 
@@ -3654,7 +3687,7 @@ void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed
     if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
         swnm->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::Trigger) == Chk::StringUserFlag::Trigger )
+    if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
         trig->markUsedCommentStrings(stringIdUsed);
 }
 

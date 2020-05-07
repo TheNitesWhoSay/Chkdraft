@@ -521,6 +521,9 @@ class Triggers : public LocationSynchronizer
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
         std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
+        Chk::ExtendedTrigDataPtr getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
+        void deleteTriggerExtension(size_t triggerIndex);
+
         size_t numBriefingTriggers();
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
         size_t addBriefingTrigger(std::shared_ptr<Chk::Trigger> briefingTrigger);

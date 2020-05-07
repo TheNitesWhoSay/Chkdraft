@@ -12,11 +12,11 @@ enum_t(Id, u32, {
     GRID_ACTIONS = ID_FIRST,
     BUTTON_UNITPROPERTIES,
     BUTTON_EDITSTRING,
-    BUTTON_EDITWAV
+    BUTTON_EDITSOUND
 });
 
 TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
-    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), wavEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
+    suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), soundEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
 {
 
 }
@@ -105,7 +105,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 
 void TrigActionsWindow::DoSize()
 {
-    if ( stringEditEnabled || wavEditEnabled || unitPropertiesEditEnabled )
+    if ( stringEditEnabled || soundEditEnabled || unitPropertiesEditEnabled )
     {
         gridActions.SetPos(2, TOP_ACTION_PADDING, cliWidth() - 2,
             cliHeight() - TOP_ACTION_PADDING - BOTTOM_ACTION_PADDING - buttonEditString.Height() - 5);
@@ -119,16 +119,16 @@ void TrigActionsWindow::DoSize()
             cliHeight() - buttonEditString.Height() - 3);
     }
 
-    if ( wavEditEnabled )
+    if ( soundEditEnabled )
     {
         if ( stringEditEnabled )
         {
-            buttonEditWav.MoveTo(cliWidth() - 4 - buttonEditWav.Width() - buttonEditString.Width(),
-                cliHeight() - buttonEditWav.Height() - 3);
+            buttonEditSound.MoveTo(cliWidth() - 4 - buttonEditSound.Width() - buttonEditString.Width(),
+                cliHeight() - buttonEditSound.Height() - 3);
         }
         else
         {
-            buttonEditWav.MoveTo(cliWidth() - 2 - buttonEditString.Width(),
+            buttonEditSound.MoveTo(cliWidth() - 2 - buttonEditString.Width(),
                 cliHeight() - buttonEditString.Height() - 3);
         }
     }
@@ -281,8 +281,8 @@ void TrigActionsWindow::CreateSubWindows(HWND hWnd)
     suggestions.CreateThis(hWnd, 0, 0, 262, 100);
     buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
-    buttonEditWav.CreateThis(hWnd, 0, 0, 100, 22, "Edit WAV", Id::BUTTON_EDITWAV);
-    buttonEditWav.Hide();
+    buttonEditSound.CreateThis(hWnd, 0, 0, 100, 22, "Edit Sound", Id::BUTTON_EDITSOUND);
+    buttonEditSound.Hide();
     buttonUnitProperties.CreateThis(hWnd, 0, 0, 125, 22, "Edit Unit Properties", Id::BUTTON_UNITPROPERTIES);
     buttonUnitProperties.Hide();
     RefreshWindow(trigIndex);
@@ -812,7 +812,7 @@ void TrigActionsWindow::SuggestOrder()
     suggestions.Show();
 }
 
-void TrigActionsWindow::SuggestWav()
+void TrigActionsWindow::SuggestSound()
 {
     for ( size_t i = 0; i < 512; i++ )
     {
@@ -947,7 +947,7 @@ void TrigActionsWindow::ButtonEditString()
         {
             ChkdStringPtr gameString, editorString;
             GetCurrentActionString(gameString, editorString);
-            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Trigger, trigIndex, focusedY);
+            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::TriggerAction, trigIndex, focusedY);
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
@@ -962,20 +962,6 @@ void TrigActionsWindow::ButtonEditString()
                 else
                     action.stringId = Chk::StringId::NoString;
             }
-            if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
-            {
-                logger.warn() << "Extended string changed to: \"" << (editorString != nullptr ? *editorString : "(nullptr)") << "\" but extended trigger strings not yet implemented" << std::endl;
-                if ( editorString != nullptr )
-                {
-                    size_t stringId = Chk::StringId::NoString; // TODO: CM->strings.addString<ChkdString>(*gameString, Chk::Scope::Editor);
-                    if ( stringId != Chk::StringId::NoString )
-                    {
-                        // TODO: extendedSomething.stringId = stringId;
-                    }
-                }
-                else
-                    ; // TODO: extendedSomething.stringId = Chk::StringId::NoString;
-            }
 
             if ( result > 0 )
                 chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
@@ -985,19 +971,19 @@ void TrigActionsWindow::ButtonEditString()
     }
 }
 
-void TrigActionsWindow::EnableWavEdit()
+void TrigActionsWindow::EnableSoundEdit()
 {
-    wavEditEnabled = true;
-    buttonEditWav.Show();
+    soundEditEnabled = true;
+    buttonEditSound.Show();
 }
 
-void TrigActionsWindow::DisableWavEdit()
+void TrigActionsWindow::DisableSoundEdit()
 {
-    buttonEditWav.Hide();
-    wavEditEnabled = false;
+    buttonEditSound.Hide();
+    soundEditEnabled = false;
 }
 
-void TrigActionsWindow::ButtonEditWav()
+void TrigActionsWindow::ButtonEditSound()
 {
     int focusedX, focusedY;
     Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
@@ -1008,7 +994,7 @@ void TrigActionsWindow::ButtonEditWav()
         {
             ChkdStringPtr gameString, editorString;
             GetCurrentActionSound(gameString, editorString);
-            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Trigger, trigIndex, focusedY);
+            ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::TriggerActionSound, trigIndex, focusedY);
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
@@ -1022,20 +1008,6 @@ void TrigActionsWindow::ButtonEditWav()
                 }
                 else
                     action.soundStringId = Chk::StringId::NoString;
-            }
-            if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
-            {
-                logger.warn() << "Extended sound string changed to: \"" << (editorString != nullptr ? *editorString : "(nullptr)") << "\" but extended trigger sound strings not yet implemented" << std::endl;
-                if ( editorString != nullptr )
-                {
-                    size_t stringId = Chk::StringId::NoString; // TODO: CM->strings.addString<ChkdString>(*gameString, Chk::Scope::Editor);
-                    if ( stringId != Chk::StringId::NoString )
-                    {
-                        // TODO: extendedSomething.soundStringId = stringId;
-                    }
-                }
-                else
-                    ; // TODO: extendedSomething.soundStringId = Chk::StringId::NoString;
             }
 
             if ( result > 0 )
@@ -1123,7 +1095,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
             case Chk::Action::ArgType::StateMod: SuggestStateMod(); break;
             case Chk::Action::ArgType::Percent: SuggestPercent(); break;
             case Chk::Action::ArgType::Order: SuggestOrder(); break;
-            case Chk::Action::ArgType::Sound: SuggestWav(); break;
+            case Chk::Action::ArgType::Sound: SuggestSound(); break;
             case Chk::Action::ArgType::Duration: SuggestDuration(); break;
             case Chk::Action::ArgType::Script: SuggestScript(); break;
             case Chk::Action::ArgType::AllyState: SuggestAllyState(); break;
@@ -1150,7 +1122,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
         Chk::Action::Type actionType = action.actionType;
         if ( actionType < Chk::Action::NumActionTypes )
         {
-            bool includesString = false, includesWav = false;
+            bool includesString = false, includesSound = false;
             bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
             for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
             {
@@ -1163,7 +1135,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
             {
                 Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
                 if ( argType == Chk::Action::ArgType::Sound )
-                    includesWav = true;
+                    includesSound = true;
             }
 
             if ( includesString )
@@ -1171,10 +1143,10 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
             else
                 DisableStringEdit();
 
-            if ( includesWav )
-                EnableWavEdit();
+            if ( includesSound )
+                EnableSoundEdit();
             else
-                DisableWavEdit();
+                DisableSoundEdit();
 
             if ( isCUWP )
                 EnableUnitPropertiesEdit();
@@ -1264,7 +1236,7 @@ LRESULT TrigActionsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             switch ( LOWORD(wParam) )
             {
                 case Id::BUTTON_EDITSTRING: ButtonEditString(); break;
-                case Id::BUTTON_EDITWAV: ButtonEditWav(); break;
+                case Id::BUTTON_EDITSOUND: ButtonEditSound(); break;
                 case Id::BUTTON_UNITPROPERTIES: ButtonEditUnitProperties(); break;
                 default: return ClassWindow::Command(hWnd, wParam, lParam); break;
             }

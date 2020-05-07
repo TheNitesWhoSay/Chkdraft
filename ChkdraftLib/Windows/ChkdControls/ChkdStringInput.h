@@ -46,6 +46,8 @@ class ChkdStringInputDialog : public WinLib::ClassDialog
         Chk::StringUserFlag stringUser;
         size_t stringUserIndex;
         size_t stringSubUserIndex;
+        bool userHasGameString;
+        bool userHasEditorString;
 
         WinLib::TabControl tabStringTypes;
         Tab currTab;

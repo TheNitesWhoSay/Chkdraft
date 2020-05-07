@@ -778,12 +778,12 @@ class TrigSection : public DynamicSection<false>
         std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
         bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId);
-        bool gameStringUsed(size_t stringId);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         bool commentStringUsed(size_t stringId);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -812,8 +812,8 @@ class MbrfSection : public DynamicSection<false>
         void insertBriefingTrigger(size_t briefingTriggerIndex, std::shared_ptr<Chk::Trigger> briefingTrigger);
         void deleteBriefingTrigger(size_t briefingTriggerIndex);
         void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -1213,10 +1213,22 @@ class KtrgSection : public DynamicSection<true>
 
         bool empty();
 
+        size_t numExtendedTriggers();
+        std::shared_ptr<Chk::ExtendedTrigData> getExtendedTrigger(size_t extendedTriggerIndex);
+        size_t addExtendedTrigger(std::shared_ptr<Chk::ExtendedTrigData> extendedTrigger);
+        void deleteExtendedTrigger(size_t extendedTriggerIndex);
+
+        bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        void remapEditorStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteEditorString(size_t stringId);
+
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool append = false); // Reads up to sizeExpected bytes from the input stream
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
+
+        void cleanTail();
 
     private:
         std::deque<Chk::ExtendedTrigDataPtr> extendedTrigData;

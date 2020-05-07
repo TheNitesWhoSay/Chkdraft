@@ -3232,21 +3232,21 @@ bool TrigSection::locationUsed(size_t locationId)
     return false;
 }
 
-bool TrigSection::stringUsed(size_t stringId)
+bool TrigSection::stringUsed(size_t stringId, u32 userMask)
 {
     for ( auto trigger : triggers )
     {
-        if ( trigger->stringUsed(stringId) )
+        if ( trigger->stringUsed(stringId, userMask) )
             return true;
     }
     return false;
 }
 
-bool TrigSection::gameStringUsed(size_t stringId)
+bool TrigSection::gameStringUsed(size_t stringId, u32 userMask)
 {
     for ( auto trigger : triggers )
     {
-        if ( trigger->gameStringUsed(stringId) )
+        if ( trigger->gameStringUsed(stringId, userMask) )
             return true;
     }
     return false;
@@ -3268,16 +3268,16 @@ void TrigSection::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locatio
         trigger->markUsedLocations(locationIdUsed);
 }
 
-void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( auto trigger : triggers )
-        trigger->markUsedStrings(stringIdUsed);
+        trigger->markUsedStrings(stringIdUsed, userMask);
 }
 
-void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( auto trigger : triggers )
-        trigger->markUsedGameStrings(stringIdUsed);
+        trigger->markUsedGameStrings(stringIdUsed, userMask);
 }
 
 void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
@@ -3422,20 +3422,20 @@ void MbrfSection::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t br
     }
 }
 
-bool MbrfSection::stringUsed(size_t stringId)
+bool MbrfSection::stringUsed(size_t stringId, u32 userMask)
 {
     for ( auto briefingTrigger : briefingTriggers )
     {
-        if ( briefingTrigger->briefingStringUsed(stringId) )
+        if ( briefingTrigger->briefingStringUsed(stringId, userMask) )
             return true;
     }
     return false;
 }
 
-void MbrfSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void MbrfSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
 {
     for ( auto briefingTrigger : briefingTriggers )
-        briefingTrigger->markUsedStrings(stringIdUsed);
+        briefingTrigger->markUsedBriefingStrings(stringIdUsed, userMask);
 }
 
 void MbrfSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -6053,6 +6053,111 @@ bool KtrgSection::empty()
     return extendedTrigData.size() < 3; // Indexes 0 and 1 are unused, so section is empty if size is less than 3
 }
 
+size_t KtrgSection::numExtendedTriggers()
+{
+    return extendedTrigData.size();
+}
+
+std::shared_ptr<Chk::ExtendedTrigData> KtrgSection::getExtendedTrigger(size_t extendedTriggerIndex)
+{
+    if ( extendedTriggerIndex < extendedTrigData.size() )
+        return extendedTrigData[extendedTriggerIndex];
+}
+
+size_t KtrgSection::addExtendedTrigger(std::shared_ptr<Chk::ExtendedTrigData> extendedTrigger)
+{
+    if ( extendedTrigger != nullptr )
+    {
+        for ( size_t i=0; i<extendedTrigData.size(); i++ )
+        {
+            if ( extendedTrigData[i] == nullptr && (i & Chk::UnusedExtendedTrigDataIndexCheck) != 0 ) // If index is unused and usable
+            {
+                extendedTrigData[i] = extendedTrigger;
+                return i;
+            }
+        }
+
+        while ( (extendedTrigData.size() & Chk::UnusedExtendedTrigDataIndexCheck) == 0 ) // While next index is unusable
+            extendedTrigData.push_back(nullptr); // Put a nullptr in that position
+
+        extendedTrigData.push_back(extendedTrigger);
+        return extendedTrigData.size()-1;
+    }
+    return 0;
+}
+
+void KtrgSection::deleteExtendedTrigger(size_t extendedTriggerIndex)
+{
+    if ( extendedTriggerIndex < extendedTrigData.size() )
+    {
+        extendedTrigData[extendedTriggerIndex] = nullptr;
+        cleanTail();
+    }
+}
+
+bool KtrgSection::editorStringUsed(size_t stringId, u32 userMask)
+{
+    for ( const auto & extendedTrig : extendedTrigData )
+    {
+        if ( extendedTrig != nullptr && (
+            ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                extendedTrig->commentStringId == stringId) ||
+            ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                extendedTrig->notesStringId == stringId) ) )
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void KtrgSection::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+{
+    for ( const auto & extendedTrig : extendedTrigData )
+    {
+        if ( extendedTrig != nullptr )
+        {
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment && extendedTrig->commentStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig->commentStringId] = true;
+
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes && extendedTrig->notesStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig->notesStringId] = true;
+        }
+    }
+}
+
+void KtrgSection::remapEditorStringIds(const std::map<u32, u32> & stringIdRemappings)
+{
+    for ( const auto & extendedTrig : extendedTrigData )
+    {
+        if ( extendedTrig != nullptr )
+        {
+            auto replacement = stringIdRemappings.find(extendedTrig->commentStringId);
+            if ( replacement != stringIdRemappings.end() )
+                extendedTrig->commentStringId = replacement->second;
+
+            replacement = stringIdRemappings.find(extendedTrig->notesStringId);
+            if ( replacement != stringIdRemappings.end() )
+                extendedTrig->notesStringId = replacement->second;
+        }
+    }
+}
+
+void KtrgSection::deleteEditorString(size_t stringId)
+{
+    for ( const auto & extendedTrig : extendedTrigData )
+    {
+        if ( extendedTrig != nullptr )
+        {
+            if ( extendedTrig->commentStringId == stringId )
+                extendedTrig->commentStringId = Chk::StringId::NoString;
+
+            if ( extendedTrig->notesStringId == stringId )
+                extendedTrig->notesStringId = Chk::StringId::NoString;
+        }
+    }
+}
+
 Chk::SectionSize KtrgSection::getSize(ScenarioSaver & scenarioSaver)
 {
     return Chk::SectionSize(4+extendedTrigData.size()*sizeof(Chk::ExtendedTrigData));
@@ -6081,6 +6186,20 @@ void KtrgSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
     for ( const Chk::ExtendedTrigDataPtr & extendedTrigData : this->extendedTrigData )
         os.write((const char*)extendedTrigData.get(), std::streamsize(sizeof(Chk::ExtendedTrigData)));
+}
+
+void KtrgSection::cleanTail()
+{
+    size_t i = extendedTrigData.size();
+    for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || extendedTrigData[i-1] == nullptr); i-- );
+
+    if ( i == 0 )
+        extendedTrigData.clear();
+    else if ( i < extendedTrigData.size() )
+    {
+        auto firstErased = std::next(extendedTrigData.begin(), i);
+        extendedTrigData.erase(firstErased, extendedTrigData.end());
+    }
 }
 
 KtgpSectionPtr KtgpSection::GetDefault()

@@ -29,6 +29,7 @@
 #define IDD_DIALOG5                     147
 #define IDD_INPUTCHKDSTR                147
 #define IDD_EDITCUWP                    150
+#define IDB_PROPERTIES                  155
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -144,9 +145,9 @@
 #define IDC_CHECKCUWPBURROWED           1114
 #define IDC_CHECKCUWPLIFTED             1115
 #define IDC_CHECKCUWPHALLUCINATED       1116
-#define IDC_CHECK_NOSTRING              1117
-#define IDC_TAB_GAMESTRING              1118
 #define IDC_TAB_STRINGTYPES             1118
+#define IDC_BUTTON4                     1119
+#define IDC_LOCNAME_PROPERTIES          1119
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -323,9 +324,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        155
+#define _APS_NEXT_RESOURCE_VALUE        157
 #define _APS_NEXT_COMMAND_VALUE         40655
-#define _APS_NEXT_CONTROL_VALUE         1119
+#define _APS_NEXT_CONTROL_VALUE         1120
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

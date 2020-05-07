@@ -211,11 +211,16 @@ namespace Chk {
         ExpansionUnitSettings = BIT_5,
         Sound = BIT_6,
         Switch = BIT_7,
-        Trigger = BIT_8,
-        BriefingTrigger = BIT_9,
+        TriggerAction = BIT_8,
+        TriggerActionSound = BIT_9,
+        ExtendedTriggerComment = BIT_10,
+        ExtendedTriggerNotes = BIT_11,
+        BriefingTriggerAction = BIT_12,
+        BriefingTriggerActionSound = BIT_13,
 
         BothUnitSettings = OriginalUnitSettings | ExpansionUnitSettings,
-        TriggerActionSound = Trigger | Sound,
+        AnyTrigger = TriggerAction | TriggerActionSound | ExtendedTriggerComment | ExtendedTriggerNotes,
+        AnyBriefingTrigger = BriefingTriggerAction | BriefingTriggerActionSound,
         xTrigger = x32BIT_8,
 
         All = u32_max
@@ -772,15 +777,15 @@ namespace Chk {
         bool hasStringArgument();
         bool hasSoundArgument();
         inline bool locationUsed(size_t locationId);
-        inline bool stringUsed(size_t stringId);
-        inline bool gameStringUsed(size_t stringId);
+        inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         inline bool commentStringUsed(size_t stringId);
-        inline bool briefingStringUsed(size_t stringId);
+        inline bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -881,15 +886,15 @@ namespace Chk {
         size_t numUsedActions();
         size_t getComment();
         bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId);
-        bool gameStringUsed(size_t stringId);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         bool commentStringUsed(size_t stringId);
-        bool briefingStringUsed(size_t stringId);
+        bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
         void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -961,6 +966,8 @@ namespace Chk {
         Deprecated = 1,
         Current = 2
     });
+
+    constexpr u32 UnusedExtendedTrigDataIndexCheck = 0xFEFEFEFE;
 
     __declspec(align(1)) struct ExtendedTrigData
     {

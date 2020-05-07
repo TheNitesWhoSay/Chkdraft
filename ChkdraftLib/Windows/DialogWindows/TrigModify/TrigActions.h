@@ -35,13 +35,13 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
     private:
         CndActGrid gridActions;
         WinLib::EditControl editListItem;
-        WinLib::ButtonControl buttonEditWav;
+        WinLib::ButtonControl buttonEditSound;
         WinLib::ButtonControl buttonEditString;
         WinLib::ButtonControl buttonUnitProperties;
         HBRUSH hBlack;
         u32 trigIndex;
         bool stringEditEnabled;
-        bool wavEditEnabled;
+        bool soundEditEnabled;
         bool unitPropertiesEditEnabled;
         bool isPasting;
 
@@ -87,7 +87,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void SuggestStateMod();
         void SuggestPercent();
         void SuggestOrder();
-        void SuggestWav();
+        void SuggestSound();
         void SuggestDuration();
         void SuggestScript();
         void SuggestAllyState();
@@ -104,9 +104,9 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void EnableStringEdit();
         void DisableStringEdit();
         void ButtonEditString();
-        void EnableWavEdit();
-        void DisableWavEdit();
-        void ButtonEditWav();
+        void EnableSoundEdit();
+        void DisableSoundEdit();
+        void ButtonEditSound();
         void EnableUnitPropertiesEdit();
         void DisableUnitPropertiesEdit();
         void ButtonEditUnitProperties();

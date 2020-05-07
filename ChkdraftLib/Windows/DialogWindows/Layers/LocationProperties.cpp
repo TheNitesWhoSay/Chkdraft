@@ -24,6 +24,7 @@ enum_t(Id, u32, {
     ButtonInvertX = IDC_INVERTX,
     ButtonInvertY = IDC_INVERTY,
     ButtonInvertXY = IDC_INVERTXY,
+    ButtonLocNameProperties = IDC_LOCNAME_PROPERTIES
 });
 
 LocationWindow::LocationWindow() : refreshing(true), preservedStat(0), currentLocationId(0)
@@ -41,6 +42,11 @@ bool LocationWindow::CreateThis(HWND hParent)
     if ( ClassDialog::CreateModelessDialog(MAKEINTRESOURCE(IDD_LOCPROP), hParent) )
     {
         editLocName.FindThis(getHandle(), Id::EditLocationName);
+        buttonLocNameProperties.FindThis(getHandle(), Id::ButtonLocNameProperties);
+
+        HBITMAP icon = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PROPERTIES));
+        SendMessage(buttonLocNameProperties.getHandle(), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)icon);
+
         editLocLeft.FindThis(getHandle(), Id::EditLocationLeft);
         editLocTop.FindThis(getHandle(), Id::EditLocationTop);
         editLocRight.FindThis(getHandle(), Id::EditLocationRight);

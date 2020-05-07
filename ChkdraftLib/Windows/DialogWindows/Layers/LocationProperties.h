@@ -54,7 +54,7 @@ class LocationWindow : public WinLib::ClassDialog
 
         WinLib::EditControl editLocName, editLocLeft, editLocTop, editLocRight, editLocBottom, editRawFlags;
         WinLib::CheckBoxControl checkUseExtended, checkLowGround, checkMedGround, checkHighGround, checkLowAir, checkMedAir, checkHighAir;
-        WinLib::ButtonControl buttonInvertX, buttonInvertY, buttonInvertXY;
+        WinLib::ButtonControl buttonLocNameProperties, buttonInvertX, buttonInvertY, buttonInvertXY;
 };
 
 #endif
