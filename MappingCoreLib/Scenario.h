@@ -533,6 +533,7 @@ class Triggers : public LocationSynchronizer
 
         Chk::ExtendedTrigDataPtr getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
         void deleteTriggerExtension(size_t triggerIndex);
+        void fixTriggerExtensions();
 
         size_t getCommentStringId(size_t triggerIndex);
         size_t getExtendedCommentStringId(size_t triggerIndex);

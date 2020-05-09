@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
+#include <chrono>
 
 extern Logger logger;
 
@@ -320,6 +321,8 @@ bool Scenario::read(std::istream & is)
         return parsingFailed("Map was missing the VER section!");
 
     Chk::Version version = versions.ver->getVersion();
+
+    triggers.fixTriggerExtensions();
 
     // TODO: More validation
     return true;
@@ -3586,21 +3589,25 @@ size_t Triggers::addTrigger(std::shared_ptr<Chk::Trigger> trigger)
 void Triggers::insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger)
 {
     trig->insertTrigger(triggerIndex, trigger);
+    fixTriggerExtensions();
 }
 
 void Triggers::deleteTrigger(size_t triggerIndex)
 {
     trig->deleteTrigger(triggerIndex);
+    fixTriggerExtensions();
 }
 
 void Triggers::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
 {
     trig->moveTrigger(triggerIndexFrom, triggerIndexTo);
+    fixTriggerExtensions();
 }
 
 std::deque<Chk::TriggerPtr> Triggers::replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers)
 {
     return trig->replaceRange(beginIndex, endIndex, triggers);
+    fixTriggerExtensions();
 }
 
 Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex, bool addIfNotFound)
@@ -3636,6 +3643,52 @@ void Triggers::deleteTriggerExtension(size_t triggerIndex)
         {
             trigger->clearExtendedDataIndex();
             ktrg->deleteExtendedTrigger(extendedTrigDataIndex);
+        }
+    }
+}
+
+void Triggers::fixTriggerExtensions()
+{
+    std::set<size_t> usedExtendedTrigDataIndexes;
+    size_t numTriggers = trig->numTriggers();
+    for ( size_t i=0; i<numTriggers; i++ )
+    {
+        Chk::TriggerPtr trigger = trig->getTrigger(i);
+        if ( trigger != nullptr )
+        {
+            size_t extendedDataIndex = trigger->getExtendedDataIndex();
+            if ( extendedDataIndex != Chk::ExtendedTrigDataIndex::None )
+            {
+                Chk::ExtendedTrigDataPtr extension = ktrg->getExtendedTrigger(extendedDataIndex);
+                if ( extension == nullptr ) // Invalid extendedDataIndex
+                    trigger->clearExtendedDataIndex();
+                else if ( usedExtendedTrigDataIndexes.find(extendedDataIndex) == usedExtendedTrigDataIndexes.end() ) // Valid extension
+                {
+                    extension->trigNum = i; // Ensure the trigNum is correct
+                    usedExtendedTrigDataIndexes.insert(extendedDataIndex);
+                }
+                else // Same extension used by multiple triggers
+                    trigger->clearExtendedDataIndex();
+            }
+        }
+    }
+
+    size_t numTriggerExtensions = ktrg->numExtendedTriggers();
+    for ( size_t i=0; i<numTriggerExtensions; i++ )
+    {
+        Chk::ExtendedTrigDataPtr extension = ktrg->getExtendedTrigger(i);
+        if ( extension != nullptr && usedExtendedTrigDataIndexes.find(i) == usedExtendedTrigDataIndexes.end() ) // Extension exists, but no trigger uses it
+        {
+            if ( extension->trigNum != Chk::ExtendedTrigData::TrigNum::None ) // Refers to a trigger
+            {
+                Chk::TriggerPtr trigger = trig->getTrigger(extension->trigNum);
+                if ( trigger != nullptr && trigger->getExtendedDataIndex() == Chk::ExtendedTrigDataIndex::None ) // This trigger exists without an extension
+                    trigger->setExtendedDataIndex(i); // Link up extension to the trigger
+                else if ( trigger == nullptr ) // Trigger does not exist
+                    ktrg->deleteExtendedTrigger(i); // Delete the extension
+            }
+            else if ( extension->trigNum == Chk::ExtendedTrigData::TrigNum::None ) // Does not refer to a trigger
+                ktrg->deleteExtendedTrigger(i); // Delete the extension
         }
     }
 }
