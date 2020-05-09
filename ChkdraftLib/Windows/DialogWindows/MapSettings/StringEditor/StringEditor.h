@@ -38,7 +38,6 @@ class StringEditorWindow : public WinLib::ClassWindow
         StringPreviewWindow stringPreviewWindow;
         WinLib::ButtonControl buttonSaveString;
         WinLib::ButtonControl buttonDeleteString;
-        WinLib::CheckBoxControl checkExtendedString;
         WinLib::ListBoxControl listStrings;
         WinLib::ListBoxControl listUsage;
         HDC stringListDC; // String list HDC for speeding up string measurement

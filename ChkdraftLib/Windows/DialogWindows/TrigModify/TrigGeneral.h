@@ -37,23 +37,27 @@ class TrigGeneralWindow : public WinLib::ClassWindow
         void SetPausedTrigger(bool paused);
         void ParseRawFlagsText();
         void ToggleAdvancedMode();
+
+        void EditCommentFocusLost();
+        void EditNotesFocusLost();
+        void ButtonCommentProperties();
+        void ButtonNotesProperties();
+
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+        
+        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
 
     private:
         bool refreshing;
         u32 trigIndex;
         WinLib::GroupBoxControl groupComment;
         WinLib::EditControl editComment;
-        WinLib::CheckBoxControl checkExtendedCommentString;
-        WinLib::CheckBoxControl checkExtendedCommentAction;
-        WinLib::ButtonControl buttonDeleteComment;
+        WinLib::ButtonControl buttonCommentProperties;
 
         WinLib::GroupBoxControl groupNotes;
         WinLib::EditControl editNotes;
-        WinLib::CheckBoxControl checkExtendedNotesString;
-        WinLib::CheckBoxControl checkExtendedNotesAction;
-        WinLib::ButtonControl buttonDeleteNotes;
+        WinLib::ButtonControl buttonNotesProperties;
 
         WinLib::GroupBoxControl groupExecutionFlags;
 

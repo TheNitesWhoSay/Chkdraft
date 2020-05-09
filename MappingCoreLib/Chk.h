@@ -219,7 +219,8 @@ namespace Chk {
         BriefingTriggerActionSound = BIT_13,
 
         BothUnitSettings = OriginalUnitSettings | ExpansionUnitSettings,
-        AnyTrigger = TriggerAction | TriggerActionSound | ExtendedTriggerComment | ExtendedTriggerNotes,
+        AnyTrigger = TriggerAction | TriggerActionSound,
+        AnyTriggerExtension = ExtendedTriggerComment | ExtendedTriggerNotes,
         AnyBriefingTrigger = BriefingTriggerAction | BriefingTriggerActionSound,
         xTrigger = x32BIT_8,
 
@@ -967,7 +968,7 @@ namespace Chk {
         Current = 2
     });
 
-    constexpr u32 UnusedExtendedTrigDataIndexCheck = 0xFEFEFEFE;
+    constexpr u32 UnusedExtendedTrigDataIndexCheck = 0xFEFEFEFE; // If potentialIndex & this == 0, potentialIndex is unusable
 
     __declspec(align(1)) struct ExtendedTrigData
     {
@@ -1284,7 +1285,7 @@ namespace Chk {
         None = 0xFFFFFFFF,
         CheckExtended = 0xFEFEFEFE,
         GetIndex = 0x00FFFFFF,
-        MaxIndex = 0x00FFFFFF
+        MaxIndex = 0x00FEFEFE
     });
 
     __declspec(align(1)) struct KTRG {

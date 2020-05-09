@@ -961,6 +961,8 @@ void TrigActionsWindow::ButtonEditString()
                 }
                 else
                     action.stringId = Chk::StringId::NoString;
+
+                CM->strings.deleteUnusedStrings(Chk::Scope::Game);
             }
 
             if ( result > 0 )
@@ -1008,6 +1010,8 @@ void TrigActionsWindow::ButtonEditSound()
                 }
                 else
                     action.soundStringId = Chk::StringId::NoString;
+
+                CM->strings.deleteUnusedStrings(Chk::Scope::Game);
             }
 
             if ( result > 0 )

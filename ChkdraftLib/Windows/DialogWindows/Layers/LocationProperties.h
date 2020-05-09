@@ -26,7 +26,7 @@ class LocationWindow : public WinLib::ClassDialog
         void NotifyLowAirClicked();
         void NotifyMedAirClicked();
         void NotifyHighAirClicked();
-        void NotifyUseExtendedStringClicked();
+        void NotifyLocNamePropertiesClicked();
 
         void RawFlagsUpdated();
         void LocationLeftUpdated();
@@ -53,7 +53,7 @@ class LocationWindow : public WinLib::ClassDialog
         u16 currentLocationId;
 
         WinLib::EditControl editLocName, editLocLeft, editLocTop, editLocRight, editLocBottom, editRawFlags;
-        WinLib::CheckBoxControl checkUseExtended, checkLowGround, checkMedGround, checkHighGround, checkLowAir, checkMedAir, checkHighAir;
+        WinLib::CheckBoxControl checkLowGround, checkMedGround, checkHighGround, checkLowAir, checkMedAir, checkHighAir;
         WinLib::ButtonControl buttonLocNameProperties, buttonInvertX, buttonInvertY, buttonInvertXY;
 };
 

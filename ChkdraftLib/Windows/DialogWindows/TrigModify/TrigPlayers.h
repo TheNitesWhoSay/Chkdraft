@@ -34,7 +34,7 @@ class TrigPlayersWindow : public WinLib::ClassWindow
         WinLib::TextControl textPlayerStats;
 
         WinLib::GroupBoxControl groupNonExecutingPlayers;
-        WinLib::CheckBoxControl checkNonExecutingPlayers[15]; // Starting at p9//ID:8, Skip ID:17-21, Ending at ID:27
+        WinLib::CheckBoxControl checkNonExecutingPlayers[14]; // Starting at p9//ID:8, Skip ID:17-21, Ending at ID:26
 
         WinLib::GroupBoxControl groupRawEdit;
         WinLib::CheckBoxControl checkAllowRawEdit;

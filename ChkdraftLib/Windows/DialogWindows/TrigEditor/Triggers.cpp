@@ -795,7 +795,7 @@ void TriggersWindow::RefreshGroupList()
             {
                 for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
                 {
-                    if ( !addedPlayer[player] && trigger->owners[player] != Chk::Trigger::Owned::No )
+                    if ( !addedPlayer[player] && trigger->owners[player] == Chk::Trigger::Owned::Yes )
                     {
                         addedPlayer[player] = true;
                         if ( player == firstNotFound ) // Skip already-found players
@@ -1104,44 +1104,43 @@ void TriggersWindow::ClearGroups()
 
 bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
 {
-    size_t commentStringId = trigger->getComment();
-    if ( commentStringId != Chk::StringId::NoString )
+    RawStringPtr commentString = CM->strings.getExtendedComment<RawString>(triggerNum);
+    if ( commentString == nullptr )
+        commentString = CM->strings.getComment<RawString>(triggerNum);
+
+    if ( commentString != nullptr )
     {
-        RawStringPtr str = chk->strings.getString<RawString>(commentStringId);
-        if ( str != nullptr )
+        size_t hash = strHash(*commentString);
+        auto matches = commentSizeTable.equal_range(hash);
+        if ( matches.first != commentSizeTable.end() && matches.first->first == hash )
         {
-            size_t hash = strHash(*str);
-            auto matches = commentSizeTable.equal_range(hash);
-            if ( matches.first != commentSizeTable.end() && matches.first->first == hash )
+            for ( auto it = matches.first; it != matches.second; ++it )
             {
-                for ( auto it = matches.first; it != matches.second; ++it )
+                CommentSize & commentSize = it->second;
+                if ( commentSize.str.compare(*commentString) == 0 )
                 {
-                    CommentSize & commentSize = it->second;
-                    if ( commentSize.str.compare(*str) == 0 )
-                    {
-                        width = commentSize.width;
-                        height = commentSize.height;
-                        return false;
-                    }
+                    width = commentSize.width;
+                    height = commentSize.height;
+                    return false;
                 }
             }
+        }
 
-            CommentSize commentSize = { *str, 0, 0 };
+        CommentSize commentSize = { *commentString, 0, 0 };
 
-            size_t endOfLine = str->find("\r\n");
-            if ( endOfLine != std::string::npos )
-                str->insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
-            else
-                str->append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+        size_t endOfLine = commentString->find("\r\n");
+        if ( endOfLine != std::string::npos )
+            commentString->insert(endOfLine, (std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
+        else
+            commentString->append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
-            if ( GetStringDrawSize(hDC, width, height, *str) )
-            {
-                width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
-                height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
-                commentSize.width = width;
-                commentSize.height = height;
-                commentSizeTable.insert(std::pair<size_t, CommentSize>(hash, commentSize));
-            }
+        if ( GetStringDrawSize(hDC, width, height, *commentString) )
+        {
+            width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
+            height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+            commentSize.width = width;
+            commentSize.height = height;
+            commentSizeTable.insert(std::pair<size_t, CommentSize>(hash, commentSize));
         }
     }
     else
@@ -1190,7 +1189,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 group
                                      "Player 11 (unused)", "Player 12 (unused)",
                                      "unknown/unused", "Current Player (unused)", "Foes (unused)", "Allies (unused)", "Neutral Players (unused)",
                                      "All players", "Force 1", "Force 2", "Force 3", "Force 4",
-                                     "unknown/unused", "unknown/unused", "unknown/unused", "unknown/unused",
+                                     "22", "23", "24", "25",
                                      "Non AV Players (unused)", "Show All" };
 
         DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
@@ -1237,22 +1236,23 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenar
 
     LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
     size_t commentStringId = trigger->getComment();
-    if ( commentStringId != Chk::StringId::NoString )
-    {
-        RawStringPtr str = chk->strings.getString<RawString>(commentStringId);
-        if ( str != nullptr )
-        {
-            std::string num(std::to_string(triggerNum));
-            size_t endOfLine = str->find("\r\n");
-            if ( endOfLine != std::string::npos )
-                str->insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
-            else
-                str->append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+    
+    RawStringPtr commentString = CM->strings.getExtendedComment<RawString>(triggerNum);
+    if ( commentString == nullptr )
+        commentString = CM->strings.getComment<RawString>(triggerNum);
 
-            SetBkMode(hDC, TRANSPARENT);
-            DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
-                rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), *str);
-        }
+    if ( commentString != nullptr )
+    {
+        std::string num(std::to_string(triggerNum));
+        size_t endOfLine = commentString->find("\r\n");
+        if ( endOfLine != std::string::npos )
+            commentString->insert(endOfLine, std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+        else
+            commentString->append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
+
+        SetBkMode(hDC, TRANSPARENT);
+        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+            rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), *commentString);
     }
     else
     {

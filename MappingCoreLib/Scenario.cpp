@@ -646,7 +646,7 @@ bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope stor
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
         {
             if ( usageScope == Chk::Scope::Editor )
-                return layers->stringUsed(stringId, storageScope, userMask) || triggers->editorStringUsed(stringId, userMask);
+                return layers->stringUsed(stringId, storageScope, userMask) || triggers->editorStringUsed(stringId, storageScope, userMask);
             else if ( usageScope == Chk::Scope::Game )
             {
                 return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
@@ -656,14 +656,14 @@ bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope stor
             {
                 return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
                     properties->stringUsed(stringId, userMask) || layers->stringUsed(stringId, storageScope, userMask) ||
-                    triggers->stringUsed(stringId, userMask);
+                    triggers->stringUsed(stringId, storageScope, userMask);
             }
         }
         else // stringId >= Chk::MaxStrings // 32-bit stringId
         {
-            return usageScope == Chk::Scope::Either && triggers->stringUsed(stringId, userMask) ||
+            return usageScope == Chk::Scope::Either && triggers->stringUsed(stringId, storageScope, userMask) ||
                 usageScope == Chk::Scope::Game && triggers->gameStringUsed(stringId, userMask) ||
-                usageScope == Chk::Scope::Editor && triggers->editorStringUsed(stringId, userMask);
+                usageScope == Chk::Scope::Editor && triggers->editorStringUsed(stringId, storageScope, userMask);
         }
     }
     else if ( storageScope == Chk::Scope::Editor && (kstr->stringStored(stringId) || !ensureStored) )
@@ -680,7 +680,7 @@ bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
 
 void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
 {
-    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
         bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
@@ -691,7 +691,7 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::
             players->markUsedStrings(stringIdUsed, userMask); // {FORC, Game, u16}: Force Names
             properties->markUsedStrings(stringIdUsed, userMask); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
             if ( markEditorStrings ) // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, ...
-                triggers->markUsedStrings(stringIdUsed, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
+                triggers->markUsedStrings(stringIdUsed, storageScope, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
             else
                 triggers->markUsedGameStrings(stringIdUsed, userMask); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
         }
@@ -700,12 +700,14 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::
         {
             layers->markUsedStrings(stringIdUsed, userMask); // {MRGN, Editor, u16}: location name
             if ( !markGameStrings )
-                triggers->markUsedEditorStrings(stringIdUsed, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
+                triggers->markUsedEditorStrings(stringIdUsed, storageScope, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
         }
     }
-    
-    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
+    {
         ostr->markUsedStrings(stringIdUsed, userMask);
+        triggers->markUsedStrings(stringIdUsed, storageScope, userMask);
+    }
 }
 
 void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
@@ -878,7 +880,7 @@ void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool delete
             players->deleteString(stringId);
             properties->deleteString(stringId);
             layers->deleteString(stringId);
-            triggers->deleteString(stringId);
+            triggers->deleteString(stringId, Chk::Scope::Game);
         }
     }
     
@@ -889,6 +891,7 @@ void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool delete
             kstr->deleteString(stringId, deleteOnlyIfUnused, std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
 
             ostr->deleteString(stringId);
+            triggers->deleteString(stringId, Chk::Scope::Editor);
         }
     }
 }
@@ -1301,6 +1304,36 @@ template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t
 template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope);
 
 template <typename StringType>
+std::shared_ptr<StringType> Strings::getComment(size_t triggerIndex)
+{
+    return getString<StringType>(triggers->getCommentStringId(triggerIndex), Chk::Scope::Game);
+}
+template std::shared_ptr<RawString> Strings::getComment<RawString>(size_t triggerIndex);
+template std::shared_ptr<EscString> Strings::getComment<EscString>(size_t triggerIndex);
+template std::shared_ptr<ChkdString> Strings::getComment<ChkdString>(size_t triggerIndex);
+template std::shared_ptr<SingleLineChkdString> Strings::getComment<SingleLineChkdString>(size_t triggerIndex);
+
+template <typename StringType>
+std::shared_ptr<StringType> Strings::getExtendedComment(size_t triggerIndex)
+{
+    return getString<StringType>(triggers->getExtendedCommentStringId(triggerIndex), Chk::Scope::Editor);
+}
+template std::shared_ptr<RawString> Strings::getExtendedComment<RawString>(size_t triggerIndex);
+template std::shared_ptr<EscString> Strings::getExtendedComment<EscString>(size_t triggerIndex);
+template std::shared_ptr<ChkdString> Strings::getExtendedComment<ChkdString>(size_t triggerIndex);
+template std::shared_ptr<SingleLineChkdString> Strings::getExtendedComment<SingleLineChkdString>(size_t triggerIndex);
+
+template <typename StringType>
+std::shared_ptr<StringType> Strings::getExtendedNotes(size_t triggerIndex)
+{
+    return getString<StringType>(triggers->getExtendedNotesStringId(triggerIndex), Chk::Scope::Editor);
+}
+template std::shared_ptr<RawString> Strings::getExtendedNotes<RawString>(size_t triggerIndex);
+template std::shared_ptr<EscString> Strings::getExtendedNotes<EscString>(size_t triggerIndex);
+template std::shared_ptr<ChkdString> Strings::getExtendedNotes<ChkdString>(size_t triggerIndex);
+template std::shared_ptr<SingleLineChkdString> Strings::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex);
+
+template <typename StringType>
 void Strings::setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
 {
     if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
@@ -1614,10 +1647,13 @@ void Strings::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk:
         players->remapStringIds(stringIdRemappings);
         properties->remapStringIds(stringIdRemappings);
         layers->remapStringIds(stringIdRemappings);
-        triggers->remapStringIds(stringIdRemappings);
+        triggers->remapStringIds(stringIdRemappings, storageScope);
     }
     else if ( storageScope == Chk::Scope::Editor )
+    {
         ostr->remapStringIds(stringIdRemappings);
+        triggers->remapStringIds(stringIdRemappings, storageScope);
+    }
 }
 
 void Strings::set(std::unordered_map<SectionName, Section> & sections)
@@ -3422,7 +3458,9 @@ Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), 
         mbrf = MbrfSection::GetDefault(); // Mission briefing triggers
         swnm = SwnmSection::GetDefault(); // Switch names
         wav = WavSection::GetDefault(); // Sound names
-        if ( wav == nullptr || swnm == nullptr || mbrf == nullptr || trig == nullptr || upus == nullptr || uprp == nullptr )
+        ktrg = KtrgSection::GetDefault(); // Trigger extensions
+        ktgp = KtgpSection::GetDefault(); // Trigger groups
+        if ( wav == nullptr || swnm == nullptr || mbrf == nullptr || trig == nullptr || upus == nullptr || uprp == nullptr || ktrg == nullptr || ktgp == nullptr )
         {
             throw ScenarioAllocationFailure(
                 wav == nullptr ? ChkSection::getNameString(SectionName::WAV) :
@@ -3430,14 +3468,16 @@ Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), 
                 (mbrf == nullptr ? ChkSection::getNameString(SectionName::MBRF) :
                 (trig == nullptr ? ChkSection::getNameString(SectionName::TRIG) :
                 (upus == nullptr ? ChkSection::getNameString(SectionName::UPUS) :
-                ChkSection::getNameString(SectionName::UPRP))))));
+                (uprp == nullptr ? ChkSection::getNameString(SectionName::UPRP) :
+                (ktrg == nullptr ? ChkSection::getNameString(SectionName::KTRG) :
+                ChkSection::getNameString(SectionName::KTGP))))))));
         }
     }
 }
 
 bool Triggers::empty()
 {
-    return uprp == nullptr && upus == nullptr && trig == nullptr && mbrf == nullptr && swnm == nullptr && wav == nullptr;
+    return uprp == nullptr && upus == nullptr && trig == nullptr && mbrf == nullptr && swnm == nullptr && wav == nullptr && ktrg == nullptr && ktgp == nullptr;
 }
 
 Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex)
@@ -3543,8 +3583,12 @@ Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex, bool
         else if ( addIfNotFound )
         {
             auto newExtendedTrigData = Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData());
-            if ( ktrg->addExtendedTrigger(newExtendedTrigData) != 0 )
+            size_t newExtendedTrigDataIndex = ktrg->addExtendedTrigger(newExtendedTrigData);
+            if ( newExtendedTrigDataIndex != 0 )
+            {
+                trigger->setExtendedDataIndex(newExtendedTrigDataIndex);
                 return newExtendedTrigData;
+            }
         }
     }
     return nullptr;
@@ -3562,6 +3606,33 @@ void Triggers::deleteTriggerExtension(size_t triggerIndex)
             ktrg->deleteExtendedTrigger(extendedTrigDataIndex);
         }
     }
+}
+
+size_t Triggers::getCommentStringId(size_t triggerIndex)
+{
+    auto trigger = trig->getTrigger(triggerIndex);
+    if ( trigger != nullptr )
+        return trigger->getComment();
+    else
+        return Chk::StringId::NoString;
+}
+
+size_t Triggers::getExtendedCommentStringId(size_t triggerIndex)
+{
+    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, false);
+    if ( extension != nullptr )
+        return extension->commentStringId;
+
+    return Chk::StringId::NoString;
+}
+
+size_t Triggers::getExtendedNotesStringId(size_t triggerIndex)
+{
+    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, false);
+    if ( extension != nullptr )
+        return extension->notesStringId;
+
+    return Chk::StringId::NoString;
 }
 
 size_t Triggers::numBriefingTriggers()
@@ -3629,12 +3700,17 @@ bool Triggers::locationUsed(size_t locationId)
     return trig->locationUsed(locationId);
 }
 
-bool Triggers::stringUsed(size_t stringId, u32 userMask)
+bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
 {
-    return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->stringUsed(stringId, userMask) ||
-        (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId, userMask);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
+            (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
+            (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->stringUsed(stringId, userMask) ||
+            (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId, userMask);
+    }
+    else
+        return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
 }
 
 bool Triggers::gameStringUsed(size_t stringId, u32 userMask)
@@ -3643,11 +3719,17 @@ bool Triggers::gameStringUsed(size_t stringId, u32 userMask)
         (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId);
 }
 
-bool Triggers::editorStringUsed(size_t stringId, u32 userMask)
+bool Triggers::editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
 {
-    return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-        (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && trig->commentStringUsed(stringId);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
+            (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
+            (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && trig->commentStringUsed(stringId) ||
+            (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
+    }
+    else
+        return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
 }
 
 void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
@@ -3655,19 +3737,24 @@ void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationId
     trig->markUsedLocations(locationIdUsed);
 }
 
-void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask)
 {
-    if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-        wav->markUsedStrings(stringIdUsed);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+            wav->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-        swnm->markUsedStrings(stringIdUsed);
+        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+            swnm->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
-        trig->markUsedStrings(stringIdUsed, userMask);
+        if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
+            trig->markUsedStrings(stringIdUsed, userMask);
 
-    if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
-        mbrf->markUsedStrings(stringIdUsed, userMask);
+        if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
+            mbrf->markUsedStrings(stringIdUsed, userMask);
+    }
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+        ktrg->markUsedEditorStrings(stringIdUsed, userMask);
 }
 
 void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
@@ -3679,16 +3766,21 @@ void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, 
         mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask)
 {
-    if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-        wav->markUsedStrings(stringIdUsed);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+            wav->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-        swnm->markUsedStrings(stringIdUsed);
+        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+            swnm->markUsedStrings(stringIdUsed);
 
-    if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
-        trig->markUsedCommentStrings(stringIdUsed);
+        if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
+            trig->markUsedCommentStrings(stringIdUsed);
+    }
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+        ktrg->markUsedEditorStrings(stringIdUsed, userMask);
 }
 
 void Triggers::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
@@ -3696,12 +3788,17 @@ void Triggers::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
     trig->remapLocationIds(locationIdRemappings);
 }
 
-void Triggers::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
+void Triggers::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
 {
-    wav->remapStringIds(stringIdRemappings);
-    swnm->remapStringIds(stringIdRemappings);
-    trig->remapStringIds(stringIdRemappings);
-    mbrf->remapStringIds(stringIdRemappings);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        wav->remapStringIds(stringIdRemappings);
+        swnm->remapStringIds(stringIdRemappings);
+        trig->remapStringIds(stringIdRemappings);
+        mbrf->remapStringIds(stringIdRemappings);
+    }
+    else if ( storageScope == Chk::Scope::Editor )
+        ktrg->remapEditorStringIds(stringIdRemappings);
 }
 
 void Triggers::deleteLocation(size_t locationId)
@@ -3709,12 +3806,17 @@ void Triggers::deleteLocation(size_t locationId)
     trig->deleteLocation(locationId);
 }
 
-void Triggers::deleteString(size_t stringId)
+void Triggers::deleteString(size_t stringId, Chk::Scope storageScope)
 {
-    wav->deleteString(stringId);
-    swnm->deleteString(stringId);
-    trig->deleteString(stringId);
-    mbrf->deleteString(stringId);
+    if ( storageScope == Chk::Scope::Game )
+    {
+        wav->deleteString(stringId);
+        swnm->deleteString(stringId);
+        trig->deleteString(stringId);
+        mbrf->deleteString(stringId);
+    }
+    else if ( storageScope == Chk::Scope::Editor )
+        ktrg->deleteEditorString(stringId);
 }
 
 void Triggers::set(std::unordered_map<SectionName, Section> & sections)
@@ -3726,6 +3828,8 @@ void Triggers::set(std::unordered_map<SectionName, Section> & sections)
     
     swnm = GetSection<SwnmSection>(sections, SectionName::SWNM);
     wav = GetSection<WavSection>(sections, SectionName::WAV);
+    ktrg = GetSection<KtrgSection>(sections, SectionName::KTRG);
+    ktgp = GetSection<KtgpSection>(sections, SectionName::KTGP);
 
     if ( uprp == nullptr )
         uprp = UprpSection::GetDefault();
@@ -3739,6 +3843,10 @@ void Triggers::set(std::unordered_map<SectionName, Section> & sections)
         swnm = SwnmSection::GetDefault();
     if ( wav == nullptr )
         wav = WavSection::GetDefault();
+    if ( ktrg == nullptr )
+        ktrg = KtrgSection::GetDefault();
+    if ( ktgp == nullptr )
+        ktgp = KtgpSection::GetDefault();
 }
 
 void Triggers::clear()
@@ -3750,4 +3858,7 @@ void Triggers::clear()
 
     swnm = nullptr;
     wav = nullptr;
+    
+    ktrg = nullptr;
+    ktgp = nullptr;
 }

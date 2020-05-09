@@ -314,7 +314,6 @@
     <Image Include="..\ChkdraftLib\New Tab.bmp" />
     <Image Include="..\ChkdraftLib\Properties.bmp" />
     <Image Include="..\ChkdraftLib\Save-as.bmp" />
-    <Image Include="Properties.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\ChkdraftLib\Resource.rc" />

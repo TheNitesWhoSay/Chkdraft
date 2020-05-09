@@ -19,7 +19,6 @@ enum_t(Id, u32, {
     CHECK_UNUSED1,
     CHECK_UNUSED4 = CHECK_UNUSED1+3,
     CHECK_NONAVPLAYERS,
-    CHECK_ID27,
     TEXT_STATS,
     GROUP_UNUSEDPLAYERS,
     GROUP_RAWEDIT,
@@ -163,7 +162,7 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
     for ( u8 i=0; i<9; i++ )
         checkNonExecutingPlayers[i].CreateThis(hWnd, 347, 24+18*i, 90, 17, false, triggerPlayers.at(8+i), Id::CHECK_PLAYER9+i);
 
-    for ( u8 i=0; i<6; i++ )
+    for ( u8 i=0; i<5; i++ )
         checkNonExecutingPlayers[i+9].CreateThis(hWnd, 450, 24+18*i, 92, 17, false, triggerPlayers.at(22+i), Id::CHECK_UNUSED1+i);
 
     groupRawEdit.CreateThis(hWnd, 5, 200, 545, 160, "Raw Data", Id::GROUP_RAWEDIT);
@@ -214,13 +213,23 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
             else
                 trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId >= Id::CHECK_UNUSED1 && checkId <= Id::CHECK_ID27 )
+        else if ( checkId >= Id::CHECK_UNUSED1 && checkId <= Id::CHECK_NONAVPLAYERS )
         {
             u8 upperNonExecutingPlayersId = u8(checkId-Id::CHECK_UNUSED1+9);
             if ( checkNonExecutingPlayers[upperNonExecutingPlayersId].isChecked() )
-                trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+            {
+                if ( trig->getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
+                    (u8 &)trig->owners[checkId-Id::CHECK_PLAYER1] |= Chk::Trigger::Owned::Yes;
+                else
+                    trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+            }
             else
-                trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+            {
+                if ( trig->getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
+                    (u8 &)trig->owners[checkId-Id::CHECK_PLAYER1] &= ~Chk::Trigger::Owned::Yes;
+                else
+                    trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+            }
         }
         else if ( checkId == Id::CHECK_ALLOWRAWEDIT )
         {
@@ -259,10 +268,11 @@ void TrigPlayersWindow::ToggleAdvancedMode()
         buttonAdvanced.SetText("Standard");
         groupNonExecutingPlayers.Show();
         for ( u8 i=0; i<9; i++ )
-        checkNonExecutingPlayers[i].Show();
+            checkNonExecutingPlayers[i].Show();
 
-        for ( u8 i=0; i<6; i++ )
+        for ( u8 i=0; i<5; i++ )
             checkNonExecutingPlayers[i+9].Show();
+
         groupRawEdit.Show();
         checkAllowRawEdit.Show();
         textExtendedData.Show();
@@ -272,8 +282,9 @@ void TrigPlayersWindow::ToggleAdvancedMode()
     {
         buttonAdvanced.SetText("Advanced");
         groupNonExecutingPlayers.Hide();
-        for ( u8 i=0; i<15; i++ )
+        for ( u8 i=0; i<14; i++ )
             checkNonExecutingPlayers[i].Hide();
+
         groupRawEdit.Hide();
         checkAllowRawEdit.Hide();
         textExtendedData.Hide();

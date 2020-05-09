@@ -6,7 +6,6 @@
 
 enum_t(Id, u32, {
     DELETE_STRING = ID_FIRST,
-    CHECK_EXTENDEDSTRING,
     SAVE_TO,
     COMPRESS_STRINGS,
     REPAIR_STRINGS,
@@ -59,15 +58,15 @@ void StringEditorWindow::RefreshWindow()
         numVisibleStrings = 0;
         int toSelect = -1;
         std::bitset<Chk::MaxStrings> strUsed;
-        CM->strings.markUsedStrings(strUsed, Chk::Scope::Either, Chk::Scope::Game);
+        CM->strings.markUsedStrings(strUsed, Chk::Scope::Either, extended ? Chk::Scope::Editor : Chk::Scope::Game);
 
-        size_t lastIndex = CM->strings.getCapacity();
+        size_t lastIndex = CM->strings.getCapacity(extended ? Chk::Scope::Editor : Chk::Scope::Game);
 
         for ( size_t i = 0; i <= lastIndex; i++ )
         {
             if ( strUsed[i] )
             {
-                ChkdStringPtr str = CM->strings.getString<ChkdString>(i);
+                ChkdStringPtr str = CM->strings.getString<ChkdString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
                 if ( str != nullptr )
                 {
                     int newListIndex = listStrings.AddItem((u32)i);
@@ -82,7 +81,12 @@ void StringEditorWindow::RefreshWindow()
         }
         listStrings.SetRedraw(true);
         if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+        {
+            if ( extended )
+                chkd.mapSettingsWindow.SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
+            else
+                chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+        }
         else
         {
             currSelString = 0; // Clear currSelString if selection fails
@@ -100,8 +104,6 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
     listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, Id::LB_STRINGS);
 
     buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", Id::DELETE_STRING);
-    checkExtendedString.CreateThis(hWnd, 20, 294, 100, 10, false, "Extended", Id::CHECK_EXTENDEDSTRING);
-    checkExtendedString.DisableThis();
     buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", Id::SAVE_TO);
     editString.CreateThis(hWnd, 5, 310, 453, 140, true, Id::EDIT_STRING);
 
@@ -150,7 +152,10 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         addUseItem("WAVs", wavs);
                         addUseItem("Units", units);
                         addUseItem("Switches", switches);*/
-                        chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+                        if ( extended )
+                            chkd.mapSettingsWindow.SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
+                        else
+                            chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
                     }
                     else
                         chkd.mapSettingsWindow.SetWinText("Map Settings");
@@ -240,7 +245,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)pdis->itemData);
+                    ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( CM != nullptr && str != nullptr )
                     {
                         HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
@@ -294,11 +299,11 @@ void StringEditorWindow::saveStrings()
         std::ofstream outFile(filePath, std::ofstream::out);
         if ( outFile.is_open() )
         {
-            for ( u32 i=0; i<CM->strings.getCapacity(); i++ )
+            for ( u32 i=0; i<CM->strings.getCapacity(extended ? Chk::Scope::Editor : Chk::Scope::Game); i++ )
             {
-                ChkdStringPtr str = CM->strings.getString<ChkdString>(i);
+                ChkdStringPtr str = CM->strings.getString<ChkdString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
                 if ( str != nullptr )
-                    outFile << i << ": " << str << "\r\n";
+                    outFile << i << ": " << *str << "\r\n";
             }
             outFile.close();
         }

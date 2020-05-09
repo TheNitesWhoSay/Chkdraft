@@ -294,7 +294,7 @@ const std::vector<std::string> triggerPlayers = {
     "Player 9", "Player 10", "Player 11", "Player 12", "None",
     "Current Player", "Foes", "Allies", "Neutral Players", "All Players",
     "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
-    "Unused 3", "Unused 4", "Non AV Players", "ID:27" };
+    "Unused 3", "Unused 4", "Non AV Players" };
 
 const std::vector<std::string> triggerConditions =
 {

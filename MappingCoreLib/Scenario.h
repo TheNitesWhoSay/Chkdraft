@@ -148,6 +148,12 @@ class Strings : public StrSynchronizer
         std::shared_ptr<StringType> getSwitchName(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         std::shared_ptr<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        template <typename StringType>
+        std::shared_ptr<StringType> getComment(size_t triggerIndex);
+        template <typename StringType>
+        std::shared_ptr<StringType> getExtendedComment(size_t triggerIndex);
+        template <typename StringType>
+        std::shared_ptr<StringType> getExtendedNotes(size_t triggerIndex);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
@@ -524,6 +530,10 @@ class Triggers : public LocationSynchronizer
         Chk::ExtendedTrigDataPtr getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
         void deleteTriggerExtension(size_t triggerIndex);
 
+        size_t getCommentStringId(size_t triggerIndex);
+        size_t getExtendedCommentStringId(size_t triggerIndex);
+        size_t getExtendedNotesStringId(size_t triggerIndex);
+
         size_t numBriefingTriggers();
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
         size_t addBriefingTrigger(std::shared_ptr<Chk::Trigger> briefingTrigger);
@@ -540,17 +550,17 @@ class Triggers : public LocationSynchronizer
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
         bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        bool stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
         bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
+        bool editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
         void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
         void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
-        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
         void deleteLocation(size_t locationId);
-        void deleteString(size_t stringId);
+        void deleteString(size_t stringId, Chk::Scope storageScope);
 
     private:
         Strings* strings; // For reading and updating sound paths, next scenario paths, text messages, leader board text, comments, and switch names

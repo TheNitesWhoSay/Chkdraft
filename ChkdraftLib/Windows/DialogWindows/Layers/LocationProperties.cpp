@@ -1,6 +1,7 @@
 #include "LocationProperties.h"
 #include "../../../Chkdraft.h"
 #include "../../../Mapping/Undos/ChkdUndos/LocationChange.h"
+#include "../../ChkdControls/ChkdStringInput.h"
 #include <exception>
 #include <string>
 
@@ -12,7 +13,6 @@ enum_t(Id, u32, {
     EditLocationBottom = IDC_LOCBOTTOM,
     EditRawFlags = IDC_RAWFLAGS,
 
-    CheckUseExtended = IDC_EXTLOCNAMESTR,
     CheckLowGround = IDC_LOWGROUND,
     CheckMedGround = IDC_MEDGROUND,
     CheckHighGround = IDC_HIGHGROUND,
@@ -43,9 +43,7 @@ bool LocationWindow::CreateThis(HWND hParent)
     {
         editLocName.FindThis(getHandle(), Id::EditLocationName);
         buttonLocNameProperties.FindThis(getHandle(), Id::ButtonLocNameProperties);
-
-        HBITMAP icon = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PROPERTIES));
-        SendMessage(buttonLocNameProperties.getHandle(), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)icon);
+        buttonLocNameProperties.SetImageFromResourceId(IDB_PROPERTIES);
 
         editLocLeft.FindThis(getHandle(), Id::EditLocationLeft);
         editLocTop.FindThis(getHandle(), Id::EditLocationTop);
@@ -53,7 +51,6 @@ bool LocationWindow::CreateThis(HWND hParent)
         editLocBottom.FindThis(getHandle(), Id::EditLocationBottom);
         editRawFlags.FindThis(getHandle(), Id::EditRawFlags);
 
-        checkUseExtended.FindThis(getHandle(), Id::CheckUseExtended);
         checkLowGround.FindThis(getHandle(), Id::CheckLowGround);
         checkMedGround.FindThis(getHandle(), Id::CheckMedGround);
         checkHighGround.FindThis(getHandle(), Id::CheckHighGround);
@@ -132,13 +129,12 @@ void LocationWindow::RefreshLocationInfo()
         editRawFlags.SetText(text);
 
         RefreshLocationElevationFlags();
-        checkUseExtended.SetCheck(false);
 
         ChkdStringPtr locName = CM->strings.getString<ChkdString>(locRef->stringId);
         if ( locName != nullptr )
             editLocName.SetText(*locName);
         else
-            editLocName.SetText("ERROR");
+            editLocName.SetText("");
     }
     else
         DestroyThis();
@@ -290,9 +286,38 @@ void LocationWindow::NotifyHighAirClicked()
     }
 }
 
-void LocationWindow::NotifyUseExtendedStringClicked()
+void LocationWindow::NotifyLocNamePropertiesClicked()
 {
-    Error("TODO: New Extended Strings...");
+    Chk::LocationPtr location = CM->layers.getLocation(currentLocationId);
+    if ( location != nullptr )
+    {
+        ChkdStringPtr gameString = CM->strings.getLocationName<ChkdString>(currentLocationId, Chk::Scope::Game);
+        ChkdStringPtr editorString = CM->strings.getLocationName<ChkdString>(currentLocationId, Chk::Scope::Editor);
+        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Location, currentLocationId);
+
+        if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
+        {
+            if ( gameString != nullptr )
+                CM->strings.setLocationName<ChkdString>(currentLocationId, *gameString, Chk::Scope::Game);
+            else
+                CM->strings.setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::Scope::Game);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Game);
+        }
+
+        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+        {
+            if ( editorString != nullptr )
+                CM->strings.setLocationName<ChkdString>(currentLocationId, *editorString, Chk::Scope::Editor);
+            else
+                CM->strings.setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::Scope::Editor);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+        }
+
+        if ( result > 0 )
+            CM->refreshScenario();
+    }
 }
 
 void LocationWindow::RawFlagsUpdated()
@@ -466,7 +491,7 @@ void LocationWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         case Id::CheckLowAir: NotifyLowAirClicked(); break;
         case Id::CheckMedAir: NotifyMedAirClicked(); break;
         case Id::CheckHighAir: NotifyHighAirClicked(); break;
-        case Id::CheckUseExtended: NotifyUseExtendedStringClicked(); break;
+        case Id::ButtonLocNameProperties: NotifyLocNamePropertiesClicked(); break;
     }
 }
 

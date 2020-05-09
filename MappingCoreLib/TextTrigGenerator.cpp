@@ -937,7 +937,7 @@ bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
                                             "\"Player 7\"", "\"Player 8\"", "\"Player 9\"", "\"Player 10\"", "\"Player 11\"", "\"Player 12\"",
                                             "\"unknown/unused\"", "\"Current Player\"", "\"Foes\"", "\"Allies\"", "\"Neutral Players\"",
                                             "\"All players\"" };
-        const char* legacyUpperGroups[] = { "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"", "\"unknown/unused\"",
+        const char* legacyUpperGroups[] = { "\"22\"", "\"23\"", "\"24\"", "\"25\"",
                                             "\"Non Allied Victory Players\"", "\"unknown/unused\"" };
 
         legacyLowerGroupNames = legacyLowerGroups;
@@ -949,7 +949,7 @@ bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
                                             "Player 7", "Player 8", "Player 9", "Player 10", "Player 11", "Player 12",
                                             "unknown/unused", "Current Player", "Foes", "Allies", "Neutral Players",
                                             "All players" };
-        const char* legacyUpperGroups[] = { "unknown/unused", "unknown/unused", "unknown/unused", "unknown/unused",
+        const char* legacyUpperGroups[] = { "22", "23", "24", "25",
                                             "Non Allied Victory Players", "unknown/unused" };
 
         legacyLowerGroupNames = legacyLowerGroups;

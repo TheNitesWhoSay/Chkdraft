@@ -28,9 +28,6 @@
     <Image Include="..\ChkdraftLib\Properties.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Properties.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\ChkdraftLib\Resource.rc">

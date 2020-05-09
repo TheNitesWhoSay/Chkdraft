@@ -5958,16 +5958,16 @@ void KstrSection::syncBytesToStrings()
     size_t numBytes = stringBytes.size();
     u32 rawNumStrings = 0;
     if ( numBytes >= 4 )
-        rawNumStrings = (u32 &)stringBytes[0];
+        rawNumStrings = (u32 &)stringBytes[4];
     else if ( numBytes == 3 )
     {
-        u8 paddedTriplet[4] = { stringBytes[0], stringBytes[1], stringBytes[2], u8(0) };
+        u8 paddedTriplet[4] = { stringBytes[4], stringBytes[5], stringBytes[6], u8(0) };
         rawNumStrings = (u32 &)paddedTriplet[0];
     }
     else if ( numBytes == 2 )
-        rawNumStrings = u32((u16 &)stringBytes[0]);
+        rawNumStrings = u32((u16 &)stringBytes[4]);
     else if ( numBytes == 1 )
-        rawNumStrings = u32(stringBytes[0]);
+        rawNumStrings = u32(stringBytes[4]);
     
     size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/4);
     size_t highestStringWithValidProperties = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/8);
@@ -6062,6 +6062,8 @@ std::shared_ptr<Chk::ExtendedTrigData> KtrgSection::getExtendedTrigger(size_t ex
 {
     if ( extendedTriggerIndex < extendedTrigData.size() )
         return extendedTrigData[extendedTriggerIndex];
+    else
+        return nullptr;
 }
 
 size_t KtrgSection::addExtendedTrigger(std::shared_ptr<Chk::ExtendedTrigData> extendedTrigger)
@@ -6171,21 +6173,40 @@ std::streamsize KtrgSection::read(const Chk::SectionHeader & sectionHeader, std:
     size_t readSize = size_t(sectionHeader.sizeInBytes);
     if ( readSize > 0 )
     {
-        size_t readNumExtendedTrigData = readSize/sizeof(Chk::ExtendedTrigData);
-        std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData);
-        is.read((char*)&extendedTrigDataBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
-        for ( const Chk::ExtendedTrigData & extendedTrigData : extendedTrigDataBuffer )
-            this->extendedTrigData.push_back(Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData(extendedTrigData)));
-
-        return is.gcount();
+        u32 version = 0;
+        is.read((char*)&version, sizeof(u32));
+        if ( sizeof(u32) == is.gcount() )
+        {
+            size_t readNumExtendedTrigData = (readSize-sizeof(u32))/sizeof(Chk::ExtendedTrigData);
+            std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData);
+            is.read((char*)&extendedTrigDataBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
+            for ( size_t i=0; i<readNumExtendedTrigData; i++ )
+            {
+                if ( (i & Chk::UnusedExtendedTrigDataIndexCheck) == 0 )
+                    this->extendedTrigData.push_back(nullptr);
+                else
+                    this->extendedTrigData.push_back(Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData(extendedTrigDataBuffer[i])));
+            }
+            return sizeof(u32) + is.gcount();
+        }
+        else
+            return is.gcount();
     }
     return 0;
 }
 
 void KtrgSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
+    u32 version = 2;
+    os.write((const char*)&version, sizeof(u32));
+    Chk::ExtendedTrigData blank = {};
     for ( const Chk::ExtendedTrigDataPtr & extendedTrigData : this->extendedTrigData )
-        os.write((const char*)extendedTrigData.get(), std::streamsize(sizeof(Chk::ExtendedTrigData)));
+    {
+        if ( extendedTrigData != nullptr )
+            os.write((const char*)extendedTrigData.get(), std::streamsize(sizeof(Chk::ExtendedTrigData)));
+        else
+            os.write((const char*)&blank, std::streamsize(sizeof(Chk::ExtendedTrigData)));
+    }
 }
 
 void KtrgSection::cleanTail()

@@ -7,13 +7,8 @@ enum_t(Id, u32, {
     GROUP_FLAGS,
     EDIT_COMMENT,
     EDIT_NOTES,
-
-    CHECK_EXTENDED_COMMENT_STRING,
-    CHECK_EXTENDED_NOTES_STRING,
-    CHECK_EXTENDED_COMMENT_ACTION,
-    CHECK_EXTENDED_NOTES_ACTION,
-    BUTTON_DELETE_COMMENT,
-    BUTTON_DELETE_NOTES,
+    BUTTON_COMMENT_PROPERTIES,
+    BUTTON_NOTES_PROPERTIES,
 
     CHECK_PRESERVE_TRIGGER,
     CHECK_DISABLED,
@@ -77,6 +72,11 @@ void TrigGeneralWindow::RefreshWindow(u32 trigIndex)
         checkIgnoreManyActions.SetCheck(trigger->ignoreMiscActionsOnce());
         checkIgnoreDefeatDraw.SetCheck(trigger->ignoreDefeatDraw());
         checkFlagPaused.SetCheck(trigger->pauseFlagged());
+        
+        ChkdStringPtr extendedComment = CM->strings.getExtendedComment<ChkdString>(trigIndex);
+        ChkdStringPtr extendedNotes = CM->strings.getExtendedNotes<ChkdString>(trigIndex);
+        editComment.SetText(extendedComment == nullptr ? "" : *extendedComment);
+        editNotes.SetText(extendedNotes == nullptr ? "" : *extendedNotes);
     }
     refreshing = false;
 }
@@ -103,23 +103,19 @@ void TrigGeneralWindow::DoSize()
         groupTop = padding;
         groupWidth = cliWidth-padding*2;
         groupHeight = halfRemainder-padding*2;
+        buttonCommentProperties.MoveTo(groupLeft+groupWidth-buttonCommentProperties.Width()-padding, groupTop+groupTopPadding);
         groupComment.SetPos(groupLeft, groupTop, groupWidth, groupHeight);
-        checkExtendedCommentString.MoveTo(groupLeft+groupWidth-checkExtendedCommentString.Width()-padding, groupTop+groupTopPadding);
-        checkExtendedCommentAction.MoveTo(checkExtendedCommentString.Left(), checkExtendedCommentString.Bottom()+1);
-        buttonDeleteComment.MoveTo(checkExtendedCommentString.Left(), checkExtendedCommentAction.Bottom()+1);
         editComment.SetPos(groupLeft+padding, groupTop+groupTopPadding,
-            checkExtendedCommentString.Left()-padding*2-groupLeft, groupHeight-groupTopPadding-padding);
+            buttonCommentProperties.Left()-padding-1-groupLeft, groupHeight-groupTopPadding-padding);
 
         groupLeft = padding;
         groupTop = halfRemainder+padding;
         groupWidth = cliWidth-padding*2;
         groupHeight = halfRemainder-padding*2;
+        buttonNotesProperties.MoveTo(groupLeft+groupWidth-buttonNotesProperties.Width()-padding, groupTop+groupTopPadding);
         groupNotes.SetPos(groupLeft, groupTop, groupWidth, groupHeight);
-        checkExtendedNotesString.MoveTo(groupLeft+groupWidth-checkExtendedNotesString.Width()-padding, groupTop+groupTopPadding);
-        checkExtendedNotesAction.MoveTo(checkExtendedNotesString.Left(), checkExtendedNotesString.Bottom()+1);
-        buttonDeleteNotes.MoveTo(checkExtendedNotesString.Left(), checkExtendedNotesAction.Bottom()+1);
         editNotes.SetPos(groupLeft+padding, groupTop+groupTopPadding,
-            checkExtendedNotesString.Left()-padding*2-groupLeft, groupHeight-groupTopPadding-padding);
+            buttonNotesProperties.Left()-padding-1-groupLeft, groupHeight-groupTopPadding-padding);
 
         groupLeft = padding;
         groupTop = groupFlagsTop;
@@ -145,15 +141,13 @@ void TrigGeneralWindow::CreateSubWindows(HWND hWnd)
 {
     groupComment.CreateThis(hWnd, 5, 5, 75, 20, "Comment: ", Id::GROUP_COMMENT);
     editComment.CreateThis(hWnd, 85, 5, 100, 40, true, Id::EDIT_COMMENT);
-    checkExtendedCommentString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", Id::CHECK_EXTENDED_COMMENT_STRING);
-    checkExtendedCommentAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", Id::CHECK_EXTENDED_COMMENT_ACTION);
-    buttonDeleteComment.CreateThis(hWnd, 5, 5, 75, 23, "Delete", Id::BUTTON_DELETE_COMMENT);
+    buttonCommentProperties.CreateThis(hWnd, 5, 5, 23, 23, "", Id::BUTTON_COMMENT_PROPERTIES, true);
+    buttonCommentProperties.SetImageFromResourceId(IDB_PROPERTIES);
 
     groupNotes.CreateThis(hWnd, 5, 50, 75, 20, "Notes: ", Id::GROUP_NOTES);
     editNotes.CreateThis(hWnd, 85, 50, 100, 80, true, Id::EDIT_NOTES);
-    checkExtendedNotesString.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended String", Id::CHECK_EXTENDED_NOTES_STRING);
-    checkExtendedNotesAction.CreateThis(hWnd, 5, 5, 120, 20, false, "Use Extended Action", Id::CHECK_EXTENDED_NOTES_ACTION);
-    buttonDeleteNotes.CreateThis(hWnd, 5, 5, 75, 23, "Delete", Id::BUTTON_DELETE_NOTES);
+    buttonNotesProperties.CreateThis(hWnd, 5, 5, 23, 23, "", Id::BUTTON_NOTES_PROPERTIES, true);
+    buttonNotesProperties.SetImageFromResourceId(IDB_PROPERTIES);
 
     groupExecutionFlags.CreateThis(hWnd, 5, 100, 75, 20, "Execution Flags: ", Id::GROUP_FLAGS);
     checkPreservedFlag.CreateThis(hWnd, 5, 5, 150, 20, false, "Preserve Trigger", Id::CHECK_PRESERVE_TRIGGER);
@@ -175,23 +169,6 @@ void TrigGeneralWindow::CreateSubWindows(HWND hWnd)
     checkFlagPaused.Hide();
     textRawFlags.Hide();
     editRawFlags.Hide();
-    checkExtendedCommentString.Hide();
-    checkExtendedCommentAction.Hide();
-    checkExtendedNotesString.Hide();
-    checkExtendedNotesAction.Hide();
-    buttonDeleteComment.Hide();
-    buttonDeleteNotes.Hide();
-
-    groupComment.DisableThis();
-    groupNotes.DisableThis();
-    buttonDeleteComment.DisableThis();
-    buttonDeleteNotes.DisableThis();
-    checkExtendedCommentString.DisableThis();
-    checkExtendedCommentAction.DisableThis();
-    checkExtendedNotesString.DisableThis();
-    checkExtendedNotesAction.DisableThis();
-    editComment.DisableThis();
-    editNotes.DisableThis();
 }
 
 void TrigGeneralWindow::OnLeave()
@@ -300,12 +277,6 @@ void TrigGeneralWindow::ToggleAdvancedMode()
         checkFlagPaused.Show();
         textRawFlags.Show();
         editRawFlags.Show();
-        checkExtendedCommentString.Show();
-        checkExtendedCommentAction.Show();
-        checkExtendedNotesString.Show();
-        checkExtendedNotesAction.Show();
-        buttonDeleteComment.Show();
-        buttonDeleteNotes.Show();
     }
     else // Now in standard mode
     {
@@ -316,15 +287,61 @@ void TrigGeneralWindow::ToggleAdvancedMode()
         checkFlagPaused.Hide();
         textRawFlags.Hide();
         editRawFlags.Hide();
-        checkExtendedCommentString.Hide();
-        checkExtendedCommentAction.Hide();
-        checkExtendedNotesString.Hide();
-        checkExtendedNotesAction.Hide();
-        buttonDeleteComment.Hide();
-        buttonDeleteNotes.Hide();
     }
     Hide(); Show(); // Dirty fix to redraw issues
     RedrawThis(); // Apparently a call to RedrawWindow is insufficient
+}
+
+void TrigGeneralWindow::EditCommentFocusLost()
+{
+    std::string newCommentText = editComment.GetWinText();
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
+    {
+        bool addIfNotFound = !newCommentText.empty();
+        Chk::ExtendedTrigDataPtr extension = CM->triggers.getTriggerExtension(trigIndex, addIfNotFound);
+        if ( extension != nullptr )
+        {
+            size_t newCommentStringId = CM->strings.addString<ChkdString>(ChkdString(newCommentText), Chk::Scope::Editor);
+            if ( newCommentStringId != Chk::StringId::NoString )
+            {
+                extension->commentStringId = (u32)newCommentStringId;
+                CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+                CM->refreshScenario();
+            }
+        }
+    }
+}
+
+void TrigGeneralWindow::EditNotesFocusLost()
+{
+    std::string newNotesText = editNotes.GetWinText();
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
+    if ( trigger != nullptr )
+    {
+        bool addIfNotFound = !newNotesText.empty();
+        Chk::ExtendedTrigDataPtr extension = CM->triggers.getTriggerExtension(trigIndex, addIfNotFound);
+        if ( extension != nullptr )
+        {
+            size_t newNotesStringId = CM->strings.addString<ChkdString>(ChkdString(newNotesText), Chk::Scope::Editor);
+            if ( newNotesStringId != Chk::StringId::NoString )
+            {
+                extension->notesStringId = (u32)newNotesStringId;
+                CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+                CM->refreshScenario();
+            }
+        }
+    }
+}
+
+void TrigGeneralWindow::ButtonCommentProperties()
+{
+    logger.info() << "ButtonCommentProperties" << std::endl;
+}
+
+void TrigGeneralWindow::ButtonNotesProperties()
+{
+    logger.info() << "ButtonNotesProperties" << std::endl;
 }
 
 LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -351,6 +368,8 @@ LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     case Id::CHECK_IGNORE_MISCACTIONS_ONCE: SetIgnoreMiscActionsOnce(checkIgnoreManyActions.isChecked());   break;
                     case Id::CHECK_IGNORE_DEFEAT_DRAW:      SetIgnoreDefeatDraw(checkIgnoreDefeatDraw.isChecked());         break;
                     case Id::CHECK_IS_PAUSED:               SetPausedTrigger(checkFlagPaused.isChecked());                  break;
+                    case Id::BUTTON_COMMENT_PROPERTIES:     ButtonCommentProperties();                                      break;
+                    case Id::BUTTON_NOTES_PROPERTIES:       ButtonNotesProperties();                                        break;
                 }
                 break;
         }
@@ -379,4 +398,14 @@ LRESULT TrigGeneralWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
             break;
     }
     return 0;
+}
+
+
+void TrigGeneralWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+        case Id::EDIT_COMMENT: EditCommentFocusLost(); break;
+        case Id::EDIT_NOTES: EditNotesFocusLost(); break;
+    }
 }
