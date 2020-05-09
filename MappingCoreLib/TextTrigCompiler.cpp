@@ -210,7 +210,7 @@ bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Ar
     else
     {
         std::stringstream errorMessage;
-        errorMessage << "Unable to parse action arg: \"" << actionArgText << "\"" << argumentError.str();
+        errorMessage << "Unable to parse action arg: \"" << actionArgText << "\" " << argumentError.str();
         if ( !silent )
             CHKD_ERR(errorMessage.str());
     }
@@ -3548,13 +3548,20 @@ bool TextTrigCompiler::prepLocationTable(ScenarioPtr map)
             locNode.locationName = "Anywhere";
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else if ( loc->stringId > 0 )
+        else
         {
-            RawStringPtr locationName = map->strings.getString<RawString>(loc->stringId);
-            if ( locationName != nullptr )
+            auto gameString = map->strings.getLocationName<RawString>(i, Chk::Scope::Game);
+            auto editorString = map->strings.getLocationName<RawString>(i, Chk::Scope::Editor);
+            if ( gameString != nullptr )
             {
                 locNode.locationId = u8(i);
-                locNode.locationName = *locationName;
+                locNode.locationName = *gameString;
+                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
+            }
+            if ( editorString != nullptr )
+            {
+                locNode.locationId = u8(i);
+                locNode.locationName = *editorString;
                 locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
             }
         }
@@ -3570,13 +3577,27 @@ bool TextTrigCompiler::prepUnitTable(ScenarioPtr map)
     for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        RawStringPtr unitName = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true);
-        if ( unitName != nullptr )
-            unitNode.unitName = *unitName;
-        else
-            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+        auto gameString = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
+        auto editorString = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
         
-        unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+        if ( gameString == nullptr && editorString == nullptr )
+        {
+            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+            unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+        }
+        else
+        {
+            if ( gameString != nullptr )
+            {
+                unitNode.unitName = *gameString;
+                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+            }
+            if ( editorString != nullptr )
+            {
+                unitNode.unitName = *editorString;
+                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+            }
+        }
     }
     return true;
 }
@@ -3587,16 +3608,20 @@ bool TextTrigCompiler::prepSwitchTable(ScenarioPtr map)
     size_t stringId = 0;
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        size_t switchNameStringId = map->triggers.getSwitchNameStringId(switchIndex);
-        if ( switchNameStringId != Chk::StringId::NoString )
+        auto gameString = map->strings.getSwitchName<RawString>(switchIndex, Chk::Scope::Game);
+        auto editorString = map->strings.getSwitchName<RawString>(switchIndex, Chk::Scope::Editor);
+        
+        if ( gameString != nullptr )
         {
-            RawStringPtr switchName = map->strings.getString<RawString>(switchNameStringId);
-            if ( switchName != nullptr )
-            {
-                switchNode.switchId = u8(switchIndex);
-                switchNode.switchName = *switchName;
-                switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
-            }
+            switchNode.switchId = u8(switchIndex);
+            switchNode.switchName = *gameString;
+            switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
+        }
+        if ( editorString != nullptr )
+        {
+            switchNode.switchId = u8(switchIndex);
+            switchNode.switchName = *editorString;
+            switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
         }
     }
     return true;
@@ -3607,11 +3632,19 @@ bool TextTrigCompiler::prepGroupTable(ScenarioPtr map)
     GroupTableNode groupNode = {};
     for ( u32 i=0; i<Chk::TotalForces; i++ )
     {
-        RawStringPtr forceName = map->strings.getForceName<RawString>((Chk::Force)i);
-        if ( forceName != nullptr )
+        auto gameString = map->strings.getForceName<RawString>((Chk::Force)i, Chk::Scope::Game);
+        auto editorString = map->strings.getForceName<RawString>((Chk::Force)i, Chk::Scope::Editor);
+
+        if ( gameString != nullptr )
         {
             groupNode.groupId = i + 18;
-            groupNode.groupName = *forceName;
+            groupNode.groupName = *gameString;
+            groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
+        }
+        if ( editorString != nullptr )
+        {
+            groupNode.groupId = i + 18;
+            groupNode.groupName = *editorString;
             groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
         }
     }

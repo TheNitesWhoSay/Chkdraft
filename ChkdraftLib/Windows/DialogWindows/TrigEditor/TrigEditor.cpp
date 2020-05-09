@@ -73,6 +73,7 @@ void TrigEditorWindow::RefreshWindow()
     countersWindow.RefreshWindow();
     cuwpsWindow.RefreshWindow(true);
     switchesWindow.RefreshWindow();
+    ChangeTab(currTab);
 }
 
 void TrigEditorWindow::CreateSubWindows(HWND hWnd)

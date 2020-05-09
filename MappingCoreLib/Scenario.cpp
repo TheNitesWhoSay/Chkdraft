@@ -323,6 +323,7 @@ bool Scenario::read(std::istream & is)
     Chk::Version version = versions.ver->getVersion();
 
     triggers.fixTriggerExtensions();
+    upgradeKstrToCurrent();
 
     // TODO: More validation
     return true;
@@ -471,6 +472,279 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
 void Scenario::setTileset(Sc::Terrain::Tileset tileset)
 {
     layers.setTileset(tileset);
+}
+
+void Scenario::upgradeKstrToCurrent()
+{
+    if ( 0 == strings.kstr->getVersion() || 2 == strings.kstr->getVersion() )
+    {
+        size_t strCapacity = strings.getCapacity(Chk::Scope::Game);
+        for ( auto & section : allSections )
+        {
+            switch ( section->getName() )
+            {
+                case Chk::SectionName::TRIG:
+                {
+                    auto trigSection = std::dynamic_pointer_cast<TrigSection>(section);
+                    size_t numTriggers = trigSection->numTriggers();
+                    for ( size_t triggerIndex=0; triggerIndex<numTriggers; triggerIndex++ )
+                    {
+                        auto trigger = trigSection->getTrigger(triggerIndex);
+                        if ( trigger != nullptr )
+                        {
+                            size_t extendedCommentStringId = triggers.getExtendedCommentStringId(triggerIndex);
+                            size_t extendedNotesStringId = triggers.getExtendedNotesStringId(triggerIndex);
+                            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+                            {
+                                Chk::Action & action = trigger->actions[actionIndex];
+                                if ( action.actionType < Chk::Action::NumActionTypes )
+                                {
+                                    if ( Chk::Action::actionUsesStringArg[action.actionType] &&
+                                        action.stringId > strCapacity &&
+                                        action.stringId != Chk::StringId::NoString &&
+                                        action.stringId < 65536 &&
+                                        strings.stringStored(65536 - action.stringId, Chk::Scope::Editor) )
+                                    {
+                                        if ( action.actionType == Chk::Action::Type::Comment &&
+                                            (extendedCommentStringId == Chk::StringId::NoString ||
+                                             extendedNotesStringId == Chk::StringId::NoString) )
+                                        { // Move comment to extended comment or to notes
+                                            if ( extendedCommentStringId == Chk::StringId::NoString )
+                                            {
+                                                triggers.setExtendedCommentStringId(triggerIndex, 65536 - action.stringId);
+                                                extendedCommentStringId = triggers.getExtendedCommentStringId(triggerIndex);
+                                                action.stringId = 0;
+                                            }
+                                            else if ( extendedNotesStringId == Chk::StringId::NoString )
+                                            {
+                                                triggers.setExtendedNotesStringId(triggerIndex, 65536 - action.stringId);
+                                                extendedNotesStringId = triggers.getExtendedNotesStringId(triggerIndex);
+                                                action.stringId = 0;
+                                            }
+                                        }
+                                        else // Extended string is lost
+                                        {
+                                            auto actionString = strings.getString<ChkdString>(65536 - action.stringId);
+                                            logger.warn() << "Trigger #" << triggerIndex
+                                                << " action #" << actionIndex
+                                                << " lost extended string: \""
+                                                << (actionString != nullptr ? *actionString : "")
+                                                << "\"" << std::endl;
+
+                                            action.stringId = Chk::StringId::NoString;
+                                        }
+                                    }
+
+                                    if ( Chk::Action::actionUsesSoundArg[action.actionType] &&
+                                        action.soundStringId > strCapacity &&
+                                        action.soundStringId != Chk::StringId::NoString &&
+                                        action.soundStringId < 65536 &&
+                                        strings.stringStored(65536 - action.soundStringId, Chk::Scope::Editor) )
+                                    {
+                                        action.soundStringId = 65536 - action.soundStringId;
+                                        auto soundString = strings.getString<ChkdString>(65536 - action.soundStringId);
+                                        logger.warn() << "Trigger #" << triggerIndex
+                                            << " action #" << actionIndex
+                                            << " lost extended sound string: \""
+                                            << (soundString != nullptr ? *soundString : "")
+                                            << "\"" << std::endl;
+
+                                        action.soundStringId = Chk::StringId::NoString;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::MBRF:
+                {
+                    auto mbrfSection = std::dynamic_pointer_cast<MbrfSection>(section);
+                    size_t numBriefingTriggers = mbrfSection->numBriefingTriggers();
+                    for ( size_t briefingTriggerIndex=0; briefingTriggerIndex<numBriefingTriggers; briefingTriggerIndex++ )
+                    {
+                        auto briefingTrigger = mbrfSection->getBriefingTrigger(briefingTriggerIndex);
+                        if ( briefingTrigger != nullptr )
+                        {
+                            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+                            {
+                                Chk::Action & briefingAction = briefingTrigger->actions[actionIndex];
+                                if ( briefingAction.actionType < Chk::Action::NumBriefingActionTypes )
+                                {
+                                    if ( Chk::Action::briefingActionUsesStringArg[briefingAction.actionType] &&
+                                        briefingAction.stringId > strCapacity &&
+                                        briefingAction.stringId != Chk::StringId::NoString &&
+                                        briefingAction.stringId < 65536 &&
+                                        strings.stringStored(65536 - briefingAction.stringId, Chk::Scope::Editor) )
+                                    {
+                                        auto briefingString = strings.getString<ChkdString>(65536 - briefingAction.stringId);
+                                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex
+                                            << " action #" << actionIndex
+                                            << " lost extended string: \""
+                                            << (briefingString != nullptr ? *briefingString : "")
+                                            << "\"" << std::endl;
+
+                                        briefingAction.stringId = Chk::StringId::NoString;
+                                    }
+
+                                    if ( Chk::Action::briefingActionUsesSoundArg[briefingAction.actionType] &&
+                                        briefingAction.soundStringId > strCapacity &&
+                                        briefingAction.soundStringId != Chk::StringId::NoString &&
+                                        briefingAction.soundStringId < 65536 &&
+                                        strings.stringStored(65536 - briefingAction.stringId, Chk::Scope::Editor) )
+                                    {
+                                        auto briefingSoundString = strings.getString<ChkdString>(65536 - briefingAction.soundStringId);
+                                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex
+                                            << " action #" << actionIndex
+                                            << " lost extended sound string: \""
+                                            << (briefingSoundString != nullptr ? *briefingSoundString : "")
+                                            << "\"" << std::endl;
+
+                                        briefingAction.soundStringId = Chk::StringId::NoString;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::MRGN:
+                {
+                    auto mrgnSection = std::dynamic_pointer_cast<MrgnSection>(section);
+                    size_t numLocations = mrgnSection->numLocations();
+                    for ( size_t i=0; i<numLocations; i++ )
+                    {
+                        auto location = mrgnSection->getLocation(i);
+                        if ( location != nullptr &&
+                            location->stringId > strCapacity &&
+                            location->stringId != Chk::StringId::NoString &&
+                            location->stringId < 65536 &&
+                            strings.stringStored(65536 - location->stringId, Chk::Scope::Editor) )
+                        {
+                            strings.setLocationNameStringId(i, 65536 - location->stringId, Chk::Scope::Editor);
+                            location->stringId = Chk::StringId::NoString;
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::SPRP:
+                {
+                    auto sprpSection = std::dynamic_pointer_cast<SprpSection>(section);
+                    u16 scenarioNameStringId = (u16)sprpSection->getScenarioNameStringId();
+                    if ( scenarioNameStringId > strCapacity &&
+                        scenarioNameStringId != Chk::StringId::NoString &&
+                        scenarioNameStringId < 65536 &&
+                        strings.stringStored(65536 - scenarioNameStringId, Chk::Scope::Editor) )
+                    {
+                        strings.setScenarioNameStringId(65536 - scenarioNameStringId, Chk::Scope::Editor);
+                        sprpSection->setScenarioNameStringId(Chk::StringId::NoString);
+                    }
+
+                    u16 scenarioDescriptionStringId = (u16)sprpSection->getScenarioDescriptionStringId();
+                    if ( scenarioDescriptionStringId > strCapacity &&
+                        scenarioDescriptionStringId != Chk::StringId::NoString &&
+                        scenarioDescriptionStringId < 65536 &&
+                        strings.stringStored(65536 - scenarioDescriptionStringId, Chk::Scope::Editor) )
+                    {
+                        strings.setScenarioDescriptionStringId(65536 - scenarioDescriptionStringId, Chk::Scope::Editor);
+                        sprpSection->setScenarioDescriptionStringId(Chk::StringId::NoString);
+                    }
+                }
+                break;
+                case Chk::SectionName::FORC:
+                {
+                    auto forcSection = std::dynamic_pointer_cast<ForcSection>(section);
+                    for ( Chk::Force i=Chk::Force::Force1; i<=Chk::Force::Force4; ((u8 &)i)++ )
+                    {
+                        u16 forcStringId = (u16)forcSection->getForceStringId((Chk::Force)i);
+                        if ( forcStringId > strCapacity &&
+                            forcStringId != Chk::StringId::NoString &&
+                            forcStringId < 65536 &&
+                            strings.stringStored(65536 - forcStringId, Chk::Scope::Editor) )
+                        {
+                            strings.setForceNameStringId(i, 65536 - forcStringId, Chk::Scope::Editor);
+                            forcSection->setForceStringId(i, Chk::StringId::NoString);
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::WAV:
+                {
+                    auto wavSection = std::dynamic_pointer_cast<WavSection>(section);
+                    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+                    {
+                        u32 soundStringId = (u32)wavSection->getSoundStringId(i);
+                        if ( soundStringId > strCapacity &&
+                            soundStringId != Chk::StringId::NoString &&
+                            soundStringId < 65536 &&
+                            strings.stringStored(65536 - soundStringId, Chk::Scope::Editor) )
+                        {
+                            strings.setSoundPathStringId(i, 65536 - soundStringId, Chk::Scope::Editor);
+                            wavSection->setSoundStringId(i, Chk::StringId::NoString);
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::SWNM:
+                {
+                    auto swnmSection = std::dynamic_pointer_cast<SwnmSection>(section);
+                    for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+                    {
+                        u32 switchStringId = (u32)swnmSection->getSwitchNameStringId(i);
+                        if ( switchStringId > strCapacity &&
+                            switchStringId != Chk::StringId::NoString &&
+                            switchStringId < 65536 &&
+                            strings.stringStored(65536 - switchStringId, Chk::Scope::Editor) )
+                        {
+                            strings.setSwitchNameStringId(i, 65536 - switchStringId, Chk::Scope::Editor);
+                            swnmSection->setSwitchNameStringId(i, Chk::StringId::NoString);
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::UNIS:
+                {
+                    auto unisSection = std::dynamic_pointer_cast<UnisSection>(section);
+                    for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
+                    {
+                        u16 unitNameStringId = (u16)unisSection->getUnitNameStringId(i);
+                        if ( unitNameStringId > strCapacity &&
+                            unitNameStringId != Chk::StringId::NoString &&
+                            unitNameStringId < 65536 &&
+                            strings.stringStored(65536 - unitNameStringId, Chk::Scope::Editor) )
+                        {
+                            strings.setUnitNameStringId(i, 65536 - unitNameStringId, Chk::UseExpSection::No, Chk::Scope::Editor);
+                            unisSection->setUnitNameStringId(i, Chk::StringId::NoString);
+                        }
+                    }
+                }
+                break;
+                case Chk::SectionName::UNIx:
+                {
+                    auto unixSection = std::dynamic_pointer_cast<UnixSection>(section);
+                    for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
+                    {
+                        u16 unitNameStringId = (u16)unixSection->getUnitNameStringId(i);
+                        if ( unitNameStringId > strCapacity &&
+                            unitNameStringId != Chk::StringId::NoString &&
+                            unitNameStringId < 65536 &&
+                            strings.stringStored(65536 - unitNameStringId, Chk::Scope::Editor) )
+                        {
+                            strings.setUnitNameStringId(i, 65536 - unitNameStringId, Chk::UseExpSection::Yes, Chk::Scope::Editor);
+                            unixSection->setUnitNameStringId(i, Chk::StringId::NoString);
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        strings.kstr->setVersion(Chk::KSTR::CurrentVersion);
+        strings.deleteUnusedStrings(Chk::Scope::Both);
+    }
+    else if ( 1 == strings.kstr->getVersion() )
+    {
+        *strings.kstr = *KstrSection::GetDefault();
+    }
 }
 
 Versions::Versions(bool useDefault) : layers(nullptr)
@@ -1492,7 +1766,7 @@ void Strings::setExtendedComment(size_t triggerIndex, const StringType & comment
     {
         size_t newStringId = addString<StringType>(comment, Chk::Scope::Editor, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
-            extension->commentStringId = newStringId;
+            extension->commentStringId = (u32)newStringId;
     }
 }
 template void Strings::setExtendedComment<RawString>(size_t triggerIndex, const RawString & comment, bool autoDefragment);
@@ -1508,7 +1782,7 @@ void Strings::setExtendedNotes(size_t triggerIndex, const StringType & notes, bo
     {
         size_t newStringId = addString<StringType>(notes, Chk::Scope::Editor, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
-            extension->notesStringId = newStringId;
+            extension->notesStringId = (u32)newStringId;
     }
 }
 template void Strings::setExtendedNotes<RawString>(size_t triggerIndex, const RawString & notes, bool autoDefragment);
@@ -1592,7 +1866,7 @@ void Strings::syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8
         throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
 
     stringBytes.assign(2*sizeof(u32)+2*sizeof(u32)*numStrings, u8(0));
-    (u32 &)stringBytes[0] = 2;
+    (u32 &)stringBytes[0] = Chk::KSTR::CurrentVersion;
     (u32 &)stringBytes[sizeof(u32)] = (u32)numStrings;
     u32 initialNulOffset = u32(stringBytes.size());
     stringBytes.push_back(u8('\0')); // Add initial NUL character
@@ -3664,7 +3938,7 @@ void Triggers::fixTriggerExtensions()
                     trigger->clearExtendedDataIndex();
                 else if ( usedExtendedTrigDataIndexes.find(extendedDataIndex) == usedExtendedTrigDataIndexes.end() ) // Valid extension
                 {
-                    extension->trigNum = i; // Ensure the trigNum is correct
+                    extension->trigNum = (u32)i; // Ensure the trigNum is correct
                     usedExtendedTrigDataIndexes.insert(extendedDataIndex);
                 }
                 else // Same extension used by multiple triggers
@@ -3716,7 +3990,7 @@ void Triggers::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     if ( extension != nullptr )
     {
-        extension->commentStringId = stringId;
+        extension->commentStringId = (u32)stringId;
         if ( stringId == Chk::StringId::NoString && extension->isBlank() )
             deleteTriggerExtension(triggerIndex);
     }
@@ -3737,7 +4011,7 @@ void Triggers::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     if ( extension != nullptr )
     {
-        extension->notesStringId = stringId;
+        extension->notesStringId = (u32)stringId;
         if ( stringId == Chk::StringId::NoString && extension->isBlank() )
             deleteTriggerExtension(triggerIndex);
     }

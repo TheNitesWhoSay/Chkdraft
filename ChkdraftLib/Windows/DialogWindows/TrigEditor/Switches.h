@@ -21,7 +21,7 @@ class SwitchesWindow : public WinLib::ClassWindow
         void CreateSubWindows(HWND hWnd);
         
         void ToggleUseDefaultString();
-        void ToggleUseExtendedString();
+        void ButtonSwitchNameProperties();
         void EditSwitchNameFocusLost();
 
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
@@ -34,7 +34,7 @@ class SwitchesWindow : public WinLib::ClassWindow
         WinLib::CheckBoxControl checkUseDefaultName;
         WinLib::TextControl textSwitchName;
         WinLib::EditControl editSwitchName;
-        WinLib::CheckBoxControl checkUseExtendedString;
+        WinLib::ButtonControl buttonSwitchNameProperties;
         s32 selectedSwitch;
         bool refreshing;
         bool refreshingSwitchList;

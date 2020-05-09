@@ -618,6 +618,8 @@ class Scenario : ScenarioSaver
         bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
         virtual void setTileset(Sc::Terrain::Tileset tileset);
 
+        void upgradeKstrToCurrent();
+
     protected:
         virtual StrSynchronizerPtr getStrSynchronizer(); // Returns strings, may be overidden
 

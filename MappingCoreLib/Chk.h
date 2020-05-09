@@ -1288,7 +1288,9 @@ namespace Chk {
     };
 
     __declspec(align(1)) struct KSTR {
-        u32 version; // Current version: 2
+        static constexpr const u32 CurrentVersion = 3;
+
+        u32 version; // Current version: 3
         u32 numStrings; // Number of strings in the section
         //u32 stringOffsets[0]; // u32 stringOffsets[numStrings]; // Offsets to each string within the string section (not within stringData, but within the whole section)
         // StringProperties[numStrings] stringProperties; // String properties

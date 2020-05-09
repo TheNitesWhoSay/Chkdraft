@@ -131,7 +131,7 @@ void ChkdStringInputDialog::UpdateWindowText()
         case Chk::StringUserFlag::ExpansionUnitSettings: text += " - [Expansion Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
         case Chk::StringUserFlag::BothUnitSettings: text += " - [Unit Name #" + std::to_string(stringUserIndex) + "]"; break;
         case Chk::StringUserFlag::Sound: text += " - [Sound #" + std::to_string(stringUserIndex) + "]"; break;
-        case Chk::StringUserFlag::Switch: text += " - [Switch #" + std::to_string(stringUserIndex) + "]"; break;
+        case Chk::StringUserFlag::Switch: text += " - [Switch #" + std::to_string(stringUserIndex+1) + "]"; break;
         case Chk::StringUserFlag::TriggerAction: text += " - [Trigger Text #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
         case Chk::StringUserFlag::TriggerActionSound: text += " - [Trigger Sound #" + std::to_string(stringUserIndex) + " Action #" + std::to_string(stringSubUserIndex) + "]"; break;
         case Chk::StringUserFlag::ExtendedTriggerComment: text += " - [Extended Trigger Comment #" + std::to_string(stringUserIndex) + "]"; break;

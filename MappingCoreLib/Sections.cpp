@@ -2747,6 +2747,11 @@ size_t StrSection::loadString(const size_t & stringOffset, const size_t & sectio
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
                 return nullIndex;
             }
+            else // String ends where section ends
+            {
+                strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
+                return sectionSize-1;
+            }
         }
         else if ( sectionSize > stringOffset ) // String ends where section ends
         {
@@ -2756,6 +2761,9 @@ size_t StrSection::loadString(const size_t & stringOffset, const size_t & sectio
         else // Character data would be out of bounds
             strings.push_back(nullptr);
     }
+    else // Offset is out of bounds
+        strings.push_back(nullptr);
+
     return 0;
 }
 
@@ -5533,7 +5541,7 @@ KstrSectionPtr KstrSection::GetDefault()
     return newSection;
 }
 
-KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR)
+KstrSection::KstrSection() : DynamicSection<true>(SectionName::KSTR), version(Chk::KSTR::CurrentVersion)
 {
 
 }
@@ -5815,6 +5823,19 @@ bool KstrSection::defragment(StrSynchronizer & strSynchronizer, bool matchCapaci
     return false;
 }
 
+u32 KstrSection::getVersion()
+{
+    return version;
+}
+
+void KstrSection::setVersion(u32 version)
+{
+    if ( version < 2 || version > Chk::KSTR::CurrentVersion )
+        throw std::invalid_argument("KSTR Version " + std::to_string(version) + " is invalid!");
+
+    this->version = version;
+}
+
 Chk::SectionSize KstrSection::getSize(ScenarioSaver & scenarioSaver)
 {
     if ( syncStringsToBytes(scenarioSaver) )
@@ -5933,7 +5954,7 @@ bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
             throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
 
         stringBytes.assign(2*sizeof(u32)+2*sizeof(u32)*numStrings, u8(0));
-        (u32 &)stringBytes[0] = 2;
+        (u32 &)stringBytes[0] = Chk::KSTR::CurrentVersion;
         (u32 &)stringBytes[sizeof(u32)] = (u32)numStrings;
         u32 initialNulOffset = u32(stringBytes.size());
         stringBytes.push_back(u8('\0')); // Add initial NUL character
@@ -5956,17 +5977,26 @@ bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
 void KstrSection::syncBytesToStrings()
 {
     size_t numBytes = stringBytes.size();
-    u32 rawNumStrings = 0;
+    u32 version = 0;
     if ( numBytes >= 4 )
+        this->version = (u32 &)stringBytes[0];
+    else
+        this->version = 0;
+
+    if ( version > Chk::KSTR::CurrentVersion )
+        throw SectionValidationException(Chk::SectionName::KSTR, "Unrecognized KSTR Version: " + std::to_string(version));
+
+    u32 rawNumStrings = 0;
+    if ( numBytes >= 8 )
         rawNumStrings = (u32 &)stringBytes[4];
-    else if ( numBytes == 3 )
+    else if ( numBytes == 7 )
     {
         u8 paddedTriplet[4] = { stringBytes[4], stringBytes[5], stringBytes[6], u8(0) };
         rawNumStrings = (u32 &)paddedTriplet[0];
     }
-    else if ( numBytes == 2 )
+    else if ( numBytes == 6 )
         rawNumStrings = u32((u16 &)stringBytes[4]);
-    else if ( numBytes == 1 )
+    else if ( numBytes == 5 )
         rawNumStrings = u32(stringBytes[4]);
     
     size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/4);
@@ -6024,12 +6054,16 @@ void KstrSection::loadString(const size_t & stringOffset, const size_t & section
             auto nullIndex = std::distance(stringBytes.begin(), nextNull);
             if ( size_t(nullIndex) > stringOffset ) // Regular string
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
+            else // String ends where section ends
+                strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
         }
         else if ( sectionSize > stringOffset ) // String ends where section ends
             strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));
         else // Character data would be out of bounds
             strings.push_back(nullptr);
     }
+    else // Offset is out of bounds
+        strings.push_back(nullptr);
 }
 
 KtrgSectionPtr KtrgSection::GetDefault()

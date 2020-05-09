@@ -1,11 +1,12 @@
 #include "Switches.h"
 #include "../../../Chkdraft.h"
+#include "../../ChkdControls/ChkdStringInput.h"
 
 enum_t(Id, u32, {
     TreeSwitches = ID_FIRST,
     CheckUseDefaultName,
-    CheckUseExtendedString,
-    EditSwitchName
+    EditSwitchName,
+    ButtonSwitchNameProperties
 });
 
 SwitchesWindow::SwitchesWindow() : selectedSwitch(-1), refreshing(false), refreshingSwitchList(false)
@@ -72,11 +73,8 @@ void SwitchesWindow::RefreshWindow()
                 textSwitchName.DisableThis();
                 editSwitchName.SetText("");
                 editSwitchName.DisableThis();
-                checkUseExtendedString.SetCheck(false);
-                checkUseExtendedString.DisableThis();
+                buttonSwitchNameProperties.DisableThis();
             }
-
-            checkUseExtendedString.SetCheck(isExtendedString);
         }
         else
             DisableEditing();
@@ -120,8 +118,7 @@ void SwitchesWindow::DisableEditing()
 {
     checkUseDefaultName.SetCheck(false);
     checkUseDefaultName.DisableThis();
-    checkUseExtendedString.SetCheck(false);
-    checkUseExtendedString.DisableThis();
+    buttonSwitchNameProperties.DisableThis();
     textSwitchName.DisableThis();
     editSwitchName.SetText("");
     editSwitchName.DisableThis();
@@ -130,7 +127,7 @@ void SwitchesWindow::DisableEditing()
 void SwitchesWindow::EnableEditing()
 {
     checkUseDefaultName.EnableThis();
-    checkUseExtendedString.EnableThis();
+    buttonSwitchNameProperties.EnableThis();
     textSwitchName.EnableThis();
     editSwitchName.EnableThis();
 }
@@ -139,9 +136,10 @@ void SwitchesWindow::CreateSubWindows(HWND hWnd)
 {
     switchList.CreateThis(hWnd, 5, 5, 175, 100, false, Id::TreeSwitches);
     checkUseDefaultName.CreateThis(hWnd, 200, 5, 110, 20, true, "Use Default Name", Id::CheckUseDefaultName);
-    checkUseExtendedString.CreateThis(hWnd, 320, 5, 125, 20, false, "Use Extended String", Id::CheckUseExtendedString);
-    textSwitchName.CreateThis(hWnd, 200, 30, 70, 20, "Switch Name: ", (u32)0);
-    editSwitchName.CreateThis(hWnd, 275, 30, 100, 20, false, Id::EditSwitchName);
+    textSwitchName.CreateThis(hWnd, 200, 32, 70, 20, "Switch Name: ", (u32)0);
+    editSwitchName.CreateThis(hWnd, 275, 30, 100, 24, false, Id::EditSwitchName);
+    buttonSwitchNameProperties.CreateThis(hWnd, editSwitchName.Left() + editSwitchName.Width() + 1, 30, 23, 23, "", Id::ButtonSwitchNameProperties, true);
+    buttonSwitchNameProperties.SetImageFromResourceId(IDB_PROPERTIES);
 
     RefreshWindow();
 }
@@ -161,21 +159,48 @@ void SwitchesWindow::ToggleUseDefaultString()
         textSwitchName.DisableThis();
         editSwitchName.SetText("");
         editSwitchName.DisableThis();
-        checkUseExtendedString.SetCheck(false);
-        checkUseExtendedString.DisableThis();
+        buttonSwitchNameProperties.DisableThis();
         RefreshSwitchList();
     }
     else
     {
         textSwitchName.EnableThis();
         editSwitchName.EnableThis();
-        checkUseExtendedString.EnableThis();
+        buttonSwitchNameProperties.EnableThis();
     }
 }
 
-void SwitchesWindow::ToggleUseExtendedString()
+void SwitchesWindow::ButtonSwitchNameProperties()
 {
-    throw std::exception("TODO: Replace this way of handling strings");
+    if ( selectedSwitch >= 0 && selectedSwitch < Chk::TotalSwitches )
+    {
+        ChkdStringPtr gameString = CM->strings.getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Game);
+        ChkdStringPtr editorString = CM->strings.getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Editor);
+        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Switch, selectedSwitch);
+
+        if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
+        {
+            if ( gameString != nullptr )
+                CM->strings.setSwitchName<ChkdString>(selectedSwitch, *gameString, Chk::Scope::Game);
+            else
+                CM->strings.setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Game);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Game);
+        }
+
+        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+        {
+            if ( editorString != nullptr )
+                CM->strings.setSwitchName<ChkdString>(selectedSwitch, *editorString, Chk::Scope::Editor);
+            else
+                CM->strings.setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Editor);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+        }
+
+        if ( result > 0 )
+            CM->refreshScenario();
+    }
 }
 
 void SwitchesWindow::EditSwitchNameFocusLost()
@@ -198,7 +223,7 @@ void SwitchesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     switch ( idFrom )
     {
         case Id::CheckUseDefaultName: ToggleUseDefaultString(); break;
-        case Id::CheckUseExtendedString: ToggleUseExtendedString(); break;
+        case Id::ButtonSwitchNameProperties: ButtonSwitchNameProperties(); break;
     }
 }
 

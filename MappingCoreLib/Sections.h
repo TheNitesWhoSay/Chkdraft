@@ -1188,12 +1188,16 @@ class KstrSection : public DynamicSection<true>
         
         bool defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
 
+        u32 getVersion();
+        void setVersion(u32 version);
+
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
         virtual std::streamsize read(const Chk::SectionHeader & sectionHeader, std::istream & is, bool unused = false); // Reads up to sizeExpected bytes from the input stream
         virtual void write(std::ostream & os, ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Writes exactly sizeInBytes bytes to the output stream
 
     private:
+        u32 version;
         std::deque<ScStrPtr> strings;
         std::vector<u8> stringBytes;
         
