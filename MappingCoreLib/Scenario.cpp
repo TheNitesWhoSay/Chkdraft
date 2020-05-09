@@ -1249,7 +1249,6 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
                     ostr->setLocationNameStringId(i, (u32)newStringId);
                 }
             }
-            // TODO: When implementing TRIG and MBRF extended strings you'll have to implement string rescoping for triggers
 
             deleteString(stringId, Chk::Scope::Game, false);
             for ( auto stringIdReplaced : stringIdsReplaced )
@@ -1323,7 +1322,6 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
                     location->stringId = (u16)newStringId;
                 }
             }
-            // TODO: When implementing TRIG and MBRF extended strings you'll have to implement string rescoping for triggers
 
             deleteString(stringId, Chk::Scope::Editor, false);
             for ( auto stringIdReplaced : stringIdsReplaced )
