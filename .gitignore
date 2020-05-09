@@ -41,9 +41,17 @@ Icon
 *.opensdf
 *.sdf
 *.VC.db
+*.iobj
+*.ipdb
+*.pdb
+*.lib
+*.testdurations
+Win32
+x64
 Debug
 Release
 build
+.vs
 
 *.opendb
 *.ipch

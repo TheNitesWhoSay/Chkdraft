@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\%2a">
+      <UniqueIdentifier>{757ea51b-a1d8-4e41-aa60-6f8c3fbe5757}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\%2a">
+      <UniqueIdentifier>{cea3cd2b-e8b9-4574-97d0-fb34440d0cd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Controls">
+      <UniqueIdentifier>{69597645-d069-4106-b5e0-2d1e36cbd3c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controls">
+      <UniqueIdentifier>{3dba543e-6cf7-4aed-82c9-2f4c69d4e23a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Menus">
+      <UniqueIdentifier>{479e8167-edb8-42ba-bbd8-12b731ecf18c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Menus">
+      <UniqueIdentifier>{e8a4ad55-3a2f-4472-b6ff-5e95886b30db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows">
+      <UniqueIdentifier>{4f9c2ae2-7380-4692-9e4b-3fcf0b46032f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows">
+      <UniqueIdentifier>{375a3943-ed45-40fc-a972-efaa7532db4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Controls\Specifics">
+      <UniqueIdentifier>{c2de8994-9a25-44b3-922f-b3765197e724}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Controls\Specifics">
+      <UniqueIdentifier>{739cdbb2-2083-4c13-9086-a00382adce62}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DataTypes.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsItem.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsUi.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="WinUiEnums.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowControl.h">
+      <Filter>Header Files\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="ButtonControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckBoxControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="DragListControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="DropdownControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="EditControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="GridItem.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="GridView.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="GroupBoxControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="ListBoxControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="ListViewControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="RadioButtonControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="StatusControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="TabControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="TextControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolbarControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeViewControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowMenu.h">
+      <Filter>Header Files\Menus</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassDialog.h">
+      <Filter>Header Files\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassWindow.h">
+      <Filter>Header Files\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="MdiClient.h">
+      <Filter>Header Files\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Popup.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Painting.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="RichEditControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="WindowsItem.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowControl.cpp">
+      <Filter>Source Files\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="ButtonControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="CheckBoxControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="DragListControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="DropdownControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="EditControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="GridItem.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="GridView.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="GroupBoxControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="ListBoxControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="ListViewControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="RadioButtonControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="StatusControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="TabControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="TextControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolbarControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeViewControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowMenu.cpp">
+      <Filter>Source Files\Menus</Filter>
+    </ClCompile>
+    <ClCompile Include="ClassDialog.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="ClassWindow.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="MdiClient.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Popup.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Painting.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="RichEditControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
