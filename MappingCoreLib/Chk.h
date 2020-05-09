@@ -882,6 +882,7 @@ namespace Chk {
 
         size_t getExtendedDataIndex();
         void setExtendedDataIndex(size_t extendedDataIndex);
+        void clearExtendedDataIndex();
 
         size_t numUsedConditions();
         size_t numUsedActions();
@@ -972,11 +973,24 @@ namespace Chk {
 
     __declspec(align(1)) struct ExtendedTrigData
     {
+        enum_t(GroupId, u32, {
+            None = u32_max
+        });
+        enum_t(TrigNum, u32, {
+            None = u32_max
+        });
+        enum_t(MaskId, u32, {
+            None = u32_max
+        });
+
         u32 commentStringId; // 0 for unused
         u32 notesStringId; // 0 for unused
         u32 groupId; // 0xFFFFFFFF for none
         u32 trigNum; // 0xFFFFFFFF for none
         u32 maskId; // 0xFFFFFFFF for none
+
+        ExtendedTrigData();
+        bool isBlank();
     };
 
     __declspec(align(1)) struct TriggerGroupHeader

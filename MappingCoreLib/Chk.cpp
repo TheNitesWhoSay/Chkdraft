@@ -1197,6 +1197,11 @@ void Chk::Trigger::setExtendedDataIndex(size_t extendedDataIndex)
         (u32 &)owners[22] = (((u32 &)owners[22]) & 0x1010101) | (u32)extendedDataIndex;
 }
 
+void Chk::Trigger::clearExtendedDataIndex()
+{
+    (u32 &)owners[22] = 0;
+}
+
 size_t Chk::Trigger::numUsedConditions()
 {
     size_t total = 0;
@@ -1411,6 +1416,16 @@ void Chk::Trigger::alignActionsTop()
                 break;
         }
     }
+}
+
+Chk::ExtendedTrigData::ExtendedTrigData() : commentStringId(0), notesStringId(0), groupId(GroupId::None), trigNum(TrigNum::None), maskId(MaskId::None)
+{
+
+}
+
+bool Chk::ExtendedTrigData::isBlank()
+{
+    return commentStringId == 0 && notesStringId == 0 && groupId == GroupId::None && trigNum == TrigNum::None && maskId == MaskId::None;
 }
 
 Chk::TriggerGroup::TriggerGroup() : groupExpanded(false), groupHidden(false), templateInstanceId(0), commentStringId(0), notesStringId(0), parentGroupId(Id::TopLevelGroup)

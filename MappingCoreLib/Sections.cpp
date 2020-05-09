@@ -6178,7 +6178,7 @@ std::streamsize KtrgSection::read(const Chk::SectionHeader & sectionHeader, std:
         if ( sizeof(u32) == is.gcount() )
         {
             size_t readNumExtendedTrigData = (readSize-sizeof(u32))/sizeof(Chk::ExtendedTrigData);
-            std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData);
+            std::vector<Chk::ExtendedTrigData> extendedTrigDataBuffer(readNumExtendedTrigData, Chk::ExtendedTrigData());
             is.read((char*)&extendedTrigDataBuffer[0], std::streamsize(sectionHeader.sizeInBytes));
             for ( size_t i=0; i<readNumExtendedTrigData; i++ )
             {
@@ -6199,7 +6199,7 @@ void KtrgSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
 {
     u32 version = 2;
     os.write((const char*)&version, sizeof(u32));
-    Chk::ExtendedTrigData blank = {};
+    Chk::ExtendedTrigData blank;
     for ( const Chk::ExtendedTrigDataPtr & extendedTrigData : this->extendedTrigData )
     {
         if ( extendedTrigData != nullptr )

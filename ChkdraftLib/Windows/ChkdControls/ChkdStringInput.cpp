@@ -80,6 +80,8 @@ ChkdStringInputDialog::Result ChkdStringInputDialog::InternalGetChkdString(HWND 
     this->stringSubUserIndex = stringSubUserIndex;
     this->userHasGameString = stringUser != Chk::StringUserFlag::ExtendedTriggerComment && stringUser != Chk::StringUserFlag::ExtendedTriggerNotes;
     this->userHasEditorString = stringUser != Chk::StringUserFlag::TriggerAction && stringUser != Chk::StringUserFlag::TriggerActionSound;
+    if ( !this->userHasGameString )
+        this->currTab = Tab::EditorString;
 
     CreateDialogBox(MAKEINTRESOURCE(IDD_INPUTCHKDSTR), hParent);
 

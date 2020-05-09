@@ -1481,6 +1481,38 @@ template void Strings::setLocationName<EscString>(size_t locationId, const EscSt
 template void Strings::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
 template void Strings::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
 
+template <typename StringType>
+void Strings::setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment)
+{
+    Chk::ExtendedTrigDataPtr extension = triggers->getTriggerExtension(triggerIndex, true);
+    if ( extension != nullptr )
+    {
+        size_t newStringId = addString<StringType>(comment, Chk::Scope::Editor, autoDefragment);
+        if ( newStringId != (size_t)Chk::StringId::NoString )
+            extension->commentStringId = newStringId;
+    }
+}
+template void Strings::setExtendedComment<RawString>(size_t triggerIndex, const RawString & comment, bool autoDefragment);
+template void Strings::setExtendedComment<EscString>(size_t triggerIndex, const EscString & comment, bool autoDefragment);
+template void Strings::setExtendedComment<ChkdString>(size_t triggerIndex, const ChkdString & comment, bool autoDefragment);
+template void Strings::setExtendedComment<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & comment, bool autoDefragment);
+
+template <typename StringType>
+void Strings::setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment)
+{
+    Chk::ExtendedTrigDataPtr extension = triggers->getTriggerExtension(triggerIndex, true);
+    if ( extension != nullptr )
+    {
+        size_t newStringId = addString<StringType>(notes, Chk::Scope::Editor, autoDefragment);
+        if ( newStringId != (size_t)Chk::StringId::NoString )
+            extension->notesStringId = newStringId;
+    }
+}
+template void Strings::setExtendedNotes<RawString>(size_t triggerIndex, const RawString & notes, bool autoDefragment);
+template void Strings::setExtendedNotes<EscString>(size_t triggerIndex, const EscString & notes, bool autoDefragment);
+template void Strings::setExtendedNotes<ChkdString>(size_t triggerIndex, const ChkdString & notes, bool autoDefragment);
+template void Strings::setExtendedNotes<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & notes, bool autoDefragment);
+
 void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
     StrCompressionElevatorPtr compressionElevator, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
 {
@@ -3602,7 +3634,7 @@ void Triggers::deleteTriggerExtension(size_t triggerIndex)
         size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
         if ( extendedTrigDataIndex != 0 )
         {
-            trigger->setExtendedDataIndex(0);
+            trigger->clearExtendedDataIndex();
             ktrg->deleteExtendedTrigger(extendedTrigDataIndex);
         }
     }
@@ -3626,6 +3658,17 @@ size_t Triggers::getExtendedCommentStringId(size_t triggerIndex)
     return Chk::StringId::NoString;
 }
 
+void Triggers::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
+{
+    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
+    if ( extension != nullptr )
+    {
+        extension->commentStringId = stringId;
+        if ( stringId == Chk::StringId::NoString && extension->isBlank() )
+            deleteTriggerExtension(triggerIndex);
+    }
+}
+
 size_t Triggers::getExtendedNotesStringId(size_t triggerIndex)
 {
     Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, false);
@@ -3633,6 +3676,18 @@ size_t Triggers::getExtendedNotesStringId(size_t triggerIndex)
         return extension->notesStringId;
 
     return Chk::StringId::NoString;
+}
+
+void Triggers::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
+{
+    
+    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
+    if ( extension != nullptr )
+    {
+        extension->notesStringId = stringId;
+        if ( stringId == Chk::StringId::NoString && extension->isBlank() )
+            deleteTriggerExtension(triggerIndex);
+    }
 }
 
 size_t Triggers::numBriefingTriggers()

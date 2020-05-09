@@ -106,7 +106,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
                 }
                 catch ( std::exception & e )
                 {
-                    logger.error() << e.what() << std::endl;
+                    logger.fatal() << "Unhandled exception: " << e.what() << std::endl;
+#ifdef _DEBUG
+                    throw e;
+#endif
                 }
             }
         }

@@ -1,5 +1,6 @@
 #include "TrigGeneral.h"
 #include "../../../Chkdraft.h"
+#include "../../ChkdControls/ChkdStringInput.h"
 
 enum_t(Id, u32, {
     GROUP_COMMENT = ID_FIRST,
@@ -336,12 +337,50 @@ void TrigGeneralWindow::EditNotesFocusLost()
 
 void TrigGeneralWindow::ButtonCommentProperties()
 {
-    logger.info() << "ButtonCommentProperties" << std::endl;
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(this->trigIndex);
+    if ( trigger != nullptr )
+    {
+        ChkdStringPtr unused = nullptr;
+        ChkdStringPtr extendedComment = CM->strings.getExtendedComment<ChkdString>(trigIndex);
+        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedComment, Chk::StringUserFlag::ExtendedTriggerComment, this->trigIndex);
+
+        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+        {
+            if ( extendedComment != nullptr )
+                CM->strings.setExtendedComment<ChkdString>(this->trigIndex, *extendedComment);
+            else
+                CM->triggers.setExtendedCommentStringId(this->trigIndex, 0);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+        }
+
+        if ( result > 0 )
+            CM->refreshScenario();
+    }
 }
 
 void TrigGeneralWindow::ButtonNotesProperties()
 {
-    logger.info() << "ButtonNotesProperties" << std::endl;
+    Chk::TriggerPtr trigger = CM->triggers.getTrigger(this->trigIndex);
+    if ( trigger != nullptr )
+    {
+        ChkdStringPtr unused = nullptr;
+        ChkdStringPtr extendedNotes = CM->strings.getExtendedNotes<ChkdString>(trigIndex);
+        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedNotes, Chk::StringUserFlag::ExtendedTriggerNotes, this->trigIndex);
+
+        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
+        {
+            if ( extendedNotes != nullptr )
+                CM->strings.setExtendedNotes<ChkdString>(this->trigIndex, *extendedNotes);
+            else
+                CM->triggers.setExtendedNotesStringId(this->trigIndex, 0);
+
+            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
+        }
+
+        if ( result > 0 )
+            CM->refreshScenario();
+    }
 }
 
 LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

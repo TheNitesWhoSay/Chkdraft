@@ -169,6 +169,10 @@ class Strings : public StrSynchronizer
         void setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
+        template <typename StringType>
+        void setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment = true);
+        template <typename StringType>
+        void setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment = true);
 
         // Creates a viable internal data buffer for the string section using the methods in requestedCompressionFlags
         // If no configuration among requestedCompressionFlags is viable, additional methods through allowedCompressionFlags are added as neccessary
@@ -532,7 +536,9 @@ class Triggers : public LocationSynchronizer
 
         size_t getCommentStringId(size_t triggerIndex);
         size_t getExtendedCommentStringId(size_t triggerIndex);
+        void setExtendedCommentStringId(size_t triggerIndex, size_t stringId);
         size_t getExtendedNotesStringId(size_t triggerIndex);
+        void setExtendedNotesStringId(size_t triggerIndex, size_t stringId);
 
         size_t numBriefingTriggers();
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
