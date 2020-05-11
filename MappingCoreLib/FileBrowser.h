@@ -18,6 +18,7 @@
 
 template <typename FilterId = u32> class FilterEntry;
 template <typename FilterId = u32> class FileBrowser;
+// TODO: This could very likely be a unique_ptr, generally FileBrowsers are constructed as needed, not stored and shared
 template <typename FilterId = u32> using FileBrowserPtr = std::shared_ptr<FileBrowser<FilterId>>;
 
 template <typename FilterId>

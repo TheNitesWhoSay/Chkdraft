@@ -11,30 +11,33 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{1245f386-a1db-4f5b-b265-52ea77a71bf9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\%2a">
-      <UniqueIdentifier>{fe2f3af9-29ce-4566-a5e8-8abcb48a379a}</UniqueIdentifier>
+    <Filter Include="Source Files\System">
+      <UniqueIdentifier>{091161c3-504b-419e-a1c9-84b69804c795}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\StarCraft">
+      <UniqueIdentifier>{713ac79f-8051-46ba-84b8-d3bea5d3506e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MappingCoreTestMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SystemIoTest.cpp">
-      <Filter>Source Files\%2a</Filter>
-    </ClCompile>
     <ClCompile Include="BasicsTest.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
     <ClCompile Include="TextTrigCompilerTest.cpp">
-      <Filter>Source Files\%2a</Filter>
+      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="TestAssets.cpp">
-      <Filter>Source Files\%2a</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemIoTest.cpp">
+      <Filter>Source Files\System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TestAssets.h">
-      <Filter>Header Files\%2a</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -430,7 +430,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else if ( numMatching > 1 )
                 {
                     auto range = scriptTable.equal_range(hash);
-                    foreachin(pair, range)
+                    for ( auto & pair = range.first; pair != range.second; ++pair )
                     {
                         std::string & scriptDisplayString = pair->second.second;
                         if ( scriptDisplayString.compare(suggestionString) == 0 )

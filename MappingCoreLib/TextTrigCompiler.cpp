@@ -2118,7 +2118,7 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
     else if ( numMatching > 1 )
     {
         auto range = locationTable.equal_range(hash);
-        foreachin(pair, range)
+        for ( auto & pair = range.first; pair != range.second; ++pair )
         {
             LocationTableNode & node = pair->second;
             if ( node.locationName.compare(str) == 0 )
@@ -2599,7 +2599,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
         else if ( numMatching > 1 )
         {
             auto range = unitTable.equal_range(hash);
-            foreachin(pair, range)
+            for ( auto & pair = range.first; pair != range.second; ++pair )
             {
                 UnitTableNode & node = pair->second;
                 if ( node.unitName.compare(str) == 0 )
@@ -2948,7 +2948,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
     else if ( numMatching > 1 )
     {
         auto range = groupTable.equal_range(hash);
-        foreachin(pair, range)
+        for ( auto & pair = range.first; pair != range.second; ++pair )
         {
             GroupTableNode & node = pair->second;
             if ( node.groupName.compare(str) == 0 )
@@ -3018,7 +3018,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
         else if ( numMatching > 1 )
         {
             auto range = switchTable.equal_range(hash);
-            foreachin(pair, range)
+            for ( auto & pair = range.first; pair != range.second; ++pair )
             {
                 SwitchTableNode & node = pair->second;
                 if ( node.switchName.compare(str) == 0 )
@@ -3084,7 +3084,7 @@ bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & 
     else if ( numMatching > 1 )
     {
         auto range = scriptTable.equal_range(hash);
-        foreachin(pair, range)
+        for ( auto & pair = range.first; pair != range.second; ++pair )
         {
             ScriptTableNode & node = pair->second;
             if ( node.scriptName.compare(str) == 0 && success == false ) // Compare equal and no prev matches

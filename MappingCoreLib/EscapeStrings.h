@@ -144,6 +144,8 @@ bool getTwoCharOctVal(const std::string & firstCharPtr, u8 & value); // firstCha
 
 bool getThreeCharOctVal(const std::string & firstCharPtr, u8 & value); // firstCharPtr must point to a string at least 3 characters long
 
+// TODO: It's very likely these could mostly be unique_ptrs, the scenario file does NOT return pointers to its own strings...
+//       It always builds a copy for which it doesn't retain ownership
 typedef std::shared_ptr<RawString> RawStringPtr;
 typedef std::shared_ptr<EscString> EscStringPtr;
 typedef std::shared_ptr<ChkdString> ChkdStringPtr;
