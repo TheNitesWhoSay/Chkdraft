@@ -101,8 +101,9 @@ void MpqFile::save()
             }
             else
                 SFileCompactArchive(hMpq, NULL, false);
+
+            SFileFlushArchive(hMpq);
         }
-        SFileFlushArchive(hMpq);
         madeChanges = false;
     }
 }
@@ -205,6 +206,17 @@ bool MpqFile::extractFile(const std::string & mpqPath, const std::string & syste
     return false;
 }
 
+bool MpqFile::addListFileEntry(const std::string & listFileEntry)
+{
+    if ( isOpen() )
+    {
+        addedMpqAssetPaths.push_back(listFileEntry);
+        madeChanges = true;
+        return true;
+    }
+    return false;
+}
+
 bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData)
 {
     fileData.unsetf(std::ios_base::skipws);
@@ -213,6 +225,7 @@ bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData)
     if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileBytes[0], (DWORD)fileBytes.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
     {
         addedMpqAssetPaths.push_back(mpqPath);
+        madeChanges = true;
         return true;
     }
     return false;
@@ -232,7 +245,10 @@ bool MpqFile::addFile(const std::string & mpqPath, std::stringstream & fileData,
             addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileBytes[0], (DWORD)fileBytes.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
 
         if ( addedFile )
+        {
             addedMpqAssetPaths.push_back(mpqPath);
+            madeChanges = true;
+        }
     }
     return addedFile;
 }
@@ -242,6 +258,7 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileD
     if ( isOpen() && SFileAddFileFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
     {
         addedMpqAssetPaths.push_back(mpqPath);
+        madeChanges = true;
         return true;
     }
     return false;
@@ -258,7 +275,10 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileD
             addedFile = SFileAddWaveFromBuffer(hMpq, mpqPath.c_str(), (LPBYTE)&fileData[0], (DWORD)fileData.size(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
 
         if ( addedFile )
+        {
             addedMpqAssetPaths.push_back(mpqPath);
+            madeChanges = true;
+        }
     }
     return addedFile;
 }
@@ -268,6 +288,7 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::string & filePath)
     if ( isOpen() && SFileAddFile(hMpq, icux::toFilestring(filePath).c_str(), mpqPath.c_str(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) )
     {
         addedMpqAssetPaths.push_back(mpqPath);
+        madeChanges = true;
         return true;
     }
     return false;
@@ -284,14 +305,19 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::string & filePath,
             addedFile = SFileAddWave(hMpq, icux::toFilestring(filePath).c_str(), mpqPath.c_str(), MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, (DWORD)wavQuality);
 
         if ( addedFile )
+        {
             addedMpqAssetPaths.push_back(mpqPath);
+            madeChanges = true;
+        }
     }
     return addedFile;
 }
 
 bool MpqFile::renameFile(const std::string & mpqPath, const std::string & newMpqPath)
 {
-    return isOpen() && SFileRenameFile(hMpq, mpqPath.c_str(), newMpqPath.c_str());
+    bool renamed = isOpen() && SFileRenameFile(hMpq, mpqPath.c_str(), newMpqPath.c_str());
+    madeChanges = renamed || madeChanges;
+    return renamed;
 }
 
 bool MpqFile::removeFile(const std::string & mpqPath)
@@ -299,6 +325,7 @@ bool MpqFile::removeFile(const std::string & mpqPath)
     bool removed = SFileRemoveFile(hMpq, mpqPath.c_str(), 0);
     if ( removed )
     {
+        madeChanges = true;
         auto toRemove = std::find(addedMpqAssetPaths.begin(), addedMpqAssetPaths.end(), mpqPath);
         if ( toRemove != addedMpqAssetPaths.end() )
             addedMpqAssetPaths.erase(toRemove);

@@ -162,7 +162,7 @@ bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscSt
                 outEscString.append("\\\"");
             else if ( currChar == '\\' )
                 outEscString.append("\\\\");
-            else if ( currChar < 32 || currChar >= 127 )
+            else if ( currChar < 32 || currChar == 127 )
             {
                 outEscString.push_back('\\');
                 outEscString.push_back('x');
@@ -352,7 +352,7 @@ bool MakeOneLineChkdStr(const std::string & inRawString, size_t inRawStringLengt
             {
                 outChkdString.append("\\t");
             }
-            else if ( currChar < 32 || currChar >= 127 )
+            else if ( currChar < 32 || currChar == 127 )
             {
                 outChkdString.push_back('<');
 
@@ -396,7 +396,7 @@ bool makeChkdStr(const std::string & inRawString, size_t inRawStringLength, Chkd
             bool partOfNewLine = ((currChar == '\r' && i + 1 < inRawStringLength && inRawString[i+1] == '\n') ||
                 (currChar == '\n' && i != 0 && inRawString[i - 1] == '\r'));
 
-            if ( (currChar < 32 || currChar >= 127) && currChar != '\t' && !partOfNewLine )
+            if ( (currChar < 32 || currChar == 127) && currChar != '\t' && !partOfNewLine )
             {
                 outChkdString.push_back('<');
 

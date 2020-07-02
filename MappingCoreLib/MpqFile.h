@@ -94,6 +94,8 @@ public:
     // Cannot be used unless the MPQ is already open
     virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath);
 
+    virtual bool addListFileEntry(const std::string & listFileEntry);
+
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual bool addFile(const std::string & mpqPath, std::stringstream & fileData);

@@ -323,7 +323,7 @@ bool ScStr::empty()
 
 size_t ScStr::length()
 {
-    return parentStr == nullptr ? allocation.size()-1 : strlen(str);
+    return parentStr == nullptr ? (allocation.size() > 0 ? allocation.size()-1 : 0) : strlen(str);
 }
 
 StrProp & ScStr::properties()
@@ -2742,7 +2742,7 @@ size_t StrSection::loadString(const size_t & stringOffset, const size_t & sectio
         if ( nextNull != stringBytes.end() )
         {
             auto nullIndex = std::distance(stringBytes.begin(), nextNull);
-            if ( size_t(nullIndex) > stringOffset ) // Regular string
+            if ( size_t(nullIndex) >= stringOffset ) // Regular string
             {
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
                 return nullIndex;
@@ -6052,7 +6052,7 @@ void KstrSection::loadString(const size_t & stringOffset, const size_t & section
         if ( nextNull != stringBytes.end() )
         {
             auto nullIndex = std::distance(stringBytes.begin(), nextNull);
-            if ( size_t(nullIndex) > stringOffset ) // Regular string
+            if ( size_t(nullIndex) >= stringOffset ) // Regular string
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset]))));
             else // String ends where section ends
                 strings.push_back(ScStrPtr(new ScStr(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset))));

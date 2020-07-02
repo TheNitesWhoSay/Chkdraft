@@ -1383,7 +1383,7 @@ class StrCompressionElevator
         static StrCompressionElevatorPtr NeverElevate() { return StrCompressionElevatorPtr(new StrCompressionElevator()); }
 };
 
-class StringException : std::exception
+class StringException : public std::exception
 {
     public:
         StringException(const std::string & error) : error(error) { }
@@ -1419,7 +1419,7 @@ class InsufficientStringCapacity : public StringException
         InsufficientStringCapacity(); // Disallow ctor
 };
 
-class MaximumCharactersExceeded : StringException
+class MaximumCharactersExceeded : public StringException
 {
     public:
         MaximumCharactersExceeded(std::string sectionName, size_t numCharacters, size_t characterSpaceSize);
@@ -1428,7 +1428,7 @@ class MaximumCharactersExceeded : StringException
         MaximumCharactersExceeded(); // Disallow ctor
 };
 
-class MaximumOffsetAndCharsExceeded : StringException
+class MaximumOffsetAndCharsExceeded : public StringException
 {
     public:
         MaximumOffsetAndCharsExceeded(std::string sectionName, size_t numStrings, size_t numCharacters, size_t sectionSpace);

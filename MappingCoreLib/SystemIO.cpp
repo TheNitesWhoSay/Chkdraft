@@ -38,21 +38,31 @@ std::string getSystemFileName(const std::string & systemFilePath)
 {
     const std::string systemFileSeparator = getSystemFileSeparator();
     size_t lastSeparator = systemFilePath.rfind(systemFileSeparator);
-    if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length()-systemFileSeparator.length() )
+    if ( lastSeparator == std::string::npos )
+        return systemFilePath;
+    else if ( !systemFilePath.empty() && lastSeparator == systemFilePath.length()-systemFileSeparator.length() )
+        return "";
+    else if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length()-systemFileSeparator.length() )
         return systemFilePath.substr(lastSeparator+systemFileSeparator.length(), systemFilePath.length());
     else
         return systemFilePath;
 }
 
-std::string getSystemFileExtension(const std::string & systemFilePath)
+std::string getSystemFileExtension(const std::string & systemFilePath, bool includeExtensionSeparator)
 {
     const std::string systemExtensionSeparator = ".";
     size_t lastExtensionSeparator = systemFilePath.rfind(systemExtensionSeparator);
-    if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < systemFilePath.length()-systemExtensionSeparator.length() )
+    if ( lastExtensionSeparator != std::string::npos && lastExtensionSeparator >= 0 &&
+        lastExtensionSeparator <= systemFilePath.length()-systemExtensionSeparator.length() )
     {
         size_t lastPathSeparator = systemFilePath.rfind(getSystemFileSeparator());
-        if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
-            return systemFilePath.substr(lastExtensionSeparator, systemFilePath.length() - lastExtensionSeparator); 
+        if ( lastPathSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
+        {
+            if ( includeExtensionSeparator )
+                return systemFilePath.substr(lastExtensionSeparator, systemFilePath.length() - lastExtensionSeparator);
+            else
+                return systemFilePath.substr(lastExtensionSeparator + systemExtensionSeparator.length(), systemFilePath.length() - lastExtensionSeparator - systemExtensionSeparator.length());
+        }
     }
     return "";
 }
@@ -61,7 +71,9 @@ std::string getSystemFileDirectory(const std::string & systemFilePath, bool incl
 {
     const std::string systemFileSeparator = getSystemFileSeparator();
     size_t lastSeparator = systemFilePath.rfind(systemFileSeparator);
-    if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length() )
+    if ( lastSeparator == std::string::npos )
+        return "";
+    else if ( lastSeparator >= 0 && lastSeparator < systemFilePath.length() )
     {
         if ( includeTrailingSeparator )
             return systemFilePath.substr(0, lastSeparator+systemFileSeparator.length());
@@ -96,7 +108,7 @@ std::string makeExtSystemFilePath(const std::string & systemDirectory, const std
     const std::string systemFileSeparator = getSystemFileSeparator();
     const std::string systemExtensionSeparator = ".";
     size_t lastSeparator = systemDirectory.rfind(systemFileSeparator);
-    const bool directoryIncludesSeparator = lastSeparator == systemDirectory.length() - systemFileSeparator.length();
+    const bool directoryIncludesSeparator = lastSeparator != std::string::npos && lastSeparator == systemDirectory.length() - systemFileSeparator.length();
     const bool extensionIncludesSeparator = extension.find(systemExtensionSeparator) == 0;
     if ( directoryIncludesSeparator )
     {
@@ -123,21 +135,31 @@ std::string getMpqFileName(const std::string & mpqFilePath)
 {
     const std::string mpqFileSeparator = getMpqFileSeparator();
     size_t lastSeparator = mpqFilePath.rfind(mpqFileSeparator);
-    if ( lastSeparator >= 0 && lastSeparator+1 < mpqFilePath.length() )
-        return mpqFilePath.substr(lastSeparator+1);
-
-    return mpqFilePath;
+    if ( lastSeparator == std::string::npos )
+        return mpqFilePath;
+    else if ( !mpqFilePath.empty() && lastSeparator == mpqFilePath.length()-mpqFileSeparator.length() )
+        return "";
+    else if ( lastSeparator >= 0 && lastSeparator < mpqFilePath.length()-mpqFileSeparator.length() )
+        return mpqFilePath.substr(lastSeparator+mpqFileSeparator.length(), mpqFilePath.length());
+    else
+        return mpqFilePath;
 }
 
-std::string getMpqFileExtension(const std::string & mpqFilePath)
+std::string getMpqFileExtension(const std::string & mpqFilePath, bool includeExtensionSeparator)
 {
     const std::string mpqExtensionSeparator = ".";
     size_t lastExtensionSeparator = mpqFilePath.rfind(mpqExtensionSeparator);
-    if ( lastExtensionSeparator >= 0 && lastExtensionSeparator < mpqFilePath.length()-mpqExtensionSeparator.length() )
+    if ( lastExtensionSeparator != std::string::npos && lastExtensionSeparator >= 0 &&
+        lastExtensionSeparator <= mpqFilePath.length()-mpqExtensionSeparator.length() )
     {
         size_t lastPathSeparator = mpqFilePath.rfind(getMpqFileSeparator());
-        if ( lastExtensionSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
-            return mpqFilePath.substr(lastExtensionSeparator, mpqFilePath.length() - lastExtensionSeparator); 
+        if ( lastPathSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
+        {
+            if ( includeExtensionSeparator )
+                return mpqFilePath.substr(lastExtensionSeparator, mpqFilePath.length() - lastExtensionSeparator);
+            else
+                return mpqFilePath.substr(lastExtensionSeparator + mpqExtensionSeparator.length(), mpqFilePath.length() - lastExtensionSeparator - mpqExtensionSeparator.length());
+        }
     }
     return "";
 }
@@ -146,7 +168,7 @@ std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string 
 {
     const std::string mpqFileSeparator = getMpqFileSeparator();
     size_t lastSeparator = mpqDirectory.rfind(mpqFileSeparator);
-    if ( lastSeparator == mpqDirectory.length() - mpqFileSeparator.length() )
+    if ( lastSeparator != std::string::npos && lastSeparator == mpqDirectory.length() - mpqFileSeparator.length() )
         return mpqDirectory + fileName;
     else
         return mpqDirectory + mpqFileSeparator + fileName;
