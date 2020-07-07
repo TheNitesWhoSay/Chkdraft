@@ -70,7 +70,8 @@ class Maps : public WinLib::MdiClient
 
 class AllMapIdsExausted : public std::exception
 {
-    virtual const char* what() { return "All 65535 map ids are in use!"; }
+public:
+    virtual const char* what() { return "All 65535 map ids are in use, please close some maps or restart Chkdraft to open additional maps!"; }
 };
 
 #endif

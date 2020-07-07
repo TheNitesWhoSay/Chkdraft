@@ -137,7 +137,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr )
                 {
-                    ChkdStringPtr str = CM->strings.getString<ChkdString>(currSelString);
+                    ChkdStringPtr str = CM->strings.getString<ChkdString>(currSelString, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( str != nullptr )
                     {
                         editString.SetText(*str);

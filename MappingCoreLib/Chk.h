@@ -1042,7 +1042,7 @@ namespace Chk {
         StringProperties();
         StringProperties(u8 red, u8 green, u8 blue, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics, u32 size);
         
-        class InvalidSize : std::exception
+        class InvalidSize : public std::exception
         {
             public:
                 InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize) : error(error) { }
