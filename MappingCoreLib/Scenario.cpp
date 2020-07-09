@@ -375,8 +375,16 @@ bool Scenario::parsingFailed(const std::string & error)
 
 void Scenario::write(std::ostream & os)
 {
-    for ( auto & section : allSections )
-        section->writeWithHeader(os, *this);
+    try
+    {
+        for ( auto & section : allSections )
+            section->writeWithHeader(os, *this);
+    }
+    catch ( std::exception & e )
+    {
+        os.setstate(std::ios_base::failbit);
+        logger.error("Error writing scenario file ", e);
+    }
 }
 
 std::vector<u8> Scenario::serialize()

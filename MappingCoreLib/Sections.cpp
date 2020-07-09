@@ -5787,7 +5787,7 @@ bool KstrSection::checkFit(StrSynchronizer & strSynchronizer, StrCompressionElev
         return false;
 
     try {
-        strSynchronizer.syncStringsToBytes(strings, stringBytes, compressionElevator);
+        strSynchronizer.syncKstringsToBytes(strings, stringBytes, compressionElevator);
         return true;
     } catch ( std::exception & ) {
         return false;
