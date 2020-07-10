@@ -849,7 +849,7 @@ bool TextTrigGenerator::prepLocationTable(ScenarioPtr map, bool quoteArgs)
             }
             else if ( loc->stringId > 0 )
             {
-                std::shared_ptr<EscString> locationName = map->strings.getString<EscString>((size_t)loc->stringId, Chk::Scope::Game);
+                std::shared_ptr<EscString> locationName = map->strings.getLocationName<EscString>(i, Chk::Scope::Game);
                 if ( locationName != nullptr )
                 {
                     if ( quoteArgs )
@@ -1050,7 +1050,7 @@ bool TextTrigGenerator::prepStringTable(ScenarioPtr map, bool quoteArgs)
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( stringUsed[i] )
-            str = map->strings.getString<EscString>(i);
+            str = map->strings.getString<EscString>(i, Chk::Scope::Game);
 
         if ( str != nullptr )
         {
@@ -1071,7 +1071,7 @@ bool TextTrigGenerator::prepStringTable(ScenarioPtr map, bool quoteArgs)
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( extendedStringUsed[i] )
-            str = map->strings.getString<EscString>(i);
+            str = map->strings.getString<EscString>(i, Chk::Scope::Editor);
         
         if ( str != nullptr )
         {
