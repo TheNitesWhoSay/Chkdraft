@@ -66,7 +66,7 @@ void StringEditorWindow::RefreshWindow()
         {
             if ( strUsed[i] )
             {
-                ChkdStringPtr str = CM->strings.getString<ChkdString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
+                RawStringPtr str = CM->strings.getString<RawString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
                 if ( str != nullptr )
                 {
                     int newListIndex = listStrings.AddItem((u32)i);
@@ -216,7 +216,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_MEASUREITEM:
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)mis->itemData);
+                RawStringPtr str = CM->strings.getString<RawString>((size_t)mis->itemData, extended ? Chk::Scope::Editor : Chk::Scope::Game);
 
                 if ( str != nullptr &&
                      GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, *str) )
@@ -245,7 +245,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
+                    RawStringPtr str = CM->strings.getString<RawString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( CM != nullptr && str != nullptr )
                     {
                         HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX

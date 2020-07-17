@@ -1729,6 +1729,8 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     
     constexpr icux::codepoint carriageReturn = (icux::codepoint)'\r';
     constexpr icux::codepoint lineFeed = (icux::codepoint)'\n';
+    constexpr icux::codepoint emptyLine[] = { carriageReturn, lineFeed, icux::nullChar };
+    constexpr size_t emptyLineLength = sizeof(emptyLine)/sizeof(icux::codepoint);
     
     auto sysStr = icux::toUistring(str);
     const size_t codepointCount = sysStr.length();
@@ -1741,7 +1743,8 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
         if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
         {
             rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
-            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) )
+            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) || // Regular line
+                (i == lineStart && WinLib::getTabTextExtent(hDC, &emptyLine[0], emptyLineLength, lineWidth, lineHeight)) ) // Empty line
             {
                 height += lineHeight;
                 if ( lineWidth > s32(width) )
@@ -1840,7 +1843,8 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
             // Do first line
             std::string firstLine = str.substr(0, loc);
             DrawStringLine(hDC, xPos, yPos, width, defaultColor, firstLine);
-            if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) )
+            if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) ||
+                (loc == 0 && str.length() > 0 && WinLib::getTabTextExtent(hDC, std::string("\r\n"), lineWidth, lineHeight)) )
             {
                 start = loc+2;
                 yPos += lineHeight;
