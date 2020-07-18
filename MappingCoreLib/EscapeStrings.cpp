@@ -119,7 +119,7 @@ ChkdString::~ChkdString()
 
 }
 
-bool ChkdString::isOneLine()
+bool ChkdString::isOneLine() const
 {
     return false;
 }
@@ -139,7 +139,7 @@ SingleLineChkdString::~SingleLineChkdString()
 
 }
 
-bool SingleLineChkdString::isOneLine()
+bool SingleLineChkdString::isOneLine() const
 {
     return true;
 }

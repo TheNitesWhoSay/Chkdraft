@@ -176,7 +176,7 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
     return success;
 }
 
-bool MpqFile::getFile(const std::string & mpqPath, std::vector<u8> & fileData)
+bool MpqFile::getFile(const std::string & mpqPath, std::vector<u8> & fileData) const
 {
     bool success = false;
     if ( isOpen() )
@@ -194,7 +194,7 @@ bool MpqFile::getFile(const std::string & mpqPath, std::vector<u8> & fileData)
     return success;
 }
 
-bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath)
+bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath) const
 {
     if ( isOpen() )
     {

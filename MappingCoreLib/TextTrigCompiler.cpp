@@ -91,7 +91,7 @@ bool TextTrigCompiler::compileTrigger(std::string & text, ScenarioPtr chk, Sc::D
     return false;
 }
 
-bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType)
+bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
 {
     std::vector<RawString> stringContents;
     cleanText(text, stringContents);
@@ -153,7 +153,7 @@ bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Cond
     return false;
 }
 
-bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType)
+bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
 {
     std::vector<RawString> stringContents;
     cleanText(text, stringContents);
@@ -255,7 +255,7 @@ void TextTrigCompiler::clearCompiler()
     newExtendedStringTable.clear();
 }
 
-void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents)
+void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents) const
 {
     logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -1216,7 +1216,7 @@ inline bool TextTrigCompiler::parsePartEleven(std::string & text, std::stringstr
     return true;
 }
 
-bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end)
+bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end) const
 {
     u32 group;
     size_t separator = text.find(':', pos);
@@ -1239,7 +1239,7 @@ bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::parseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType)
+bool TextTrigCompiler::parseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType) const
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -1375,7 +1375,7 @@ bool TextTrigCompiler::parseCondition(std::string & text, size_t pos, size_t end
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType)
+bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const
 {
     char currChar = arg[0];
     switch ( currChar )
@@ -1943,7 +1943,7 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Order or 1-byte number" );
         case Chk::Action::ArgType::Sound:
-            returnMsg( parseWavName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
+            returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
                 parseLong(text, currAction.soundStringId, pos, end),
                 "Expected: Wav name or 4-byte wavID" );
         case Chk::Action::ArgType::Duration:
@@ -2013,7 +2013,7 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
     return false;
 }
 
-bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags)
+bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags) const
 {
     flags = 0;
 
@@ -2080,7 +2080,7 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
         return parseLong(text, dest, pos, end);
 }
 
-bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text.compare(pos, end-pos, "NOLOCATION") == 0 )
@@ -2108,7 +2108,7 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
     size_t numMatching = locationTable.count(hash);
     if ( numMatching == 1 )
     { // Should guarentee that you can find at least one entry
-        LocationTableNode & node = locationTable.find(hash)->second;
+        const LocationTableNode & node = locationTable.find(hash)->second;
         if ( node.locationName.compare(str) == 0 )
         {
             dest = node.locationId;
@@ -2120,7 +2120,7 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
         auto range = locationTable.equal_range(hash);
         for ( auto & pair = range.first; pair != range.second; ++pair )
         {
-            LocationTableNode & node = pair->second;
+            const LocationTableNode & node = pair->second;
             if ( node.locationName.compare(str) == 0 )
             {
                 if ( success == false ) // If no matches have previously been found
@@ -2139,7 +2139,7 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
     return success;
 }
 
-bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
@@ -2589,7 +2589,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
         size_t numMatching = unitTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
-            UnitTableNode & node = unitTable.find(hash)->second;
+            const UnitTableNode & node = unitTable.find(hash)->second;
             if ( node.unitName.compare(str) == 0 )
             {
                 dest = node.unitType;
@@ -2601,7 +2601,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
             auto range = unitTable.equal_range(hash);
             for ( auto & pair = range.first; pair != range.second; ++pair )
             {
-                UnitTableNode & node = pair->second;
+                const UnitTableNode & node = pair->second;
                 if ( node.unitName.compare(str) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
@@ -2718,7 +2718,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
     return success;
 }
 
-bool TextTrigCompiler::parseWavName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
 {
     if ( text.compare(pos, end-pos, "NOWAV") == 0  )
     {
@@ -2729,7 +2729,7 @@ bool TextTrigCompiler::parseWavName(std::string & text, std::vector<RawString> &
         return parseString(text, stringContents, nextString, dest, pos, end);
 }
 
-bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     std::string str;
     u32 number = 0;
@@ -2938,7 +2938,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
     size_t numMatching = groupTable.count(hash);
     if ( numMatching == 1 )
     { // Should guarentee that you can find at least one entry
-        GroupTableNode & node = groupTable.find(hash)->second;
+        const GroupTableNode & node = groupTable.find(hash)->second;
         if ( node.groupName.compare(str) == 0 )
         {
             dest = node.groupId;
@@ -2950,7 +2950,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
         auto range = groupTable.equal_range(hash);
         for ( auto & pair = range.first; pair != range.second; ++pair )
         {
-            GroupTableNode & node = pair->second;
+            const GroupTableNode & node = pair->second;
             if ( node.groupName.compare(str) == 0 )
             {
                 if ( success == false ) // If no matches have previously been found
@@ -2969,7 +2969,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
@@ -3008,7 +3008,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
         size_t numMatching = switchTable.count(hash);
         if ( numMatching == 1 )
         { // Should guarentee that you can find at least one entry
-            SwitchTableNode & node = switchTable.find(hash)->second;
+            const SwitchTableNode & node = switchTable.find(hash)->second;
             if ( node.switchName.compare(str) == 0 )
             {
                 dest = node.switchId;
@@ -3020,7 +3020,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
             auto range = switchTable.equal_range(hash);
             for ( auto & pair = range.first; pair != range.second; ++pair )
             {
-                SwitchTableNode & node = pair->second;
+                const SwitchTableNode & node = pair->second;
                 if ( node.switchName.compare(str) == 0 )
                 {
                     if ( success == false ) // If no matches have previously been found
@@ -3040,7 +3040,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseSwitch(text, stringContents, nextString, temp, pos, end);
@@ -3048,7 +3048,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     if ( text.compare(pos, end-pos, "NOSCRIPT") == 0 )
     {
@@ -3074,7 +3074,7 @@ bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & 
     size_t numMatching = scriptTable.count(hash);
     if ( numMatching == 1 )
     { // Should guarentee that you can find at least one entry
-        ScriptTableNode & node = scriptTable.find(hash)->second;
+        const ScriptTableNode & node = scriptTable.find(hash)->second;
         if ( node.scriptName.compare(str) == 0 )
         {
             dest = node.scriptId;
@@ -3086,7 +3086,7 @@ bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & 
         auto range = scriptTable.equal_range(hash);
         for ( auto & pair = range.first; pair != range.second; ++pair )
         {
-            ScriptTableNode & node = pair->second;
+            const ScriptTableNode & node = pair->second;
             if ( node.scriptName.compare(str) == 0 && success == false ) // Compare equal and no prev matches
             {
                 dest = node.scriptId;
@@ -3118,7 +3118,7 @@ bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condition::VirtualType conditionType)
+Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condition::VirtualType conditionType) const
 {
     switch ( conditionType )
     {
@@ -3130,7 +3130,7 @@ Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condi
     return (Chk::Condition::Type)conditionType;
 }
 
-Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::VirtualType actionType)
+Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::VirtualType actionType) const
 {
     switch ( actionType )
     {
@@ -3142,7 +3142,7 @@ Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::Vir
     return (Chk::Action::Type)actionType;
 }
 
-bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
 {
     std::array<char, 12> comparison = {};
     copyUpperCaseNoSpace(comparison, text, stringContents, nextString, pos, end);
@@ -3160,7 +3160,7 @@ bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vec
     return false;
 }
 
-bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
 {
     std::array<char, 8> switchState = {};
     copyUpperCaseNoSpace(switchState, text, stringContents, nextString, pos, end);
@@ -3180,7 +3180,7 @@ bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<Ra
     return false;
 }
 
-bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // All
 {
     std::array<char, 4> specialUnitAmount = {};
@@ -3195,7 +3195,7 @@ bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vec
         return false;
 }
 
-bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
     // Ally, Enemy, Allied Victory
 {
     std::array<char, 16> allianceStatus = {};
@@ -3214,7 +3214,7 @@ bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector
     return false;
 }
 
-bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::array<char, 12> resourceType = {};
     copyUpperCaseNoSpace(resourceType, text, stringContents, nextString, pos, end);
@@ -3232,7 +3232,7 @@ bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<R
     return false;
 }
 
-bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::array<char, 20> scoreType = {};
     copyUpperCaseNoSpace(scoreType, text, stringContents, nextString, pos, end);
@@ -3263,7 +3263,7 @@ bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Always Display, Don't Always Display
 {
     std::array<char, 24> textDisplayFlag = {};
@@ -3281,7 +3281,7 @@ bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vecto
     return false;
 }
 
-bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Add, subtract, set to
 {
     std::array<char, 12> numericModifier = {};
@@ -3300,7 +3300,7 @@ bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vecto
     return false;
 }
 
-bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Set, clear, toggle, randomize
 {
     std::array<char, 10> switchMod = {};
@@ -3324,7 +3324,7 @@ bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Disable, Disabled, Enable, Enabled, Toggle
 {
     std::array<char, 12> stateMod = {};
@@ -3347,7 +3347,7 @@ bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawSt
     return false;
 }
 
-bool TextTrigCompiler::parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Attack, move, patrol
 {
     std::array<char, 8> order = {};
@@ -3368,7 +3368,7 @@ bool TextTrigCompiler::parseOrder(const std::string & text, std::vector<RawStrin
     return false;
 }
 
-bool TextTrigCompiler::parseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset)
+bool TextTrigCompiler::parseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset) const
 {
     u32 temp = 0;
     if ( parseLong(text, temp, pos, end) )
@@ -3379,7 +3379,7 @@ bool TextTrigCompiler::parseMemoryAddress(const std::string & text, u32 & dest, 
     return false;
 }
 
-bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseResourceType(text, stringContents, nextString, temp, pos, end);
@@ -3387,7 +3387,7 @@ bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<R
     return success;
 }
 
-bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseScoreType(text, stringContents, nextString, temp, pos, end);
@@ -3395,7 +3395,7 @@ bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawS
     return success;
 }
 
-bool TextTrigCompiler::parseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseBinaryLong(const std::string & text, u32 & dest, size_t pos, size_t end) const
 {
     size_t size = end - pos;
     if ( size < 33 )
@@ -3432,7 +3432,7 @@ bool TextTrigCompiler::parseBinaryLong(const std::string & text, u32 & dest, siz
     return false;
 }
 
-bool TextTrigCompiler::parseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseLong(const std::string & text, u32 & dest, size_t pos, size_t end) const
 {
     size_t size = end - pos;
     if ( size < 12 )
@@ -3464,7 +3464,7 @@ bool TextTrigCompiler::parseLong(const std::string & text, u32 & dest, size_t po
     return false;
 }
 
-bool TextTrigCompiler::parseShort(const std::string & text, u16 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseShort(const std::string & text, u16 & dest, size_t pos, size_t end) const
 {
     size_t size = end - pos;
     if ( size < 7 )
@@ -3496,7 +3496,7 @@ bool TextTrigCompiler::parseShort(const std::string & text, u16 & dest, size_t p
     return false;
 }
 
-bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos, size_t end) const
 {
     size_t size = end - pos;
     if ( size < 5 )
@@ -3748,7 +3748,7 @@ bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
     return true;
 }
 
-bool TextTrigCompiler::buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error)
+bool TextTrigCompiler::buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error) const
 {
     auto strBackup = scenario->strings.backup();
     std::deque<Chk::TriggerPtr> replacedTriggers = scenario->triggers.replaceRange(trigIndexBegin, trigIndexEnd, triggers);

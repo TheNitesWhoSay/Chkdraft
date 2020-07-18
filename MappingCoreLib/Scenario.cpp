@@ -134,22 +134,22 @@ void Scenario::clear()
     mapIsProtected = false;
 }
 
-bool Scenario::empty()
+bool Scenario::empty() const
 {
     return allSections.empty() && tailLength == 0 && versions.empty() && strings.empty() && players.empty() && layers.empty() && properties.empty() && triggers.empty();
 }
 
-bool Scenario::isProtected()
+bool Scenario::isProtected() const
 {
     return mapIsProtected;
 }
 
-bool Scenario::hasPassword()
+bool Scenario::hasPassword() const
 {
     return tailLength == 7;
 }
 
-bool Scenario::isPassword(const std::string & password)
+bool Scenario::isPassword(const std::string & password) const
 {
     if ( hasPassword() )
     {
@@ -206,7 +206,7 @@ bool Scenario::setPassword(const std::string & oldPass, const std::string & newP
     return false;
 }
 
-bool Scenario::login(const std::string & password)
+bool Scenario::login(const std::string & password) const
 {
     if ( isPassword(password) )
     {
@@ -776,37 +776,37 @@ Versions::Versions(bool useDefault) : layers(nullptr)
     }
 }
 
-bool Versions::empty()
+bool Versions::empty() const
 {
     return ver == nullptr && type == nullptr && iver == nullptr && ive2 == nullptr && vcod == nullptr;
 }
 
-Chk::Version Versions::getVersion()
+Chk::Version Versions::getVersion() const
 {
     return ver->getVersion();
 }
 
-bool Versions::is(Chk::Version version)
+bool Versions::is(Chk::Version version) const
 {
     return ver->getVersion() == version;
 }
 
-bool Versions::isOriginal()
+bool Versions::isOriginal() const
 {
     return ver->isOriginal();
 }
 
-bool Versions::isHybrid()
+bool Versions::isHybrid() const
 {
     return ver->isHybrid();
 }
 
-bool Versions::isExpansion()
+bool Versions::isExpansion() const
 {
     return ver->isExpansion();
 }
 
-bool Versions::isHybridOrAbove()
+bool Versions::isHybridOrAbove() const
 {
     return ver->isHybridOrAbove();
 }
@@ -845,7 +845,7 @@ bool Versions::changeTo(Chk::Version version, bool lockAnywhere, bool autoDefrag
     return true;
 }
 
-bool Versions::hasDefaultValidation()
+bool Versions::hasDefaultValidation() const
 {
     return vcod->isDefault();
 }
@@ -904,17 +904,17 @@ Strings::Strings(bool useDefault) : versions(nullptr), players(nullptr), layers(
     }
 }
 
-bool Strings::empty()
+bool Strings::empty() const
 {
     return sprp == nullptr && str == nullptr && ostr == nullptr && kstr == nullptr;
 }
 
-bool Strings::hasExtendedStrings()
+bool Strings::hasExtendedStrings() const
 {
     return ostr != nullptr && kstr != nullptr && !kstr->empty();
 }
 
-size_t Strings::getCapacity(Chk::Scope storageScope)
+size_t Strings::getCapacity(Chk::Scope storageScope) const
 {
     if ( storageScope == Chk::Scope::Game )
         return str->getCapacity();
@@ -924,7 +924,7 @@ size_t Strings::getCapacity(Chk::Scope storageScope)
         return 0;
 }
 
-bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored)
+bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored) const
 {
     if ( storageScope == Chk::Scope::Game && (str->stringStored(stringId) || !ensureStored) )
     {
@@ -957,13 +957,13 @@ bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope stor
     return false;
 }
 
-bool Strings::stringStored(size_t stringId, Chk::Scope storageScope)
+bool Strings::stringStored(size_t stringId, Chk::Scope storageScope) const
 {
     return (storageScope & Chk::Scope::Game) == Chk::Scope::Game && str->stringStored(stringId) ||
         (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
 }
 
-void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
+void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -995,7 +995,7 @@ void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::
     }
 }
 
-void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask)
+void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
 {
     markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
     switch ( storageScope )
@@ -1044,7 +1044,7 @@ void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, 
     }
 }
 
-StrProp Strings::getProperties(size_t editorStringId)
+StrProp Strings::getProperties(size_t editorStringId) const
 {
     return kstr != nullptr ? kstr->getProperties(editorStringId) : StrProp();
 }
@@ -1056,7 +1056,7 @@ void Strings::setProperties(size_t editorStringId, const StrProp & strProp)
 }
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getString(size_t stringId, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getString(size_t stringId, Chk::Scope storageScope) const
 {
     switch ( storageScope )
     {
@@ -1076,13 +1076,13 @@ std::shared_ptr<StringType> Strings::getString(size_t stringId, Chk::Scope stora
         default: return nullptr;
     }
 }
-template std::shared_ptr<RawString> Strings::getString<RawString>(size_t stringId, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getString<EscString>(size_t stringId, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t stringId, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t stringId, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getString<RawString>(size_t stringId, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getString<EscString>(size_t stringId, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t stringId, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t stringId, Chk::Scope storageScope) const;
 
 template <typename StringType>
-size_t Strings::findString(const StringType & str, Chk::Scope storageScope)
+size_t Strings::findString(const StringType & str, Chk::Scope storageScope) const
 {
     switch ( storageScope )
     {
@@ -1102,10 +1102,10 @@ size_t Strings::findString(const StringType & str, Chk::Scope storageScope)
     }
     return (size_t)Chk::StringId::NoString;
 }
-template size_t Strings::findString<RawString>(const RawString & str, Chk::Scope storageScope);
-template size_t Strings::findString<EscString>(const EscString & str, Chk::Scope storageScope);
-template size_t Strings::findString<ChkdString>(const ChkdString & str, Chk::Scope storageScope);
-template size_t Strings::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope);
+template size_t Strings::findString<RawString>(const RawString & str, Chk::Scope storageScope) const;
+template size_t Strings::findString<EscString>(const EscString & str, Chk::Scope storageScope) const;
+template size_t Strings::findString<ChkdString>(const ChkdString & str, Chk::Scope storageScope) const;
+template size_t Strings::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope) const;
 
 void Strings::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool autoDefragment)
 {
@@ -1339,7 +1339,7 @@ size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, 
     return 0;
 }
 
-std::vector<u8> & Strings::getTailData()
+std::vector<u8> & Strings::getTailData() const
 {
     return str->getTailData();
 }
@@ -1349,37 +1349,37 @@ size_t Strings::getTailDataOffset()
     return str->getTailDataOffset(*this);
 }
 
-size_t Strings::getInitialTailDataOffset()
+size_t Strings::getInitialTailDataOffset() const
 {
     return str->getInitialTailDataOffset();
 }
 
-size_t Strings::getBytePaddedTo()
+size_t Strings::getBytePaddedTo() const
 {
     return str->getBytePaddedTo();
 }
 
-void Strings::setBytePaddedTo(size_t bytePaddedTo)
+void Strings::setBytePaddedTo(size_t bytePaddedTo) const
 {
     str->setBytePaddedTo(bytePaddedTo);
 }
 
-size_t Strings::getScenarioNameStringId(Chk::Scope storageScope)
+size_t Strings::getScenarioNameStringId(Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? ostr->getScenarioNameStringId() : sprp->getScenarioNameStringId();
 }
 
-size_t Strings::getScenarioDescriptionStringId(Chk::Scope storageScope)
+size_t Strings::getScenarioDescriptionStringId(Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? ostr->getScenarioDescriptionStringId() : sprp->getScenarioDescriptionStringId();
 }
 
-size_t Strings::getForceNameStringId(Chk::Force force, Chk::Scope storageScope)
+size_t Strings::getForceNameStringId(Chk::Force force, Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? ostr->getForceNameStringId(force) : players->getForceStringId(force);
 }
 
-size_t Strings::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope)
+size_t Strings::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope) const
 {
     if ( storageScope == Chk::Scope::Game )
         return properties->getUnitNameStringId(unitType, useExp);
@@ -1397,17 +1397,17 @@ size_t Strings::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection 
     return 0;
 }
 
-size_t Strings::getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope)
+size_t Strings::getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? ostr->getSoundPathStringId(soundIndex) : triggers->getSoundStringId(soundIndex);
 }
 
-size_t Strings::getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope)
+size_t Strings::getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? ostr->getSwitchNameStringId(switchIndex) : triggers->getSwitchNameStringId(switchIndex);
 }
 
-size_t Strings::getLocationNameStringId(size_t locationId, Chk::Scope storageScope)
+size_t Strings::getLocationNameStringId(size_t locationId, Chk::Scope storageScope) const
 {
     if ( storageScope == Chk::Scope::Editor )
         return ostr->getLocationNameStringId(locationId);
@@ -1489,7 +1489,7 @@ void Strings::setLocationNameStringId(size_t locationId, size_t locationNameStri
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-std::shared_ptr<StringType> Strings::getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const
 {
     switch ( storageScope )
     {
@@ -1501,43 +1501,43 @@ std::shared_ptr<StringType> Strings::getString(size_t gameStringId, size_t edito
     }
     return nullptr;
 }
-template std::shared_ptr<RawString> Strings::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getScenarioName(Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getScenarioName(Chk::Scope storageScope) const
 {
     return getString<StringType>(sprp->getScenarioNameStringId(), ostr->getScenarioNameStringId(), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getScenarioName<RawString>(Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getScenarioName<EscString>(Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getScenarioName<ChkdString>(Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getScenarioName<SingleLineChkdString>(Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getScenarioName<RawString>(Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getScenarioName<EscString>(Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getScenarioName<ChkdString>(Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getScenarioName<SingleLineChkdString>(Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getScenarioDescription(Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getScenarioDescription(Chk::Scope storageScope) const
 {
     return getString<StringType>(sprp->getScenarioDescriptionStringId(), ostr->getScenarioDescriptionStringId(), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getScenarioDescription<RawString>(Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getScenarioDescription<EscString>(Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getScenarioDescription<ChkdString>(Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getScenarioDescription<SingleLineChkdString>(Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getScenarioDescription<RawString>(Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getScenarioDescription<EscString>(Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getScenarioDescription<ChkdString>(Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getScenarioDescription<SingleLineChkdString>(Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getForceName(Chk::Force force, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getForceName(Chk::Force force, Chk::Scope storageScope) const
 {
     return getString<StringType>(players->getForceStringId(force), ostr->getForceNameStringId(force), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getForceName<RawString>(Chk::Force force, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getForceName<EscString>(Chk::Force force, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getForceName<ChkdString>(Chk::Force force, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getForceName<RawString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getForceName<EscString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getForceName<ChkdString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const
 {
     std::shared_ptr<StringType> mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
         properties->getUnitNameStringId(unitType, useExp),
@@ -1551,70 +1551,70 @@ std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool d
     else
         return std::shared_ptr<StringType>(new StringType("ID:" + std::to_string(unitType)));
 }
-template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getSoundPath(size_t soundIndex, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getSoundPath(size_t soundIndex, Chk::Scope storageScope) const
 {
     return getString<StringType>(triggers->getSoundStringId(soundIndex), ostr->getSoundPathStringId(soundIndex), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getSoundPath<RawString>(size_t soundIndex, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getSoundPath<EscString>(size_t soundIndex, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getSoundPath<ChkdString>(size_t soundIndex, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getSoundPath<RawString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getSoundPath<EscString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getSoundPath<ChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getSwitchName(size_t switchIndex, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getSwitchName(size_t switchIndex, Chk::Scope storageScope) const
 {
     return getString<StringType>(triggers->getSwitchNameStringId(switchIndex), ostr->getSwitchNameStringId(switchIndex), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getSwitchName<RawString>(size_t switchIndex, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getSwitchName<EscString>(size_t switchIndex, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getSwitchName<ChkdString>(size_t switchIndex, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getSwitchName<RawString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getSwitchName<EscString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getSwitchName<ChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getLocationName(size_t locationId, Chk::Scope storageScope)
+std::shared_ptr<StringType> Strings::getLocationName(size_t locationId, Chk::Scope storageScope) const
 {
     return getString<StringType>((locationId > 0 && locationId <= layers->numLocations() ? layers->getLocation(locationId)->stringId : 0), ostr->getLocationNameStringId(locationId), storageScope);
 }
-template std::shared_ptr<RawString> Strings::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope);
-template std::shared_ptr<EscString> Strings::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope);
-template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t locationId, Chk::Scope storageScope);
-template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope);
+template std::shared_ptr<RawString> Strings::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope) const;
+template std::shared_ptr<EscString> Strings::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope) const;
+template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t locationId, Chk::Scope storageScope) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getComment(size_t triggerIndex)
+std::shared_ptr<StringType> Strings::getComment(size_t triggerIndex) const
 {
     return getString<StringType>(triggers->getCommentStringId(triggerIndex), Chk::Scope::Game);
 }
-template std::shared_ptr<RawString> Strings::getComment<RawString>(size_t triggerIndex);
-template std::shared_ptr<EscString> Strings::getComment<EscString>(size_t triggerIndex);
-template std::shared_ptr<ChkdString> Strings::getComment<ChkdString>(size_t triggerIndex);
-template std::shared_ptr<SingleLineChkdString> Strings::getComment<SingleLineChkdString>(size_t triggerIndex);
+template std::shared_ptr<RawString> Strings::getComment<RawString>(size_t triggerIndex) const;
+template std::shared_ptr<EscString> Strings::getComment<EscString>(size_t triggerIndex) const;
+template std::shared_ptr<ChkdString> Strings::getComment<ChkdString>(size_t triggerIndex) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getComment<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getExtendedComment(size_t triggerIndex)
+std::shared_ptr<StringType> Strings::getExtendedComment(size_t triggerIndex) const
 {
     return getString<StringType>(triggers->getExtendedCommentStringId(triggerIndex), Chk::Scope::Editor);
 }
-template std::shared_ptr<RawString> Strings::getExtendedComment<RawString>(size_t triggerIndex);
-template std::shared_ptr<EscString> Strings::getExtendedComment<EscString>(size_t triggerIndex);
-template std::shared_ptr<ChkdString> Strings::getExtendedComment<ChkdString>(size_t triggerIndex);
-template std::shared_ptr<SingleLineChkdString> Strings::getExtendedComment<SingleLineChkdString>(size_t triggerIndex);
+template std::shared_ptr<RawString> Strings::getExtendedComment<RawString>(size_t triggerIndex) const;
+template std::shared_ptr<EscString> Strings::getExtendedComment<EscString>(size_t triggerIndex) const;
+template std::shared_ptr<ChkdString> Strings::getExtendedComment<ChkdString>(size_t triggerIndex) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getExtendedComment<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getExtendedNotes(size_t triggerIndex)
+std::shared_ptr<StringType> Strings::getExtendedNotes(size_t triggerIndex) const
 {
     return getString<StringType>(triggers->getExtendedNotesStringId(triggerIndex), Chk::Scope::Editor);
 }
-template std::shared_ptr<RawString> Strings::getExtendedNotes<RawString>(size_t triggerIndex);
-template std::shared_ptr<EscString> Strings::getExtendedNotes<EscString>(size_t triggerIndex);
-template std::shared_ptr<ChkdString> Strings::getExtendedNotes<ChkdString>(size_t triggerIndex);
-template std::shared_ptr<SingleLineChkdString> Strings::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex);
+template std::shared_ptr<RawString> Strings::getExtendedNotes<RawString>(size_t triggerIndex) const;
+template std::shared_ptr<EscString> Strings::getExtendedNotes<EscString>(size_t triggerIndex) const;
+template std::shared_ptr<ChkdString> Strings::getExtendedNotes<ChkdString>(size_t triggerIndex) const;
+template std::shared_ptr<SingleLineChkdString> Strings::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
 void Strings::setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
@@ -1943,7 +1943,7 @@ const std::vector<u32> Strings::compressionFlagsProgression = {
 };
 
 
-Strings::StringBackup Strings::backup()
+Strings::StringBackup Strings::backup() const
 {
     return { (str == nullptr ? nullptr : str->backup()) };
 }
@@ -2016,12 +2016,12 @@ Players::Players(bool useDefault) : strings(nullptr)
     }
 }
 
-bool Players::empty()
+bool Players::empty() const
 {
     return side == nullptr && colr == nullptr && forc == nullptr && ownr == nullptr && iown == nullptr;
 }
 
-Sc::Player::SlotType Players::getSlotType(size_t slotIndex, Chk::Scope scope)
+Sc::Player::SlotType Players::getSlotType(size_t slotIndex, Chk::Scope scope) const
 {
     switch ( scope )
     {
@@ -2043,7 +2043,7 @@ void Players::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::
     }
 }
 
-Chk::Race Players::getPlayerRace(size_t playerIndex)
+Chk::Race Players::getPlayerRace(size_t playerIndex) const
 {
     return side->getPlayerRace(playerIndex);
 }
@@ -2053,7 +2053,7 @@ void Players::setPlayerRace(size_t playerIndex, Chk::Race race)
     side->setPlayerRace(playerIndex, race);
 }
 
-Chk::PlayerColor Players::getPlayerColor(size_t slotIndex)
+Chk::PlayerColor Players::getPlayerColor(size_t slotIndex) const
 {
     return colr->getPlayerColor(slotIndex);
 }
@@ -2063,17 +2063,17 @@ void Players::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
     colr->setPlayerColor(slotIndex, color);
 }
 
-Chk::Force Players::getPlayerForce(size_t slotIndex)
+Chk::Force Players::getPlayerForce(size_t slotIndex) const
 {
     return forc->getPlayerForce(slotIndex);
 }
 
-size_t Players::getForceStringId(Chk::Force force)
+size_t Players::getForceStringId(Chk::Force force) const
 {
     return forc->getForceStringId(force);
 }
 
-u8 Players::getForceFlags(Chk::Force force)
+u8 Players::getForceFlags(Chk::Force force) const
 {
     return forc->getForceFlags(force);
 }
@@ -2093,12 +2093,12 @@ void Players::setForceFlags(Chk::Force force, u8 forceFlags)
     forc->setForceFlags(force, forceFlags);
 }
 
-bool Players::stringUsed(size_t stringId, u32 userMask)
+bool Players::stringUsed(size_t stringId, u32 userMask) const
 {
     return (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force && forc->stringUsed(stringId);
 }
 
-void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
         forc->markUsedStrings(stringIdUsed);
@@ -2163,12 +2163,12 @@ Terrain::Terrain(Sc::Terrain::Tileset tileset, u16 width, u16 height)
     }
 }
 
-bool Terrain::empty()
+bool Terrain::empty() const
 {
     return era == nullptr && dim == nullptr && mtxm == nullptr && tile == nullptr && isom == nullptr;
 }
 
-Sc::Terrain::Tileset Terrain::getTileset()
+Sc::Terrain::Tileset Terrain::getTileset() const
 {
     return era->getTileset();
 }
@@ -2178,22 +2178,22 @@ void Terrain::setTileset(Sc::Terrain::Tileset tileset)
     era->setTileset(tileset);
 }
 
-size_t Terrain::getTileWidth()
+size_t Terrain::getTileWidth() const
 {
     return dim->getTileWidth();
 }
 
-size_t Terrain::getTileHeight()
+size_t Terrain::getTileHeight() const
 {
     return dim->getTileHeight();
 }
 
-size_t Terrain::getPixelWidth()
+size_t Terrain::getPixelWidth() const
 {
     return dim->getPixelWidth();
 }
 
-size_t Terrain::getPixelHeight()
+size_t Terrain::getPixelHeight() const
 {
     return dim->getPixelHeight();
 }
@@ -2228,7 +2228,7 @@ void Terrain::setDimensions(u16 newTileWidth, u16 newTileHeight, s32 leftEdge, s
     dim->setDimensions(newTileWidth, newTileHeight);
 }
 
-u16 Terrain::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope)
+u16 Terrain::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope) const
 {
     size_t tileWidth = dim->getTileWidth();
     size_t tileIndex = tileYc*tileWidth + tileXc;
@@ -2242,7 +2242,7 @@ u16 Terrain::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope)
     return 0;
 }
 
-inline u16 Terrain::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope)
+inline u16 Terrain::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope) const
 {
     return getTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, scope);
 }
@@ -2265,6 +2265,11 @@ inline void Terrain::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Ch
 }
 
 Chk::IsomEntry & Terrain::getIsomEntry(size_t isomIndex)
+{
+    return isom->getIsomEntry(isomIndex);
+}
+
+const Chk::IsomEntry & Terrain::getIsomEntry(size_t isomIndex) const
 {
     return isom->getIsomEntry(isomIndex);
 }
@@ -2298,7 +2303,7 @@ void Terrain::clear()
 }
 
 
-Layers::Layers() : Terrain(), strings(nullptr)
+Layers::Layers() : Terrain(), strings(nullptr), triggers(nullptr)
 {
 
 }
@@ -2321,7 +2326,7 @@ Layers::Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height) : Terrain(ti
     }
 }
 
-bool Layers::empty()
+bool Layers::empty() const
 {
     return Terrain::empty() && mask == nullptr && thg2 == nullptr && dd2 == nullptr && unit == nullptr & mrgn == nullptr;
 }
@@ -2368,14 +2373,14 @@ void Layers::validateSizes(u16 sizeValidationFlags)
         removeOutOfBoundsSprites();
 }
 
-u8 Layers::getFog(size_t tileXc, size_t tileYc)
+u8 Layers::getFog(size_t tileXc, size_t tileYc) const
 {
     size_t tileWidth = dim->getTileWidth();
     size_t tileIndex = tileWidth*tileYc + tileXc;
     return mask->getFog(tileIndex);
 }
 
-u8 Layers::getFogPx(size_t pixelXc, size_t pixelYc)
+u8 Layers::getFogPx(size_t pixelXc, size_t pixelYc) const
 {
     return getFog(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile);
 }
@@ -2392,12 +2397,17 @@ void Layers::setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers)
     setFog(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, fogOfWarPlayers);
 }
 
-size_t Layers::numSprites()
+size_t Layers::numSprites() const
 {
     return thg2->numSprites();
 }
 
 std::shared_ptr<Chk::Sprite> Layers::getSprite(size_t spriteIndex)
+{
+    return thg2->getSprite(spriteIndex);
+}
+
+const std::shared_ptr<Chk::Sprite> Layers::getSprite(size_t spriteIndex) const
 {
     return thg2->getSprite(spriteIndex);
 }
@@ -2452,12 +2462,17 @@ void Layers::removeOutOfBoundsSprites()
     }
 }
 
-size_t Layers::numDoodads()
+size_t Layers::numDoodads() const
 {
     return dd2->numDoodads();
 }
 
 std::shared_ptr<Chk::Doodad> Layers::getDoodad(size_t doodadIndex)
+{
+    return dd2->getDoodad(doodadIndex);
+}
+
+const std::shared_ptr<Chk::Doodad> Layers::getDoodad(size_t doodadIndex) const
 {
     return dd2->getDoodad(doodadIndex);
 }
@@ -2495,12 +2510,17 @@ void Layers::removeOutOfBoundsDoodads()
     }
 }
 
-size_t Layers::numUnits()
+size_t Layers::numUnits() const
 {
     return unit->numUnits();
 }
 
 std::shared_ptr<Chk::Unit> Layers::getUnit(size_t unitIndex)
+{
+    return unit->getUnit(unitIndex);
+}
+
+const std::shared_ptr<Chk::Unit> Layers::getUnit(size_t unitIndex) const
 {
     return unit->getUnit(unitIndex);
 }
@@ -2555,12 +2575,17 @@ void Layers::removeOutOfBoundsUnits()
     }
 }
 
-size_t Layers::numLocations()
+size_t Layers::numLocations() const
 {
     return mrgn->numLocations();
 }
 
 std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationId)
+{
+    return mrgn->getLocation(locationId);
+}
+
+const std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationId) const
 {
     return mrgn->getLocation(locationId);
 }
@@ -2586,7 +2611,7 @@ bool Layers::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockA
     return mrgn->moveLocation(locationIdFrom, locationIdTo, lockAnywhere);
 }
 
-bool Layers::isBlank(size_t locationId)
+bool Layers::isBlank(size_t locationId) const
 {
     return mrgn->isBlank(locationId);
 }
@@ -2629,7 +2654,7 @@ void Layers::expandToScHybridOrExpansion()
     mrgn->expandToScHybridOrExpansion();
 }
 
-bool Layers::anywhereIsStandardDimensions()
+bool Layers::anywhereIsStandardDimensions() const
 {
     std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation(Chk::LocationId::Anywhere);
     return anywhere != nullptr && anywhere->left == 0 && anywhere->top == 0 && anywhere->right == dim->getPixelWidth() && anywhere->bottom == dim->getPixelHeight();
@@ -2647,7 +2672,7 @@ void Layers::matchAnywhereToDimensions()
     }
 }
 
-bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
+bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
@@ -2664,7 +2689,7 @@ bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
     return false;
 }
 
-void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
         mrgn->markUsedStrings(stringIdUsed);
@@ -2747,13 +2772,13 @@ Properties::Properties(bool useDefault) : versions(nullptr), strings(nullptr)
     }
 }
 
-bool Properties::empty()
+bool Properties::empty() const
 {
     return unis == nullptr && unix == nullptr && puni == nullptr && upgs == nullptr && upgx == nullptr &&
         upgr == nullptr && pupx == nullptr && tecs == nullptr && tecx == nullptr & ptec == nullptr && ptex == nullptr;
 }
 
-bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp)
+bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp) const
 {
     switch ( useExp )
     {
@@ -2767,52 +2792,52 @@ bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp)
     return true;
 }
 
-bool Properties::unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+bool Properties::unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->unitUsesDefaultSettings(unitType) : unis->unitUsesDefaultSettings(unitType);
 }
 
-u32 Properties::getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u32 Properties::getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitHitpoints(unitType) : unis->getUnitHitpoints(unitType);
 }
 
-u16 Properties::getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u16 Properties::getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitShieldPoints(unitType) : unis->getUnitShieldPoints(unitType);
 }
 
-u8 Properties::getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u8 Properties::getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitArmorLevel(unitType) : unis->getUnitArmorLevel(unitType);
 }
 
-u16 Properties::getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u16 Properties::getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitBuildTime(unitType) : unis->getUnitBuildTime(unitType);
 }
 
-u16 Properties::getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u16 Properties::getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitMineralCost(unitType) : unis->getUnitMineralCost(unitType);
 }
 
-u16 Properties::getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+u16 Properties::getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitGasCost(unitType) : unis->getUnitGasCost(unitType);
 }
 
-size_t Properties::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
+size_t Properties::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getUnitNameStringId(unitType) : unis->getUnitNameStringId(unitType);
 }
 
-u16 Properties::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp)
+u16 Properties::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getWeaponBaseDamage(weaponType) : unis->getWeaponBaseDamage(weaponType);
 }
 
-u16 Properties::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp)
+u16 Properties::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
     return useExpansionUnitSettings(useExp) ? unix->getWeaponUpgradeDamage(weaponType) : unis->getWeaponUpgradeDamage(weaponType);
 }
@@ -2957,17 +2982,17 @@ void Properties::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrade
     }
 }
 
-bool Properties::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex)
+bool Properties::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const
 {
     return puni->isUnitBuildable(unitType, playerIndex);
 }
 
-bool Properties::isUnitDefaultBuildable(Sc::Unit::Type unitType)
+bool Properties::isUnitDefaultBuildable(Sc::Unit::Type unitType) const
 {
     return puni->isUnitDefaultBuildable(unitType);
 }
 
-bool Properties::playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex)
+bool Properties::playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex) const
 {
     return puni->playerUsesDefault(unitType, playerIndex);
 }
@@ -3024,7 +3049,7 @@ void Properties::setUnitsToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::useExpansionUpgradeCosts(Chk::UseExpSection useExp)
+bool Properties::useExpansionUpgradeCosts(Chk::UseExpSection useExp) const
 {
     switch ( useExp )
     {
@@ -3037,37 +3062,37 @@ bool Properties::useExpansionUpgradeCosts(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+bool Properties::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->upgradeUsesDefaultCosts(upgradeType) : upgs->upgradeUsesDefaultCosts(upgradeType);
 }
 
-u16 Properties::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getBaseMineralCost(upgradeType) : upgs->getBaseMineralCost(upgradeType);
 }
 
-u16 Properties::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getMineralCostFactor(upgradeType) : upgs->getMineralCostFactor(upgradeType);
 }
 
-u16 Properties::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getBaseGasCost(upgradeType) : upgs->getBaseGasCost(upgradeType);
 }
 
-u16 Properties::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getGasCostFactor(upgradeType) : upgs->getGasCostFactor(upgradeType);
 }
 
-u16 Properties::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getBaseResearchTime(upgradeType) : upgs->getBaseResearchTime(upgradeType);
 }
 
-u16 Properties::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+u16 Properties::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeCosts(useExp) ? upgx->getResearchTimeFactor(upgradeType) : upgs->getResearchTimeFactor(upgradeType);
 }
@@ -3198,7 +3223,7 @@ void Properties::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16
     }
 }
 
-bool Properties::useExpansionUpgradeLeveling(Chk::UseExpSection useExp)
+bool Properties::useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const
 {
     switch ( useExp )
     {
@@ -3211,27 +3236,27 @@ bool Properties::useExpansionUpgradeLeveling(Chk::UseExpSection useExp)
     }
 }
 
-size_t Properties::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp)
+size_t Properties::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeLeveling(useExp) ? pupx->getMaxUpgradeLevel(upgradeType, playerIndex) : upgr->getMaxUpgradeLevel(upgradeType, playerIndex);
 }
 
-size_t Properties::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp)
+size_t Properties::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeLeveling(useExp) ? pupx->getStartUpgradeLevel(upgradeType, playerIndex) : upgr->getStartUpgradeLevel(upgradeType, playerIndex);
 }
 
-size_t Properties::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+size_t Properties::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeLeveling(useExp) ? pupx->getDefaultMaxUpgradeLevel(upgradeType) : upgr->getDefaultMaxUpgradeLevel(upgradeType);
 }
 
-size_t Properties::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp)
+size_t Properties::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeLeveling(useExp) ? pupx->getDefaultStartUpgradeLevel(upgradeType) : upgr->getDefaultStartUpgradeLevel(upgradeType);
 }
 
-bool Properties::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp)
+bool Properties::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionUpgradeLeveling(useExp) ? pupx->playerUsesDefault(upgradeType, playerIndex) : upgr->playerUsesDefault(upgradeType, playerIndex);
 }
@@ -3376,7 +3401,7 @@ void Properties::setUpgradesToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::useExpansionTechCosts(Chk::UseExpSection useExp)
+bool Properties::useExpansionTechCosts(Chk::UseExpSection useExp) const
 {
     switch ( useExp )
     {
@@ -3389,27 +3414,27 @@ bool Properties::useExpansionTechCosts(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+bool Properties::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechCosts(useExp) ? tecx->techUsesDefaultSettings(techType) : tecs->techUsesDefaultSettings(techType);
 }
 
-u16 Properties::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+u16 Properties::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechCosts(useExp) ? tecx->getTechMineralCost(techType) : tecs->getTechMineralCost(techType);
 }
 
-u16 Properties::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+u16 Properties::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechCosts(useExp) ? tecx->getTechGasCost(techType) : tecs->getTechGasCost(techType);
 }
 
-u16 Properties::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+u16 Properties::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechCosts(useExp) ? tecx->getTechResearchTime(techType) : tecs->getTechResearchTime(techType);
 }
 
-u16 Properties::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+u16 Properties::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechCosts(useExp) ? tecx->getTechEnergyCost(techType) : tecs->getTechEnergyCost(techType);
 }
@@ -3504,7 +3529,7 @@ void Properties::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk:
     }
 }
 
-bool Properties::useExpansionTechAvailability(Chk::UseExpSection useExp)
+bool Properties::useExpansionTechAvailability(Chk::UseExpSection useExp) const
 {
     switch ( useExp )
     {
@@ -3517,27 +3542,27 @@ bool Properties::useExpansionTechAvailability(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp)
+bool Properties::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionTechAvailability(useExp) ? ptex->techAvailable(techType, playerIndex) : ptec->techAvailable(techType, playerIndex);
 }
 
-bool Properties::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp)
+bool Properties::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionTechAvailability(useExp) ? ptex->techResearched(techType, playerIndex) : ptec->techResearched(techType, playerIndex);
 }
 
-bool Properties::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+bool Properties::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechAvailability(useExp) ? ptex->techDefaultAvailable(techType) : ptec->techDefaultAvailable(techType);
 }
 
-bool Properties::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp)
+bool Properties::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
     return useExpansionTechAvailability(useExp) ? ptex->techDefaultResearched(techType) : ptec->techDefaultResearched(techType);
 }
 
-bool Properties::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp)
+bool Properties::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     return useExpansionTechAvailability(useExp) ? ptex->playerUsesDefault(techType, playerIndex) : ptec->playerUsesDefault(techType, playerIndex);
 }
@@ -3676,13 +3701,13 @@ void Properties::setTechsToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Properties::stringUsed(size_t stringId, u32 userMask)
+bool Properties::stringUsed(size_t stringId, u32 userMask) const
 {
     return ((userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings && unis->stringUsed(stringId)) ||
         ((userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings && unix->stringUsed(stringId));
 }
 
-void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
         unis->markUsedStrings(stringIdUsed);
@@ -3790,12 +3815,12 @@ Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), 
     }
 }
 
-bool Triggers::empty()
+bool Triggers::empty() const
 {
     return uprp == nullptr && upus == nullptr && trig == nullptr && mbrf == nullptr && swnm == nullptr && wav == nullptr && ktrg == nullptr && ktgp == nullptr;
 }
 
-Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex)
+Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex) const
 {
     return uprp->getCuwp(cuwpIndex);
 }
@@ -3841,7 +3866,7 @@ void Triggers::fixCuwpUsage(size_t excludedTriggerIndex, size_t excludedTriggerA
     }
 }
 
-bool Triggers::cuwpUsed(size_t cuwpIndex)
+bool Triggers::cuwpUsed(size_t cuwpIndex) const
 {
     return upus->cuwpUsed(cuwpIndex);
 }
@@ -3851,12 +3876,17 @@ void Triggers::setCuwpUsed(size_t cuwpIndex, bool cuwpUsed)
     upus->setCuwpUsed(cuwpIndex, cuwpUsed);
 }
 
-size_t Triggers::numTriggers()
+size_t Triggers::numTriggers() const
 {
     return trig->numTriggers();
 }
 
 std::shared_ptr<Chk::Trigger> Triggers::getTrigger(size_t triggerIndex)
+{
+    return trig->getTrigger(triggerIndex);
+}
+
+const std::shared_ptr<Chk::Trigger> Triggers::getTrigger(size_t triggerIndex) const
 {
     return trig->getTrigger(triggerIndex);
 }
@@ -3909,6 +3939,19 @@ Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex, bool
                 return newExtendedTrigData;
             }
         }
+    }
+    return nullptr;
+}
+
+const Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex) const
+{
+    auto trigger = trig->getTrigger(triggerIndex);
+    if ( trigger != nullptr )
+    {
+        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
+        auto extendedTrigger = ktrg->getExtendedTrigger(extendedTrigDataIndex);
+        if ( extendedTrigger != nullptr )
+            return extendedTrigger;
     }
     return nullptr;
 }
@@ -3973,7 +4016,7 @@ void Triggers::fixTriggerExtensions()
     }
 }
 
-size_t Triggers::getCommentStringId(size_t triggerIndex)
+size_t Triggers::getCommentStringId(size_t triggerIndex) const
 {
     auto trigger = trig->getTrigger(triggerIndex);
     if ( trigger != nullptr )
@@ -3982,9 +4025,9 @@ size_t Triggers::getCommentStringId(size_t triggerIndex)
         return Chk::StringId::NoString;
 }
 
-size_t Triggers::getExtendedCommentStringId(size_t triggerIndex)
+size_t Triggers::getExtendedCommentStringId(size_t triggerIndex) const
 {
-    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, false);
+    const Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex);
     if ( extension != nullptr )
         return extension->commentStringId;
 
@@ -4002,9 +4045,9 @@ void Triggers::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
     }
 }
 
-size_t Triggers::getExtendedNotesStringId(size_t triggerIndex)
+size_t Triggers::getExtendedNotesStringId(size_t triggerIndex) const
 {
-    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, false);
+    const Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex);
     if ( extension != nullptr )
         return extension->notesStringId;
 
@@ -4023,12 +4066,17 @@ void Triggers::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
     }
 }
 
-size_t Triggers::numBriefingTriggers()
+size_t Triggers::numBriefingTriggers() const
 {
     return mbrf->numBriefingTriggers();
 }
 
 std::shared_ptr<Chk::Trigger> Triggers::getBriefingTrigger(size_t briefingTriggerIndex)
+{
+    return mbrf->getBriefingTrigger(briefingTriggerIndex);
+}
+
+const std::shared_ptr<Chk::Trigger> Triggers::getBriefingTrigger(size_t briefingTriggerIndex) const
 {
     return mbrf->getBriefingTrigger(briefingTriggerIndex);
 }
@@ -4053,7 +4101,7 @@ void Triggers::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t brief
     mbrf->moveBriefingTrigger(briefingTriggerIndexFrom, briefingTriggerIndexTo);
 }
 
-size_t Triggers::getSwitchNameStringId(size_t switchIndex)
+size_t Triggers::getSwitchNameStringId(size_t switchIndex) const
 {
     return swnm->getSwitchNameStringId(switchIndex);
 }
@@ -4068,12 +4116,12 @@ size_t Triggers::addSound(size_t stringId)
     return wav->addSound(stringId);
 }
 
-bool Triggers::stringIsSound(size_t stringId)
+bool Triggers::stringIsSound(size_t stringId) const
 {
     return wav->stringIsSound(stringId);
 }
 
-size_t Triggers::getSoundStringId(size_t soundIndex)
+size_t Triggers::getSoundStringId(size_t soundIndex) const
 {
     return wav->getSoundStringId(soundIndex);
 }
@@ -4083,12 +4131,12 @@ void Triggers::setSoundStringId(size_t soundIndex, size_t soundStringId)
     wav->setSoundStringId(soundIndex, soundStringId);
 }
 
-bool Triggers::locationUsed(size_t locationId)
+bool Triggers::locationUsed(size_t locationId) const
 {
     return trig->locationUsed(locationId);
 }
 
-bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
+bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -4101,13 +4149,13 @@ bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask
         return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
 }
 
-bool Triggers::gameStringUsed(size_t stringId, u32 userMask)
+bool Triggers::gameStringUsed(size_t stringId, u32 userMask) const
 {
     return (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->gameStringUsed(stringId, userMask) ||
         (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId);
 }
 
-bool Triggers::editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask)
+bool Triggers::editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -4120,12 +4168,12 @@ bool Triggers::editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 us
         return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
 }
 
-void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
 {
     trig->markUsedLocations(locationIdUsed);
 }
 
-void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask)
+void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
     if ( storageScope == Chk::Scope::Game )
     {
@@ -4145,7 +4193,7 @@ void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk:
         ktrg->markUsedEditorStrings(stringIdUsed, userMask);
 }
 
-void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
         trig->markUsedGameStrings(stringIdUsed);
@@ -4154,7 +4202,7 @@ void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, 
         mbrf->markUsedStrings(stringIdUsed);
 }
 
-void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask)
+void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
     if ( storageScope == Chk::Scope::Game )
     {

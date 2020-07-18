@@ -683,7 +683,7 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
     return true;
 }
 
-bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath)
+bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
 {
     size_t hash = MapFile::strHash(soundMpqPath);
     size_t numMatching = MapFile::virtualSoundTable.count(hash);
@@ -705,7 +705,7 @@ bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath)
     return false;
 }
 
-std::string MapFile::getFileName()
+std::string MapFile::getFileName() const
 {
     return getSystemFileName(mapFilePath);
 
@@ -724,7 +724,7 @@ const std::string & MapFile::getFilePath() const
     return mapFilePath;
 }
 
-bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser)
+bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const
 {
     if ( fileBrowser != nullptr )
     {

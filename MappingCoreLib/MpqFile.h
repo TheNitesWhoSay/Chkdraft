@@ -88,12 +88,14 @@ public:
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool getFile(const std::string & mpqPath, std::vector<u8> & fileData);
+    virtual bool getFile(const std::string & mpqPath, std::vector<u8> & fileData) const;
 
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
     // Cannot be used unless the MPQ is already open
-    virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath);
+    virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath) const;
 
+    // Adds an entry to the list file
+    // Cannot be used unless the MPQ is already open
     virtual bool addListFileEntry(const std::string & listFileEntry);
 
     // Attempts to add a file to this MPQ at mpqPath with the data from the fileData buffer

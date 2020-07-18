@@ -61,16 +61,16 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         virtual bool removeSoundByStringId(size_t stringId, bool removeIfUsed);
         SoundStatus getSoundStatus(size_t soundStringId);
         bool getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
-        bool isInVirtualSoundList(const std::string & soundMpqPath);
+        bool isInVirtualSoundList(const std::string & soundMpqPath) const;
 
-        std::string getFileName();
+        std::string getFileName() const;
         virtual const std::string & getFilePath() const;
 
         static FileBrowserPtr<SaveType> getDefaultOpenMapBrowser();
         static FileBrowserPtr<SaveType> getDefaultSaveMapBrowser();
 
     protected:
-        virtual bool getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser);
+        virtual bool getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const;
 
     private:
         std::string mapFilePath;

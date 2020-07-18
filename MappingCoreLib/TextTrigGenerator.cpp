@@ -67,7 +67,7 @@ void TextTrigGenerator::clearScenario()
     groupTable.clear();
 }
 
-std::string TextTrigGenerator::getConditionName(Chk::Condition::Type conditionType)
+std::string TextTrigGenerator::getConditionName(Chk::Condition::Type conditionType) const
 {
     if ( size_t(conditionType) < conditionTable.size() )
         return conditionTable[conditionType];
@@ -75,21 +75,21 @@ std::string TextTrigGenerator::getConditionName(Chk::Condition::Type conditionTy
         return std::to_string((int)conditionType);
 }
 
-std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex)
+std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex) const
 {
     StringBuffer output;
     appendConditionArgument(output, condition, Chk::Condition::getTextArg(condition.conditionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument)
+std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument) const
 {
     StringBuffer output;
     appendConditionArgument(output, condition, argument);
     return output.str();
 }
 
-std::string TextTrigGenerator::getActionName(Chk::Action::Type actionType)
+std::string TextTrigGenerator::getActionName(Chk::Action::Type actionType) const
 {
     if ( size_t(actionType) < actionTable.size() )
         return actionTable[actionType];
@@ -97,21 +97,21 @@ std::string TextTrigGenerator::getActionName(Chk::Action::Type actionType)
         return std::to_string((int)actionType);
 }
 
-std::string TextTrigGenerator::getActionArgument(Chk::Action & action, size_t textArgumentIndex)
+std::string TextTrigGenerator::getActionArgument(Chk::Action & action, size_t textArgumentIndex) const
 {
     StringBuffer output;
     appendActionArgument(output, action, Chk::Action::getTextArg(action.actionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::getActionArgument(Chk::Action & action, Chk::Action::Argument argument)
+std::string TextTrigGenerator::getActionArgument(Chk::Action & action, Chk::Action::Argument argument) const
 {
     StringBuffer output;
     appendActionArgument(output, action, argument);
     return output.str();
 }
 
-ChkdString TextTrigGenerator::getTrigLocation(size_t locationId)
+ChkdString TextTrigGenerator::getTrigLocation(size_t locationId) const
 {
     if ( locationId > 0 && locationId < locationTable.size() )
         return SingleLineChkdString(locationTable[locationId]);
@@ -119,7 +119,7 @@ ChkdString TextTrigGenerator::getTrigLocation(size_t locationId)
         return ChkdString(std::to_string(locationId));
 }
 
-ChkdString TextTrigGenerator::getTrigString(size_t stringId)
+ChkdString TextTrigGenerator::getTrigString(size_t stringId) const
 {
     if ( stringId == Chk::StringId::NoString )
         return SingleLineChkdString("No String");
@@ -134,7 +134,7 @@ ChkdString TextTrigGenerator::getTrigString(size_t stringId)
         return ChkdString(std::to_string(stringId));
 }
 
-ChkdString TextTrigGenerator::getTrigWav(size_t stringId)
+ChkdString TextTrigGenerator::getTrigWav(size_t stringId) const
 {
     if ( stringId == 0 )
         return ChkdString("No WAV");
@@ -142,7 +142,7 @@ ChkdString TextTrigGenerator::getTrigWav(size_t stringId)
         return getTrigString(stringId);
 }
 
-ChkdString TextTrigGenerator::getTrigPlayer(size_t playerIndex)
+ChkdString TextTrigGenerator::getTrigPlayer(size_t playerIndex) const
 {
     if ( playerIndex < groupTable.size() )
         return groupTable[playerIndex].c_str();
@@ -150,7 +150,7 @@ ChkdString TextTrigGenerator::getTrigPlayer(size_t playerIndex)
         return ChkdString(std::to_string(playerIndex));
 }
 
-ChkdString TextTrigGenerator::getTrigUnit(Sc::Unit::Type unitType)
+ChkdString TextTrigGenerator::getTrigUnit(Sc::Unit::Type unitType) const
 {
     if ( unitType < unitTable.size() )
         return unitTable[unitType];
@@ -158,7 +158,7 @@ ChkdString TextTrigGenerator::getTrigUnit(Sc::Unit::Type unitType)
         return ChkdString(std::to_string(unitType));
 }
 
-ChkdString TextTrigGenerator::getTrigSwitch(size_t switchIndex)
+ChkdString TextTrigGenerator::getTrigSwitch(size_t switchIndex) const
 {
     if ( switchIndex < switchTable.size() )
         return switchTable[switchIndex];
@@ -166,7 +166,7 @@ ChkdString TextTrigGenerator::getTrigSwitch(size_t switchIndex)
         return ChkdString(std::to_string(switchIndex));
 }
 
-std::string TextTrigGenerator::getTrigScoreType(Chk::Trigger::ScoreType scoreType)
+std::string TextTrigGenerator::getTrigScoreType(Chk::Trigger::ScoreType scoreType) const
 {
     const char* scoreTypes[] = { "total", "units", "buildings", "units and buildings", "kills", "razings", "kills and razings", "custom" };
     if ( scoreType < sizeof(scoreTypes) / sizeof(const char*) )
@@ -175,7 +175,7 @@ std::string TextTrigGenerator::getTrigScoreType(Chk::Trigger::ScoreType scoreTyp
         return std::to_string((int)scoreType);
 }
 
-std::string TextTrigGenerator::getTrigResourceType(Chk::Trigger::ResourceType resourceType)
+std::string TextTrigGenerator::getTrigResourceType(Chk::Trigger::ResourceType resourceType) const
 {
     const char* resourceTypes[] = { "ore", "gas", "ore and gas" };
     if ( resourceType < sizeof(resourceTypes) / sizeof(const char*) )
@@ -184,7 +184,7 @@ std::string TextTrigGenerator::getTrigResourceType(Chk::Trigger::ResourceType re
         return std::to_string((int)resourceType);
 }
 
-std::string TextTrigGenerator::getTrigOrder(Chk::Action::Order order)
+std::string TextTrigGenerator::getTrigOrder(Chk::Action::Order order) const
 {
     const char* orderTypes[] = { "move", "patrol", "attack" };
     if ( order < sizeof(orderTypes) / sizeof(const char*) )
@@ -193,7 +193,7 @@ std::string TextTrigGenerator::getTrigOrder(Chk::Action::Order order)
         return std::to_string((int)order);
 }
 
-std::string TextTrigGenerator::getTrigStateModifier(Chk::Trigger::ValueModifier stateModifier)
+std::string TextTrigGenerator::getTrigStateModifier(Chk::Trigger::ValueModifier stateModifier) const
 {
     const char* stateModifiers[] = { "0", "1", "2", "3", "Enable", "Disable", "Toggle" };
     if ( stateModifier < sizeof(stateModifiers) / sizeof(const char*) )
@@ -202,7 +202,7 @@ std::string TextTrigGenerator::getTrigStateModifier(Chk::Trigger::ValueModifier 
         return std::to_string((int)stateModifier);
 }
 
-std::string TextTrigGenerator::getTrigSwitchState(Chk::Trigger::ValueModifier switchState)
+std::string TextTrigGenerator::getTrigSwitchState(Chk::Trigger::ValueModifier switchState) const
 {
     const char* switchStates[] = { "0", "1", "Set", "Cleared" };
     if ( switchState < sizeof(switchStates) / sizeof(const char*) )
@@ -211,7 +211,7 @@ std::string TextTrigGenerator::getTrigSwitchState(Chk::Trigger::ValueModifier sw
         return std::to_string((int)switchState);
 }
 
-std::string TextTrigGenerator::getTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier)
+std::string TextTrigGenerator::getTrigSwitchModifier(Chk::Trigger::ValueModifier switchModifier) const
 {
     const char* switchModifiers[] = { "0", "1", "2", "3", "Set", "Clear", "Toggle", "7", "8", "9", "10", "Randomize" };
     if ( switchModifier < sizeof(switchModifiers) / sizeof(const char*) )
@@ -220,7 +220,7 @@ std::string TextTrigGenerator::getTrigSwitchModifier(Chk::Trigger::ValueModifier
         return std::to_string((int)switchModifier);
 }
 
-std::string TextTrigGenerator::getTrigAllyState(Chk::Action::AllianceStatus allyState)
+std::string TextTrigGenerator::getTrigAllyState(Chk::Action::AllianceStatus allyState) const
 {
     const char* allyStates[] = { "Enemy", "Ally", "Allied Victory" };
     if ( allyState < sizeof(allyStates) / sizeof(const char*) )
@@ -229,7 +229,7 @@ std::string TextTrigGenerator::getTrigAllyState(Chk::Action::AllianceStatus ally
         return std::to_string(allyState);
 }
 
-std::string TextTrigGenerator::getTrigNumericComparison(Chk::Condition::Comparison numericComparison)
+std::string TextTrigGenerator::getTrigNumericComparison(Chk::Condition::Comparison numericComparison) const
 {
     const char* numericComparisons[] = { "at least", "at most", "2", "3", "4", "5", "6", "7", "8", "9", "exactly" };
     if ( numericComparison < sizeof(numericComparisons) / sizeof(const char*) )
@@ -238,7 +238,7 @@ std::string TextTrigGenerator::getTrigNumericComparison(Chk::Condition::Comparis
         return std::to_string((int)numericComparison);
 }
 
-std::string TextTrigGenerator::getTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier)
+std::string TextTrigGenerator::getTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier) const
 {
     const char* numericModifiers[] = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
     if ( numericModifier < sizeof(numericModifiers) / sizeof(const char*) )
@@ -247,7 +247,7 @@ std::string TextTrigGenerator::getTrigNumericModifier(Chk::Trigger::ValueModifie
         return std::to_string((int)numericModifier);
 }
 
-std::string TextTrigGenerator::getTrigScript(Sc::Ai::ScriptId scriptId)
+std::string TextTrigGenerator::getTrigScript(Sc::Ai::ScriptId scriptId) const
 {
     if ( scriptId == Sc::Ai::ScriptId::NoScript )
         return std::string("No Script");
@@ -259,7 +259,7 @@ std::string TextTrigGenerator::getTrigScript(Sc::Ai::ScriptId scriptId)
     return std::string(script);
 }
 
-std::string TextTrigGenerator::getTrigNumUnits(Chk::Action::NumUnits numUnits)
+std::string TextTrigGenerator::getTrigNumUnits(Chk::Action::NumUnits numUnits) const
 {
     if ( numUnits == 0 )
         return std::string("All");
@@ -267,12 +267,12 @@ std::string TextTrigGenerator::getTrigNumUnits(Chk::Action::NumUnits numUnits)
         return std::to_string(numUnits);
 }
 
-std::string TextTrigGenerator::getTrigNumber(u32 number)
+std::string TextTrigGenerator::getTrigNumber(u32 number) const
 {
     return std::to_string(number);
 }
 
-std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags)
+std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags) const
 {
     const char* cTextFlags[] = { "Don't Always Display", "Always Display" };
     if      ( (textFlags&Chk::Action::Flags::AlwaysDisplay) == 0 )
@@ -298,7 +298,7 @@ bool TextTrigGenerator::loadScenario(ScenarioPtr map, bool quoteArgs, bool useCu
            prepStringTable(map, quoteArgs);
 }
 
-bool TextTrigGenerator::correctLineEndings(StringBuffer & buf)
+bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
 {
     char curr;
     size_t pos = 0;
@@ -350,7 +350,7 @@ bool TextTrigGenerator::buildTextTrig(Chk::Trigger & trigger, std::string & trig
     return true;
 }
 
-inline void TextTrigGenerator::appendTriggers(StringBuffer & output, ScenarioPtr scenario)
+inline void TextTrigGenerator::appendTriggers(StringBuffer & output, ScenarioPtr scenario) const
 {
     Triggers & triggers = scenario->triggers;
     size_t numTrigs = triggers.numTriggers();
@@ -362,7 +362,7 @@ inline void TextTrigGenerator::appendTriggers(StringBuffer & output, ScenarioPtr
     }
 }
 
-inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger & trigger)
+inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger & trigger) const
 {
     output += "Trigger(";
 
@@ -500,7 +500,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     output += "\n}\n\n//-----------------------------------------------------------------//\n\n";
 }
 
-inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument)
+inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument) const
 {
     switch ( argument.type )
     {
@@ -522,7 +522,7 @@ inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Ch
     }
 }
 
-inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument)
+inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument) const
 {
     switch ( argument.type )
     {
@@ -572,7 +572,7 @@ inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, Chk::
     }
 }
 
-inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_t & locationId)
+inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_t & locationId) const
 {
     if ( locationId < locationTable.size() )
         output += (std::string &)locationTable[locationId];
@@ -580,7 +580,7 @@ inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_
         output += std::to_string(locationId);
 }
 
-inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t & stringId)
+inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
         output += "No String";
@@ -595,7 +595,7 @@ inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t 
         output += std::to_string(stringId);
 }
 
-inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t & stringId)
+inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
         output += "No WAV";
@@ -610,7 +610,7 @@ inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t &
         output += std::to_string(stringId);
 }
 
-inline void TextTrigGenerator::appendPlayer(StringBuffer & output, const size_t & playerIndex)
+inline void TextTrigGenerator::appendPlayer(StringBuffer & output, const size_t & playerIndex) const
 {
     if ( playerIndex < groupTable.size() )
         output += (std::string &)groupTable[playerIndex];
@@ -618,12 +618,12 @@ inline void TextTrigGenerator::appendPlayer(StringBuffer & output, const size_t 
         output += std::to_string(playerIndex);
 }
 
-inline void TextTrigGenerator::appendAmount(StringBuffer & output, const u32 & amount)
+inline void TextTrigGenerator::appendAmount(StringBuffer & output, const u32 & amount) const
 {
     output << amount;
 }
 
-inline void TextTrigGenerator::appendUnit(StringBuffer & output, const Sc::Unit::Type & unitType)
+inline void TextTrigGenerator::appendUnit(StringBuffer & output, const Sc::Unit::Type & unitType) const
 {
     if ( size_t(unitType) < unitTable.size() )
         output += (std::string &)unitTable[unitType];
@@ -631,7 +631,7 @@ inline void TextTrigGenerator::appendUnit(StringBuffer & output, const Sc::Unit:
         output += std::to_string(unitType);
 }
 
-inline void TextTrigGenerator::appendSwitch(StringBuffer & output, const size_t & switchIndex)
+inline void TextTrigGenerator::appendSwitch(StringBuffer & output, const size_t & switchIndex) const
 {
     if ( switchIndex < switchTable.size() )
         output += (std::string &)switchTable[switchIndex];
@@ -639,7 +639,7 @@ inline void TextTrigGenerator::appendSwitch(StringBuffer & output, const size_t 
         output += std::to_string(switchIndex);
 }
 
-inline void TextTrigGenerator::appendScoreType(StringBuffer & output, const Chk::Trigger::ScoreType & scoreType)
+inline void TextTrigGenerator::appendScoreType(StringBuffer & output, const Chk::Trigger::ScoreType & scoreType) const
 {
     if ( size_t(scoreType) < scoreTypes.size() )
         output += scoreTypes[scoreType];
@@ -647,7 +647,7 @@ inline void TextTrigGenerator::appendScoreType(StringBuffer & output, const Chk:
         output += std::to_string((int)scoreType);
 }
 
-inline void TextTrigGenerator::appendResourceType(StringBuffer & output, const Chk::Trigger::ResourceType & resourceType)
+inline void TextTrigGenerator::appendResourceType(StringBuffer & output, const Chk::Trigger::ResourceType & resourceType) const
 {
     if ( size_t(resourceType) < resourceTypes.size() )
         output += resourceTypes[resourceType];
@@ -655,7 +655,7 @@ inline void TextTrigGenerator::appendResourceType(StringBuffer & output, const C
         output += std::to_string((int)resourceType);
 }
 
-inline void TextTrigGenerator::appendOrder(StringBuffer & output, const Chk::Action::Order & order)
+inline void TextTrigGenerator::appendOrder(StringBuffer & output, const Chk::Action::Order & order) const
 {
     if ( size_t(order) < orderTypes.size() )
         output += orderTypes[order];
@@ -663,7 +663,7 @@ inline void TextTrigGenerator::appendOrder(StringBuffer & output, const Chk::Act
         output += std::to_string((int)order);
 }
 
-inline void TextTrigGenerator::appendStateModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & stateModifier)
+inline void TextTrigGenerator::appendStateModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & stateModifier) const
 {
     if ( size_t(stateModifier) < stateModifiers.size() )
         output += stateModifiers[stateModifier];
@@ -671,7 +671,7 @@ inline void TextTrigGenerator::appendStateModifier(StringBuffer & output, const 
         output += std::to_string((int)stateModifier);
 }
 
-inline void TextTrigGenerator::appendSwitchState(StringBuffer & output, const Chk::Trigger::ValueModifier & switchState)
+inline void TextTrigGenerator::appendSwitchState(StringBuffer & output, const Chk::Trigger::ValueModifier & switchState) const
 {
     if ( size_t(switchState) < switchStates.size() )
         output += switchStates[switchState];
@@ -679,7 +679,7 @@ inline void TextTrigGenerator::appendSwitchState(StringBuffer & output, const Ch
         output += std::to_string((int)switchState);
 }
 
-inline void TextTrigGenerator::appendSwitchModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & switchModifier)
+inline void TextTrigGenerator::appendSwitchModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & switchModifier) const
 {
     if ( size_t(switchModifier) < switchModifiers.size() )
         output += switchModifiers[switchModifier];
@@ -687,7 +687,7 @@ inline void TextTrigGenerator::appendSwitchModifier(StringBuffer & output, const
         output += std::to_string((int)switchModifier);
 }
 
-inline void TextTrigGenerator::appendAllyState(StringBuffer & output, const Chk::Action::AllianceStatus & allyState)
+inline void TextTrigGenerator::appendAllyState(StringBuffer & output, const Chk::Action::AllianceStatus & allyState) const
 {
     if ( size_t(allyState) < allyStates.size() )
         output += allyStates[allyState];
@@ -695,7 +695,7 @@ inline void TextTrigGenerator::appendAllyState(StringBuffer & output, const Chk:
         output += std::to_string(allyState);
 }
 
-inline void TextTrigGenerator::appendNumericComparison(StringBuffer & output, const Chk::Condition::Comparison & numericComparison)
+inline void TextTrigGenerator::appendNumericComparison(StringBuffer & output, const Chk::Condition::Comparison & numericComparison) const
 {
     if ( size_t(numericComparison) < numericComparisons.size() )
         output += numericComparisons[numericComparison];
@@ -703,7 +703,7 @@ inline void TextTrigGenerator::appendNumericComparison(StringBuffer & output, co
         output += std::to_string((int)numericComparison);
 }
 
-inline void TextTrigGenerator::appendNumericModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & numericModifier)
+inline void TextTrigGenerator::appendNumericModifier(StringBuffer & output, const Chk::Trigger::ValueModifier & numericModifier) const
 {
     if ( size_t(numericModifier) < numericModifiers.size() )
         output += numericModifiers[numericModifier];
@@ -711,7 +711,7 @@ inline void TextTrigGenerator::appendNumericModifier(StringBuffer & output, cons
         output += std::to_string((int)numericModifier);
 }
 
-inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai::ScriptId & scriptId)
+inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai::ScriptId & scriptId) const
 {
     if ( scriptId == Sc::Ai::ScriptId::NoScript )
         output += "No Script";
@@ -729,7 +729,7 @@ inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai:
     }
 }
 
-inline void TextTrigGenerator::appendNumUnits(StringBuffer & output, const Chk::Action::NumUnits & numUnits)
+inline void TextTrigGenerator::appendNumUnits(StringBuffer & output, const Chk::Action::NumUnits & numUnits) const
 {
     if ( numUnits == 0 )
         output += "All";
@@ -737,7 +737,7 @@ inline void TextTrigGenerator::appendNumUnits(StringBuffer & output, const Chk::
         output += std::to_string((int)numUnits);
 }
 
-inline void TextTrigGenerator::appendConditionMaskFlag(StringBuffer & output, const Chk::Condition::MaskFlag & maskFlag)
+inline void TextTrigGenerator::appendConditionMaskFlag(StringBuffer & output, const Chk::Condition::MaskFlag & maskFlag) const
 {
     if ( maskFlag == Chk::Condition::MaskFlag::Enabled )
         output += "Enabled";
@@ -747,7 +747,7 @@ inline void TextTrigGenerator::appendConditionMaskFlag(StringBuffer & output, co
         output += std::to_string(maskFlag);
 }
 
-inline void TextTrigGenerator::appendActionMaskFlag(StringBuffer & output, const Chk::Action::MaskFlag & maskFlag)
+inline void TextTrigGenerator::appendActionMaskFlag(StringBuffer & output, const Chk::Action::MaskFlag & maskFlag) const
 {
     if ( maskFlag == Chk::Action::MaskFlag::Enabled )
         output += "Enabled";
@@ -757,7 +757,7 @@ inline void TextTrigGenerator::appendActionMaskFlag(StringBuffer & output, const
         output += std::to_string(maskFlag);
 }
 
-inline void TextTrigGenerator::appendMemory(StringBuffer & output, const u32 & memory)
+inline void TextTrigGenerator::appendMemory(StringBuffer & output, const u32 & memory) const
 {
     if ( useAddressesForMemory )
         output += to_hex_string(memory*4+deathTableOffset);
@@ -765,7 +765,7 @@ inline void TextTrigGenerator::appendMemory(StringBuffer & output, const u32 & m
         output += std::to_string(memory);
 }
 
-inline void TextTrigGenerator::appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags)
+inline void TextTrigGenerator::appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags) const
 {
     if ( (textFlags&Chk::Action::Flags::AlwaysDisplay) == 0 )
         output += "Don't Always Display";

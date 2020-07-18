@@ -316,12 +316,12 @@ ScStr::ScStr(const std::string & str, const StrProp & strProp) : strProp(strProp
     this->str = &allocation[0];
 }
 
-bool ScStr::empty()
+bool ScStr::empty() const
 {
     return parentStr == nullptr ? allocation.size() <= 1 : parentStr->empty();
 }
 
-size_t ScStr::length()
+size_t ScStr::length() const
 {
     return parentStr == nullptr ? (allocation.size() > 0 ? allocation.size()-1 : 0) : strlen(str);
 }
@@ -332,28 +332,28 @@ StrProp & ScStr::properties()
 }
 
 template <typename StringType>
-int ScStr::compare(const StringType & str)
+int ScStr::compare(const StringType & str) const
 {
     RawString rawStr;
     convertStr<StringType, RawString>(str, rawStr);
     return strcmp(this->str, rawStr.c_str());
 }
-template int ScStr::compare<RawString>(const RawString & str);
-template int ScStr::compare<EscString>(const EscString & str);
-template int ScStr::compare<ChkdString>(const ChkdString & str);
-template int ScStr::compare<SingleLineChkdString>(const SingleLineChkdString & str);
+template int ScStr::compare<RawString>(const RawString & str) const;
+template int ScStr::compare<EscString>(const EscString & str) const;
+template int ScStr::compare<ChkdString>(const ChkdString & str) const;
+template int ScStr::compare<SingleLineChkdString>(const SingleLineChkdString & str) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> ScStr::toString()
+std::shared_ptr<StringType> ScStr::toString() const
 {
     std::shared_ptr<StringType> destStr = std::shared_ptr<StringType>(new StringType());
     convertStr<RawString, StringType>(str, *destStr);
     return destStr;
 }
-template std::shared_ptr<RawString> ScStr::toString<RawString>();
-template std::shared_ptr<EscString> ScStr::toString<EscString>();
-template std::shared_ptr<ChkdString> ScStr::toString<ChkdString>();
-template std::shared_ptr<SingleLineChkdString> ScStr::toString<SingleLineChkdString>();
+template std::shared_ptr<RawString> ScStr::toString<RawString>() const;
+template std::shared_ptr<EscString> ScStr::toString<EscString>() const;
+template std::shared_ptr<ChkdString> ScStr::toString<ChkdString>() const;
+template std::shared_ptr<SingleLineChkdString> ScStr::toString<SingleLineChkdString>() const;
 
 ScStrPtr ScStr::getParentStr()
 {
@@ -486,7 +486,7 @@ TypeSection::~TypeSection()
 
 }
 
-Chk::Type TypeSection::getType()
+Chk::Type TypeSection::getType() const
 {
     return data->scenarioType;
 }
@@ -519,27 +519,27 @@ VerSection::~VerSection()
 
 }
 
-bool VerSection::isOriginal()
+bool VerSection::isOriginal() const
 {
     return data->version < Chk::Version::StarCraft_Hybrid;
 }
 
-bool VerSection::isHybrid()
+bool VerSection::isHybrid() const
 {
     return data->version >= Chk::Version::StarCraft_Hybrid && data->version < Chk::Version::StarCraft_BroodWar;
 }
 
-bool VerSection::isExpansion()
+bool VerSection::isExpansion() const
 {
     return data->version >= Chk::Version::StarCraft_BroodWar;
 }
 
-bool VerSection::isHybridOrAbove()
+bool VerSection::isHybridOrAbove() const
 {
     return data->version >= Chk::Version::StarCraft_Hybrid;
 }
 
-Chk::Version VerSection::getVersion()
+Chk::Version VerSection::getVersion() const
 {
     return data->version;
 }
@@ -571,7 +571,7 @@ IverSection::~IverSection()
 
 }
 
-Chk::IVersion IverSection::getVersion()
+Chk::IVersion IverSection::getVersion() const
 {
     return data->version;
 }
@@ -603,7 +603,7 @@ Ive2Section::~Ive2Section()
 
 }
 
-Chk::I2Version Ive2Section::getVersion()
+Chk::I2Version Ive2Section::getVersion() const
 {
     return data->version;
 }
@@ -666,7 +666,7 @@ VcodSection::~VcodSection()
 
 }
 
-bool VcodSection::isDefault()
+bool VcodSection::isDefault() const
 {
     VcodSectionPtr defaultVcod = VcodSection::GetDefault();
     return memcmp(data, defaultVcod->data, sizeof(Chk::VCOD)) == 0;
@@ -702,7 +702,7 @@ IownSection::~IownSection()
 
 }
 
-Sc::Player::SlotType IownSection::getSlotType(size_t slotIndex)
+Sc::Player::SlotType IownSection::getSlotType(size_t slotIndex) const
 {
     if ( slotIndex < Sc::Player::Total )
         return data->slotType[slotIndex];
@@ -742,7 +742,7 @@ OwnrSection::~OwnrSection()
 
 }
 
-Sc::Player::SlotType OwnrSection::getSlotType(size_t slotIndex)
+Sc::Player::SlotType OwnrSection::getSlotType(size_t slotIndex) const
 {
     if ( slotIndex < Sc::Player::Total )
         return data->slotType[slotIndex];
@@ -778,7 +778,7 @@ EraSection::~EraSection()
 
 }
 
-Sc::Terrain::Tileset EraSection::getTileset()
+Sc::Terrain::Tileset EraSection::getTileset() const
 {
     return data->tileset;
 }
@@ -808,22 +808,22 @@ DimSection::~DimSection()
 
 }
 
-size_t DimSection::getTileWidth()
+size_t DimSection::getTileWidth() const
 {
     return data->tileWidth;
 }
 
-size_t DimSection::getTileHeight()
+size_t DimSection::getTileHeight() const
 {
     return data->tileHeight;
 }
 
-size_t DimSection::getPixelWidth()
+size_t DimSection::getPixelWidth() const
 {
     return data->tileWidth * Sc::Terrain::PixelsPerTile;
 }
 
-size_t DimSection::getPixelHeight()
+size_t DimSection::getPixelHeight() const
 {
     return data->tileHeight * Sc::Terrain::PixelsPerTile;
 }
@@ -869,7 +869,7 @@ SideSection::~SideSection()
 
 }
 
-Chk::Race SideSection::getPlayerRace(size_t playerIndex)
+Chk::Race SideSection::getPlayerRace(size_t playerIndex) const
 {
     if ( playerIndex < Sc::Player::Total )
         return data->playerRaces[playerIndex];
@@ -903,7 +903,7 @@ MtxmSection::~MtxmSection()
 
 }
 
-u16 MtxmSection::getTile(size_t tileIndex)
+u16 MtxmSection::getTile(size_t tileIndex) const
 {
     if ( tileIndex < tiles.size() )
         return tiles[tileIndex];
@@ -1118,7 +1118,7 @@ PuniSection::~PuniSection()
 
 }
 
-bool PuniSection::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex)
+bool PuniSection::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
     {
@@ -1131,7 +1131,7 @@ bool PuniSection::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
 }
 
-bool PuniSection::isUnitDefaultBuildable(Sc::Unit::Type unitType)
+bool PuniSection::isUnitDefaultBuildable(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->defaultUnitBuildable[unitType] != Chk::Available::No;
@@ -1139,7 +1139,7 @@ bool PuniSection::isUnitDefaultBuildable(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
 }
 
-bool PuniSection::playerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex)
+bool PuniSection::playerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
     {
@@ -1222,7 +1222,7 @@ UpgrSection::~UpgrSection()
 
 }
 
-size_t UpgrSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+size_t UpgrSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
@@ -1235,7 +1235,7 @@ size_t UpgrSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t pla
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-size_t UpgrSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+size_t UpgrSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
@@ -1248,7 +1248,7 @@ size_t UpgrSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t p
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-size_t UpgrSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
+size_t UpgrSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->defaultMaxLevel[upgradeType];
@@ -1256,7 +1256,7 @@ size_t UpgrSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-size_t UpgrSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
+size_t UpgrSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->defaultStartLevel[upgradeType];
@@ -1264,7 +1264,7 @@ size_t UpgrSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGR section!");
 }
 
-bool UpgrSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+bool UpgrSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
     {
@@ -1370,7 +1370,7 @@ PtecSection::~PtecSection()
 
 }
 
-bool PtecSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
+bool PtecSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
@@ -1383,7 +1383,7 @@ bool PtecSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
-bool PtecSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
+bool PtecSection::techResearched(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
@@ -1396,7 +1396,7 @@ bool PtecSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
-bool PtecSection::techDefaultAvailable(Sc::Tech::Type techType)
+bool PtecSection::techDefaultAvailable(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->techAvailableByDefault[(size_t)techType] != Chk::Available::No;
@@ -1404,7 +1404,7 @@ bool PtecSection::techDefaultAvailable(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
-bool PtecSection::techDefaultResearched(Sc::Tech::Type techType)
+bool PtecSection::techDefaultResearched(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->techResearchedByDefault[(size_t)techType] != Chk::Researched::No;
@@ -1412,7 +1412,7 @@ bool PtecSection::techDefaultResearched(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEC section!");
 }
 
-bool PtecSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex)
+bool PtecSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
     {
@@ -1496,12 +1496,17 @@ UnitSection::~UnitSection()
 
 }
 
-size_t UnitSection::numUnits()
+size_t UnitSection::numUnits() const
 {
     return units.size();
 }
 
 std::shared_ptr<Chk::Unit> UnitSection::getUnit(size_t unitIndex)
+{
+    return units[unitIndex];
+}
+
+const std::shared_ptr<Chk::Unit> UnitSection::getUnit(size_t unitIndex) const
 {
     return units[unitIndex];
 }
@@ -1621,6 +1626,14 @@ Chk::IsomEntry & IsomSection::getIsomEntry(size_t isomIndex)
         throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
 }
 
+const Chk::IsomEntry & IsomSection::getIsomEntry(size_t isomIndex) const
+{
+    if ( isomIndex < isomEntries.size() )
+        return isomEntries[isomIndex];
+    else
+        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
+}
+
 void IsomSection::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
     size_t oldNumIndices = isomEntries.size();
@@ -1685,7 +1698,7 @@ TileSection::~TileSection()
 
 }
 
-u16 TileSection::getTile(size_t tileIndex)
+u16 TileSection::getTile(size_t tileIndex) const
 {
     if ( tileIndex < tiles.size() )
         return tiles[tileIndex];
@@ -1755,12 +1768,17 @@ Dd2Section::~Dd2Section()
 
 }
 
-size_t Dd2Section::numDoodads()
+size_t Dd2Section::numDoodads() const
 {
     return doodads.size();
 }
 
 std::shared_ptr<Chk::Doodad> Dd2Section::getDoodad(size_t doodadIndex)
+{
+    return doodads[doodadIndex];
+}
+
+const std::shared_ptr<Chk::Doodad> Dd2Section::getDoodad(size_t doodadIndex) const
 {
     return doodads[doodadIndex];
 }
@@ -1860,12 +1878,17 @@ Thg2Section::~Thg2Section()
 
 }
 
-size_t Thg2Section::numSprites()
+size_t Thg2Section::numSprites() const
 {
     return sprites.size();
 }
 
 std::shared_ptr<Chk::Sprite> Thg2Section::getSprite(size_t spriteIndex)
+{
+    return sprites[spriteIndex];
+}
+
+const std::shared_ptr<Chk::Sprite> Thg2Section::getSprite(size_t spriteIndex) const
 {
     return sprites[spriteIndex];
 }
@@ -1974,7 +1997,7 @@ MaskSection::~MaskSection()
 
 }
 
-u8 MaskSection::getFog(size_t tileIndex)
+u8 MaskSection::getFog(size_t tileIndex) const
 {
     if ( tileIndex < fogTiles.size() )
         return fogTiles[tileIndex];
@@ -2197,17 +2220,17 @@ StrSection::~StrSection()
 
 }
 
-size_t StrSection::getCapacity()
+size_t StrSection::getCapacity() const
 {
     return strings.size();
 }
 
-bool StrSection::stringStored(size_t stringId)
+bool StrSection::stringStored(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr;
 }
 
-void StrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void StrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     size_t limit = std::min((size_t)Chk::MaxStrings, strings.size());
     size_t stringId = 1;
@@ -2224,17 +2247,17 @@ void StrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUs
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-std::shared_ptr<StringType> StrSection::getString(size_t stringId)
+std::shared_ptr<StringType> StrSection::getString(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->toString<StringType>() : nullptr;
 }
-template std::shared_ptr<RawString> StrSection::getString<RawString>(size_t stringId);
-template std::shared_ptr<EscString> StrSection::getString<EscString>(size_t stringId);
-template std::shared_ptr<ChkdString> StrSection::getString<ChkdString>(size_t stringId);
-template std::shared_ptr<SingleLineChkdString> StrSection::getString<SingleLineChkdString>(size_t stringId);
+template std::shared_ptr<RawString> StrSection::getString<RawString>(size_t stringId) const;
+template std::shared_ptr<EscString> StrSection::getString<EscString>(size_t stringId) const;
+template std::shared_ptr<ChkdString> StrSection::getString<ChkdString>(size_t stringId) const;
+template std::shared_ptr<SingleLineChkdString> StrSection::getString<SingleLineChkdString>(size_t stringId) const;
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t StrSection::findString(const StringType & str)
+size_t StrSection::findString(const StringType & str) const
 {
     for ( size_t stringId=1; stringId<strings.size(); stringId++ )
     {
@@ -2243,10 +2266,10 @@ size_t StrSection::findString(const StringType & str)
     }
     return Chk::StringId::NoString;
 }
-template size_t StrSection::findString<RawString>(const RawString & str);
-template size_t StrSection::findString<EscString>(const EscString & str);
-template size_t StrSection::findString<ChkdString>(const ChkdString & str);
-template size_t StrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str);
+template size_t StrSection::findString<RawString>(const RawString & str) const;
+template size_t StrSection::findString<EscString>(const EscString & str) const;
+template size_t StrSection::findString<ChkdString>(const ChkdString & str) const;
+template size_t StrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str) const;
 
 bool StrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
@@ -2459,12 +2482,12 @@ size_t StrSection::getTailDataOffset(StrSynchronizer & strSynchronizer)
     return stringBytes.size();
 }
 
-size_t StrSection::getInitialTailDataOffset()
+size_t StrSection::getInitialTailDataOffset() const
 {
     return initialTailDataOffset;
 }
 
-size_t StrSection::getBytePaddedTo()
+size_t StrSection::getBytePaddedTo() const
 {
     return bytePaddedTo;
 }
@@ -2575,7 +2598,7 @@ void StrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
     }
 }
 
-size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+size_t StrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked) const
 {
     size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
     for ( size_t i=firstChecked; i<limit; i++ )
@@ -2611,7 +2634,7 @@ void StrSection::resolveParantage(ScStrPtr string)
     }
 }
 
-bool StrSection::stringsMatchBytes()
+bool StrSection::stringsMatchBytes() const
 {
     if ( stringBytes.size() == 0 )
         return false;
@@ -2787,7 +2810,7 @@ UprpSection::~UprpSection()
 
 }
 
-Chk::Cuwp UprpSection::getCuwp(size_t cuwpIndex)
+Chk::Cuwp UprpSection::getCuwp(size_t cuwpIndex) const
 {
     return data->createUnitProperties[cuwpIndex];
 }
@@ -2798,7 +2821,7 @@ void UprpSection::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
         memcpy(&data->createUnitProperties[cuwpIndex], &cuwp, sizeof(Chk::Cuwp));
 }
 
-size_t UprpSection::findCuwp(const Chk::Cuwp & cuwp)
+size_t UprpSection::findCuwp(const Chk::Cuwp & cuwp) const
 {
     for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
@@ -2828,7 +2851,7 @@ UpusSection::~UpusSection()
 
 }
 
-bool UpusSection::cuwpUsed(size_t cuwpIndex)
+bool UpusSection::cuwpUsed(size_t cuwpIndex) const
 {
     if ( cuwpIndex < Sc::Unit::MaxCuwps )
         return data->cuwpUsed[cuwpIndex] == Chk::CuwpUsed::No ? false : true;
@@ -2842,7 +2865,7 @@ void UpusSection::setCuwpUsed(size_t cuwpIndex, bool cuwpUsed)
         data->cuwpUsed[cuwpIndex] = cuwpUsed ? Chk::CuwpUsed::Yes : Chk::CuwpUsed::No;
 }
 
-size_t UpusSection::getNextUnusedCuwpIndex()
+size_t UpusSection::getNextUnusedCuwpIndex() const
 {
     for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
@@ -2883,12 +2906,17 @@ MrgnSection::~MrgnSection()
 
 }
 
-size_t MrgnSection::numLocations()
+size_t MrgnSection::numLocations() const
 {
     return locations.size() > 0 ? locations.size()-1 : 0;
 }
 
 std::shared_ptr<Chk::Location> MrgnSection::getLocation(size_t locationId)
+{
+    return locations[locationId];
+}
+
+const std::shared_ptr<Chk::Location> MrgnSection::getLocation(size_t locationId) const
 {
     return locations[locationId];
 }
@@ -2961,7 +2989,7 @@ bool MrgnSection::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool 
     return false;
 }
 
-bool MrgnSection::isBlank(size_t locationId)
+bool MrgnSection::isBlank(size_t locationId) const
 {
     if ( locationId > 0 && locationId < locations.size() )
     {
@@ -2971,7 +2999,7 @@ bool MrgnSection::isBlank(size_t locationId)
     return false;
 }
 
-bool MrgnSection::stringUsed(size_t stringId)
+bool MrgnSection::stringUsed(size_t stringId) const
 {
     u16 u16StringId = (u16)stringId;
     for ( size_t i=1; i<locations.size(); i++ )
@@ -2983,7 +3011,7 @@ bool MrgnSection::stringUsed(size_t stringId)
     return false;
 }
 
-void MrgnSection::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+void MrgnSection::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
 {
     size_t limit = std::min(Chk::TotalLocations, locations.size());
     for ( size_t i=1; i<limit; i++ )
@@ -2994,7 +3022,7 @@ void MrgnSection::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & loca
     }
 }
 
-void MrgnSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void MrgnSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=1; i<locations.size(); i++ )
     {
@@ -3025,7 +3053,7 @@ void MrgnSection::deleteString(size_t stringId)
     }
 }
 
-bool MrgnSection::locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere, bool autoDefragment)
+bool MrgnSection::locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere, bool autoDefragment) const
 {
     std::bitset<Chk::TotalLocations+1> locationIdUsed;
     locationSynchronizer.markUsedLocations(locationIdUsed);
@@ -3149,12 +3177,17 @@ TrigSection::~TrigSection()
 
 }
 
-size_t TrigSection::numTriggers()
+size_t TrigSection::numTriggers() const
 {
     return triggers.size();
 }
 
 std::shared_ptr<Chk::Trigger> TrigSection::getTrigger(size_t triggerIndex)
+{
+    return triggers[triggerIndex];
+}
+
+const std::shared_ptr<Chk::Trigger> TrigSection::getTrigger(size_t triggerIndex) const
 {
     return triggers[triggerIndex];
 }
@@ -3230,7 +3263,7 @@ std::deque<Chk::TriggerPtr> TrigSection::replaceRange(size_t beginIndex, size_t 
             ") is invalid for trigger list of size: " + std::to_string(triggers.size()));
 }
 
-bool TrigSection::locationUsed(size_t locationId)
+bool TrigSection::locationUsed(size_t locationId) const
 {
     for ( auto trigger : triggers )
     {
@@ -3240,7 +3273,7 @@ bool TrigSection::locationUsed(size_t locationId)
     return false;
 }
 
-bool TrigSection::stringUsed(size_t stringId, u32 userMask)
+bool TrigSection::stringUsed(size_t stringId, u32 userMask) const
 {
     for ( auto trigger : triggers )
     {
@@ -3250,7 +3283,7 @@ bool TrigSection::stringUsed(size_t stringId, u32 userMask)
     return false;
 }
 
-bool TrigSection::gameStringUsed(size_t stringId, u32 userMask)
+bool TrigSection::gameStringUsed(size_t stringId, u32 userMask) const
 {
     for ( auto trigger : triggers )
     {
@@ -3260,7 +3293,7 @@ bool TrigSection::gameStringUsed(size_t stringId, u32 userMask)
     return false;
 }
 
-bool TrigSection::commentStringUsed(size_t stringId)
+bool TrigSection::commentStringUsed(size_t stringId) const
 {
     for ( auto trigger : triggers )
     {
@@ -3270,25 +3303,25 @@ bool TrigSection::commentStringUsed(size_t stringId)
     return false;
 }
 
-void TrigSection::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed)
+void TrigSection::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
 {
     for ( auto trigger : triggers )
         trigger->markUsedLocations(locationIdUsed);
 }
 
-void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void TrigSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     for ( auto trigger : triggers )
         trigger->markUsedStrings(stringIdUsed, userMask);
 }
 
-void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void TrigSection::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     for ( auto trigger : triggers )
         trigger->markUsedGameStrings(stringIdUsed, userMask);
 }
 
-void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void TrigSection::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( auto trigger : triggers )
         trigger->markUsedCommentStrings(stringIdUsed);
@@ -3375,12 +3408,17 @@ MbrfSection::~MbrfSection()
 
 }
 
-size_t MbrfSection::numBriefingTriggers()
+size_t MbrfSection::numBriefingTriggers() const
 {
     return briefingTriggers.size();
 }
 
 std::shared_ptr<Chk::Trigger> MbrfSection::getBriefingTrigger(size_t briefingTriggerIndex)
+{
+    return briefingTriggers[briefingTriggerIndex];
+}
+
+const std::shared_ptr<Chk::Trigger> MbrfSection::getBriefingTrigger(size_t briefingTriggerIndex) const
 {
     return briefingTriggers[briefingTriggerIndex];
 }
@@ -3522,12 +3560,12 @@ SprpSection::~SprpSection()
 
 }
 
-size_t SprpSection::getScenarioNameStringId()
+size_t SprpSection::getScenarioNameStringId() const
 {
     return data->scenarioNameStringId;
 }
 
-size_t SprpSection::getScenarioDescriptionStringId()
+size_t SprpSection::getScenarioDescriptionStringId() const
 {
     return data->scenarioDescriptionStringId;
 }
@@ -3542,7 +3580,7 @@ void SprpSection::setScenarioDescriptionStringId(u16 scenarioDescriptionStringId
     data->scenarioDescriptionStringId = scenarioDescriptionStringId;
 }
 
-bool SprpSection::stringUsed(size_t stringId, u32 userMask)
+bool SprpSection::stringUsed(size_t stringId, u32 userMask) const
 {
     return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioNameStringId == (u16)stringId )
         || ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescriptionStringId == (u16)stringId );
@@ -3569,7 +3607,7 @@ void SprpSection::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
         data->scenarioDescriptionStringId = scenarioDescriptionRemapping->second;
 }
 
-void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void SprpSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioNameStringId > 0 )
         stringIdUsed[data->scenarioNameStringId] = true;
@@ -3611,7 +3649,7 @@ ForcSection::~ForcSection()
 
 }
 
-Chk::Force ForcSection::getPlayerForce(size_t slotIndex)
+Chk::Force ForcSection::getPlayerForce(size_t slotIndex) const
 {
     if ( slotIndex < Sc::Player::TotalSlots )
         return data->playerForce[slotIndex];
@@ -3619,7 +3657,7 @@ Chk::Force ForcSection::getPlayerForce(size_t slotIndex)
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
 }
 
-size_t ForcSection::getForceStringId(Chk::Force force)
+size_t ForcSection::getForceStringId(Chk::Force force) const
 {
     if ( force < Chk::TotalForces )
         return data->forceString[(size_t)force];
@@ -3627,7 +3665,7 @@ size_t ForcSection::getForceStringId(Chk::Force force)
         throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
 }
 
-u8 ForcSection::getForceFlags(Chk::Force force)
+u8 ForcSection::getForceFlags(Chk::Force force) const
 {
     if ( force < Chk::TotalForces )
         return data->flags[force];
@@ -3655,12 +3693,12 @@ void ForcSection::setForceFlags(Chk::Force force, u8 forceFlags)
         data->flags[force] = forceFlags;
 }
 
-bool ForcSection::stringUsed(size_t stringId)
+bool ForcSection::stringUsed(size_t stringId) const
 {
     return data->forceString[0] == (u16)stringId || data->forceString[1] == (u16)stringId || data->forceString[2] == (u16)stringId || data->forceString[3] == (u16)stringId;
 }
 
-void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=0; i<Chk::TotalForces; i++ )
     {
@@ -3731,7 +3769,7 @@ size_t WavSection::addSound(size_t stringId)
     return Chk::TotalSounds;
 }
 
-bool WavSection::stringIsSound(size_t stringId)
+bool WavSection::stringIsSound(size_t stringId) const
 {
     u32 u32StringId = (u32)stringId;
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
@@ -3742,7 +3780,7 @@ bool WavSection::stringIsSound(size_t stringId)
     return false;
 }
 
-size_t WavSection::getSoundStringId(size_t soundIndex)
+size_t WavSection::getSoundStringId(size_t soundIndex) const
 {
     if ( soundIndex < Chk::TotalSounds )
         return data->soundPathStringId[soundIndex];
@@ -3756,12 +3794,12 @@ void WavSection::setSoundStringId(size_t soundIndex, size_t soundStringId)
         data->soundPathStringId[soundIndex] = (u32)soundStringId;
 }
 
-bool WavSection::stringUsed(size_t stringId)
+bool WavSection::stringUsed(size_t stringId) const
 {
     return stringIsSound(stringId);
 }
 
-void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
@@ -3823,7 +3861,7 @@ UnisSection::~UnisSection()
 
 }
 
-bool UnisSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
+bool UnisSection::unitUsesDefaultSettings(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->useDefault[unitType] != Chk::UseDefault::No;
@@ -3831,7 +3869,7 @@ bool UnisSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u32 UnisSection::getUnitHitpoints(Sc::Unit::Type unitType)
+u32 UnisSection::getUnitHitpoints(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->hitpoints[unitType];
@@ -3839,7 +3877,7 @@ u32 UnisSection::getUnitHitpoints(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getUnitShieldPoints(Sc::Unit::Type unitType)
+u16 UnisSection::getUnitShieldPoints(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->shieldPoints[unitType];
@@ -3847,7 +3885,7 @@ u16 UnisSection::getUnitShieldPoints(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u8 UnisSection::getUnitArmorLevel(Sc::Unit::Type unitType)
+u8 UnisSection::getUnitArmorLevel(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->armorLevel[unitType];
@@ -3855,7 +3893,7 @@ u8 UnisSection::getUnitArmorLevel(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getUnitBuildTime(Sc::Unit::Type unitType)
+u16 UnisSection::getUnitBuildTime(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->buildTime[unitType];
@@ -3863,7 +3901,7 @@ u16 UnisSection::getUnitBuildTime(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getUnitMineralCost(Sc::Unit::Type unitType)
+u16 UnisSection::getUnitMineralCost(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->mineralCost[unitType];
@@ -3871,7 +3909,7 @@ u16 UnisSection::getUnitMineralCost(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getUnitGasCost(Sc::Unit::Type unitType)
+u16 UnisSection::getUnitGasCost(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->gasCost[unitType];
@@ -3879,7 +3917,7 @@ u16 UnisSection::getUnitGasCost(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-size_t UnisSection::getUnitNameStringId(Sc::Unit::Type unitType)
+size_t UnisSection::getUnitNameStringId(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->nameStringId[unitType];
@@ -3887,7 +3925,7 @@ size_t UnisSection::getUnitNameStringId(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
+u16 UnisSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType) const
 {
     if ( (size_t)weaponType < Sc::Weapon::TotalOriginal )
         return data->baseDamage[weaponType];
@@ -3895,7 +3933,7 @@ u16 UnisSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIS section!");
 }
 
-u16 UnisSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType)
+u16 UnisSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType) const
 {
     if ( (size_t)weaponType < Sc::Weapon::TotalOriginal )
         return data->upgradeDamage[weaponType];
@@ -3983,7 +4021,7 @@ void UnisSection::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrad
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIS section!");
 }
 
-bool UnisSection::stringUsed(size_t stringId)
+bool UnisSection::stringUsed(size_t stringId) const
 {
     u16 u16StringId = (u16)stringId;
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
@@ -3994,7 +4032,7 @@ bool UnisSection::stringUsed(size_t stringId)
     return false;
 }
 
-void UnisSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void UnisSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -4053,7 +4091,7 @@ UpgsSection::~UpgsSection()
 
 }
 
-bool UpgsSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
+bool UpgsSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->useDefault[upgradeType] != Chk::UseDefault::No;
@@ -4061,7 +4099,7 @@ bool UpgsSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->baseMineralCost[upgradeType];
@@ -4069,7 +4107,7 @@ u16 UpgsSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->mineralCostFactor[upgradeType];
@@ -4077,7 +4115,7 @@ u16 UpgsSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getBaseGasCost(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->baseGasCost[upgradeType];
@@ -4085,7 +4123,7 @@ u16 UpgsSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getGasCostFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->gasCostFactor[upgradeType];
@@ -4093,7 +4131,7 @@ u16 UpgsSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->baseResearchTime[upgradeType];
@@ -4101,7 +4139,7 @@ u16 UpgsSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGS section!");
 }
 
-u16 UpgsSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgsSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalOriginalTypes )
         return data->researchTimeFactor[upgradeType];
@@ -4195,7 +4233,7 @@ TecsSection::~TecsSection()
 
 }
 
-bool TecsSection::techUsesDefaultSettings(Sc::Tech::Type techType)
+bool TecsSection::techUsesDefaultSettings(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->useDefault[(size_t)techType] != Chk::UseDefault::No;
@@ -4203,7 +4241,7 @@ bool TecsSection::techUsesDefaultSettings(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
-u16 TecsSection::getTechMineralCost(Sc::Tech::Type techType)
+u16 TecsSection::getTechMineralCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->mineralCost[(size_t)techType];
@@ -4211,7 +4249,7 @@ u16 TecsSection::getTechMineralCost(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
-u16 TecsSection::getTechGasCost(Sc::Tech::Type techType)
+u16 TecsSection::getTechGasCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->gasCost[(size_t)techType];
@@ -4219,7 +4257,7 @@ u16 TecsSection::getTechGasCost(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
-u16 TecsSection::getTechResearchTime(Sc::Tech::Type techType)
+u16 TecsSection::getTechResearchTime(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->researchTime[(size_t)techType];
@@ -4227,7 +4265,7 @@ u16 TecsSection::getTechResearchTime(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECS section!");
 }
 
-u16 TecsSection::getTechEnergyCost(Sc::Tech::Type techType)
+u16 TecsSection::getTechEnergyCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalOriginalTypes )
         return data->energyCost[(size_t)techType];
@@ -4296,7 +4334,7 @@ SwnmSection::~SwnmSection()
 
 }
 
-size_t SwnmSection::getSwitchNameStringId(size_t switchIndex)
+size_t SwnmSection::getSwitchNameStringId(size_t switchIndex) const
 {
     if ( switchIndex < Chk::TotalSwitches )
         return data->switchName[switchIndex];
@@ -4310,7 +4348,7 @@ void SwnmSection::setSwitchNameStringId(size_t switchIndex, size_t stringId)
         data->switchName[switchIndex] = (u32)stringId;
 }
 
-bool SwnmSection::stringUsed(size_t stringId)
+bool SwnmSection::stringUsed(size_t stringId) const
 {
     u32 u32StringId = (u32)stringId;
     for ( size_t i=0; i<Chk::TotalSwitches; i++ )
@@ -4321,7 +4359,7 @@ bool SwnmSection::stringUsed(size_t stringId)
     return false;
 }
 
-void SwnmSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void SwnmSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=0; i<Chk::TotalSwitches; i++ )
     {
@@ -4373,7 +4411,7 @@ ColrSection::~ColrSection()
 
 }
 
-Chk::PlayerColor ColrSection::getPlayerColor(size_t slotIndex)
+Chk::PlayerColor ColrSection::getPlayerColor(size_t slotIndex) const
 {
     if ( slotIndex < Sc::Player::TotalSlots )
         return data->playerColor[slotIndex];
@@ -4422,7 +4460,7 @@ PupxSection::~PupxSection()
 
 }
 
-size_t PupxSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+size_t PupxSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
     {
@@ -4435,7 +4473,7 @@ size_t PupxSection::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t pla
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
 }
 
-size_t PupxSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+size_t PupxSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
     {
@@ -4448,7 +4486,7 @@ size_t PupxSection::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t p
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
 }
 
-size_t PupxSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
+size_t PupxSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->defaultMaxLevel[upgradeType];
@@ -4456,7 +4494,7 @@ size_t PupxSection::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
 }
 
-size_t PupxSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
+size_t PupxSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->defaultStartLevel[upgradeType];
@@ -4464,7 +4502,7 @@ size_t PupxSection::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the PUPx section!");
 }
 
-bool PupxSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex)
+bool PupxSection::playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
     {
@@ -4574,7 +4612,7 @@ PtexSection::~PtexSection()
 
 }
 
-bool PtexSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
+bool PtexSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
@@ -4587,7 +4625,7 @@ bool PtexSection::techAvailable(Sc::Tech::Type techType, size_t playerIndex)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
-bool PtexSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
+bool PtexSection::techResearched(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
@@ -4600,7 +4638,7 @@ bool PtexSection::techResearched(Sc::Tech::Type techType, size_t playerIndex)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
-bool PtexSection::techDefaultAvailable(Sc::Tech::Type techType)
+bool PtexSection::techDefaultAvailable(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->techAvailableByDefault[(size_t)techType] != Chk::Available::No;
@@ -4608,7 +4646,7 @@ bool PtexSection::techDefaultAvailable(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
-bool PtexSection::techDefaultResearched(Sc::Tech::Type techType)
+bool PtexSection::techDefaultResearched(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->techResearchedByDefault[(size_t)techType] != Chk::Researched::No;
@@ -4616,7 +4654,7 @@ bool PtexSection::techDefaultResearched(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the PTEx section!");
 }
 
-bool PtexSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex)
+bool PtexSection::playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
     {
@@ -4717,7 +4755,7 @@ UnixSection::~UnixSection()
 
 }
 
-bool UnixSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
+bool UnixSection::unitUsesDefaultSettings(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->useDefault[unitType] != Chk::UseDefault::No;
@@ -4725,7 +4763,7 @@ bool UnixSection::unitUsesDefaultSettings(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS section!");
 }
 
-u32 UnixSection::getUnitHitpoints(Sc::Unit::Type unitType)
+u32 UnixSection::getUnitHitpoints(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->hitpoints[unitType];
@@ -4733,7 +4771,7 @@ u32 UnixSection::getUnitHitpoints(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getUnitShieldPoints(Sc::Unit::Type unitType)
+u16 UnixSection::getUnitShieldPoints(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->shieldPoints[unitType];
@@ -4741,7 +4779,7 @@ u16 UnixSection::getUnitShieldPoints(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u8 UnixSection::getUnitArmorLevel(Sc::Unit::Type unitType)
+u8 UnixSection::getUnitArmorLevel(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->armorLevel[unitType];
@@ -4749,7 +4787,7 @@ u8 UnixSection::getUnitArmorLevel(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getUnitBuildTime(Sc::Unit::Type unitType)
+u16 UnixSection::getUnitBuildTime(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->buildTime[unitType];
@@ -4757,7 +4795,7 @@ u16 UnixSection::getUnitBuildTime(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getUnitMineralCost(Sc::Unit::Type unitType)
+u16 UnixSection::getUnitMineralCost(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->mineralCost[unitType];
@@ -4765,7 +4803,7 @@ u16 UnixSection::getUnitMineralCost(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getUnitGasCost(Sc::Unit::Type unitType)
+u16 UnixSection::getUnitGasCost(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->gasCost[unitType];
@@ -4773,7 +4811,7 @@ u16 UnixSection::getUnitGasCost(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-size_t UnixSection::getUnitNameStringId(Sc::Unit::Type unitType)
+size_t UnixSection::getUnitNameStringId(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->nameStringId[unitType];
@@ -4781,7 +4819,7 @@ size_t UnixSection::getUnitNameStringId(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
+u16 UnixSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType) const
 {
     if ( (size_t)weaponType < Sc::Weapon::Total )
         return data->baseDamage[weaponType];
@@ -4789,7 +4827,7 @@ u16 UnixSection::getWeaponBaseDamage(Sc::Weapon::Type weaponType)
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIx section!");
 }
 
-u16 UnixSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType)
+u16 UnixSection::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType) const
 {
     if ( (size_t)weaponType < Sc::Weapon::Total )
         return data->upgradeDamage[weaponType];
@@ -4877,7 +4915,7 @@ void UnixSection::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrad
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIx section!");
 }
 
-bool UnixSection::stringUsed(size_t stringId)
+bool UnixSection::stringUsed(size_t stringId) const
 {
     u16 u16StringId = (u16)stringId;
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
@@ -4888,7 +4926,7 @@ bool UnixSection::stringUsed(size_t stringId)
     return false;
 }
 
-void UnixSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void UnixSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
@@ -4947,7 +4985,7 @@ UpgxSection::~UpgxSection()
 
 }
 
-bool UpgxSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
+bool UpgxSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->useDefault[upgradeType] != Chk::UseDefault::No;
@@ -4955,7 +4993,7 @@ bool UpgxSection::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->baseMineralCost[upgradeType];
@@ -4963,7 +5001,7 @@ u16 UpgxSection::getBaseMineralCost(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->mineralCostFactor[upgradeType];
@@ -4971,7 +5009,7 @@ u16 UpgxSection::getMineralCostFactor(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getBaseGasCost(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->baseGasCost[upgradeType];
@@ -4979,7 +5017,7 @@ u16 UpgxSection::getBaseGasCost(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getGasCostFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->gasCostFactor[upgradeType];
@@ -4987,7 +5025,7 @@ u16 UpgxSection::getGasCostFactor(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->baseResearchTime[upgradeType];
@@ -4995,7 +5033,7 @@ u16 UpgxSection::getBaseResearchTime(Sc::Upgrade::Type upgradeType)
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the UPGx section!");
 }
 
-u16 UpgxSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType)
+u16 UpgxSection::getResearchTimeFactor(Sc::Upgrade::Type upgradeType) const
 {
     if ( upgradeType < Sc::Upgrade::TotalTypes )
         return data->researchTimeFactor[upgradeType];
@@ -5088,7 +5126,7 @@ TecxSection::~TecxSection()
 
 }
 
-bool TecxSection::techUsesDefaultSettings(Sc::Tech::Type techType)
+bool TecxSection::techUsesDefaultSettings(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->useDefault[(size_t)techType] != Chk::UseDefault::No;
@@ -5096,7 +5134,7 @@ bool TecxSection::techUsesDefaultSettings(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
-u16 TecxSection::getTechMineralCost(Sc::Tech::Type techType)
+u16 TecxSection::getTechMineralCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->mineralCost[(size_t)techType];
@@ -5104,7 +5142,7 @@ u16 TecxSection::getTechMineralCost(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
-u16 TecxSection::getTechGasCost(Sc::Tech::Type techType)
+u16 TecxSection::getTechGasCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->gasCost[(size_t)techType];
@@ -5112,7 +5150,7 @@ u16 TecxSection::getTechGasCost(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
-u16 TecxSection::getTechResearchTime(Sc::Tech::Type techType)
+u16 TecxSection::getTechResearchTime(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->researchTime[(size_t)techType];
@@ -5120,7 +5158,7 @@ u16 TecxSection::getTechResearchTime(Sc::Tech::Type techType)
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) + " is out of range for the TECx section!");
 }
 
-u16 TecxSection::getTechEnergyCost(Sc::Tech::Type techType)
+u16 TecxSection::getTechEnergyCost(Sc::Tech::Type techType) const
 {
     if ( (size_t)techType < Sc::Tech::TotalTypes )
         return data->energyCost[(size_t)techType];
@@ -5199,22 +5237,22 @@ OstrSection::~OstrSection()
 
 }
 
-u32 OstrSection::getVersion()
+u32 OstrSection::getVersion() const
 {
     return data->version;
 }
 
-u32 OstrSection::getScenarioNameStringId()
+u32 OstrSection::getScenarioNameStringId() const
 {
     return data->scenarioName;
 }
 
-u32 OstrSection::getScenarioDescriptionStringId()
+u32 OstrSection::getScenarioDescriptionStringId() const
 {
     return data->scenarioDescription;
 }
 
-u32 OstrSection::getForceNameStringId(Chk::Force force)
+u32 OstrSection::getForceNameStringId(Chk::Force force) const
 {
     if ( force < Chk::TotalForces )
         return data->forceName[force];
@@ -5222,7 +5260,7 @@ u32 OstrSection::getForceNameStringId(Chk::Force force)
         throw std::out_of_range(std::string("ForceIndex: ") + std::to_string(force) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getUnitNameStringId(Sc::Unit::Type unitType)
+u32 OstrSection::getUnitNameStringId(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->unitName[unitType];
@@ -5230,7 +5268,7 @@ u32 OstrSection::getUnitNameStringId(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getExpUnitNameStringId(Sc::Unit::Type unitType)
+u32 OstrSection::getExpUnitNameStringId(Sc::Unit::Type unitType) const
 {
     if ( unitType < Sc::Unit::TotalTypes )
         return data->expUnitName[unitType];
@@ -5238,7 +5276,7 @@ u32 OstrSection::getExpUnitNameStringId(Sc::Unit::Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getSoundPathStringId(size_t soundIndex)
+u32 OstrSection::getSoundPathStringId(size_t soundIndex) const
 {
     if ( soundIndex < Chk::TotalSounds )
         return data->soundPath[soundIndex];
@@ -5246,7 +5284,7 @@ u32 OstrSection::getSoundPathStringId(size_t soundIndex)
         throw std::out_of_range(std::string("SoundIndex: ") + std::to_string((u32)soundIndex) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getSwitchNameStringId(size_t switchIndex)
+u32 OstrSection::getSwitchNameStringId(size_t switchIndex) const
 {
     if ( switchIndex < Chk::TotalSwitches )
         return data->switchName[switchIndex];
@@ -5254,7 +5292,7 @@ u32 OstrSection::getSwitchNameStringId(size_t switchIndex)
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the OSTR section!");
 }
 
-u32 OstrSection::getLocationNameStringId(size_t locationId)
+u32 OstrSection::getLocationNameStringId(size_t locationId) const
 {
     if ( locationId > 0 && locationId <= Chk::TotalLocations )
         return data->locationName[locationId-1];
@@ -5320,7 +5358,7 @@ void OstrSection::setLocationNameStringId(size_t locationId, u32 locationNameStr
         throw std::out_of_range(std::string("locationId: ") + std::to_string((u32)locationId) + " is out of range for the OSTR section!");
 }
 
-bool OstrSection::stringUsed(size_t stringId, u32 userMask)
+bool OstrSection::stringUsed(size_t stringId, u32 userMask) const
 {
     if ( data->scenarioName == stringId || data->scenarioDescription == stringId )
         return true;
@@ -5364,7 +5402,7 @@ bool OstrSection::stringUsed(size_t stringId, u32 userMask)
     return false;
 }
 
-void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void OstrSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioName != 0 )
         stringIdUsed[data->scenarioName] = true;
@@ -5551,7 +5589,7 @@ KstrSection::~KstrSection()
 
 }
 
-bool KstrSection::empty()
+bool KstrSection::empty() const
 {
     for ( auto & string : strings )
     {
@@ -5561,17 +5599,17 @@ bool KstrSection::empty()
     return true;
 }
 
-size_t KstrSection::getCapacity()
+size_t KstrSection::getCapacity() const
 {
     return strings.size();
 }
 
-bool KstrSection::stringStored(size_t stringId)
+bool KstrSection::stringStored(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr;
 }
 
-void KstrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed)
+void KstrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     size_t limit = std::min((size_t)Chk::MaxKStrings, strings.size());
     size_t stringId = 1;
@@ -5587,7 +5625,7 @@ void KstrSection::unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdU
     }
 }
 
-StrProp KstrSection::getProperties(size_t stringId)
+StrProp KstrSection::getProperties(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->properties() : StrProp();
 }
@@ -5599,17 +5637,17 @@ void KstrSection::setProperties(size_t stringId, const StrProp & strProp)
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-std::shared_ptr<StringType> KstrSection::getString(size_t stringId)
+std::shared_ptr<StringType> KstrSection::getString(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr ? strings[stringId]->toString<StringType>() : nullptr;
 }
-template std::shared_ptr<RawString> KstrSection::getString<RawString>(size_t stringId);
-template std::shared_ptr<EscString> KstrSection::getString<EscString>(size_t stringId);
-template std::shared_ptr<ChkdString> KstrSection::getString<ChkdString>(size_t stringId);
-template std::shared_ptr<SingleLineChkdString> KstrSection::getString<SingleLineChkdString>(size_t stringId);
+template std::shared_ptr<RawString> KstrSection::getString<RawString>(size_t stringId) const;
+template std::shared_ptr<EscString> KstrSection::getString<EscString>(size_t stringId) const;
+template std::shared_ptr<ChkdString> KstrSection::getString<ChkdString>(size_t stringId) const;
+template std::shared_ptr<SingleLineChkdString> KstrSection::getString<SingleLineChkdString>(size_t stringId) const;
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-size_t KstrSection::findString(const StringType & str)
+size_t KstrSection::findString(const StringType & str) const
 {
     for ( size_t stringId=1; stringId<strings.size(); stringId++ )
     {
@@ -5618,10 +5656,10 @@ size_t KstrSection::findString(const StringType & str)
     }
     return Chk::StringId::NoString;
 }
-template size_t KstrSection::findString<RawString>(const RawString & str);
-template size_t KstrSection::findString<EscString>(const EscString & str);
-template size_t KstrSection::findString<ChkdString>(const ChkdString & str);
-template size_t KstrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str);
+template size_t KstrSection::findString<RawString>(const RawString & str) const;
+template size_t KstrSection::findString<EscString>(const EscString & str) const;
+template size_t KstrSection::findString<ChkdString>(const ChkdString & str) const;
+template size_t KstrSection::findString<SingleLineChkdString>(const SingleLineChkdString & str) const;
 
 bool KstrSection::setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment)
 {
@@ -5823,7 +5861,7 @@ bool KstrSection::defragment(StrSynchronizer & strSynchronizer, bool matchCapaci
     return false;
 }
 
-u32 KstrSection::getVersion()
+u32 KstrSection::getVersion() const
 {
     return version;
 }
@@ -5876,7 +5914,7 @@ void KstrSection::write(std::ostream & os, ScenarioSaver & scenarioSaver)
         os.write((const char*)&stringBytes[0], (std::streamsize)stringBytes.size());
 }
 
-size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked)
+size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity, size_t firstChecked) const
 {
     size_t limit = checkBeyondCapacity ? Chk::MaxStrings : strings.size();
     for ( size_t i=firstChecked; i<limit; i++ )
@@ -5887,7 +5925,7 @@ size_t KstrSection::getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringI
     return 0;
 }
 
-bool KstrSection::stringsMatchBytes()
+bool KstrSection::stringsMatchBytes() const
 {
     if ( stringBytes.size() == 0 )
         return false;
@@ -6082,17 +6120,25 @@ KtrgSection::~KtrgSection()
 
 }
 
-bool KtrgSection::empty()
+bool KtrgSection::empty() const
 {
     return extendedTrigData.size() < 3; // Indexes 0 and 1 are unused, so section is empty if size is less than 3
 }
 
-size_t KtrgSection::numExtendedTriggers()
+size_t KtrgSection::numExtendedTriggers() const
 {
     return extendedTrigData.size();
 }
 
 std::shared_ptr<Chk::ExtendedTrigData> KtrgSection::getExtendedTrigger(size_t extendedTriggerIndex)
+{
+    if ( extendedTriggerIndex < extendedTrigData.size() )
+        return extendedTrigData[extendedTriggerIndex];
+    else
+        return nullptr;
+}
+
+const std::shared_ptr<Chk::ExtendedTrigData> KtrgSection::getExtendedTrigger(size_t extendedTriggerIndex) const
 {
     if ( extendedTriggerIndex < extendedTrigData.size() )
         return extendedTrigData[extendedTriggerIndex];
@@ -6131,7 +6177,7 @@ void KtrgSection::deleteExtendedTrigger(size_t extendedTriggerIndex)
     }
 }
 
-bool KtrgSection::editorStringUsed(size_t stringId, u32 userMask)
+bool KtrgSection::editorStringUsed(size_t stringId, u32 userMask) const
 {
     for ( const auto & extendedTrig : extendedTrigData )
     {
@@ -6147,7 +6193,7 @@ bool KtrgSection::editorStringUsed(size_t stringId, u32 userMask)
     return false;
 }
 
-void KtrgSection::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask)
+void KtrgSection::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     for ( const auto & extendedTrig : extendedTrigData )
     {
@@ -6273,7 +6319,7 @@ KtgpSection::~KtgpSection()
 
 }
 
-bool KtgpSection::empty()
+bool KtgpSection::empty() const
 {
     return triggerGroups.empty();
 }

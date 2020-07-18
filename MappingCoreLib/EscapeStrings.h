@@ -50,7 +50,7 @@ class ChkdString : public std::string
         ChkdString(const std::string & str);
         virtual ~ChkdString();
 
-        virtual bool isOneLine();
+        virtual bool isOneLine() const;
 };
 
 class SingleLineChkdString : public ChkdString
@@ -61,7 +61,7 @@ class SingleLineChkdString : public ChkdString
         SingleLineChkdString(const std::string & str);
         virtual ~SingleLineChkdString();
 
-        virtual bool isOneLine();
+        virtual bool isOneLine() const;
 };
 
 /** Makes an EscString from a RawString using these rules...

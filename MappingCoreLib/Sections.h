@@ -123,10 +123,10 @@ class ChkSection
         ChkSection(SectionName sectionName, bool virtualizable = false, bool dataIsVirtual = false);
         virtual ~ChkSection();
 
-        virtual void Validate(bool hybridOrBroodWar) { } // throws SectionValidationException
-        SectionIndex getIndex() { return sectionIndex; }
-        SectionName getName() { return sectionName; }
-        template<typename t> t getNameValue() { return (t)sectionName; }
+        virtual void Validate(bool hybridOrBroodWar) const { } // throws SectionValidationException
+        SectionIndex getIndex() const { return sectionIndex; }
+        SectionName getName() const { return sectionName; }
+        template<typename t> t getNameValue() const { return (t)sectionName; }
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()) = 0; // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
 
         static Section read(std::multimap<SectionName, Section> & parsedSections, const Chk::SectionHeader & sectionHeader, std::istream & is, output_param Chk::SectionSize & sizeRead);
@@ -137,7 +137,7 @@ class ChkSection
 
     protected:
 
-        bool isVirtual() { return dataIsVirtual; }
+        bool isVirtual() const { return dataIsVirtual; }
         virtual void setVirtual(bool isVirtual) { // If the client calls code that normalizes the size (any change), flag virtual as false
             this->dataIsVirtual = virtualizable ? isVirtual : false; }
 
@@ -309,7 +309,7 @@ class TypeSection : public StructSection<Chk::TYPE, true>
         TypeSection();
         virtual ~TypeSection();
 
-        Chk::Type getType();
+        Chk::Type getType() const;
         void setType(Chk::Type type);
 };
 
@@ -321,11 +321,11 @@ class VerSection : public StructSection<Chk::VER, false>
         VerSection();
         virtual ~VerSection();
 
-        bool isOriginal();
-        bool isHybrid();
-        bool isExpansion();
-        bool isHybridOrAbove();
-        Chk::Version getVersion();
+        bool isOriginal() const;
+        bool isHybrid() const;
+        bool isExpansion() const;
+        bool isHybridOrAbove() const;
+        Chk::Version getVersion() const;
         void setVersion(Chk::Version version);
 };
 
@@ -337,7 +337,7 @@ class IverSection : public StructSection<Chk::IVER, true>
         IverSection();
         virtual ~IverSection();
 
-        Chk::IVersion getVersion();
+        Chk::IVersion getVersion() const;
         void setVersion(Chk::IVersion version);
 };
 
@@ -349,7 +349,7 @@ class Ive2Section : public StructSection<Chk::IVE2, true>
         Ive2Section();
         virtual ~Ive2Section();
 
-        Chk::I2Version getVersion();
+        Chk::I2Version getVersion() const;
         void setVersion(Chk::I2Version version);
 };
 
@@ -361,7 +361,7 @@ class VcodSection : public StructSection<Chk::VCOD, false>
         VcodSection();
         virtual ~VcodSection();
 
-        bool isDefault();
+        bool isDefault() const;
         void setToDefault();
 };
 
@@ -373,7 +373,7 @@ class IownSection : public StructSection<Chk::IOWN, true>
         IownSection();
         virtual ~IownSection();
 
-        Sc::Player::SlotType getSlotType(size_t slotIndex);
+        Sc::Player::SlotType getSlotType(size_t slotIndex) const;
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
 };
 
@@ -385,7 +385,7 @@ class OwnrSection : public StructSection<Chk::OWNR, false>
         OwnrSection();
         virtual ~OwnrSection();
         
-        Sc::Player::SlotType getSlotType(size_t slotIndex);
+        Sc::Player::SlotType getSlotType(size_t slotIndex) const;
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType);
 };
 
@@ -397,7 +397,7 @@ class EraSection : public StructSection<Chk::ERA, false>
         EraSection();
         virtual ~EraSection();
 
-        Sc::Terrain::Tileset getTileset();
+        Sc::Terrain::Tileset getTileset() const;
         void setTileset(Sc::Terrain::Tileset tileset);
 };
 
@@ -409,10 +409,10 @@ class DimSection : public StructSection<Chk::DIM, false>
         DimSection();
         virtual ~DimSection();
 
-        size_t getTileWidth();
-        size_t getTileHeight();
-        size_t getPixelWidth();
-        size_t getPixelHeight();
+        size_t getTileWidth() const;
+        size_t getTileHeight() const;
+        size_t getPixelWidth() const;
+        size_t getPixelHeight() const;
         void setTileWidth(u16 tileWidth);
         void setTileHeight(u16 tileHeight);
         void setDimensions(u16 tileWidth, u16 tileHeight);
@@ -426,7 +426,7 @@ class SideSection : public StructSection<Chk::SIDE, false>
         SideSection();
         virtual ~SideSection();
 
-        Chk::Race getPlayerRace(size_t playerIndex);
+        Chk::Race getPlayerRace(size_t playerIndex) const;
         void setPlayerRace(size_t playerIndex, Chk::Race race);
 };
 
@@ -437,7 +437,7 @@ class MtxmSection : public DynamicSection<false>
         MtxmSection();
         virtual ~MtxmSection();
 
-        u16 getTile(size_t tileIndex);
+        u16 getTile(size_t tileIndex) const;
         void setTile(size_t tileIndex, u16 tileValue);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
@@ -458,9 +458,9 @@ class PuniSection : public StructSection<Chk::PUNI, false>
         PuniSection();
         virtual ~PuniSection();
 
-        bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex);
-        bool isUnitDefaultBuildable(Sc::Unit::Type unitType);
-        bool playerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex);
+        bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const;
+        bool isUnitDefaultBuildable(Sc::Unit::Type unitType) const;
+        bool playerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex) const;
         void setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, bool buildable);
         void setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable);
         void setPlayerUsesDefault(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault);
@@ -474,11 +474,11 @@ class UpgrSection : public StructSection<Chk::UPGR, false>
         UpgrSection();
         virtual ~UpgrSection();
 
-        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
-        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
-        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType);
-        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType);
-        bool playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex);
+        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
+        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
+        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType) const;
+        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType) const;
+        bool playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
         void setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel);
         void setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel);
         void setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel);
@@ -494,11 +494,11 @@ class PtecSection : public StructSection<Chk::PTEC, false>
         PtecSection();
         virtual ~PtecSection();
 
-        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
-        bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
-        bool techDefaultAvailable(Sc::Tech::Type techType);
-        bool techDefaultResearched(Sc::Tech::Type techType);
-        bool playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex);
+        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex) const;
+        bool techResearched(Sc::Tech::Type techType, size_t playerIndex) const;
+        bool techDefaultAvailable(Sc::Tech::Type techType) const;
+        bool techDefaultResearched(Sc::Tech::Type techType) const;
+        bool playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex) const;
         void setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available);
         void setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched);
         void setDefaultTechAvailable(Sc::Tech::Type techType, bool available);
@@ -513,8 +513,9 @@ class UnitSection : public DynamicSection<false>
         UnitSection();
         virtual ~UnitSection();
 
-        size_t numUnits();
+        size_t numUnits() const;
         std::shared_ptr<Chk::Unit> getUnit(size_t unitIndex);
+        const std::shared_ptr<Chk::Unit> getUnit(size_t unitIndex) const;
         size_t addUnit(std::shared_ptr<Chk::Unit> unit);
         void insertUnit(size_t unitIndex, std::shared_ptr<Chk::Unit> unit);
         void deleteUnit(size_t unitIndex);
@@ -535,8 +536,9 @@ class IsomSection : public DynamicSection<true>
         static IsomSectionPtr GetDefault(u16 tileWidth, u16 tileHeigh);
         IsomSection();
         virtual ~IsomSection();
-
+        
         Chk::IsomEntry & getIsomEntry(size_t isomIndex);
+        const Chk::IsomEntry & getIsomEntry(size_t isomIndex) const;
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
     protected:
@@ -555,7 +557,7 @@ class TileSection : public DynamicSection<true>
         TileSection();
         virtual ~TileSection();
 
-        u16 getTile(size_t tileIndex);
+        u16 getTile(size_t tileIndex) const;
         void setTile(size_t tileIndex, u16 tileValue);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
@@ -575,8 +577,9 @@ class Dd2Section : public DynamicSection<true>
         Dd2Section();
         virtual ~Dd2Section();
 
-        size_t numDoodads();
+        size_t numDoodads() const;
         std::shared_ptr<Chk::Doodad> getDoodad(size_t doodadIndex);
+        const std::shared_ptr<Chk::Doodad> getDoodad(size_t doodadIndex) const;
         size_t addDoodad(std::shared_ptr<Chk::Doodad> doodad);
         void insertDoodad(size_t doodadIndex, std::shared_ptr<Chk::Doodad> doodad);
         void deleteDoodad(size_t doodadIndex);
@@ -598,8 +601,9 @@ class Thg2Section : public DynamicSection<false>
         Thg2Section();
         virtual ~Thg2Section();
 
-        size_t numSprites();
+        size_t numSprites() const;
         std::shared_ptr<Chk::Sprite> getSprite(size_t spriteIndex);
+        const std::shared_ptr<Chk::Sprite> getSprite(size_t spriteIndex) const;
         size_t addSprite(std::shared_ptr<Chk::Sprite> sprite);
         void insertSprite(size_t spriteIndex, std::shared_ptr<Chk::Sprite> sprite);
         void deleteSprite(size_t spriteIndex);
@@ -621,7 +625,7 @@ class MaskSection : public DynamicSection<true>
         MaskSection();
         virtual ~MaskSection();
 
-        u8 getFog(size_t tileIndex);
+        u8 getFog(size_t tileIndex) const;
         void setFog(size_t tileIndex, u8 fogOfWarPlayers);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
@@ -642,16 +646,16 @@ class StrSection : public DynamicSection<false>
         StrSection(const StrSection & other);
         virtual ~StrSection();
 
-        size_t getCapacity();
+        size_t getCapacity() const;
 
-        bool stringStored(size_t stringId);
-        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringStored(size_t stringId) const;
+        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
+        std::shared_ptr<StringType> getString(size_t stringId) const; // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType & str);
+        size_t findString(const StringType & str) const;
 
         bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
@@ -671,8 +675,8 @@ class StrSection : public DynamicSection<false>
 
         std::vector<u8> & getTailData(); 
         size_t getTailDataOffset(StrSynchronizer & strSynchronizer); // Gets the offset tail data would be at within the STR section were it written right now
-        size_t getInitialTailDataOffset(); // Gets the offset tail data was at when it was initially read in
-        size_t getBytePaddedTo(); // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none for tail data read in)
+        size_t getInitialTailDataOffset() const; // Gets the offset tail data was at when it was initially read in
+        size_t getBytePaddedTo() const; // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none for tail data read in)
         void setBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
 
         StrSectionPtr backup();
@@ -691,11 +695,11 @@ class StrSection : public DynamicSection<false>
         size_t initialTailDataOffset; // The offset at which strTailData started when the STR section was read, "0" if "read" is never called or there was no tailData
         std::vector<u8> tailData; // Any data that comes after the regular STR section data, and after any padding
         
-        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1) const;
         void resolveParantage();
         void resolveParantage(ScStrPtr string);
 
-        bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
+        bool stringsMatchBytes() const; // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
         size_t loadString(const size_t & stringOffset, const size_t & sectionSize); // Returns position of last character in the string (usually position of NUL terminator) if loaded, 0 otherwise
@@ -709,9 +713,9 @@ class UprpSection : public StructSection<Chk::UPRP, false>
         UprpSection();
         virtual ~UprpSection();
 
-        Chk::Cuwp getCuwp(size_t cuwpIndex);
+        Chk::Cuwp getCuwp(size_t cuwpIndex) const;
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
-        size_t findCuwp(const Chk::Cuwp & cuwp);
+        size_t findCuwp(const Chk::Cuwp & cuwp) const;
 };
 
 class UpusSection : public StructSection<Chk::UPUS, true>
@@ -722,9 +726,9 @@ class UpusSection : public StructSection<Chk::UPUS, true>
         UpusSection();
         virtual ~UpusSection();
 
-        bool cuwpUsed(size_t cuwpIndex);
+        bool cuwpUsed(size_t cuwpIndex) const;
         void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
-        size_t getNextUnusedCuwpIndex();
+        size_t getNextUnusedCuwpIndex() const;
 };
 
 class MrgnSection : public DynamicSection<false>
@@ -734,21 +738,22 @@ class MrgnSection : public DynamicSection<false>
         MrgnSection();
         virtual ~MrgnSection();
 
-        size_t numLocations();
+        size_t numLocations() const;
         std::shared_ptr<Chk::Location> getLocation(size_t locationId);
+        const std::shared_ptr<Chk::Location> getLocation(size_t locationId) const;
         size_t addLocation(std::shared_ptr<Chk::Location> location);
         void replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location);
         void deleteLocation(size_t locationId);
         bool moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere = true);
-        bool isBlank(size_t locationId);
+        bool isBlank(size_t locationId) const;
         void expandToScHybridOrExpansion();
         
-        bool locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true); // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
+        bool locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true) const; // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
         bool trimToOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true); // If possible, trims locations to indexes < Chk::TotalOriginalLocations
 
-        bool stringUsed(size_t stringId);
-        void markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -768,8 +773,9 @@ class TrigSection : public DynamicSection<false>
         TrigSection();
         virtual ~TrigSection();
 
-        size_t numTriggers();
+        size_t numTriggers() const;
         std::shared_ptr<Chk::Trigger> getTrigger(size_t triggerIndex);
+        const std::shared_ptr<Chk::Trigger> getTrigger(size_t triggerIndex) const;
         size_t addTrigger(std::shared_ptr<Chk::Trigger> trigger);
         void insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger);
         void deleteTrigger(size_t triggerIndex);
@@ -777,14 +783,14 @@ class TrigSection : public DynamicSection<false>
         void swap(std::deque<std::shared_ptr<Chk::Trigger>> & triggers);
         std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
-        bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        bool commentStringUsed(size_t stringId);
-        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool locationUsed(size_t locationId) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool commentStringUsed(size_t stringId) const;
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteLocation(size_t locationId);
@@ -806,8 +812,9 @@ class MbrfSection : public DynamicSection<false>
         MbrfSection();
         virtual ~MbrfSection();
 
-        size_t numBriefingTriggers();
+        size_t numBriefingTriggers() const;
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
+        const std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex) const;
         size_t addBriefingTrigger(std::shared_ptr<Chk::Trigger> briefingTrigger);
         void insertBriefingTrigger(size_t briefingTriggerIndex, std::shared_ptr<Chk::Trigger> briefingTrigger);
         void deleteBriefingTrigger(size_t briefingTriggerIndex);
@@ -834,12 +841,12 @@ class SprpSection : public StructSection<Chk::SPRP, false>
         SprpSection();
         virtual ~SprpSection();
         
-        size_t getScenarioNameStringId();
-        size_t getScenarioDescriptionStringId();
+        size_t getScenarioNameStringId() const;
+        size_t getScenarioDescriptionStringId() const;
         void setScenarioNameStringId(u16 scenarioNameStringId);
         void setScenarioDescriptionStringId(u16 scenarioDescriptionStringId);
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -852,14 +859,14 @@ class ForcSection : public StructSection<Chk::FORC, false>
         ForcSection();
         virtual ~ForcSection();
 
-        Chk::Force getPlayerForce(size_t slotIndex);
-        size_t getForceStringId(Chk::Force force);
-        u8 getForceFlags(Chk::Force force);
+        Chk::Force getPlayerForce(size_t slotIndex) const;
+        size_t getForceStringId(Chk::Force force) const;
+        u8 getForceFlags(Chk::Force force) const;
         void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -873,12 +880,12 @@ class WavSection : public StructSection<Chk::WAV, true>
         virtual ~WavSection();
 
         size_t addSound(size_t stringId);
-        bool stringIsSound(size_t stringId);
-        size_t getSoundStringId(size_t soundIndex);
+        bool stringIsSound(size_t stringId) const;
+        size_t getSoundStringId(size_t soundIndex) const;
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -891,16 +898,16 @@ class UnisSection : public StructSection<Chk::UNIS, false>
         UnisSection();
         virtual ~UnisSection();
 
-        bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
-        u32 getUnitHitpoints(Sc::Unit::Type unitType);
-        u16 getUnitShieldPoints(Sc::Unit::Type unitType);
-        u8 getUnitArmorLevel(Sc::Unit::Type unitType);
-        u16 getUnitBuildTime(Sc::Unit::Type unitType);
-        u16 getUnitMineralCost(Sc::Unit::Type unitType);
-        u16 getUnitGasCost(Sc::Unit::Type unitType);
-        size_t getUnitNameStringId(Sc::Unit::Type unitType);
-        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType);
-        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType);
+        bool unitUsesDefaultSettings(Sc::Unit::Type unitType) const;
+        u32 getUnitHitpoints(Sc::Unit::Type unitType) const;
+        u16 getUnitShieldPoints(Sc::Unit::Type unitType) const;
+        u8 getUnitArmorLevel(Sc::Unit::Type unitType) const;
+        u16 getUnitBuildTime(Sc::Unit::Type unitType) const;
+        u16 getUnitMineralCost(Sc::Unit::Type unitType) const;
+        u16 getUnitGasCost(Sc::Unit::Type unitType) const;
+        size_t getUnitNameStringId(Sc::Unit::Type unitType) const;
+        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType) const;
+        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType) const;
 
         void setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault);
         void setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints);
@@ -913,8 +920,8 @@ class UnisSection : public StructSection<Chk::UNIS, false>
         void setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage);
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
 
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -927,13 +934,13 @@ class UpgsSection : public StructSection<Chk::UPGS, false>
         UpgsSection();
         virtual ~UpgsSection();
 
-        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
-        u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
-        u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType);
-        u16 getBaseGasCost(Sc::Upgrade::Type upgradeType);
-        u16 getGasCostFactor(Sc::Upgrade::Type upgradeType);
-        u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType);
-        u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType);
+        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType) const;
+        u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseGasCost(Sc::Upgrade::Type upgradeType) const;
+        u16 getGasCostFactor(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType) const;
+        u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType) const;
 
         void setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault);
         void setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost);
@@ -952,11 +959,11 @@ class TecsSection : public StructSection<Chk::TECS, false>
         TecsSection();
         virtual ~TecsSection();
 
-        bool techUsesDefaultSettings(Sc::Tech::Type techType);
-        u16 getTechMineralCost(Sc::Tech::Type techType);
-        u16 getTechGasCost(Sc::Tech::Type techType);
-        u16 getTechResearchTime(Sc::Tech::Type techType);
-        u16 getTechEnergyCost(Sc::Tech::Type techType);
+        bool techUsesDefaultSettings(Sc::Tech::Type techType) const;
+        u16 getTechMineralCost(Sc::Tech::Type techType) const;
+        u16 getTechGasCost(Sc::Tech::Type techType) const;
+        u16 getTechResearchTime(Sc::Tech::Type techType) const;
+        u16 getTechEnergyCost(Sc::Tech::Type techType) const;
 
         void setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault);
         void setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost);
@@ -973,10 +980,10 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
         SwnmSection();
         virtual ~SwnmSection();
 
-        size_t getSwitchNameStringId(size_t switchIndex);
+        size_t getSwitchNameStringId(size_t switchIndex) const;
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -989,7 +996,7 @@ class ColrSection : public StructSection<Chk::COLR, false>
         ColrSection();
         virtual ~ColrSection();
 
-        Chk::PlayerColor getPlayerColor(size_t slotIndex);
+        Chk::PlayerColor getPlayerColor(size_t slotIndex) const;
         void setPlayerColor(size_t slotIndex, Chk::PlayerColor color);
 };
 
@@ -1001,11 +1008,11 @@ class PupxSection : public StructSection<Chk::PUPx, false>
         PupxSection();
         virtual ~PupxSection();
 
-        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
-        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex);
-        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType);
-        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType);
-        bool playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex);
+        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
+        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
+        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType) const;
+        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType) const;
+        bool playerUsesDefault(Sc::Upgrade::Type upgradeType, size_t playerIndex) const;
         void setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel);
         void setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel);
         void setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel);
@@ -1021,11 +1028,11 @@ class PtexSection : public StructSection<Chk::PTEx, false>
         PtexSection();
         virtual ~PtexSection();
 
-        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex);
-        bool techResearched(Sc::Tech::Type techType, size_t playerIndex);
-        bool techDefaultAvailable(Sc::Tech::Type techType);
-        bool techDefaultResearched(Sc::Tech::Type techType);
-        bool playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex);
+        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex) const;
+        bool techResearched(Sc::Tech::Type techType, size_t playerIndex) const;
+        bool techDefaultAvailable(Sc::Tech::Type techType) const;
+        bool techDefaultResearched(Sc::Tech::Type techType) const;
+        bool playerUsesDefault(Sc::Tech::Type techType, size_t playerIndex) const;
         void setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available);
         void setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched);
         void setDefaultTechAvailable(Sc::Tech::Type techType, bool available);
@@ -1041,16 +1048,16 @@ class UnixSection : public StructSection<Chk::UNIx, false>
         UnixSection();
         virtual ~UnixSection();
 
-        bool unitUsesDefaultSettings(Sc::Unit::Type unitType);
-        u32 getUnitHitpoints(Sc::Unit::Type unitType);
-        u16 getUnitShieldPoints(Sc::Unit::Type unitType);
-        u8 getUnitArmorLevel(Sc::Unit::Type unitType);
-        u16 getUnitBuildTime(Sc::Unit::Type unitType);
-        u16 getUnitMineralCost(Sc::Unit::Type unitType);
-        u16 getUnitGasCost(Sc::Unit::Type unitType);
-        size_t getUnitNameStringId(Sc::Unit::Type unitType);
-        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType);
-        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType);
+        bool unitUsesDefaultSettings(Sc::Unit::Type unitType) const;
+        u32 getUnitHitpoints(Sc::Unit::Type unitType) const;
+        u16 getUnitShieldPoints(Sc::Unit::Type unitType) const;
+        u8 getUnitArmorLevel(Sc::Unit::Type unitType) const;
+        u16 getUnitBuildTime(Sc::Unit::Type unitType) const;
+        u16 getUnitMineralCost(Sc::Unit::Type unitType) const;
+        u16 getUnitGasCost(Sc::Unit::Type unitType) const;
+        size_t getUnitNameStringId(Sc::Unit::Type unitType) const;
+        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType) const;
+        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType) const;
 
         void setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault);
         void setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints);
@@ -1063,8 +1070,8 @@ class UnixSection : public StructSection<Chk::UNIx, false>
         void setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage);
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
 
-        bool stringUsed(size_t stringId);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringUsed(size_t stringId) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1077,13 +1084,13 @@ class UpgxSection : public StructSection<Chk::UPGx, false>
         UpgxSection();
         virtual ~UpgxSection();
 
-        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType);
-        u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType);
-        u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType);
-        u16 getBaseGasCost(Sc::Upgrade::Type upgradeType);
-        u16 getGasCostFactor(Sc::Upgrade::Type upgradeType);
-        u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType);
-        u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType);
+        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseMineralCost(Sc::Upgrade::Type upgradeType) const;
+        u16 getMineralCostFactor(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseGasCost(Sc::Upgrade::Type upgradeType) const;
+        u16 getGasCostFactor(Sc::Upgrade::Type upgradeType) const;
+        u16 getBaseResearchTime(Sc::Upgrade::Type upgradeType) const;
+        u16 getResearchTimeFactor(Sc::Upgrade::Type upgradeType) const;
 
         void setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault);
         void setBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost);
@@ -1102,11 +1109,11 @@ class TecxSection : public StructSection<Chk::TECx, false>
         TecxSection();
         virtual ~TecxSection();
 
-        bool techUsesDefaultSettings(Sc::Tech::Type techType);
-        u16 getTechMineralCost(Sc::Tech::Type techType);
-        u16 getTechGasCost(Sc::Tech::Type techType);
-        u16 getTechResearchTime(Sc::Tech::Type techType);
-        u16 getTechEnergyCost(Sc::Tech::Type techType);
+        bool techUsesDefaultSettings(Sc::Tech::Type techType) const;
+        u16 getTechMineralCost(Sc::Tech::Type techType) const;
+        u16 getTechGasCost(Sc::Tech::Type techType) const;
+        u16 getTechResearchTime(Sc::Tech::Type techType) const;
+        u16 getTechEnergyCost(Sc::Tech::Type techType) const;
 
         void setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault);
         void setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost);
@@ -1123,16 +1130,16 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         OstrSection();
         virtual ~OstrSection();
 
-        u32 getVersion();
+        u32 getVersion() const;
 
-        u32 getScenarioNameStringId();
-        u32 getScenarioDescriptionStringId();
-        u32 getForceNameStringId(Chk::Force force);
-        u32 getUnitNameStringId(Sc::Unit::Type unitType);
-        u32 getExpUnitNameStringId(Sc::Unit::Type unitType);
-        u32 getSoundPathStringId(size_t soundIndex);
-        u32 getSwitchNameStringId(size_t switchIndex);
-        u32 getLocationNameStringId(size_t locationId);
+        u32 getScenarioNameStringId() const;
+        u32 getScenarioDescriptionStringId() const;
+        u32 getForceNameStringId(Chk::Force force) const;
+        u32 getUnitNameStringId(Sc::Unit::Type unitType) const;
+        u32 getExpUnitNameStringId(Sc::Unit::Type unitType) const;
+        u32 getSoundPathStringId(size_t soundIndex) const;
+        u32 getSwitchNameStringId(size_t switchIndex) const;
+        u32 getLocationNameStringId(size_t locationId) const;
 
         void setScenarioNameStringId(u32 scenarioNameStringId);
         void setScenarioDescriptionStringId(u32 scenarioDescriptionStringId);
@@ -1143,8 +1150,8 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         void setSwitchNameStringId(size_t switchIndex, u32 switchNameStringId);
         void setLocationNameStringId(size_t locationId, u32 locationNameStringId);
 
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 };
@@ -1156,21 +1163,21 @@ class KstrSection : public DynamicSection<true>
         KstrSection();
         virtual ~KstrSection();
 
-        bool empty();
+        bool empty() const;
 
-        size_t getCapacity();
+        size_t getCapacity() const;
 
-        bool stringStored(size_t stringId);
-        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
+        bool stringStored(size_t stringId) const;
+        void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
 
-        StrProp getProperties(size_t stringId);
+        StrProp getProperties(size_t stringId) const;
         void setProperties(size_t stringId, const StrProp & strProp);
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        std::shared_ptr<StringType> getString(size_t stringId); // Gets the string at stringId with formatting based on StringType
+        std::shared_ptr<StringType> getString(size_t stringId) const; // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType & str);
+        size_t findString(const StringType & str) const;
 
         bool setCapacity(size_t stringCapacity, StrSynchronizer & strSynchronizer, bool autoDefragment = true);
         
@@ -1188,7 +1195,7 @@ class KstrSection : public DynamicSection<true>
         
         bool defragment(StrSynchronizer & strSynchronizer, bool matchCapacityToUsage = true); // Returns true if any fragmented strings are packed
 
-        u32 getVersion();
+        u32 getVersion() const;
         void setVersion(u32 version);
 
     protected:
@@ -1201,8 +1208,8 @@ class KstrSection : public DynamicSection<true>
         std::deque<ScStrPtr> strings;
         std::vector<u8> stringBytes;
         
-        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1);
-        bool stringsMatchBytes(); // Check whether every string in strings matches a string in stringBytes
+        size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1) const;
+        bool stringsMatchBytes() const; // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
         void loadString(const size_t & stringOffset, const size_t & sectionSize);
@@ -1215,15 +1222,16 @@ class KtrgSection : public DynamicSection<true>
         KtrgSection();
         virtual ~KtrgSection();
 
-        bool empty();
+        bool empty() const;
 
-        size_t numExtendedTriggers();
+        size_t numExtendedTriggers() const;
         std::shared_ptr<Chk::ExtendedTrigData> getExtendedTrigger(size_t extendedTriggerIndex);
+        const std::shared_ptr<Chk::ExtendedTrigData> getExtendedTrigger(size_t extendedTriggerIndex) const;
         size_t addExtendedTrigger(std::shared_ptr<Chk::ExtendedTrigData> extendedTrigger);
         void deleteExtendedTrigger(size_t extendedTriggerIndex);
 
-        bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
+        bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         void remapEditorStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteEditorString(size_t stringId);
 
@@ -1245,7 +1253,7 @@ class KtgpSection : public DynamicSection<true>
         KtgpSection();
         virtual ~KtgpSection();
 
-        bool empty();
+        bool empty() const;
 
     protected:
         virtual Chk::SectionSize getSize(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Gets the size of the data that can be written to an output stream, or throws MaxSectionSizeExceeded if size would be over MaxChkSectionSize
@@ -1281,16 +1289,16 @@ class ScStr
         ScStr(const std::string & str);
         ScStr(const std::string & str, const StrProp & strProp);
 
-        bool empty();
-        size_t length();
+        bool empty() const;
+        size_t length() const;
 
         StrProp & properties();
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        int compare(const StringType & str);
+        int compare(const StringType & str) const;
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        std::shared_ptr<StringType> toString();
+        std::shared_ptr<StringType> toString() const;
 
         ScStrPtr getParentStr();
         ScStrPtr getChildStr();
@@ -1378,7 +1386,7 @@ enum_t(StrCompressFlag, u32, {
 class StrCompressionElevator
 {
     public:
-        bool elevate(u32 currentlyAllowedCompressionFlags, u32 nextAllowableCompression) { return false; }
+        bool elevate(u32 currentlyAllowedCompressionFlags, u32 nextAllowableCompression) const { return false; }
 
         static StrCompressionElevatorPtr NeverElevate() { return StrCompressionElevatorPtr(new StrCompressionElevator()); }
 };
@@ -1440,8 +1448,8 @@ class MaximumOffsetAndCharsExceeded : public StringException
 class LocationSynchronizer
 {
     public:
-        virtual bool locationUsed(size_t locationId) = 0;
-        virtual void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) = 0;
+        virtual bool locationUsed(size_t locationId) const = 0;
+        virtual void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const = 0;
 
         virtual void remapLocationIds(const std::map<u32, u32> & locationIdRemappings) = 0;
 };
@@ -1452,9 +1460,9 @@ class StrSynchronizer
         StrSynchronizer(u32 requestedCompressionFlags, u32 allowedCompressionFlags)
             : requestedCompressionFlags(requestedCompressionFlags), allowedCompressionFlags(allowedCompressionFlags) { }
 
-        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) = 0;
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) = 0;
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) = 0;
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) const = 0;
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const = 0;
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const = 0;
 
         virtual void syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),

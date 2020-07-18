@@ -78,7 +78,7 @@ public:
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool getFile(const std::string & archivedFilePath, std::vector<u8> & fileData) = 0;
+    virtual bool getFile(const std::string & archivedFilePath, std::vector<u8> & fileData) const = 0;
 
     // Attempts to add a file to this archive at archivedFilePath with the data from the fileData buffer
     // Cannot be used unless the archive is already open
