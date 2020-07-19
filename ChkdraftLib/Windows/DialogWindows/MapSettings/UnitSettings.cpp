@@ -401,6 +401,7 @@ void UnitSettingsWindow::CheckReplaceUnitName()
     if ( possibleUnitNameUpdate && selectedUnitType != Sc::Unit::Type::NoUnit && (u16)selectedUnitType < Sc::Unit::TotalTypes && editUnitName.GetWinText(newUnitName) )
     {
         CM->strings.setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, newUnitName);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         CM->notifyChange(false);
         chkd.unitWindow.RepopulateList();
         RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -419,6 +420,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         u16 expName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
         CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
         CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         
         ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(selectedUnitType, true);
         editUnitName.SetText(*unitName);
@@ -576,6 +578,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                     editUnitName.DisableThis();
                     CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
+                    CM->strings.deleteUnusedStrings(Chk::Scope::Both);
                     ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(selectedUnitType, true);
                     editUnitName.SetText(*unitName);
                     chkd.unitWindow.RepopulateList();

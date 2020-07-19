@@ -339,6 +339,7 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
         editForceName[(size_t)force].GetWinText(newMapForce) && newMapForce.length() > 0 )
     {
         CM->strings.setForceName<ChkdString>(force, newMapForce);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         CM->notifyChange(false);
         CM->refreshScenario();
         possibleForceNameUpdate[(size_t)force] = false;

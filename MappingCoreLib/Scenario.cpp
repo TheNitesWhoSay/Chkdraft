@@ -434,6 +434,7 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
 {
     if ( versions.changeTo(version, lockAnywhere, autoDefragmentLocations) )
     {
+        strings.deleteUnusedStrings(Chk::Scope::Both);
         if ( version < Chk::Version::StarCraft_BroodWar ) // Original or Hybrid: No COLR, include all original properties
         {
             if ( version < Chk::Version::StarCraft_Hybrid ) // Original: No TYPE, IVE2, or expansion properties

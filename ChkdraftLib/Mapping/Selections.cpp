@@ -154,7 +154,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
     
     for ( u16 i=1; i<=numLocations; i++ )
     {
-        auto location = i != selectedLocation && (i != Chk::LocationId::Anywhere || canSelectAnywhere) ? map.layers.getLocation(i) : nullptr;
+        const auto location = i != selectedLocation && (i != Chk::LocationId::Anywhere || canSelectAnywhere) ? map.layers.getLocation(i) : nullptr;
         if ( location != nullptr )
         {
             s32 locLeft = std::min(location->left, location->right),

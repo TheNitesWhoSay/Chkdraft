@@ -471,7 +471,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
         u16 selectedLocation = selections.getSelectedLocation();
         if ( selectedLocation != NO_LOCATION )
         {
-            Chk::LocationPtr loc = currentlyActiveMap->layers.getLocation(selectedLocation);
+            const Chk::LocationPtr loc = currentlyActiveMap->layers.getLocation(selectedLocation);
             if ( loc != nullptr )
             {
                 s32 locationLeft = std::min(loc->left, loc->right),

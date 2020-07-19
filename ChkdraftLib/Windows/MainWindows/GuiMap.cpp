@@ -184,7 +184,7 @@ void GuiMap::setDragging(bool bDragging)
 
 void GuiMap::viewLocation(u16 locationId)
 {
-    Chk::LocationPtr location = layers.getLocation(locationId);
+    const Chk::LocationPtr location = layers.getLocation(locationId);
     RECT rect;
     if ( location != nullptr && GetClientRect(getHandle(), &rect) != 0 )
     {
@@ -212,7 +212,7 @@ LocSelFlags GuiMap::getLocSelFlags(s32 xc, s32 yc)
         u16 selectedLocation = selections.getSelectedLocation();
         if ( selectedLocation != NO_LOCATION ) // If location is selected, determine which part of it is hovered by mouse
         {
-            Chk::LocationPtr loc = layers.getLocation(selectedLocation);
+            const Chk::LocationPtr loc = layers.getLocation(selectedLocation);
             if ( loc != nullptr )
             {
                 s32 locationLeft = std::min(loc->left, loc->right),
@@ -296,7 +296,7 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
     if ( selectedLoc != NO_LOCATION )
     {
-        Chk::LocationPtr locRef = layers.getLocation(selectedLoc);
+        const Chk::LocationPtr locRef = layers.getLocation(selectedLoc);
         if ( locRef != nullptr )
         {
             s32 locLeft = std::min(locRef->left, locRef->right),
@@ -1774,6 +1774,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             if ( newLocationId != Chk::LocationId::NoLocation )
             {
                 strings.setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+                strings.deleteUnusedStrings(Chk::Scope::Both);
                 undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
                 refreshScenario();

@@ -25,7 +25,7 @@ void LocationChange::Reverse(void *guiMap)
         case Chk::Location::Field::Bottom: replacedData = (u32)((GuiMap*)guiMap)->layers.getLocation(locationId)->bottom;
             ((GuiMap*)guiMap)->layers.getLocation(locationId)->bottom = data; break;
         case Chk::Location::Field::StringId: replacedData = (u32)((GuiMap*)guiMap)->layers.getLocation(locationId)->stringId;
-            ((GuiMap*)guiMap)->layers.getLocation(locationId)->stringId = data; break;
+            ((GuiMap*)guiMap)->layers.getLocation(locationId)->stringId = data; break; // TODO: This is sketchy, replace this
         case Chk::Location::Field::ElevationFlags: replacedData = (u32)((GuiMap*)guiMap)->layers.getLocation(locationId)->elevationFlags;
             ((GuiMap*)guiMap)->layers.getLocation(locationId)->elevationFlags = data; break;
     }

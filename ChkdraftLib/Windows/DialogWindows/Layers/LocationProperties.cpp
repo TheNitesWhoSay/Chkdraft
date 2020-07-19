@@ -87,7 +87,7 @@ void LocationWindow::RefreshLocationElevationFlags()
     bool prevRefreshingValue = refreshing;
     refreshing = true;
 
-    Chk::LocationPtr locRef = currentLocationId != NO_LOCATION ? CM->layers.getLocation(currentLocationId) : nullptr;
+    const Chk::LocationPtr locRef = currentLocationId != NO_LOCATION ? CM->layers.getLocation(currentLocationId) : nullptr;
     if ( locRef != nullptr )
     {
         checkLowGround.SetCheck((locRef->elevationFlags & Chk::Location::Elevation::LowElevation) == 0);
@@ -109,7 +109,7 @@ void LocationWindow::RefreshLocationInfo()
         DestroyThis();
 
     currentLocationId = CM->GetSelectedLocation();
-    Chk::LocationPtr locRef = currentLocationId != NO_LOCATION ? CM->layers.getLocation(currentLocationId) : nullptr;
+    const Chk::LocationPtr locRef = currentLocationId != NO_LOCATION ? CM->layers.getLocation(currentLocationId) : nullptr;
     if ( locRef != nullptr )
     {
         editLocLeft.SetText(std::to_string(locRef->left));
@@ -385,6 +385,7 @@ void LocationWindow::LocationNameFocusLost()
         if ( editLocName.GetWinText(locationName) )
         {
             CM->strings.replaceString<ChkdString>(locRef->stringId, locationName);
+            CM->strings.deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             CM->refreshScenario();
         }
@@ -520,7 +521,7 @@ void LocationWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
     {
         switch ( idFrom )
         {
-            case Id::EditLocationName: preservedStat = locRef->stringId; break;
+            case Id::EditLocationName: preservedStat = locRef->stringId; break; // TODO: This is sketchy, replace this
             case Id::EditRawFlags: preservedStat = locRef->elevationFlags; break;
             case Id::EditLocationLeft: preservedStat = locRef->left; break;
             case Id::EditLocationTop: preservedStat = locRef->top; break;

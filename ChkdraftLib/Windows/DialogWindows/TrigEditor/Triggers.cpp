@@ -156,6 +156,7 @@ void TriggersWindow::DeleteSelection()
     if ( currTrigger != NO_TRIGGER )
     {
         CM->triggers.deleteTrigger(currTrigger);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -790,7 +791,7 @@ void TriggersWindow::RefreshGroupList()
         size_t numTriggers = CM->triggers.numTriggers();
         for ( size_t i=0; i<numTriggers; i++ )
         {
-            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
             if ( trigger != nullptr )
             {
                 for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
@@ -856,7 +857,7 @@ void TriggersWindow::RefreshTrigList()
         size_t numTriggers = CM->triggers.numTriggers();
         for ( size_t i=0; i<numTriggers; i++ )
         {
-            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
             if ( trigger != nullptr && ShowTrigger(&(*trigger)) )
             {
                 int newListIndex = listTriggers.AddItem((u32)i);
@@ -1368,7 +1369,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 triggerNum = (u32)mis->itemData;
                 
-                Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
+                const Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
                 if ( trigger != nullptr )
                     GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, CM, triggerNum, &(*trigger));
                 
@@ -1421,7 +1422,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 {
                     u32 triggerNum = (u32)pdis->itemData;
                     
-                    Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
+                    const Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
                     if ( CM != nullptr && trigger != nullptr )
                         DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, CM, triggerNum, &(*trigger));
                 }

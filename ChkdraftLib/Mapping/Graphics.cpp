@@ -284,7 +284,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 
     for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        auto location = map.layers.getLocation(locationId);
+        const auto location = map.layers.getLocation(locationId);
         if ( (locationId != Chk::LocationId::Anywhere || showAnywhere) && location != nullptr )
         {
             
@@ -382,7 +382,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
     u16 selectedLoc = selections.getSelectedLocation();
     if ( selectedLoc != NO_LOCATION )
     {
-        Chk::LocationPtr loc = map.layers.getLocation(selectedLoc);
+        const Chk::LocationPtr loc = map.layers.getLocation(selectedLoc);
         if ( loc != nullptr )
         {
             s32 leftMost = std::min(loc->left, loc->right);
@@ -521,7 +521,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 
     for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        auto location = map.layers.getLocation(locationId);
+        const auto location = map.layers.getLocation(locationId);
         if ( locationId != Chk::LocationId::Anywhere && location != nullptr )
         {
             s32 leftMost = std::min(location->left, location->right);
@@ -1334,7 +1334,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selection
     else
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? map.layers.getLocation((size_t)selectedLocation) : nullptr;
+        const Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? map.layers.getLocation((size_t)selectedLocation) : nullptr;
         if ( loc != nullptr ) // Draw location resize/movement graphics
         {
             s32 locLeft = loc->left-screenLeft;
