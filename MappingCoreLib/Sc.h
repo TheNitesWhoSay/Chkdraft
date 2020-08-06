@@ -1577,6 +1577,7 @@ namespace Sc {
         const Entry & getEntry(size_t aiIndex) const;
         const std::string & getName(size_t aiIndex) const;
         bool getName(size_t aiIndex, std::string & outAiName) const;
+        bool getNameById(u32 aiId, std::string & outAiName) const;
         size_t numEntries() const;
 
     private:

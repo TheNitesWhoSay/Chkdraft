@@ -1524,6 +1524,20 @@ bool Sc::Ai::getName(size_t aiIndex, std::string & outAiName) const
     return false;
 }
 
+bool Sc::Ai::getNameById(u32 aiId, std::string & outAiName) const
+{
+    for ( size_t i=0; i<entries.size(); i++ )
+    {
+        const Sc::Ai::Entry & entry = entries[i];
+        if ( entry.identifier == aiId )
+        {
+            if ( statTxt != nullptr )
+                return entries[i].getName(*statTxt, outAiName);
+        }
+    }
+    return false;
+}
+
 size_t Sc::Ai::numEntries() const
 {
     return entries.size();
@@ -1872,7 +1886,7 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     
     grps.push_back(blankGrp);
     size_t numStrings = tblFile.numStrings();
-    for ( size_t i=0; i<numStrings; i++ )
+    for ( size_t i=1; i<=numStrings; i++ )
     {
         const std::string & imageFilePath = tblFile.getString(i);
         Sc::Sprite::Grp grp;
@@ -3240,7 +3254,8 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
             if ( rawData.back() != u8('\0') )
                 rawData.push_back('\0');
 
-            for ( s64 i=1; i<numStrings && 2*i; i++ )
+            strings.push_back(std::string());
+            for ( s64 i=1; i<=numStrings && 2*i < rawData.size(); i++ )
             {
                 size_t stringOffset = size_t((u16 &)rawData[2*size_t(i)]);
                 if ( stringOffset < rawData.size() )
@@ -3259,7 +3274,7 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
 
 size_t Sc::TblFile::numStrings() const
 {
-    return strings.size();
+    return strings.empty() ? 0 : strings.size()-1;
 }
 
 const std::string & Sc::TblFile::getString(size_t stringIndex) const
@@ -3272,7 +3287,12 @@ const std::string & Sc::TblFile::getString(size_t stringIndex) const
 
 bool Sc::TblFile::getString(size_t stringIndex, std::string & outString) const
 {
-    if ( stringIndex < strings.size() )
+    if ( stringIndex == 0 )
+    {
+        outString = std::string();
+        return true;
+    }
+    else if ( stringIndex < strings.size() )
     {
         outString = strings[stringIndex];
         return true;

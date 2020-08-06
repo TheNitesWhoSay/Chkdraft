@@ -594,7 +594,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
         case Chk::Action::Type::RunAiScript: // Number
             {
                 std::string aiName;
-                if ( chkd.scData.ai.getName(action.number, aiName) )
+                if ( chkd.scData.ai.getNameById(action.number, aiName) )
                     ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << ")\x0C\'.";
                 else
                     ssAction << "Execute AI script \'\x08" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << "\x0C\'.";
@@ -603,7 +603,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
         case Chk::Action::Type::RunAiScriptAtLocation: // Number, Location
             {
                 std::string aiName;
-                if ( chkd.scData.ai.getName(action.number, aiName) )
+                if ( chkd.scData.ai.getNameById(action.number, aiName) )
                 {
                     ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << ")\x0C\' at \'\x08"
                         << tt.getTrigLocation(action.locationId) << "\x0C\'.";
