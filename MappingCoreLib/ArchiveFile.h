@@ -67,11 +67,11 @@ public:
     // If the deleteOnClose flag was specified earlier the archive is removed from disk after being closed
     virtual void close();
 
-    // Checks whether an file exists within the archive at the given archivedFilePath
+    // Checks whether a file exists within the archive at the given archivedFilePath
     // Cannot be used unless the archive is already open
     virtual bool findFile(const std::string & archivedFilePath) const = 0;
 
-    // Checks whether an file exists within the archive at the given archivedFilePath
+    // Checks whether a file exists within the archive at the given archivedFilePath
     // If an archive is already open with a filePath matching the provided filePath, the already opened archive is searched
     // Else attempts to find and search an archive at filePath
     virtual bool findFile(const std::string & filePath, const std::string & archivedFilePath) const = 0;

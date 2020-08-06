@@ -77,11 +77,11 @@ public:
     // If the temporary flag was specified the MPQ is removed from disk after being closed
     virtual void close();
 
-    // Checks whether an file exists within the MPQ at the given mpqPath
+    // Checks whether a file exists within the MPQ at the given mpqPath
     // Cannot be used unless the MPQ is already open
     virtual bool findFile(const std::string & mpqPath) const;
 
-    // Checks whether an file exists within the MPQ at the given mpqPath
+    // Checks whether a file exists within the MPQ at the given mpqPath
     // If an MPQ is already open with a filePath matching the provided filePath, the already opened MPQ is searched
     // Else attempts to find and search an MPQ at filePath
     virtual bool findFile(const std::string & filePath, const std::string & mpqPath) const;
