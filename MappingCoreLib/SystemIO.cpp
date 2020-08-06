@@ -303,7 +303,7 @@ bool removeFile(const std::string & filePath)
 #ifdef WINDOWS_UTF16
     return filePath.empty() || _wremove(sysFilePath.c_str()) == 0 || !findFile(filePath);
 #else
-    return sysFilePath.empty() || remove(sysFilePath.c_str()) == 0 || !FindFile(filePath);
+    return sysFilePath.empty() || remove(sysFilePath.c_str()) == 0 || !findFile(filePath);
 #endif
 }
 
