@@ -708,15 +708,6 @@ bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
 std::string MapFile::getFileName() const
 {
     return getSystemFileName(mapFilePath);
-
-    std::string sFilePath(mapFilePath);
-    std::string separator = getSystemFileSeparator();
-    auto lastBackslashPos = sFilePath.find_last_of('\\');
-
-    if ( lastBackslashPos != std::string::npos && lastBackslashPos+1 < sFilePath.size() )
-        return std::string(sFilePath.substr(lastBackslashPos+1, sFilePath.size() - lastBackslashPos+1));
-    else
-        return std::string("");
 }
 
 const std::string & MapFile::getFilePath() const
