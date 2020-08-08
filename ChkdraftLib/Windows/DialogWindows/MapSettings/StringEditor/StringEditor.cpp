@@ -48,10 +48,9 @@ void StringEditorWindow::RefreshWindow()
     if ( CM != nullptr )
     {
         buttonSwap.SetWinText(extended ? "Switch to Standard" : "Switch to Extended");
-        if ( extended )
-            textAboutStrings.SetText("");
-        else
-            textAboutStrings.SetText(std::string("TODO / 65536 Bytes Used"));
+        size_t bytesUsed = CM->strings.getBytesUsed(extended ? Chk::Scope::Editor : Chk::Scope::Game);
+        size_t maxBytes = extended ? ChkSection::MaxChkSectionSize : 65536;
+        textAboutStrings.SetText(std::to_string(bytesUsed) + " / " + std::to_string(maxBytes) + " Bytes Used");
         
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
