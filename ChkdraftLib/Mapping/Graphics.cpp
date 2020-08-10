@@ -284,7 +284,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 
     for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        auto location = map.layers.getLocation(locationId);
+        const auto location = map.layers.getLocation(locationId);
         if ( (locationId != Chk::LocationId::Anywhere || showAnywhere) && location != nullptr )
         {
             
@@ -382,7 +382,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
     u16 selectedLoc = selections.getSelectedLocation();
     if ( selectedLoc != NO_LOCATION )
     {
-        Chk::LocationPtr loc = map.layers.getLocation(selectedLoc);
+        const Chk::LocationPtr loc = map.layers.getLocation(selectedLoc);
         if ( loc != nullptr )
         {
             s32 leftMost = std::min(loc->left, loc->right);
@@ -521,7 +521,7 @@ void Graphics::DrawLocationNames(HDC hDC)
 
     for ( size_t locationId = 1; locationId <= map.layers.numLocations(); locationId++ )
     {
-        auto location = map.layers.getLocation(locationId);
+        const auto location = map.layers.getLocation(locationId);
         if ( locationId != Chk::LocationId::Anywhere && location != nullptr )
         {
             s32 leftMost = std::min(location->left, location->right);
@@ -1334,7 +1334,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selection
     else
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? map.layers.getLocation((size_t)selectedLocation) : nullptr;
+        const Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? map.layers.getLocation((size_t)selectedLocation) : nullptr;
         if ( loc != nullptr ) // Draw location resize/movement graphics
         {
             s32 locLeft = loc->left-screenLeft;
@@ -1729,6 +1729,8 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     
     constexpr icux::codepoint carriageReturn = (icux::codepoint)'\r';
     constexpr icux::codepoint lineFeed = (icux::codepoint)'\n';
+    constexpr icux::codepoint emptyLine[] = { carriageReturn, lineFeed, icux::nullChar };
+    constexpr size_t emptyLineLength = sizeof(emptyLine)/sizeof(icux::codepoint);
     
     auto sysStr = icux::toUistring(str);
     const size_t codepointCount = sysStr.length();
@@ -1741,7 +1743,8 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
         if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
         {
             rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
-            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) )
+            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) || // Regular line
+                (i == lineStart && WinLib::getTabTextExtent(hDC, &emptyLine[0], emptyLineLength, lineWidth, lineHeight)) ) // Empty line
             {
                 height += lineHeight;
                 if ( lineWidth > s32(width) )
@@ -1840,7 +1843,8 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
             // Do first line
             std::string firstLine = str.substr(0, loc);
             DrawStringLine(hDC, xPos, yPos, width, defaultColor, firstLine);
-            if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) )
+            if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) ||
+                (loc == 0 && str.length() > 0 && WinLib::getTabTextExtent(hDC, std::string("\r\n"), lineWidth, lineHeight)) )
             {
                 start = loc+2;
                 yPos += lineHeight;

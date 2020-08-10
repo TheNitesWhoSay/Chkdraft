@@ -33,7 +33,7 @@ using s64 = std::int64_t;
 bool hasExtension(const std::string & systemFilePath, const std::string & extension);
 std::string getSystemFileSeparator(); // Gets the file separator on the current system, usually \ or /
 std::string getSystemFileName(const std::string & systemFilePath); // Extracts the file name from a system file path
-std::string getSystemFileExtension(const std::string & systemFilePath); // Extracts the file extension from a system file path, this will include the dot
+std::string getSystemFileExtension(const std::string & systemFilePath, bool includeExtensionSeparator = true); // Extracts the file extension from a system file path, this will include the dot
 std::string getSystemFileDirectory(const std::string & systemFilePath, bool includeTrailingSeparator = true); // Extracts the directory from a system file path
 std::string makeSystemFilePath(const std::string & systemDirectory, const std::string & fileName); // Creates a file path ensuring the appropriate separator is used
 std::string makeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension); // Creates a file path ensuring the appropriate extension is used
@@ -41,7 +41,7 @@ std::string makeExtSystemFilePath(const std::string & systemDirectory, const std
 
 std::string getMpqFileSeparator(); // Gets the file separator used inside MPQ files (always \)
 std::string getMpqFileName(const std::string & mpqFilePath); // Extracts the file name from a MPQ file path
-std::string getMpqFileExtension(const std::string & mpqFilePath); // Extracts the file extension from a mpq file path, this will include the dot
+std::string getMpqFileExtension(const std::string & mpqFilePath, bool includeExtensionSeparator = true); // Extracts the file extension from a mpq file path, this will include the dot
 std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName); // Creates a mpq file path ensuring the appropriate separator is used
 std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
 

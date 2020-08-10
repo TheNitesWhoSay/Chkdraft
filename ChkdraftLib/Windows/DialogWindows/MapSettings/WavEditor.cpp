@@ -61,7 +61,7 @@ void WavEditorWindow::RefreshWindow()
     }
     for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
     {
-        Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+        const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
             if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
@@ -533,6 +533,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
             CM->notifyChange(false);
             CM->refreshScenario();
         }
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
     }
 }
 

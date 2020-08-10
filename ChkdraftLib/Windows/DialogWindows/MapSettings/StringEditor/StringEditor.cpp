@@ -48,10 +48,9 @@ void StringEditorWindow::RefreshWindow()
     if ( CM != nullptr )
     {
         buttonSwap.SetWinText(extended ? "Switch to Standard" : "Switch to Extended");
-        if ( extended )
-            textAboutStrings.SetText("");
-        else
-            textAboutStrings.SetText(std::string("TODO / 65536 Bytes Used"));
+        size_t bytesUsed = CM->strings.getBytesUsed(extended ? Chk::Scope::Editor : Chk::Scope::Game);
+        size_t maxBytes = extended ? ChkSection::MaxChkSectionSize : 65536;
+        textAboutStrings.SetText(std::to_string(bytesUsed) + " / " + std::to_string(maxBytes) + " Bytes Used");
         
         listStrings.SetRedraw(false);
         listStrings.ClearItems();
@@ -66,7 +65,7 @@ void StringEditorWindow::RefreshWindow()
         {
             if ( strUsed[i] )
             {
-                ChkdStringPtr str = CM->strings.getString<ChkdString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
+                RawStringPtr str = CM->strings.getString<RawString>(i, extended ? Chk::Scope::Editor : Chk::Scope::Game);
                 if ( str != nullptr )
                 {
                     int newListIndex = listStrings.AddItem((u32)i);
@@ -137,21 +136,54 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr )
                 {
-                    ChkdStringPtr str = CM->strings.getString<ChkdString>(currSelString);
+                    ChkdStringPtr str = CM->strings.getString<ChkdString>(currSelString, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( str != nullptr )
                     {
                         editString.SetText(*str);
 
-                        /* TODO u32 locs, trigs, briefs, props, forces, wavs, units, switches;
-                        CM->getStringUse(currSelString, locs, trigs, briefs, props, forces, wavs, units, switches);
-                        addUseItem("Locations", locs);
-                        addUseItem("Triggers", trigs);
-                        addUseItem("Briefing Triggers", briefs);
-                        addUseItem("Map Properties", props);
-                        addUseItem("Forces", forces);
-                        addUseItem("WAVs", wavs);
-                        addUseItem("Units", units);
-                        addUseItem("Switches", switches);*/
+                        std::vector<Chk::StringUser> stringUsers;
+                        CM->strings.appendUsage(currSelString, stringUsers, extended ? Chk::Scope::Editor : Chk::Scope::Game);
+                        std::unordered_map<Chk::StringUserFlag, size_t> stringUserToUsageCount = {
+                            { Chk::StringUserFlag::Location, 0 },
+                            { Chk::StringUserFlag::AnyTrigger, 0 },
+                            { Chk::StringUserFlag::AnyBriefingTrigger, 0 },
+                            { Chk::StringUserFlag::ScenarioProperties, 0 },
+                            { Chk::StringUserFlag::Force, 0 },
+                            { Chk::StringUserFlag::Sound, 0 },
+                            { Chk::StringUserFlag::BothUnitSettings, 0 },
+                            { Chk::StringUserFlag::Switch, 0 }
+                        };
+
+                        for ( const Chk::StringUser & stringUser : stringUsers )
+                        {
+                            Chk::StringUserFlag userFlags = stringUser.userFlags;
+                            if ( (userFlags & Chk::StringUserFlag::Location) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::Location)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::AnyTrigger)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::AnyBriefingTrigger) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::AnyBriefingTrigger)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::ScenarioProperties) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::ScenarioProperties)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::Force) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::Force)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::Sound) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::Sound)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::BothUnitSettings) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::BothUnitSettings)->second ++;
+                            else if ( (userFlags & Chk::StringUserFlag::Switch) != Chk::StringUserFlag::None )
+                                stringUserToUsageCount.find(Chk::StringUserFlag::Switch)->second ++;
+                        }
+                        
+                        addUseItem("Locations", stringUserToUsageCount.find(Chk::StringUserFlag::Location)->second);
+                        addUseItem("Triggers", stringUserToUsageCount.find(Chk::StringUserFlag::AnyTrigger)->second);
+                        addUseItem("Briefing Triggers", stringUserToUsageCount.find(Chk::StringUserFlag::AnyBriefingTrigger)->second);
+                        addUseItem("Map Properties", stringUserToUsageCount.find(Chk::StringUserFlag::ScenarioProperties)->second);
+                        addUseItem("Forces", stringUserToUsageCount.find(Chk::StringUserFlag::Force)->second);
+                        addUseItem("WAVs", stringUserToUsageCount.find(Chk::StringUserFlag::Sound)->second);
+                        addUseItem("Units", stringUserToUsageCount.find(Chk::StringUserFlag::BothUnitSettings)->second);
+                        addUseItem("Switches", stringUserToUsageCount.find(Chk::StringUserFlag::Switch)->second);
+
                         if ( extended )
                             chkd.mapSettingsWindow.SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
                         else
@@ -216,7 +248,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_MEASUREITEM:
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)mis->itemData);
+                RawStringPtr str = CM->strings.getString<RawString>((size_t)mis->itemData, extended ? Chk::Scope::Editor : Chk::Scope::Game);
 
                 if ( str != nullptr &&
                      GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, *str) )
@@ -245,7 +277,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
-                    ChkdStringPtr str = CM->strings.getString<ChkdString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
+                    RawStringPtr str = CM->strings.getString<RawString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( CM != nullptr && str != nullptr )
                     {
                         HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
@@ -310,7 +342,7 @@ void StringEditorWindow::saveStrings()
     }
 }
 
-void StringEditorWindow::addUseItem(std::string str, u32 amount)
+void StringEditorWindow::addUseItem(std::string str, size_t amount)
 {
     if ( amount > 0 )
         listUsage.AddString(str + ": " + std::to_string(amount));

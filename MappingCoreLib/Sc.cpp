@@ -257,7 +257,7 @@ bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return true;
 }
 
-const Sc::Unit::DatEntry & Sc::Unit::getUnit(Type unitType)
+const Sc::Unit::DatEntry & Sc::Unit::getUnit(Type unitType) const
 {
     if ( unitType < units.size() )
         return units[unitType];
@@ -265,7 +265,7 @@ const Sc::Unit::DatEntry & Sc::Unit::getUnit(Type unitType)
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for units vector of size " + std::to_string(units.size()));
 }
 
-const Sc::Unit::FlingyDatEntry & Sc::Unit::getFlingy(size_t flingyIndex)
+const Sc::Unit::FlingyDatEntry & Sc::Unit::getFlingy(size_t flingyIndex) const
 {
     if ( flingyIndex < flingies.size() )
         return flingies[flingyIndex];
@@ -1493,7 +1493,7 @@ bool Sc::Ai::load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr
     return false;
 }
 
-const Sc::Ai::Entry & Sc::Ai::getEntry(size_t aiIndex)
+const Sc::Ai::Entry & Sc::Ai::getEntry(size_t aiIndex) const
 {
     if ( aiIndex < entries.size() )
         return entries[aiIndex];
@@ -1520,6 +1520,20 @@ bool Sc::Ai::getName(size_t aiIndex, std::string & outAiName) const
     {
         if ( statTxt != nullptr )
             return entries[aiIndex].getName(*statTxt, outAiName);
+    }
+    return false;
+}
+
+bool Sc::Ai::getNameById(u32 aiId, std::string & outAiName) const
+{
+    for ( size_t i=0; i<entries.size(); i++ )
+    {
+        const Sc::Ai::Entry & entry = entries[i];
+        if ( entry.identifier == aiId )
+        {
+            if ( statTxt != nullptr )
+                return entries[i].getName(*statTxt, outAiName);
+        }
     }
     return false;
 }
@@ -1658,7 +1672,7 @@ bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return success;
 }
 
-const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(Tileset tileset)
+const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(Tileset tileset) const
 {
     if ( tileset < Terrain::NumTilesets )
         return tilesets[tileset].systemColorPalette;
@@ -1712,7 +1726,7 @@ bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return true;
 }
 
-const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType)
+const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType) const
 {
     if ( weaponType < weapons.size() )
         return weapons[weaponType];
@@ -1740,14 +1754,14 @@ const Sc::Sprite::GrpFile & Sc::Sprite::Grp::get() const
     return (const GrpFile &)grpData[0];
 }
 
-bool Sc::Sprite::Grp::isValid(const std::string & mpqFileName)
+bool Sc::Sprite::Grp::isValid(const std::string & mpqFileName) const
 {
     return fileHeaderIsValid(mpqFileName) &&
         frameHeadersAreValid(mpqFileName) &&
         framesAreValid(mpqFileName);
 }
 
-bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & mpqFileName)
+bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & mpqFileName) const
 {
     if ( grpData.size() < Sc::Sprite::GrpFile::FileHeaderSize )
     {
@@ -1757,7 +1771,7 @@ bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & mpqFileName)
     return true;
 }
 
-bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & mpqFileName)
+bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & mpqFileName) const
 {
     GrpFile & grpFile = (GrpFile &)grpData[0];
     size_t minimumFileSize = Sc::Sprite::GrpFile::FileHeaderSize + size_t(grpFile.numFrames)*sizeof(GrpFrameHeader);
@@ -1769,7 +1783,7 @@ bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & mpqFileName)
     return true;
 }
 
-bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName)
+bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
 {
     GrpFile & grpFile = (GrpFile &)grpData[0];
     u16 numFrames = grpFile.numFrames;
@@ -1872,7 +1886,7 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     
     grps.push_back(blankGrp);
     size_t numStrings = tblFile.numStrings();
-    for ( size_t i=0; i<numStrings; i++ )
+    for ( size_t i=1; i<=numStrings; i++ )
     {
         const std::string & imageFilePath = tblFile.getString(i);
         Sc::Sprite::Grp grp;
@@ -1950,7 +1964,7 @@ const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
         throw std::out_of_range(std::string("GrpIndex: ") + std::to_string(grpIndex) + " is out of range for grps vector of size " + std::to_string(grps.size()));
 }
 
-const Sc::Sprite::ImageDatEntry & Sc::Sprite::getImage(size_t imageIndex)
+const Sc::Sprite::ImageDatEntry & Sc::Sprite::getImage(size_t imageIndex) const
 {
     if ( imageIndex < images.size() )
         return images[imageIndex];
@@ -1958,7 +1972,7 @@ const Sc::Sprite::ImageDatEntry & Sc::Sprite::getImage(size_t imageIndex)
         throw std::out_of_range(std::string("ImageIndex: ") + std::to_string(imageIndex) + " is out of range for images vector of size " + std::to_string(images.size()));
 }
 
-const Sc::Sprite::DatEntry & Sc::Sprite::getSprite(size_t spriteIndex)
+const Sc::Sprite::DatEntry & Sc::Sprite::getSprite(size_t spriteIndex) const
 {
     if ( spriteIndex < sprites.size() )
         return sprites[spriteIndex];
@@ -1966,17 +1980,17 @@ const Sc::Sprite::DatEntry & Sc::Sprite::getSprite(size_t spriteIndex)
         throw std::out_of_range(std::string("SpriteIndex: ") + std::to_string(spriteIndex) + " is out of range for sprites vector of size " + std::to_string(sprites.size()));
 }
 
-size_t Sc::Sprite::numGrps()
+size_t Sc::Sprite::numGrps() const
 {
     return grps.size();
 }
 
-size_t Sc::Sprite::numImages()
+size_t Sc::Sprite::numImages() const
 {
     return images.size();
 }
 
-size_t Sc::Sprite::numSprites()
+size_t Sc::Sprite::numSprites() const
 {
     return sprites.size();
 }
@@ -2023,7 +2037,7 @@ bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return true;
 }
 
-const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType)
+const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType) const
 {
     if ( upgradeType < upgrades.size() )
         return upgrades[upgradeType];
@@ -2071,7 +2085,7 @@ bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     return true;
 }
 
-const Sc::Tech::DatEntry & Sc::Tech::getTech(Type techType)
+const Sc::Tech::DatEntry & Sc::Tech::getTech(Type techType) const
 {
     if ( size_t(techType) < techs.size() )
         return techs[size_t(techType)];
@@ -3240,7 +3254,8 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
             if ( rawData.back() != u8('\0') )
                 rawData.push_back('\0');
 
-            for ( s64 i=1; i<numStrings && 2*i; i++ )
+            strings.push_back(std::string());
+            for ( s64 i=1; i<=numStrings && size_t(2*i) < rawData.size(); i++ )
             {
                 size_t stringOffset = size_t((u16 &)rawData[2*size_t(i)]);
                 if ( stringOffset < rawData.size() )
@@ -3257,9 +3272,9 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
     return false;
 }
 
-size_t Sc::TblFile::numStrings()
+size_t Sc::TblFile::numStrings() const
 {
-    return strings.size();
+    return strings.empty() ? 0 : strings.size()-1;
 }
 
 const std::string & Sc::TblFile::getString(size_t stringIndex) const
@@ -3272,7 +3287,12 @@ const std::string & Sc::TblFile::getString(size_t stringIndex) const
 
 bool Sc::TblFile::getString(size_t stringIndex, std::string & outString) const
 {
-    if ( stringIndex < strings.size() )
+    if ( stringIndex == 0 )
+    {
+        outString = std::string();
+        return true;
+    }
+    else if ( stringIndex < strings.size() )
     {
         outString = strings[stringIndex];
         return true;

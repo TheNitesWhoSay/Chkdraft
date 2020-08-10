@@ -590,4 +590,56 @@ TEST(BasicsTest, NotImplemented)
     }
 }
 
+TEST(BasicsTest, AscendingOrder)
+{
+    int first = 0;
+    int second = 1;
+    ascendingOrder(first, second);
+    EXPECT_EQ(first, 0);
+    EXPECT_EQ(second, 1);
+
+    first = 1;
+    second = 0;
+    ascendingOrder(first, second);
+    EXPECT_EQ(first, 0);
+    EXPECT_EQ(second, 1);
+}
+
+TEST(BasicsTest, Round)
+{
+    EXPECT_EQ(s32(0), round(0.00));
+    EXPECT_EQ(s32(0), round(0.49));
+    EXPECT_EQ(s32(1), round(0.51));
+    EXPECT_EQ(s32(1), round(0.99));
+    EXPECT_EQ(s32(1), round(1.01));
+    EXPECT_EQ(s32(1), round(1.49));
+    EXPECT_EQ(s32(2), round(1.51));
+    EXPECT_EQ(s32(-2), round(-1.51));
+    EXPECT_EQ(s32(-1), round(-0.51));
+    EXPECT_EQ(s32(0), round(-0.49));
+    EXPECT_EQ(s32(1023), round(1023.45));
+    
+    EXPECT_EQ(s32(0), round(0.00f));
+    EXPECT_EQ(s32(0), round(0.49f));
+    EXPECT_EQ(s32(1), round(0.51f));
+    EXPECT_EQ(s32(1), round(0.99f));
+    EXPECT_EQ(s32(1), round(1.01f));
+    EXPECT_EQ(s32(1), round(1.49f));
+    EXPECT_EQ(s32(2), round(1.51f));
+    EXPECT_EQ(s32(-2), round(-1.51f));
+    EXPECT_EQ(s32(-1), round(-0.51f));
+    EXPECT_EQ(s32(0), round(-0.49f));
+    EXPECT_EQ(s32(1023), round(1023.45f));
+}
+
+TEST(BasicsTest, ToHexString)
+{
+    EXPECT_STREQ("0xDEADBEEF", to_hex_string(0xDEADBEEF).c_str());
+    EXPECT_STREQ("0xFF", to_hex_string<u8>(u8(255)).c_str());
+}
+
+// Don't test promote_char, tested by reflection library TODO: Delete this comment once including reflection
+
+// Don't test enum_t, tested by reflection library TODO: Delete this comment once including reflection
+
 #pragma warning(pop)

@@ -25,6 +25,7 @@ void LocationCreateDel::Reverse(void *guiMap)
         std::shared_ptr<RawString> locName = ((GuiMap*)guiMap)->strings.getLocationName<RawString>((size_t)locationId, Chk::Scope::Game);
         locationName = locName != nullptr ? *locName : "";
         ((GuiMap*)guiMap)->layers.deleteLocation(locationId);
+        ((GuiMap*)guiMap)->strings.deleteUnusedStrings(Chk::Scope::Both);
     }
     else // Do create
     {

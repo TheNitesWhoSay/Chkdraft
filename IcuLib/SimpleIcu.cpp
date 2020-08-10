@@ -50,9 +50,11 @@ namespace icux {
     {
         int32_t bufferSize = int32_t(length)*2+1;
         int32_t resultSize = 0;
+        int32_t subCount = 0;
+        UChar32 subChar = (UChar32)'?';
         UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
-        std::unique_ptr<UChar> buffer(new UChar[bufferSize]);
-        u_strFromUTF8(buffer.get(), bufferSize, &resultSize, utf8Str, (int32_t)length, &errorCode);
+        std::unique_ptr<UChar[]> buffer(new UChar[bufferSize]);
+        u_strFromUTF8WithSub(buffer.get(), bufferSize, &resultSize, utf8Str, (int32_t)length, subChar, &subCount, &errorCode);
         const wchar_t* result = (wchar_t*)buffer.get();
         return std::wstring(result, (size_t)resultSize);
     }

@@ -212,8 +212,6 @@ class NotImplemented : public std::logic_error
 };
 
 
-#define foreachin(item, range) for ( auto item = range.first; item != range.second; ++ item)
-
 template <typename valueType>
 void ascendingOrder(valueType & low, valueType & high);
 
