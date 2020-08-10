@@ -3255,7 +3255,7 @@ bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const
                 rawData.push_back('\0');
 
             strings.push_back(std::string());
-            for ( s64 i=1; i<=numStrings && 2*i < rawData.size(); i++ )
+            for ( s64 i=1; i<=numStrings && size_t(2*i) < rawData.size(); i++ )
             {
                 size_t stringOffset = size_t((u16 &)rawData[2*size_t(i)]);
                 if ( stringOffset < rawData.size() )

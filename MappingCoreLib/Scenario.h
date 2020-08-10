@@ -82,8 +82,10 @@ class Strings : public StrSynchronizer
         });
 
         size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getBytesUsed(Chk::Scope storageScope = Chk::Scope::Game);
 
         bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
         virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) const;
         virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
         virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
@@ -234,6 +236,7 @@ class Players
         void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -369,7 +372,8 @@ class Layers : public Terrain
         
         bool anywhereIsStandardDimensions() const;
         void matchAnywhereToDimensions();
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -489,7 +493,8 @@ class Properties
         void setDefaultTechResearched(Sc::Tech::Type techType, bool researched, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -565,6 +570,7 @@ class Triggers : public LocationSynchronizer
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
         bool locationUsed(size_t locationId) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
         bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
         bool editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;

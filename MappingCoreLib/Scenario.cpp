@@ -925,6 +925,46 @@ size_t Strings::getCapacity(Chk::Scope storageScope) const
         return 0;
 }
 
+size_t Strings::getBytesUsed(Chk::Scope storageScope)
+{
+    if ( storageScope == Chk::Scope::Game )
+        return str->getBytesUsed(std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
+    else if ( storageScope == Chk::Scope::Editor )
+        return kstr->getBytesUsed(std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
+    else
+        return 0;
+}
+
+bool Strings::stringStored(size_t stringId, Chk::Scope storageScope) const
+{
+    return (storageScope & Chk::Scope::Game) == Chk::Scope::Game && str->stringStored(stringId) ||
+        (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
+}
+
+void Strings::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
+{
+    if ( storageScope == Chk::Scope::Game )
+    {
+        if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
+        {
+            if ( (userMask & Chk::StringUserFlag::ScenarioProperties) != Chk::StringUserFlag::None )
+                sprp->appendUsage(stringId, stringUsers, userMask);
+            if ( (userMask & Chk::StringUserFlag::Force) != Chk::StringUserFlag::None )
+                players->appendUsage(stringId, stringUsers, userMask);
+            if ( (userMask & Chk::StringUserFlag::BothUnitSettings) != Chk::StringUserFlag::None )
+                properties->appendUsage(stringId, stringUsers, userMask);
+            if ( (userMask & Chk::StringUserFlag::Location) != Chk::StringUserFlag::None )
+                layers->appendUsage(stringId, stringUsers, userMask);
+            if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
+                triggers->appendUsage(stringId, stringUsers, storageScope, userMask);
+        }
+        else if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None ) // stringId >= Chk::MaxStrings // 32-bit stringId
+            triggers->appendUsage(stringId, stringUsers, storageScope, userMask);
+    }
+    else if ( storageScope == Chk::Scope::Editor )
+        ostr->appendUsage(stringId, stringUsers, userMask);
+}
+
 bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored) const
 {
     if ( storageScope == Chk::Scope::Game && (str->stringStored(stringId) || !ensureStored) )
@@ -956,12 +996,6 @@ bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope stor
         return ostr->stringUsed(stringId, userMask);
 
     return false;
-}
-
-bool Strings::stringStored(size_t stringId, Chk::Scope storageScope) const
-{
-    return (storageScope & Chk::Scope::Game) == Chk::Scope::Game && str->stringStored(stringId) ||
-        (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
 }
 
 void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
@@ -2094,6 +2128,12 @@ void Players::setForceFlags(Chk::Force force, u8 forceFlags)
     forc->setForceFlags(force, forceFlags);
 }
 
+void Players::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
+        forc->appendUsage(stringId, stringUsers);
+}
+
 bool Players::stringUsed(size_t stringId, u32 userMask) const
 {
     return (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force && forc->stringUsed(stringId);
@@ -2671,6 +2711,12 @@ void Layers::matchAnywhereToDimensions()
         anywhere->right = (u32)dim->getPixelWidth();
         anywhere->bottom = (u32)dim->getPixelHeight();
     }
+}
+
+void Layers::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
+        mrgn->appendUsage(stringId, stringUsers);
 }
 
 bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
@@ -3702,6 +3748,15 @@ void Properties::setTechsToDefault(Chk::UseExpSection useExp)
     }
 }
 
+void Properties::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
+        unis->appendUsage(stringId, stringUsers);
+
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+        unix->appendUsage(stringId, stringUsers);
+}
+
 bool Properties::stringUsed(size_t stringId, u32 userMask) const
 {
     return ((userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings && unis->stringUsed(stringId)) ||
@@ -4135,6 +4190,23 @@ void Triggers::setSoundStringId(size_t soundIndex, size_t soundStringId)
 bool Triggers::locationUsed(size_t locationId) const
 {
     return trig->locationUsed(locationId);
+}
+
+void Triggers::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
+{
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
+    {
+        if ( (userMask & Chk::StringUserFlag::Sound) != Chk::StringUserFlag::None )
+            wav->appendUsage(stringId, stringUsers);
+        if ( (userMask & Chk::StringUserFlag::Switch) != Chk::StringUserFlag::None )
+            swnm->appendUsage(stringId, stringUsers);
+        if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
+            trig->appendUsage(stringId, stringUsers, userMask);
+        if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) != Chk::StringUserFlag::None )
+            mbrf->appendUsage(stringId, stringUsers, userMask);
+    }
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) != Chk::StringUserFlag::None )
+        ktrg->appendUsage(stringId, stringUsers, userMask);
 }
 
 bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const

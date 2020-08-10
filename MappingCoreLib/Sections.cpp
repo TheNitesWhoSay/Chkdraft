@@ -2225,6 +2225,16 @@ size_t StrSection::getCapacity() const
     return strings.size();
 }
 
+size_t StrSection::getBytesUsed(StrSynchronizerPtr strSynchronizer, StrCompressionElevatorPtr compressionElevator)
+{
+    if ( syncStringsToBytes(strSynchronizer) )
+    {
+        size_t stringBytesSize = stringBytes.size();
+        return stringBytesSize;
+    }
+    return 0;
+}
+
 bool StrSection::stringStored(size_t stringId) const
 {
     return stringId < strings.size() && strings[stringId] != nullptr;
@@ -2665,7 +2675,11 @@ bool StrSection::stringsMatchBytes() const
 
 bool StrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
 {
-    auto strSynchronizer = scenarioSaver.getStrSynchronizer();
+    return syncStringsToBytes(scenarioSaver.getStrSynchronizer());
+}
+
+bool StrSection::syncStringsToBytes(StrSynchronizerPtr strSynchronizer)
+{
     if ( strSynchronizer != nullptr )
         strSynchronizer->syncStringsToBytes(strings, stringBytes);
     else
@@ -2999,6 +3013,17 @@ bool MrgnSection::isBlank(size_t locationId) const
     return false;
 }
 
+void MrgnSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    u16 u16StringId = (u16)stringId;
+    for ( size_t i=0; i<locations.size(); i++ )
+    {
+        const Chk::LocationPtr & location = locations[i];
+        if ( location != nullptr && location->stringId == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Location, i));
+    }
+}
+
 bool MrgnSection::stringUsed(size_t stringId) const
 {
     u16 u16StringId = (u16)stringId;
@@ -3273,6 +3298,31 @@ bool TrigSection::locationUsed(size_t locationId) const
     return false;
 }
 
+void TrigSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    size_t numTriggers = triggers.size();
+    for ( size_t trigIndex=0; trigIndex<numTriggers; trigIndex++ )
+    {
+        const auto & trigger = triggers[trigIndex];
+        if ( trigger != nullptr )
+        {
+            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction &&
+                    trigger->actions[actionIndex].stringUsed(stringId, Chk::StringUserFlag::TriggerAction) )
+                {
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::TriggerAction, trigIndex, actionIndex));
+                }
+                if ( (userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound &&
+                    trigger->actions[actionIndex].stringUsed(stringId, Chk::StringUserFlag::TriggerActionSound) )
+                {
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::TriggerActionSound, trigIndex, actionIndex));
+                }
+            }
+        }
+    }
+}
+
 bool TrigSection::stringUsed(size_t stringId, u32 userMask) const
 {
     for ( auto trigger : triggers )
@@ -3468,6 +3518,31 @@ void MbrfSection::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t br
     }
 }
 
+void MbrfSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    size_t numBriefingTriggers = briefingTriggers.size();
+    for ( size_t briefingTrigIndex=0; briefingTrigIndex<numBriefingTriggers; briefingTrigIndex++ )
+    {
+        const auto & briefingTrigger = briefingTriggers[briefingTrigIndex];
+        if ( briefingTrigger != nullptr )
+        {
+            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                if ( (userMask & Chk::StringUserFlag::BriefingTriggerAction) == Chk::StringUserFlag::BriefingTriggerAction &&
+                    briefingTrigger->actions[actionIndex].briefingStringUsed(stringId, Chk::StringUserFlag::BriefingTriggerAction) )
+                {
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::BriefingTriggerAction, briefingTrigIndex, actionIndex));
+                }
+                if ( (userMask & Chk::StringUserFlag::BriefingTriggerActionSound) == Chk::StringUserFlag::BriefingTriggerActionSound &&
+                    briefingTrigger->actions[actionIndex].briefingStringUsed(stringId, Chk::StringUserFlag::BriefingTriggerActionSound) )
+                {
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::BriefingTriggerActionSound, briefingTrigIndex, actionIndex));
+                }
+            }
+        }
+    }
+}
+
 bool MbrfSection::stringUsed(size_t stringId, u32 userMask)
 {
     for ( auto briefingTrigger : briefingTriggers )
@@ -3586,6 +3661,15 @@ bool SprpSection::stringUsed(size_t stringId, u32 userMask) const
         || ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescriptionStringId == (u16)stringId );
 }
 
+void SprpSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && data->scenarioNameStringId == (u16)stringId )
+        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioName));
+
+    if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && data->scenarioDescriptionStringId == (u16)stringId )
+        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioDescription));
+}
+
 void SprpSection::deleteString(size_t stringId)
 {
     if ( data->scenarioNameStringId == stringId )
@@ -3693,6 +3777,15 @@ void ForcSection::setForceFlags(Chk::Force force, u8 forceFlags)
         data->flags[force] = forceFlags;
 }
 
+void ForcSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    for ( size_t i=0; i<Chk::TotalForces; i++ )
+    {
+        if ( data->forceString[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Force, i));
+    }
+}
+
 bool ForcSection::stringUsed(size_t stringId) const
 {
     return data->forceString[0] == (u16)stringId || data->forceString[1] == (u16)stringId || data->forceString[2] == (u16)stringId || data->forceString[3] == (u16)stringId;
@@ -3702,7 +3795,7 @@ void ForcSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) c
 {
     for ( size_t i=0; i<Chk::TotalForces; i++ )
     {
-        if ( data->forceString[i] > 0 )
+        if ( data->forceString[i] != Chk::StringId::NoString )
             stringIdUsed[data->forceString[i]] = true;
     }
 }
@@ -3794,6 +3887,15 @@ void WavSection::setSoundStringId(size_t soundIndex, size_t soundStringId)
         data->soundPathStringId[soundIndex] = (u32)soundStringId;
 }
 
+void WavSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( data->soundPathStringId[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Sound, i));
+    }
+}
+
 bool WavSection::stringUsed(size_t stringId) const
 {
     return stringIsSound(stringId);
@@ -3803,7 +3905,7 @@ void WavSection::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) co
 {
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
-        if ( data->soundPathStringId[i] > 0 && data->soundPathStringId[i] < Chk::MaxStrings )
+        if ( data->soundPathStringId[i] != Chk::StringId::UnusedSound && data->soundPathStringId[i] < Chk::MaxStrings )
             stringIdUsed[data->soundPathStringId[i]] = true;
     }
 }
@@ -4019,6 +4121,16 @@ void UnisSection::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrad
         data->upgradeDamage[weaponType] = upgradeDamage;
     else
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIS section!");
+}
+
+void UnisSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    u16 u16StringId = (u16)stringId;
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( data->nameStringId[i] == u16StringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::OriginalUnitSettings, i));
+    }
 }
 
 bool UnisSection::stringUsed(size_t stringId) const
@@ -4346,6 +4458,15 @@ void SwnmSection::setSwitchNameStringId(size_t switchIndex, size_t stringId)
 {
     if ( switchIndex < Chk::TotalSwitches )
         data->switchName[switchIndex] = (u32)stringId;
+}
+
+void SwnmSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+    {
+        if ( data->switchName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Switch, i));
+    }
 }
 
 bool SwnmSection::stringUsed(size_t stringId) const
@@ -4915,6 +5036,16 @@ void UnixSection::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgrad
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) + " is out of range for the UNIx section!");
 }
 
+void UnixSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const
+{
+    u16 u16StringId = (u16)stringId;
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( data->nameStringId[i] == u16StringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExpansionUnitSettings, i));
+    }
+}
+
 bool UnixSection::stringUsed(size_t stringId) const
 {
     u16 u16StringId = (u16)stringId;
@@ -5358,6 +5489,51 @@ void OstrSection::setLocationNameStringId(size_t locationId, u32 locationNameStr
         throw std::out_of_range(std::string("locationId: ") + std::to_string((u32)locationId) + " is out of range for the OSTR section!");
 }
 
+void OstrSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( data->scenarioName == stringId )
+        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioName));
+
+    if ( data->scenarioDescription == stringId )
+        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioDescription));
+
+    for ( size_t i=0; i<Chk::TotalForces; i++ )
+    {
+        if ( data->forceName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Force, i));
+    }
+
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( data->unitName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::OriginalUnitSettings, i));
+    }
+
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( data->expUnitName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExpansionUnitSettings, i));
+    }
+
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( data->soundPath[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Sound, i));
+    }
+
+    for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+    {
+        if ( data->switchName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Switch, i));
+    }
+
+    for ( size_t i=0; i<Chk::TotalLocations; i++ )
+    {
+        if ( data->locationName[i] == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Location, i));
+    }
+}
+
 bool OstrSection::stringUsed(size_t stringId, u32 userMask) const
 {
     if ( data->scenarioName == stringId || data->scenarioDescription == stringId )
@@ -5602,6 +5778,16 @@ bool KstrSection::empty() const
 size_t KstrSection::getCapacity() const
 {
     return strings.size();
+}
+
+size_t KstrSection::getBytesUsed(StrSynchronizerPtr strSynchronizer)
+{
+    if ( syncStringsToBytes(strSynchronizer) )
+    {
+        size_t stringBytesSize = stringBytes.size();
+        return stringBytesSize;
+    }
+    return 0;
 }
 
 bool KstrSection::stringStored(size_t stringId) const
@@ -5968,7 +6154,11 @@ bool KstrSection::stringsMatchBytes() const
 
 bool KstrSection::syncStringsToBytes(ScenarioSaver & scenarioSaver)
 {
-    auto strSynchronizer = scenarioSaver.getStrSynchronizer();
+    return syncStringsToBytes(scenarioSaver.getStrSynchronizer());
+}
+
+bool KstrSection::syncStringsToBytes(StrSynchronizerPtr strSynchronizer)
+{
     if ( strSynchronizer != nullptr )
         strSynchronizer->syncKstringsToBytes(strings, stringBytes);
     else
@@ -6174,6 +6364,26 @@ void KtrgSection::deleteExtendedTrigger(size_t extendedTriggerIndex)
     {
         extendedTrigData[extendedTriggerIndex] = nullptr;
         cleanTail();
+    }
+}
+
+void KtrgSection::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    for ( const auto & extendedTrig : extendedTrigData )
+    {
+        if ( extendedTrig != nullptr )
+        {
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                extendedTrig->commentStringId == stringId) )
+            {
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExtendedTriggerComment, extendedTrig->trigNum));
+            }
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                extendedTrig->notesStringId == stringId))
+            {
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExtendedTriggerNotes, extendedTrig->trigNum));
+            }
+        }
     }
 }
 

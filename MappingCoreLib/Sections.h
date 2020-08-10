@@ -647,6 +647,7 @@ class StrSection : public DynamicSection<false>
         virtual ~StrSection();
 
         size_t getCapacity() const;
+        size_t getBytesUsed(StrSynchronizerPtr strSynchronizer = nullptr, StrCompressionElevatorPtr compressionElevator = StrCompressionElevatorPtr());
 
         bool stringStored(size_t stringId) const;
         void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
@@ -701,6 +702,7 @@ class StrSection : public DynamicSection<false>
 
         bool stringsMatchBytes() const; // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
+        bool syncStringsToBytes(StrSynchronizerPtr strSynchronizer = nullptr); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
         size_t loadString(const size_t & stringOffset, const size_t & sectionSize); // Returns position of last character in the string (usually position of NUL terminator) if loaded, 0 otherwise
 };
@@ -750,7 +752,8 @@ class MrgnSection : public DynamicSection<false>
         
         bool locationsFitOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true) const; // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
         bool trimToOriginal(LocationSynchronizer & locationSynchronizer, bool lockAnywhere = true, bool autoDefragment = true); // If possible, trims locations to indexes < Chk::TotalOriginalLocations
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
@@ -784,6 +787,7 @@ class TrigSection : public DynamicSection<false>
         std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
 
         bool locationUsed(size_t locationId) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         bool commentStringUsed(size_t stringId) const;
@@ -819,6 +823,8 @@ class MbrfSection : public DynamicSection<false>
         void insertBriefingTrigger(size_t briefingTriggerIndex, std::shared_ptr<Chk::Trigger> briefingTrigger);
         void deleteBriefingTrigger(size_t briefingTriggerIndex);
         void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
+
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -846,6 +852,7 @@ class SprpSection : public StructSection<Chk::SPRP, false>
         void setScenarioNameStringId(u16 scenarioNameStringId);
         void setScenarioDescriptionStringId(u16 scenarioDescriptionStringId);
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = (u32)Chk::StringUserFlag::ScenarioProperties) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
@@ -865,6 +872,7 @@ class ForcSection : public StructSection<Chk::FORC, false>
         void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -883,7 +891,8 @@ class WavSection : public StructSection<Chk::WAV, true>
         bool stringIsSound(size_t stringId) const;
         size_t getSoundStringId(size_t soundIndex) const;
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -919,7 +928,8 @@ class UnisSection : public StructSection<Chk::UNIS, false>
         void setUnitNameStringId(Sc::Unit::Type unitType, u16 nameStringId);
         void setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage);
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -982,6 +992,7 @@ class SwnmSection : public StructSection<Chk::SWNM, true>
 
         size_t getSwitchNameStringId(size_t switchIndex) const;
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -1069,7 +1080,8 @@ class UnixSection : public StructSection<Chk::UNIx, false>
         void setUnitNameStringId(Sc::Unit::Type unitType, u16 nameStringId);
         void setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage);
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers) const;
         bool stringUsed(size_t stringId) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -1149,7 +1161,8 @@ class OstrSection : public StructSection<Chk::OSTR, true>
         void setSoundPathStringId(size_t soundIndex, u32 soundPathStringId);
         void setSwitchNameStringId(size_t switchIndex, u32 switchNameStringId);
         void setLocationNameStringId(size_t locationId, u32 locationNameStringId);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
         void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -1166,6 +1179,7 @@ class KstrSection : public DynamicSection<true>
         bool empty() const;
 
         size_t getCapacity() const;
+        size_t getBytesUsed(StrSynchronizerPtr strSynchronizer = nullptr);
 
         bool stringStored(size_t stringId) const;
         void unmarkUnstoredStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
@@ -1211,6 +1225,7 @@ class KstrSection : public DynamicSection<true>
         size_t getNextUnusedStringId(std::bitset<Chk::MaxStrings> & stringIdUsed, bool checkBeyondCapacity = true, size_t firstChecked = 1) const;
         bool stringsMatchBytes() const; // Check whether every string in strings matches a string in stringBytes
         bool syncStringsToBytes(ScenarioSaver & scenarioSaver = ScenarioSaver::GetDefault()); // Default string write method (staredit-like, no compression applied)
+        bool syncStringsToBytes(StrSynchronizerPtr strSynchronizer = nullptr); // Default string write method (staredit-like, no compression applied)
         void syncBytesToStrings(); // Universal string reader method
         void loadString(const size_t & stringOffset, const size_t & sectionSize);
 };
@@ -1229,7 +1244,8 @@ class KtrgSection : public DynamicSection<true>
         const std::shared_ptr<Chk::ExtendedTrigData> getExtendedTrigger(size_t extendedTriggerIndex) const;
         size_t addExtendedTrigger(std::shared_ptr<Chk::ExtendedTrigData> extendedTrigger);
         void deleteExtendedTrigger(size_t extendedTriggerIndex);
-
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
         bool editorStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         void remapEditorStringIds(const std::map<u32, u32> & stringIdRemappings);

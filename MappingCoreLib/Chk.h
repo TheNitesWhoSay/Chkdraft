@@ -218,6 +218,7 @@ namespace Chk {
         BriefingTriggerAction = BIT_12,
         BriefingTriggerActionSound = BIT_13,
 
+        ScenarioProperties = ScenarioName | ScenarioDescription,
         BothUnitSettings = OriginalUnitSettings | ExpansionUnitSettings,
         AnyTrigger = TriggerAction | TriggerActionSound,
         AnyTriggerExtension = ExtendedTriggerComment | ExtendedTriggerNotes,
@@ -226,6 +227,16 @@ namespace Chk {
 
         All = u32_max
     });
+
+    struct StringUser
+    {
+        Chk::StringUserFlag userFlags;
+        size_t index;
+        size_t subIndex;
+
+        StringUser(Chk::StringUserFlag userFlags = Chk::StringUserFlag::All, size_t index = 0, size_t subIndex = 0)
+            : userFlags(userFlags), index(index), subIndex(subIndex) {}
+    };
 
     enum_t(CuwpUsed, u8, { // u8
         No = 0, // CUWP slot is unused
