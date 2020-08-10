@@ -17,7 +17,7 @@ class StringEditorWindow : public WinLib::ClassWindow
     protected:
         void CreateSubWindows(HWND hWnd);
         void saveStrings();
-        void addUseItem(std::string str, u32 amount); // Adds items to StringUse list box
+        void addUseItem(std::string str, size_t amount); // Adds items to StringUse list box
         bool updateString(u32 stringNum); // Checks if string matches edit box content, if not, replaces string; returns true iff string changes
         void SwitchButtonPressed();
 

@@ -30,7 +30,7 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
 {
     public:
         MapFile(const std::string & filePath); // Load map at filePath
-        MapFile(FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser()); // Load map selected from browser
+        MapFile(FileBrowserPtr<SaveType> fileBrowser); // Load map selected from browser, can use getDefaultOpenMapBrowser()
         MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64); // Create new map
 
         virtual ~MapFile();
@@ -61,16 +61,16 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         virtual bool removeSoundByStringId(size_t stringId, bool removeIfUsed);
         SoundStatus getSoundStatus(size_t soundStringId);
         bool getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
-        bool isInVirtualSoundList(const std::string & soundMpqPath);
+        bool isInVirtualSoundList(const std::string & soundMpqPath) const;
 
-        std::string getFileName();
+        std::string getFileName() const;
         virtual const std::string & getFilePath() const;
 
         static FileBrowserPtr<SaveType> getDefaultOpenMapBrowser();
         static FileBrowserPtr<SaveType> getDefaultSaveMapBrowser();
 
     protected:
-        virtual bool getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser);
+        virtual bool getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const;
 
     private:
         std::string mapFilePath;

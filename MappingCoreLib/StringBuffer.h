@@ -10,6 +10,8 @@
 #include <system_error>
 #include <ios>
 
+// Note: Don't test here, tested by reflection lib, TODO: Delete this comment when including reflection
+
 namespace BufferedStream
 {
     struct EndL

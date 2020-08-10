@@ -50,7 +50,7 @@ class ChkdString : public std::string
         ChkdString(const std::string & str);
         virtual ~ChkdString();
 
-        virtual bool isOneLine();
+        virtual bool isOneLine() const;
 };
 
 class SingleLineChkdString : public ChkdString
@@ -61,7 +61,7 @@ class SingleLineChkdString : public ChkdString
         SingleLineChkdString(const std::string & str);
         virtual ~SingleLineChkdString();
 
-        virtual bool isOneLine();
+        virtual bool isOneLine() const;
 };
 
 /** Makes an EscString from a RawString using these rules...
@@ -144,6 +144,8 @@ bool getTwoCharOctVal(const std::string & firstCharPtr, u8 & value); // firstCha
 
 bool getThreeCharOctVal(const std::string & firstCharPtr, u8 & value); // firstCharPtr must point to a string at least 3 characters long
 
+// TODO: It's very likely these could mostly be unique_ptrs, the scenario file does NOT return pointers to its own strings...
+//       It always builds a copy for which it doesn't retain ownership
 typedef std::shared_ptr<RawString> RawStringPtr;
 typedef std::shared_ptr<EscString> EscStringPtr;
 typedef std::shared_ptr<ChkdString> ChkdStringPtr;

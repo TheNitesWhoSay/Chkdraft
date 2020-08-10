@@ -350,6 +350,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
     if ( possibleTitleUpdate == true && editMapTitle.GetWinText(newMapTitle) )
     {
         CM->strings.setScenarioName(newMapTitle);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         CM->notifyChange(false);
         possibleTitleUpdate = false;
     }
@@ -361,6 +362,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     if ( possibleDescriptionUpdate == true && editMapDescription.GetWinText(newMapDescription) )
     {
         CM->strings.setScenarioDescription(newMapDescription);
+        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
         CM->notifyChange(false);
         possibleDescriptionUpdate = false;
     }

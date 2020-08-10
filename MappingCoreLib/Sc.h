@@ -528,8 +528,8 @@ namespace Sc {
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & getUnit(Type unitType);
-        const FlingyDatEntry & getFlingy(size_t flingyIndex);
+        const DatEntry & getUnit(Type unitType) const;
+        const FlingyDatEntry & getFlingy(size_t flingyIndex) const;
 
     private:
         std::vector<DatEntry> units;
@@ -692,19 +692,19 @@ namespace Sc {
         private:
             std::vector<u8> grpData;
             
-            inline bool isValid(const std::string & mpqFileName);
-            inline bool fileHeaderIsValid(const std::string & mpqFileName);
-            inline bool frameHeadersAreValid(const std::string & mpqFileName);
-            inline bool framesAreValid(const std::string & mpqFileName);
+            inline bool isValid(const std::string & mpqFileName) const;
+            inline bool fileHeaderIsValid(const std::string & mpqFileName) const;
+            inline bool frameHeadersAreValid(const std::string & mpqFileName) const;
+            inline bool framesAreValid(const std::string & mpqFileName) const;
         };
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
         const Grp & getGrp(size_t grpIndex);
-        const ImageDatEntry & getImage(size_t imageIndex);
-        const DatEntry & getSprite(size_t spriteIndex);
-        size_t numGrps();
-        size_t numImages();
-        size_t numSprites();
+        const ImageDatEntry & getImage(size_t imageIndex) const;
+        const DatEntry & getSprite(size_t spriteIndex) const;
+        size_t numGrps() const;
+        size_t numImages() const;
+        size_t numSprites() const;
 
     private:
         std::vector<Grp> grps;
@@ -831,7 +831,7 @@ namespace Sc {
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & getUpgrade(Type upgradeType);
+        const DatEntry & getUpgrade(Type upgradeType) const;
 
     private:
         std::vector<DatEntry> upgrades;
@@ -933,7 +933,7 @@ namespace Sc {
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & getTech(Type techType);
+        const DatEntry & getTech(Type techType) const;
 
     private:
         std::vector<DatEntry> techs;
@@ -944,7 +944,7 @@ namespace Sc {
     public:
         virtual ~TblFile();
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
-        size_t numStrings();
+        size_t numStrings() const;
         const std::string & getString(size_t stringIndex) const;
         bool getString(size_t stringIndex, std::string & outString) const;
 
@@ -1574,9 +1574,10 @@ namespace Sc {
 
         virtual ~Ai();
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr statTxt = nullptr);
-        const Entry & getEntry(size_t aiIndex);
+        const Entry & getEntry(size_t aiIndex) const;
         const std::string & getName(size_t aiIndex) const;
         bool getName(size_t aiIndex, std::string & outAiName) const;
+        bool getNameById(u32 aiId, std::string & outAiName) const;
         size_t numEntries() const;
 
     private:
@@ -1759,7 +1760,7 @@ namespace Sc {
 
         const Tiles & get(const Tileset & tileset) const;
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset);
+        const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
 
     private:
         Tiles tilesets[NumTilesets];
@@ -1962,7 +1963,7 @@ namespace Sc {
 #pragma pack(pop)
 
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
-        const DatEntry & get(Type weaponType);
+        const DatEntry & get(Type weaponType) const;
 
     private:
         std::vector<DatEntry> weapons;

@@ -35,17 +35,17 @@ class Versions
 
         Versions(bool useDefault = false);
 
-        bool empty();
+        bool empty() const;
         
-        Chk::Version getVersion();
-        bool is(Chk::Version version);
-        bool isOriginal();
-        bool isHybrid();
-        bool isExpansion();
-        bool isHybridOrAbove();
+        Chk::Version getVersion() const;
+        bool is(Chk::Version version) const;
+        bool isOriginal() const;
+        bool isHybrid() const;
+        bool isExpansion() const;
+        bool isHybridOrAbove() const;
         bool changeTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
-        bool hasDefaultValidation();
+        bool hasDefaultValidation() const;
         void setToDefaultValidation();
 
     private:
@@ -71,9 +71,9 @@ class Strings : public StrSynchronizer
 
         Strings(bool useDefault = false);
 
-        bool empty();
+        bool empty() const;
 
-        bool hasExtendedStrings();
+        bool hasExtendedStrings() const;
 
         enum_t(RescopeFlag, u32, {
             RescopeSwitchNames = BIT_0,
@@ -81,21 +81,23 @@ class Strings : public StrSynchronizer
             Rescope
         });
 
-        size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game);
+        size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getBytesUsed(Chk::Scope storageScope = Chk::Scope::Game);
 
-        bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either);
-        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false);
-        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
-        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All);
+        bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+        virtual bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) const;
+        virtual void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
+        virtual void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
 
-        StrProp getProperties(size_t editorStringId);
+        StrProp getProperties(size_t editorStringId) const;
         void setProperties(size_t editorStringId, const StrProp & strProp);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-        std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame); // Gets the string at stringId with formatting based on StringType
+        std::shared_ptr<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const; // Gets the string at stringId with formatting based on StringType
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        size_t findString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game);
+        size_t findString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game) const;
 
         void setCapacity(size_t stringCapacity, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         
@@ -110,19 +112,19 @@ class Strings : public StrSynchronizer
         void moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope = Chk::Scope::Game);
         size_t rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo = Chk::Scope::Editor, bool autoDefragment = true);
 
-        std::vector<u8> & getTailData(); // Gets the data appended after the STR section
+        std::vector<u8> & getTailData() const; // Gets the data appended after the STR section
         size_t getTailDataOffset(); // Gets the offset tail data would be at within the STR section were it written right now
-        size_t getInitialTailDataOffset(); // Gets the offset tail data was at when it was initially read in
-        size_t getBytePaddedTo(); // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none if existing tailData was read in)
-        void setBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
+        size_t getInitialTailDataOffset() const; // Gets the offset tail data was at when it was initially read in
+        size_t getBytePaddedTo() const; // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none if existing tailData was read in)
+        void setBytePaddedTo(size_t bytePaddedTo) const; // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
 
-        size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getScenarioDescriptionStringId(Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getForceNameStringId(Chk::Force force, Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::Game);
-        size_t getLocationNameStringId(size_t locationId, Chk::Scope storageScope = Chk::Scope::Game);
+        size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getScenarioDescriptionStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getForceNameStringId(Chk::Force force, Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::Game) const;
+        size_t getLocationNameStringId(size_t locationId, Chk::Scope storageScope = Chk::Scope::Game) const;
 
         void setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
         void setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope = Chk::Scope::Game);
@@ -133,27 +135,27 @@ class Strings : public StrSynchronizer
         void setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
         
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope);
+        std::shared_ptr<StringType> getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getScenarioName(Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getScenarioName(Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getScenarioDescription(Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getScenarioDescription(Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getForceName(Chk::Force force, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getForceName(Chk::Force force, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getSoundPath(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getSoundPath(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getSwitchName(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getSwitchName(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-        std::shared_ptr<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame);
+        std::shared_ptr<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
         template <typename StringType>
-        std::shared_ptr<StringType> getComment(size_t triggerIndex);
+        std::shared_ptr<StringType> getComment(size_t triggerIndex) const;
         template <typename StringType>
-        std::shared_ptr<StringType> getExtendedComment(size_t triggerIndex);
+        std::shared_ptr<StringType> getExtendedComment(size_t triggerIndex) const;
         template <typename StringType>
-        std::shared_ptr<StringType> getExtendedNotes(size_t triggerIndex);
+        std::shared_ptr<StringType> getExtendedNotes(size_t triggerIndex) const;
 
         template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
         void setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
@@ -186,7 +188,7 @@ class Strings : public StrSynchronizer
             StrCompressionElevatorPtr compressionElevator = StrCompressionElevator::NeverElevate(),
             u32 requestedCompressionFlags = StrCompressFlag::Unchanged, u32 allowedCompressionFlags = StrCompressFlag::Unchanged);
 
-        StringBackup backup();
+        StringBackup backup() const;
         void restore(StringBackup & backup); // A backup instance can only be restored once
 
     protected:
@@ -217,25 +219,26 @@ class Players
 
         Players(bool useDefault = false);
 
-        bool empty();
+        bool empty() const;
 
-        Sc::Player::SlotType getSlotType(size_t slotIndex, Chk::Scope scope = Chk::Scope::Game);
+        Sc::Player::SlotType getSlotType(size_t slotIndex, Chk::Scope scope = Chk::Scope::Game) const;
         void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope = Chk::Scope::Both);
 
-        Chk::Race getPlayerRace(size_t playerIndex);
+        Chk::Race getPlayerRace(size_t playerIndex) const;
         void setPlayerRace(size_t playerIndex, Chk::Race race);
 
-        Chk::PlayerColor getPlayerColor(size_t slotIndex);
+        Chk::PlayerColor getPlayerColor(size_t slotIndex) const;
         void setPlayerColor(size_t slotIndex, Chk::PlayerColor color);
 
-        Chk::Force getPlayerForce(size_t slotIndex);
-        size_t getForceStringId(Chk::Force force);
-        u8 getForceFlags(Chk::Force force);
+        Chk::Force getPlayerForce(size_t slotIndex) const;
+        size_t getForceStringId(Chk::Force force) const;
+        u8 getForceFlags(Chk::Force force) const;
         void setPlayerForce(size_t slotIndex, Chk::Force force);
         void setForceStringId(Chk::Force force, u16 forceStringId);
         void setForceFlags(Chk::Force force, u8 forceFlags);
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -259,25 +262,26 @@ class Terrain
         Terrain();
         Terrain(Sc::Terrain::Tileset tileset, u16 width, u16 height);
 
-        bool empty();
+        bool empty() const;
 
-        Sc::Terrain::Tileset getTileset();
+        Sc::Terrain::Tileset getTileset() const;
         void setTileset(Sc::Terrain::Tileset tileset);
 
-        size_t getTileWidth();
-        size_t getTileHeight();
-        size_t getPixelWidth();
-        size_t getPixelHeight();
+        size_t getTileWidth() const;
+        size_t getTileHeight() const;
+        size_t getPixelWidth() const;
+        size_t getPixelHeight() const;
         virtual void setTileWidth(u16 newTileWidth, s32 leftEdge = 0);
         virtual void setTileHeight(u16 newTileHeight, s32 topEdge = 0);
         virtual void setDimensions(u16 newTileWidth, u16 newTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
 
-        u16 getTile(size_t tileXc, size_t tileYc, Chk::Scope scope = Chk::Scope::Game);
-		inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game);
+        u16 getTile(size_t tileXc, size_t tileYc, Chk::Scope scope = Chk::Scope::Game) const;
+		inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game) const;
 		void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Both);
 		inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Both);
         
         Chk::IsomEntry & getIsomEntry(size_t isomIndex);
+        const Chk::IsomEntry & getIsomEntry(size_t isomIndex) const;
 
     protected:
         void set(std::unordered_map<SectionName, Section> & sections);
@@ -299,7 +303,7 @@ class Layers : public Terrain
         Layers();
         Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height);
 
-        bool empty();
+        bool empty() const;
 
         enum_t(SizeValidationFlag, u16, {
             UpdateAnywhere = BIT_0,
@@ -318,13 +322,14 @@ class Layers : public Terrain
         virtual void setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
         void validateSizes(u16 sizeValidationFlags);
 
-        u8 getFog(size_t tileXc, size_t tileYc);
-        inline u8 getFogPx(size_t pixelXc, size_t pixelYc);
+        u8 getFog(size_t tileXc, size_t tileYc) const;
+        inline u8 getFogPx(size_t pixelXc, size_t pixelYc) const;
         void setFog(size_t tileXc, size_t tileYc, u8 fogOfWarPlayers);
         inline void setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers);
 
-        size_t numSprites();
+        size_t numSprites() const;
         std::shared_ptr<Chk::Sprite> getSprite(size_t spriteIndex);
+        const std::shared_ptr<Chk::Sprite> getSprite(size_t spriteIndex) const;
         size_t addSprite(std::shared_ptr<Chk::Sprite> sprite);
         void insertSprite(size_t spriteIndex, std::shared_ptr<Chk::Sprite> sprite);
         void deleteSprite(size_t spriteIndex);
@@ -332,16 +337,18 @@ class Layers : public Terrain
         void updateOutOfBoundsSprites();
         void removeOutOfBoundsSprites();
 
-        size_t numDoodads();
+        size_t numDoodads() const;
         std::shared_ptr<Chk::Doodad> getDoodad(size_t doodadIndex);
+        const std::shared_ptr<Chk::Doodad> getDoodad(size_t doodadIndex) const;
         size_t addDoodad(std::shared_ptr<Chk::Doodad> doodad);
         void insertDoodad(size_t doodadIndex, std::shared_ptr<Chk::Doodad> doodad);
         void deleteDoodad(size_t doodadIndex);
         void moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo);
         void removeOutOfBoundsDoodads();
 
-        size_t numUnits();
+        size_t numUnits() const;
         std::shared_ptr<Chk::Unit> getUnit(size_t unitIndex);
+        const std::shared_ptr<Chk::Unit> getUnit(size_t unitIndex) const;
         size_t addUnit(std::shared_ptr<Chk::Unit> unit);
         void insertUnit(size_t unitIndex, std::shared_ptr<Chk::Unit> unit);
         void deleteUnit(size_t unitIndex);
@@ -349,24 +356,26 @@ class Layers : public Terrain
         void updateOutOfBoundsUnits();
         void removeOutOfBoundsUnits();
         
-        size_t numLocations();
+        size_t numLocations() const;
         std::shared_ptr<Chk::Location> getLocation(size_t locationId);
+        const std::shared_ptr<Chk::Location> getLocation(size_t locationId) const;
         size_t addLocation(std::shared_ptr<Chk::Location> location);
         void replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location);
         void deleteLocation(size_t locationId, bool deleteOnlyIfUnused = true);
         bool moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere = true);
-        bool isBlank(size_t locationId);
+        bool isBlank(size_t locationId) const;
         void downsizeOutOfBoundsLocations();
 
         bool locationsFitOriginal(bool lockAnywhere = true, bool autoDefragment = true); // Checks if all locations fit in indexes < Chk::TotalOriginalLocations
         bool trimLocationsToOriginal(bool lockAnywhere = true, bool autoDefragment = true); // If possible, trims locations to indexes < Chk::TotalOriginalLocations
         void expandToScHybridOrExpansion();
         
-        bool anywhereIsStandardDimensions();
+        bool anywhereIsStandardDimensions() const;
         void matchAnywhereToDimensions();
-
-        bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
+        bool stringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -396,19 +405,19 @@ class Properties
 
         Properties(bool useDefault = false);
 
-        bool empty();
+        bool empty() const;
 
-        bool useExpansionUnitSettings(Chk::UseExpSection useExp);
-        bool unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u32 getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u8 getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
+        bool useExpansionUnitSettings(Chk::UseExpSection useExp) const;
+        bool unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u32 getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u8 getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
 
         void setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
@@ -421,22 +430,22 @@ class Properties
         void setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
 
-        bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex);
-        bool isUnitDefaultBuildable(Sc::Unit::Type unitType);
-        bool playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex);
+        bool isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const;
+        bool isUnitDefaultBuildable(Sc::Unit::Type unitType) const;
+        bool playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex) const;
         void setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, bool buildable);
         void setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable);
         void setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault);
         void setUnitsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
         
-        bool useExpansionUpgradeCosts(Chk::UseExpSection useExp);
-        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
+        bool useExpansionUpgradeCosts(Chk::UseExpSection useExp) const;
+        bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
 
         void setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
@@ -446,12 +455,12 @@ class Properties
         void setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
 
-        bool useExpansionUpgradeLeveling(Chk::UseExpSection useExp);
-        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        bool playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
+        bool useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const;
+        size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        size_t getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        bool playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
         void setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
@@ -459,12 +468,12 @@ class Properties
         void setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setUpgradesToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
         
-        bool useExpansionTechCosts(Chk::UseExpSection useExp);
-        bool techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        u16 getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
+        bool useExpansionTechCosts(Chk::UseExpSection useExp) const;
+        bool techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        u16 getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
 
         void setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
@@ -472,21 +481,22 @@ class Properties
         void setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         
-        bool useExpansionTechAvailability(Chk::UseExpSection useExp);
-        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        bool techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        bool techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        bool techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
-        bool playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
+        bool useExpansionTechAvailability(Chk::UseExpSection useExp) const;
+        bool techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        bool techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        bool techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        bool techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+        bool playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
         void setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setDefaultTechAvailable(Sc::Tech::Type techType, bool available, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setDefaultTechResearched(Sc::Tech::Type techType, bool researched, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         void setTechsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
-
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
+        
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteString(size_t stringId);
 
@@ -513,57 +523,61 @@ class Triggers : public LocationSynchronizer
 
         Triggers(bool useDefault = false);
 
-        bool empty();
+        bool empty() const;
 
-        Chk::Cuwp getCuwp(size_t cuwpIndex);
+        Chk::Cuwp getCuwp(size_t cuwpIndex) const;
         void setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp);
         size_t addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding = true, size_t excludedTriggerIndex = Chk::MaximumTriggers, size_t excludedTriggerActionIndex = Chk::Trigger::MaxActions);
         
         void fixCuwpUsage(size_t excludedTriggerIndex = Chk::MaximumTriggers, size_t excludedTriggerActionIndex = Chk::Trigger::MaxActions);
-        bool cuwpUsed(size_t cuwpIndex);
+        bool cuwpUsed(size_t cuwpIndex) const;
         void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
 
-        size_t numTriggers();
+        size_t numTriggers() const;
         std::shared_ptr<Chk::Trigger> getTrigger(size_t triggerIndex);
+        const std::shared_ptr<Chk::Trigger> getTrigger(size_t triggerIndex) const;
         size_t addTrigger(std::shared_ptr<Chk::Trigger> trigger);
         void insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger);
         void deleteTrigger(size_t triggerIndex);
         void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
         std::deque<Chk::TriggerPtr> replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers);
-
+        
         Chk::ExtendedTrigDataPtr getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
+        const Chk::ExtendedTrigDataPtr getTriggerExtension(size_t triggerIndex) const;
         void deleteTriggerExtension(size_t triggerIndex);
         void fixTriggerExtensions();
 
-        size_t getCommentStringId(size_t triggerIndex);
-        size_t getExtendedCommentStringId(size_t triggerIndex);
+        size_t getCommentStringId(size_t triggerIndex) const;
+        size_t getExtendedCommentStringId(size_t triggerIndex) const;
         void setExtendedCommentStringId(size_t triggerIndex, size_t stringId);
-        size_t getExtendedNotesStringId(size_t triggerIndex);
+        size_t getExtendedNotesStringId(size_t triggerIndex) const;
         void setExtendedNotesStringId(size_t triggerIndex, size_t stringId);
 
-        size_t numBriefingTriggers();
+        size_t numBriefingTriggers() const;
         std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex);
+        const std::shared_ptr<Chk::Trigger> getBriefingTrigger(size_t briefingTriggerIndex) const;
         size_t addBriefingTrigger(std::shared_ptr<Chk::Trigger> briefingTrigger);
         void insertBriefingTrigger(size_t briefingTriggerIndex, std::shared_ptr<Chk::Trigger> briefingTrigger);
         void deleteBriefingTrigger(size_t briefingTriggerIndex);
         void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
 
-        size_t getSwitchNameStringId(size_t switchIndex);
+        size_t getSwitchNameStringId(size_t switchIndex) const;
         void setSwitchNameStringId(size_t switchIndex, size_t stringId);
 
         size_t addSound(size_t stringId);
-        bool stringIsSound(size_t stringId);
-        size_t getSoundStringId(size_t soundIndex);
+        bool stringIsSound(size_t stringId) const;
+        size_t getSoundStringId(size_t soundIndex) const;
         void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
-        bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
-        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All);
-        bool editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All);
-        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All);
+        bool locationUsed(size_t locationId) const;
+        void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+        bool stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
+        bool editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
+        void markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
         void deleteLocation(size_t locationId);
@@ -599,13 +613,13 @@ class Scenario : ScenarioSaver
         
         virtual ~Scenario();
 
-        bool empty();
+        bool empty() const;
         
-        bool isProtected(); // Checks if map is protected
-        bool hasPassword(); // Checks if the map has a password
-        bool isPassword(const std::string & password); // Checks if this is the password the map has
+        bool isProtected() const; // Checks if map is protected
+        bool hasPassword() const; // Checks if the map has a password
+        bool isPassword(const std::string & password) const; // Checks if this is the password the map has
         bool setPassword(const std::string & oldPass, const std::string & newPass); // Attempts to password-protect the map
-        bool login(const std::string & password); // Attempts to login to the map
+        bool login(const std::string & password) const; // Attempts to login to the map
 
         bool read(std::istream & is); // Parses supplied scenario file data
         void write(std::ostream & os); // Writes all sections to the supplied stream
@@ -633,7 +647,7 @@ class Scenario : ScenarioSaver
         std::vector<Section> allSections; // Holds all the sections of a map
         std::array<u8, 7> tailData; // The 0-7 bytes just before the Scenario file ends, after the last valid section
         u8 tailLength; // 0 for no tail data, must be less than 8
-        bool mapIsProtected; // Flagged if map is protected
+        mutable bool mapIsProtected; // Flagged if map is protected
         bool jumpCompress; // If true, the map will attempt to compress using jump sections when saving
 };
 
@@ -641,7 +655,7 @@ class ScenarioAllocationFailure : std::bad_alloc
 {
 public:
     ScenarioAllocationFailure(const std::string & sectionName) : sectionName(sectionName) {}
-    virtual const char* what() { return sectionName.c_str(); }
+    virtual const char* what() const { return sectionName.c_str(); }
 
 private:
     std::string sectionName;

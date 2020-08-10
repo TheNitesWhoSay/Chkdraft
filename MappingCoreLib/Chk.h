@@ -168,7 +168,7 @@ namespace Chk {
             Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
         });
 
-        bool isDrawnAsSprite();
+        bool isDrawnAsSprite() const;
 
         Sc::Sprite::Type type;
         u16 xc;
@@ -218,6 +218,7 @@ namespace Chk {
         BriefingTriggerAction = BIT_12,
         BriefingTriggerActionSound = BIT_13,
 
+        ScenarioProperties = ScenarioName | ScenarioDescription,
         BothUnitSettings = OriginalUnitSettings | ExpansionUnitSettings,
         AnyTrigger = TriggerAction | TriggerActionSound,
         AnyTriggerExtension = ExtendedTriggerComment | ExtendedTriggerNotes,
@@ -226,6 +227,16 @@ namespace Chk {
 
         All = u32_max
     });
+
+    struct StringUser
+    {
+        Chk::StringUserFlag userFlags;
+        size_t index;
+        size_t subIndex;
+
+        StringUser(Chk::StringUserFlag userFlags = Chk::StringUserFlag::All, size_t index = 0, size_t subIndex = 0)
+            : userFlags(userFlags), index(index), subIndex(subIndex) {}
+    };
 
     enum_t(CuwpUsed, u8, { // u8
         No = 0, // CUWP slot is unused
@@ -263,11 +274,11 @@ namespace Chk {
             xHanger = x16BIT_5
         });
         
-        bool isCloaked();
-        bool isBurrowed();
-        bool isInTransit();
-        bool isHallucinated();
-        bool isInvincible();
+        bool isCloaked() const;
+        bool isBurrowed() const;
+        bool isInTransit() const;
+        bool isHallucinated() const;
+        bool isInvincible() const;
         
         void setCloaked(bool cloaked);
         void setBurrowed(bool burrowed);
@@ -312,7 +323,7 @@ namespace Chk {
 
         Location();
 
-        bool isBlank();
+        bool isBlank() const;
         
         u32 left;
         u32 top;
@@ -485,9 +496,9 @@ namespace Chk {
         MaskFlag maskFlag; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
 
         void toggleDisabled();
-        bool isDisabled();
-        inline bool locationUsed(size_t locationId);
-        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
+        bool isDisabled() const;
+        inline bool locationUsed(size_t locationId) const;
+        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void deleteLocation(size_t locationId);
         static const Argument & getClassicArg(Type conditionType, size_t argIndex);
@@ -763,7 +774,7 @@ namespace Chk {
         u8 padding;
         MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
-        bool isDisabled() { return (flags & Flags::Disabled) == Flags::Disabled; }
+        bool isDisabled() const { return (flags & Flags::Disabled) == Flags::Disabled; }
         void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
         static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
@@ -775,18 +786,18 @@ namespace Chk {
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
         static u8 getDefaultFlags(Type actionType);
         static u8 getDefaultFlags(VirtualType actionType);
-        bool hasStringArgument();
-        bool hasSoundArgument();
-        inline bool locationUsed(size_t locationId);
-        inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        inline bool commentStringUsed(size_t stringId);
-        inline bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
-        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
+        bool hasStringArgument() const;
+        bool hasSoundArgument() const;
+        inline bool locationUsed(size_t locationId) const;
+        inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        inline bool commentStringUsed(size_t stringId) const;
+        inline bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
+        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -864,13 +875,13 @@ namespace Chk {
         void deleteAction(size_t actionIndex, bool alignTop = true);
         void deleteCondition(size_t conditionIndex, bool alignTop = true);
         
-        bool preserveTriggerFlagged();
-        bool disabled();
-        bool ignoreConditionsOnce();
-        bool ignoreWaitSkipOnce();
-        bool ignoreMiscActionsOnce();
-        bool ignoreDefeatDraw();
-        bool pauseFlagged();
+        bool preserveTriggerFlagged() const;
+        bool disabled() const;
+        bool ignoreConditionsOnce() const;
+        bool ignoreWaitSkipOnce() const;
+        bool ignoreMiscActionsOnce() const;
+        bool ignoreDefeatDraw() const;
+        bool pauseFlagged() const;
 
         void setPreserveTriggerFlagged(bool preserved);
         void setDisabled(bool disabled);
@@ -880,23 +891,23 @@ namespace Chk {
         void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
         void setPauseFlagged(bool pauseFlagged);
 
-        size_t getExtendedDataIndex();
+        size_t getExtendedDataIndex() const;
         void setExtendedDataIndex(size_t extendedDataIndex);
         void clearExtendedDataIndex();
 
-        size_t numUsedConditions();
-        size_t numUsedActions();
-        size_t getComment();
-        bool locationUsed(size_t locationId);
-        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        bool commentStringUsed(size_t stringId);
-        bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
-        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed);
-        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger);
-        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed);
-        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger);
+        size_t numUsedConditions() const;
+        size_t numUsedActions() const;
+        size_t getComment() const;
+        bool locationUsed(size_t locationId) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool commentStringUsed(size_t stringId) const;
+        bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
+        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -990,7 +1001,7 @@ namespace Chk {
         u32 maskId; // 0xFFFFFFFF for none
 
         ExtendedTrigData();
-        bool isBlank();
+        bool isBlank() const;
     };
 
     __declspec(align(1)) struct TriggerGroupHeader
@@ -1042,7 +1053,7 @@ namespace Chk {
         StringProperties();
         StringProperties(u8 red, u8 green, u8 blue, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics, u32 size);
         
-        class InvalidSize : std::exception
+        class InvalidSize : public std::exception
         {
             public:
                 InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize) : error(error) { }

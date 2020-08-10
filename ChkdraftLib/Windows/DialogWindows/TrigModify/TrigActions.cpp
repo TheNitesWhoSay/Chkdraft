@@ -58,7 +58,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
     if ( trig != nullptr && ttg.loadScenario(CM) )
     {
@@ -412,7 +412,8 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                         action.stringId = (u32)newStringId;
                     else if ( argType == Chk::Action::ArgType::Sound )
                         action.soundStringId = (u32)newStringId;
-
+                    
+                    CM->strings.deleteUnusedStrings(Chk::Scope::Both);
                     madeChange = true;
                 }
             }
@@ -430,7 +431,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else if ( numMatching > 1 )
                 {
                     auto range = scriptTable.equal_range(hash);
-                    foreachin(pair, range)
+                    for ( auto & pair = range.first; pair != range.second; ++pair )
                     {
                         std::string & scriptDisplayString = pair->second.second;
                         if ( scriptDisplayString.compare(suggestionString) == 0 )
@@ -517,7 +518,7 @@ void TrigActionsWindow::DrawSelectedAction()
     HDC hDC = GetDC(getHandle());
     if ( hDC != NULL )
     {
-        Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+        const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
         if ( trig != nullptr )
         {
             int focusedX = -1,
@@ -683,7 +684,7 @@ void TrigActionsWindow::SuggestLocation()
         size_t numLocations = (u16)CM->layers.numLocations();
         for ( size_t i = 1; i <= numLocations; i++ )
         {
-            Chk::LocationPtr loc = CM->layers.getLocation(i);
+            const Chk::LocationPtr loc = CM->layers.getLocation(i);
             std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
             if ( locationName != nullptr )
                 suggestions.AddString(*locationName);
@@ -1119,10 +1120,10 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 
 void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr )
     {
-        Chk::Action & action = trig->action((u8)gridItemY);
+        const Chk::Action & action = trig->action((u8)gridItemY);
         Chk::Action::Type actionType = action.actionType;
         if ( actionType < Chk::Action::NumActionTypes )
         {
@@ -1179,10 +1180,10 @@ void TrigActionsWindow::NewSuggestion(std::string & str)
 void TrigActionsWindow::GetCurrentActionString(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
 {
     int focusedX, focusedY;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig->action((u8)focusedY);
+        const Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
@@ -1199,10 +1200,10 @@ void TrigActionsWindow::GetCurrentActionString(ChkdStringPtr & gameString, ChkdS
 void TrigActionsWindow::GetCurrentActionSound(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
 {
     int focusedX, focusedY;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
     if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig->action((u8)focusedY);
+        const Chk::Action & action = trig->action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
