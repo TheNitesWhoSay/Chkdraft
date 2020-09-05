@@ -276,7 +276,7 @@ void WavEditorWindow::BrowseButtonPressed()
 {
     OPENFILENAME ofn = { };
     std::vector<std::pair<std::string, std::string>> filtersAndLabels = { std::make_pair<std::string, std::string>("*.wav", "WAV File"), std::make_pair<std::string, std::string>("*.*", "All Files") };
-    std::string initPath = Settings::starCraftPath + getSystemFileSeparator() + "Maps";
+    std::string initPath = makeSystemFilePath(Settings::starCraftPath, "Maps");
 
     u32 filterIndex = 0;
     std::string soundFilePath;
