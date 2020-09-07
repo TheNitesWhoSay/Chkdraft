@@ -57,6 +57,7 @@ bool MpqFile::create(const std::string & filePath)
     if ( SFileCreateArchive(icux::toFilestring(filePath).c_str(), NULL, 1000, &hMpq) )
     {
         this->filePath = filePath;
+        this->madeChanges = true;
         return true;
     }
     return false;
