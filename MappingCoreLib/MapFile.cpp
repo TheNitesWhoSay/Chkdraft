@@ -203,7 +203,9 @@ bool MapFile::openTemporaryMpq()
             {
                 assetFileDirectory = getSystemFileDirectory(mapFilePath, true);
                 assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
-            } while ( ::findFile(assetFilePath) ); // Try again if the file already exists
+                nextAssetFileId ++;
+            }
+            while ( ::findFile(assetFilePath) ); // Try again if the file already exists
         }
         else // Use the C library to find an appropriate temporary location
         {
