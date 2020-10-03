@@ -322,6 +322,7 @@ bool Scenario::read(std::istream & is)
 
     Chk::Version version = versions.ver->getVersion();
 
+    layers.fixTerrainToDimensions();
     triggers.fixTriggerExtensions();
     upgradeKstrToCurrent();
 
@@ -2412,6 +2413,18 @@ void Layers::validateSizes(u16 sizeValidationFlags)
         updateOutOfBoundsSprites();
     else if ( (sizeValidationFlags & SizeValidationFlag::RemoveOutOfBoundsSprites) == SizeValidationFlag::RemoveOutOfBoundsSprites )
         removeOutOfBoundsSprites();
+}
+
+bool Layers::fixTerrainToDimensions()
+{
+    size_t tileWidth = dim->getTileWidth();
+    size_t tileHeight = dim->getTileHeight();
+    if ( mtxm->getTileCount() != tileWidth*tileHeight )
+    {
+        mtxm->setDimensions((u16)tileWidth, (u16)tileHeight, (u16)tileWidth, (u16)tileHeight, 0, 0);
+        return true;
+    }
+    return false;
 }
 
 u8 Layers::getFog(size_t tileXc, size_t tileYc) const

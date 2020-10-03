@@ -321,6 +321,7 @@ class Layers : public Terrain
         virtual void setTileHeight(u16 tileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 topEdge = 0);
         virtual void setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
         void validateSizes(u16 sizeValidationFlags);
+        bool fixTerrainToDimensions();
 
         u8 getFog(size_t tileXc, size_t tileYc) const;
         inline u8 getFogPx(size_t pixelXc, size_t pixelYc) const;

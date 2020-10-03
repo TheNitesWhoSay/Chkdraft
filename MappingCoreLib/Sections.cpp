@@ -903,6 +903,11 @@ MtxmSection::~MtxmSection()
 
 }
 
+size_t MtxmSection::getTileCount() const
+{
+    return tiles.size();
+}
+
 u16 MtxmSection::getTile(size_t tileIndex) const
 {
     if ( tileIndex < tiles.size() )
@@ -919,7 +924,7 @@ void MtxmSection::setTile(size_t tileIndex, u16 tileValue)
         throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
 }
 
-void setMtxmOrTileDimensions(std::vector<u16> tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
     s64 oldLeft = 0, oldTop = 0, oldRight = oldTileWidth, oldBottom = oldTileHeight,
         newLeft = leftEdge, newTop = topEdge, newRight = (s64)leftEdge+(s64)newTileWidth, newBottom = (s64)topEdge+(s64)newTileHeight,
@@ -1004,6 +1009,9 @@ void setMtxmOrTileDimensions(std::vector<u16> tiles, u16 newTileWidth, u16 newTi
         }
     }
 
+    if ( tiles.size() > (size_t)newTileWidth * (size_t)newTileHeight ) // Remove out of bounds tiles
+        tiles.erase(tiles.begin() + (size_t)newTileWidth*(size_t)newTileHeight);
+
     if ( currTileWidth == 0 || currTileHeight == 0 )
         tiles.clear();
     else // currTileWidth > 0 && currTileHeight > 0
@@ -1047,6 +1055,9 @@ void setMtxmOrTileDimensions(std::vector<u16> tiles, u16 newTileWidth, u16 newTi
             s64 numTilesAdded = currTileWidth*numRowsAdded;
             tiles.insert(tiles.end(), numTilesAdded, u16(0));
         }
+
+        if ( tiles.size() < (size_t)newTileWidth * (size_t)newTileHeight ) // Fill any missing tiles with nulls
+            tiles.insert(tiles.end(), (size_t)newTileWidth*(size_t)newTileHeight - tiles.size(), u16(0));
     }
 }
 

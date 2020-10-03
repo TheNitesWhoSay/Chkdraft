@@ -437,6 +437,7 @@ class MtxmSection : public DynamicSection<false>
         MtxmSection();
         virtual ~MtxmSection();
 
+        size_t getTileCount() const;
         u16 getTile(size_t tileIndex) const;
         void setTile(size_t tileIndex, u16 tileValue);
         void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge = 0, s32 topEdge = 0);
