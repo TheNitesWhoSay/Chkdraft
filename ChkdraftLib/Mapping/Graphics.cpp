@@ -1012,9 +1012,9 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
     {
         s64 yEnd = std::min(yStart + 32, height);
         s64 xEnd = std::min(xStart + 32, width);
-        for ( s64 yc = yStart; yc < yEnd; yc++ )
+        for ( s64 yc = std::max((s64)0, yStart); yc < yEnd; yc++ )
         {
-            for ( s64 xc = xStart; xc < xEnd; xc++ )
+            for ( s64 xc = std::max((s64)0, xStart); xc < xEnd; xc++ )
                 bitmap[yc*width + xc] = black;
         }
     }
