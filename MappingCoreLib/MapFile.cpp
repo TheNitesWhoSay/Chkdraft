@@ -93,7 +93,7 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
 
         if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
-            if ( !saveAs || (saveAs && makeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location
+            if ( !saveAs || (saveAs && (!MpqFile::isValid(mapFilePath) || makeFileCopy(mapFilePath, saveFilePath))) ) // If using save-as and existing is mpq, copy mpq to the new location
             {
                 std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                 Scenario::write(chk);
