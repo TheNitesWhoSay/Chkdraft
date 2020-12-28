@@ -82,11 +82,11 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
 
         textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
         editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, Id::EDIT_MAPTITLE);
-        editMapTitle.SetText(*mapTitle);
+        editMapTitle.SetText(mapTitle != nullptr ? *mapTitle : "");
 
         textMapDescription.CreateThis(hMapProperties, 5, 60, 100, 20, "Map Description", 0);
         editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, Id::EDIT_MAPDESCRIPTION);
-        editMapDescription.SetText(*mapDescription);
+        editMapDescription.SetText(mapDescription != nullptr ? *mapDescription : "");
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
