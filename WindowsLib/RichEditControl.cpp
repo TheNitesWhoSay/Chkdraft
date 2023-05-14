@@ -48,7 +48,7 @@ namespace WinLib {
         if ( scrollable )
             dwStyle |= ES_AUTOVSCROLL|ES_AUTOHSCROLL|WS_VSCROLL|WS_HSCROLL;
 
-        return WindowControl::CreateControl( WS_EX_CLIENTEDGE, RICHEDIT_CLASS, "", dwStyle,
+        return WindowControl::CreateControl( WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, "", dwStyle,
                                              x, y, width, height,
                                              hParent, (HMENU)id, true );
     }

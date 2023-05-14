@@ -36,7 +36,7 @@ namespace WinLib {
         {
             auto uiText = icux::toUistring(text);
             menuItemInfo.fMask = MIIM_STRING;
-            WideCharToMultiByte(CP_ACP, 0, (LPWSTR)uiText.c_str(), -1, menuItemInfo.dwTypeData, NULL, NULL, NULL);
+            menuItemInfo.dwTypeData = (LPWSTR)uiText.c_str();
             SetMenuItemInfo(hMenu, itemId, FALSE, &menuItemInfo);
         }
         
