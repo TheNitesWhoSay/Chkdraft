@@ -26,7 +26,7 @@ namespace WinLib {
         setTextSettings.codepage = 1200;
 #else
         setTextSettings.flags = ST_NEWCHARS;
-        setTextSettings.codepage = CP_ASP;
+        setTextSettings.codepage = CP_ACP;
 #endif
     }
 
