@@ -69,7 +69,7 @@ namespace Sc {
                 const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-            virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
+            virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
 
             virtual MpqFilePtr openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor);
 
@@ -942,7 +942,6 @@ namespace Sc {
     class TblFile
     {
     public:
-        virtual ~TblFile();
         bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
         size_t numStrings() const;
         const std::string & getString(size_t stringIndex) const;

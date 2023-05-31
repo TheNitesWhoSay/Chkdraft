@@ -116,45 +116,6 @@ namespace WinLib {
         WindowsItem::DisableThis();
     }
 
-    template <typename numType>
-    bool EditControl::SetEditNum(numType num)
-    {
-        return SetText(std::to_string(num));
-    }
-    template bool EditControl::SetEditNum<u8>(u8 num);
-    template bool EditControl::SetEditNum<s8>(s8 num);
-    template bool EditControl::SetEditNum<u16>(u16 num);
-    template bool EditControl::SetEditNum<s16>(s16 num);
-    template bool EditControl::SetEditNum<u32>(u32 num);
-    template bool EditControl::SetEditNum<s32>(s32 num);
-    template bool EditControl::SetEditNum<int>(int num);
-    template bool EditControl::SetEditNum<size_t>(size_t num);
-
-    template <typename numType>
-    bool EditControl::SetEditBinaryNum(numType num)
-    {
-        char newText[36] = { };
-        u32 temp = (u32)num;
-        u8 numBits = (sizeof(numType)*8);
-        _itoa_s(temp, newText, 36, 2);
-        size_t length = std::strlen(newText);
-        if ( length > 0 && length < numBits && numBits < 36 )
-        {
-            std::memmove(&newText[numBits-length], newText, length);
-            std::memset(newText, '0', numBits-length);
-            newText[numBits] = '\0';
-        }
-        return SetText(newText);
-    }
-    template bool EditControl::SetEditBinaryNum<u8>(u8 num);
-    template bool EditControl::SetEditBinaryNum<s8>(s8 num);
-    template bool EditControl::SetEditBinaryNum<u16>(u16 num);
-    template bool EditControl::SetEditBinaryNum<s16>(s16 num);
-    template bool EditControl::SetEditBinaryNum<u32>(u32 num);
-    template bool EditControl::SetEditBinaryNum<s32>(s32 num);
-    template bool EditControl::SetEditBinaryNum<int>(int num);
-    template bool EditControl::SetEditBinaryNum<size_t>(size_t num);
-
     void EditControl::SetTextLimit(u32 newLimit)
     {
         SendMessage(getHandle(), EM_SETLIMITTEXT, (WPARAM)newLimit, 0);
@@ -376,36 +337,6 @@ namespace WinLib {
         SetText(byteString);
         return true;
     }
-
-    template <typename numType>
-    bool EditControl::GetEditNum(numType & dest)
-    {
-        std::string text;
-        if ( GetWinText(text) && text.length() > 0 )
-        {
-            errno = 0;
-            char* endPtr = nullptr;
-            long long temp = std::strtoll(text.c_str(), &endPtr, 0);
-            if ( temp != 0 )
-            {
-                dest = (numType)temp;
-                return true;
-            }
-            else if ( errno == 0 && endPtr == &text[text.size()] )
-            {
-                dest = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-    template bool EditControl::GetEditNum<u8>(u8 & dest);
-    template bool EditControl::GetEditNum<s8>(s8 & dest);
-    template bool EditControl::GetEditNum<u16>(u16 & dest);
-    template bool EditControl::GetEditNum<s16>(s16 & dest);
-    template bool EditControl::GetEditNum<u32>(u32 & dest);
-    template bool EditControl::GetEditNum<s32>(s32 & dest);
-    template bool EditControl::GetEditNum<int>(int & dest);
 
     LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {

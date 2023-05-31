@@ -359,11 +359,6 @@ ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actio
     nextAssetId ++;
 }
 
-ModifiedAsset::~ModifiedAsset()
-{
-
-}
-
 std::vector<FilterEntry<u32>> getMpqFilter()
 {
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>("*.mpq", "MoPaQ Archive(*.mpq)", ".mpq") };

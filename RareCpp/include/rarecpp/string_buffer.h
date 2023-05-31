@@ -1,18 +1,20 @@
+// MIT License, Copyright (c) 2019-2023 Justin F https://github.com/TheNitesWhoSay/RareCpp/blob/master/LICENSE
 #ifndef STRINGBUFFER_H
 #define STRINGBUFFER_H
-#include <vector>
-#include <streambuf>
-#include <ostream>
-#include <istream>
-#include <string>
 #include <array>
 #include <charconv>
-#include <system_error>
+#include <cstring>
+#include <functional>
 #include <ios>
+#include <istream>
+#include <memory>
+#include <ostream>
+#include <streambuf>
+#include <string>
+#include <system_error>
+#include <vector>
 
-// Note: Don't test here, tested by reflection lib, TODO: Delete this comment when including reflection
-
-namespace BufferedStream
+namespace RareBufferedStream
 {
     struct EndL
     {
@@ -20,12 +22,12 @@ namespace BufferedStream
     };
     struct Os {};
 
-    /// A faster alternative to std::stringstream; can similarly be used as both an ostream or istream,
-    /// streaming to a StringBuffer with the << operator will occur much faster than to the ostream,
-    /// although all stream flags will be ignored; to stream to ostream as regular with stream flags applied
-    /// and less enhanced performance, cast to a ostream reference or use the "os" stream manipulator;
-    /// you can stream objects that overload ostream/istream with StringBuffer as usual, stream flags will apply,
-    /// though overloading streaming to StringBuffer can improve object streaming speed
+    // A faster alternative to std::stringstream; can similarly be used as both an ostream or istream,
+    // streaming to a StringBuffer with the << operator will occur much faster than to the ostream,
+    // although all stream flags will be ignored; to stream to ostream as regular with stream flags applied
+    // and less enhanced performance, cast to a ostream reference or use the "os" stream manipulator;
+    // you can stream objects that overload ostream/istream with StringBuffer as usual, stream flags will apply,
+    // though overloading streaming to StringBuffer can improve object streaming speed
     template <typename StreamType>
     class BasicStringBuffer : public std::streambuf, public StreamType
     {
@@ -33,16 +35,16 @@ namespace BufferedStream
             static constexpr EndL endl = {}; // Use StringBuffer::endl instead of std::endl to improve performance
             static constexpr Os os = {}; // Use this stream manipulator to start streaming as if to std::ostream, avoid this to improve performance
 
-            BasicStringBuffer() : StreamType((std::streambuf*)this), src(nullptr), num(), inputInitialized(false) {}
-            BasicStringBuffer(std::istream & source) : StreamType((std::streambuf*)this), src(&source), num(), inputInitialized(false) {}
+            BasicStringBuffer() : StreamType((std::streambuf*)this), inputInitialized(false), src(nullptr), num() {}
+            BasicStringBuffer(std::istream & source) : StreamType((std::streambuf*)this), inputInitialized(false), src(&source), num() {}
             BasicStringBuffer(const std::string & str) : StreamType((std::streambuf*)this),
-                data(str.begin(), str.end()), src(nullptr), num(), inputInitialized(false) {}
+                inputInitialized(false), src(nullptr), num(), data(str.begin(), str.end()) {}
             BasicStringBuffer(const std::string & str, std::istream & source) : StreamType((std::streambuf*)this),
-                data(str.begin(), str.end()), src(&source), num(), inputInitialized(false) {}
+                inputInitialized(false), src(&source), num(), data(str.begin(), str.end()) {}
 
             virtual ~BasicStringBuffer() {}
 
-            /// Append text as-is using the += operator
+            // Append text as-is using the += operator
             inline void operator+=(const char & c)
             {
                 data.push_back(c);
@@ -53,14 +55,14 @@ namespace BufferedStream
             }
             inline void operator+=(const char* str)
             {
-                data.insert(data.end(), str, str+strlen(str)*sizeof(char));
+                data.insert(data.end(), str, str+std::strlen(str)*sizeof(char));
             }
             inline void operator+=(const std::string & str)
             {
                 data.insert(data.end(), str.begin(), str.end());
             }
             
-            /// Append text as-is using ostream operators
+            // Append text as-is using ostream operators
             inline BasicStringBuffer & operator<<(const char & c)
             {
                 data.push_back(c);
@@ -73,7 +75,7 @@ namespace BufferedStream
             }
             inline BasicStringBuffer & operator<<(const char* str)
             {
-                data.insert(data.end(), str, str+strlen(str)*sizeof(char));
+                data.insert(data.end(), str, str+std::strlen(str)*sizeof(char));
                 return *this;
             }
             inline BasicStringBuffer & operator<<(const std::string & str)
@@ -82,10 +84,15 @@ namespace BufferedStream
                 return *this;
             }
         
-            /// Append regular base-10 numbers
+            // Append regular base-10 numbers
             template <typename T>
             inline BasicStringBuffer & appendNumber(const T & value) {
-                if ( auto [p, ec] = std::to_chars((char*)num.data(), (char*)num.data() + num.size(), value); ec == std::errc() )
+                if constexpr ( std::is_same_v<bool, T> )
+                {
+                    if ( auto [p, ec] = std::to_chars((char*)num.data(), (char*)num.data() + num.size(), (int)value); ec == std::errc() )
+                        data.insert(data.end(), num.data(), p);
+                }
+                else if ( auto [p, ec] = std::to_chars((char*)num.data(), (char*)num.data() + num.size(), value); ec == std::errc() )
                     data.insert(data.end(), num.data(), p);
 
                 return *this;
@@ -104,13 +111,9 @@ namespace BufferedStream
                 (*this) += std::to_string(value);
                 return *this;
             }
-            inline BasicStringBuffer & appendNumber(const bool & value) {
-                (*this) += std::to_string(value);
-                return *this;
-            }
 #endif
         
-            /// Append regular base-10 numbers using ostream operators
+            // Append regular base-10 numbers using ostream operators
             inline BasicStringBuffer & operator<<(const short & value) { return appendNumber(value); }
             inline BasicStringBuffer & operator<<(const unsigned short & value) { return appendNumber(value); }
             inline BasicStringBuffer & operator<<(const int & value) { return appendNumber(value); }
@@ -124,7 +127,7 @@ namespace BufferedStream
             inline BasicStringBuffer & operator<<(const double & value) { return appendNumber(value); }
             inline BasicStringBuffer & operator<<(const long double & value) { return appendNumber(value); }
 
-            /// Stream manipulators
+            // Stream manipulators
             inline BasicStringBuffer & operator<<(const EndL &)
             {
                 (*this) += EndL::value;
@@ -135,8 +138,8 @@ namespace BufferedStream
                 return (std::ostream &)(*this);
             }
 
-            /// Append the result of std::ostream << t, avoid when possible to improve performance
-            /// This enables streaming objects that overload ostream, overload streaming to StringBuffer where possible to improve performance
+            // Append the result of std::ostream << t, avoid when possible to improve performance
+            // This enables streaming objects that overload ostream, overload streaming to StringBuffer where possible to improve performance
             template <typename T> inline BasicStringBuffer & operator<<(const T & t)
             {
                 syncOutput();
@@ -172,9 +175,9 @@ namespace BufferedStream
                 return data[pos];
             }
 
-            /// Warning: unless addNulTerminator is false, this will add a nul terminator to the end of the buffer if not already present
-            /// This must be manually removed (perhaps by calling unterminate) before adding additional character data to avoid having
-            /// a NUL terminator in the middle of string
+            // Warning: unless addNulTerminator is false, this will add a nul terminator to the end of the buffer if not already present
+            // This must be manually removed (perhaps by calling unterminate) before adding additional character data to avoid having
+            // a NUL terminator in the middle of string
             inline const char* c_str(bool addNulTerminator = true)
             {
                 if ( addNulTerminator )
@@ -219,7 +222,7 @@ namespace BufferedStream
             }
 
         protected:
-            /// Returns true if gptr points to a valid next character, false otherwise
+            // Returns true if gptr points to a valid next character, false otherwise
             inline bool syncInput()
             {
                 auto eback = std::streambuf::eback(); // Input start
@@ -247,7 +250,7 @@ namespace BufferedStream
                             size = data.size()*sizeof(char);
                         }
 
-                        if ( offset == size ) // Input position is at the end of the vector
+                        if ( size_t(offset) == size ) // Input position is at the end of the vector
                         {
                             setg(start, start+size, start+size); // Set gptr same as egptr
                             return false; // No characters available
@@ -307,7 +310,7 @@ namespace BufferedStream
                     setp(&data[0]+size, &data[0]+size);
             }
 
-            /// Setup the read for std::istream
+            // Setup the read for std::istream
             virtual int underflow()
             {
                 if ( syncInput() )
@@ -316,7 +319,7 @@ namespace BufferedStream
                     return std::streambuf::traits_type::eof(); // Return EOF
             }
 
-            /// Appends the character that came through std::ostream
+            // Appends the character that came through std::ostream
             virtual int overflow(int c)
             {
                 if ( pptr() < epptr() && pptr() != nullptr && epptr() != nullptr )
@@ -354,10 +357,10 @@ namespace BufferedStream
                         setg(eback, gptr-1, egptr);
                         return c;
                     }
-                    else if constexpr ( !std::is_base_of<std::istream, StreamType>::value )
+                    else if constexpr ( !std::is_base_of_v<std::istream, StreamType> )
                     {
                         setg(eback, gptr-1, egptr);
-                        *gptr = c;
+                        *gptr = static_cast<char>(c);
                         return c;
                     }
                 }
@@ -380,8 +383,8 @@ namespace BufferedStream
             virtual std::streambuf::pos_type seekoff(std::streambuf::off_type off, std::ios_base::seekdir dir,
                 std::ios_base::openmode which = std::ios_base::in | std::ios_base::out)
             {
-                bool repositionRead = (which & std::ios_base::in) == std::ios_base::in && std::is_base_of<std::istream, StreamType>::value;
-                bool repositionWrite = (which & std::ios_base::out) == std::ios_base::out && std::is_base_of<std::ostream, StreamType>::value;
+                bool repositionRead = (which & std::ios_base::in) == std::ios_base::in && std::is_base_of_v<std::istream, StreamType>;
+                bool repositionWrite = (which & std::ios_base::out) == std::ios_base::out && std::is_base_of_v<std::ostream, StreamType>;
 
                 if ( repositionRead || repositionWrite )
                 {
@@ -402,7 +405,7 @@ namespace BufferedStream
                             else if ( dir == std::ios_base::cur )
                                 newInputOffset = gptr()-eback();
                             else if ( dir == std::ios_base::end )
-                                newInputOffset = data.size()*sizeof(char);
+                                newInputOffset = std::streamoff(data.size()*sizeof(char));
 
                             if ( newInputOffset + off < 0 || &data[0] + newInputOffset + off > &data[0]+data.size()*sizeof(char) )
                                 return std::streambuf::pos_type(std::streambuf::off_type(-1));
@@ -415,7 +418,7 @@ namespace BufferedStream
                             else if ( dir == std::ios_base::cur )
                                 newOutputOffset = pptr()-pbase();
                             else if ( dir == std::ios_base::end )
-                                newOutputOffset = data.size()*sizeof(char);
+                                newOutputOffset = std::streamoff(data.size()*sizeof(char));
 
                             if ( newOutputOffset + off < 0 || &data[0] + newOutputOffset + off > epptr() )
                                 return std::streambuf::pos_type(std::streambuf::off_type(-1));
@@ -450,12 +453,12 @@ namespace BufferedStream
     class BasicStringBuffer<std::istream> : public std::streambuf, public std::istream, private std::ostream
     {
         public:
-            BasicStringBuffer() : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this), src(nullptr), num(), inputInitialized(false) {}
-            BasicStringBuffer(std::istream & source) : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this), src(&source), num(), inputInitialized(false) {}
+            BasicStringBuffer() : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this), inputInitialized(false), src(nullptr) {}
+            BasicStringBuffer(std::istream & source) : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this), inputInitialized(false), src(&source) {}
             BasicStringBuffer(const std::string & str) : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this),
-                data(str.begin(), str.end()), src(nullptr), num(), inputInitialized(false) {}
+                inputInitialized(false), src(nullptr), data(str.begin(), str.end()) {}
             BasicStringBuffer(const std::string & str, std::istream & source) : std::istream((std::streambuf*)this), std::ostream((std::streambuf*)this),
-                data(str.begin(), str.end()), src(&source), num(), inputInitialized(false) {}
+                inputInitialized(false), src(&source), data(str.begin(), str.end()) {}
 
             virtual ~BasicStringBuffer() {}
 
@@ -492,9 +495,9 @@ namespace BufferedStream
                 return data[pos];
             }
 
-            /// Warning: unless addNulTerminator is false, this will add a nul terminator to the end of the buffer if not already present
-            /// This must be manually removed (perhaps by calling unterminate) before adding additional character data to avoid having
-            /// a NUL terminator in the middle of string
+            // Warning: unless addNulTerminator is false, this will add a nul terminator to the end of the buffer if not already present
+            // This must be manually removed (perhaps by calling unterminate) before adding additional character data to avoid having
+            // a NUL terminator in the middle of string
             inline const char* c_str(bool addNulTerminator = true)
             {
                 if ( addNulTerminator )
@@ -532,7 +535,7 @@ namespace BufferedStream
             }
 
         protected:
-            /// Returns true if gptr points to a valid next character, false otherwise
+            // Returns true if gptr points to a valid next character, false otherwise
             inline bool syncInput()
             {
                 auto eback = std::streambuf::eback(); // Input start
@@ -560,7 +563,7 @@ namespace BufferedStream
                             size = data.size()*sizeof(char);
                         }
 
-                        if ( offset == size ) // Input position is at the end of the vector
+                        if ( size_t(offset) == size ) // Input position is at the end of the vector
                         {
                             setg(start, start+size, start+size); // Set gptr same as egptr
                             return false; // No characters available
@@ -620,7 +623,7 @@ namespace BufferedStream
                     setp(&data[0]+size, &data[0]+size);
             }
 
-            /// Setup the read for std::istream
+            // Setup the read for std::istream
             virtual int underflow()
             {
                 if ( syncInput() )
@@ -629,7 +632,7 @@ namespace BufferedStream
                     return std::streambuf::traits_type::eof(); // Return EOF
             }
 
-            /// Appends the character that came through std::ostream
+            // Appends the character that came through std::ostream
             virtual int overflow(int c)
             {
                 if ( pptr() < epptr() && pptr() != nullptr && epptr() != nullptr )
@@ -709,7 +712,7 @@ namespace BufferedStream
                             else if ( dir == std::ios_base::cur )
                                 newInputOffset = gptr()-eback();
                             else if ( dir == std::ios_base::end )
-                                newInputOffset = data.size()*sizeof(char);
+                                newInputOffset = std::streamoff(data.size()*sizeof(char));
 
                             if ( newInputOffset + off < 0 || &data[0] + newInputOffset + off > &data[0]+data.size()*sizeof(char) )
                                 return std::streambuf::pos_type(std::streambuf::off_type(-1));
@@ -722,7 +725,7 @@ namespace BufferedStream
                             else if ( dir == std::ios_base::cur )
                                 newOutputOffset = pptr()-pbase();
                             else if ( dir == std::ios_base::end )
-                                newOutputOffset = data.size()*sizeof(char);
+                                newOutputOffset = std::streamoff(data.size()*sizeof(char));
 
                             if ( newOutputOffset + off < 0 || &data[0] + newOutputOffset + off > epptr() )
                                 return std::streambuf::pos_type(std::streambuf::off_type(-1));
@@ -749,7 +752,6 @@ namespace BufferedStream
         private:
             bool inputInitialized;
             std::istream* src;
-            std::array<char, 256> num;
             std::vector<char> data;
     };
 
@@ -757,17 +759,17 @@ namespace BufferedStream
     using OStringBuffer = BasicStringBuffer<std::ostream>;
     using IStringBuffer = BasicStringBuffer<std::istream>;
 
-    static std::ostream & operator<<(std::ostream & os, BasicStringBuffer<std::ostream> & sb)
+    inline std::ostream & operator<<(std::ostream & os, BasicStringBuffer<std::ostream> & sb)
     {
-        return sb.size() > 0 ? os.write(&sb[0], sb.size()) : os;
+        return sb.size() > 0 ? os.write(&sb[0], std::streamsize(sb.size())) : os;
     }
 
-    static std::ostream & operator<<(std::ostream & os, BasicStringBuffer<std::iostream> & sb)
+    inline std::ostream & operator<<(std::ostream & os, BasicStringBuffer<std::iostream> & sb)
     {
-        return sb.size() > 0 ? os.write(&sb[0], sb.size()) : os;
+        return sb.size() > 0 ? os.write(&sb[0], std::streamsize(sb.size())) : os;
     }
 
-    /// See StringBufferPtr
+    // See StringBufferPtr
     template <typename StreamType>
     class BasicStringBufferPtr;
 
@@ -775,26 +777,23 @@ namespace BufferedStream
     class BasicStringBufferPtr<std::iostream>
     {
         public:
-            BasicStringBufferPtr(StringBuffer & sb) : sb(&sb), os(nullptr) {}
-            BasicStringBufferPtr(std::istream & is) : sb(new StringBuffer(is)), os(nullptr)
+            BasicStringBufferPtr(StringBuffer & sb) : sb(&sb, [](StringBuffer*){}), os(nullptr) {}
+            BasicStringBufferPtr(std::istream & is) : sb(std::make_unique<StringBuffer>(is)), os(nullptr)
             {
                 *sb << is.rdbuf();
-                ((std::basic_ios<char>*)sb)->clear();
+                ((std::basic_ios<char>*)sb.get())->clear();
             }
-            BasicStringBufferPtr(std::ostream & os) : sb(new StringBuffer()), os(&os) {}
-            BasicStringBufferPtr(std::iostream & ios) : sb(new StringBuffer(ios)), os(&ios)
+            BasicStringBufferPtr(std::ostream & os) : sb(std::make_unique<StringBuffer>()), os(&os) {}
+            BasicStringBufferPtr(std::iostream & ios) : sb(std::make_unique<StringBuffer>(ios)), os(&ios)
             {
                 *sb << ios.rdbuf();
-                ((std::basic_ios<char>*)sb)->clear();
+                ((std::basic_ios<char>*)sb.get())->clear();
             }
 
             virtual ~BasicStringBufferPtr()
             {
                 if ( os != nullptr )
-                {
                     *os << *sb;
-                    delete sb;
-                }
             }
 
             inline StringBuffer & operator*() const
@@ -803,7 +802,7 @@ namespace BufferedStream
             }
             inline StringBuffer* operator->() const
             {
-                return sb;
+                return sb.get();
             }
 
             inline void flush() const
@@ -816,7 +815,7 @@ namespace BufferedStream
             }
 
         private:
-            mutable StringBuffer* sb;
+            mutable std::unique_ptr<StringBuffer, std::function<void(StringBuffer*)>> sb;
             mutable std::ostream* os;
     };
 
@@ -824,18 +823,15 @@ namespace BufferedStream
     class BasicStringBufferPtr<std::ostream>
     {
         public:
-            BasicStringBufferPtr(OStringBuffer & sb) : sb(&sb), os(nullptr) {}
-            BasicStringBufferPtr(StringBuffer & sb) : sb(new OStringBuffer()), os(&sb) {}
-            BasicStringBufferPtr(std::ostream & os) : sb(new OStringBuffer()), os(&os) {}
-            BasicStringBufferPtr(std::iostream & ios) : sb(new OStringBuffer()), os(&ios) {}
+            BasicStringBufferPtr(OStringBuffer & sb) : sb(&sb, [](OStringBuffer*){}), os(nullptr) {}
+            BasicStringBufferPtr(StringBuffer & sb) : sb(std::make_unique<OStringBuffer>()), os(&sb) {}
+            BasicStringBufferPtr(std::ostream & os) : sb(std::make_unique<OStringBuffer>()), os(&os) {}
+            BasicStringBufferPtr(std::iostream & ios) : sb(std::make_unique<OStringBuffer>()), os(&ios) {}
 
             virtual ~BasicStringBufferPtr()
             {
                 if ( os != nullptr )
-                {
                     *os << *sb;
-                    delete sb;
-                }
             }
 
             inline OStringBuffer & operator*() const
@@ -844,7 +840,7 @@ namespace BufferedStream
             }
             inline OStringBuffer* operator->() const
             {
-                return sb;
+                return sb.get();
             }
 
             inline void flush() const
@@ -857,7 +853,7 @@ namespace BufferedStream
             }
 
         private:
-            mutable OStringBuffer* sb;
+            mutable std::unique_ptr<OStringBuffer, std::function<void(OStringBuffer*)>> sb;
             mutable std::ostream* os;
     };
 
@@ -865,22 +861,21 @@ namespace BufferedStream
     class BasicStringBufferPtr<std::istream>
     {
         public:
-            BasicStringBufferPtr(IStringBuffer & sb) : sb(&sb) {}
-            BasicStringBufferPtr(StringBuffer & sb) : sb(new IStringBuffer((std::istream &)sb))
+            BasicStringBufferPtr(IStringBuffer & sb) : sb(&sb, [](IStringBuffer*){}) {}
+            BasicStringBufferPtr(StringBuffer & sb) : sb(std::make_unique<IStringBuffer>((std::istream &)sb))
             {
                 *this->sb << sb.rdbuf();
-                ((std::basic_ios<char>*)this->sb)->clear();
+                ((std::basic_ios<char>*)this->sb.get())->clear();
             }
-            BasicStringBufferPtr(std::istream & is) : sb(new IStringBuffer(is))
+            BasicStringBufferPtr(std::istream & is) : sb(std::make_unique<IStringBuffer>(is))
             {
                 *sb << is.rdbuf();
-                ((std::basic_ios<char>*)sb)->clear();
+                ((std::basic_ios<char>*)sb.get())->clear();
             }
-            BasicStringBufferPtr(std::iostream & ios) : sb(new IStringBuffer(ios))
+            BasicStringBufferPtr(std::iostream & ios) : sb(std::make_unique<IStringBuffer>(ios))
             {
                 *sb << ios.rdbuf();
-                int i = 5;
-                ((std::basic_ios<char>*)sb)->clear();
+                ((std::basic_ios<char>*)sb.get())->clear();
             }
 
             virtual ~BasicStringBufferPtr() {}
@@ -891,30 +886,30 @@ namespace BufferedStream
             }
             inline IStringBuffer* operator->() const
             {
-                return sb;
+                return sb.get();
             }
 
         private:
-            mutable IStringBuffer* sb;
+            mutable std::unique_ptr<IStringBuffer, std::function<void(IStringBuffer*)>> sb;
     };
 
-    /// Functions accepting StringBufferPtr allow you to pass a reference to one of...
-    /// StringBuffer, OStringBuffer, IStringBuffer, std::istream, std::ostream, std::iostream, or another StringBufferPtr
-    /// StringBufferPtrs can be used as though they were pointers to a StringBuffer
-    /// If constructed with std::istream or std::iostream any existing contents will be read in
-    /// If constructed with std::ostream or std::iostream all contents will be sent to that stream on destruction
+    // Functions accepting StringBufferPtr allow you to pass a reference to one of...
+    // StringBuffer, OStringBuffer, IStringBuffer, std::istream, std::ostream, std::iostream, or another StringBufferPtr
+    // StringBufferPtrs can be used as though they were pointers to a StringBuffer
+    // If constructed with std::istream or std::iostream any existing contents will be read in
+    // If constructed with std::ostream or std::iostream all contents will be sent to that stream on destruction
     using StringBufferPtr = const BasicStringBufferPtr<std::iostream> &;
 
-    /// Functions accepting OStringBufferPtr allow you to pass a reference to one of...
-    /// OStringBuffer, StringBuffer, std::ostream, std::iostream, or another OStringBufferPtr
-    /// OStringBufferPtrs can be used as though they were pointers to an OStringBuffer
-    /// If constructed with std::ostream or std::iostream all contents will be sent to that stream on destruction
+    // Functions accepting OStringBufferPtr allow you to pass a reference to one of...
+    // OStringBuffer, StringBuffer, std::ostream, std::iostream, or another OStringBufferPtr
+    // OStringBufferPtrs can be used as though they were pointers to an OStringBuffer
+    // If constructed with std::ostream or std::iostream all contents will be sent to that stream on destruction
     using OStringBufferPtr = const BasicStringBufferPtr<std::ostream> &;
 
-    /// Functions accepting IStringBufferPtr allow you to pass a reference to one of...
-    /// IStringbuffer, StringBuffer, std::istream, std::iostream, or another IStringBufferPtr
-    /// IStringBufferPtrs can be used as though they were pointers to an IStringBuffer
-    /// If constructed with std::istream or std::iostream any existing contents will be read in
+    // Functions accepting IStringBufferPtr allow you to pass a reference to one of...
+    // IStringbuffer, StringBuffer, std::istream, std::iostream, or another IStringBufferPtr
+    // IStringBufferPtrs can be used as though they were pointers to an IStringBuffer
+    // If constructed with std::istream or std::iostream any existing contents will be read in
     using IStringBufferPtr = const BasicStringBufferPtr<std::istream> &;
 }
 

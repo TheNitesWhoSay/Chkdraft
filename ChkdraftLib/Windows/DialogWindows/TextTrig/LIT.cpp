@@ -29,7 +29,7 @@ void LitWindow::ButtonLit()
 {
     if ( CM != nullptr )
     {
-        if ( RunLit(CM) )
+        if ( RunLit(*CM) )
         {
             CM->notifyChange(false);
             CM->refreshScenario();
@@ -43,7 +43,7 @@ void LitWindow::ButtonLitSave()
 {
     if ( CM != nullptr )
     {
-        if ( RunLit(CM) )
+        if ( RunLit(*CM) )
         {
             CM->refreshScenario();
             if ( !chkd.maps.SaveCurr(false) )
@@ -149,7 +149,7 @@ bool LitWindow::WriteLitBat(std::string & luaDirectory, std::string & luaName, s
     return false;
 }
 
-bool LitWindow::RunLit(ScenarioPtr map)
+bool LitWindow::RunLit(Scenario & map)
 {
     std::string litDirectory, litPath, luaDirectory, luaName, litBatPath, litText;
     if ( GetLitPaths(litDirectory, litPath) && GetInputPaths(luaDirectory, luaName) )
@@ -169,7 +169,7 @@ bool LitWindow::RunLit(ScenarioPtr map)
                 if ( foundLitTrigs )
                 {
                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
-                    if ( compiler.compileTriggers(litTrigs, map, chkd.scData, 0, map->triggers.numTriggers()) )
+                    if ( compiler.compileTriggers(litTrigs, map, chkd.scData, 0, map.numTriggers()) )
                     {
                         foundLitText ? WinLib::Message(litText, "LIT") : WinLib::Message("Success!", "Text Trigger Compiler");
                         return true;

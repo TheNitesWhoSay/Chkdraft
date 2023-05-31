@@ -283,10 +283,17 @@ const std::vector<std::string> playerRaces =
     "Zerg", "Terran", "Protoss", "Independent", "Neutral", "User Select", "Inactive", "Human"
 };
 
+const std::vector<std::string> specialColors =
+{
+    "Randomize",
+    "User Select"
+};
+
 const std::vector<std::string> playerColors =
 {
-    "Red", "Blue", "Teal", "Purple", "Orange", "Brown", "White", "Yellow", "Green", "Pale Yellow",
-    "Tan", "Dark Aqua", "Pale Green", "Blueish Gray", "Pale Yellow", "Cyan"
+    "Red", "Blue", "Teal", "Purple", "Orange", "Brown", "White", "Yellow",
+    "Green", "Pale Yellow", "Tan", "Dark Aqua", "Pale Green", "Blueish Gray", "Cyan",
+    "Pink (SC:R)", "Olive (SC:R)", "Lime (SC:R)", "Navy (SC:R)", "Magenta (SC:R)", "Grey (SC:R)", "Black (SC:R)"
 };
 
 const std::vector<std::string> triggerPlayers = {

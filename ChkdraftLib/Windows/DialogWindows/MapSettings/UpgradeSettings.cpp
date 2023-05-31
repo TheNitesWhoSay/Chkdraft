@@ -78,7 +78,7 @@ void UpgradeSettingsWindow::RefreshWindow()
         if ( isDisabled )
             EnableUpgradeEditing();
 
-        bool useDefaultCosts = CM->properties.upgradeUsesDefaultCosts((Sc::Upgrade::Type)upgrade);
+        bool useDefaultCosts = CM->upgradeUsesDefaultCosts((Sc::Upgrade::Type)upgrade);
         checkUseDefaultCosts.SetCheck(useDefaultCosts);
         if ( useDefaultCosts )
             DisableCostEditing();
@@ -98,30 +98,30 @@ void UpgradeSettingsWindow::RefreshWindow()
         }
         else
         {
-            editMineralBaseCosts.SetEditNum<u16>(CM->properties.getUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade));
-            editMineralUpgradeFactor.SetEditNum<u16>(CM->properties.getUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade));
-            editGasBaseCosts.SetEditNum<u16>(CM->properties.getUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade));
-            editGasUpgradeFactor.SetEditNum<u16>(CM->properties.getUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade));
-            editTimeBaseCosts.SetEditNum<u16>(CM->properties.getUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade)/15);
-            editTimeUpgradeFactor.SetEditNum<u16>(CM->properties.getUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade)/15);
+            editMineralBaseCosts.SetEditNum<u16>(CM->getUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade));
+            editMineralUpgradeFactor.SetEditNum<u16>(CM->getUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade));
+            editGasBaseCosts.SetEditNum<u16>(CM->getUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade));
+            editGasUpgradeFactor.SetEditNum<u16>(CM->getUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade));
+            editTimeBaseCosts.SetEditNum<u16>(CM->getUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade)/15);
+            editTimeUpgradeFactor.SetEditNum<u16>(CM->getUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade)/15);
         }
 
-        size_t defaultStartLevel = CM->properties.getDefaultStartUpgradeLevel((Sc::Upgrade::Type)upgrade),
-            defaultMaxLevel = CM->properties.getDefaultMaxUpgradeLevel((Sc::Upgrade::Type)upgrade);
+        size_t defaultStartLevel = CM->getDefaultStartUpgradeLevel((Sc::Upgrade::Type)upgrade),
+            defaultMaxLevel = CM->getDefaultMaxUpgradeLevel((Sc::Upgrade::Type)upgrade);
         editDefaultStartLevel.SetEditNum<size_t>(defaultStartLevel);
         editDefaultMaxLevel.SetEditNum<size_t>(defaultMaxLevel);
 
         for ( int player=0; player<12; player++ )
         {
-            bool playerUsesDefault = CM->properties.playerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)upgrade, player);
+            bool playerUsesDefault = CM->playerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)upgrade, player);
             checkPlayerDefault[player].SetCheck(playerUsesDefault);
             if ( playerUsesDefault )
                 DisablePlayerEditing(player);
             else
             {
                 EnablePlayerEditing(player);
-                editPlayerStartLevel[player].SetEditNum<size_t>(CM->properties.getStartUpgradeLevel((Sc::Upgrade::Type)upgrade, player));
-                editPlayerMaxLevel[player].SetEditNum<size_t>(CM->properties.getMaxUpgradeLevel((Sc::Upgrade::Type)upgrade, player));
+                editPlayerStartLevel[player].SetEditNum<size_t>(CM->getStartUpgradeLevel((Sc::Upgrade::Type)upgrade, player));
+                editPlayerMaxLevel[player].SetEditNum<size_t>(CM->getMaxUpgradeLevel((Sc::Upgrade::Type)upgrade, player));
             }
         }
     }
@@ -211,7 +211,7 @@ void UpgradeSettingsWindow::EnableUpgradeEditing()
 {
     checkUseDefaultCosts.EnableThis();
 
-    if ( !CM->properties.upgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade) )
+    if ( !CM->upgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade) )
         EnableCostEditing();
 
     groupPlayerSettings.EnableThis();
@@ -297,12 +297,12 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
         Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         const Sc::Upgrade::DatEntry & upgDat = chkd.scData.upgrades.getUpgrade(upgrade);
         
-        CM->properties.setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, upgDat.mineralCost);
-        CM->properties.setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, upgDat.mineralFactor);
-        CM->properties.setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, upgDat.vespeneCost);
-        CM->properties.setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, upgDat.vespeneFactor);
-        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, upgDat.timeCost);
-        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, upgDat.timeFactor);
+        CM->setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, upgDat.mineralCost);
+        CM->setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, upgDat.mineralFactor);
+        CM->setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, upgDat.vespeneCost);
+        CM->setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, upgDat.vespeneFactor);
+        CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, upgDat.timeCost);
+        CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, upgDat.timeFactor);
     }
 }
 
@@ -312,12 +312,12 @@ void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
     {
         u8 upgrade = (u8)selectedUpgrade;
 
-        CM->properties.setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, 0);
-        CM->properties.setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, 0);
-        CM->properties.setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, 0);
-        CM->properties.setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, 0);
-        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, 0);
-        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeBaseMineralCost((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeMineralCostFactor((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeBaseGasCost((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeGasCostFactor((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)upgrade, 0);
+        CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)upgrade, 0);
     }
 }
 
@@ -358,7 +358,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newMineralCost;
                 if ( editMineralBaseCosts.GetEditNum<u16>(newMineralCost) )
                 {
-                    CM->properties.setUpgradeBaseMineralCost((Sc::Upgrade::Type)selectedUpgrade, newMineralCost);
+                    CM->setUpgradeBaseMineralCost((Sc::Upgrade::Type)selectedUpgrade, newMineralCost);
                     CM->notifyChange(false);
                 }
             }
@@ -370,7 +370,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newMineralFactor;
                 if ( editMineralUpgradeFactor.GetEditNum<u16>(newMineralFactor) )
                 {
-                    CM->properties.setUpgradeMineralCostFactor((Sc::Upgrade::Type)selectedUpgrade, newMineralFactor);
+                    CM->setUpgradeMineralCostFactor((Sc::Upgrade::Type)selectedUpgrade, newMineralFactor);
                     CM->notifyChange(false);
                 }
             }
@@ -382,7 +382,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newGasCost;
                 if ( editGasBaseCosts.GetEditNum<u16>(newGasCost) )
                 {
-                    CM->properties.setUpgradeBaseGasCost((Sc::Upgrade::Type)selectedUpgrade, newGasCost);
+                    CM->setUpgradeBaseGasCost((Sc::Upgrade::Type)selectedUpgrade, newGasCost);
                     CM->notifyChange(false);
                 }
             }
@@ -394,7 +394,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u16 newGasFactor;
                 if ( editGasUpgradeFactor.GetEditNum<u16>(newGasFactor) )
                 {
-                    CM->properties.setUpgradeGasCostFactor((Sc::Upgrade::Type)selectedUpgrade, newGasFactor);
+                    CM->setUpgradeGasCostFactor((Sc::Upgrade::Type)selectedUpgrade, newGasFactor);
                     CM->notifyChange(false);
                 }
             }
@@ -407,9 +407,9 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( editTimeBaseCosts.GetEditNum<u16>(newTimeCost) )
                 {
                     if ( newTimeCost * 15 < newTimeCost ) // Value overflow
-                        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
+                        CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
                     else // Normal
-                        CM->properties.setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, newTimeCost * 15);
+                        CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, newTimeCost * 15);
 
                     CM->notifyChange(false);
                 }
@@ -423,9 +423,9 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( editTimeUpgradeFactor.GetEditNum<u16>(newTimeFactor) )
                 {
                     if ( newTimeFactor * 15 < newTimeFactor ) // Value overflow
-                        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
+                        CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
                     else // Normal
-                        CM->properties.setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, newTimeFactor * 15); // Set to max
+                        CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, newTimeFactor * 15); // Set to max
 
                     CM->notifyChange(false);
                 }
@@ -438,7 +438,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u8 newStartLevel;
                 if ( editDefaultStartLevel.GetEditNum<u8>(newStartLevel) )
                 {
-                    CM->properties.setDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newStartLevel);
+                    CM->setDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newStartLevel);
                     CM->notifyChange(false);
                 }
             }
@@ -450,7 +450,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u8 newMaxLevel;
                 if ( editDefaultMaxLevel.GetEditNum<u8>(newMaxLevel) )
                 {
-                    CM->properties.setDefaultMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newMaxLevel);
+                    CM->setDefaultMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newMaxLevel);
                     CM->notifyChange(false);
                 }
             }
@@ -464,13 +464,13 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                     if ( state == BST_CHECKED )
                     {
-                        CM->properties.setUpgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade, true);
+                        CM->setUpgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade, true);
                         ClearDefaultUpgradeCosts();
                         DisableCostEditing();
                     }
                     else
                     {
-                        CM->properties.setUpgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade, false);
+                        CM->setUpgradeUsesDefaultCosts((Sc::Upgrade::Type)selectedUpgrade, false);
                         SetDefaultUpgradeCosts();
                         EnableCostEditing();
                     }
@@ -485,7 +485,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( WinLib::GetYesNo("Are you sure you want to reset all ugprade settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
-                    CM->properties.setUpgradesToDefault();
+                    CM->setUpgradesToDefault();
                     CM->notifyChange(false);
                     DisableCostEditing();
                     RefreshWindow();
@@ -499,14 +499,14 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
                 int player = LOWORD(wParam) - Id::ID_CHECK_DEFAULTUPGRADEP1;
                 bool useDefault = (state == BST_CHECKED);
-                CM->properties.setPlayerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)selectedUpgrade, player, useDefault);
+                CM->setPlayerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)selectedUpgrade, player, useDefault);
                 if ( state != BST_CHECKED )
                 {
-                    size_t defaultStartLevel = CM->properties.getDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade),
-                        defaultMaxLevel = CM->properties.getDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade);
+                    size_t defaultStartLevel = CM->getDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade),
+                        defaultMaxLevel = CM->getDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade);
                     
-                    CM->properties.setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultStartLevel);
-                    CM->properties.setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultMaxLevel);
+                    CM->setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultStartLevel);
+                    CM->setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultMaxLevel);
                 }
                 CM->notifyChange(false);
                 RefreshWindow();
@@ -518,7 +518,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     newStartLevel;
                 if ( editPlayerStartLevel[player].GetEditNum<u8>(newStartLevel) )
                 {
-                    CM->properties.setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newStartLevel);
+                    CM->setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newStartLevel);
                     CM->notifyChange(false);
                 }
             }
@@ -529,7 +529,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     newMaxLevel;
                 if ( editPlayerMaxLevel[player].GetEditNum<u8>(newMaxLevel) )
                 {
-                    CM->properties.setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newMaxLevel);
+                    CM->setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newMaxLevel);
                     CM->notifyChange(false);
                 }
             }

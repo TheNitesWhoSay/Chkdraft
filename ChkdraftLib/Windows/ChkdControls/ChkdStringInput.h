@@ -23,14 +23,14 @@ class ChkdStringInputDialog : public WinLib::ClassDialog
         });
 
         virtual ~ChkdStringInputDialog();
-        static Result GetChkdString(HWND hParent, ChkdStringPtr & gameString, ChkdStringPtr & editorString, Chk::StringUserFlag stringUser = Chk::StringUserFlag::None, size_t stringUserIndex = 0, size_t stringSubUserIndex = 0);
+        static Result GetChkdString(HWND hParent, std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString, Chk::StringUserFlag stringUser = Chk::StringUserFlag::None, size_t stringUserIndex = 0, size_t stringSubUserIndex = 0);
         
         void ChangeTab(Tab tab);
         void ExitDialog(ExitCode exitCode);
 
     protected:
         ChkdStringInputDialog();
-        Result InternalGetChkdString(HWND hParent, ChkdStringPtr & gameString, ChkdStringPtr & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex);
+        Result InternalGetChkdString(HWND hParent, std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex);
         void UpdateWindowText();
         BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
@@ -39,10 +39,10 @@ class ChkdStringInputDialog : public WinLib::ClassDialog
         void DoSize();
 
     private:
-        ChkdStringPtr initialGameString;
-        ChkdStringPtr initialEditorString;
-        ChkdStringPtr newGameString;
-        ChkdStringPtr newEditorString;
+        std::optional<ChkdString> initialGameString;
+        std::optional<ChkdString> initialEditorString;
+        std::optional<ChkdString> newGameString;
+        std::optional<ChkdString> newEditorString;
         Chk::StringUserFlag stringUser;
         size_t stringUserIndex;
         size_t stringSubUserIndex;

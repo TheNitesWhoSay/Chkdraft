@@ -25,8 +25,8 @@ namespace WinLib {
 
             int GetWinTextLen();
             std::string GetWinText();
-            bool GetWinText(output_param std::string & text);
-            bool getWindowRect(output_param RECT & rect);
+            bool GetWinText(std::string & text);
+            bool getWindowRect(RECT & rect);
             int Width();
             int Height();
             int Left();

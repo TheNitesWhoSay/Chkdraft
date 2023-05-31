@@ -123,7 +123,7 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
     return orderedDataFiles;
 }
 
-bool Sc::DataFile::Browser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
     if ( !expectedStarCraftDirectory.empty() && findFile(makeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
@@ -1869,7 +1869,6 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
     return true;
 }
 
-#include <chrono>
 bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
 {
     logger.debug("Loading Sprites...");
@@ -3239,8 +3238,6 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Artanis\\PAtYes03.wav"
 };
 
-Sc::TblFile::~TblFile() {}
-
 bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
 {
     strings.clear();
@@ -3349,7 +3346,10 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unorder
     logger.debug("Loading StarCraft Data...");
 
     if ( dataFileBrowser == nullptr )
+    {
+        logger.error("No data-file browser was provided to Sc::Data::load");
         return false;
+    }
 
     const std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )

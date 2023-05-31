@@ -23,34 +23,7 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
-    //maps.NewMap(Sc::Terrain::Tileset::Installation, 64, 64);
-    /*{
-        //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 
-        trigEditorWindow.CreateThis(getHandle());
-        trigEditorWindow.ChangeTab(3);
-
-        OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
-    }*/
-    
-    /*ChkdStringPtr gameString;
-    ChkdStringPtr editorString;
-    while ( true )
-    {
-        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::None, 0, 0);
-        std::string resultStr;
-        switch ( result )
-        {
-            case ChkdStringInputDialog::Result::BothStringsChanged: resultStr = "BothStringsChanged"; break;
-            case ChkdStringInputDialog::Result::GameStringChanged: resultStr = "GameStringChanged"; break;
-            case ChkdStringInputDialog::Result::EditorStringChanged: resultStr = "EditorStringChanged"; break;
-            default: resultStr = "NoStringChanged"; break;
-        }
-        logger.info() << "GetChkdString returned: " << resultStr << " with gameString: \""
-            << (gameString != nullptr ? *gameString : "(null)") << "\", and editorString: \""
-            << (editorString != nullptr ? *editorString : "(null)") << "\"" << std::endl;
-    }*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
@@ -68,8 +41,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     SetupLogging();
     if ( !CreateThis() )
         return 1;
-    
-    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+
     InitCommonControls();
     UpdateLogLevelCheckmarks(logger.getLogLevel());
     ShowWindow(getHandle(), nCmdShow);
@@ -79,6 +51,8 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 #endif
     mainPlot.loggerWindow.Refresh();
     UpdateWindow();
+
+    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
     this->OnLoadTest();
@@ -114,7 +88,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->layers.getTileset(), CM->getPalette()) )
+        if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset(), CM->getPalette()) )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
@@ -129,7 +103,7 @@ void Chkdraft::SetupLogging()
     std::string loggerPath;
     if ( GetLoggerPath(loggerPath) )
     {
-        logFilePath = loggerPath + Logger::getTimestamp();
+        logFilePath = loggerPath + Logger::getTimestamp() + ".log";
         std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger(logger.getLogLevel()));
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);

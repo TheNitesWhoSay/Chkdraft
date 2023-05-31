@@ -57,7 +57,7 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
         cuwpTree.EmptySubTree(NULL);
         for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
         {
-            if ( CM->triggers.cuwpUsed(i) )
+            if ( CM->cuwpUsed(i) )
                 cuwpTree.InsertTreeItem(NULL, "CUWP #" + std::to_string(i), i);
             else
                 cuwpTree.InsertTreeItem(NULL, "(#" + std::to_string(i) + ")", i);
@@ -66,8 +66,8 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
 
     if ( selectedCuwp != -1 )
     {
-        Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
-        checkUsed.SetCheck(CM->triggers.cuwpUsed(selectedCuwp));
+        Chk::Cuwp cuwp = CM->getCuwp(selectedCuwp);
+        checkUsed.SetCheck(CM->cuwpUsed(selectedCuwp));
         editHitpointPercent.SetEditNum<u8>(cuwp.hitpointPercent);
         editManaPercent.SetEditNum<u8>(cuwp.energyPercent);
         editShieldPercent.SetEditNum<u8>(cuwp.shieldPercent);
@@ -190,7 +190,7 @@ void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
 
 void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
-    Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
+    Chk::Cuwp cuwp = CM->getCuwp(selectedCuwp);
     switch ( idFrom )
     {
         case Id::CheckInvincible: cuwp.setInvincible(checkInvincible.isChecked()); break;
@@ -199,13 +199,13 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         case Id::CheckHallucinated: cuwp.setHallucinated(checkHallucinated.isChecked()); break;
         case Id::CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
     }
-    CM->triggers.setCuwp(selectedCuwp, cuwp);
+    CM->setCuwp(selectedCuwp, cuwp);
     CM->notifyChange(false);
 }
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 {
-    Chk::Cuwp cuwp = CM->triggers.getCuwp(selectedCuwp);
+    Chk::Cuwp cuwp = CM->getCuwp(selectedCuwp);
     int editNum = 0;
     switch ( idFrom )
     {
@@ -215,7 +215,7 @@ void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
         case Id::EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
         case Id::EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
     }
-    CM->triggers.setCuwp(selectedCuwp, cuwp);
+    CM->setCuwp(selectedCuwp, cuwp);
     CM->notifyChange(false);
 }
 

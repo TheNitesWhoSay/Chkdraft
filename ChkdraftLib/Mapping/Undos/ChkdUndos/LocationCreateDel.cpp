@@ -21,18 +21,18 @@ void LocationCreateDel::Reverse(void *guiMap)
     if ( location == nullptr ) // Do delete
     {
         location = std::unique_ptr<Chk::Location>(new Chk::Location);
-        *location = *((GuiMap*)guiMap)->layers.getLocation(locationId);
-        std::shared_ptr<RawString> locName = ((GuiMap*)guiMap)->strings.getLocationName<RawString>((size_t)locationId, Chk::Scope::Game);
-        locationName = locName != nullptr ? *locName : "";
-        ((GuiMap*)guiMap)->layers.deleteLocation(locationId);
-        ((GuiMap*)guiMap)->strings.deleteUnusedStrings(Chk::Scope::Both);
+        *location = ((GuiMap*)guiMap)->getLocation(locationId);
+        auto locName = ((GuiMap*)guiMap)->getLocationName<RawString>((size_t)locationId, Chk::StrScope::Game);
+        locationName = locName ? *locName : "";
+        ((GuiMap*)guiMap)->deleteLocation(locationId);
+        ((GuiMap*)guiMap)->deleteUnusedStrings(Chk::StrScope::Both);
     }
     else // Do create
     {
-        Chk::LocationPtr newLocation = Chk::LocationPtr(new Chk::Location(*location));
-        newLocation->stringId = 0;
-        ((GuiMap*)guiMap)->layers.addLocation(newLocation);
-        newLocation->stringId = (u16)((GuiMap*)guiMap)->strings.addString(locationName);
+        Chk::Location newLocation = *location;
+        newLocation.stringId = 0;
+        size_t newLocationId = ((GuiMap*)guiMap)->addLocation(newLocation);
+        ((GuiMap*)guiMap)->getLocation(newLocationId).stringId = (u16)((GuiMap*)guiMap)->addString(locationName);
         location = nullptr;
         locationName.clear();
     }

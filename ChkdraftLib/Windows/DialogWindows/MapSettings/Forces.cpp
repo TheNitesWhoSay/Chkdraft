@@ -57,7 +57,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
             {
                 int force = x+y*2;
 
-                u8 forceFlags = CM->players.getForceFlags((Chk::Force)force);
+                u8 forceFlags = CM->getForceFlags((Chk::Force)force);
                 bool allied = forceFlags & Chk::ForceFlags::RandomAllies;
                 bool vision = forceFlags & Chk::ForceFlags::SharedVision;
                 bool random = forceFlags & Chk::ForceFlags::RandomizeStartLocation;
@@ -65,8 +65,8 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
 
                 groupForce[force].CreateThis(hForces, 5+293*x, 50+239*y, 288, 234, forceGroups[force], 0);
                 editForceName[force].CreateThis(hForces, 20+293*x, 70+239*y, 268, 20, false, Id::EDIT_F1NAME+force);
-                auto forceName = CM->strings.getForceName<ChkdString>((Chk::Force)force);
-                editForceName[force].SetText(forceName != nullptr && !forceName->empty() ? forceName->c_str() : "");
+                auto forceName = CM->getForceName<ChkdString>((Chk::Force)force);
+                editForceName[force].SetText(forceName && !forceName->empty() ? forceName->c_str() : "");
                 dragForces[force].CreateThis(hForces, 20+293*x, 95+239*y, 268, 121, Id::LB_F1PLAYERS+force);
                 checkAllied[force].CreateThis(hForces, 15+293*x, 232+239*y, 100, 20, allied, "Allied", Id::CHECK_F1ALLIED+force);
                 checkSharedVision[force].CreateThis(hForces, 15+293*x, 252+239*y, 100, 20, vision, "Share Vision", Id::CHECK_F1VISION+force);
@@ -97,14 +97,14 @@ void ForcesWindow::RefreshWindow()
     {
         for ( int force=0; force<4; force++ )
         {
-            u8 forceFlags = CM->players.getForceFlags((Chk::Force)force);
+            u8 forceFlags = CM->getForceFlags((Chk::Force)force);
             bool allied = forceFlags & Chk::ForceFlags::RandomAllies;
             bool vision = forceFlags & Chk::ForceFlags::SharedVision;
             bool random = forceFlags & Chk::ForceFlags::RandomizeStartLocation;
             bool av = forceFlags & Chk::ForceFlags::AlliedVictory;
 
-            auto forceName = CM->strings.getForceName<ChkdString>((Chk::Force)force);
-            editForceName[force].SetWinText(forceName != nullptr && !forceName->empty() ? forceName->c_str() : "");
+            auto forceName = CM->getForceName<ChkdString>((Chk::Force)force);
+            editForceName[force].SetWinText(forceName && !forceName->empty() ? forceName->c_str() : "");
             if ( allied ) SendMessage(GetDlgItem(hWnd, Id::CHECK_F1ALLIED+force), BM_SETCHECK, BST_CHECKED  , 0);
             else          SendMessage(GetDlgItem(hWnd, Id::CHECK_F1ALLIED+force), BM_SETCHECK, BST_UNCHECKED, 0);
             if ( vision ) SendMessage(GetDlgItem(hWnd, Id::CHECK_F1VISION+force), BM_SETCHECK, BST_CHECKED  , 0);
@@ -125,9 +125,9 @@ void ForcesWindow::RefreshWindow()
         for ( u8 slot=0; slot<8; slot++ )
         {
             u8 displayOwner(CM->GetPlayerOwnerStringId(slot));
-            Chk::Force force = CM->players.getPlayerForce(slot);
-            Chk::PlayerColor color = CM->players.getPlayerColor(slot);
-            Chk::Race race = CM->players.getPlayerRace(slot);
+            Chk::Force force = CM->getPlayerForce(slot);
+            Chk::PlayerColor color = CM->getPlayerColor(slot);
+            Chk::Race race = CM->getPlayerRace(slot);
             std::stringstream ssplayer;
 
             std::string playerColorStr = "";
@@ -167,9 +167,9 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 Chk::Force force = Chk::Force(LOWORD(wParam) - Id::CHECK_F1ALLIED);
                 if ( state == BST_CHECKED )
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) | Chk::ForceFlags::RandomAllies);
+                    CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::RandomAllies);
                 else
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) & Chk::ForceFlags::xRandomAllies);
+                    CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xRandomAllies);
 
                 CM->notifyChange(false);
             }
@@ -179,9 +179,9 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 Chk::Force force = Chk::Force(buttonId-Id::CHECK_F1VISION);
                 if ( state == BST_CHECKED )
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) | Chk::ForceFlags::SharedVision);
+                    CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::SharedVision);
                 else
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) & Chk::ForceFlags::xSharedVision);
+                    CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xSharedVision);
 
                 CM->notifyChange(false);
             }
@@ -191,9 +191,9 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 Chk::Force force = Chk::Force(buttonId-Id::CHECK_F1RANDOM);
                 if ( state == BST_CHECKED )
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) | Chk::ForceFlags::RandomizeStartLocation);
+                    CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::RandomizeStartLocation);
                 else
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) & Chk::ForceFlags::xRandomizeStartLocation);
+                    CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xRandomizeStartLocation);
 
                 CM->notifyChange(false);
             }
@@ -203,9 +203,9 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 Chk::Force force = Chk::Force(buttonId-Id::CHECK_F1AV);
                 if ( state == BST_CHECKED )
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) | Chk::ForceFlags::AlliedVictory);
+                    CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::AlliedVictory);
                 else
-                    CM->players.setForceFlags(force, CM->players.getForceFlags(force) & Chk::ForceFlags::xAlliedVictory);
+                    CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xAlliedVictory);
 
                 CM->notifyChange(false);
             }
@@ -303,7 +303,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                         Chk::Force force = Chk::Force(windowID-Id::LB_F1PLAYERS);
                                         if ( CM != nullptr )
                                         {
-                                            CM->players.setPlayerForce(playerBeingDragged, force);
+                                            CM->setPlayerForce(playerBeingDragged, force);
                                             RefreshWindow();
                                             std::stringstream ssPlayer;
                                             ssPlayer << "Player " << playerBeingDragged+1;
@@ -338,8 +338,8 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
     if ( (size_t)force < 4 && possibleForceNameUpdate[(size_t)force] == true &&
         editForceName[(size_t)force].GetWinText(newMapForce) && newMapForce.length() > 0 )
     {
-        CM->strings.setForceName<ChkdString>(force, newMapForce);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->setForceName<ChkdString>(force, newMapForce);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         CM->notifyChange(false);
         CM->refreshScenario();
         possibleForceNameUpdate[(size_t)force] = false;

@@ -24,11 +24,6 @@ public:
 
 void begin(Commander* commander);
 
-/*Commander::Commander(std::shared_ptr<Logger> logger) : logger(logger)
-{
-
-}*/
-
 Commander::Commander(std::shared_ptr<Logger> logger) : logger(logger), hasCommandsToExecute(false), numSynchronousCommands(0),
     synchronousLock(synchronousLocker),
     undoCommand(std::shared_ptr<GenericUndoCommand>(new GenericUndoCommand())),

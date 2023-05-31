@@ -79,6 +79,8 @@ void TrigModifyWindow::RefreshWindow(u32 trigIndex)
     actionsWindow.RefreshWindow(trigIndex);
     if ( currTab == Tab::Text )
         trigModifyTextWindow.RefreshWindow(trigIndex);
+    else
+        trigModifyTextWindow.SetTrigIndex(trigIndex);
 }
 
 void TrigModifyWindow::CreateSubWindows(HWND hWnd)

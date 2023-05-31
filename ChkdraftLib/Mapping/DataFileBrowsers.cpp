@@ -16,7 +16,7 @@ std::vector<MpqFilePtr> ChkdDataFileBrowser::openScDataFiles(const std::unordere
     return scDataFiles;
 }
 
-bool ChkdDataFileBrowser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
+bool ChkdDataFileBrowser::findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     bool foundStarCraftDirectory = Sc::DataFile::Browser::findStarCraftDirectory(starCraftDirectory, declinedBrowse, expectedStarCraftDirectory, starCraftBrowser);
     if ( foundStarCraftDirectory && Settings::starCraftPath != starCraftDirectory )

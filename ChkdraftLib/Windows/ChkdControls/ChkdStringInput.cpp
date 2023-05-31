@@ -23,7 +23,7 @@ ChkdStringInputDialog::~ChkdStringInputDialog()
 
 }
 
-ChkdStringInputDialog::Result ChkdStringInputDialog::GetChkdString(HWND hParent, ChkdStringPtr & gameString, ChkdStringPtr & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex)
+ChkdStringInputDialog::Result ChkdStringInputDialog::GetChkdString(HWND hParent, std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex)
 {
     ChkdStringInputDialog inputDialog;
     return inputDialog.InternalGetChkdString(hParent, gameString, editorString, stringUser, stringUserIndex, stringSubUserIndex);
@@ -62,19 +62,18 @@ void ChkdStringInputDialog::ExitDialog(ExitCode exitCode)
     }
 }
 
-ChkdStringInputDialog::ChkdStringInputDialog() : initialGameString(nullptr), initialEditorString(nullptr),
-    stringUser(Chk::StringUserFlag::None), stringUserIndex(0), stringSubUserIndex(0), userHasGameString(true), userHasEditorString(true), currTab(Tab::GameString), exitCode(ExitCode::None),
-    gameStringWindow(*this), editorStringWindow(*this)
+ChkdStringInputDialog::ChkdStringInputDialog() : stringUser(Chk::StringUserFlag::None), stringUserIndex(0), stringSubUserIndex(0),
+    userHasGameString(true), userHasEditorString(true), currTab(Tab::GameString), exitCode(ExitCode::None), gameStringWindow(*this), editorStringWindow(*this)
 {
 
 }
 
-ChkdStringInputDialog::Result ChkdStringInputDialog::InternalGetChkdString(HWND hParent, ChkdStringPtr & gameString, ChkdStringPtr & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex)
+ChkdStringInputDialog::Result ChkdStringInputDialog::InternalGetChkdString(HWND hParent, std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString, Chk::StringUserFlag stringUser, size_t stringUserIndex, size_t stringSubUserIndex)
 {
-    this->initialGameString = gameString == nullptr ? nullptr : ChkdStringPtr(new ChkdString(*gameString));
-    this->initialEditorString = editorString == nullptr ? nullptr : ChkdStringPtr(new ChkdString(*editorString));
-    this->newGameString = gameString == nullptr ? nullptr : ChkdStringPtr(new ChkdString(*gameString));
-    this->newEditorString = editorString == nullptr ? nullptr : ChkdStringPtr(new ChkdString(*editorString));
+    this->initialGameString = std::move(gameString);
+    this->initialEditorString = std::move(editorString);
+    this->newGameString = this->initialGameString;
+    this->newEditorString = this->initialEditorString;
     this->stringUser = stringUser;
     this->stringUserIndex = stringUserIndex;
     this->stringSubUserIndex = stringSubUserIndex;
@@ -86,14 +85,12 @@ ChkdStringInputDialog::Result ChkdStringInputDialog::InternalGetChkdString(HWND 
     CreateDialogBox(MAKEINTRESOURCE(IDD_INPUTCHKDSTR), hParent);
 
     bool gameStringChanged = exitCode == ExitCode::Ok && userHasGameString &&
-        ((this->initialGameString == nullptr && this->newGameString != nullptr) ||
-        (this->initialGameString != nullptr && this->newGameString == nullptr) ||
-        (this->initialGameString != nullptr && this->newGameString != nullptr && this->initialGameString->compare(*this->newGameString) != 0));
+        ((!this->initialGameString && this->newGameString) || (this->initialGameString && !this->newGameString) ||
+        (this->initialGameString && this->newGameString && this->initialGameString->compare(*this->newGameString) != 0));
 
     bool editorStringChanged = exitCode == ExitCode::Ok && userHasEditorString &&
-        ((this->initialEditorString == nullptr && this->newEditorString != nullptr) ||
-        (this->initialEditorString != nullptr && this->newEditorString == nullptr) ||
-        (this->initialEditorString != nullptr && this->newEditorString != nullptr && this->initialEditorString->compare(*this->newEditorString) != 0));
+        ((!this->initialEditorString && this->newEditorString) || (this->initialEditorString && !this->newEditorString ) ||
+        (this->initialEditorString && this->newEditorString && this->initialEditorString->compare(*this->newEditorString) != 0));
 
     if ( gameStringChanged )
         gameString = this->newGameString;
@@ -205,6 +202,8 @@ BOOL ChkdStringInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         //editString.SetText(initialString);
         //SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
     }
+    else if ( msg == WM_CLOSE )
+        ExitDialog(ExitCode::Cancel);
 
     return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
 }
@@ -260,9 +259,9 @@ void ChkdStringInputDialog::GameStringWindow::DoSize()
 void ChkdStringInputDialog::GameStringWindow::ApplyChanges()
 {
     if ( checkNoString.isChecked() )
-        parent.newGameString = nullptr;
+        parent.newGameString = std::nullopt;
     else
-        parent.newGameString = ChkdStringPtr(new ChkdString(editString.GetWinText()));
+        parent.newGameString = std::optional<ChkdString>(editString.GetWinText());
 }
 
 void ChkdStringInputDialog::GameStringWindow::FocusThis()
@@ -283,8 +282,8 @@ void ChkdStringInputDialog::GameStringWindow::CreateSubWindows(HWND hWnd)
     buttonCancel.CreateThis(hWnd, buttonReset.Left()-79, buttonY, 75, 23, "Cancel", Id::BUTTON_GAME_CANCEL);
     buttonOk.CreateThis(hWnd, buttonCancel.Left()-79, buttonY, 75, 23, "OK", Id::BUTTON_GAME_OK);
     editString.CreateThis(hWnd, 11, 11, rcCli.right-rcCli.left-22, editHeight, true, Id::EDIT_GAME_STRING);
-    editString.SetWinText(parent.initialGameString == nullptr ? "" : *parent.initialGameString);
-    checkNoString.CreateThis(hWnd, 11, buttonY, 75, 23, parent.initialGameString == nullptr, "No String", Id::CHECK_GAME_NO_STRING);
+    editString.SetWinText(parent.initialGameString ? *parent.initialGameString : "");
+    checkNoString.CreateThis(hWnd, 11, buttonY, 75, 23, !parent.initialGameString, "No String", Id::CHECK_GAME_NO_STRING);
     if ( parent.currTab == ChkdStringInputDialog::Tab::GameString )
         editString.FocusThis();
 }
@@ -299,8 +298,8 @@ void ChkdStringInputDialog::GameStringWindow::ButtonOk()
 void ChkdStringInputDialog::GameStringWindow::ButtonReset()
 {
     parent.newGameString = parent.initialGameString;
-    checkNoString.SetCheck(parent.newGameString == nullptr);
-    editString.SetWinText(parent.newGameString == nullptr ? "" : *parent.newGameString);
+    checkNoString.SetCheck(!parent.newGameString);
+    editString.SetWinText(parent.newGameString ? *parent.newGameString : "");
     logger.info() << "Game Button Reset" << std::endl;
 }
 
@@ -319,7 +318,7 @@ void ChkdStringInputDialog::GameStringWindow::NotifyButtonClicked(int idFrom, HW
         case Id::CHECK_GAME_NO_STRING:
             if ( checkNoString.isChecked() )
             {
-                parent.newGameString = nullptr;
+                parent.newGameString.reset();
                 editString.SetWinText("");
             }
             break;
@@ -372,9 +371,9 @@ void ChkdStringInputDialog::EditorStringWindow::DoSize()
 void ChkdStringInputDialog::EditorStringWindow::ApplyChanges()
 {
     if ( checkNoString.isChecked() )
-        parent.newEditorString = nullptr;
+        parent.newEditorString = std::nullopt;
     else
-        parent.newEditorString = ChkdStringPtr(new ChkdString(editString.GetWinText()));
+        parent.newEditorString = std::optional<ChkdString>(editString.GetWinText());
 }
 
 void ChkdStringInputDialog::EditorStringWindow::FocusThis()
@@ -395,8 +394,8 @@ void ChkdStringInputDialog::EditorStringWindow::CreateSubWindows(HWND hWnd)
     buttonCancel.CreateThis(hWnd, buttonReset.Left()-79, buttonY, 75, 23, "Cancel", Id::BUTTON_EDITOR_CANCEL);
     buttonOk.CreateThis(hWnd, buttonCancel.Left()-79, buttonY, 75, 23, "OK", Id::BUTTON_EDITOR_OK);
     editString.CreateThis(hWnd, 11, 11, rcCli.right-rcCli.left-22, editHeight, true, Id::EDIT_EDITOR_STRING);
-    editString.SetWinText(parent.initialEditorString == nullptr ? "" : *parent.initialEditorString);
-    checkNoString.CreateThis(hWnd, 11, buttonY, 75, 23, parent.initialEditorString == nullptr, "No String", Id::CHECK_EDITOR_NO_STRING);
+    editString.SetWinText(parent.initialEditorString ? *parent.initialEditorString : "");
+    checkNoString.CreateThis(hWnd, 11, buttonY, 75, 23, !parent.initialEditorString, "No String", Id::CHECK_EDITOR_NO_STRING);
     if ( parent.currTab == ChkdStringInputDialog::Tab::EditorString )
         editString.FocusThis();
 }
@@ -411,8 +410,8 @@ void ChkdStringInputDialog::EditorStringWindow::ButtonOk()
 void ChkdStringInputDialog::EditorStringWindow::ButtonReset()
 {
     parent.newEditorString = parent.initialEditorString;
-    checkNoString.SetCheck(parent.newEditorString == nullptr);
-    editString.SetWinText(parent.newEditorString == nullptr ? "" : *parent.newEditorString);
+    checkNoString.SetCheck(!parent.newEditorString);
+    editString.SetWinText(parent.newEditorString ? *parent.newEditorString : "");
     logger.info() << "Editor Button Reset" << std::endl;
 }
 
@@ -431,7 +430,7 @@ void ChkdStringInputDialog::EditorStringWindow::NotifyButtonClicked(int idFrom, 
         case Id::CHECK_EDITOR_NO_STRING:
             if ( checkNoString.isChecked() )
             {
-                parent.newEditorString = nullptr;
+                parent.newEditorString.reset();
                 editString.SetWinText("");
             }
             break;

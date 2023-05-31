@@ -80,7 +80,7 @@ void UnitSettingsWindow::RefreshWindow()
         if ( isDisabled )
             EnableUnitEditing();
 
-        bool unitUsesDefaultSettings = CM->properties.unitUsesDefaultSettings(selectedUnitType);
+        bool unitUsesDefaultSettings = CM->unitUsesDefaultSettings(selectedUnitType);
         checkUseUnitDefaults.SetCheck(unitUsesDefaultSettings);
         if ( unitUsesDefaultSettings )
             DisableUnitProperties();
@@ -161,39 +161,39 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else // Not default settings
         {
-            u32 unitHitpoints = CM->properties.getUnitHitpoints(selectedUnitType);
+            u32 unitHitpoints = CM->getUnitHitpoints(selectedUnitType);
             editHitPoints.SetEditNum<u32>(unitHitpoints/256);
             editHitPointsByte.SetEditNum<u8>(unitHitpoints%256);
-            editShieldPoints.SetEditNum<u16>(CM->properties.getUnitShieldPoints(selectedUnitType));
-            editArmor.SetEditNum<u8>(CM->properties.getUnitArmorLevel(selectedUnitType));
-            editBuildTime.SetEditNum<u16>(CM->properties.getUnitBuildTime(selectedUnitType));
-            editMineralCost.SetEditNum<u16>(CM->properties.getUnitMineralCost(selectedUnitType));
-            editGasCost.SetEditNum<u16>(CM->properties.getUnitGasCost(selectedUnitType));
+            editShieldPoints.SetEditNum<u16>(CM->getUnitShieldPoints(selectedUnitType));
+            editArmor.SetEditNum<u8>(CM->getUnitArmorLevel(selectedUnitType));
+            editBuildTime.SetEditNum<u16>(CM->getUnitBuildTime(selectedUnitType));
+            editMineralCost.SetEditNum<u16>(CM->getUnitMineralCost(selectedUnitType));
+            editGasCost.SetEditNum<u16>(CM->getUnitGasCost(selectedUnitType));
             if ( groundWeapon != 130 )
             {
-                editGroundDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)groundWeapon));
-                editGroundBonus.SetEditNum<u16>(CM->properties.getWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon));
+                editGroundDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)groundWeapon));
+                editGroundBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon));
             }
             if ( airWeapon != 130 && airWeapon != groundWeapon )
             {
-                editAirDamage.SetEditNum<u16>(CM->properties.getWeaponBaseDamage((Sc::Weapon::Type)airWeapon));
-                editAirBonus.SetEditNum<u16>(CM->properties.getWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon));
+                editAirDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)airWeapon));
+                editAirBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon));
             }
         }
 
-        checkEnabledByDefault.SetCheck(CM->properties.isUnitDefaultBuildable(selectedUnitType));
+        checkEnabledByDefault.SetCheck(CM->isUnitDefaultBuildable(selectedUnitType));
 
         for ( size_t i=0; i<12; i++ )
         {
-            if ( CM->properties.playerUsesDefaultUnitBuildability(selectedUnitType, i) )
+            if ( CM->playerUsesDefaultUnitBuildability(selectedUnitType, i) )
                 dropPlayerAvailability[i].SetSel(0);
-            else if ( CM->properties.isUnitBuildable(selectedUnitType, i) )
+            else if ( CM->isUnitBuildable(selectedUnitType, i) )
                 dropPlayerAvailability[i].SetSel(1);
             else // playerUsesDefault == false && isUnitBuildable == false
                 dropPlayerAvailability[i].SetSel(2);
         }
 
-        if ( CM->properties.getUnitNameStringId(selectedUnitType) == Chk::StringId::NoString )
+        if ( CM->getUnitNameStringId(selectedUnitType) == Chk::StringId::NoString )
         {
             editUnitName.DisableThis();
             checkUseDefaultName.SetCheck(true);
@@ -206,7 +206,7 @@ void UnitSettingsWindow::RefreshWindow()
             checkUseDefaultName.SetCheck(false);
         }
             
-        ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
         editUnitName.SetText(*unitName);
         chkd.mapSettingsWindow.SetWinText("Map Settings - [" + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
     }
@@ -307,7 +307,7 @@ void UnitSettingsWindow::DisableUnitEditing()
 void UnitSettingsWindow::EnableUnitEditing()
 {
     isDisabled = false;
-    if ( selectedUnitType != Sc::Unit::Type::NoUnit && CM->properties.unitUsesDefaultSettings(selectedUnitType) == false )
+    if ( selectedUnitType != Sc::Unit::Type::NoUnit && CM->unitUsesDefaultSettings(selectedUnitType) == false )
         EnableUnitProperties();
 
     checkUseUnitDefaults.EnableThis();
@@ -400,8 +400,8 @@ void UnitSettingsWindow::CheckReplaceUnitName()
     ChkdString newUnitName;
     if ( possibleUnitNameUpdate && selectedUnitType != Sc::Unit::Type::NoUnit && (u16)selectedUnitType < Sc::Unit::TotalTypes && editUnitName.GetWinText(newUnitName) )
     {
-        CM->strings.setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, newUnitName);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, newUnitName);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         CM->notifyChange(false);
         chkd.unitWindow.RepopulateList();
         RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -416,18 +416,18 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
     if ( selectedUnitType != Sc::Unit::Type::NoUnit )
     {
         // Remove Custom Unit Name
-        u16 origName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No);
-        u16 expName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
-        CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
-        CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        u16 origName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No);
+        u16 expName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
+        CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
+        CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         
-        ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
         editUnitName.SetText(*unitName);
         checkUseDefaultName.DisableThis();
         editUnitName.DisableThis();
-        CM->strings.deleteString(origName);
-        CM->strings.deleteString(expName);
+        CM->deleteString(origName);
+        CM->deleteString(expName);
         chkd.unitWindow.RepopulateList();
         RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -443,20 +443,20 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
                 airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon;
         }
         
-        CM->properties.setUnitHitpoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).hitPoints);
-        CM->properties.setUnitShieldPoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).shieldAmount);
-        CM->properties.setUnitArmorLevel(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).armor);
-        CM->properties.setUnitBuildTime(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).buildTime);
-        CM->properties.setUnitMineralCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).mineralCost);
-        CM->properties.setUnitGasCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).vespeneCost);
+        CM->setUnitHitpoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).hitPoints);
+        CM->setUnitShieldPoints(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).shieldAmount);
+        CM->setUnitArmorLevel(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).armor);
+        CM->setUnitBuildTime(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).buildTime);
+        CM->setUnitMineralCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).mineralCost);
+        CM->setUnitGasCost(selectedUnitType, chkd.scData.units.getUnit(selectedUnitType).vespeneCost);
 
         if ( groundWeapon != 130 )
         {
             u16 defaultBaseDamage = chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount,
                 defaultBonusDamage = chkd.scData.weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus;
             
-            CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, defaultBaseDamage);
-            CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, defaultBonusDamage);
+            CM->setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, defaultBaseDamage);
+            CM->setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, defaultBonusDamage);
         }
 
         if ( airWeapon != 130 )
@@ -464,8 +464,8 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
             u16 defaultBaseDamage = chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageAmount,
                 defaultBonusDamage = chkd.scData.weapons.get((Sc::Weapon::Type)airWeapon).damageBonus;
             
-            CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, defaultBaseDamage);
-            CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, defaultBonusDamage);
+            CM->setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, defaultBaseDamage);
+            CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, defaultBonusDamage);
         }
 
         CM->notifyChange(false);
@@ -480,18 +480,18 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
         u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon,
             airWeapon    = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
 
-        u16 origName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No),
-            expName = (u16)CM->properties.getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
-        CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->strings.deleteString(origName);
-        CM->strings.deleteString(expName);
+        u16 origName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No),
+            expName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
+        CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->deleteString(origName);
+        CM->deleteString(expName);
         
-        CM->properties.setUnitHitpoints(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->properties.setUnitShieldPoints(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->properties.setUnitArmorLevel(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->properties.setUnitBuildTime(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->properties.setUnitMineralCost(selectedUnitType, 0, Chk::UseExpSection::Both);
-        CM->properties.setUnitGasCost(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitHitpoints(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitShieldPoints(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitArmorLevel(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitBuildTime(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitMineralCost(selectedUnitType, 0, Chk::UseExpSection::Both);
+        CM->setUnitGasCost(selectedUnitType, 0, Chk::UseExpSection::Both);
 
         CM->notifyChange(false);
     }
@@ -533,8 +533,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             if ( WinLib::GetYesNo("Are you sure you want to reset all unit settings?", "Confirm") == WinLib::PromptResult::Yes )
             {
-                CM->properties.setUnitsToDefault();
-                CM->strings.deleteUnusedStrings();
+                CM->setUnitsToDefault();
+                CM->deleteUnusedStrings();
                 DisableUnitEditing();
                 RefreshWindow();
                 CM->notifyChange(false);
@@ -552,13 +552,13 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                     ClearDefaultUnitProperties();
                     DisableUnitProperties();
-                    CM->properties.setUnitUsesDefaultSettings(selectedUnitType, true);
+                    CM->setUnitUsesDefaultSettings(selectedUnitType, true);
                 }
                 else
                 {
                     SetDefaultUnitProperties();
                     EnableUnitProperties();
-                    CM->properties.setUnitUsesDefaultSettings(selectedUnitType, false);
+                    CM->setUnitUsesDefaultSettings(selectedUnitType, false);
                 }
 
                 RefreshWindow();
@@ -577,9 +577,9 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( state == BST_CHECKED )
                 {
                     editUnitName.DisableThis();
-                    CM->properties.setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
-                    CM->strings.deleteUnusedStrings(Chk::Scope::Both);
-                    ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(selectedUnitType, true);
+                    CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
+                    CM->deleteUnusedStrings(Chk::StrScope::Both);
+                    auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
                     editUnitName.SetText(*unitName);
                     chkd.unitWindow.RepopulateList();
                     RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -597,7 +597,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
             if ( selectedUnitType != Sc::Unit::Type::NoUnit )
             {
-                CM->properties.setUnitDefaultBuildable(selectedUnitType, state == BST_CHECKED);
+                CM->setUnitDefaultBuildable(selectedUnitType, state == BST_CHECKED);
                 CM->notifyChange(false);
             }
         }
@@ -614,8 +614,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u32 newHitPoints;
             if ( editHitPoints.GetEditNum<u32>(newHitPoints) )
             {
-                u32 oldHitpoints = CM->properties.getUnitHitpoints(selectedUnitType);
-                CM->properties.setUnitHitpoints(selectedUnitType, newHitPoints*256+oldHitpoints%256);
+                u32 oldHitpoints = CM->getUnitHitpoints(selectedUnitType);
+                CM->setUnitHitpoints(selectedUnitType, newHitPoints*256+oldHitpoints%256);
                 CM->notifyChange(false);
             }
         }
@@ -626,8 +626,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u8 newHitPointByte;
             if ( editHitPointsByte.GetEditNum<u8>(newHitPointByte) )
             {
-                u32 oldHitpoints = CM->properties.getUnitHitpoints(selectedUnitType);
-                CM->properties.setUnitHitpoints(selectedUnitType, oldHitpoints-oldHitpoints%256+newHitPointByte);
+                u32 oldHitpoints = CM->getUnitHitpoints(selectedUnitType);
+                CM->setUnitHitpoints(selectedUnitType, oldHitpoints-oldHitpoints%256+newHitPointByte);
                 CM->notifyChange(false);
             }
         }
@@ -638,7 +638,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newShieldPoints;
             if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
             {
-                CM->properties.setUnitShieldPoints(selectedUnitType, newShieldPoints);
+                CM->setUnitShieldPoints(selectedUnitType, newShieldPoints);
                 CM->notifyChange(false);
             }
         }
@@ -649,7 +649,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u8 newArmorByte;
             if ( editArmor.GetEditNum<u8>(newArmorByte) )
             {
-                CM->properties.setUnitArmorLevel(selectedUnitType, newArmorByte);
+                CM->setUnitArmorLevel(selectedUnitType, newArmorByte);
                 CM->notifyChange(false);
             }
         }
@@ -660,7 +660,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newBuildTime;
             if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
             {
-                CM->properties.setUnitBuildTime(selectedUnitType, newBuildTime);
+                CM->setUnitBuildTime(selectedUnitType, newBuildTime);
                 CM->notifyChange(false);
             }
         }
@@ -671,7 +671,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newMineralCost;
             if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
             {
-                CM->properties.setUnitMineralCost(selectedUnitType, newMineralCost);
+                CM->setUnitMineralCost(selectedUnitType, newMineralCost);
                 CM->notifyChange(false);
             }
         }
@@ -682,7 +682,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u16 newGasCost;
             if ( editGasCost.GetEditNum<u16>(newGasCost) )
             {
-                CM->properties.setUnitGasCost(selectedUnitType, newGasCost);
+                CM->setUnitGasCost(selectedUnitType, newGasCost);
                 CM->notifyChange(false);
             }
         }
@@ -700,7 +700,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
                 {
-                    CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
+                    CM->setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
                     CM->notifyChange(false);
                 }
             }
@@ -719,7 +719,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
                 {
-                    CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, newGroundBonus);
+                    CM->setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, newGroundBonus);
                     CM->notifyChange(false);
                 }
             }
@@ -738,7 +738,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
                 if ( airWeapon < 130 )
                 {
-                    CM->properties.setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, newAirDamage);
+                    CM->setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, newAirDamage);
                     CM->notifyChange(false);
                 }
             }
@@ -756,7 +756,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
                     airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
 
-                CM->properties.setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);
+                CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);
                 CM->notifyChange(false);
             }
         }
@@ -769,16 +769,16 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             int sel = dropPlayerAvailability[player].GetSel();
 
             if ( sel == 0 ) // Default
-                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, true);
+                CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, true);
             else if ( sel == 1 ) // Yes
             {
-                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
-                CM->properties.setUnitBuildable(selectedUnitType, player, true);
+                CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
+                CM->setUnitBuildable(selectedUnitType, player, true);
             }
             else if ( sel == 2 ) // No
             {
-                CM->properties.setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
-                CM->properties.setUnitBuildable(selectedUnitType, player, false);
+                CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
+                CM->setUnitBuildable(selectedUnitType, player, false);
             }
 
             CM->notifyChange(false);
