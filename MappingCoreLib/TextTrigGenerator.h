@@ -2,12 +2,12 @@
 #define TEXTTRIGGENERATOR_H
 #include "Basics.h"
 #include "Scenario.h"
-#include "StringBuffer.h"
+#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include <vector>
 #include <string>
 #include <map>
 
-using namespace BufferedStream;
+using RareBufferedStream::StringBuffer;
 
 class TextTrigGenerator
 {
@@ -17,21 +17,21 @@ class TextTrigGenerator
         virtual ~TextTrigGenerator();
 
         // Places text trigs representative of the given TRIG section in trigString if successful
-        bool generateTextTrigs(ScenarioPtr map, std::string & trigString);
+        bool generateTextTrigs(const Scenario & map, std::string & trigString);
 
         // Places text trigs representative of the given trigger in trigString if successful
-        bool generateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString);
+        bool generateTextTrigs(const Scenario & map, size_t trigIndex, std::string & trigString);
         
-        bool loadScenario(ScenarioPtr map); // Loads data about the given scenario for use outside text trigs
+        bool loadScenario(const Scenario & map); // Loads data about the given scenario for use outside text trigs
 
         void clearScenario(); // Clears loaded scenario data
 
         std::string getConditionName(Chk::Condition::Type conditionType) const;
-        std::string getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex) const;
-        std::string getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument) const;
+        std::string getConditionArgument(const Chk::Condition & condition, size_t textArgumentIndex) const;
+        std::string getConditionArgument(const Chk::Condition & condition, Chk::Condition::Argument argument) const;
         std::string getActionName(Chk::Action::Type actionType) const;
-        std::string getActionArgument(Chk::Action & action, size_t textArgumentIndex) const;
-        std::string getActionArgument(Chk::Action & action, Chk::Action::Argument argument) const;
+        std::string getActionArgument(const Chk::Action & action, size_t textArgumentIndex) const;
+        std::string getActionArgument(const Chk::Action & action, Chk::Action::Argument argument) const;
 
         ChkdString getTrigLocation(size_t locationId) const;
         ChkdString getTrigString(size_t stringId) const;
@@ -55,15 +55,15 @@ class TextTrigGenerator
     
     protected:
 
-        bool loadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames);
+        bool loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames);
         bool correctLineEndings(StringBuffer & buf) const; // Corrects any improperly formatted line endings
         
-        bool buildTextTrigs(ScenarioPtr scenario, std::string & trigString);
-        bool buildTextTrig(Chk::Trigger & trigger, std::string & trigString);
-        inline void appendTriggers(StringBuffer & output, ScenarioPtr scenario) const;
-        inline void appendTrigger(StringBuffer & output, Chk::Trigger & trigger) const;
-        inline void appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument) const;
-        inline void appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument) const;
+        bool buildTextTrigs(const Scenario & scenario, std::string & trigString);
+        bool buildTextTrig(const Chk::Trigger & trigger, std::string & trigString);
+        inline void appendTriggers(StringBuffer & output, const Scenario & scenario) const;
+        inline void appendTrigger(StringBuffer & output, const Chk::Trigger & trigger) const;
+        inline void appendConditionArgument(StringBuffer & output, const Chk::Condition & condition, Chk::Condition::Argument argument) const;
+        inline void appendActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const;
 
         inline void appendLocation(StringBuffer & output, const size_t & locationId) const;
         inline void appendString(StringBuffer & output, const size_t & stringId) const;
@@ -86,9 +86,9 @@ class TextTrigGenerator
         template<typename T> inline void appendNumber(StringBuffer & output, const T & number) const
         {
             if constexpr ( std::is_enum<T>::value )
-                output.appendNumber((typename promote_char<typename std::underlying_type<T>::type>::type)number);
+                output.appendNumber((typename RareTs::promote_char_t<typename std::underlying_type_t<T>>)number);
             else
-                output.appendNumber((typename promote_char<T>::type)number);
+                output.appendNumber((typename RareTs::promote_char_t<T>)number);
         }
         inline void appendConditionMaskFlag(StringBuffer & output, const Chk::Condition::MaskFlag & maskFlag) const;
         inline void appendActionMaskFlag(StringBuffer & output, const Chk::Action::MaskFlag & maskFlag) const;
@@ -114,12 +114,12 @@ class TextTrigGenerator
 
         bool prepConditionTable(); // Fills conditionTable
         bool prepActionTable(); // Fills actionTable
-        bool prepLocationTable(ScenarioPtr map, bool quoteArgs); // Fills locationTable
-        bool prepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames); // Fills unitTable
-        bool prepSwitchTable(ScenarioPtr map, bool quoteArgs); // Fills switchTable
-        bool prepGroupTable(ScenarioPtr map, bool quoteArgs); // Fills groupTable
-        bool prepScriptTable(ScenarioPtr map, bool quoteArgs); // Fills scriptTable
-        bool prepStringTable(ScenarioPtr map, bool quoteArgs); // Fills stringTable
+        bool prepLocationTable(const Scenario & map, bool quoteArgs); // Fills locationTable
+        bool prepUnitTable(const Scenario & map, bool quoteArgs, bool useCustomNames); // Fills unitTable
+        bool prepSwitchTable(const Scenario & map, bool quoteArgs); // Fills switchTable
+        bool prepGroupTable(const Scenario & map, bool quoteArgs); // Fills groupTable
+        bool prepScriptTable(const Scenario & map, bool quoteArgs); // Fills scriptTable
+        bool prepStringTable(const Scenario & map, bool quoteArgs); // Fills stringTable
 };
 
 #endif

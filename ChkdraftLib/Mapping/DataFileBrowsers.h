@@ -13,7 +13,7 @@ class ChkdDataFileBrowser : public Sc::DataFile::Browser
             const std::string & expectedStarCraftDirectory = Settings::starCraftPath,
             FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
 
-        virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<> starCraftBrowser = nullptr);
+        virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<> starCraftBrowser = nullptr);
 
         virtual MpqFilePtr openDataFile(const std::string & dataFilePath, const Sc::DataFile::Descriptor & dataFileDescriptor);
 

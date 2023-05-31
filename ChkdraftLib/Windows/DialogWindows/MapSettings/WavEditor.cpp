@@ -55,33 +55,33 @@ void WavEditorWindow::RefreshWindow()
     wavMap.clear();
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
-        size_t soundStringId = CM->triggers.getSoundStringId(i);
+        size_t soundStringId = CM->getSoundStringId(i);
         if ( soundStringId != Chk::StringId::UnusedSound )
             wavMap.insert(std::pair<u32, u16>((u32)soundStringId, (u16)i));
     }
-    for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
+    for ( size_t i=0; i<CM->numTriggers(); i++ )
     {
-        const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+        const Chk::Trigger & trigger = CM->getTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
-                trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                wavMap.insert(std::pair<u32, u16>((u32)trigger->actions[actionIndex].soundStringId, u16_max));
+                wavMap.insert(std::pair<u32, u16>((u32)trigger.actions[actionIndex].soundStringId, u16_max));
             }
         }
     }
-    for ( size_t i=0; i<CM->triggers.numBriefingTriggers(); i++ )
+    for ( size_t i=0; i<CM->numBriefingTriggers(); i++ )
     {
-        Chk::TriggerPtr trigger = CM->triggers.getBriefingTrigger(i);
+        const Chk::Trigger & trigger = CM->getBriefingTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
-                trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
-                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                wavMap.insert(std::pair<u32, u16>((u32)trigger->actions[actionIndex].soundStringId, u16_max));
+                wavMap.insert(std::pair<u32, u16>((u32)trigger.actions[actionIndex].soundStringId, u16_max));
             }
         }
     }
@@ -162,12 +162,11 @@ void WavEditorWindow::UpdateCustomStringList()
     {
         dropCustomMpqString.ClearItems();
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        CM->strings.markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
-        size_t stringCapacity = CM->strings.getCapacity(Chk::Scope::Game);
+        CM->markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        size_t stringCapacity = CM->getCapacity(Chk::StrScope::Game);
         for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(stringId, Chk::Scope::Game);
-            if ( str != nullptr )
+            if ( auto str = CM->getString<SingleLineChkdString>(stringId, Chk::StrScope::Game) )
                 dropCustomMpqString.AddItem(*str);
         }
         dropCustomMpqString.EnableThis();
@@ -195,8 +194,8 @@ void WavEditorWindow::PlaySoundButtonPressed()
         }
         else
         {
-            RawStringPtr soundString = CM->strings.getString<RawString>(soundStringId);
-            if ( soundString != nullptr && CM->isInVirtualSoundList(*soundString) &&
+            auto soundString = CM->getString<RawString>(soundStringId);
+            if ( soundString && CM->isInVirtualSoundList(*soundString) &&
                 Sc::Data::GetAsset(*soundString, wavBuffer, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
                     ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
             {
@@ -244,8 +243,7 @@ void WavEditorWindow::ExtractSoundButtonPressed()
     u32 soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        RawStringPtr wavMpqPath = CM->strings.getString<RawString>(soundStringId);
-        if ( wavMpqPath != nullptr )
+        if ( auto wavMpqPath = CM->getString<RawString>(soundStringId) )
         {
             u32 filterIndex = 0;
             std::string saveFilePath = getMpqFileName(*wavMpqPath);
@@ -276,7 +274,7 @@ void WavEditorWindow::BrowseButtonPressed()
 {
     OPENFILENAME ofn = { };
     std::vector<std::pair<std::string, std::string>> filtersAndLabels = { std::make_pair<std::string, std::string>("*.wav", "WAV File"), std::make_pair<std::string, std::string>("*.*", "All Files") };
-    std::string initPath = Settings::starCraftPath + getSystemFileSeparator() + "Maps";
+    std::string initPath = makeSystemFilePath(Settings::starCraftPath, "Maps");
 
     u32 filterIndex = 0;
     std::string soundFilePath;
@@ -459,34 +457,34 @@ void WavEditorWindow::DeleteSoundButtonPressed()
     if ( listMapSounds.GetItemData(selectedSoundListIndex, wavStringId) )
     {
         bool wavStringIdIsUsed = false;
-        for ( size_t i=0; i<CM->triggers.numTriggers(); i++ )
+        for ( size_t i=0; i<CM->numTriggers(); i++ )
         {
-            Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
+            const Chk::Trigger & trigger = CM->getTrigger(i);
             for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
-                if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
-                    trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                    trigger->actions[actionIndex].soundStringId == wavStringId )
+                if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                    trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                    trigger.actions[actionIndex].soundStringId == wavStringId )
                 {
                     wavStringIdIsUsed = true;
-                    i = CM->triggers.numTriggers();
+                    i = CM->numTriggers();
                     break;
                 }
             }
         }
         if ( !wavStringIdIsUsed )
         {
-            for ( size_t i=0; i<CM->triggers.numBriefingTriggers(); i++ )
+            for ( size_t i=0; i<CM->numBriefingTriggers(); i++ )
             {
-                Chk::TriggerPtr trigger = CM->triggers.getBriefingTrigger(i);
+                const Chk::Trigger & trigger = CM->getBriefingTrigger(i);
                 for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
                 {
-                    if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
-                        trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
-                        trigger->actions[actionIndex].soundStringId == wavStringId )
+                    if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                        trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                        trigger.actions[actionIndex].soundStringId == wavStringId )
                     {
                         wavStringIdIsUsed = true;
-                        i = CM->triggers.numBriefingTriggers();
+                        i = CM->numBriefingTriggers();
                         break;
                     }
                 }
@@ -533,7 +531,7 @@ void WavEditorWindow::DeleteSoundButtonPressed()
             CM->notifyChange(false);
             CM->refreshScenario();
         }
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
     }
 }
 
@@ -564,8 +562,8 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
         case WM_MEASUREITEM:
         {
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-            RawStringPtr str = CM->strings.getString<RawString>((size_t)mis->itemData);
-            if ( str != nullptr && GetStringDrawSize(wavListDC, mis->itemWidth, mis->itemHeight, *str) )
+            auto str = CM->getString<RawString>((size_t)mis->itemData);
+            if ( str && GetStringDrawSize(wavListDC, mis->itemWidth, mis->itemHeight, *str) )
             {
                 mis->itemWidth += 5;
                 mis->itemHeight += 2;
@@ -591,8 +589,8 @@ LRESULT WavEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
-                RawStringPtr str = CM->strings.getString<RawString>((size_t)pdis->itemData);
-                if ( CM != nullptr && str != nullptr )
+                auto str = CM->getString<RawString>((size_t)pdis->itemData);
+                if ( CM != nullptr && str )
                 {
                     HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                     if ( hBackground != NULL )

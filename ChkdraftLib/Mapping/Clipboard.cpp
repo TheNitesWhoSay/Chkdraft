@@ -60,11 +60,11 @@ PasteTileNode::~PasteTileNode()
 
 }
 
-PasteUnitNode::PasteUnitNode(Chk::UnitPtr unit)
+PasteUnitNode::PasteUnitNode(const Chk::Unit & unit)
 {
-    this->unit = Chk::UnitPtr(new Chk::Unit(*unit));
-    this->xc = unit->xc;
-    this->yc = unit->yc;
+    this->unit = unit;
+    this->xc = unit.xc;
+    this->yc = unit.yc;
 }
 
 PasteUnitNode::~PasteUnitNode()
@@ -138,16 +138,16 @@ void Clipboard::copy(GuiMap & map, Layer layer)
         if ( selections.hasUnits() )
         {
             u16 firstUnitIndex = selections.getFirstUnit();
-            Chk::UnitPtr currUnit = map.layers.getUnit(firstUnitIndex);
-            edges.left   = currUnit->xc;
-            edges.right  = currUnit->xc;
-            edges.top    = currUnit->yc;
-            edges.bottom = currUnit->yc;
+            const Chk::Unit & currUnit = map.getUnit(firstUnitIndex);
+            edges.left   = currUnit.xc;
+            edges.right  = currUnit.xc;
+            edges.top    = currUnit.yc;
+            edges.bottom = currUnit.yc;
 
             auto & selectedUnits = selections.getUnits();
             for ( u16 & unitIndex : selectedUnits )
             {
-                Chk::UnitPtr currUnit = map.layers.getUnit(unitIndex);
+                const Chk::Unit & currUnit = map.getUnit(unitIndex);
                 PasteUnitNode add(currUnit);
 
                 if      ( add.xc < edges.left   ) edges.left   = add.xc;
@@ -177,7 +177,7 @@ void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
     quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, TileNeighbor::All));
 }
 
-void Clipboard::addQuickUnit(Chk::UnitPtr unit)
+void Clipboard::addQuickUnit(const Chk::Unit & unit)
 {
     quickUnits.push_back(unit);
 }
@@ -281,8 +281,8 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
         {
             prevPaste.x = mapClickX/16;
             prevPaste.y = mapClickY/16;
-            u16 xSize = (u16)map.layers.getTileWidth();
-            u16 ySize = (u16)map.layers.getTileHeight();
+            u16 xSize = (u16)map.getTileWidth();
+            u16 ySize = (u16)map.getTileHeight();
 
             auto tileChanges = ReversibleActions::Make();
             auto & tiles = getTiles();
@@ -296,10 +296,10 @@ void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
                 {
                     if ( yc >= 0 && yc < ySize )
                     {
-                        if ( map.layers.getTile(xc, yc) != tile.value )
+                        if ( map.getTile(xc, yc) != tile.value )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.layers.getTile(xc, yc)));
-                            map.layers.setTile(xc, yc, tile.value);
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            map.setTile(xc, yc, tile.value);
                         }
                     }
                 }
@@ -318,8 +318,8 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
     {
         prevPaste.x = mapClickX/16;
         prevPaste.y = mapClickY/16;
-        u16 xSize = (u16)map.layers.getTileWidth();
-        u16 ySize = (u16)map.layers.getTileHeight();
+        u16 xSize = (u16)map.getTileWidth();
+        u16 ySize = (u16)map.getTileHeight();
 
         auto tileChanges = ReversibleActions::Make();
         if ( getTiles().size() == 1 )
@@ -332,7 +332,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
             // If within map boundaries
             if ( xc >= 0 && xc < xSize && yc >= 0 && yc < ySize )
             {
-                u16 filledTileValue = map.layers.getTile(xc, yc);
+                u16 filledTileValue = map.getTile(xc, yc);
                 if ( filledTileValue != pasteTileValue )
                 {
                     std::set<points> tilesProcessed;
@@ -346,10 +346,10 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
                         tilesProcessed.insert(tile);
                         xc = tile.x;
                         yc = tile.y;
-                        if ( map.layers.getTile(xc, yc) == filledTileValue )
+                        if ( map.getTile(xc, yc) == filledTileValue )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.layers.getTile(xc, yc)));
-                            map.layers.setTile(xc, yc, pasteTileValue);
+                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            map.setTile(xc, yc, pasteTileValue);
                             const points left = points(xc-1, yc);
                             const points right = points(xc+1, yc);
                             const points up = points(xc, yc-1);
@@ -377,26 +377,26 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     auto & pasteUnits = getUnits();
     for ( auto & pasteUnit : pasteUnits )
     {
-        pasteUnit.unit->xc = u16(mapClickX + pasteUnit.xc);
-        pasteUnit.unit->yc = u16(mapClickY + pasteUnit.yc);
+        pasteUnit.unit.xc = u16(mapClickX + pasteUnit.xc);
+        pasteUnit.unit.yc = u16(mapClickY + pasteUnit.yc);
         if ( mapClickX + (s32(pasteUnit.xc)) >= 0 && mapClickY + (s32(pasteUnit.yc)) >= 0 )
         {
             bool canPaste = true;
             if ( allowStack == false )
             {
-                s32 unitLeft   = pasteUnit.unit->xc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeLeft,
-                    unitRight  = pasteUnit.unit->xc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeRight,
-                    unitTop    = pasteUnit.unit->yc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeUp,
-                    unitBottom = pasteUnit.unit->yc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeDown;
+                s32 unitLeft   = pasteUnit.unit.xc - chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeLeft,
+                    unitRight  = pasteUnit.unit.xc + chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeRight,
+                    unitTop    = pasteUnit.unit.yc - chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeUp,
+                    unitBottom = pasteUnit.unit.yc + chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeDown;
 
-                size_t numUnits = map.layers.numUnits();
+                size_t numUnits = map.numUnits();
                 for ( size_t i=0; i<numUnits; i++ )
                 {
-                    Chk::UnitPtr unit = map.layers.getUnit(i);
-                    s32 left   = unit->xc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeLeft,
-                        right  = unit->xc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeRight,
-                        top    = unit->yc - chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeUp,
-                        bottom = unit->yc + chkd.scData.units.getUnit(pasteUnit.unit->type).unitSizeDown;
+                    const Chk::Unit & unit = map.getUnit(i);
+                    s32 left   = unit.xc - chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeLeft,
+                        right  = unit.xc + chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeRight,
+                        top    = unit.yc - chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeUp,
+                        bottom = unit.yc + chkd.scData.units.getUnit(pasteUnit.unit.type).unitSizeDown;
 
                     if ( unitRight >= left && unitLeft <= right && unitBottom >= top && unitTop <= bottom )
                     {
@@ -408,10 +408,10 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
 
             if ( canPaste )
             {
-                prevPaste.x = pasteUnit.unit->xc;
-                prevPaste.y = pasteUnit.unit->yc;
-                size_t numUnits = map.layers.numUnits();
-                map.layers.addUnit(Chk::UnitPtr(new Chk::Unit(*pasteUnit.unit)));
+                prevPaste.x = pasteUnit.unit.xc;
+                prevPaste.y = pasteUnit.unit.yc;
+                size_t numUnits = map.numUnits();
+                map.addUnit(pasteUnit.unit);
                 unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
                 if ( chkd.unitWindow.getHandle() != nullptr )
                     chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);

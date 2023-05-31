@@ -12,7 +12,6 @@
 
 #include "Basics.h" // Numerous useful definitions, constants, and utility functions
 #include "sha256.h" // Provides the means to compute sha256 hashes for securing sensitive passwords or keys
-#include "StringBuffer.h" // Provides faster alternatives to std::stringstream
 
 #include "Chk.h" // Defines all static structures, constants, and enumerations specific to scenario files (.chk)
 #include "EscapeStrings.h" // Defines several string types that extend basic strings in ways useful for mapping purposes
@@ -20,7 +19,6 @@
 #include "MpqFile.h" // An MPQ file is nothing more than an archive format (like .zip) specialized for StarCraft
 #include "Sc.h" // Contains resources to load assets from StarCraft and defines static structures, constants, and enumerations general to StarCraft
 #include "Scenario.h" // Resources for working with scenarios - scenario are the core piece of a map and describe their versioning, strings, player information, terrain, units, locations, properties, triggers and more
-#include "Sections.h" // Defines sections which encapsulate the storage structures defined in the Chk
 
 #include "TextTrigCompiler.h" // Provides the means to compile text triggers into a scenario file
 #include "TextTrigGenerator.h" // Provides the means to turn triggers into text 

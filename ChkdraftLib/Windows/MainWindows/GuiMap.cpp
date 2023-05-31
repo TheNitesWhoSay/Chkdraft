@@ -46,6 +46,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
     minSecondsBetweenBackups(1800), lastBackupTime(-1)
 {
+    graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -99,13 +100,13 @@ bool GuiMap::SaveFile(bool saveAs)
 
 bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
 {
-    u16 xSize = (u16)Scenario::layers.getTileWidth();
-    if ( x > xSize || y > (u16)Scenario::layers.getTileHeight() )
+    u16 xSize = (u16)Scenario::getTileWidth();
+    if ( x > xSize || y > (u16)Scenario::getTileHeight() )
         return false;
 
-    undos.AddUndo(TileChange::Make((u16)x, (u16)y, layers.getTile((u16)x, (u16)y)));
+    undos.AddUndo(TileChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y)));
 
-    layers.setTile(x, y, tileNum);
+    Scenario::setTile(x, y, tileNum);
 
     RECT rcTile;
     rcTile.left   = x*32-screenLeft;
@@ -184,16 +185,16 @@ void GuiMap::setDragging(bool bDragging)
 
 void GuiMap::viewLocation(u16 locationId)
 {
-    const Chk::LocationPtr location = layers.getLocation(locationId);
-    RECT rect;
-    if ( location != nullptr && GetClientRect(getHandle(), &rect) != 0 )
+    RECT rect {};
+    if ( locationId < Scenario::numLocations() && GetClientRect(getHandle(), &rect) != 0 )
     {
+        const Chk::Location & location = Scenario::getLocation(locationId);
         s32 width = rect.right - rect.left,
             height = rect.bottom - rect.top,
-            locLeft = std::min(location->left, location->right),
-            locRight = std::max(location->left, location->right),
-            locTop = std::min(location->top, location->bottom),
-            locBottom = std::max(location->top, location->bottom),
+            locLeft = std::min(location.left, location.right),
+            locRight = std::max(location.left, location.right),
+            locTop = std::min(location.top, location.bottom),
+            locBottom = std::max(location.top, location.bottom),
             locCenterX = locLeft+(locRight-locLeft)/2,
             locCenterY = locTop+(locBottom-locTop)/2;
 
@@ -210,67 +211,64 @@ LocSelFlags GuiMap::getLocSelFlags(s32 xc, s32 yc)
     if ( currLayer == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION ) // If location is selected, determine which part of it is hovered by mouse
+        if ( selectedLocation != NO_LOCATION && selectedLocation < Scenario::numLocations() ) // If location is selected, determine which part of it is hovered by mouse
         {
-            const Chk::LocationPtr loc = layers.getLocation(selectedLocation);
-            if ( loc != nullptr )
+            const Chk::Location & loc = Scenario::getLocation(selectedLocation);
+            s32 locationLeft = std::min(loc.left, loc.right),
+                locationRight = std::max(loc.left, loc.right),
+                locationTop = std::min(loc.top, loc.bottom),
+                locationBottom = std::max(loc.top, loc.bottom),
+                leftOuterBound = locationLeft-5,
+                rightOuterBound = locationRight+5,
+                topOuterBound = locationTop-5,
+                bottomOuterBound = locationBottom+5;
+
+            if ( xc >= leftOuterBound && xc <= rightOuterBound &&
+                    yc >= topOuterBound && yc <= bottomOuterBound    )
             {
-                s32 locationLeft = std::min(loc->left, loc->right),
-                    locationRight = std::max(loc->left, loc->right),
-                    locationTop = std::min(loc->top, loc->bottom),
-                    locationBottom = std::max(loc->top, loc->bottom),
-                    leftOuterBound = locationLeft-5,
-                    rightOuterBound = locationRight+5,
-                    topOuterBound = locationTop-5,
-                    bottomOuterBound = locationBottom+5;
+                s32 locationWidth = locationRight-locationLeft,
+                    locationHeight = locationBottom-locationTop,
+                    leftInnerBound = locationLeft+locationWidth/3,
+                    rightInnerBound = locationRight-locationWidth/3,
+                    topInnerBound = locationTop+locationHeight/3,
+                    bottomInnerBound = locationBottom-locationHeight/3;
 
-                if ( xc >= leftOuterBound && xc <= rightOuterBound &&
-                     yc >= topOuterBound && yc <= bottomOuterBound    )
+                if ( leftInnerBound > locationLeft+5 )
+                    leftInnerBound = locationLeft+5;
+                if ( topInnerBound > locationTop+5 )
+                    topInnerBound = locationTop+5;
+                if ( rightInnerBound < locationRight-5 )
+                    rightInnerBound = locationRight-5;
+                if ( bottomInnerBound < locationBottom-5 )
+                    bottomInnerBound = locationBottom-5;
+
+                if ( xc >= leftInnerBound && xc <= rightInnerBound &&   // Location in absolute center
+                        yc >= topInnerBound && yc <= bottomInnerBound    )
                 {
-                    s32 locationWidth = locationRight-locationLeft,
-                        locationHeight = locationBottom-locationTop,
-                        leftInnerBound = locationLeft+locationWidth/3,
-                        rightInnerBound = locationRight-locationWidth/3,
-                        topInnerBound = locationTop+locationHeight/3,
-                        bottomInnerBound = locationBottom-locationHeight/3;
-
-                    if ( leftInnerBound > locationLeft+5 )
-                        leftInnerBound = locationLeft+5;
-                    if ( topInnerBound > locationTop+5 )
-                        topInnerBound = locationTop+5;
-                    if ( rightInnerBound < locationRight-5 )
-                        rightInnerBound = locationRight-5;
-                    if ( bottomInnerBound < locationBottom-5 )
-                        bottomInnerBound = locationBottom-5;
-
-                    if ( xc >= leftInnerBound && xc <= rightInnerBound &&   // Location in absolute center
-                         yc >= topInnerBound && yc <= bottomInnerBound    )
-                    {
-                        return LocSelFlags::Middle;
-                    } // Invariant: not in center
-                    else if ( xc >= leftInnerBound && xc <= rightInnerBound ) // Location in horizontal center
-                    {
-                        if ( yc > bottomInnerBound )
-                            return LocSelFlags::South;
-                        else
-                            return LocSelFlags::North;
-                    } // Invariant: on west or east
-                    else if ( yc >= topInnerBound && yc <= bottomInnerBound )
-                    {
-                        if ( xc > rightInnerBound )
-                            return LocSelFlags::East;
-                        else
-                            return LocSelFlags::West;
-                    } // Invariant: is on a corner
-                    else if ( xc < leftInnerBound && yc < topInnerBound )
-                        return LocSelFlags::NorthWest;
-                    else if ( xc > rightInnerBound && yc > bottomInnerBound )
-                        return LocSelFlags::SouthEast;
-                    else if ( xc < leftInnerBound && yc > bottomInnerBound )
-                        return LocSelFlags::SouthWest;
-                    else if ( xc > rightInnerBound && yc < topInnerBound )
-                        return LocSelFlags::NorthEast;
-                }
+                    return LocSelFlags::Middle;
+                } // Invariant: not in center
+                else if ( xc >= leftInnerBound && xc <= rightInnerBound ) // Location in horizontal center
+                {
+                    if ( yc > bottomInnerBound )
+                        return LocSelFlags::South;
+                    else
+                        return LocSelFlags::North;
+                } // Invariant: on west or east
+                else if ( yc >= topInnerBound && yc <= bottomInnerBound )
+                {
+                    if ( xc > rightInnerBound )
+                        return LocSelFlags::East;
+                    else
+                        return LocSelFlags::West;
+                } // Invariant: is on a corner
+                else if ( xc < leftInnerBound && yc < topInnerBound )
+                    return LocSelFlags::NorthWest;
+                else if ( xc > rightInnerBound && yc > bottomInnerBound )
+                    return LocSelFlags::SouthEast;
+                else if ( xc < leftInnerBound && yc > bottomInnerBound )
+                    return LocSelFlags::SouthWest;
+                else if ( xc > rightInnerBound && yc < topInnerBound )
+                    return LocSelFlags::NorthEast;
             }
         }
     }
@@ -294,28 +292,25 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
         selectedLoc = selections.getSelectedLocation();
     }
 
-    if ( selectedLoc != NO_LOCATION )
+    if ( selectedLoc != NO_LOCATION && selectedLoc < Scenario::numLocations() )
     {
-        const Chk::LocationPtr locRef = layers.getLocation(selectedLoc);
-        if ( locRef != nullptr )
-        {
-            s32 locLeft = std::min(locRef->left, locRef->right),
-                locRight = std::max(locRef->left, locRef->right),
-                locTop = std::min(locRef->top, locRef->bottom),
-                locBottom = std::max(locRef->top, locRef->bottom);
+        const Chk::Location & locRef = Scenario::getLocation(selectedLoc);
+        s32 locLeft = std::min(locRef.left, locRef.right),
+            locRight = std::max(locRef.left, locRef.right),
+            locTop = std::min(locRef.top, locRef.bottom),
+            locBottom = std::max(locRef.top, locRef.bottom);
     
-            if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
+        if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
+        {
+            if ( chkd.locationWindow.getHandle() == NULL )
             {
-                if ( chkd.locationWindow.getHandle() == NULL )
-                {
-                    chkd.locationWindow.CreateThis(chkd.getHandle());
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
-                }
-                else
-                {
-                    chkd.locationWindow.RefreshLocationInfo();
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
-                }
+                chkd.locationWindow.CreateThis(chkd.getHandle());
+                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
+            }
+            else
+            {
+                chkd.locationWindow.RefreshLocationInfo();
+                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
             }
         }
     }
@@ -323,8 +318,8 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
-    u16 xSize = (u16)Scenario::layers.getTileWidth();
-    u16 currTile = layers.getTile(xClick/32, yClick/32);
+    u16 xSize = (u16)Scenario::getTileWidth();
+    u16 currTile = Scenario::getTile(xClick/32, yClick/32);
     
     if ( selections.hasTiles() )
         selections.removeTiles();
@@ -360,7 +355,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
-            if ( size_t((screenLeft+rcMap.right)/32) < Scenario::layers.getTileWidth() )
+            if ( size_t((screenLeft+rcMap.right)/32) < Scenario::getTileWidth() )
                 selections.setEndDrag( ((screenLeft+rcMap.right)/32+1)*32, selections.getEndDrag().y );
             screenLeft = selections.getEndDrag().x - rcMap.right;
         }
@@ -373,7 +368,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
-            if ( size_t((screenTop+rcMap.bottom)/32) < Scenario::layers.getTileHeight() )
+            if ( size_t((screenTop+rcMap.bottom)/32) < Scenario::getTileHeight() )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+rcMap.bottom)/32+1)*32 );
             screenTop = selections.getEndDrag().y - rcMap.bottom;
         }
@@ -384,7 +379,7 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 
 u8 GuiMap::GetPlayerOwnerStringId(u8 player)
 {
-    Sc::Player::SlotType slotType = players.getSlotType(player);
+    Sc::Player::SlotType slotType = Scenario::getSlotType(player);
     switch ( slotType )
     {
         case Sc::Player::SlotType::GameComputer: case Sc::Player::SlotType::Computer: return 2; // Computer
@@ -405,7 +400,7 @@ void GuiMap::refreshScenario()
         chkd.unitWindow.RepopulateList();
     if ( chkd.locationWindow.getHandle() != NULL )
     {
-        if ( CM->layers.numLocations() == 0 )
+        if ( CM->numLocations() == 0 )
             chkd.locationWindow.DestroyThis();
         else
             chkd.locationWindow.RefreshLocationInfo();
@@ -448,39 +443,39 @@ void GuiMap::selectAll()
                         selections.removeTiles();
 
                     u16 tileValue,
-                        width = (u16)Scenario::layers.getTileWidth(),
-                        height = (u16)Scenario::layers.getTileHeight(),
+                        width = (u16)Scenario::getTileWidth(),
+                        height = (u16)Scenario::getTileHeight(),
                         x=0, y=0;
 
                     for ( x=0; x<width; x++ ) // Add the top row
                     {
-                        tileValue = layers.getTile(x, 0);
+                        tileValue = Scenario::getTile(x, 0);
                         selections.addTile(tileValue, x, y, TileNeighbor::Top);
                     }
 
                     for ( y=0; y<height-1; y++ ) // Add the middle rows
                     {
-                        tileValue = layers.getTile(0, y);
+                        tileValue = Scenario::getTile(0, y);
                         selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
 
                         for ( x=1; x<width-1; x++ )
                         {
-                            tileValue = layers.getTile(x, y);
+                            tileValue = Scenario::getTile(x, y);
                             selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
                         }
-                        tileValue = layers.getTile(width-1, y);
+                        tileValue = Scenario::getTile(width-1, y);
                         selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
                     }
 
-                    tileValue = layers.getTile(0, height-1);
+                    tileValue = Scenario::getTile(0, height-1);
                     selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
 
                     for ( x=1; x<width-1; x++ ) // Add the bottom row
                     {
-                        tileValue = layers.getTile(x, height-1);
+                        tileValue = Scenario::getTile(x, height-1);
                         selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
                     }
-                    tileValue = layers.getTile(width-1, height-1);
+                    tileValue = Scenario::getTile(width-1, height-1);
                     selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
 
                     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -489,7 +484,7 @@ void GuiMap::selectAll()
             case Layer::Units:
                 {
                     chkd.unitWindow.SetChangeHighlightOnly(true);
-                    for ( u16 i=0; i<layers.numUnits(); i++ )
+                    for ( u16 i=0; i<Scenario::numUnits(); i++ )
                     {
                         if ( !selections.unitIsSelected(i) )
                         {
@@ -514,13 +509,13 @@ void GuiMap::deleteSelection()
         {
             case Layer::Terrain:
                 {
-                    u16 xSize = (u16)Scenario::layers.getTileWidth();
+                    u16 xSize = (u16)Scenario::getTileWidth();
 
                     auto & selTiles = selections.getTiles();
                     for ( auto & tile : selTiles )
                     {
-                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, layers.getTile(tile.xc, tile.yc)));
-                        layers.setTile(tile.xc, tile.yc, 0);
+                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc)));
+                        Scenario::setTile(tile.xc, tile.yc, 0);
                     }
 
                     selections.removeTiles();
@@ -540,9 +535,9 @@ void GuiMap::deleteSelection()
                             u16 index = selections.getHighestIndex();
                             selections.removeUnit(index);
                             
-                            Chk::UnitPtr delUnit = layers.getUnit(index);
-                            deletes->Insert(UnitCreateDel::Make(index, *delUnit));
-                            layers.deleteUnit(index);
+                            const Chk::Unit & delUnit = Scenario::getUnit(index);
+                            deletes->Insert(UnitCreateDel::Make(index, delUnit));
+                            Scenario::deleteUnit(index);
                         }
                         undos.AddUndo(deletes);
                     }
@@ -555,23 +550,23 @@ void GuiMap::deleteSelection()
                         chkd.locationWindow.DestroyThis();
                 
                     u16 index = selections.getSelectedLocation();
-                    Chk::LocationPtr loc = index != NO_LOCATION ? layers.getLocation(index) : nullptr;
-                    if ( loc != nullptr )
+                    if ( index != NO_LOCATION && index < Scenario::numLocations() )
                     {
+                        Chk::Location & loc = Scenario::getLocation(index);
                         undos.AddUndo(LocationCreateDel::Make(index));
 
                         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
-                        loc->elevationFlags = 0;
-                        loc->left = 0;
-                        loc->right = 0;
-                        loc->top = 0;
-                        loc->bottom = 0;
-                        u16 stringNum = loc->stringId;
-                        loc->stringId = 0;
+                        loc.elevationFlags = 0;
+                        loc.left = 0;
+                        loc.right = 0;
+                        loc.top = 0;
+                        loc.bottom = 0;
+                        u16 stringNum = loc.stringId;
+                        loc.stringId = 0;
                         if ( stringNum > 0 )
                         {
-                            Scenario::strings.deleteString(stringNum);
+                            Scenario::deleteString(stringNum);
                             refreshScenario();
                         }
 
@@ -604,9 +599,9 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     auto & selUnits = selections.getUnits();
     for ( u16 unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, unit->owner));
-        unit->owner = newPlayer;
+        Chk::Unit & unit = Scenario::getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, unit.owner));
+        unit.owner = newPlayer;
 
         if ( chkd.unitWindow.getHandle() != nullptr )
             chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
@@ -651,7 +646,7 @@ void GuiMap::undo()
                 //undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
                 if ( chkd.locationWindow.getHandle() != NULL )
                 {
-                    if ( CM->layers.numLocations() > 0 )
+                    if ( CM->numLocations() > 0 )
                         chkd.locationWindow.RefreshLocationInfo();
                     else
                         chkd.locationWindow.DestroyThis();
@@ -683,7 +678,7 @@ void GuiMap::redo()
             //undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
             if ( chkd.locationWindow.getHandle() != NULL )
             {
-                if ( CM->layers.numLocations() == 0 )
+                if ( CM->numLocations() == 0 )
                     chkd.locationWindow.DestroyThis();
                 else
                     chkd.locationWindow.RefreshLocationInfo();
@@ -806,16 +801,16 @@ void GuiMap::PaintMiniMap(HDC miniMapDc, int miniMapWidth, int miniMapHeight)
         if ( RedrawMiniMap && miniMapBuffer.SetSize(miniMapDc, miniMapWidth, miniMapHeight) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer.GetPaintDc(), getPalette(), (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
-                MiniMapScale((u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight()), *this);
+            DrawMiniMap(miniMapBuffer.GetPaintDc(), getPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
+                MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()), *this);
         }
 
         if ( miniMapBuffer.GetPaintDc() != NULL )
         {
             BitBlt(miniMapDc, 0, 0, miniMapWidth, miniMapHeight, miniMapBuffer.GetPaintDc(), 0, 0, SRCCOPY);
             DrawMiniMapBox(miniMapDc, screenLeft, screenTop, bitmapWidth, bitmapHeight,
-                (u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight(),
-                MiniMapScale((u16)Scenario::layers.getTileWidth(), (u16)Scenario::layers.getTileHeight()));
+                (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
+                MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()));
         }
     }
 }
@@ -836,22 +831,22 @@ void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
 {
     if ( screenLeft < 0 )
         screenLeft = 0;
-    else if ( screenLeft > ((s32)Scenario::layers.getTileWidth())*32-screenWidth )
+    else if ( screenLeft > ((s32)Scenario::getTileWidth())*32-screenWidth )
     {
-        if ( screenWidth > s32(Scenario::layers.getTileWidth())*32 )
+        if ( screenWidth > s32(Scenario::getTileWidth())*32 )
             screenLeft = 0;
         else
-            screenLeft = s32(Scenario::layers.getTileWidth())*32-screenWidth;
+            screenLeft = s32(Scenario::getTileWidth())*32-screenWidth;
     }
 
     if ( screenTop < 0 )
         screenTop = 0;
-    else if ( screenTop > s32(Scenario::layers.getTileHeight())*32-screenHeight )
+    else if ( screenTop > s32(Scenario::getTileHeight())*32-screenHeight )
     {
-        if ( screenHeight > s32(Scenario::layers.getTileHeight())*32 )
+        if ( screenHeight > s32(Scenario::getTileHeight())*32 )
             screenTop = 0;
         else
-            screenTop = s32(Scenario::layers.getTileHeight())*32-screenHeight;
+            screenTop = s32(Scenario::getTileHeight())*32-screenHeight;
     }
 }
 
@@ -1191,14 +1186,14 @@ void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder)
     if ( scrollX )
     {
         scrollbars.nPos = screenLeft; 
-        scrollbars.nMax = (int)Scenario::layers.getPixelWidth();
+        scrollbars.nMax = (int)Scenario::getPixelWidth();
         scrollbars.nPage = screenWidth;
         SetScrollInfo(getHandle(), SB_HORZ, &scrollbars, true);
     }
     if ( scrollY )
     {
         scrollbars.nPos = screenTop;
-        scrollbars.nMax = (int)Scenario::layers.getPixelHeight();
+        scrollbars.nMax = (int)Scenario::getPixelHeight();
         scrollbars.nPage = screenHeight;
         SetScrollInfo(getHandle(), SB_VERT, &scrollbars, true);
     }
@@ -1431,9 +1426,10 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
-    chkd.maps.CloseMap(hWnd);
+    LRESULT destroyResult = ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
+    chkd.maps.CloseMap(hWnd); // TODO: it's bad to close this map from here, should post a message to do it
     RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
-    return ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
+    return destroyResult;
 }
 
 void GuiMap::RButtonUp()
@@ -1710,13 +1706,13 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
     selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
-    u16 width = (u16)Scenario::layers.getTileWidth();
+    u16 width = (u16)Scenario::getTileWidth();
                     
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
         selections.setEndDrag(mapX/32, mapY/32);
                             
-        u16 tileValue = layers.getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
+        u16 tileValue = Scenario::getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
         selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
     }
     else // Add/remove multiple tiles from selection
@@ -1729,16 +1725,16 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             bool multiAdd = selections.getStartDrag().x + 1 < selections.getEndDrag().x ||
                             selections.getStartDrag().y + 1 < selections.getEndDrag().y;
     
-            if ( selections.getEndDrag().x > LONG(Scenario::layers.getTileWidth()) )
-                selections.setEndDrag((s32)Scenario::layers.getTileWidth(), selections.getEndDrag().y);
-            if ( selections.getEndDrag().y > LONG(Scenario::layers.getTileHeight()) )
-                selections.setEndDrag(selections.getEndDrag().x, (s32)Scenario::layers.getTileHeight());
+            if ( selections.getEndDrag().x > LONG(Scenario::getTileWidth()) )
+                selections.setEndDrag((s32)Scenario::getTileWidth(), selections.getEndDrag().y);
+            if ( selections.getEndDrag().y > LONG(Scenario::getTileHeight()) )
+                selections.setEndDrag(selections.getEndDrag().x, (s32)Scenario::getTileHeight());
     
             for ( int yRow = selections.getStartDrag().y; yRow < selections.getEndDrag().y; yRow++ )
             {
                 for ( int xRow = selections.getStartDrag().x; xRow < selections.getEndDrag().x; xRow++ )
                 {
-                    u16 tileValue = layers.getTile(xRow, yRow);
+                    u16 tileValue = Scenario::getTile(xRow, yRow);
                     selections.addTile(tileValue, xRow, yRow);
                 }
             }
@@ -1763,18 +1759,18 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             ascendingOrder(startY, endY);
             SnapLocationDimensions(startX, startY, endX, endY, LocSnapFlags::SnapAll);
                                     
-            Chk::LocationPtr newLocation = Chk::LocationPtr(new Chk::Location());
-            newLocation->left = startX;
-            newLocation->top = startY;
-            newLocation->right = endX;
-            newLocation->bottom = endY;
-            newLocation->elevationFlags = Chk::Location::Elevation::All;
+            Chk::Location newLocation {};
+            newLocation.left = startX;
+            newLocation.top = startY;
+            newLocation.right = endX;
+            newLocation.bottom = endY;
+            newLocation.elevationFlags = 0;
 
-            size_t newLocationId = layers.addLocation(newLocation);
+            size_t newLocationId = Scenario::addLocation(newLocation);
             if ( newLocationId != Chk::LocationId::NoLocation )
             {
-                strings.setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
-                strings.deleteUnusedStrings(Chk::Scope::Both);
+                Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
+                Scenario::deleteUnusedStrings(Chk::StrScope::Both);
                 undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
                 refreshScenario();
@@ -1785,50 +1781,50 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         else // Move or resize location
         {
             u16 selectedLocation = selections.getSelectedLocation();
-            Chk::LocationPtr loc = selectedLocation != NO_LOCATION ? layers.getLocation(selectedLocation) : nullptr;
-            if ( loc != nullptr )
+            if ( selectedLocation != NO_LOCATION && selectedLocation < Scenario::numLocations() )
             {
+                Chk::Location & loc = Scenario::getLocation(selectedLocation);
                 LocSelFlags selFlags = selections.getLocationFlags();
                 if ( selFlags == LocSelFlags::Middle ) // Move location
                 {
-                    bool xInverted = loc->right < loc->left,
-                         yInverted = loc->bottom < loc->top;
+                    bool xInverted = loc.right < loc.left,
+                         yInverted = loc.bottom < loc.top;
 
-                    loc->left += dragX;
-                    loc->right += dragX;
-                    loc->top += dragY;
-                    loc->bottom += dragY;
-                    s32 xc1Preserve = loc->left,
-                        yc1Preserve = loc->top,
-                        xc2Preserve = loc->right,
-                        yc2Preserve = loc->bottom;
+                    loc.left += dragX;
+                    loc.right += dragX;
+                    loc.top += dragY;
+                    loc.bottom += dragY;
+                    s32 xc1Preserve = loc.left,
+                        yc1Preserve = loc.top,
+                        xc2Preserve = loc.right,
+                        yc2Preserve = loc.bottom;
                                         
                     if ( xInverted )
                     {
-                        if ( SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX2) )
+                        if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2) )
                         {
-                            loc->left += loc->right - xc2Preserve; // Maintain location width
-                            dragX += loc->left - xc1Preserve;
+                            loc.left += loc.right - xc2Preserve; // Maintain location width
+                            dragX += loc.left - xc1Preserve;
                         }
                     }
-                    else if ( SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX1) )
+                    else if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1) )
                     {
-                        loc->right += loc->left - xc1Preserve; // Maintain location width
-                        dragX += loc->right - xc2Preserve;
+                        loc.right += loc.left - xc1Preserve; // Maintain location width
+                        dragX += loc.right - xc2Preserve;
                     }
 
                     if ( yInverted )
                     {
-                        if ( SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY2) )
+                        if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2) )
                         {
-                            loc->top += loc->bottom - yc2Preserve; // Maintain location height
-                            dragY += loc->top - yc1Preserve;
+                            loc.top += loc.bottom - yc2Preserve; // Maintain location height
+                            dragY += loc.top - yc1Preserve;
                         }
                     }
-                    else if ( SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY1) )
+                    else if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1) )
                     {
-                        loc->bottom += loc->top - yc1Preserve; // Maintain location height
-                        dragY += loc->bottom - yc2Preserve;
+                        loc.bottom += loc.top - yc1Preserve; // Maintain location height
+                        dragY += loc.bottom - yc2Preserve;
                     }
                                         
                     //undos().addUndoLocationMove(selectedLocation, dragX, dragY);
@@ -1838,64 +1834,64 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 {
                     if ( (selFlags & LocSelFlags::North) == LocSelFlags::North )
                     {
-                        if ( loc->top <= loc->bottom ) // Standard yc
+                        if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc->top));
-                            loc->top += dragY;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY1);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc.top));
+                            loc.top += dragY;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc->bottom));
-                            loc->bottom += dragY;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY2);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc.bottom));
+                            loc.bottom += dragY;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2);
                         }
                                     
                     }
                     else if ( (selFlags & LocSelFlags::South) == LocSelFlags::South )
                     {
-                        if ( loc->top <= loc->bottom ) // Standard yc
+                        if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc->bottom));
-                            loc->bottom += dragY;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY2);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc.bottom));
+                            loc.bottom += dragY;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc->top));
-                            loc->top += dragY;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapY1);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc.top));
+                            loc.top += dragY;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1);
                         }
                     }
     
                     if ( (selFlags & LocSelFlags::West) == LocSelFlags::West )
                     {
-                        if ( loc->left <= loc->right ) // Standard xc
+                        if ( loc.left <= loc.right ) // Standard xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc->left));
-                            loc->left += dragX;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX1);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc.left));
+                            loc.left += dragX;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc->right));
-                            loc->right += dragX;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX2);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc.right));
+                            loc.right += dragX;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2);
                         }
                     }
                     else if ( (selFlags & LocSelFlags::East) == LocSelFlags::East )
                     {
-                        if ( loc->left <= loc->right ) // Standard xc
+                        if ( loc.left <= loc.right ) // Standard xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc->right));
-                            loc->right += dragX;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX2);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc.right));
+                            loc.right += dragX;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc->left));
-                            loc->left += dragX;
-                            SnapLocationDimensions(loc->left, loc->top, loc->right, loc->bottom, LocSnapFlags::SnapX1);
+                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc.left));
+                            loc.left += dragX;
+                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1);
                         }
                     }
                 }
@@ -1937,27 +1933,27 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         chkd.unitWindow.UpdateEnabledState();
     }
         
-    size_t numUnits = layers.numUnits();
+    size_t numUnits = Scenario::numUnits();
     for ( size_t i=0; i<numUnits; i++ )
     {
         int unitLeft = 0, unitRight  = 0,
             unitTop  = 0, unitBottom = 0;
     
-        Chk::UnitPtr unit = layers.getUnit(i);
+        const Chk::Unit & unit = Scenario::getUnit(i);
         
-        if ( (u16)unit->type < (u16)Sc::Unit::TotalTypes )
+        if ( (u16)unit.type < (u16)Sc::Unit::TotalTypes )
         {
-            unitLeft = unit->xc - chkd.scData.units.getUnit(unit->type).unitSizeLeft;
-            unitRight = unit->xc + chkd.scData.units.getUnit(unit->type).unitSizeRight;
-            unitTop = unit->yc - chkd.scData.units.getUnit(unit->type).unitSizeUp;
-            unitBottom = unit->yc + chkd.scData.units.getUnit(unit->type).unitSizeDown;
+            unitLeft = unit.xc - chkd.scData.units.getUnit(unit.type).unitSizeLeft;
+            unitRight = unit.xc + chkd.scData.units.getUnit(unit.type).unitSizeRight;
+            unitTop = unit.yc - chkd.scData.units.getUnit(unit.type).unitSizeUp;
+            unitBottom = unit.yc + chkd.scData.units.getUnit(unit.type).unitSizeDown;
         }
         else
         {
-            unitLeft = unit->xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
-            unitRight = unit->xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
-            unitTop = unit->yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
-            unitBottom = unit->yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
+            unitLeft = unit.xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
+            unitRight = unit.xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
+            unitTop = unit.yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
+            unitBottom = unit.yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
         }
     
         if ( selections.getStartDrag().x <= unitRight && selections.getEndDrag().x >= unitLeft

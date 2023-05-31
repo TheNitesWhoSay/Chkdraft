@@ -24,11 +24,6 @@ namespace WinLib {
 
 }
 
-#ifdef output_param
-#undef output_param
-#endif
-#define output_param /* Syntactic sugar denoting an output parameter - unless a function indicates that there has been an error it's obligated to set out params before returning */
-
 #ifndef enum_t
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope

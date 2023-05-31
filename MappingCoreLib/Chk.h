@@ -1,6 +1,7 @@
 #ifndef CHK_H
 #define CHK_H
 #include "Basics.h"
+#include "EscapeStrings.h"
 #include "Sc.h"
 #include <bitset>
 
@@ -19,10 +20,6 @@ namespace Chk {
 
     struct Unit; struct IsomEntry; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
     struct ExtendedTrigData; struct TriggerGroup;
-    using UnitPtr = std::shared_ptr<Unit>; using IsomEntryPtr = std::shared_ptr<IsomEntry>; using DoodadPtr = std::shared_ptr<Doodad>; using SpritePtr = std::shared_ptr<Sprite>;
-    using CuwpPtr = std::shared_ptr<Cuwp>; using LocationPtr = std::shared_ptr<Location>; using ConditionPtr = std::shared_ptr<Condition>; using ActionPtr = std::shared_ptr<Action>;
-    using TriggerPtr = std::shared_ptr<Trigger>; using StringPropertiesPtr = std::shared_ptr<StringProperties>; using ExtendedTrigDataPtr = std::shared_ptr<ExtendedTrigData>;
-    using TriggerGroupPtr = std::shared_ptr<TriggerGroup>;
 
     enum_t(Type, u32, { // u32
         RAWS = 0x53574152, // 1.04 StarCraft and above ("hybrid")
@@ -32,7 +29,8 @@ namespace Chk {
     enum_t(Version, u16, { // u16
         StarCraft_Original = 59,
         StarCraft_Hybrid = 63, // 1.04 StarCraft and above ("hybrid")
-        StarCraft_BroodWar = 205 // Brood War
+        StarCraft_BroodWar = 205, // Brood War
+        StarCraft_Remastered = 206 // Remastered
     });
     
     enum_t(IVersion, u16, { // u16
@@ -53,7 +51,7 @@ namespace Chk {
         XOR_Sections_05 = 5, // Same as XOR_Sections
         ORs_And_Shifts = 6, // Complex function consisting of ORs and shifts
         ORs_And_Reverse_Shifts = 7, // Same as ORS_AND_SHIFTS with shift direction inverted
-        NOOP = 8 // No operation
+        NoOp = 8 // No operation
     });
     
     constexpr u32 TotalValidationSeeds = 256;
@@ -68,6 +66,13 @@ namespace Chk {
         UserSelectable = 5,
         Random = 6,
         Inactive = 7
+    });
+
+    enum_t(PlayerColorSetting, u8, {
+        RandomPredefined = 0,
+        PlayerChoice = 1,
+        Custom = 2,
+        UseId = 3
     });
     
     enum_t(Available, u8, { // u8
@@ -138,6 +143,9 @@ namespace Chk {
         u16 stateFlags;
         u32 unused;
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
+
+        REFLECT(Unit, classId, xc, yc, type, relationFlags, validStateFlags, validFieldFlags, owner,
+            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)
     }; // 36 (0x24) bytes
 
     __declspec(align(1)) struct IsomEntry { // 8 bytes
@@ -145,6 +153,8 @@ namespace Chk {
         u16 top;
         u16 right;
         u16 bottom;
+
+        REFLECT(IsomEntry, left, top, right, bottom)
     };
     
     __declspec(align(1)) struct Doodad
@@ -158,7 +168,9 @@ namespace Chk {
         u16 xc;
         u16 yc;
         u8 owner;
-        Enabled enabled; 
+        Enabled enabled;
+
+        REFLECT(Doodad, type, xc, yc, owner, enabled)
     };
 
     __declspec(align(1)) struct Sprite
@@ -176,6 +188,8 @@ namespace Chk {
         u8 owner;
         u8 unused;
         u16 flags;
+
+        REFLECT(Sprite, type, xc, yc, owner, unused, flags)
     };
 
     enum_t(FogOfWarPlayers, u8, { // u8
@@ -296,6 +310,9 @@ namespace Chk {
         u16 hangerAmount;
         u16 unitStateFlags;
         u32 unknown;
+
+        REFLECT(Cuwp, validUnitStateFlags, validUnitFieldFlags, owner,
+            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, unitStateFlags, unknown)
     };
 
     constexpr size_t TotalOriginalLocations = 64;
@@ -331,6 +348,8 @@ namespace Chk {
         u32 bottom;
         u16 stringId;
         u16 elevationFlags;
+
+        REFLECT(Location, left, top, right, bottom, stringId, elevationFlags)
     };
 
     constexpr u32 TotalForces = 4;
@@ -494,6 +513,8 @@ namespace Chk {
         u8 typeIndex; // Resource type/score type/switch num
         u8 flags;
         MaskFlag maskFlag; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
+
+        REFLECT(Condition, locationId, player, amount, unitType, comparison, conditionType, typeIndex, flags, maskFlag)
 
         void toggleDisabled();
         bool isDisabled() const;
@@ -774,6 +795,8 @@ namespace Chk {
         u8 padding;
         MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
+        REFLECT(Action, locationId, stringId, soundStringId, time, group, number, type, actionType, type2, flags, padding, maskFlag)
+
         bool isDisabled() const { return (flags & Flags::Disabled) == Flags::Disabled; }
         void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
@@ -869,8 +892,11 @@ namespace Chk {
             No = 0
         });
         Condition & condition(size_t conditionIndex);
+        const Condition & condition(size_t conditionIndex) const;
         Action & action(size_t actionIndex);
+        const Action & action(size_t actionIndex) const;
         Owned & owned(size_t ownerIndex);
+        const Owned & owned(size_t ownerIndex) const;
         Trigger & operator= (const Trigger & trigger);
         void deleteAction(size_t actionIndex, bool alignTop = true);
         void deleteCondition(size_t conditionIndex, bool alignTop = true);
@@ -923,6 +949,8 @@ namespace Chk {
         u32 flags; // 4 bytes
         Owned owners[MaxOwners]; // 1 byte * 27 owners = 27 bytes
         u8 currentAction; // Used internally by StarCraft, incremented after each action is executed, trigger execution ends when currentAction equals MaxActions or Action::Type::NoAction is hit
+
+        REFLECT(Trigger, conditions, actions, flags, owners, currentAction)
     }; // 2400 (0x960) bytes total
 
     enum_t(PlayerColor, u8, { // u8
@@ -956,7 +984,7 @@ namespace Chk {
         sizePlusOneStep = BIT_7
     });
     
-    enum_t(Scope, u32, { // u32
+    enum_t(StrScope, u32, { // u32
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,
@@ -1000,6 +1028,8 @@ namespace Chk {
         u32 trigNum; // 0xFFFFFFFF for none
         u32 maskId; // 0xFFFFFFFF for none
 
+        REFLECT(ExtendedTrigData, commentStringId, notesStringId, groupId, trigNum, maskId)
+
         ExtendedTrigData();
         bool isBlank() const;
     };
@@ -1042,6 +1072,8 @@ namespace Chk {
         u32 parentGroupId; // 0xFFFFFFFF if this is a top-level group
         std::vector<u32> extendedTrigDataIndexes; // Extended trigger data indexes of triggers in this group
         std::vector<u32> groupIndexes; // Indexes of sub-groups
+
+        REFLECT(TriggerGroup, groupExpanded, groupHidden, templateInstanceId, commentStringId, notesStringId, parentGroupId, extendedTrigDataIndexes, groupIndexes)
     };
 
     __declspec(align(1)) struct StringProperties {
@@ -1065,45 +1097,91 @@ namespace Chk {
     };
     
     __declspec(align(1)) struct TYPE {
-        Type scenarioType;
+        Type scenarioType {Chk::Type::RAWS};
     }; // Size: 4 (not validated)
 
     __declspec(align(1)) struct VER {
-        Version version;
+        Version version {Chk::Version::StarCraft_Hybrid};
     }; // Size: 2 (validated)
     
     __declspec(align(1)) struct IVER {
-        IVersion version;
+        IVersion version {Chk::IVersion::Current};
     }; // Size: 2 (not validated)
     
     __declspec(align(1)) struct IVE2 {
-        I2Version version;
+        I2Version version {Chk::I2Version::StarCraft_1_04};
     }; // Size: 2 (not validated)
     
     __declspec(align(1)) struct VCOD {
-        u32 seedValues[TotalValidationSeeds];
-        ValidationOpCodes opCodes[TotalValidationOpCodes];
+        u32 seedValues[TotalValidationSeeds] {
+            0x77CA1934, 0x7168DC99, 0xC3BF600A, 0xA775E7A7, 0xA67D291F, 0xBB3AB0D7, 0xED2431CC, 0x0B134C17, 0xB7A22065, 0x6B18BD91, 0xDD5DC38D, 0x37D57AE2,
+            0xD46459F6, 0x0F129A63, 0x462E5C43, 0x2AF874E3, 0x06376A08, 0x3BD6F637, 0x1663940E, 0xEC5C6745, 0xB7F77BD7, 0x9ED4FC1A, 0x8C3FFA73, 0x0FE1C02E,
+            0x070974D1, 0xD764E395, 0x74681675, 0xDA4FA799, 0x1F1820D5, 0xBEA0E6E7, 0x1FE3B6A6, 0x70EF0CCA, 0x311AD531, 0x3524B84D, 0x7DC7F8E3, 0xDE581AE1,
+            0x432705F4, 0x07DBACBA, 0x0ABE69DC, 0x49EC8FA8, 0x3F1658D7, 0x8AC1DBE5, 0x05C0CF41, 0x721CCA9D, 0xA55FB1A2, 0x9B7023C4, 0x14E10484, 0xDA907B80,
+            0x0669DBFA, 0x400FF3A3, 0xD4CEF3BE, 0xD7CBC9E3, 0x3401405A, 0xF81468F2, 0x1AC58E38, 0x4B3DD6FE, 0xFA050553, 0x8E451034, 0xFE6991DD, 0xF0EEE0AF,
+            0xDD7E48F3, 0x75DCAD9F, 0xE5AC7A62, 0x67621B31, 0x4D36CD20, 0x742198E0, 0x717909FB, 0x7FCD6736, 0x3CD65F77, 0xC6A6A2A2, 0x6ACEE31A, 0x6CA9CD4E,
+            0x3B9DBA86, 0xFD76F4B5, 0xBCF044F8, 0x296EE92E, 0x6B2F2523, 0x4427AB08, 0x99CC127A, 0x75F2DCED, 0x7E383CC5, 0xC51B1CF7, 0x65942DD1, 0xDD48C906,
+            0xAC2D32BE, 0x8132C9B5, 0x34D84A66, 0xDF153F35, 0xB6EBEEB2, 0x964DF604, 0x9C944235, 0x61D38A62, 0x6F7BA852, 0xF4FC61DC, 0xFE2D146C, 0x0AA4EA99,
+            0x13FED9E8, 0x594448D0, 0xE3F36680, 0x198DD934, 0xFE63D716, 0x3A7E1830, 0xB10F8D9B, 0x8CF5F012, 0xDB58780A, 0x8CB8633E, 0x8EF3AA3A, 0x2E1A8A37,
+            0xEFF9315C, 0x7EE36DE3, 0x133EBD9B, 0xB9C044C6, 0x90DA3ABC, 0x74B0ADA4, 0x892757F8, 0x373FE647, 0x5A7942E4, 0xEE8D43DF, 0xE8490AB4, 0x1A88C33C,
+            0x766B0188, 0xA3FDC38A, 0x564E7A16, 0xBACB7FA7, 0xEC1C5E02, 0x76C9B9B0, 0x39B1821E, 0xC557C93E, 0x4C382419, 0xB8542F5D, 0x8E575D6F, 0x520AA130,
+            0x5E71186D, 0x59C30613, 0x623EDC1F, 0xEBB5DADC, 0xF995911B, 0xDAD591A7, 0x6BCE5333, 0x017000F5, 0xE8EED87F, 0xCEF10AC0, 0xD3B6EB63, 0xA5CCEF78,
+            0xA4BC5DAA, 0xD2F2AB96, 0x9AEAFF61, 0xA2ED6AA8, 0x61ED3EBD, 0x9282C139, 0xB1233616, 0xE524A0B0, 0xAAA79B05, 0x339B120D, 0xDA209283, 0xFCECB025,
+            0x2338D024, 0x74F295FC, 0x19E57380, 0x447D5097, 0xDB449345, 0x691DADA2, 0xE7EE1444, 0xFF877F2C, 0xF1329E38, 0xDA29BC4D, 0xFE262742, 0xA92BD2C1,
+            0x0E7A42F6, 0xD17CE8CB, 0x56EC5B0F, 0x3161B769, 0x25F96DB4, 0x6D793440, 0x0BA753FA, 0xCE82A4FA, 0x614945C3, 0x8F2C450D, 0xF7604928, 0x1EC97DF3,
+            0xC189D00F, 0xD3F85226, 0x14358F4D, 0x0B5F9DBA, 0x004AA907, 0x2F2622F7, 0x1FFB673E, 0xC6119CA1, 0x665D4F69, 0x90153458, 0x4654E56C, 0xD6635FAF,
+            0xDF950C8A, 0xAFE40DBD, 0x4C4040BF, 0x7151F6A3, 0xF826ED29, 0xD5222885, 0xFACFBEBF, 0x517FC528, 0x076306B8, 0x298FBDEC, 0x717E55FA, 0x6632401A,
+            0x9DDED4E8, 0x93FC5ED4, 0x3BD53D7A, 0x802E75CD, 0x87744F0A, 0xEA8FCC1B, 0x7CDBA99A, 0xEFE55316, 0x6EC178AB, 0x5A8972A4, 0x50702C98, 0x1FDFA1FB,
+            0x44D9B76B, 0x56828007, 0x83C0BFFD, 0x5BD0490E, 0x0E6A681E, 0x2F0BC29A, 0xE1A0438E, 0xB2F60C99, 0x5E1C7AE0, 0x45A0C82C, 0x88E90B3C, 0xC696B9AC,
+            0x2A83AE74, 0x65FA13BB, 0xA61F4FEB, 0xE18A8AB0, 0xB9B8E981, 0x4E1555D5, 0x9BADF245, 0x7E35C23E, 0x722E925F, 0x23685BB6, 0x0E45C66E, 0xD4873BE9,
+            0xE3C041F4, 0xBE4405A8, 0x138A0FE4, 0xF437C41A, 0xEF55405A, 0x4B1D799D, 0x9C3A794A, 0xCC378576, 0xB60F3D82, 0x7E93A660, 0xC4C25CBD, 0x907FC772,
+            0x10961B4D, 0x68680513, 0xFF7BC035, 0x2A438546
+        };
+        ValidationOpCodes opCodes[TotalValidationOpCodes] {
+            Chk::ValidationOpCodes::Add_Shifted_Sections, Chk::ValidationOpCodes::XOR_Sections_04       , Chk::ValidationOpCodes::XOR_Sections_05,
+            Chk::ValidationOpCodes::ORs_And_Shifts      , Chk::ValidationOpCodes::Sub_Shifted_Sections  , Chk::ValidationOpCodes::Add_Shifted_Sections,
+            Chk::ValidationOpCodes::XOR_Sections_05     , Chk::ValidationOpCodes::Sub_Shifted_Sections  , Chk::ValidationOpCodes::XOR_Shifted_Sections,
+            Chk::ValidationOpCodes::XOR_Sections        , Chk::ValidationOpCodes::ORs_And_Reverse_Shifts, Chk::ValidationOpCodes::ORs_And_Reverse_Shifts,
+            Chk::ValidationOpCodes::XOR_Sections_05     , Chk::ValidationOpCodes::XOR_Sections_04       , Chk::ValidationOpCodes::ORs_And_Shifts,
+            Chk::ValidationOpCodes::XOR_Sections
+        };
+
+        REFLECT(VCOD, seedValues, opCodes)
     }; // Size: 1040 (validated)
     
     __declspec(align(1)) struct IOWN {
-        Sc::Player::SlotType slotType[Sc::Player::Total];
+        Sc::Player::SlotType slotType[Sc::Player::Total] {
+            Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+            Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+            Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+        };
     }; // Size: 12 (not validated)
     
     __declspec(align(1)) struct OWNR {
-        Sc::Player::SlotType slotType[Sc::Player::Total];
+        Sc::Player::SlotType slotType[Sc::Player::Total] {
+            Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+            Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+            Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+        };
     }; // Size: 12 (validated)
     
     __declspec(align(1)) struct ERA {
-        Sc::Terrain::Tileset tileset;
+        Sc::Terrain::Tileset tileset {Sc::Terrain::Tileset::Badlands};
     }; // Size: 2 (validated)
     
     __declspec(align(1)) struct DIM {
-        u16 tileWidth;
-        u16 tileHeight;
+        u16 tileWidth {64};
+        u16 tileHeight {64};
+
+        REFLECT(DIM, tileWidth, tileHeight)
     }; // Size: 4 (validated)
     
     __declspec(align(1)) struct SIDE {
-        Race playerRaces[Sc::Player::Total];
+        Race playerRaces[Sc::Player::Total] {
+            Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
+            Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
+            Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
+        };
     }; // Size: 12 (validated)
     
     __declspec(align(1)) struct MTXM {
@@ -1111,25 +1189,57 @@ namespace Chk {
     }; // Size <= 256*256*2 (validated)
     
     __declspec(align(1)) struct PUNI {
-        Available playerUnitBuildable[Sc::Unit::TotalTypes][Sc::Player::Total];
-        Available defaultUnitBuildable[Sc::Unit::TotalTypes];
-        UseDefault playerUnitUsesDefault[Sc::Unit::TotalTypes][Sc::Player::Total];
+        Available playerUnitBuildable[Sc::Unit::TotalTypes][Sc::Player::Total] {};
+        Available defaultUnitBuildable[Sc::Unit::TotalTypes] {};
+        UseDefault playerUnitUsesDefault[Sc::Unit::TotalTypes][Sc::Player::Total] {};
+
+        PUNI() {
+            memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes*Sc::Player::Total);
+            memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
+            memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Unit::TotalTypes*Sc::Player::Total);
+        }
+
+        REFLECT(PUNI, playerUnitBuildable, defaultUnitBuildable, playerUnitUsesDefault)
     }; // Size: 5700 (validated)
     
     __declspec(align(1)) struct UPGR {
-        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total];
-        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total];
-        u8 defaultMaxLevel[Sc::Upgrade::TotalOriginalTypes];
-        u8 defaultStartLevel[Sc::Upgrade::TotalOriginalTypes];
-        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total];
+        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
+        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
+        u8 defaultMaxLevel[Sc::Upgrade::TotalOriginalTypes] {
+            3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,
+            1, 1, 0, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,
+            1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 0
+        };
+        u8 defaultStartLevel[Sc::Upgrade::TotalOriginalTypes] {};
+        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
+
+        UPGR() {
+            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes*Sc::Player::Total);
+        }
+
+        REFLECT(UPGR, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 1748 (validated)
     
     __declspec(align(1)) struct PTEC {
-        Available techAvailableForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total];
-        Researched techResearchedForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total];
-        Available techAvailableByDefault[Sc::Tech::TotalOriginalTypes];
-        Researched techResearchedByDefault[Sc::Tech::TotalOriginalTypes];
-        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalOriginalTypes][Sc::Player::Total];
+        Available techAvailableForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
+        Researched techResearchedForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
+        Available techAvailableByDefault[Sc::Tech::TotalOriginalTypes] {};
+        Researched techResearchedByDefault[Sc::Tech::TotalOriginalTypes] {
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No ,
+            Chk::Researched::Yes, Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No ,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No ,
+            Chk::Researched::Yes, Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No ,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No ,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes
+        };
+        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
+
+        PTEC() {
+            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
+            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes*Sc::Player::Total);
+        }
+
+        REFLECT(PTEC, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
     }; // Size: 912 (validated)
     
     __declspec(align(1)) struct UNIT {
@@ -1157,7 +1267,7 @@ namespace Chk {
     }; // Size: tileWidth*tileHeight (not validated)
     
     __declspec(align(1)) struct STR {
-        u16 numStrings; // Number of strings in the section (default 1024)
+        u16 numStrings {1024}; // Number of strings in the section (default 1024)
         // u16 stringOffsets[0]; // u16 stringOffsets[numStrings]; // stringId: 1 = stringOffsets[0];
                                  // Offsets to each string within the string section (not within stringData, but within the whole section)
         // void[] stringData; // Character data, usually starting wiht a NUL character, unless recycling sub-strings each string is null terminated
@@ -1165,15 +1275,15 @@ namespace Chk {
     }; // Size >= 1 (validated)
     
     __declspec(align(1)) struct UPRP {
-        Cuwp createUnitProperties[Sc::Unit::MaxCuwps];
+        Cuwp createUnitProperties[Sc::Unit::MaxCuwps] {};
     }; // Size: 1280 (validated)
     
     __declspec(align(1)) struct UPUS {
-        CuwpUsed cuwpUsed[Sc::Unit::MaxCuwps];
+        CuwpUsed cuwpUsed[Sc::Unit::MaxCuwps] {};
     }; // Size: 64 (validated
     
     __declspec(align(1)) struct MRGN {
-        Location locations[TotalLocations]; // If this is a vanilla map, only the first 64 locations are usable
+        Location locations[TotalLocations] {}; // If this is a vanilla map, only the first 64 locations are usable
     }; // Size: 1280 in Original, 5100 in Hybrid or Broodwar (validated)
     
     __declspec(align(1)) struct TRIG {
@@ -1185,124 +1295,200 @@ namespace Chk {
     }; // Size: Multiple of 2400 (validated)
     
     __declspec(align(1)) struct SPRP {
-        u16 scenarioNameStringId;
-        u16 scenarioDescriptionStringId;
+        u16 scenarioNameStringId {1};
+        u16 scenarioDescriptionStringId {2};
+
+        REFLECT(SPRP, scenarioNameStringId, scenarioDescriptionStringId)
     }; // Size: 4 (validated)
     
     __declspec(align(1)) struct FORC {
-        Force playerForce[Sc::Player::TotalSlots];
-        u16 forceString[TotalForces];
-        u8 flags[TotalForces];
+        Force playerForce[Sc::Player::TotalSlots] {
+            Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1,
+            Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1
+        };
+        u16 forceString[TotalForces] {4, 5, 6, 7};
+        u8 flags[TotalForces] {Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All};
     }; // Size <= 20 (validated)
     
     __declspec(align(1)) struct WAV {
-        u32 soundPathStringId[TotalSounds];
+        u32 soundPathStringId[TotalSounds] {};
     }; // Size: 2048 (not validated)
     
     __declspec(align(1)) struct UNIS {
-        UseDefault useDefault[Sc::Unit::TotalTypes];
-        u32 hitpoints[Sc::Unit::TotalTypes]; // Displayed value is hitpoints / 256
-        u16 shieldPoints[Sc::Unit::TotalTypes];
-        u8 armorLevel[Sc::Unit::TotalTypes]; // Note: 255 armor + ultra armor upgrade = 0 armor
-        u16 buildTime[Sc::Unit::TotalTypes];
-        u16 mineralCost[Sc::Unit::TotalTypes];
-        u16 gasCost[Sc::Unit::TotalTypes];
-        u16 nameStringId[Sc::Unit::TotalTypes];
-        u16 baseDamage[Sc::Weapon::TotalOriginal];
-        u16 upgradeDamage[Sc::Weapon::TotalOriginal];
+        UseDefault useDefault[Sc::Unit::TotalTypes] {};
+        u32 hitpoints[Sc::Unit::TotalTypes] {}; // Displayed value is hitpoints / 256
+        u16 shieldPoints[Sc::Unit::TotalTypes] {};
+        u8 armorLevel[Sc::Unit::TotalTypes] {}; // Note: 255 armor + ultra armor upgrade = 0 armor
+        u16 buildTime[Sc::Unit::TotalTypes] {};
+        u16 mineralCost[Sc::Unit::TotalTypes] {};
+        u16 gasCost[Sc::Unit::TotalTypes] {};
+        u16 nameStringId[Sc::Unit::TotalTypes] {};
+        u16 baseDamage[Sc::Weapon::TotalOriginal] {};
+        u16 upgradeDamage[Sc::Weapon::TotalOriginal] {};
+
+        UNIS() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+        }
+
+        REFLECT(UNIS, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
     }; // Size: 4048 (validated)
 
     __declspec(align(1)) struct UPGS {
-        UseDefault useDefault[Sc::Upgrade::TotalOriginalTypes];
-        u16 baseMineralCost[Sc::Upgrade::TotalOriginalTypes];
-        u16 mineralCostFactor[Sc::Upgrade::TotalOriginalTypes];
-        u16 baseGasCost[Sc::Upgrade::TotalOriginalTypes];
-        u16 gasCostFactor[Sc::Upgrade::TotalOriginalTypes];
-        u16 baseResearchTime[Sc::Upgrade::TotalOriginalTypes];
-        u16 researchTimeFactor[Sc::Upgrade::TotalOriginalTypes];
+        UseDefault useDefault[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 baseMineralCost[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 mineralCostFactor[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 baseGasCost[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 gasCostFactor[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 baseResearchTime[Sc::Upgrade::TotalOriginalTypes] {};
+        u16 researchTimeFactor[Sc::Upgrade::TotalOriginalTypes] {};
+
+        UPGS() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
+        }
+
+        REFLECT(UPGS, useDefault, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
     }; // Size: 598 (validated)
     
     __declspec(align(1)) struct TECS {
-        UseDefault useDefault[Sc::Tech::TotalOriginalTypes];
-        u16 mineralCost[Sc::Tech::TotalOriginalTypes];
-        u16 gasCost[Sc::Tech::TotalOriginalTypes];
-        u16 researchTime[Sc::Tech::TotalOriginalTypes];
-        u16 energyCost[Sc::Tech::TotalOriginalTypes];
+        UseDefault useDefault[Sc::Tech::TotalOriginalTypes] {};
+        u16 mineralCost[Sc::Tech::TotalOriginalTypes] {};
+        u16 gasCost[Sc::Tech::TotalOriginalTypes] {};
+        u16 researchTime[Sc::Tech::TotalOriginalTypes] {};
+        u16 energyCost[Sc::Tech::TotalOriginalTypes] {};
+
+        TECS() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
+        }
+
+        REFLECT(TECS, useDefault, mineralCost, gasCost, researchTime, energyCost)
     }; // Size: 216 (validated)
     
     __declspec(align(1)) struct SWNM {
-        u32 switchName[TotalSwitches];
+        u32 switchName[TotalSwitches] {};
     }; // Size: 1024 (not validated)
     
     __declspec(align(1)) struct COLR {
-        PlayerColor playerColor[Sc::Player::TotalSlots];
+        PlayerColor playerColor[Sc::Player::TotalSlots] {
+            PlayerColor::Red, PlayerColor::Blue, PlayerColor::Teal, PlayerColor::Purple,
+            PlayerColor::Orange, PlayerColor::Brown, PlayerColor::White, PlayerColor::Yellow
+        };
     }; // Size: 8 (validated)
     
     __declspec(align(1)) struct PUPx {
-        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total];
-        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total];
-        u8 defaultMaxLevel[Sc::Upgrade::TotalTypes];
-        u8 defaultStartLevel[Sc::Upgrade::TotalTypes];
-        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalTypes][Sc::Player::Total];
+        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
+        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
+        u8 defaultMaxLevel[Sc::Upgrade::TotalTypes] {
+            3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,
+            1, 1, 0, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,
+            1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 0, 0, 1,
+            0, 1, 0, 1,    1, 1, 1, 0,    0, 0, 0, 0,    0
+        };
+        u8 defaultStartLevel[Sc::Upgrade::TotalTypes] {};
+        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
+
+        PUPx() {
+            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes*Sc::Player::Total);
+        }
+
+        REFLECT(PUPx, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 2318 (validated)
     
     __declspec(align(1)) struct PTEx {
-        Available techAvailableForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total];
-        Researched techResearchedForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total];
-        Available techAvailableByDefault[Sc::Tech::TotalTypes];
-        Researched techResearchedByDefault[Sc::Tech::TotalTypes];
-        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalTypes][Sc::Player::Total];
+        Available techAvailableForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total] {};
+        Researched techResearchedForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total] {};
+        Available techAvailableByDefault[Sc::Tech::TotalTypes] {};
+        Researched techResearchedByDefault[Sc::Tech::TotalTypes] {
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No ,
+            Chk::Researched::Yes, Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No ,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No,
+            Chk::Researched::Yes, Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No,
+            Chk::Researched::Yes, Chk::Researched::Yes, Chk::Researched::No , Chk::Researched::No,
+            Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::Yes, Chk::Researched::No,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No,
+            Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No
+        };
+        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalTypes][Sc::Player::Total] {};
+
+        PTEx() {
+            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
+            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes*Sc::Player::Total);
+        }
+
+        REFLECT(PTEx, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
     }; // Size: 1672 (validated)
     
     __declspec(align(1)) struct UNIx {
-        UseDefault useDefault[Sc::Unit::TotalTypes];
-        u32 hitpoints[Sc::Unit::TotalTypes]; // Displayed value is hitpoints / 256
-        u16 shieldPoints[Sc::Unit::TotalTypes];
-        u8 armorLevel[Sc::Unit::TotalTypes]; // Note: 255 armor + ultra armor upgrade = 0 armor
-        u16 buildTime[Sc::Unit::TotalTypes];
-        u16 mineralCost[Sc::Unit::TotalTypes];
-        u16 gasCost[Sc::Unit::TotalTypes];
-        u16 nameStringId[Sc::Unit::TotalTypes];
-        u16 baseDamage[Sc::Weapon::Total];
-        u16 upgradeDamage[Sc::Weapon::Total];
+        UseDefault useDefault[Sc::Unit::TotalTypes] {};
+        u32 hitpoints[Sc::Unit::TotalTypes] {}; // Displayed value is hitpoints / 256
+        u16 shieldPoints[Sc::Unit::TotalTypes] {};
+        u8 armorLevel[Sc::Unit::TotalTypes] {}; // Note: 255 armor + ultra armor upgrade = 0 armor
+        u16 buildTime[Sc::Unit::TotalTypes] {};
+        u16 mineralCost[Sc::Unit::TotalTypes] {};
+        u16 gasCost[Sc::Unit::TotalTypes] {};
+        u16 nameStringId[Sc::Unit::TotalTypes] {};
+        u16 baseDamage[Sc::Weapon::Total] {};
+        u16 upgradeDamage[Sc::Weapon::Total] {};
+
+        UNIx() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+        }
+
+        REFLECT(UNIx, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
     }; // Size: 4168 (validated)
     
     __declspec(align(1)) struct UPGx {
-        UseDefault useDefault[Sc::Upgrade::TotalTypes];
-        u8 unused;
-        u16 baseMineralCost[Sc::Upgrade::TotalTypes];
-        u16 mineralCostFactor[Sc::Upgrade::TotalTypes];
-        u16 baseGasCost[Sc::Upgrade::TotalTypes];
-        u16 gasCostFactor[Sc::Upgrade::TotalTypes];
-        u16 baseResearchTime[Sc::Upgrade::TotalTypes];
-        u16 researchTimeFactor[Sc::Upgrade::TotalTypes];
+        UseDefault useDefault[Sc::Upgrade::TotalTypes] {};
+        u8 unused {};
+        u16 baseMineralCost[Sc::Upgrade::TotalTypes] {};
+        u16 mineralCostFactor[Sc::Upgrade::TotalTypes] {};
+        u16 baseGasCost[Sc::Upgrade::TotalTypes] {};
+        u16 gasCostFactor[Sc::Upgrade::TotalTypes] {};
+        u16 baseResearchTime[Sc::Upgrade::TotalTypes] {};
+        u16 researchTimeFactor[Sc::Upgrade::TotalTypes] {};
+
+        UPGx() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
+        }
+
+        REFLECT(UPGx, useDefault, unused, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
     }; // Size: 794 (validated)
     
     __declspec(align(1)) struct TECx {
-        UseDefault useDefault[Sc::Tech::TotalTypes];
-        u16 mineralCost[Sc::Tech::TotalTypes];
-        u16 gasCost[Sc::Tech::TotalTypes];
-        u16 researchTime[Sc::Tech::TotalTypes];
-        u16 energyCost[Sc::Tech::TotalTypes];
+        UseDefault useDefault[Sc::Tech::TotalTypes] {};
+        u16 mineralCost[Sc::Tech::TotalTypes] {};
+        u16 gasCost[Sc::Tech::TotalTypes] {};
+        u16 researchTime[Sc::Tech::TotalTypes] {};
+        u16 energyCost[Sc::Tech::TotalTypes] {};
+
+        TECx() {
+            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
+        }
+
+        REFLECT(TECx, useDefault, mineralCost, gasCost, researchTime, energyCost)
     }; // Size: 396 (validated)
     
     __declspec(align(1)) struct OSTR {
-        u32 version; // Current version: 1
-        u32 scenarioName;
-        u32 scenarioDescription;
-        u32 forceName[Chk::TotalForces];
-        u32 unitName[Sc::Unit::TotalTypes];
-        u32 expUnitName[Sc::Unit::TotalTypes];
-        u32 soundPath[Chk::TotalSounds];
-        u32 switchName[Chk::TotalSwitches];
-        u32 locationName[Chk::TotalLocations];
+        u32 version {1}; // Current version: 1
+        u32 scenarioName {};
+        u32 scenarioDescription {};
+        u32 forceName[Chk::TotalForces] {};
+        u32 unitName[Sc::Unit::TotalTypes] {};
+        u32 expUnitName[Sc::Unit::TotalTypes] {};
+        u32 soundPath[Chk::TotalSounds] {};
+        u32 switchName[Chk::TotalSwitches] {};
+        u32 locationName[Chk::TotalLocations] {};
+
+        REFLECT(OSTR, version, scenarioName, scenarioDescription, forceName, unitName, expUnitName, soundPath, switchName, locationName)
     };
 
     __declspec(align(1)) struct KSTR {
         static constexpr const u32 CurrentVersion = 3;
 
-        u32 version; // Current version: 3
-        u32 numStrings; // Number of strings in the section
+        u32 version {CurrentVersion}; // Current version: 3
+        u32 numStrings {0}; // Number of strings in the section
         //u32 stringOffsets[0]; // u32 stringOffsets[numStrings]; // Offsets to each string within the string section (not within stringData, but within the whole section)
         // StringProperties[numStrings] stringProperties; // String properties
         // void[] stringData; // List of strings, each null terminated, starting with one NUL character
@@ -1316,15 +1502,34 @@ namespace Chk {
     });
 
     __declspec(align(1)) struct KTRG {
-        u32 version; // Current version: 2
+        u32 version {2}; // Current version: 2
         //ExtendedTrigData extendedTrigData[numTrigs];
     }; // Size: 4+20*numTrigs
 
     __declspec(align(1)) struct KTGP {
-        u32 version; // Current version: 1
-        u32 numGroups; // The number of trigger groupings in this section
+        u32 version {1}; // Current version: 1
+        u32 numGroups {0}; // The number of trigger groupings in this section
         //TriggerGroupHeader headers[numGroups];
         //TriggerGroupBody bodies[numGroups];
+    };
+
+    __declspec(align(1)) struct CRGB {
+        u8 playerColor[8][3] {
+            {0, 0, 0}, {0, 0, 1}, {0, 0, 2}, {0, 0, 3},
+            {0, 0, 4}, {0, 0, 5}, {0, 0, 6}, {0, 0, 7}
+        }; // RGB or unused-unused-colorIndex depending on playerSetting
+        PlayerColorSetting playerSetting[8] {
+            PlayerColorSetting::UseId, PlayerColorSetting::UseId, PlayerColorSetting::UseId, PlayerColorSetting::UseId,
+            PlayerColorSetting::UseId, PlayerColorSetting::UseId, PlayerColorSetting::UseId, PlayerColorSetting::UseId
+        };
+
+        REFLECT(CRGB, playerColor, playerSetting)
+    };
+
+    struct Rgb {
+        u8 red {};
+        u8 green {};
+        u8 blue {};
     };
 
     enum_t(SectionName, u32, { // The section name values, as they appear in the binary scenario file
@@ -1337,14 +1542,83 @@ namespace Chk {
         TRIG = 1195987540, MBRF = 1179796045, SPRP = 1347571795, FORC = 1129467718,
         WAV = 542523735, UNIS = 1397313109, UPGS = 1397182549, TECS = 1396917588,
         SWNM = 1296979795, COLR = 1380732739, PUPx = 2018530640, PTEx = 2017809488,
-        UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580,
+        UNIx = 2018070101, UPGx = 2017939541, TECx = 2017674580, STRx = 2018661459,
+        CRGB = 1111970371,
 
         OSTR = 1381258063, KSTR = 1381258059, KTRG = 1196577867, KTGP = 1346851915,
 
         UNKNOWN = u32_max
     });
+
+    enum class LoadBehavior
+    {
+        Standard, // The last instance of a section is used
+        Override, // The first instance of the section has part or all of its data overridden by subsequent instances
+        Append // Subsequent instances of the section will be appended to the first instance
+    };
+    
+    inline std::unordered_map<SectionName, LoadBehavior> nonStandardLoadBehaviors {
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::MTXM, Chk::LoadBehavior::Override),
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::UNIT, Chk::LoadBehavior::Append),
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::THG2, Chk::LoadBehavior::Append),
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::STR, Chk::LoadBehavior::Override),
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::TRIG, Chk::LoadBehavior::Append),
+        std::pair<SectionName, Chk::LoadBehavior>(SectionName::MBRF, Chk::LoadBehavior::Append)
+    };
+
+    inline std::unordered_map<SectionName, std::string> sectionNameStrings {
+        std::pair<SectionName, std::string>(SectionName::TYPE, "TYPE"), std::pair<SectionName, std::string>(SectionName::VER, "VER"),
+        std::pair<SectionName, std::string>(SectionName::IVER, "IVER"), std::pair<SectionName, std::string>(SectionName::IVE2, "IVE2"),
+        std::pair<SectionName, std::string>(SectionName::VCOD, "VCOD"), std::pair<SectionName, std::string>(SectionName::IOWN, "IOWN"),
+        std::pair<SectionName, std::string>(SectionName::OWNR, "OWNR"), std::pair<SectionName, std::string>(SectionName::ERA, "ERA"),
+        std::pair<SectionName, std::string>(SectionName::DIM, "DIM"), std::pair<SectionName, std::string>(SectionName::SIDE, "SIDE"),
+        std::pair<SectionName, std::string>(SectionName::MTXM, "MTXM"), std::pair<SectionName, std::string>(SectionName::PUNI, "PUNI"),
+        std::pair<SectionName, std::string>(SectionName::UPGR, "UPGR"), std::pair<SectionName, std::string>(SectionName::PTEC, "PTEC"),
+        std::pair<SectionName, std::string>(SectionName::UNIT, "UNIT"), std::pair<SectionName, std::string>(SectionName::ISOM, "ISOM"),
+        std::pair<SectionName, std::string>(SectionName::TILE, "TILE"), std::pair<SectionName, std::string>(SectionName::DD2, "DD2"),
+        std::pair<SectionName, std::string>(SectionName::THG2, "THG2"), std::pair<SectionName, std::string>(SectionName::MASK, "MASK"),
+        std::pair<SectionName, std::string>(SectionName::STR, "STR"), std::pair<SectionName, std::string>(SectionName::UPRP, "UPRP"),
+        std::pair<SectionName, std::string>(SectionName::UPUS, "UPUS"), std::pair<SectionName, std::string>(SectionName::MRGN, "MRGN"),
+        std::pair<SectionName, std::string>(SectionName::TRIG, "TRIG"), std::pair<SectionName, std::string>(SectionName::MBRF, "MBRF"),
+        std::pair<SectionName, std::string>(SectionName::SPRP, "SPRP"), std::pair<SectionName, std::string>(SectionName::FORC, "FORC"),
+        std::pair<SectionName, std::string>(SectionName::WAV, "WAV"), std::pair<SectionName, std::string>(SectionName::UNIS, "UNIS"),
+        std::pair<SectionName, std::string>(SectionName::UPGS, "UPGS"), std::pair<SectionName, std::string>(SectionName::TECS, "TECS"),
+        std::pair<SectionName, std::string>(SectionName::SWNM, "SWNM"), std::pair<SectionName, std::string>(SectionName::COLR, "COLR"),
+        std::pair<SectionName, std::string>(SectionName::PUPx, "PUPx"), std::pair<SectionName, std::string>(SectionName::PTEx, "PTEx"),
+        std::pair<SectionName, std::string>(SectionName::UNIx, "UNIx"), std::pair<SectionName, std::string>(SectionName::UPGx, "UPGx"),
+        std::pair<SectionName, std::string>(SectionName::TECx, "TECx"), std::pair<SectionName, std::string>(SectionName::STRx, "STRx"),
+        std::pair<SectionName, std::string>(SectionName::CRGB, "CRGB"),
+    
+        std::pair<SectionName, std::string>(SectionName::OSTR, "OSTR"), std::pair<SectionName, std::string>(SectionName::KSTR, "KSTR"),
+        std::pair<SectionName, std::string>(SectionName::KTRG, "KTRG"), std::pair<SectionName, std::string>(SectionName::KTGP, "KTGP"),
+
+        std::pair<SectionName, std::string>(SectionName::UNKNOWN, "UNKNOWN")
+    };
+
+    std::string getNameString(SectionName sectionName);
+
+    enum_t(SectionIndex, u32, { // The index at which a section appears in the default scenario file (plus indexes for extended sections), this is not related to section names
+        TYPE = 0, VER = 1, IVER = 2, IVE2 = 3,
+        VCOD = 4, IOWN = 5, OWNR = 6, ERA = 7,
+        DIM = 8, SIDE = 9, MTXM = 10, PUNI = 11,
+        UPGR = 12, PTEC = 13, UNIT = 14, ISOM = 15,
+        TILE = 16, DD2 = 17, THG2 = 18, MASK = 19,
+        STR = 20, UPRP = 21, UPUS = 22, MRGN = 23,
+        TRIG = 24, MBRF = 25, SPRP = 26, FORC = 27,
+        WAV = 28, UNIS = 29, UPGS = 30, TECS = 31,
+        SWNM = 32, COLR = 33, PUPx = 34, PTEx = 35,
+        UNIx = 36, UPGx = 37, TECx = 38, STRx = 39,
+        CRGB = 40,
+
+        OSTR = 41, KSTR = 42, KTRG = 43, KTGP = 44,
+
+        UNKNOWN = u32_max
+    });
+    
+    static constexpr u32 TotalKnownChkSections = 40;
     
     using SectionSize = s32;
+    static constexpr Chk::SectionSize MaxChkSectionSize = s32_max;
 
     __declspec(align(1)) struct SectionHeader {
         SectionName name;
@@ -1374,6 +1648,193 @@ namespace Chk {
     std::ostream & operator<< (std::ostream & out, const Trigger & trigger);
 
 #pragma pack(pop)
+
+    /** None - No compression methods applied
+        DuplicateStringRecycling - All duplicate strings share one stringId
+        LastStringTrick - The largest has the highest offset value
+        ReverseStacking - All offsets use the highest necessary string ids such that character data preceeds all offsets (the NUL/zero-length string loses its sticky position)
+        SizeBytesRecycling - If possible to do so, the bytes denoting the number of strings in the section are also used as characters
+        SubStringRecycling - All eligible sub-strings (strings that fit in the end of some other string) are recycled
+        OffsetInterlacing - Offsets are combined with character data where possible
+        OrderShuffledInterlacing - OffsetInterlacing is attempted with strings arranged in every possible order
+        SpareShuffledInterlacing - OffsetInterlacing is attempted with every possible distribution of one to total spare codepoints
+        SubShuffledInterlacing - OffsetInterlacing is attempted with every possible permutation of potentially advantagous sub-strings unrecycled or recycled
+            
+        Fighting three limits...
+        1.) Max Strings     :   numStrings <= 65535
+        2.) Max Characters  :   SUM(LENGTH(rootStrings)) + numRootStrings - (LastStringTrick ? LENGTH(lastString) : 0) - (SizeBytesRecycling ? 0 : 2) < 65536 &&
+                                SUM(LENGTH(rootStrings)) + numRootStrings <= 2147483647
+        3.) Chars & Offsets :   IF ( LastStringTrick && MAX(LENGTH(string)) > 65538 && MAX(stringOffset) + LENGTH(lastString) >= 131074 ) {
+                                    2147483647 >= SUM(LENGTH(rootStrings)) + numRootStrings + 2*numStrings +
+                                        (SizeBytesRecycling ? 0 : 2) +
+                                        (OffsetInterlacing ? offsetBytesBlocked - offsetBytesRecycled : 0) &&
+                                    131074 >= SUM(LENGTH(rootStrings)) + numRootStrings + 2*numStrings - (LENGTH(lastString) + MAX(stringOffset) - 131074)
+                                        (SizeBytesRecycling ? 0 : 2) +
+                                        (OffsetInterlacing ? offsetBytesRecycled - offsetBytesBlocked : 0)
+                                } else { // No excessively large last string
+                                    131074 >= SUM(LENGTH(rootStrings)) + numRootStrings + 2*numStrings +  +
+                                        (SizeByteRecycling ? 0 : 2) +
+                                        (OffsetInterlacing ? offsetBytesBlocked - offsetBytesRecycled : 0)
+                                }
+
+        1.) This hard limit is given by numStrings being a u16, you only have usuable offsets at indexes 0-65535/stringIds 1-65536 .
+        2.) The first part of this limit is given by string offsets being u16, such that no string points past byte 65535 .
+            Each root string (potentially containing substrings) occupies its length plus one NUL character.
+            The last string/substrings may have an ending that flows onto the 65536th byte and beyond, if it does, then that NUL character can be ignored.
+            The first two bytes of the section which denote numStrings may also be used as characters.
+            Even with the last string flowing over the regular limit, you'll still hit the section max (s32_max: 2147483647) eventually.
+        3.) Offsets being an array of u16s with a max index of numStrings (65535) can only occupy space before the 131074th byte
+            If the last string flows beyond that point then we're given two limits: first the limit of the section size
+            and second all characters and offsets minus any overhang from the last string must fit in the first 131074 bytes.
+            Else we're given one limit: all characters and offsets must fit in a space no larger than 131074 bytes.
+
+        (1) is addressed only by "DuplicateStringRecycling", no other compression methods reduce the string count (sub-strings still have their own offset/are their own string)
+        (2) is addressed by "DuplicateStringRecycling", "LastStringTrick", "ReverseStacking", "SizeBytesRecycling", and "SubStringRecycling"
+        (3) is addressed by everything that addressed (2) (except "LastStringTrick"), plus all types of offset interlacing
+
+        - Automatically fail an operation if none of the compression methods affecting that limit, combined in every possible way can make the above equations satisfy.
+        - Calculate section configuration viability before physically laying them out in memory
+    */
+    enum_t(StrCompressFlag, u32, {
+        DuplicateStringRecycling = BIT_0,
+        LastStringTrick = BIT_1,
+        ReverseStacking = BIT_2,
+        SizeBytesRecycling = BIT_3,
+        SubStringRecycling = BIT_4 | DuplicateStringRecycling,
+        OffsetInterlacing = BIT_5 | SubStringRecycling, // When active, ignores ReverseStacking
+        OrderShuffledInterlacing = BIT_6 | OffsetInterlacing, // When active, ignores LastStringTrick
+        SpareShuffledInterlacing = BIT_7 | OffsetInterlacing,
+        SubShuffledInterlacing = BIT_8 | OffsetInterlacing & (~SubStringRecycling) | DuplicateStringRecycling, // When active, ignores 
+
+        SubLastStringTrick = SubStringRecycling | LastStringTrick, // Causes different LastStringTrick behavior
+        SizedLastStringTrick = SizeBytesRecycling | LastStringTrick, // Causes different LastStringTrick behavior
+        SubSizedLastStringTrick = SubStringRecycling | SizeBytesRecycling | LastStringTrick, // Causes different LastStringTrick behavior
+        None = 0,
+        AllNonInterlacing = DuplicateStringRecycling | LastStringTrick | ReverseStacking | SizeBytesRecycling | SubStringRecycling,
+        AllInterlacing = OffsetInterlacing | OrderShuffledInterlacing | SpareShuffledInterlacing | SubShuffledInterlacing,
+        All = AllNonInterlacing | AllInterlacing,
+        Unchanged = u32_max,
+        Default = DuplicateStringRecycling
+    });
+    
+    class SectionValidationException : public std::exception
+    {
+        public:
+            SectionValidationException(SectionName sectionName, std::string error);
+            virtual ~SectionValidationException() { }
+            virtual const char* what() const throw() { return error.c_str(); }
+
+        private:
+            std::string error;
+            SectionValidationException(); // Disallow ctor
+    };
+
+    class StringException : public std::exception
+    {
+        public:
+            StringException(const std::string & error) : error(error) { }
+            virtual const char* what() const throw() { return error.c_str(); }
+            const std::string error;
+        private:
+            StringException(); // Disallow ctor
+    };
+
+    class MaximumStringsExceeded : public StringException
+    {
+        public:
+            MaximumStringsExceeded(std::string sectionName, size_t numStrings, size_t maxStrings);
+            MaximumStringsExceeded();
+            virtual const char* what() const throw() { return error.c_str(); }
+    };
+
+    class InsufficientStringCapacity : public StringException
+    {
+        public:
+            InsufficientStringCapacity(std::string sectionName, size_t numStrings, size_t requestedCapacity, bool autoDefragment);
+            virtual const char* what() const throw() { return error.c_str(); }
+        private:
+            InsufficientStringCapacity(); // Disallow ctor
+    };
+
+    class MaximumCharactersExceeded : public StringException
+    {
+        public:
+            MaximumCharactersExceeded(std::string sectionName, size_t numCharacters, size_t characterSpaceSize);
+            virtual const char* what() const throw() { return error.c_str(); }
+        private:
+            MaximumCharactersExceeded(); // Disallow ctor
+    };
+
+    class MaximumOffsetAndCharsExceeded : public StringException
+    {
+        public:
+            MaximumOffsetAndCharsExceeded(std::string sectionName, size_t numStrings, size_t numCharacters, size_t sectionSpace);
+            virtual const char* what() const throw() { return error.c_str(); }
+        private:
+            MaximumOffsetAndCharsExceeded(); // Disallow ctor
+    };
+
+    class StrProp {
+        public:
+            u8 red;
+            u8 green;
+            u8 blue;
+            u32 size;
+            bool isUsed;
+            bool hasPriority;
+            bool isBold;
+            bool isUnderlined;
+            bool isItalics;
+    
+            StrProp();
+            StrProp(Chk::StringProperties stringProperties);
+            StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics);
+    };
+
+    class ScStr
+    {
+        public:
+            const char* str; // The content of this string (RawString/no formatting)
+        
+            ScStr();
+            ScStr(const std::string & str);
+            ScStr(const std::string & str, const StrProp & strProp);
+            ScStr(const char* str);
+            ScStr(const u8* str);
+            ScStr(const u8* str, size_t length);
+            ScStr(const std::vector<u8> & strBytes);
+            template <size_t N> ScStr(const char (&str)[N]) : ScStr(std::string(str)) {}
+
+            bool empty() const;
+            size_t length() const;
+        
+            StrProp & properties();
+            const StrProp & properties() const;
+
+            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+            int compare(const StringType & str) const;
+
+            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+            StringType toString() const;
+
+            ScStr* getParentStr() const;
+            ScStr* getChildStr() const;
+            static bool adopt(ScStr* lhs, ScStr* rhs); // Make lhs the parent of rhs if possible, or vice-versa
+            void disown(); // Break any connections with parent and child strings
+
+        private:
+            ScStr* parentStr = nullptr; // The larger string inside which this string fits, if null then this is a root string
+            ScStr* childStr = nullptr; // The next largest string that fits inside this string
+            std::vector<char> allocation; // If parentStr is null, then this is the actual string data and str points to the first character
+                                          // else str points to first character of this string within the allocation of the highest-order parent
+            StrProp strProp; // Additional color and font details, if this string is extended and gets stored
+
+            static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
+    };
 }
+
+using Chk::SectionName;
+using Chk::StrProp;
+using Chk::ScStr;
 
 #endif

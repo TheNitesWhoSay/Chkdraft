@@ -332,10 +332,10 @@ void Maps::ChangePlayer(u8 newPlayer)
         {
             auto & units = clipboard.getUnits();
             for ( auto & pasteUnit : units )
-                pasteUnit.unit->owner = newPlayer;
+                pasteUnit.unit.owner = newPlayer;
         }
 
-        size_t numUnits = currentlyActiveMap->layers.numUnits();
+        size_t numUnits = currentlyActiveMap->numUnits();
         currentlyActiveMap->PlayerChanged(newPlayer);
     }
 
@@ -469,66 +469,63 @@ void Maps::updateCursor(s32 xc, s32 yc)
     if ( currentlyActiveMap->getLayer() == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION )
+        if ( selectedLocation != NO_LOCATION && selectedLocation < currentlyActiveMap->numUnits() )
         {
-            const Chk::LocationPtr loc = currentlyActiveMap->layers.getLocation(selectedLocation);
-            if ( loc != nullptr )
+            const Chk::Location & loc = currentlyActiveMap->getLocation(selectedLocation);
+            s32 locationLeft = std::min(loc.left, loc.right),
+                locationRight = std::max(loc.left, loc.right),
+                locationTop = std::min(loc.top, loc.bottom),
+                locationBottom = std::max(loc.top, loc.bottom),
+                leftOuterBound = locationLeft-5,
+                rightOuterBound = locationRight+5,
+                topOuterBound = locationTop-5,
+                bottomOuterBound = locationBottom+5;
+
+            if ( xc >= leftOuterBound && xc <= rightOuterBound &&
+                    yc >= topOuterBound && yc <= bottomOuterBound    )
             {
-                s32 locationLeft = std::min(loc->left, loc->right),
-                    locationRight = std::max(loc->left, loc->right),
-                    locationTop = std::min(loc->top, loc->bottom),
-                    locationBottom = std::max(loc->top, loc->bottom),
-                    leftOuterBound = locationLeft-5,
-                    rightOuterBound = locationRight+5,
-                    topOuterBound = locationTop-5,
-                    bottomOuterBound = locationBottom+5;
+                s32 locationWidth = locationRight-locationLeft,
+                    locationHeight = locationBottom-locationTop,
+                    leftInnerBound = locationLeft+locationWidth/3,
+                    rightInnerBound = locationRight-locationWidth/3,
+                    topInnerBound = locationTop+locationHeight/3,
+                    bottomInnerBound = locationBottom-locationHeight/3;
 
-                if ( xc >= leftOuterBound && xc <= rightOuterBound &&
-                     yc >= topOuterBound && yc <= bottomOuterBound    )
+                if ( leftInnerBound > locationLeft+5 )
+                    leftInnerBound = locationLeft+5;
+                if ( topInnerBound > locationTop+5 )
+                    topInnerBound = locationTop+5;
+                if ( rightInnerBound < locationRight-5 )
+                    rightInnerBound = locationRight-5;
+                if ( bottomInnerBound < locationBottom-5 )
+                    bottomInnerBound = locationBottom-5;
+
+                if ( xc >= leftInnerBound && xc <= rightInnerBound &&
+                        yc >= topInnerBound && yc <= bottomInnerBound    )
                 {
-                    s32 locationWidth = locationRight-locationLeft,
-                        locationHeight = locationBottom-locationTop,
-                        leftInnerBound = locationLeft+locationWidth/3,
-                        rightInnerBound = locationRight-locationWidth/3,
-                        topInnerBound = locationTop+locationHeight/3,
-                        bottomInnerBound = locationBottom-locationHeight/3;
-
-                    if ( leftInnerBound > locationLeft+5 )
-                        leftInnerBound = locationLeft+5;
-                    if ( topInnerBound > locationTop+5 )
-                        topInnerBound = locationTop+5;
-                    if ( rightInnerBound < locationRight-5 )
-                        rightInnerBound = locationRight-5;
-                    if ( bottomInnerBound < locationBottom-5 )
-                        bottomInnerBound = locationBottom-5;
-
-                    if ( xc >= leftInnerBound && xc <= rightInnerBound &&
-                         yc >= topInnerBound && yc <= bottomInnerBound    )
-                    {
-                        currCursor = &sizeAllCursor;
-                        SetCursor(sizeAllCursor);
-                    } // Invariant: not in center
-                    else if ( xc >= leftInnerBound && xc <= rightInnerBound )
-                    {
-                        currCursor = &nsCursor;
-                        SetCursor(nsCursor);
-                    } // Invariant: on west or east
-                    else if ( yc >= topInnerBound && yc <= bottomInnerBound )
-                    {
-                        currCursor = &weCursor;
-                        SetCursor(weCursor);
-                    } // Invariant: is on a corner
-                    else if ( ( xc < leftInnerBound && yc < topInnerBound ) ||
-                              ( xc > rightInnerBound && yc > bottomInnerBound ) )
-                    {
-                        currCursor = &nwseCursor;
-                        SetCursor(nwseCursor);
-                    } // Invariant: is on ne or sw corner
-                    else
-                    {
-                        currCursor = &neswCursor;
-                        SetCursor(neswCursor);
-                    }
+                    currCursor = &sizeAllCursor;
+                    SetCursor(sizeAllCursor);
+                } // Invariant: not in center
+                else if ( xc >= leftInnerBound && xc <= rightInnerBound )
+                {
+                    currCursor = &nsCursor;
+                    SetCursor(nsCursor);
+                } // Invariant: on west or east
+                else if ( yc >= topInnerBound && yc <= bottomInnerBound )
+                {
+                    currCursor = &weCursor;
+                    SetCursor(weCursor);
+                } // Invariant: is on a corner
+                else if ( ( xc < leftInnerBound && yc < topInnerBound ) ||
+                            ( xc > rightInnerBound && yc > bottomInnerBound ) )
+                {
+                    currCursor = &nwseCursor;
+                    SetCursor(nwseCursor);
+                } // Invariant: is on ne or sw corner
+                else
+                {
+                    currCursor = &neswCursor;
+                    SetCursor(neswCursor);
                 }
             }
         }

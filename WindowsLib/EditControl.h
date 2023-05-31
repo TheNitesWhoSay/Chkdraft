@@ -23,10 +23,10 @@ namespace WinLib {
             bool SetText(const std::string & newText); // Sets new text content
             void SetCaret(int caretPos);
 
-            template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+            template <typename numType>
                 bool SetEditNum(numType num);
 
-            template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+            template <typename numType>
                 bool SetEditBinaryNum(numType num);
 
             void SetTextLimit(u32 newLimit);
@@ -40,7 +40,7 @@ namespace WinLib {
             bool GetHexByteString(u8* dest, u32 destLength);
             bool SetHexByteString(u8* bytes, u32 numBytes);
 
-            template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+            template <typename numType>
                 bool GetEditNum(numType & dest);
 
 
@@ -54,6 +54,53 @@ namespace WinLib {
             bool autoExpand;
             HWND hBuddy; // If NULL, the control has no buddy
     };
+
+    template <typename numType>
+    bool WinLib::EditControl::SetEditNum(numType num)
+    {
+        return SetText(std::to_string(num));
+    }
+    
+
+    template <typename numType>
+    bool EditControl::SetEditBinaryNum(numType num)
+    {
+        char newText[36] = { };
+        u32 temp = (u32)num;
+        u8 numBits = (sizeof(numType)*8);
+        _itoa_s(temp, newText, 36, 2);
+        size_t length = std::strlen(newText);
+        if ( length > 0 && length < numBits && numBits < 36 )
+        {
+            std::memmove(&newText[numBits-length], newText, length);
+            std::memset(newText, '0', numBits-length);
+            newText[numBits] = '\0';
+        }
+        return SetText(newText);
+    }
+
+    template <typename numType>
+    bool EditControl::GetEditNum(numType & dest)
+    {
+        std::string text;
+        if ( GetWinText(text) && text.length() > 0 )
+        {
+            errno = 0;
+            char* endPtr = nullptr;
+            long long temp = std::strtoll(text.c_str(), &endPtr, 0);
+            if ( temp != 0 )
+            {
+                dest = (numType)temp;
+                return true;
+            }
+            else if ( errno == 0 && endPtr == &text[text.size()] )
+            {
+                dest = 0;
+                return true;
+            }
+        }
+        return false;
+    }
 
 }
 

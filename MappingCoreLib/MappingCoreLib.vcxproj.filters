@@ -47,16 +47,10 @@
     <ClInclude Include="FileBrowser.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="StringBuffer.h">
-      <Filter>Header Files\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="TextTrigCompiler.h">
       <Filter>Header Files\StarCraft</Filter>
     </ClInclude>
     <ClInclude Include="TextTrigGenerator.h">
-      <Filter>Header Files\StarCraft</Filter>
-    </ClInclude>
-    <ClInclude Include="Sections.h">
       <Filter>Header Files\StarCraft</Filter>
     </ClInclude>
     <ClInclude Include="Scenario.h">
@@ -93,9 +87,6 @@
     </ClCompile>
     <ClCompile Include="ArchiveFile.cpp">
       <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="Sections.cpp">
-      <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="Scenario.cpp">
       <Filter>Source Files\StarCraft</Filter>

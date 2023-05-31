@@ -272,7 +272,7 @@ namespace WinLib {
         return text;
     }
 
-    bool WindowsItem::GetWinText(output_param std::string & text)
+    bool WindowsItem::GetWinText(std::string & text)
     {
         int titleLength = ::GetWindowTextLength(getHandle()) + 1;
         if ( titleLength > 1 )
@@ -293,7 +293,7 @@ namespace WinLib {
         return false;
     }
 
-    bool WindowsItem::getWindowRect(output_param RECT & rect)
+    bool WindowsItem::getWindowRect(RECT & rect)
     {
         return ::GetWindowRect(getHandle(), &rect) != 0;
     }

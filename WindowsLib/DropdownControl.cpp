@@ -55,7 +55,7 @@ namespace WinLib {
         return (int)SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
     }
 
-    bool DropdownControl::GetItemText(int index, output_param std::string & dest)
+    bool DropdownControl::GetItemText(int index, std::string & dest)
     {
         LRESULT textLength = SendMessage(getHandle(), CB_GETLBTEXTLEN, index, 0);
         if ( textLength != CB_ERR )
@@ -69,59 +69,26 @@ namespace WinLib {
         }
         return false;
     }
+    
+    int DropdownControl::GetNumItems()
+    {
+        return int(SendMessage(getHandle(), CB_GETCOUNT, 0, 0));
+    }
 
     void DropdownControl::ClearItems()
     {
         SendMessage(getHandle(), CB_RESETCONTENT, 0, 0);
     }
 
-    bool DropdownControl::AddItem(const std::string & item)
+    int DropdownControl::AddItem(const std::string & item)
     {
         LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
-        return result != CB_ERR && result != CB_ERRSPACE;
+        return int(result);// != CB_ERR && result != CB_ERRSPACE;
     }
-
-    template <typename numType>
-    bool DropdownControl::GetEditNum(numType & dest)
+    
+    int DropdownControl::RemoveItem(int index)
     {
-        std::string text;
-        if ( GetWinText(text) && text.length() > 0 )
-        {
-            errno = 0;
-            char* endPtr = nullptr;
-            long long temp = std::strtoll(text.c_str(), &endPtr, 0);
-            if ( temp != 0 )
-            {
-                dest = (numType)temp;
-                return true;
-            }
-            else if ( errno == 0 && endPtr == &text[text.size()] )
-            {
-                dest = 0;
-                return true;
-            }
-        }
-        return false;
+        return int(SendMessage(getHandle(), CB_DELETESTRING, WPARAM(index), NULL));
     }
-    template bool DropdownControl::GetEditNum<u8>(u8 & dest);
-    template bool DropdownControl::GetEditNum<s8>(s8 & dest);
-    template bool DropdownControl::GetEditNum<u16>(u16 & dest);
-    template bool DropdownControl::GetEditNum<s16>(s16 & dest);
-    template bool DropdownControl::GetEditNum<u32>(u32 & dest);
-    template bool DropdownControl::GetEditNum<s32>(s32 & dest);
-    template bool DropdownControl::GetEditNum<int>(int & dest);
-
-    template <typename numType>
-    bool DropdownControl::SetEditNum(numType num)
-    {
-        return WindowsItem::SetWinText(std::to_string(num));
-    }
-    template bool DropdownControl::SetEditNum<u8>(u8 num);
-    template bool DropdownControl::SetEditNum<s8>(s8 num);
-    template bool DropdownControl::SetEditNum<u16>(u16 num);
-    template bool DropdownControl::SetEditNum<s16>(s16 num);
-    template bool DropdownControl::SetEditNum<u32>(u32 num);
-    template bool DropdownControl::SetEditNum<s32>(s32 num);
-    template bool DropdownControl::SetEditNum<int>(int num);
 
 }

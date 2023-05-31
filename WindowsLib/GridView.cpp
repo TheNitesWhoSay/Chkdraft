@@ -426,7 +426,7 @@ namespace WinLib {
         return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
     }
 
-    bool GridViewControl::GetEditText(output_param std::string & str)
+    bool GridViewControl::GetEditText(std::string & str)
     {
         return editBox.GetWinText(str);
     }

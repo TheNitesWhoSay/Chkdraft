@@ -188,7 +188,7 @@ namespace WinLib {
             return 0;
     }
 
-    bool ListBoxControl::GetSelString(int index, output_param std::string & str)
+    bool ListBoxControl::GetSelString(int index, std::string & str)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
         if ( numSel != LB_ERR && numSel > 0 )
@@ -219,7 +219,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListBoxControl::GetCurSelString(output_param std::string & str)
+    bool ListBoxControl::GetCurSelString(std::string & str)
     {
         int selectedItem = -1;
         if ( GetCurSel(selectedItem) )

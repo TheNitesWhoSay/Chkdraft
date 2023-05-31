@@ -14,7 +14,7 @@ class TextTrigWindow : public WinLib::ClassDialog
 
     protected:
         void updateMenus();
-        bool CompileEditText(ScenarioPtr map);
+        bool CompileEditText(Scenario & map);
         virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         virtual BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

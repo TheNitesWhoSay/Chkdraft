@@ -35,8 +35,8 @@ namespace WinLib {
             int ColumnWidth();
             bool GetCurSel(int & sel); // Used with single-selection list boxes
             int GetNumSel(); // Gets the number of items selected (in a multi-selection list box)
-            bool GetSelString(int n, output_param std::string & str); // Attempts to get the nth selected item's string (in a multi-selection list box)
-            bool GetCurSelString(output_param std::string & str); // Attempts to get the currently selected item's string
+            bool GetSelString(int n, std::string & str); // Attempts to get the nth selected item's string (in a multi-selection list box)
+            bool GetCurSelString(std::string & str); // Attempts to get the currently selected item's string
             bool GetSelItem(int n, int & itemData); // Attempts to get the nth selected item's data (in a multi-selection list box)
             bool GetItemData(int index, u32 & data);
             int GetTopIndex();

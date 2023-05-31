@@ -304,10 +304,8 @@
     <ClInclude Include="Chk.h" />
     <ClInclude Include="MpqFile.h" />
     <ClInclude Include="Sc.h" />
-    <ClInclude Include="Sections.h" />
     <ClInclude Include="EscapeStrings.h" />
     <ClInclude Include="FileBrowser.h" />
-    <ClInclude Include="StringBuffer.h" />
     <ClInclude Include="SystemIO.h" />
     <ClInclude Include="MapFile.h" />
     <ClInclude Include="MappingCore.h" />
@@ -322,7 +320,6 @@
     <ClCompile Include="Chk.cpp" />
     <ClCompile Include="MpqFile.cpp" />
     <ClCompile Include="Sc.cpp" />
-    <ClCompile Include="Sections.cpp" />
     <ClCompile Include="EscapeStrings.cpp" />
     <ClCompile Include="FileBrowser.cpp" />
     <ClCompile Include="SystemIO.cpp" />

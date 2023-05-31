@@ -347,6 +347,9 @@
     <ClInclude Include="Windows\MainWindows\LoggerWindow.h">
       <Filter>Header Files\Windows\Main Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\MapSettings\ColorProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -561,6 +564,9 @@
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\LoggerWindow.cpp">
       <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\MapSettings\ColorProperties.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

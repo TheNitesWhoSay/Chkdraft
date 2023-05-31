@@ -28,22 +28,15 @@ namespace WinLib {
             HBITMAP memBitmap;
     };
 
-
-    class PaintFont;
-    using PaintFontPtr = std::shared_ptr<PaintFont>;
     class PaintFont
     {
         public:
-            static PaintFontPtr createFont(int height, int width, const std::string & fontName);
+            PaintFont(int height, int width, const std::string & fontName);
+            ~PaintFont();
             HFONT getFont();
 
-            virtual ~PaintFont();
-
         private:
-
             HFONT hFont;
-
-            PaintFont();
     };
     
     struct LineSize {

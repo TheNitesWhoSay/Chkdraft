@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\Users\Justin\source\repos\Chkdraft\ChkdraftLib\Resource.rc
+// Used by C:\misc\source\Chkdraft\ChkdraftLib\Resource.rc
 //
 #define IDR_MAIN_MENU                   101
 #define IDR_TRIG_MENU                   102
@@ -30,6 +30,8 @@
 #define IDD_INPUTCHKDSTR                147
 #define IDD_EDITCUWP                    150
 #define IDB_PROPERTIES                  155
+#define IDD_DIALOG6                     157
+#define IDD_INPUTCRGBCOLOR              157
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -324,7 +326,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        157
+#define _APS_NEXT_RESOURCE_VALUE        159
 #define _APS_NEXT_COMMAND_VALUE         40655
 #define _APS_NEXT_CONTROL_VALUE         1120
 #define _APS_NEXT_SYMED_VALUE           101

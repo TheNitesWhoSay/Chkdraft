@@ -46,7 +46,7 @@ namespace WinLib {
         text = "";
     }
 
-    bool GridControlItem::getText(output_param std::string & text)
+    bool GridControlItem::getText(std::string & text)
     {
         try { text = this->text; return true; }
         catch ( std::exception ) { return false; }

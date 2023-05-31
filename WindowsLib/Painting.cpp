@@ -68,16 +68,10 @@ namespace WinLib {
     {
         return BitBlt(hdcDest, 0, 0, width, height, memDc, 0, 0, SRCCOPY) != 0;
     }
-
-
-    PaintFontPtr PaintFont::createFont(int height, int width, const std::string & fontName)
+    
+    PaintFont::PaintFont(int height, int width, const std::string & fontName)
     {
-        PaintFontPtr paintFont = PaintFontPtr(new PaintFont());
-        paintFont->hFont = CreateFont(height, width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toFilestring(fontName).c_str());
-        if ( paintFont ->hFont != NULL )
-            return paintFont;
-        else
-            return nullptr;
+        this->hFont = CreateFont(height, width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toFilestring(fontName).c_str());
     }
 
     HFONT PaintFont::getFont()
@@ -89,11 +83,6 @@ namespace WinLib {
     {
         if ( hFont != NULL )
             DeleteObject(hFont);
-    }
-
-    PaintFont::PaintFont() : hFont(NULL)
-    {
-    
     }
     
     std::hash<icux::uistring> LineSize::strHash;

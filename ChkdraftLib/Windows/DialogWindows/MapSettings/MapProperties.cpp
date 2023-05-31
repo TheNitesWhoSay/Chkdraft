@@ -1,7 +1,10 @@
 #include "MapProperties.h"
+#include "ColorProperties.h"
 #include "../../../CommonFiles/CommonFiles.h"
 #include "../../../Chkdraft.h"
 #include <string>
+
+extern Logger logger;
 
 enum_t(Id, u32, {
     EDIT_MAPTITLE = ID_FIRST,
@@ -42,7 +45,15 @@ enum_t(Id, u32, {
     CB_P5COLOR,
     CB_P6COLOR,
     CB_P7COLOR,
-    CB_P8COLOR
+    CB_P8COLOR,
+    BUTTON_P1COLOR,
+    BUTTON_P2COLOR,
+    BUTTON_P3COLOR,
+    BUTTON_P4COLOR,
+    BUTTON_P5COLOR,
+    BUTTON_P6COLOR,
+    BUTTON_P7COLOR,
+    BUTTON_P8COLOR
 });
 
 MapPropertiesWindow::MapPropertiesWindow() : possibleTitleUpdate(false), possibleDescriptionUpdate(false), refreshing(false)
@@ -66,27 +77,27 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         refreshing = true;
         HWND hMapProperties = getHandle();
 
-        ChkdStringPtr mapTitle, mapDescription;
+        std::optional<ChkdString> mapTitle, mapDescription;
         u16 currTileset = 0,
             currWidth = 0,
             currHeight = 0;
 
         if ( CM != nullptr )
         {
-            mapTitle = CM->strings.getScenarioName<ChkdString>();
-            mapDescription = CM->strings.getScenarioDescription<ChkdString>();
-            currTileset = CM->layers.getTileset(),
-            currWidth = (u16)CM->layers.getTileWidth(),
-            currHeight = (u16)CM->layers.getTileHeight();
+            mapTitle = CM->getScenarioName<ChkdString>();
+            mapDescription = CM->getScenarioDescription<ChkdString>();
+            currTileset = CM->getTileset(),
+            currWidth = (u16)CM->getTileWidth(),
+            currHeight = (u16)CM->getTileHeight();
         }
 
         textMapTitle.CreateThis(hMapProperties, 5, 5, 50, 20, "Map Title", 0);
         editMapTitle.CreateThis(hMapProperties, 5, 25, 582, 20, false, Id::EDIT_MAPTITLE);
-        editMapTitle.SetText(*mapTitle);
+        editMapTitle.SetText(mapTitle ? *mapTitle : "");
 
         textMapDescription.CreateThis(hMapProperties, 5, 60, 100, 20, "Map Description", 0);
         editMapDescription.CreateThis(hMapProperties, 5, 80, 582, 100, true, Id::EDIT_MAPDESCRIPTION);
-        editMapDescription.SetText(*mapDescription);
+        editMapDescription.SetText(mapDescription ? *mapDescription : "");
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
@@ -115,21 +126,27 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
                 Chk::Race race = Chk::Race::Zerg;
                 Chk::PlayerColor color = Chk::PlayerColor::Azure_NeutralColor;
                 if ( CM != nullptr )
-                    race = CM->players.getPlayerRace(player);
+                    race = CM->getPlayerRace(player);
 
                 groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
-                textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
+                textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
                 dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners, defaultFont);
-                textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 15+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
+                textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
                 dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces, defaultFont);
 
                 if ( yBox < 2 )
                 {
                     if ( CM != nullptr )
-                        color = CM->players.getPlayerColor(player);
+                        color = CM->getPlayerColor(player);
 
-                    textPlayerColor[player].CreateThis(hMapProperties, 15+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, playerColors, defaultFont);
+                    std::vector<std::string> colorSelections{};
+                    colorSelections.insert(colorSelections.end(), specialColors.begin(), specialColors.end());
+                    colorSelections.insert(colorSelections.end(), playerColors.begin(), playerColors.end());
+
+                    textPlayerColor[player].CreateThis(hMapProperties, 13+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
+                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, colorSelections, defaultFont);
+                    buttonColorProperties[player].CreateThis(hMapProperties, dropPlayerColor[player].Left()-20, 307+95*yBox, 20, 19, "", Id::BUTTON_P1COLOR+player, true);
+                    buttonColorProperties[player].SetImageFromResourceId(IDB_PROPERTIES);
                 }
             }
         }
@@ -145,19 +162,19 @@ void MapPropertiesWindow::RefreshWindow()
     refreshing = true;
     if ( CM != nullptr )
     {
-        ChkdStringPtr mapTitle = CM->strings.getScenarioName<ChkdString>();
-        ChkdStringPtr mapDescription = CM->strings.getScenarioDescription<ChkdString>();
-        u16 tileset = CM->layers.getTileset(),
-            currWidth = (u16)CM->layers.getTileWidth(),
-            currHeight = (u16)CM->layers.getTileHeight();
+        auto mapTitle = CM->getScenarioName<ChkdString>();
+        auto mapDescription = CM->getScenarioDescription<ChkdString>();
+        u16 tileset = CM->getTileset(),
+            currWidth = (u16)CM->getTileWidth(),
+            currHeight = (u16)CM->getTileHeight();
 
         std::string sCurrWidth(std::to_string(currWidth));
         std::string sCurrHeight(std::to_string(currHeight));
         
-        if ( mapTitle != nullptr )
+        if ( mapTitle )
             editMapTitle.SetText(*mapTitle);
 
-        if ( mapDescription != nullptr )
+        if ( mapDescription )
             editMapDescription.SetText(*mapDescription);
 
         possibleTitleUpdate = false;
@@ -172,7 +189,7 @@ void MapPropertiesWindow::RefreshWindow()
         for ( int player=0; player<12; player++ )
         {
             u8 displayOwner(CM->GetPlayerOwnerStringId(player));
-            Chk::Race race = CM->players.getPlayerRace(player);
+            Chk::Race race = CM->getPlayerRace(player);
             dropPlayerOwner[player].SetSel(displayOwner);
             dropPlayerOwner[player].ClearEditSel();
             dropPlayerRaces[player].SetSel(race);
@@ -180,9 +197,39 @@ void MapPropertiesWindow::RefreshWindow()
 
             if ( player < 8 )
             {
-                Chk::PlayerColor color = CM->players.getPlayerColor(player);
-                dropPlayerColor[player].SetSel(color);
-                dropPlayerColor[player].ClearEditSel();
+                if ( CM->isUsingRemasteredColors() )
+                {
+                    auto colorSetting = CM->getPlayerColorSetting(player);
+                    switch ( colorSetting )
+                    {
+                        case Chk::PlayerColorSetting::RandomPredefined:
+                            dropPlayerColor[player].SetSel(0);
+                            break;
+                        case Chk::PlayerColorSetting::PlayerChoice:
+                            dropPlayerColor[player].SetSel(1);
+                            break;
+                        case Chk::PlayerColorSetting::Custom:
+                        {
+                            auto customColor = CM->getPlayerCustomColor(player);
+                            if ( dropPlayerColor[player].GetNumItems() > ::playerColors.size() + ::specialColors.size() )
+                                dropPlayerColor[player].RemoveItem(dropPlayerColor[player].GetNumItems()-1); // Remove the custom color element
+                            auto rgb = RGB(customColor.red, customColor.green, customColor.blue);
+                            int customIndex = dropPlayerColor[player].AddItem(to_hex_string(rgb));
+                            if ( customIndex >= 0 )
+                                dropPlayerColor[player].SetSel(customIndex);
+                        }
+                        break;
+                        case Chk::PlayerColorSetting::UseId:
+                            dropPlayerColor[player].SetSel(CM->getPlayerCustomColor(player).blue+int(specialColors.size()));
+                            break;
+                    }
+                }
+                else // Using COLR section
+                {
+                    Chk::PlayerColor color = CM->getPlayerColor(player);
+                    dropPlayerColor[player].SetSel(int(color)+int(specialColors.size()));
+                    dropPlayerColor[player].ClearEditSel();
+                }
             }
         }
     }
@@ -215,7 +262,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             CM->setTileset(newTileset);
             u16 newWidth, newHeight;
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
-                CM->layers.setDimensions(newWidth, newHeight);
+                CM->setDimensions(newWidth, newHeight);
 
             // Apply new terrain...
 
@@ -263,7 +310,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
                 if ( newType != Sc::Player::SlotType::Inactive )
                 {
-                    CM->players.setSlotType(player, newType);
+                    CM->setSlotType(player, newType);
                     CM->notifyChange(false);
                 }
             }
@@ -279,12 +326,13 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
             if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
             {
-                CM->players.setPlayerRace(player, (Chk::Race)newRace);
+                CM->setPlayerRace(player, (Chk::Race)newRace);
+                CM->Redraw(true);
                 CM->notifyChange(false);
             }
         }
         break;
-
+        
     case Id::CB_P1COLOR: case Id::CB_P2COLOR: case Id::CB_P3COLOR: case Id::CB_P4COLOR:
     case Id::CB_P5COLOR: case Id::CB_P6COLOR: case Id::CB_P7COLOR: case Id::CB_P8COLOR:
         switch ( HIWORD(wParam) )
@@ -293,9 +341,15 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
             LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
-            if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < 16 )
+            LRESULT maxColorIndex = ::specialColors.size() + ::playerColors.size();
+            if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < maxColorIndex )
             {
-                CM->players.setPlayerColor(player, (Chk::PlayerColor)newColor);
+                switch ( newColor )
+                {
+                case 0: CM->setPlayerColorSetting(player, Chk::PlayerColorSetting::RandomPredefined); break;
+                case 1: CM->setPlayerColorSetting(player, Chk::PlayerColorSetting::PlayerChoice); break;
+                default: CM->setPlayerColor(player, Chk::PlayerColor(newColor-LRESULT(::specialColors.size()))); break;
+                }
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -307,7 +361,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u8 newColor;
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {
-                CM->players.setPlayerColor(player, (Chk::PlayerColor)newColor);
+                CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -344,13 +398,29 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
     return 0;
 }
 
+void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    if ( u32(idFrom) >= Id::BUTTON_P1COLOR && u32(idFrom) <= Id::BUTTON_P8COLOR )
+    {
+        size_t playerIndex = size_t(idFrom)-Id::BUTTON_P1COLOR;
+        if ( auto playerColor = ColorPropertiesDialog::GetCrgbColor(getHandle(), CM->getPlayerCustomColor(playerIndex)) )
+        {
+            CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
+            CM->setPlayerCustomColor(playerIndex, *playerColor);
+            CM->Redraw(true);
+            CM->notifyChange(false);
+            this->RefreshWindow();
+        }
+    }
+}
+
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
     ChkdString newMapTitle;
     if ( possibleTitleUpdate == true && editMapTitle.GetWinText(newMapTitle) )
     {
-        CM->strings.setScenarioName(newMapTitle);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->setScenarioName(newMapTitle);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         CM->notifyChange(false);
         possibleTitleUpdate = false;
     }
@@ -361,8 +431,8 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     ChkdString newMapDescription;
     if ( possibleDescriptionUpdate == true && editMapDescription.GetWinText(newMapDescription) )
     {
-        CM->strings.setScenarioDescription(newMapDescription);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->setScenarioDescription(newMapDescription);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         CM->notifyChange(false);
         possibleDescriptionUpdate = false;
     }

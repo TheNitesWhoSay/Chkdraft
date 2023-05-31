@@ -17,7 +17,7 @@ class LitWindow : public WinLib::ClassDialog
         bool GetInputPaths(std::string & luaDirectory, std::string & luaName);
         bool WriteLitBat(std::string & luaDirectory, std::string & luaName, std::string & litDirectory, std::string & litBatPath,
             std::string & textOutName, std::string & trigOutName);
-        bool RunLit(ScenarioPtr map);
+        bool RunLit(Scenario & map);
         void ButtonLit();
         void ButtonLitSave();
         virtual BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);

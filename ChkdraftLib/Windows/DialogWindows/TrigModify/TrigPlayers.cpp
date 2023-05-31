@@ -66,57 +66,54 @@ void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
 {
     refreshing = true;
     this->trigIndex = trigIndex;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr )
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    std::stringstream ssStats;
+    const char* strTimesExecuted[] = { "Never", "Once", "Twice", "Thrice" };
+    u8 exec[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    if ( trig.owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes )
     {
-        std::stringstream ssStats;
-        const char* strTimesExecuted[] = { "Never", "Once", "Twice", "Thrice" };
-        u8 exec[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-        if ( trig->owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes )
+        for ( u8 player=0; player<8; player++ )
+            exec[player] ++;
+    }
+    for ( u8 force=0; force<4; force++ )
+    {
+        if ( trig.owners[Sc::Player::Id::Force1+force] & Chk::Trigger::Owned::Yes )
         {
             for ( u8 player=0; player<8; player++ )
-                exec[player] ++;
-        }
-        for ( u8 force=0; force<4; force++ )
-        {
-            if ( trig->owners[Sc::Player::Id::Force1+force] & Chk::Trigger::Owned::Yes )
             {
-                for ( u8 player=0; player<8; player++ )
-                {
-                    if ( CM->players.getPlayerForce(player) == force )
-                        exec[player] ++;
-                }
+                if ( CM->getPlayerForce(player) == force )
+                    exec[player] ++;
             }
         }
-        for ( u8 player=0; player<8; player++ )
-        {
-            if ( trig->owners[Sc::Player::Id::Player1+player] & Chk::Trigger::Owned::Yes )
-                exec[player] ++;
-        }
-        ssStats << "For each trigger cycle..." << std::endl
-            << "This trigger will be run by:" << std::endl << std::endl
-            << "By Player 1: " << strTimesExecuted[exec[0]] << std::endl
-            << "By Player 2: " << strTimesExecuted[exec[1]] << std::endl
-            << "By Player 3: " << strTimesExecuted[exec[2]] << std::endl
-            << "By Player 4: " << strTimesExecuted[exec[3]] << std::endl
-            << "By Player 5: " << strTimesExecuted[exec[4]] << std::endl
-            << "By Player 6: " << strTimesExecuted[exec[5]] << std::endl
-            << "By Player 7: " << strTimesExecuted[exec[6]] << std::endl
-            << "By Player 8: " << strTimesExecuted[exec[7]] << std::endl;
-        textPlayerStats.SetText(ssStats.str());
-
-        for ( u8 i=0; i<8; i++ )
-            checkMainPlayers[i].SetCheck(trig->owners[i+Sc::Player::Id::Player1] & Chk::Trigger::Owned::Yes);
-        for ( u8 i=0; i<4; i++ )
-            checkForces[i].SetCheck(trig->owners[i+Sc::Player::Id::Force1] & Chk::Trigger::Owned::Yes);
-        checkAllPlayers.SetCheck(trig->owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes);
-        for ( u8 i=Sc::Player::Id::Player9; i<=Sc::Player::Id::NeutralPlayers; i++ )
-            checkNonExecutingPlayers[i-Sc::Player::Id::Player9].SetCheck(trig->owners[i] & Chk::Trigger::Owned::Yes);
-        for ( u8 i=Sc::Player::Id::Unused1; i<=Sc::Player::Id::NonAlliedVictoryPlayers; i++ )
-            checkNonExecutingPlayers[i-Sc::Player::Id::Unused1+9].SetCheck(trig->owners[i] & Chk::Trigger::Owned::Yes);
-
-        editRawPlayers.SetHexByteString((u8*)&trig->owners[0], Chk::Trigger::MaxOwners);
     }
+    for ( u8 player=0; player<8; player++ )
+    {
+        if ( trig.owners[Sc::Player::Id::Player1+player] & Chk::Trigger::Owned::Yes )
+            exec[player] ++;
+    }
+    ssStats << "For each trigger cycle..." << std::endl
+        << "This trigger will be run by:" << std::endl << std::endl
+        << "By Player 1: " << strTimesExecuted[exec[0]] << std::endl
+        << "By Player 2: " << strTimesExecuted[exec[1]] << std::endl
+        << "By Player 3: " << strTimesExecuted[exec[2]] << std::endl
+        << "By Player 4: " << strTimesExecuted[exec[3]] << std::endl
+        << "By Player 5: " << strTimesExecuted[exec[4]] << std::endl
+        << "By Player 6: " << strTimesExecuted[exec[5]] << std::endl
+        << "By Player 7: " << strTimesExecuted[exec[6]] << std::endl
+        << "By Player 8: " << strTimesExecuted[exec[7]] << std::endl;
+    textPlayerStats.SetText(ssStats.str());
+
+    for ( u8 i=0; i<8; i++ )
+        checkMainPlayers[i].SetCheck(trig.owners[i+Sc::Player::Id::Player1] & Chk::Trigger::Owned::Yes);
+    for ( u8 i=0; i<4; i++ )
+        checkForces[i].SetCheck(trig.owners[i+Sc::Player::Id::Force1] & Chk::Trigger::Owned::Yes);
+    checkAllPlayers.SetCheck(trig.owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes);
+    for ( u8 i=Sc::Player::Id::Player9; i<=Sc::Player::Id::NeutralPlayers; i++ )
+        checkNonExecutingPlayers[i-Sc::Player::Id::Player9].SetCheck(trig.owners[i] & Chk::Trigger::Owned::Yes);
+    for ( u8 i=Sc::Player::Id::Unused1; i<=Sc::Player::Id::NonAlliedVictoryPlayers; i++ )
+        checkNonExecutingPlayers[i-Sc::Player::Id::Unused1+9].SetCheck(trig.owners[i] & Chk::Trigger::Owned::Yes);
+
+    editRawPlayers.SetHexByteString((u8*)&trig.owners[0], Chk::Trigger::MaxOwners);
     refreshing = false;
 }
 
@@ -179,66 +176,62 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 
 void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr )
+    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    if ( checkId >= Id::CHECK_PLAYER1 && checkId <= Id::CHECK_PLAYER8 )
     {
-        if ( checkId >= Id::CHECK_PLAYER1 && checkId <= Id::CHECK_PLAYER8 )
+        u8 player = u8(checkId-Id::CHECK_PLAYER1);
+        if ( checkMainPlayers[player].isChecked() )
+            trig.owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
+        else
+            trig.owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
+    }
+    else if ( checkId >= Id::CHECK_FORCE1 && checkId <= Id::CHECK_FORCE4 )
+    {
+        u8 force = u8(checkId-Id::CHECK_FORCE1);
+        if ( checkForces[force].isChecked() )
+            trig.owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
+        else
+            trig.owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
+    }
+    else if ( checkId == Id::CHECK_ALL_PLAYERS )
+    {
+        if ( checkAllPlayers.isChecked() )
+            trig.owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
+        else
+            trig.owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
+    }
+    else if ( checkId >= Id::CHECK_PLAYER9 && checkId <= Id::CHECK_NEUTRALPLAYERS )
+    {
+        u8 lowerNonExecutingPlayersId = u8(checkId-Id::CHECK_PLAYER9);
+        if ( checkNonExecutingPlayers[lowerNonExecutingPlayersId].isChecked() )
+            trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+        else
+            trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+    }
+    else if ( checkId >= Id::CHECK_UNUSED1 && checkId <= Id::CHECK_NONAVPLAYERS )
+    {
+        u8 upperNonExecutingPlayersId = u8(checkId-Id::CHECK_UNUSED1+9);
+        if ( checkNonExecutingPlayers[upperNonExecutingPlayersId].isChecked() )
         {
-            u8 player = u8(checkId-Id::CHECK_PLAYER1);
-            if ( checkMainPlayers[player].isChecked() )
-                trig->owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
+            if ( trig.getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
+                (u8 &)trig.owners[checkId-Id::CHECK_PLAYER1] |= Chk::Trigger::Owned::Yes;
             else
-                trig->owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
+                trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
         }
-        else if ( checkId >= Id::CHECK_FORCE1 && checkId <= Id::CHECK_FORCE4 )
+        else
         {
-            u8 force = u8(checkId-Id::CHECK_FORCE1);
-            if ( checkForces[force].isChecked() )
-                trig->owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
+            if ( trig.getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
+                (u8 &)trig.owners[checkId-Id::CHECK_PLAYER1] &= ~Chk::Trigger::Owned::Yes;
             else
-                trig->owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
+                trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
         }
-        else if ( checkId == Id::CHECK_ALL_PLAYERS )
-        {
-            if ( checkAllPlayers.isChecked() )
-                trig->owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
-            else
-                trig->owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
-        }
-        else if ( checkId >= Id::CHECK_PLAYER9 && checkId <= Id::CHECK_NEUTRALPLAYERS )
-        {
-            u8 lowerNonExecutingPlayersId = u8(checkId-Id::CHECK_PLAYER9);
-            if ( checkNonExecutingPlayers[lowerNonExecutingPlayersId].isChecked() )
-                trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
-            else
-                trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
-        }
-        else if ( checkId >= Id::CHECK_UNUSED1 && checkId <= Id::CHECK_NONAVPLAYERS )
-        {
-            u8 upperNonExecutingPlayersId = u8(checkId-Id::CHECK_UNUSED1+9);
-            if ( checkNonExecutingPlayers[upperNonExecutingPlayersId].isChecked() )
-            {
-                if ( trig->getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
-                    (u8 &)trig->owners[checkId-Id::CHECK_PLAYER1] |= Chk::Trigger::Owned::Yes;
-                else
-                    trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
-            }
-            else
-            {
-                if ( trig->getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
-                    (u8 &)trig->owners[checkId-Id::CHECK_PLAYER1] &= ~Chk::Trigger::Owned::Yes;
-                else
-                    trig->owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
-            }
-        }
-        else if ( checkId == Id::CHECK_ALLOWRAWEDIT )
-        {
-            if ( checkAllowRawEdit.isChecked() )
-                editRawPlayers.EnableThis();
-            else
-                editRawPlayers.DisableThis();
-        }
-        
+    }
+    else if ( checkId == Id::CHECK_ALLOWRAWEDIT )
+    {
+        if ( checkAllowRawEdit.isChecked() )
+            editRawPlayers.EnableThis();
+        else
+            editRawPlayers.DisableThis();
     }
     RefreshWindow(trigIndex);
 }
@@ -250,14 +243,11 @@ void TrigPlayersWindow::OnLeave()
 
 void TrigPlayersWindow::ParseRawPlayers()
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        if ( editRawPlayers.GetHexByteString((u8*)&trigger->owners[0], 27) )
-            CM->notifyChange(false);
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    if ( editRawPlayers.GetHexByteString((u8*)&trigger.owners[0], 27) )
+        CM->notifyChange(false);
         
-        RefreshWindow(trigIndex);
-    }
+    RefreshWindow(trigIndex);
 }
 
 void TrigPlayersWindow::ToggleAdvancedMode()

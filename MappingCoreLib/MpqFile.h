@@ -16,10 +16,6 @@
     MpqFile is in turn built on top of a version of StormLib that has been modified for use in Mapping Core
 */
 
-enum class AssetAction;
-class ModifiedAsset;
-using ModifiedAssetPtr = std::shared_ptr<ModifiedAsset>;
-
 enum_t(WavQuality, uint32_t, {
     Low = MPQ_WAVE_QUALITY_LOW,
     Med = MPQ_WAVE_QUALITY_MEDIUM,
@@ -154,13 +150,11 @@ public:
     WavQuality wavQualitySelected;
     AssetAction actionTaken;
 
+    ModifiedAsset() = delete;
     ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
-    virtual ~ModifiedAsset();
 
 private:
     static u64 nextAssetId; // Changes are needed if this is accessed in a multi-threaded environment
-
-    ModifiedAsset(); // Disallow ctor
 };
 
 extern std::vector<FilterEntry<u32>> getMpqFilter();

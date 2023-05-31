@@ -82,6 +82,8 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
         else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
+        else if ( saveType == SaveType::RemasteredScx || saveType == SaveType::RemasteredChk || saveType == SaveType::AllMaps ) // Remastered Map, edit to match
+            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Remastered);
 
         if ( !versionCorrect )
         {
@@ -91,9 +93,10 @@ bool MapFile::save(const std::string & saveFilePath, bool updateListFile, bool l
 
         updateSaveSections();
 
-        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm || saveType == SaveType::ExpansionScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
+              saveType == SaveType::ExpansionScx || saveType == SaveType::RemasteredScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
-            if ( !saveAs || (saveAs && makeFileCopy(mapFilePath, saveFilePath)) ) // If using save-as, copy the existing mpq to the new location
+            if ( !saveAs || (saveAs && (!MpqFile::isValid(mapFilePath) || makeFileCopy(mapFilePath, saveFilePath))) ) // If using save-as and existing is mpq, copy mpq to the new location
             {
                 std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                 Scenario::write(chk);
@@ -203,7 +206,9 @@ bool MapFile::openTemporaryMpq()
             {
                 assetFileDirectory = getSystemFileDirectory(mapFilePath, true);
                 assetFilePath = makeSystemFilePath(assetFileDirectory, std::to_string(nextAssetFileId) + ".mpq");
-            } while ( ::findFile(assetFilePath) ); // Try again if the file already exists
+                nextAssetFileId ++;
+            }
+            while ( ::findFile(assetFilePath) ); // Try again if the file already exists
         }
         else // Use the C library to find an appropriate temporary location
         {
@@ -252,12 +257,14 @@ bool MapFile::openMapFile(const std::string & filePath)
                 std::copy(chkData.begin(), chkData.end(), std::ostream_iterator<u8>(chk));
                 if ( Scenario::read(chk) )
                 {
-                    if ( Scenario::versions.isOriginal() )
+                    if ( Scenario::isOriginal() )
                         saveType = SaveType::StarCraftScm; // Vanilla
-                    else if ( Scenario::versions.isHybrid() )
+                    else if ( Scenario::isHybrid() )
                         saveType = SaveType::HybridScm; // Hybrid
-                    else
+                    else if ( Scenario::isExpansion() )
                         saveType = SaveType::ExpansionScx; // Expansion
+                    else if ( Scenario::isRemastered() )
+                        saveType = SaveType::RemasteredScx; // Remastered
                     
                     auto finish = std::chrono::high_resolution_clock::now();
                     logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -277,12 +284,14 @@ bool MapFile::openMapFile(const std::string & filePath)
             std::ifstream chk(filePath, std::ios_base::binary|std::ios_base::in);
             if ( Scenario::read(chk) )
             {
-                if ( Scenario::versions.isOriginal() )
+                if ( Scenario::isOriginal() )
                     saveType = SaveType::StarCraftChk; // Vanilla chk
-                else if ( Scenario::versions.isHybrid() )
+                else if ( Scenario::isHybrid() )
                     saveType = SaveType::HybridChk; // Hybrid chk
-                else
+                else if ( Scenario::isExpansion() )
                     saveType = SaveType::ExpansionChk; // Expansion chk
+                else
+                    saveType = SaveType::RemasteredChk;
                 
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -299,19 +308,19 @@ bool MapFile::openMapFile(const std::string & filePath)
 
 bool MapFile::processModifiedAssets(bool updateListFile)
 {
-    std::vector<std::vector<ModifiedAssetPtr>::iterator> processedAssets;
+    std::vector<std::vector<ModifiedAsset>::iterator> processedAssets;
     if ( openTemporaryMpq() )
     {
         for ( auto modifiedAsset = modifiedAssets.begin(); modifiedAsset != modifiedAssets.end(); ++modifiedAsset )
         {
-            const std::string & assetMpqPath = (*modifiedAsset)->assetMpqPath;
-            if ( (*modifiedAsset)->actionTaken == AssetAction::Add )
+            const std::string & assetMpqPath = modifiedAsset->assetMpqPath;
+            if ( modifiedAsset->actionTaken == AssetAction::Add )
             {
                 std::vector<u8> assetBuffer;
-                if ( temporaryMpq.getFile((*modifiedAsset)->assetTempMpqPath, assetBuffer) )
+                if ( temporaryMpq.getFile(modifiedAsset->assetTempMpqPath, assetBuffer) )
                 {
-                    temporaryMpq.removeFile((*modifiedAsset)->assetTempMpqPath);
-                    if ( MpqFile::addFile(assetMpqPath, assetBuffer, (*modifiedAsset)->wavQualitySelected) )
+                    temporaryMpq.removeFile(modifiedAsset->assetTempMpqPath);
+                    if ( MpqFile::addFile(assetMpqPath, assetBuffer, modifiedAsset->wavQualitySelected) )
                         processedAssets.push_back(modifiedAsset);
                     else
                         CHKD_ERR("Failed to save %s to destination file", assetMpqPath.c_str());
@@ -319,7 +328,7 @@ bool MapFile::processModifiedAssets(bool updateListFile)
                 else
                     CHKD_ERR("Failed to read in temporary asset!");
             }
-            else if ( (*modifiedAsset)->actionTaken == AssetAction::Remove )
+            else if ( modifiedAsset->actionTaken == AssetAction::Remove )
             {
                 if ( MpqFile::removeFile(assetMpqPath) )
                     processedAssets.push_back(modifiedAsset);
@@ -345,6 +354,11 @@ bool MapFile::processModifiedAssets(bool updateListFile)
     }
 }
 
+SaveType MapFile::getSaveType()
+{
+    return saveType;
+}
+
 void MapFile::setSaveType(SaveType newSaveType)
 {
     saveType = newSaveType;
@@ -362,11 +376,11 @@ bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::st
     {
         if ( openTemporaryMpq() )
         {
-            ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-            const std::string & tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
+            ModifiedAsset modifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality);
+            const std::string & tempMpqPath = modifiedAsset.assetTempMpqPath;
             if ( temporaryMpq.addFile(tempMpqPath, assetSystemFilePath) )
             {
-                modifiedAssets.push_back(modifiedAssetPtr);
+                modifiedAssets.push_back(modifiedAsset);
                 success = true;
             }
             else
@@ -389,13 +403,13 @@ bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vecto
     bool success = false;
     if ( openTemporaryMpq() )
     {
-        ModifiedAssetPtr modifiedAssetPtr = ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality));
-        const std::string & tempMpqPath = modifiedAssetPtr->assetTempMpqPath;
+        ModifiedAsset modifiedAsset = ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality);
+        const std::string & tempMpqPath = modifiedAsset.assetTempMpqPath;
         if ( temporaryMpq.open(temporaryMpqPath, false, true) )
         {
-            if ( temporaryMpq.addFile(modifiedAssetPtr->assetTempMpqPath, asset) )
+            if ( temporaryMpq.addFile(modifiedAsset.assetTempMpqPath, asset) )
             {
-                modifiedAssets.push_back(modifiedAssetPtr);
+                modifiedAssets.push_back(modifiedAsset);
                 success = true;
             }
             else
@@ -418,7 +432,7 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
     auto recentlyAddedAsset = modifiedAssets.end();
     for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
     {
-        if ( (*asset) != nullptr && (*asset)->assetMpqPath == assetMpqFilePath )
+        if ( asset->assetMpqPath == assetMpqFilePath )
         {
             recentlyAddedAsset = asset;
             break;
@@ -428,7 +442,7 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
     if ( recentlyAddedAsset != modifiedAssets.end() ) // Asset was added between last save and now, cancel its addition
     {
         // Get the temp mpq file path used for this asset
-        const std::string tempMpqFilePath = (*recentlyAddedAsset)->assetTempMpqPath;
+        const std::string tempMpqFilePath = recentlyAddedAsset->assetTempMpqPath;
 
         // Remove the asset from the list of assets to be added to the actual map file
         modifiedAssets.erase(recentlyAddedAsset);
@@ -441,16 +455,16 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
         }
     }
     else // The given file was not added recently, mark it for deletion at the next save
-        modifiedAssets.push_back(ModifiedAssetPtr(new ModifiedAsset(assetMpqFilePath, AssetAction::Remove)));
+        modifiedAssets.push_back(ModifiedAsset(assetMpqFilePath, AssetAction::Remove));
 }
 
 bool MapFile::getMpqAsset(const std::string & assetMpqFilePath, std::vector<u8> & outAssetBuffer)
 {
     bool success = false;
-    for ( auto asset : modifiedAssets ) // Check if it's a recently added asset
+    for ( auto & asset : modifiedAssets ) // Check if it's a recently added asset
     {
-        if ( asset->actionTaken == AssetAction::Add && asset->assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
-            return openTemporaryMpq() && temporaryMpq.getFile(asset->assetTempMpqPath, outAssetBuffer);
+        if ( asset.actionTaken == AssetAction::Add && asset.assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
+            return openTemporaryMpq() && temporaryMpq.getFile(asset.assetTempMpqPath, outAssetBuffer);
     }
 
     if ( MpqFile::open(mapFilePath, true, false) )
@@ -477,8 +491,7 @@ bool MapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::s
 
 bool MapFile::getSound(size_t stringId, std::vector<u8> & outSoundData)
 {
-    RawStringPtr soundString = Scenario::strings.getString<RawString>(stringId);
-    if ( soundString != nullptr )
+    if ( auto soundString = Scenario::getString<RawString>(stringId) )
         return getMpqAsset(*soundString, outSoundData);
     else
         return false;
@@ -486,10 +499,10 @@ bool MapFile::getSound(size_t stringId, std::vector<u8> & outSoundData)
 
 bool MapFile::addSound(size_t stringId)
 {
-    RawStringPtr soundString = Scenario::strings.getString<RawString>(stringId, Chk::Scope::Game);
-    if ( soundString != nullptr && MpqFile::findFile(mapFilePath, *soundString) )
+    auto soundString = Scenario::getString<RawString>(stringId, Chk::StrScope::Game);
+    if ( soundString && MpqFile::findFile(mapFilePath, *soundString) )
     {
-        Scenario::triggers.addSound(stringId);
+        Scenario::addSound(stringId);
         return true;
     }
     return false;
@@ -506,19 +519,19 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
 {
     if ( virtualFile )
     {
-        size_t soundStringId = Scenario::strings.addString(RawString(srcFilePath), Chk::Scope::Game);
+        size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::StrScope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::triggers.addSound(soundStringId);
+            Scenario::addSound(soundStringId);
             return true;
         }
     }
     else if ( addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
-        size_t soundStringId = Scenario::strings.addString(RawString(destMpqPath), Chk::Scope::Game);
+        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::StrScope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::triggers.addSound(soundStringId);
+            Scenario::addSound(soundStringId);
             return true;
         }
         else
@@ -532,10 +545,10 @@ bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & 
     bool success = false;
     if ( addMpqAsset(destMpqPath, soundContents, wavQuality) )
     {
-        size_t soundStringId = Scenario::strings.addString(RawString(destMpqPath), Chk::Scope::Game);
+        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::StrScope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::triggers.addSound(soundStringId);
+            Scenario::addSound(soundStringId);
             return true;
         }
         else
@@ -546,14 +559,14 @@ bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & 
 
 bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
 {
-    size_t soundStringId = Scenario::triggers.getSoundStringId(soundIndex);
+    size_t soundStringId = Scenario::getSoundStringId(soundIndex);
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
-        Scenario::triggers.setSoundStringId(soundIndex, 0);
-        if ( soundString != nullptr )
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        Scenario::setSoundStringId(soundIndex, 0);
+        if ( soundString )
         {
-            Scenario::strings.deleteString(soundStringId);
+            Scenario::deleteString(soundStringId);
             removeMpqAsset(*soundString);
         }
         return true;
@@ -565,9 +578,9 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 {
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
-        Scenario::strings.deleteString(soundStringId);
-        if ( soundString != nullptr )
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        Scenario::deleteString(soundStringId);
+        if ( soundString )
             removeMpqAsset(*soundString);
 
         return true;
@@ -577,17 +590,17 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 
 SoundStatus MapFile::getSoundStatus(size_t soundStringId)
 {
-    if ( Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
-        !Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+    if ( Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Editor) &&
+        !Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Game) )
         return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
     {
-        RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId, Chk::Scope::Game);
-        if ( soundString != nullptr )
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        if ( soundString )
         {
-            for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
+            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
             {
-                if ( modifiedAsset->actionTaken == AssetAction::Add && soundString->compare(modifiedAsset->assetMpqPath) == 0 )
+                if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
                     return SoundStatus::PendingMatch;
             }
 
@@ -615,30 +628,30 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
 {
     std::map<size_t/*stringId*/, u16/*soundIndex*/> soundMap;
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
-        soundMap.insert(std::pair<size_t, u16>(i, (u16)Scenario::triggers.getSoundStringId(i)));
-    for ( size_t i=0; i<Scenario::triggers.numTriggers(); i++ )
+        soundMap.insert(std::pair<size_t, u16>(i, (u16)Scenario::getSoundStringId(i)));
+    for ( size_t i=0; i<Scenario::numTriggers(); i++ )
     {
-        Chk::TriggerPtr trigger = Scenario::triggers.getTrigger(i);
+        const auto & trigger = Scenario::getTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
-                trigger->actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
+                trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                soundMap.insert(std::pair<size_t, u16>((size_t)trigger->actions[actionIndex].soundStringId, u16_max));
+                soundMap.insert(std::pair<size_t, u16>((size_t)trigger.actions[actionIndex].soundStringId, u16_max));
             }
         }
     }
-    for ( size_t i=0; i<Scenario::triggers.numBriefingTriggers(); i++ )
+    for ( size_t i=0; i<Scenario::numBriefingTriggers(); i++ )
     {
-        Chk::TriggerPtr trigger = Scenario::triggers.getBriefingTrigger(i);
+        const auto & trigger = Scenario::getBriefingTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
-            if ( (trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
-                trigger->actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
-                trigger->actions[actionIndex].soundStringId != Chk::StringId::NoString )
+            if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                soundMap.insert(std::pair<size_t, u16>((size_t)trigger->actions[actionIndex].soundStringId, u16_max));
+                soundMap.insert(std::pair<size_t, u16>((size_t)trigger.actions[actionIndex].soundStringId, u16_max));
             }
         }
     }
@@ -647,37 +660,33 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
     {
         size_t soundStringId = entry.first;
         
-        if ( Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
-            !Scenario::strings.stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+        if ( Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Editor) &&
+            !Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Game) )
         { // Extended strings are not used in SC and therefore never match
             outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatchExtended));
         }
-        else
+        else if ( auto soundString = Scenario::getString<RawString>(soundStringId) )
         {
-            RawStringPtr soundString = Scenario::strings.getString<RawString>(soundStringId);
-            if ( soundString != nullptr )
+            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
             {
-                for ( ModifiedAssetPtr modifiedAsset : modifiedAssets )
+                if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
                 {
-                    if ( modifiedAsset->actionTaken == AssetAction::Add && soundString->compare(modifiedAsset->assetMpqPath) == 0 )
-                    {
-                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::PendingMatch));
-                        continue;
-                    }
+                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::PendingMatch));
+                    continue;
                 }
-
-                if ( MapFile::open(mapFilePath, true, false) )
-                {
-                    if ( MapFile::findFile(*soundString) )
-                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::CurrentMatch));
-                    else
-                        outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatch));
-
-                    MapFile::close();
-                }
-                else
-                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::FileInUse));
             }
+
+            if ( MapFile::open(mapFilePath, true, false) )
+            {
+                if ( MapFile::findFile(*soundString) )
+                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::CurrentMatch));
+                else
+                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatch));
+
+                MapFile::close();
+            }
+            else
+                outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::FileInUse));
         }
     }
     return true;
@@ -715,7 +724,7 @@ const std::string & MapFile::getFilePath() const
     return mapFilePath;
 }
 
-bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::string & saveFilePath, output_param bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const
+bool MapFile::getSaveDetails(SaveType & saveType, std::string & saveFilePath, bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const
 {
     if ( fileBrowser != nullptr )
     {
@@ -729,10 +738,12 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
             {
                 if ( newSaveType == SaveType::StarCraftScm || newSaveType == SaveType::HybridScm )
                     newSaveFilePath += ".scm";
-                else if ( newSaveType == SaveType::ExpansionScx || newSaveType == SaveType::AllMaps || newSaveType == SaveType::AllFiles )
+                else if ( newSaveType == SaveType::ExpansionScx || newSaveType == SaveType::RemasteredScx ||
+                          newSaveType == SaveType::AllMaps || newSaveType == SaveType::AllFiles )
                 {
                     newSaveFilePath += ".scx";
-                    newSaveType = SaveType::ExpansionScx;
+                    if ( newSaveType == SaveType::AllMaps || newSaveType == SaveType::AllFiles )
+                        newSaveType = SaveType::RemasteredScx;
                 }
                 else if ( newSaveType == SaveType::StarCraftChk || newSaveType == SaveType::HybridChk || newSaveType == SaveType::ExpansionChk )
                     newSaveFilePath += ".chk";
@@ -741,9 +752,12 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
             }
             else // Extension specified, give it precedence over filterIndex (that is, update newSaveType if it's not already appropriate for the extension)
             {
-                if ( extension == ".chk" && newSaveType != SaveType::StarCraftChk && newSaveType != SaveType::HybridChk && newSaveType != SaveType::ExpansionChk && newSaveType != SaveType::AllChk )
+                if ( extension == ".chk" && newSaveType != SaveType::StarCraftChk && newSaveType != SaveType::HybridChk &&
+                     newSaveType != SaveType::ExpansionChk && newSaveType != SaveType::RemasteredChk && newSaveType != SaveType::AllChk )
                 {
-                    if ( newSaveType == SaveType::ExpansionScx )
+                    if ( newSaveType == SaveType::RemasteredScx )
+                        newSaveType = SaveType::RemasteredChk;
+                    else if ( newSaveType == SaveType::ExpansionScx )
                         newSaveType = SaveType::ExpansionChk;
                     else if ( newSaveType == SaveType::StarCraftScm )
                         newSaveType = SaveType::StarCraftChk;
@@ -757,10 +771,10 @@ bool MapFile::getSaveDetails(inout_param SaveType & saveType, output_param std::
                     else // Default to hybrid scm
                         newSaveType = SaveType::HybridScm;
                 }
-                else if ( extension == ".scx" && newSaveType != SaveType::ExpansionScx )
+                else if ( extension == ".scx" && newSaveType != SaveType::ExpansionScx && newSaveType != SaveType::RemasteredScx )
                     newSaveType = SaveType::ExpansionScx;
                 else if ( newSaveType == SaveType::AllMaps )
-                    newSaveType = SaveType::ExpansionScx; // Default to expansion scx
+                    newSaveType = SaveType::RemasteredScx; // Default to remastered scx
             }
 
             bool fileExists = ::findFile(newSaveFilePath);
@@ -784,9 +798,11 @@ std::string saveTypeToStr(const SaveType & saveType)
         case SaveType::StarCraftScm: return "StarCraft Map(*.scm)"; break;
         case SaveType::HybridScm: return "StarCraft Hybrid Map(*.scm)"; break;
         case SaveType::ExpansionScx: return "BroodWar Map(*.scx)"; break;
+        case SaveType::RemasteredScx: return "StarCraft Remastered Map(*.scx)"; break;
         case SaveType::StarCraftChk: return "Raw StarCraft Map(*.chk)"; break;
         case SaveType::HybridChk: return "Raw StarCraft Hybrid Map(*.chk)"; break;
         case SaveType::ExpansionChk: return "Raw BroodWar Map(*.chk)"; break;
+        case SaveType::RemasteredChk: return "Raw StarCraft Remastered Map(*.chk)"; break;
         case SaveType::AllScm: return "All Scm"; break;
         case SaveType::AllScx: return "All Scx"; break;
         case SaveType::AllChk: return "All Chk"; break;
@@ -811,9 +827,11 @@ std::vector<FilterEntry<SaveType>> getSaveMapFilters()
         FilterEntry<SaveType>(SaveType::StarCraftScm, "*.scm", "StarCraft Map(*.scm)", ".scm"),
         FilterEntry<SaveType>(SaveType::HybridScm, "*.scm", "StarCraft Hybrid Map(*.scm)", ".scm"),
         FilterEntry<SaveType>(SaveType::ExpansionScx, "*.scx", "BroodWar Map(*.scx)", ".scx"),
+        FilterEntry<SaveType>(SaveType::RemasteredScx, "*.scx", "StarCraft Remastered Map(*.scx)", ".scx"),
         FilterEntry<SaveType>(SaveType::StarCraftChk, "*.chk", "Raw StarCraft Map(*.chk)", ".chk"),
         FilterEntry<SaveType>(SaveType::HybridChk, "*.chk", "Raw StarCraft Hybrid Map(*.chk)", ".chk"),
         FilterEntry<SaveType>(SaveType::ExpansionChk, "*.chk", "Raw BroodWar Map(*.chk)", ".chk"),
+        FilterEntry<SaveType>(SaveType::RemasteredChk, "*.chk", "Raw StarCraft Remastered Map(*.chk)", ".chk"),
         FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps", ".scx"),
         FilterEntry<SaveType>(SaveType::AllFiles, "*", "All Files")
     };

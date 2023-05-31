@@ -68,6 +68,8 @@ extern const std::vector<std::string> playerOwners;
 
 extern const std::vector<std::string> playerRaces;
 
+extern const std::vector<std::string> specialColors;
+
 extern const std::vector<std::string> playerColors;
 
 extern const std::vector<std::string> triggerPlayers;
