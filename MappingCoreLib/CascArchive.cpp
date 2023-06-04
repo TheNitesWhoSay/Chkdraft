@@ -1,5 +1,5 @@
-#include "../CascLib/src/CascLib.h" // Keep at top
-#include "CascArchive.h" // Don't move to top, see https://github.com/ladislav-zezula/CascLib/issues/215#issuecomment-1573182157
+#include "CascArchive.h"
+#include "../CascLib/src/CascLib.h"
 #include <SimpleIcu.h>
 #include <fstream>
 
