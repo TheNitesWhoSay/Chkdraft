@@ -17,7 +17,7 @@
 */
 
 #ifdef CHKDRAFT
-bool getPreSavePath(std::string & outPreSavePath); // Gets path holding assets to be written to the map file on save
+std::optional<std::string> getPreSavePath(); // Gets path holding assets to be written to the map file on save
 #endif
 
 class SimpleMapBrowser;
@@ -33,7 +33,7 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
 
         virtual ~MapFile();
         
-        virtual bool save(const std::string & saveFilePath, bool updateListFile = true, bool lockAnywhere = true, bool autoDefragmentLocations = true);
+        virtual bool save(const std::string & saveFilePath, bool overwriting = false, bool updateListFile = true, bool lockAnywhere = true, bool autoDefragmentLocations = true);
         virtual bool save(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),
             bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
@@ -48,10 +48,10 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         bool addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
         bool addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
         void removeMpqAsset(const std::string & assetMpqFilePath);
-        bool getMpqAsset(const std::string & assetMpqFilePath, std::vector<u8> & outAssetBuffer);
+        std::optional<std::vector<u8>> getMpqAsset(const std::string & assetMpqFilePath);
         bool extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
 
-        bool getSound(size_t stringId, std::vector<u8> & outSoundData);
+        std::optional<std::vector<u8>> getSound(size_t stringId);
         bool addSound(size_t stringId); // Adds a sound string to the sound list
         bool addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
         bool addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);

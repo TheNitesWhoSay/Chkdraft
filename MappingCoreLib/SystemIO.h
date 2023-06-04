@@ -1,8 +1,8 @@
 #ifndef SYSTEMIO_H
 #define SYSTEMIO_H
 #include <fstream>
-#include <direct.h>
 #include <algorithm>
+#include <optional>
 #include <vector>
 #include <map>
 
@@ -37,10 +37,13 @@ std::string getMpqFileExtension(const std::string & mpqFilePath, bool includeExt
 std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName); // Creates a mpq file path ensuring the appropriate separator is used
 std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
 
+bool isDirectory(const std::string & directory);
 bool findFile(const std::string & filePath);
 bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes);
 
-bool fileToString(const std::string & fileName, std::string & str);
+std::optional<std::string> fileToString(const std::string & fileName);
+std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath);
+bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & buffer);
 
 bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath);
 bool makeDirectory(const std::string & directory);
@@ -49,7 +52,7 @@ bool removeFile(const std::string & filePath);
 bool removeFiles(const std::string & firstFileName, const std::string & secondFileName);
 bool removeFiles(const std::string & firstFileName, const std::string & secondFileName, const std::string & thirdFileName);
 
-bool getModuleDirectory(std::string & moduleDirectory, bool includeTrailingSeparator = false);
+std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator = false);
 
 bool getDefaultScPath(std::string & data);
 std::string getDefaultScPath();

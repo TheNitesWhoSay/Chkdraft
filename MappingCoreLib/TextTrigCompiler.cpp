@@ -1943,7 +1943,7 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
         case Chk::Action::ArgType::Sound:
             returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end, trigIndex, actionIndex) ||
                 parseLong(text, currAction.soundStringId, pos, end),
-                "Expected: Wav name or 4-byte wavID" );
+                "Expected: Sound name or 4-byte soundID" );
         case Chk::Action::ArgType::Duration:
             returnMsg( parseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );

@@ -31,18 +31,18 @@ namespace WinLib {
     template <typename numType>
     bool DropdownControl::GetEditNum(numType & dest)
     {
-        std::string text;
-        if ( GetWinText(text) && text.length() > 0 )
+        auto text = GetWinText();
+        if ( text && text->length() > 0 )
         {
             errno = 0;
             char* endPtr = nullptr;
-            long long temp = std::strtoll(text.c_str(), &endPtr, 0);
+            long long temp = std::strtoll(text->c_str(), &endPtr, 0);
             if ( temp != 0 )
             {
                 dest = (numType)temp;
                 return true;
             }
-            else if ( errno == 0 && endPtr == &text[text.size()] )
+            else if ( errno == 0 && endPtr == &text.value()[text->size()] )
             {
                 dest = 0;
                 return true;

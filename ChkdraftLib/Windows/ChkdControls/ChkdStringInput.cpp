@@ -261,7 +261,7 @@ void ChkdStringInputDialog::GameStringWindow::ApplyChanges()
     if ( checkNoString.isChecked() )
         parent.newGameString = std::nullopt;
     else
-        parent.newGameString = std::optional<ChkdString>(editString.GetWinText());
+        parent.newGameString = editString.GetWinText();
 }
 
 void ChkdStringInputDialog::GameStringWindow::FocusThis()
@@ -373,7 +373,7 @@ void ChkdStringInputDialog::EditorStringWindow::ApplyChanges()
     if ( checkNoString.isChecked() )
         parent.newEditorString = std::nullopt;
     else
-        parent.newEditorString = std::optional<ChkdString>(editString.GetWinText());
+        parent.newEditorString = editString.GetWinText();
 }
 
 void ChkdStringInputDialog::EditorStringWindow::FocusThis()

@@ -1,4 +1,6 @@
 #include "Sc.h"
+#include "MpqFile.h"
+#include "CascArchive.h"
 #include <chrono>
 
 const std::string Sc::DataFile::starCraftFileName = "StarCraft.exe";
@@ -23,8 +25,8 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getStarCraftExeFilter()
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starCraftFileName, "StarCraft Executable") };
 }
 
-Sc::DataFile::Descriptor::Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
-    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory)
+Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
+    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), optionalIfCascFound(isOptionalIfCascFound)
 {
 
 }
@@ -54,34 +56,49 @@ bool Sc::DataFile::Descriptor::isExpectedInScDirectory() const
     return expectedInScDirectory;
 }
 
+bool Sc::DataFile::Descriptor::isCasc() const
+{
+    return isCascDataFile;
+}
+
+bool Sc::DataFile::Descriptor::isOptionalIfCascFound() const
+{
+    return optionalIfCascFound;
+}
+
 void Sc::DataFile::Descriptor::setExpectedFilePath(const std::string & expectedFilePath)
 {
     this->expectedFilePath = expectedFilePath;
 }
 
-std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
+std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
 {
-    return std::unordered_map<Priority, Descriptor> {
-        { Priority::StarDat, Descriptor(Priority::StarDat, starDatFileName, "", FileBrowserPtr<u32>(new FileBrowser<u32>(getStarDatFilter(), ""))) },
-        { Priority::BrooDat, Descriptor(Priority::BrooDat, brooDatFileName, "", FileBrowserPtr<u32>(new FileBrowser<u32>(getBrooDatFilter(), ""))) },
-        { Priority::PatchRt, Descriptor(Priority::PatchRt, patchRtFileName, "", FileBrowserPtr<u32>(new FileBrowser<u32>(getPatchRtFilter(), ""))) },
+    return std::vector<Descriptor> {
+        Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
+        Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+        Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+        Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
     };
 }
 
-std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
-    const std::unordered_map<Priority, Descriptor> & dataFiles,
+std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
+    const std::vector<Descriptor> & constDataFileDescriptors,
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
-    std::unordered_map<Priority, MpqFilePtr> openedDataFiles;
-    std::string starCraftDirectory = "";
-    bool foundStarCraftDirectory = false;
-    bool declinedStarCraftBrowse = false;
+    std::vector<Descriptor> dataFileDescriptors = constDataFileDescriptors;
+    std::sort(dataFileDescriptors.begin(), dataFileDescriptors.end(),
+        [](const Descriptor & l, const Descriptor & r) { return l.getPriority() < r.getPriority(); });
 
-    for ( auto dataFile : dataFiles )
+    std::unordered_map<Priority, ArchiveFilePtr> openedDataFiles;
+    std::string scDirectory = "";
+    bool foundStarCraftDirectory = false;
+    bool declinedScBrowser = false;
+    bool openedCasc = false;
+
+    for ( auto dataFileDescriptor : dataFileDescriptors )
     {
-        Priority dataFilePriority = dataFile.first;
-        Descriptor dataFileDescriptor = dataFile.second;
+        Priority dataFilePriority = dataFileDescriptor.getPriority();
         if ( dataFilePriority != dataFileDescriptor.getPriority() )
             throw std::exception("The dataFilePriority provided in the dataFile key must match the dataFilePriority in the associated descriptor.");
 
@@ -89,29 +106,39 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
         const std::string & expectedFilePath = dataFileDescriptor.getExpectedFilePath();
         const FileBrowserPtr<u32> browser = dataFileDescriptor.getBrowser();
         const bool expectedInScDirectory = dataFileDescriptor.isExpectedInScDirectory();
-        bool skipStarCraftBrowse = expectedInScDirectory && declinedStarCraftBrowse;
+        bool isOptional = openedCasc && dataFileDescriptor.isOptionalIfCascFound();
+        bool skipStarCraftBrowse = isOptional || (expectedInScDirectory && declinedScBrowser);
+        bool foundRemastered = false;
 
         bool opened = false;
         u32 filterIndex = 0;
         std::string browsedFilePath = "";
-        MpqFilePtr mpqFile = nullptr;
+        ArchiveFilePtr dataFile = nullptr;
 
         if ( !expectedFilePath.empty() && findFile(expectedFilePath) )
-            mpqFile = openDataFile(expectedFilePath, dataFileDescriptor);
-        else if ( !skipStarCraftBrowse && expectedInScDirectory && (foundStarCraftDirectory || findStarCraftDirectory(starCraftDirectory, declinedStarCraftBrowse, expectedStarCraftDirectory, starCraftBrowser))
-            && findFile(makeSystemFilePath(starCraftDirectory, fileName)) )
+        {
+            dataFile = openDataFile(expectedFilePath, dataFileDescriptor);
+        }
+        else if ( !skipStarCraftBrowse && expectedInScDirectory &&
+            (foundStarCraftDirectory || (foundStarCraftDirectory = findStarCraftDirectory(scDirectory, foundRemastered, declinedScBrowser, expectedStarCraftDirectory, starCraftBrowser)))
+            && (foundRemastered || findFile(makeSystemFilePath(scDirectory, fileName))) )
         {
             foundStarCraftDirectory = true;
-            mpqFile = openDataFile(makeSystemFilePath(starCraftDirectory, fileName), dataFileDescriptor);
+            dataFile = openDataFile(makeSystemFilePath(scDirectory, fileName), dataFileDescriptor);
         }
-        else if ( browser != nullptr && browser->promptTryBrowse("Failed to find " + fileName + " would you like to locate it manually?") && browser->browseForOpenPath(browsedFilePath, filterIndex) )
-            mpqFile = openDataFile(browsedFilePath, dataFileDescriptor);
+        else if ( !isOptional && browser != nullptr && browser->promptTryBrowse("Failed to find " + fileName + " would you like to locate it manually?") && browser->browseForOpenPath(browsedFilePath, filterIndex) )
+            dataFile = openDataFile(browsedFilePath, dataFileDescriptor);
 
-        if ( mpqFile != nullptr )
-            openedDataFiles.insert({dataFilePriority, mpqFile});
+        if ( dataFile != nullptr )
+        {
+            if ( dataFileDescriptor.isCasc() )
+                openedCasc = true;
+
+            openedDataFiles.insert({dataFilePriority, dataFile});
+        }
     }
 
-    std::vector<MpqFilePtr> orderedDataFiles;
+    std::vector<ArchiveFilePtr> orderedDataFiles;
     std::list<Priority> dataFilePriorities;
     for ( auto openedDataFile : openedDataFiles )
         dataFilePriorities.push_back(openedDataFile.first);
@@ -123,12 +150,20 @@ std::vector<MpqFilePtr> Sc::DataFile::Browser::openScDataFiles(
     return orderedDataFiles;
 }
 
-bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedStarCraftBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedStarCraftBrowse,
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
     if ( !expectedStarCraftDirectory.empty() && findFile(makeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
     {
         starCraftDirectory = expectedStarCraftDirectory;
+        isRemastered = false;
+        return true;
+    }
+    else if ( isDirectory(makeSystemFilePath(expectedStarCraftDirectory, "Data")) )
+    {
+        starCraftDirectory = expectedStarCraftDirectory;
+        isRemastered = true;
         return true;
     }
     else if ( starCraftBrowser != nullptr )
@@ -137,7 +172,19 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirect
         if ( starCraftBrowser->promptTryBrowse("Failed to find " + starCraftFileName + " would you like to locate it manually?") &&
             starCraftBrowser->browseForOpenPath(starCraftFilePath, filterIndex) )
         {
+            isRemastered = false;
             starCraftDirectory = getSystemFileDirectory(starCraftFilePath, false);
+            auto directoryName = getSystemFileName(starCraftDirectory);
+            if ( directoryName == "x86" || directoryName == "x86_64" )
+            {
+                auto remasteredDirectory = getSystemFileDirectory(starCraftDirectory, true);
+                auto dataDirectory = remasteredDirectory + "Data";
+                if ( ::isDirectory(dataDirectory) )
+                {
+                    isRemastered = true;
+                    starCraftDirectory = remasteredDirectory;
+                }
+            }
             return true;
         }
         else
@@ -146,16 +193,20 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirect
     return false;
 }
 
-MpqFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor)
+ArchiveFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor)
 {
-    MpqFilePtr mpqFile = MpqFilePtr(new MpqFile());
+    ArchiveFilePtr archiveFile = dataFileDescriptor.isCasc() ?
+        std::static_pointer_cast<ArchiveFile>(std::make_shared<CascArchive>()) :
+        std::static_pointer_cast<ArchiveFile>(std::make_shared<MpqFile>());
+
     do
     {
-        if ( mpqFile->open(dataFilePath, true, false) )
-            return mpqFile;
+        if ( archiveFile->open(dataFilePath, true, false) )
+            return archiveFile;
     }
     while ( dataFileDescriptor.getBrowser() != nullptr &&
             dataFileDescriptor.getBrowser()->promptOpenRetry("Failed to open " + dataFilePath + "! The file may be in use.\n\nWould you like to try again?") );
+    
     return nullptr;
 }
 
@@ -164,22 +215,22 @@ FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), getDefaultScPath()));
 }
 
-bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<u8> unitData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\units.dat", unitData) )
+    auto unitData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\units.dat");
+    if ( !unitData )
     {
         logger.error() << "Failed to load arr\\units.dat" << std::endl;
         return false;
     }
-    else if ( unitData.size() != sizeof(Sc::Unit::DatFile) )
+    else if ( unitData->size() != sizeof(Sc::Unit::DatFile) )
     {
         logger.error() << "Unrecognized UnitDat format!" << std::endl;
         return false;
     }
 
-    DatFile & dat = (DatFile &)unitData[0];
+    DatFile & dat = (DatFile &)unitData.value()[0];
     size_t i=0;
     for ( ; i<DatFile::IdRange::From0To105; i++ )
     {
@@ -233,19 +284,19 @@ bool Sc::Unit::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
         });
     }
 
-    std::vector<u8> flingyData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\flingy.dat", flingyData) )
+    auto flingyData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\flingy.dat");
+    if ( !flingyData )
     {
         logger.error() << "Failed to load arr\\flingy.dat" << std::endl;
         return false;
     }
-    else if ( flingyData.size() != sizeof(Sc::Unit::FlingyDatFile) )
+    else if ( flingyData->size() != sizeof(Sc::Unit::FlingyDatFile) )
     {
         logger.error() << "Unrecognized UnitDat format!" << std::endl;
         return false;
     }
 
-    FlingyDatFile & flingyDat = (FlingyDatFile &)flingyData[0];
+    FlingyDatFile & flingyDat = (FlingyDatFile &)flingyData.value()[0];
     for ( i=0; i<TotalFlingies; i++ )
     {
         flingies.push_back(Sc::Unit::FlingyDatEntry { flingyDat.sprite[i], flingyDat.topSpeed[i], flingyDat.acceleration[i],
@@ -1466,21 +1517,19 @@ Sc::Ai::~Ai()
 
 }
 
-bool Sc::Ai::load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr statTxt)
+bool Sc::Ai::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, TblFilePtr statTxt)
 {
     this->statTxt = statTxt;
-
-    std::vector<u8> rawData;
-    if ( Sc::Data::GetAsset(orderedSourceFiles, aiScriptBinPath, rawData) )
+    if ( auto rawData = Sc::Data::GetAsset(orderedSourceFiles, aiScriptBinPath) )
     {
-        if ( rawData.size() >= 4 )
+        if ( rawData->size() >= 4 )
         {
-            u32 aiEntriesOffset = (u32 &)rawData[0];
-            u32 numAiEntries = u32((rawData.size() - (size_t)aiEntriesOffset) / sizeof(Entry));
+            u32 aiEntriesOffset = (u32 &)rawData.value()[0];
+            u32 numAiEntries = u32((rawData->size() - (size_t)aiEntriesOffset) / sizeof(Entry));
             if ( numAiEntries > 0 )
             {
                 for ( u32 i=0; i<numAiEntries; i++ )
-                    entries.push_back((Entry &)rawData[aiEntriesOffset+i*sizeof(Entry)]);
+                    entries.push_back((Entry &)rawData.value()[aiEntriesOffset+i*sizeof(Entry)]);
             }
             else
                 logger.warn() << "Zero AI entries in " << aiScriptBinPath << std::endl;
@@ -1554,39 +1603,41 @@ const std::vector<std::string> Sc::Terrain::TilesetNames = {
     "Twilight"
 };
 
-bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName)
+bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName)
 {
-    constexpr const char tilesetMpqDirectory[] = "tileset";
+    const std::string tilesetMpqDirectory = "tileset";
     const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
     const std::string cv5FilePath = makeExtMpqFilePath(mpqFilePath, "cv5");
     const std::string vf4FilePath = makeExtMpqFilePath(mpqFilePath, "vf4");
     const std::string vr4FilePath = makeExtMpqFilePath(mpqFilePath, "vr4");
     const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
+    const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
     const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
     
-    std::vector<u8> cv5Data, vf4Data, vr4Data, vx4Data, wpeData;
+    auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
+    auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
+    auto vr4Data = Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath);
+    bool isVx4ex = false;
+    auto vx4Data = Sc::Data::GetAsset(orderedSourceFiles, isVx4ex, vx4exFilePath, vx4FilePath);
+    auto wpeData = Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath);
 
-    if ( Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath, cv5Data) &&
-        Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath, vf4Data) &&
-        Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath, vr4Data) &&
-        Sc::Data::GetAsset(orderedSourceFiles, vx4FilePath, vx4Data) &&
-        Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath, wpeData) )
+    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData )
     {
-        if ( cv5Data.size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
-            vf4Data.size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
-            vr4Data.size() % sizeof(Sc::Terrain::MiniTilePixels) == 0 &&
-            vx4Data.size() % sizeof(Sc::Terrain::TileGraphics) == 0 &&
-            wpeData.size() == sizeof(Sc::Terrain::WpeDat) )
+        if ( cv5Data->size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
+            vf4Data->size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
+            vr4Data->size() % sizeof(Sc::Terrain::MiniTilePixels) == 0 &&
+            vx4Data->size() % sizeof(Sc::Terrain::TileGraphics) == 0 &&
+            wpeData->size() == sizeof(Sc::Terrain::WpeDat) )
         {
-            size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data.size());
-            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data.size());
-            size_t numTileFlags = Vf4Dat::size(vf4Data.size());
-            size_t numMiniTilePixels = Vr4Dat::size(vr4Data.size());
-            size_t numTileGraphics = Vx4Dat::size(vx4Data.size());
+            size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data->size());
+            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data->size());
+            size_t numTileFlags = Vf4Dat::size(vf4Data->size());
+            size_t numMiniTilePixels = Vr4Dat::size(vr4Data->size());
+            size_t numTileGraphics = Vx4Dat::size(isVx4ex, vx4Data->size());
 
             if ( numTileGroups > 0 )
             {
-                TileGroup* rawTileGroups = (TileGroup*)&cv5Data[0];
+                TileGroup* rawTileGroups = (TileGroup*)&cv5Data.value()[0];
                 tileGroups.assign(&rawTileGroups[0], &rawTileGroups[numTileGroups]);
             }
             else
@@ -1594,7 +1645,7 @@ bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles
 
             if ( numDoodads > 0 )
             {
-                Doodad* rawDoodads = (Doodad*)&cv5Data[Cv5Dat::MaxTileGroups];
+                Doodad* rawDoodads = (Doodad*)&cv5Data.value()[Cv5Dat::MaxTileGroups];
                 doodads.assign(&rawDoodads[0], &rawDoodads[numDoodads]);
             }
             else
@@ -1602,7 +1653,7 @@ bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles
 
             if ( numTileFlags > 0 )
             {
-                TileFlags* rawTileFlags = (TileFlags*)&vf4Data[0];
+                TileFlags* rawTileFlags = (TileFlags*)&vf4Data.value()[0];
                 tileFlags.assign(&rawTileFlags[0], &rawTileFlags[numTileFlags]);
             }
             else
@@ -1610,7 +1661,7 @@ bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles
 
             if ( numMiniTilePixels > 0 )
             {
-                MiniTilePixels* rawMiniTilePixels = (MiniTilePixels*)&vr4Data[0];
+                MiniTilePixels* rawMiniTilePixels = (MiniTilePixels*)&vr4Data.value()[0];
                 miniTilePixels.assign(&rawMiniTilePixels[0], &rawMiniTilePixels[numMiniTilePixels]);
             }
             else
@@ -1618,13 +1669,23 @@ bool Sc::Terrain::Tiles::load(const std::vector<MpqFilePtr> & orderedSourceFiles
 
             if ( numTileGraphics > 0 )
             {
-                TileGraphics* rawTileGraphics = (TileGraphics*)&vx4Data[0];
-                tileGraphics.assign(&rawTileGraphics[0], &rawTileGraphics[numTileGraphics]);
+                if ( isVx4ex )
+                {
+                    TileGraphicsEx* rawTileGraphics = (TileGraphicsEx*)&vx4Data.value()[0];
+                    tileGraphics.assign(&rawTileGraphics[0], &rawTileGraphics[numTileGraphics]);
+                }
+                else
+                {
+                    TileGraphics* rawTileGraphics = (TileGraphics*)&vx4Data.value()[0];
+                    tileGraphics.clear();
+                    for ( size_t i=0; i<numTileGraphics; ++i )
+                        tileGraphics.push_back(TileGraphicsEx(rawTileGraphics[i]));
+                }
             }
             else
                 tileGraphics.clear();
 
-            WpeColor* wpeColors = (WpeColor*)&wpeData[0];
+            WpeColor* wpeColors = (WpeColor*)&wpeData.value()[0];
             std::memcpy(&systemColorPalette[0], wpeColors, sizeof(Sc::Terrain::WpeDat));
             if ( offsetof(WpeColor, red) == offsetof(SystemColor, blue) &&
                 offsetof(WpeColor, green) == offsetof(SystemColor, green) &&
@@ -1660,7 +1721,7 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
         return tilesets[tileset % NumTilesets];
 }
 
-bool Sc::Terrain::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
@@ -1680,25 +1741,25 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
         return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
 }
 
-bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Weapon::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<u8> weaponData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\weapons.dat", weaponData) )
+    auto weaponData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\weapons.dat");
+    if ( !weaponData )
     {
         logger.error() << "Failed to load arr\\weapons.dat" << std::endl;
         return false;
     }
-    else if ( weaponData.size() != sizeof(Sc::Weapon::DatFile<true>) && weaponData.size() != sizeof(Sc::Weapon::DatFile<false>) )
+    else if ( weaponData->size() != sizeof(Sc::Weapon::DatFile<true>) && weaponData->size() != sizeof(Sc::Weapon::DatFile<false>) )
     {
         logger.error() << "Unrecognized WeaponDat format!" << std::endl;
         return false;
     }
     
-    bool isExpansion = (weaponData.size() == sizeof(Sc::Weapon::DatFile<true>));
+    bool isExpansion = (weaponData->size() == sizeof(Sc::Weapon::DatFile<true>));
     if ( isExpansion )
     {
-        const DatFile<true> & weaponDat = (DatFile<true> &)weaponData[0];
+        const DatFile<true> & weaponDat = (DatFile<true> &)weaponData.value()[0];
         for ( size_t i=0; i<Total; i++ )
         {
             weapons.push_back(Sc::Weapon::DatEntry { weaponDat.label[i], weaponDat.graphics[i], weaponDat.unused[i], weaponDat.targetFlags[i], weaponDat.minimumRange[i],
@@ -1710,7 +1771,7 @@ bool Sc::Weapon::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     }
     else
     {
-        const DatFile<false> & weaponDat = (DatFile<false> &)weaponData[0];
+        const DatFile<false> & weaponDat = (DatFile<false> &)weaponData.value()[0];
         for ( size_t i=0; i<TotalOriginal; i++ )
         {
             weapons.push_back(Sc::Weapon::DatEntry { weaponDat.label[i], weaponDat.graphics[i], weaponDat.unused[i], weaponDat.targetFlags[i], weaponDat.minimumRange[i],
@@ -1734,12 +1795,16 @@ const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType) const
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string(weaponType) + " is out of range for weapons vector of size " + std::to_string(weapons.size()));
 }
 
-bool Sc::Sprite::Grp::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
+bool Sc::Sprite::Grp::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
 {
-    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, grpData) )
-        return isValid(mpqFileName);
+    auto grpAsset = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath);
+    if ( grpAsset )
+    {
+        this->grpData.swap(*grpAsset);
+        return isValid(assetArchivePath);
+    }
     else
-        logger.error() << "Failed to load GRP " << mpqFileName << std::endl;
+        logger.error() << "Failed to load GRP " << assetArchivePath << std::endl;
 
     return false;
 }
@@ -1754,36 +1819,36 @@ const Sc::Sprite::GrpFile & Sc::Sprite::Grp::get() const
     return (const GrpFile &)grpData[0];
 }
 
-bool Sc::Sprite::Grp::isValid(const std::string & mpqFileName) const
+bool Sc::Sprite::Grp::isValid(const std::string & assetArchivePath) const
 {
-    return fileHeaderIsValid(mpqFileName) &&
-        frameHeadersAreValid(mpqFileName) &&
-        framesAreValid(mpqFileName);
+    return fileHeaderIsValid(assetArchivePath) &&
+        frameHeadersAreValid(assetArchivePath) &&
+        framesAreValid(assetArchivePath);
 }
 
-bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & mpqFileName) const
+bool Sc::Sprite::Grp::fileHeaderIsValid(const std::string & assetArchivePath) const
 {
     if ( grpData.size() < Sc::Sprite::GrpFile::FileHeaderSize )
     {
-        logger.error() << "GRP file \"" << mpqFileName << "\" must be at least " << Sc::Sprite::GrpFile::FileHeaderSize << " bytes" << std::endl;
+        logger.error() << "GRP file \"" << assetArchivePath << "\" must be at least " << Sc::Sprite::GrpFile::FileHeaderSize << " bytes" << std::endl;
         return false;
     }
     return true;
 }
 
-bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & mpqFileName) const
+bool Sc::Sprite::Grp::frameHeadersAreValid(const std::string & assetArchivePath) const
 {
     GrpFile & grpFile = (GrpFile &)grpData[0];
     size_t minimumFileSize = Sc::Sprite::GrpFile::FileHeaderSize + size_t(grpFile.numFrames)*sizeof(GrpFrameHeader);
     if ( grpData.size() < minimumFileSize )
     {
-        logger.error() << "GRP file \"" << mpqFileName << "\" with " << grpFile.numFrames << " frames must be at least " << minimumFileSize << " bytes" << std::endl;
+        logger.error() << "GRP file \"" << assetArchivePath << "\" with " << grpFile.numFrames << " frames must be at least " << minimumFileSize << " bytes" << std::endl;
         return false;
     }
     return true;
 }
 
-bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
+bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
 {
     GrpFile & grpFile = (GrpFile &)grpData[0];
     u16 numFrames = grpFile.numFrames;
@@ -1792,24 +1857,24 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
         GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
         if ( grpFrameHeader.frameHeight == 0 )
         {
-            logger.warn() << "GRP file \"" << mpqFileName << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
+            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( grpFrameHeader.frameWidth == 0 )
         {
-            logger.warn() << "GRP file \"" << mpqFileName << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
+            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( u16(grpFrameHeader.yOffset) + u16(grpFrameHeader.frameHeight) > grpFile.grpHeight )
         {
-            logger.error() << "GRP file \"" << mpqFileName << "\" with height " << grpFile.grpHeight << " has frame " << frame
+            logger.error() << "GRP file \"" << assetArchivePath << "\" with height " << grpFile.grpHeight << " has frame " << frame
                 << " with yOffset " << u16(grpFrameHeader.yOffset) << " and frameHeight " << u16(grpFrameHeader.frameHeight)
                 << " which overflows the grp height!" << std::endl;
             return false;
         }
         else if ( u16(grpFrameHeader.xOffset) + u16(grpFrameHeader.frameWidth) > grpFile.grpWidth )
         {
-            logger.error() << "GRP file \"" << mpqFileName << "\" with width " << grpFile.grpWidth << " has frame " << frame
+            logger.error() << "GRP file \"" << assetArchivePath << "\" with width " << grpFile.grpWidth << " has frame " << frame
                 << " with xOffset " << u16(grpFrameHeader.xOffset) << " and frameWidth " << u16(grpFrameHeader.frameWidth)
                 << " which overflows the grp width!" << std::endl;
             return false;
@@ -1821,7 +1886,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
 
         if ( grpData.size() < frameMinimumFileSize )
         {
-            logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << grpFrameHeader.frameHeight
+            logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << grpFrameHeader.frameHeight
                 << " requires a file size of at least " << frameMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
             return false;
         }
@@ -1835,7 +1900,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
             size_t pixelRowMinimumFileSize = pixelRowOffset + PixelRow::MinimumSize;
             if ( grpData.size() < pixelRowMinimumFileSize )
             {
-                logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << ", row " << row << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
                     << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
                 return false;
             }
@@ -1848,7 +1913,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
             {
                 if ( grpData.size() < pixelLineOffset + PixelLine::MinimumSize )
                 {
-                    logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << ", line header " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                    logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << ", row " << row << ", line header " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
                         << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
                     return false;
                 }
@@ -1856,7 +1921,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
                 PixelLine & pixelLine = (PixelLine &)grpData[pixelLineOffset];
                 if ( grpData.size() < pixelLineOffset + size_t(pixelLine.sizeInBytes()) )
                 {
-                    logger.error() << "GRP file \"" << mpqFileName << "\", frame " << frame << ", row " << row << ", line " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
+                    logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << ", row " << row << ", line " << line << " with frame offset " << grpFrameHeader.frameOffset << " and rowOffset " << rowOffset
                         << " requires a file size of at least " << pixelRowMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
                     return false;
                 }
@@ -1869,7 +1934,7 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & mpqFileName) const
     return true;
 }
 
-bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
@@ -1906,19 +1971,19 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     if ( numStrings == 0 )
         logger.warn() << "images.tbl was empty, no grps were loaded!" << std::endl;
 
-    std::vector<u8> imageData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat", imageData) )
+    auto imageData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat");
+    if ( !imageData )
     {
         logger.error() << "Failed to load arr\\images.dat" << std::endl;
         return false;
     }
-    else if ( imageData.size() != sizeof(Sc::Sprite::ImageDatFile) )
+    else if ( imageData->size() != sizeof(Sc::Sprite::ImageDatFile) )
     {
         logger.error() << "Unrecognized ImageDat format!" << std::endl;
         return false;
     }
 
-    ImageDatFile & datFile = (ImageDatFile &)imageData[0];
+    ImageDatFile & datFile = (ImageDatFile &)imageData.value()[0];
     for ( size_t i=0; i<TotalImages; i++ )
     {
         images.push_back(ImageDatEntry { datFile.grpFile[i], datFile.graphicTurns[i], datFile.clickable[i], datFile.useFullIscript[i], datFile.drawIfCloaked[i],
@@ -1926,19 +1991,19 @@ bool Sc::Sprite::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
             datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
     }
 
-    std::vector<u8> spriteData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\sprites.dat", spriteData) )
+    auto spriteData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\sprites.dat");
+    if ( !spriteData )
     {
         logger.error() << "Failed to load arr\\sprites.dat" << std::endl;
         return false;
     }
-    else if ( spriteData.size() != sizeof(Sc::Sprite::DatFile) )
+    else if ( spriteData->size() != sizeof(Sc::Sprite::DatFile) )
     {
         logger.error() << "Unrecognized SpriteDat format!" << std::endl;
         return false;
     }
 
-    DatFile & spriteDatFile = (DatFile &)spriteData[0];
+    DatFile & spriteDatFile = (DatFile &)spriteData.value()[0];
     size_t i=0;
     for ( ; i<DatFile::IdRange::From0To129; i++ )
         sprites.push_back(DatEntry { spriteDatFile.imageFile[i], u8(0), spriteDatFile.unknown[i], spriteDatFile.isVisible[i], u8(0), u8(0) });
@@ -1994,25 +2059,25 @@ size_t Sc::Sprite::numSprites() const
     return sprites.size();
 }
 
-bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<u8> upgradeData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\upgrades.dat", upgradeData) )
+    auto upgradeData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\upgrades.dat");
+    if ( !upgradeData )
     {
         logger.error() << "Failed to load arr\\upgrades.dat" << std::endl;
         return false;
     }
-    else if ( upgradeData.size() != sizeof(Sc::Upgrade::DatFile) && upgradeData.size() != sizeof(Sc::Upgrade::OriginalDatFile) )
+    else if ( upgradeData->size() != sizeof(Sc::Upgrade::DatFile) && upgradeData->size() != sizeof(Sc::Upgrade::OriginalDatFile) )
     {
         logger.error() << "Unrecognized UpgradeDat format!" << std::endl;
         return false;
     }
     
-    bool isExpansion = (upgradeData.size() == sizeof(Sc::Upgrade::DatFile));
+    bool isExpansion = (upgradeData->size() == sizeof(Sc::Upgrade::DatFile));
     if ( isExpansion )
     {
-        const DatFile & upgradeDat = (DatFile &)upgradeData[0];
+        const DatFile & upgradeDat = (DatFile &)upgradeData.value()[0];
         for ( size_t i=0; i<TotalTypes; i++ )
         {
             upgrades.push_back(Sc::Upgrade::DatEntry { upgradeDat.mineralCost[i], upgradeDat.mineralFactor[i], upgradeDat.vespeneCost[i], upgradeDat.vespeneFactor[i],
@@ -2022,7 +2087,7 @@ bool Sc::Upgrade::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     }
     else
     {
-        const OriginalDatFile & upgradeDat = (OriginalDatFile &)upgradeData[0];
+        const OriginalDatFile & upgradeDat = (OriginalDatFile &)upgradeData.value()[0];
         for ( size_t i=0; i<TotalOriginalTypes; i++ )
         {
             upgrades.push_back(Sc::Upgrade::DatEntry { upgradeDat.mineralCost[i], upgradeDat.mineralFactor[i], upgradeDat.vespeneCost[i], upgradeDat.vespeneFactor[i],
@@ -2044,25 +2109,25 @@ const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType) const
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for upgrades vector of size " + std::to_string(upgrades.size()));
 }
 
-bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
+bool Sc::Tech::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<u8> techData;
-    if ( !Sc::Data::GetAsset(orderedSourceFiles, "arr\\techdata.dat", techData) )
+    auto techData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\techdata.dat");
+    if ( !techData )
     {
         logger.error() << "Failed to load arr\\techdata.dat" << std::endl;
         return false;
     }
-    else if ( techData.size() != sizeof(Sc::Tech::DatFile) && techData.size() != sizeof(Sc::Tech::OriginalDatFile) )
+    else if ( techData->size() != sizeof(Sc::Tech::DatFile) && techData->size() != sizeof(Sc::Tech::OriginalDatFile) )
     {
         logger.error() << "Unrecognized TechDat format!" << std::endl;
         return false;
     }
     
-    bool isExpansion = (techData.size() == sizeof(Sc::Tech::DatFile));
+    bool isExpansion = (techData->size() == sizeof(Sc::Tech::DatFile));
     if ( isExpansion )
     {
-        const DatFile & techDat = (DatFile &)techData[0];
+        const DatFile & techDat = (DatFile &)techData.value()[0];
         for ( size_t i=0; i<TotalTypes; i++ )
         {
             techs.push_back(Sc::Tech::DatEntry { techDat.mineralCost[i], techDat.vespeneCost[i], techDat.researchTime[i], techDat.energyCost[i],
@@ -2071,7 +2136,7 @@ bool Sc::Tech::load(const std::vector<MpqFilePtr> & orderedSourceFiles)
     }
     else
     {
-        const OriginalDatFile & techDat = (OriginalDatFile &)techData[0];
+        const OriginalDatFile & techDat = (OriginalDatFile &)techData.value()[0];
         for ( size_t i=0; i<TotalOriginalTypes; i++ )
         {
             techs.push_back(Sc::Tech::DatEntry { techDat.mineralCost[i], techDat.vespeneCost[i], techDat.researchTime[i], techDat.energyCost[i],
@@ -3238,31 +3303,30 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Artanis\\PAtYes03.wav"
 };
 
-bool Sc::TblFile::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
+bool Sc::TblFile::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
 {
     strings.clear();
 
-    std::vector<u8> rawData;
-    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, rawData) )
+    if ( auto rawData = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath) )
     {
-        s64 numStrings = rawData.size() >= 2 ? s64((u16 &)rawData[0]) : 0;
+        s64 numStrings = rawData->size() >= 2 ? s64((u16 &)rawData.value()[0]) : 0;
         if ( numStrings > 0 )
         {
-            if ( rawData.back() != u8('\0') )
-                rawData.push_back('\0');
+            if ( rawData->back() != u8('\0') )
+                rawData->push_back('\0');
 
             strings.push_back(std::string());
-            for ( s64 i=1; i<=numStrings && size_t(2*i) < rawData.size(); i++ )
+            for ( s64 i=1; i<=numStrings && size_t(2*i) < rawData->size(); i++ )
             {
-                size_t stringOffset = size_t((u16 &)rawData[2*size_t(i)]);
-                if ( stringOffset < rawData.size() )
-                    strings.push_back((char*)&rawData[stringOffset]);
+                size_t stringOffset = size_t((u16 &)rawData.value()[2*size_t(i)]);
+                if ( stringOffset < rawData->size() )
+                    strings.push_back((char*)&rawData.value()[stringOffset]);
                 else
                     strings.push_back(std::string());
             }
         }
         else
-            logger.warn() << mpqFileName << " contained no strings" << std::endl;
+            logger.warn() << assetArchivePath << " contained no strings" << std::endl;
 
         return true;
     }
@@ -3297,25 +3361,24 @@ bool Sc::TblFile::getString(size_t stringIndex, std::string & outString) const
     return false;
 }
 
-bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName)
+bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
 {
-    std::vector<u8> pcxData;
-    if ( Sc::Data::GetAsset(orderedSourceFiles, mpqFileName, pcxData) )
+    if ( auto pcxData = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath) )
     {
-        if ( pcxData.size() < PcxFile::PcxHeaderSize )
+        if ( pcxData->size() < PcxFile::PcxHeaderSize )
         {
             logger.error() << "PCX format not recognized!" << std::endl;
             return false;
         }
 
-        PcxFile & pcxFile = (PcxFile &)pcxData[0];
+        PcxFile & pcxFile = (PcxFile &)pcxData.value()[0];
         if ( pcxFile.bitCount != 8 )
         {
             logger.error() << "PCX bit count not recognized!" << std::endl;
             return false;
         }
 
-        u8* paletteData = &pcxData[pcxData.size()-PcxFile::PaletteSize];
+        u8* paletteData = &pcxData.value()[pcxData->size()-PcxFile::PaletteSize];
         size_t dataOffset = 0;
         size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
         for ( size_t pixel = 0; pixel < pixelCount; )
@@ -3339,7 +3402,7 @@ bool Sc::Pcx::load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std
     return false;
 }
 
-bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     auto start = std::chrono::high_resolution_clock::now();
@@ -3351,7 +3414,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unorder
         return false;
     }
 
-    const std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
@@ -3397,43 +3460,75 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::unorder
     return true;
 }
 
-bool Sc::Data::GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents)
+std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool & isFirst,
+    const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption)
 {
-    for ( auto mpqFile : orderedSourceFiles )
+    for ( auto archiveFile : orderedSourceFiles )
     {
-        if ( mpqFile != nullptr && mpqFile->getFile(assetMpqPath, outAssetContents) )
-            return true;
+        if ( archiveFile != nullptr )
+        {
+            if ( auto asset = archiveFile->getFile(firstAssetArchivePathOption) )
+            {
+                isFirst = true;
+                return asset;
+            }
+        }
     }
-    logger.error() << "Failed to get StarCraft asset: " << assetMpqPath << std::endl;
-    return false;
+    for ( auto archiveFile : orderedSourceFiles )
+    {
+        if ( archiveFile != nullptr )
+        {
+            if ( auto asset = archiveFile->getFile(secondAssetArchivePathOption) )
+            {
+                isFirst = false;
+                return asset;
+            }
+        }
+    }
+    logger.error() << "Failed to get StarCraft asset: \"" << firstAssetArchivePathOption << "\" or \"" << secondAssetArchivePathOption << "\"" << std::endl;
+    return std::nullopt;
 }
 
-bool Sc::Data::GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
+std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
+{
+    for ( auto archiveFile : orderedSourceFiles )
+    {
+        if ( archiveFile != nullptr )
+        {
+            if ( auto asset = archiveFile->getFile(assetArchivePath) )
+                return asset;
+        }
+    }
+    logger.error() << "Failed to get StarCraft asset: " << assetArchivePath << std::endl;
+    return std::nullopt;
+}
+
+std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::string & assetArchivePath,
     Sc::DataFile::BrowserPtr dataFileBrowser,
-    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
-    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    return Sc::Data::GetAsset(orderedSourceFiles, assetMpqPath, outAssetContents);
+    std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath);
 }
 
-bool Sc::Data::ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath)
+bool Sc::Data::ExtractAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, const std::string & systemFilePath)
 {
-    for ( auto mpqFile : orderedSourceFiles )
+    for ( auto archiveFile : orderedSourceFiles )
     {
-        if ( mpqFile != nullptr && mpqFile->findFile(assetMpqPath) )
-            return mpqFile->extractFile(assetMpqPath, systemFilePath);
+        if ( archiveFile != nullptr && archiveFile->findFile(assetArchivePath) )
+            return archiveFile->extractFile(assetArchivePath, systemFilePath);
     }
     return false;
 }
 
-bool Sc::Data::ExtractAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
+bool Sc::Data::ExtractAsset(const std::string & assetArchivePath, const std::string & systemFilePath,
     Sc::DataFile::BrowserPtr dataFileBrowser,
-    const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles,
+    const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
-    std::vector<MpqFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    return Sc::Data::ExtractAsset(orderedSourceFiles, assetMpqPath, systemFilePath);
+    std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::ExtractAsset(orderedSourceFiles, assetArchivePath, systemFilePath);
 }

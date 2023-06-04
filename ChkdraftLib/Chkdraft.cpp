@@ -100,10 +100,9 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
 void Chkdraft::SetupLogging()
 {
-    std::string loggerPath;
-    if ( GetLoggerPath(loggerPath) )
+    if ( auto loggerPath = GetLoggerPath() )
     {
-        logFilePath = loggerPath + Logger::getTimestamp() + ".log";
+        logFilePath = *loggerPath + Logger::getTimestamp() + ".log";
         std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger(logger.getLogLevel()));
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
@@ -723,7 +722,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
             case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
             case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
             case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::WavEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
         }
         ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     }

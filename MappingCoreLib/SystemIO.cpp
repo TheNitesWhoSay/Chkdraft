@@ -225,6 +225,11 @@ std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::strin
         return fixedMpqFilePath + mpqExtensionSeparator + extension;
 }
 
+bool isDirectory(const std::string & directory)
+{
+    return std::filesystem::is_directory(directory);
+}
+
 bool findFile(const std::string & filePath)
 {
     icux::filestring fFilePath = icux::toFilestring(filePath);
@@ -273,27 +278,47 @@ bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTi
     return false;
 }
 
-bool fileToString(const std::string & fileName, std::string & str)
+std::optional<std::string> fileToString(const std::string & fileName)
 {
     try {
-        str.clear();
         std::ifstream file(fileName, std::ifstream::in | std::ifstream::ate); // Open at ending characters position
         if ( file.is_open() )
         {
             auto size = file.tellg(); // Grab size via current position
-            str.reserve((size_t)size); // Set string size to file size
             file.seekg(0); // Move reader to beggining of file
+            auto str = std::make_optional<std::string>(); // Set string size to file size
+            str->reserve(size_t(size));
             while ( !file.eof() )
-                str += file.get();
+                *str += file.get();
 
-            if ( str.length() > 0 && str[str.length() - 1] == (char)-1 )
-                str[str.length() - 1] = '\0';
+            if ( str->length() > 0 && str.value()[str->length() - 1] == (char)-1 )
+                str.value()[str->length() - 1] = '\0';
 
-            return true;
+            bool success = file.good() || file.eof();
+            file.close();
+            return success ? str : std::nullopt;
         }
     }
     catch ( std::exception ) { }
-    return false;
+    return std::nullopt;
+}
+
+std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath)
+{
+    std::ifstream inFile(systemFilePath, std::ios_base::binary|std::ios_base::in);
+    auto buffer = std::make_optional<std::vector<u8>>(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>());
+    bool success = inFile.good();
+    inFile.close();
+    return success ? buffer : std::nullopt;
+}
+
+bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & buffer)
+{
+    std::ofstream outFile(systemFilePath, std::ios_base::binary|std::ios_base::out);
+    outFile.write(reinterpret_cast<const char*>(&buffer[0]), std::streamsize(buffer.size()));
+    bool success = outFile.good();
+    outFile.close();
+    return success;
 }
 
 bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath)
@@ -331,9 +356,9 @@ bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
 #ifdef WINDOWS_UTF16
-    return _wmkdir(directoryPath.c_str()) == 0;
+    return _wmkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
 #else
-    return _mkdir(directoryPath.c_str()) == 0;
+    return _mkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
 #endif
 }
 
@@ -344,7 +369,7 @@ bool removeFile(const std::string & filePath)
 #ifdef WINDOWS_UTF16
     return filePath.empty() || _wremove(sysFilePath.c_str()) == 0 || !findFile(filePath);
 #else
-    return sysFilePath.empty() || remove(sysFilePath.c_str()) == 0 || !findFile(filePath);
+    return filePath.empty() || remove(sysFilePath.c_str()) == 0 || !findFile(filePath);
 #endif
 }
 
@@ -360,7 +385,7 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
     return success;
 }
 
-bool getModuleDirectory(std::string & moduleDirectory, bool includeTrailingSeparator)
+std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 {
 #ifdef _WIN32
     icux::codepoint cModulePath[MAX_PATH] = {};
@@ -369,13 +394,10 @@ bool getModuleDirectory(std::string & moduleDirectory, bool includeTrailingSepar
         icux::filestring modulePath(cModulePath);
         auto lastBackslashPos = modulePath.rfind('\\');
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
-        {
-            moduleDirectory = icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
-            return true;
-        }
+            return icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
     }
 #endif
-    return false;
+    return std::nullopt;
 }
 
 bool getDefaultScPath(std::string & data)
@@ -509,7 +531,7 @@ bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
         flags |= OFN_OVERWRITEPROMPT;
 
     ofn.Flags = flags;
-    ofn.nFilterIndex = filterIndex;
+    ofn.nFilterIndex = filterIndex+1;
 
     bool success = GetOpenFileName(&ofn) == TRUE;
     if ( success )

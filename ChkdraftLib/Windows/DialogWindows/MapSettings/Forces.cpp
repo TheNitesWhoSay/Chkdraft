@@ -334,14 +334,16 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void ForcesWindow::CheckReplaceForceName(Chk::Force force)
 {
-    ChkdString newMapForce;
-    if ( (size_t)force < 4 && possibleForceNameUpdate[(size_t)force] == true &&
-        editForceName[(size_t)force].GetWinText(newMapForce) && newMapForce.length() > 0 )
+    if ( (size_t)force < 4 && possibleForceNameUpdate[(size_t)force] == true )
     {
-        CM->setForceName<ChkdString>(force, newMapForce);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
-        CM->notifyChange(false);
-        CM->refreshScenario();
-        possibleForceNameUpdate[(size_t)force] = false;
+        auto newMapForce = editForceName[size_t(force)].GetWinText();
+        if ( newMapForce && newMapForce->length() > 0 )
+        {
+            CM->setForceName<ChkdString>(force, *newMapForce);
+            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->notifyChange(false);
+            CM->refreshScenario();
+            possibleForceNameUpdate[(size_t)force] = false;
+        }
     }
 }

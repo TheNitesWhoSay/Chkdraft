@@ -29,23 +29,21 @@ bool PlayerDropdown::CreateThis(HWND hParent, int x, int y, int width, int heigh
 bool PlayerDropdown::GetPlayerNum(u8 & dest)
 {
     bool success = false;
-    std::string editText;
-
     if ( DropdownControl::GetEditNum<u8>(dest) )
     {
         dest --; // to 0 based
         success = true;
     }
-    else if ( DropdownControl::GetWinText(editText) )
+    else if ( auto editText = DropdownControl::GetWinText() )
     {
-        for ( auto & c : editText )
+        for ( auto & c : *editText )
             c = toupper(c);
 
         int parsedPlayer = 0;
 
-        if (    std::sscanf(editText.c_str(), "PLAYER%d", &parsedPlayer) > 0
-             || std::sscanf(editText.c_str(), "P%d", &parsedPlayer) > 0
-             || std::sscanf(editText.c_str(), "ID:%d", &parsedPlayer) > 0 )
+        if (    std::sscanf(editText->c_str(), "PLAYER%d", &parsedPlayer) > 0
+             || std::sscanf(editText->c_str(), "P%d", &parsedPlayer) > 0
+             || std::sscanf(editText->c_str(), "ID:%d", &parsedPlayer) > 0 )
         {
             dest = parsedPlayer;
             dest --; // to 0 based

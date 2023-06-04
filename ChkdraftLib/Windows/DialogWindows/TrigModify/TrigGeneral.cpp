@@ -268,11 +268,11 @@ void TrigGeneralWindow::ToggleAdvancedMode()
 
 void TrigGeneralWindow::EditCommentFocusLost()
 {
-    std::string newCommentText = editComment.GetWinText();
+    auto newCommentText = editComment.GetWinText();
     Chk::Trigger & trigger = CM->getTrigger(trigIndex);
-    bool addIfNotFound = !newCommentText.empty();
+    bool addIfNotFound = newCommentText && !newCommentText->empty();
     Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
-    size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(newCommentText), Chk::StrScope::Editor);
+    size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
     if ( newCommentStringId != Chk::StringId::NoString )
     {
         extension.commentStringId = (u32)newCommentStringId;
@@ -283,13 +283,13 @@ void TrigGeneralWindow::EditCommentFocusLost()
 
 void TrigGeneralWindow::EditNotesFocusLost()
 {
-    std::string newNotesText = editNotes.GetWinText();
+    auto newNotesText = editNotes.GetWinText();
     Chk::Trigger & trigger = CM->getTrigger(trigIndex);
-    bool addIfNotFound = !newNotesText.empty();
+    bool addIfNotFound = newNotesText && !newNotesText->empty();
     if ( CM->hasTriggerExtension(trigIndex) )
     {
         Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
-        size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(newNotesText), Chk::StrScope::Editor);
+        size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::StrScope::Editor);
         if ( newNotesStringId != Chk::StringId::NoString )
         {
             extension.notesStringId = (u32)newNotesStringId;

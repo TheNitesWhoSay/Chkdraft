@@ -278,10 +278,9 @@ LRESULT CndActGrid::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         case EN_CHANGE:
             if ( !ignoreChange )
             {
-                std::string str;
-                GridViewControl::GetEditText(str);
+                auto str = GridViewControl::GetWinText();
                 ignoreChange = true;
-                suggestions.SuggestNear(str);
+                suggestions.SuggestNear(*str);
                 ignoreChange = false;
             }
             break;

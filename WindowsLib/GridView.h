@@ -65,7 +65,6 @@ namespace WinLib {
             POINT GetItemTopLeft(int x, int y);
             POINT GetFocusedBottomRightScreenPt();
             bool GetEditItemRect(RECT & rect);
-            bool GetEditText(std::string & str);
         
             // Checks where a point is in relation to the GridView items
             bool contentHitTest(int x, int y, bool & outsideLeft, bool & outsideTop, bool & outsideRight, bool & outsideBottom);

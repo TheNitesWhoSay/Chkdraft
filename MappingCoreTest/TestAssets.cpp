@@ -2,21 +2,19 @@
 #include <fstream>
 #include "TestAssets.h"
 
-bool getPreSavePath(std::string & outPreSavePath)
+std::optional<std::string> getPreSavePath()
 {
-    return false; // Necessary default to avoid unresolved external for the same method in ChkdraftLib/Settings
+    return std::nullopt; // Necessary default to avoid unresolved external for the same method in ChkdraftLib/Settings
 }
 
-bool getEmptyDirectory(std::string & outEmptyDirectoryPath)
+std::optional<std::string> getEmptyDirectory()
 {
-    std::string moduleDirectory;
-    if ( getModuleDirectory(moduleDirectory) )
+    if ( auto moduleDirectory = getModuleDirectory() )
     {
-        makeDirectory(moduleDirectory + "\\gtest");
-        outEmptyDirectoryPath = moduleDirectory + std::string("\\gtest");
-        return true;
+        makeDirectory(*moduleDirectory + "\\gtest");
+        return *moduleDirectory + "\\gtest";
     }
-    return false;
+    return std::nullopt;
 }
 
 bool TestAssets::LoadScData(Sc::Data & data)
@@ -27,14 +25,14 @@ bool TestAssets::LoadScData(Sc::Data & data)
     {
         Sc::DataFile::BrowserPtr dataFileBrowser(new Sc::DataFile::Browser());
     
-        std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> dataFiles({
-            { Sc::DataFile::Priority::StarDat, Sc::DataFile::Descriptor(Sc::DataFile::Priority::StarDat,
-                Sc::DataFile::starDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::starDatFileName), nullptr, false) },
-            { Sc::DataFile::Priority::BrooDat, Sc::DataFile::Descriptor(Sc::DataFile::Priority::BrooDat,
-                Sc::DataFile::brooDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::brooDatFileName), nullptr, false) },
-            { Sc::DataFile::Priority::PatchRt, Sc::DataFile::Descriptor(Sc::DataFile::Priority::PatchRt,
-                Sc::DataFile::patchRtFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::patchRtFileName), nullptr, false) },
-        });
+        std::vector<Sc::DataFile::Descriptor> dataFiles {
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::StarDat, false, true,
+                Sc::DataFile::starDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::starDatFileName), nullptr, false),
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::BrooDat, false, true,
+                Sc::DataFile::brooDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::brooDatFileName), nullptr, false),
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::PatchRt, false, true,
+                Sc::DataFile::patchRtFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::patchRtFileName), nullptr, false),
+        };
 
         bool loadedScData = data.load(dataFileBrowser, dataFiles, getDefaultScPath(), nullptr);
         EXPECT_TRUE(loadedScData);

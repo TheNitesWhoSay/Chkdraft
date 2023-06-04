@@ -178,7 +178,7 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         addUseItem("Briefing Triggers", stringUserToUsageCount.find(Chk::StringUserFlag::AnyBriefingTrigger)->second);
                         addUseItem("Map Properties", stringUserToUsageCount.find(Chk::StringUserFlag::ScenarioProperties)->second);
                         addUseItem("Forces", stringUserToUsageCount.find(Chk::StringUserFlag::Force)->second);
-                        addUseItem("WAVs", stringUserToUsageCount.find(Chk::StringUserFlag::Sound)->second);
+                        addUseItem("Sounds", stringUserToUsageCount.find(Chk::StringUserFlag::Sound)->second);
                         addUseItem("Units", stringUserToUsageCount.find(Chk::StringUserFlag::BothUnitSettings)->second);
                         addUseItem("Switches", stringUserToUsageCount.find(Chk::StringUserFlag::Switch)->second);
 
@@ -346,18 +346,20 @@ void StringEditorWindow::addUseItem(std::string str, size_t amount)
 
 bool StringEditorWindow::updateString(u32 stringNum)
 {
-    ChkdString editStr;
     auto existingStr = CM->getString<ChkdString>((size_t)stringNum);
-    if ( CM != nullptr && editString.GetWinText(editStr) && existingStr && existingStr->compare(editStr) != 0 )
+    auto editStr = editString.GetWinText();
+    if ( CM != nullptr && editStr && existingStr && existingStr->compare(*editStr) != 0 )
     {
-        CM->replaceString<ChkdString>((size_t)stringNum, editStr);
-        CM->notifyChange(false);
-        if ( CM->locationStringUsed(currSelString, Chk::StrScope::EditorOverGame) )
-            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+        if ( auto editStr = editString.GetWinText() )
+        {
+            CM->replaceString<ChkdString>((size_t)stringNum, *editStr);
+            CM->notifyChange(false);
+            if ( CM->locationStringUsed(currSelString, Chk::StrScope::EditorOverGame) )
+                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
-        editString.RedrawThis();
-        return true;
+            editString.RedrawThis();
+            return true;
+        }
     }
-    else
-        return false;
+    return false;
 }

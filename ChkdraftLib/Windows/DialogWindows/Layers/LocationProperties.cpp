@@ -378,10 +378,9 @@ void LocationWindow::LocationNameFocusLost()
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
-        ChkdString locationName;
-        if ( editLocName.GetWinText(locationName) )
+        if ( auto locationName = editLocName.GetWinText() )
         {
-            CM->replaceString<ChkdString>(locRef.stringId, locationName);
+            CM->replaceString<ChkdString>(locRef.stringId, *locationName);
             CM->deleteUnusedStrings(Chk::StrScope::Both);
             CM->notifyChange(false);
             CM->refreshScenario();

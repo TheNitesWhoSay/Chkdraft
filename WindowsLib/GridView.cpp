@@ -250,16 +250,13 @@ namespace WinLib {
         if ( !ending )
         {
             ending = true;
-            std::string str;
-            bool gotText = editBox.GetWinText(str);
+            auto str = editBox.GetWinText();
             if ( editing == true && editBox.DestroyThis() )
             {
                 editing = false;
-                if ( gotText &&
-                     SendMessage(GetParent(getHandle()), GV::WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
-                {
-                    item(focusedX, focusedY).SetText(str);
-                }
+                if ( str && SendMessage(GetParent(getHandle()), GV::WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
+                    item(focusedX, focusedY).SetText(*str);
+
                 RedrawThis();
                 SendMessage(GetParent(getHandle()), GV::WM_GRIDEDITEND, MAKEWPARAM(focusedX, focusedY), 0);
             }
@@ -424,11 +421,6 @@ namespace WinLib {
     bool GridViewControl::GetEditItemRect(RECT & rect)
     {
         return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
-    }
-
-    bool GridViewControl::GetEditText(std::string & str)
-    {
-        return editBox.GetWinText(str);
     }
 
     bool GridViewControl::contentHitTest(int x, int y, bool & outsideLeft, bool & outsideTop, bool & outsideRight, bool & outsideBottom)

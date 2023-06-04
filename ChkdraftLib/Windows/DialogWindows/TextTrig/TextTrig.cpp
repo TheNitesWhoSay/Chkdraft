@@ -146,11 +146,10 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 bool TextTrigWindow::CompileEditText(Scenario & map)
 {
-    std::string trigText;
-    if ( editControl.GetWinText(trigText) )
+    if ( auto trigText = editControl.GetWinText() )
     {
         TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-        if ( compiler.compileTriggers(trigText, map, chkd.scData, 0, map.numTriggers()) )
+        if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");
