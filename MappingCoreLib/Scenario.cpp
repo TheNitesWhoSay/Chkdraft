@@ -6217,6 +6217,7 @@ void Scenario::deleteTrigger(size_t triggerIndex)
     if ( triggerIndex < this->triggers.size() )
     {
         auto trigger = std::next(this->triggers.begin(), triggerIndex);
+        this->removeTriggersExtension(triggerIndex);
         this->triggers.erase(trigger);
     }
     fixTriggerExtensions();
@@ -6323,16 +6324,21 @@ const Chk::ExtendedTrigData & Scenario::getTriggerExtension(size_t triggerIndex)
         throw std::logic_error(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " did not have an extension!");
 }
 
-void Scenario::deleteTriggerExtension(size_t triggerIndex)
+void Scenario::removeTriggersExtension(size_t triggerIndex)
 {
     if ( triggerIndex >= this->triggers.size() )
         throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
 
     auto & trigger = this->triggers[triggerIndex];
     size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
-    if ( extendedTrigDataIndex < this->triggerExtensions.size() && extendedTrigDataIndex != Chk::ExtendedTrigDataIndex::None )
+    trigger.clearExtendedDataIndex();
+    deleteTriggerExtension(extendedTrigDataIndex);
+}
+
+void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
+{
+    if ( triggerExtensionIndex < this->triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
     {
-        trigger.clearExtendedDataIndex();
         size_t i = this->triggerExtensions.size();
         for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= this->triggerExtensions.size()); i-- );
 
@@ -6417,7 +6423,7 @@ void Scenario::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     extension.commentStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && extension.isBlank() )
-        deleteTriggerExtension(triggerIndex);
+        removeTriggersExtension(triggerIndex);
 }
 
 size_t Scenario::getExtendedNotesStringId(size_t triggerIndex) const
@@ -6433,7 +6439,7 @@ void Scenario::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     extension.notesStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && extension.isBlank() )
-        deleteTriggerExtension(triggerIndex);
+        removeTriggersExtension(triggerIndex);
 }
 
 size_t Scenario::numBriefingTriggers() const

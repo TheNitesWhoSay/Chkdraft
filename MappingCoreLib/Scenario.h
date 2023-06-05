@@ -454,7 +454,8 @@ struct Scenario
     bool hasTriggerExtension(size_t triggerIndex) const;
     Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
     const Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex) const;
-    void deleteTriggerExtension(size_t triggerIndex);
+    void removeTriggersExtension(size_t triggerIndex);
+    void deleteTriggerExtension(size_t triggerExtensionIndex);
     void fixTriggerExtensions();
 
     size_t getCommentStringId(size_t triggerIndex) const;
