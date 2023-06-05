@@ -1189,40 +1189,40 @@ namespace Chk {
     }; // Size <= 256*256*2 (validated)
     
     __declspec(align(1)) struct PUNI {
-        Available playerUnitBuildable[Sc::Unit::TotalTypes][Sc::Player::Total] {};
+        Available playerUnitBuildable[Sc::Player::Total][Sc::Unit::TotalTypes] {};
         Available defaultUnitBuildable[Sc::Unit::TotalTypes] {};
-        UseDefault playerUnitUsesDefault[Sc::Unit::TotalTypes][Sc::Player::Total] {};
+        UseDefault playerUnitUsesDefault[Sc::Player::Total][Sc::Unit::TotalTypes] {};
 
         PUNI() {
-            memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes*Sc::Player::Total);
+            memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
             memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
-            memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Unit::TotalTypes*Sc::Player::Total);
+            memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
         }
 
         REFLECT(PUNI, playerUnitBuildable, defaultUnitBuildable, playerUnitUsesDefault)
     }; // Size: 5700 (validated)
     
     __declspec(align(1)) struct UPGR {
-        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
-        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
+        u8 playerMaxUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
+        u8 playerStartUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
         u8 defaultMaxLevel[Sc::Upgrade::TotalOriginalTypes] {
             3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,
             1, 1, 0, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,
             1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 0
         };
         u8 defaultStartLevel[Sc::Upgrade::TotalOriginalTypes] {};
-        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalOriginalTypes][Sc::Player::Total] {};
+        UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
 
         UPGR() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes*Sc::Player::Total);
+            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalOriginalTypes);
         }
 
         REFLECT(UPGR, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 1748 (validated)
     
     __declspec(align(1)) struct PTEC {
-        Available techAvailableForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
-        Researched techResearchedForPlayer[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
+        Available techAvailableForPlayer[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
+        Researched techResearchedForPlayer[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
         Available techAvailableByDefault[Sc::Tech::TotalOriginalTypes] {};
         Researched techResearchedByDefault[Sc::Tech::TotalOriginalTypes] {
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No ,
@@ -1232,11 +1232,11 @@ namespace Chk {
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes, Chk::Researched::No ,
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::Yes
         };
-        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalOriginalTypes][Sc::Player::Total] {};
+        UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
 
         PTEC() {
             memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes*Sc::Player::Total);
+            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalOriginalTypes);
         }
 
         REFLECT(PTEC, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
@@ -1375,8 +1375,8 @@ namespace Chk {
     }; // Size: 8 (validated)
     
     __declspec(align(1)) struct PUPx {
-        u8 playerMaxUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
-        u8 playerStartUpgradeLevel[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
+        u8 playerMaxUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
+        u8 playerStartUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
         u8 defaultMaxLevel[Sc::Upgrade::TotalTypes] {
             3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,    3, 3, 3, 3,
             1, 1, 0, 1,    1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,
@@ -1384,18 +1384,18 @@ namespace Chk {
             0, 1, 0, 1,    1, 1, 1, 0,    0, 0, 0, 0,    0
         };
         u8 defaultStartLevel[Sc::Upgrade::TotalTypes] {};
-        UseDefault playerUpgradeUsesDefault[Sc::Upgrade::TotalTypes][Sc::Player::Total] {};
+        UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
 
         PUPx() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes*Sc::Player::Total);
+            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalTypes);
         }
 
         REFLECT(PUPx, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 2318 (validated)
     
     __declspec(align(1)) struct PTEx {
-        Available techAvailableForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total] {};
-        Researched techResearchedForPlayer[Sc::Tech::TotalTypes][Sc::Player::Total] {};
+        Available techAvailableForPlayer[Sc::Player::Total][Sc::Tech::TotalTypes] {};
+        Researched techResearchedForPlayer[Sc::Player::Total][Sc::Tech::TotalTypes] {};
         Available techAvailableByDefault[Sc::Tech::TotalTypes] {};
         Researched techResearchedByDefault[Sc::Tech::TotalTypes] {
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No ,
@@ -1410,11 +1410,11 @@ namespace Chk {
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No,
             Chk::Researched::No , Chk::Researched::No , Chk::Researched::No , Chk::Researched::No
         };
-        UseDefault playerUsesDefaultsForTech[Sc::Tech::TotalTypes][Sc::Player::Total] {};
+        UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalTypes] {};
 
         PTEx() {
             memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes*Sc::Player::Total);
+            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalTypes);
         }
 
         REFLECT(PTEx, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)

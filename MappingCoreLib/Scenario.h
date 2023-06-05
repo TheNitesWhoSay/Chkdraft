@@ -341,7 +341,7 @@ struct Scenario
     void deleteLocationString(size_t stringId);
 
     // Properties API
-    bool useExpansionUnitSettings(Chk::UseExpSection useExp) const;
+    bool useExpansionUnitSettings(Chk::UseExpSection useExp, Sc::Weapon::Type weaponType = Sc::Weapon::Type::GaussRifle_Normal) const;
     bool unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u32 getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u16 getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
@@ -370,7 +370,7 @@ struct Scenario
     void setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault);
     void setUnitsToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
         
-    bool useExpansionUpgradeCosts(Chk::UseExpSection useExp) const;
+    bool useExpansionUpgradeCosts(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType = Sc::Upgrade::Type::TerranInfantryArmor) const;
     bool upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u16 getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u16 getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
@@ -387,7 +387,7 @@ struct Scenario
     void setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
     void setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
 
-    bool useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const;
+    bool useExpansionUpgradeLeveling(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType = Sc::Upgrade::Type::TerranInfantryArmor) const;
     size_t getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     size_t getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     size_t getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
@@ -400,7 +400,7 @@ struct Scenario
     void setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
     void setUpgradesToDefault(Chk::UseExpSection useExp = Chk::UseExpSection::Both);
         
-    bool useExpansionTechCosts(Chk::UseExpSection useExp) const;
+    bool useExpansionTechCosts(Chk::UseExpSection useExp, Sc::Tech::Type techType = Sc::Tech::Type::StimPacks) const;
     bool techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u16 getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     u16 getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
@@ -413,12 +413,13 @@ struct Scenario
     void setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
     void setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
         
-    bool useExpansionTechAvailability(Chk::UseExpSection useExp) const;
+    bool useExpansionTechAvailability(Chk::UseExpSection useExp, Sc::Tech::Type techType = Sc::Tech::Type::StimPacks) const;
     bool techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     bool techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     bool techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     bool techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
     bool playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp = Chk::UseExpSection::Auto) const;
+
     void setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
     void setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);
     void setDefaultTechAvailable(Sc::Tech::Type techType, bool available, Chk::UseExpSection useExp = Chk::UseExpSection::Auto);

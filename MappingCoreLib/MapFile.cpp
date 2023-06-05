@@ -168,6 +168,13 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
     return false;
 }
 
+bool isChkSaveType(SaveType saveType)
+{
+    return saveType == SaveType::AllChk || saveType == SaveType::RemasteredChk ||
+        saveType == SaveType::ExpansionChk || saveType == SaveType::HybridChk ||
+        saveType == SaveType::StarCraftChk;
+}
+
 bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
 {
     if ( saveAs && mapFilePath.empty() )
@@ -177,6 +184,16 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
+        // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
+        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
+            saveType = isChkSaveType(saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
+            saveType = isChkSaveType(saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
+            saveType = isChkSaveType(saveType) ? SaveType::HybridChk : SaveType::HybridScm;
+        else // version < Chk::Version::StarCraft_Hybrid
+            saveType = isChkSaveType(saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+
         bool overwriting = false;
         std::string newMapFilePath;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
