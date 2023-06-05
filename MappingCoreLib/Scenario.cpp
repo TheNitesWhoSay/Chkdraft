@@ -887,6 +887,9 @@ bool Scenario::stringStored(size_t stringId, Chk::StrScope storageScope) const
 
 void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
 {
+    if ( stringId == Chk::StringId::NoString )
+        return;
+
     if ( storageScope == Chk::StrScope::Game )
     {
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
@@ -2292,7 +2295,7 @@ void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, 
             if ( storageScope == Chk::StrScope::Game )
                 this->switchNames[switchIndex] = u32(newStringId);
             else if ( storageScope == Chk::StrScope::Editor )
-                this->editorStringOverrides.soundPath[switchIndex] = u32(newStringId);
+                this->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }

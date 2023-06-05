@@ -269,7 +269,6 @@ void TrigGeneralWindow::ToggleAdvancedMode()
 void TrigGeneralWindow::EditCommentFocusLost()
 {
     auto newCommentText = editComment.GetWinText();
-    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
     bool addIfNotFound = newCommentText && !newCommentText->empty();
     Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
     size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
@@ -284,7 +283,6 @@ void TrigGeneralWindow::EditCommentFocusLost()
 void TrigGeneralWindow::EditNotesFocusLost()
 {
     auto newNotesText = editNotes.GetWinText();
-    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
     bool addIfNotFound = newNotesText && !newNotesText->empty();
     if ( CM->hasTriggerExtension(trigIndex) )
     {

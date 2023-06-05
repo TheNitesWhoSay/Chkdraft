@@ -136,10 +136,3 @@ bool CascArchive::extractFile(const std::string & cascPath, const std::string & 
     }
     return success;
 }
-
-std::vector<FilterEntry<u32>> getCasqFilter()
-{
-    // TODO: How to filter for a folder?
-    //return std::vector<FilterEntry<u32>> { FilterEntry<u32>("*.casc", "CASC Archive(*.casc)", ".casc") };
-    throw std::logic_error("unimplemented");
-}

@@ -71,6 +71,4 @@ private:
     HANDLE hCasc;
 };
 
-// extern std::vector<FilterEntry<u32>> getCascFilter(); // TODO: how to filter for a folder?
-
 #endif
