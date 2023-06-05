@@ -87,7 +87,7 @@ class TextTrigCompiler
 
         bool loadCompiler(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
         void clearCompiler(); // Clears data loaded for a run of the compiler
-        void cleanText(std::string & text, std::vector<RawString> & stringContents) const; // Remove spacing and standardize line endings
+        bool cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const; // Remove spacing and standardize line endings
 
         bool parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
         inline bool parsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
