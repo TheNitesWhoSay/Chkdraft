@@ -642,7 +642,7 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
     auto & selUnits = selections.getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
+        if ( unitIndex+1 < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
         {
             CM->moveUnit(unitIndex, unitIndex+1);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));

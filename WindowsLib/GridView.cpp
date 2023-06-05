@@ -422,6 +422,11 @@ namespace WinLib {
     {
         return editing && ListViewControl::GetItemRect(focusedX, focusedY, rect);
     }
+    
+    std::optional<std::string> GridViewControl::GetEditText()
+    {
+        return editBox.GetWinText();
+    }
 
     bool GridViewControl::contentHitTest(int x, int y, bool & outsideLeft, bool & outsideTop, bool & outsideRight, bool & outsideBottom)
     {

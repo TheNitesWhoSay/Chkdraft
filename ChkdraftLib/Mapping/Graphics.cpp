@@ -816,11 +816,11 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                 
                 for ( s64 yc = 0; yc < 8; yc++ )
                 {
-                    if ( yc + miniTileYc < bitHeight )
+                    if ( yc + miniTileYc >= 0 && yc + miniTileYc < bitHeight )
                     {
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
-                            if ( xc + miniTileXc < bitWidth )
+                            if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
                                 bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(0, 0, 0);
                         }
                     }

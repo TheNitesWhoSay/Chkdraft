@@ -242,8 +242,8 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
             dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], dat.readySound[i], dat.whatSoundStart[i], dat.whatSoundEnd[i],
             dat.pissSoundStart[i], dat.pissSoundEnd[i], dat.yesSoundStart[i], dat.yesSoundEnd[i],
-            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], u16(0), u16(0),
-            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
             dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
             dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
             dat.starEditAvailabilityFlags[i]
@@ -259,8 +259,8 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
             dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
             u16(0), u16(0), u16(0), u16(0),
-            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], dat.addonHorizontal[i], dat.addonVertical[i],
-            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, dat.addonHorizontal[i], dat.addonVertical[i],
+            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
             dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
             dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
             dat.starEditAvailabilityFlags[i]
@@ -276,8 +276,8 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
             dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
             u16(0), u16(0), u16(0), u16(0),
-            dat.starEditPlacementBoxWidth[i], dat.starEditPlacementBoxHeight[i], u16(0), u16(0),
-            dat.unitSizeLeft[i], dat.unitSizeUp[i], dat.unitSizeRight[i], dat.unitSizeDown[i], dat.portrait[i], dat.mineralCost[i],
+            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
             dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
             dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
             dat.starEditAvailabilityFlags[i]

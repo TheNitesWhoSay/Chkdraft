@@ -461,6 +461,16 @@ namespace Sc {
                 From0To105 = 106,
                 From106To201 = 96
             });
+            __declspec(align(1)) struct Dimensions {
+                u16 width;
+                u16 height;
+            };
+            __declspec(align(1)) struct Extent {
+                u16 left;
+                u16 up;
+                u16 right;
+                u16 down;
+            };
 
             u8 graphics[TotalTypes];
             Sc::Unit::Type subunit1[TotalTypes];
@@ -498,14 +508,10 @@ namespace Sc {
             u16 pissSoundEnd[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundStart[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundEnd[IdRange::From0To105]; // Id 0-105 only
-            u16 starEditPlacementBoxWidth[TotalTypes];
-            u16 starEditPlacementBoxHeight[TotalTypes];
+            Dimensions starEditPlacementBox[TotalTypes];
             u16 addonHorizontal[IdRange::From106To201]; // Id 106-201 only
             u16 addonVertical[IdRange::From106To201]; // Id 106-201 only
-            u16 unitSizeLeft[TotalTypes];
-            u16 unitSizeUp[TotalTypes];
-            u16 unitSizeRight[TotalTypes];
-            u16 unitSizeDown[TotalTypes];
+            Extent unitExtent[TotalTypes];
             u16 portrait[TotalTypes];
             u16 mineralCost[TotalTypes];
             u16 vespeneCost[TotalTypes];
