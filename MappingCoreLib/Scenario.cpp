@@ -2,12 +2,12 @@
 #include "sha256.h"
 #include "Math.h"
 #include "../CommanderLib/Logger.h"
-#include "Sections.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -16,127 +16,209 @@
 
 extern Logger logger;
 
-template <typename SectionType>
-std::shared_ptr<SectionType> GetSection(std::unordered_map<SectionName, Section> & sections, const SectionName & sectionName)
-{
-    auto found = sections.find(sectionName);
-    if ( found != sections.end() )
-        return std::dynamic_pointer_cast<SectionType>(found->second);
-    else
-        return nullptr;
-}
+using Chk::StrCompressFlag;
+using Member = RareTs::IndexOf<Scenario>;
+
+std::unordered_map<Chk::SectionName, size_t> sectionMemberIndex {
+    {SectionName::TYPE, Member::type}, {SectionName::VER, Member::version}, {SectionName::IVER, Member::iVersion}, {SectionName::IVE2, Member::i2Version},
+    {SectionName::VCOD, Member::validation}, {SectionName::IOWN, Member::iownSlotTypes}, {SectionName::OWNR, Member::slotTypes}, {SectionName::ERA, Member::tileset},
+    {SectionName::DIM, Member::dimensions}, {SectionName::SIDE, Member::playerRaces}, {SectionName::MTXM, Member::tiles}, {SectionName::PUNI, Member::unitAvailability},
+    {SectionName::UPGR, Member::origUpgradeLeveling}, {SectionName::PTEC, Member::origTechnologyAvailability}, {SectionName::UNIT, Member::units}, {SectionName::ISOM, Member::isomTiles},
+    {SectionName::TILE, Member::editorTiles}, {SectionName::DD2, Member::doodads}, {SectionName::THG2, Member::sprites}, {SectionName::MASK, Member::tileFog},
+    {SectionName::STR, Member::strings}, {SectionName::UPRP, Member::createUnitProperties}, {SectionName::UPUS, Member::createUnitPropertiesUsed}, {SectionName::MRGN, Member::locations},
+    {SectionName::TRIG, Member::triggers}, {SectionName::MBRF, Member::briefingTriggers}, {SectionName::FORC, Member::forces}, {SectionName::SPRP, Member::scenarioProperties},
+    {SectionName::WAV, Member::soundPaths}, {SectionName::UNIS, Member::origUnitSettings}, {SectionName::UPGS, Member::origUpgradeCosts}, {SectionName::TECS, Member::origTechnologyCosts},
+    {SectionName::SWNM, Member::switchNames}, {SectionName::COLR, Member::playerColors}, {SectionName::PUPx, Member::upgradeLeveling}, {SectionName::PTEx, Member::techAvailability},
+    {SectionName::UNIx, Member::unitSettings}, {SectionName::UPGx, Member::upgradeCosts}, {SectionName::TECx, Member::techCosts}, {SectionName::STRx, Member::strings},
+    {SectionName::CRGB, Member::customColors}, {SectionName::OSTR, Member::editorStringOverrides}, {SectionName::KSTR, Member::editorStrings}, {SectionName::KTRG, Member::triggerExtensions},
+    {SectionName::KTGP, Member::triggerGroupings}
+};
 
 Scenario::Scenario() :
-    versions(), strings(), players(), layers(), properties(), triggers(),
-    tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
-{
-    versions.layers = &layers;
-    strings.versions = &versions;
-    strings.players = &players;
-    strings.layers = &layers;
-    strings.properties = &properties;
-    strings.triggers = &triggers;
-    players.strings = &strings;
-    layers.strings = &strings;
-    layers.triggers = &triggers;
-    properties.versions = &versions;
-    properties.strings = &strings;
-    triggers.strings = &strings;
-    triggers.layers = &layers;
-}
+    playerRaces{
+        Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
+        Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
+        Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
+    },
+    playerColors{
+        Chk::PlayerColor::Red, Chk::PlayerColor::Blue, Chk::PlayerColor::Teal, Chk::PlayerColor::Purple,
+        Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
+    },
+    slotTypes{
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    },
+    iownSlotTypes{
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    },
+    dimensions({0, 0})
+{}
 
 Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
-    versions(true), strings(true), players(true), layers(tileset, width, height), properties(true), triggers(true),
+    playerRaces{
+        Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
+        Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
+        Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
+    },
+    playerColors{
+        Chk::PlayerColor::Red, Chk::PlayerColor::Blue, Chk::PlayerColor::Teal, Chk::PlayerColor::Purple,
+        Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
+    },
+    slotTypes{
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    },
+    iownSlotTypes{
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    },
+    dimensions({width, height}), tileset(tileset),
+    tiles(size_t(width)*size_t(height), u16(0)),
+    editorTiles(size_t(width)*size_t(height), u16(0)),
+    tileFog(size_t(width)*size_t(height), u8(0)),
+    isomTiles((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1))),
     tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
-{
-    versions.layers = &layers;
-    strings.versions = &versions;
-    strings.players = &players;
-    strings.layers = &layers;
-    strings.properties = &properties;
-    strings.triggers = &triggers;
-    players.strings = &strings;
-    layers.strings = &strings;
-    layers.triggers = &triggers;
-    properties.versions = &versions;
-    properties.strings = &strings;
-    triggers.strings = &strings;
-    triggers.layers = &layers;
+{{
+    strings.push_back(std::nullopt); // 0 (always unused)
+    strings.push_back("Untitled Scenario"); // 1
+    strings.push_back("Destroy all enemy buildings."); // 2
+    strings.push_back("Anywhere"); // 3
+    strings.push_back("Force 1"); // 4
+    strings.push_back("Force 2"); // 5
+    strings.push_back("Force 3"); // 6
+    strings.push_back("Force 4"); // 7
 
-    if ( versions.isHybridOrAbove() )
-        allSections.push_back(versions.type);
+    for ( size_t i=0; i<Chk::LocationId::Anywhere; i++ ) // Note: Index 0 is unused
+        locations.push_back(Chk::Location{});
+
+    Chk::Location anywhere {};
+    anywhere.right = (s32)width*32;
+    anywhere.bottom = (s32)height*32;
+    anywhere.stringId = 3;
+    locations.push_back(anywhere);
+
+    if ( this->isHybridOrAbove() )
+    {
+        for ( size_t i=Chk::LocationId::Anywhere; i<Chk::TotalLocations; i++ )
+            locations.push_back(Chk::Location{});
+    }
+
+    if ( this->isHybridOrAbove() )
+        saveSections.push_back({Chk::SectionName::TYPE});
     
-    allSections.push_back(versions.ver);
+    saveSections.push_back({Chk::SectionName::VER});
 
-    if ( !versions.isHybridOrAbove() )
-        allSections.push_back(versions.iver);
+    if ( !this->isHybridOrAbove() )
+        saveSections.push_back({Chk::SectionName::IVER});
 
-    allSections.push_back(versions.ive2);
-    allSections.push_back(versions.vcod);
-    allSections.push_back(players.iown);
-    allSections.push_back(players.ownr);
-    allSections.push_back(layers.era);
-    allSections.push_back(layers.dim);
-    allSections.push_back(players.side);
-    allSections.push_back(layers.mtxm);
-    allSections.push_back(properties.puni);
-    allSections.push_back(properties.upgr);
-    allSections.push_back(properties.ptec);
-    allSections.push_back(layers.unit);
-    allSections.push_back(layers.isom);
-    allSections.push_back(layers.tile);
-    allSections.push_back(layers.dd2);
-    allSections.push_back(layers.thg2);
-    allSections.push_back(layers.mask);
-    allSections.push_back(strings.str);
-    allSections.push_back(triggers.uprp);
-    allSections.push_back(triggers.upus);
-    allSections.push_back(layers.mrgn);
-    allSections.push_back(triggers.trig);
-    allSections.push_back(triggers.mbrf);
-    allSections.push_back(strings.sprp);
-    allSections.push_back(players.forc);
-    allSections.push_back(triggers.wav);
-    allSections.push_back(properties.unis);
-    allSections.push_back(properties.upgs);
-    allSections.push_back(properties.tecs);
-    allSections.push_back(triggers.swnm);
-    allSections.push_back(players.colr);
-    allSections.push_back(properties.pupx);
-    allSections.push_back(properties.ptex);
-    allSections.push_back(properties.unix);
-    allSections.push_back(properties.upgx);
-    allSections.push_back(properties.tecx);
-}
-
-Scenario::~Scenario()
-{
-
-}
+    saveSections.insert(saveSections.end(), {
+        {Chk::SectionName::IVE2}, {Chk::SectionName::VCOD}, {Chk::SectionName::IOWN}, {Chk::SectionName::OWNR},
+        {Chk::SectionName::ERA }, {Chk::SectionName::DIM }, {Chk::SectionName::SIDE}, {Chk::SectionName::MTXM},
+        {Chk::SectionName::PUNI}, {Chk::SectionName::UPGR}, {Chk::SectionName::PTEC}, {Chk::SectionName::UNIT},
+        {Chk::SectionName::ISOM}, {Chk::SectionName::TILE}, {Chk::SectionName::DD2 }, {Chk::SectionName::THG2},
+        {Chk::SectionName::MASK}, {Chk::SectionName::STR }, {Chk::SectionName::UPRP}, {Chk::SectionName::UPUS},
+        {Chk::SectionName::MRGN}, {Chk::SectionName::TRIG}, {Chk::SectionName::MBRF}, {Chk::SectionName::SPRP},
+        {Chk::SectionName::FORC}, {Chk::SectionName::WAV }, {Chk::SectionName::UNIS}, {Chk::SectionName::UPGS},
+        {Chk::SectionName::TECS}, {Chk::SectionName::SWNM}, {Chk::SectionName::COLR}, {Chk::SectionName::PUPx},
+        {Chk::SectionName::PTEx}, {Chk::SectionName::UNIx}, {Chk::SectionName::UPGx}, {Chk::SectionName::TECx}
+    });
+}}
 
 void Scenario::clear()
 {
+    version = Chk::Version::StarCraft_Hybrid;
+    type = Chk::Type::RAWS;
+    iVersion = Chk::IVersion::Current;
+    i2Version = Chk::I2Version::StarCraft_1_04;
+    validation = Chk::VCOD{};
     strings.clear();
-    triggers.clear();
-    layers.clear();
-    properties.clear();
-    players.clear();
-    versions.clear();
+    editorStrings.clear();
+    editorStringsVersion = Chk::KstrVersion::Current;
+    editorStringOverrides = Chk::OSTR{};
+    scenarioProperties = Chk::SPRP{};
 
-    allSections.clear();
+    Chk::Race playerRaces[Sc::Player::Total] {
+        Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
+        Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
+        Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
+    };
+    for ( size_t i=0; i<Sc::Player::Total; ++i )
+        this->playerRaces[i] = playerRaces[i];
+
+    for ( size_t i=0; i<Sc::Player::TotalSlots; ++i )
+        playerColors[i] = Chk::PlayerColor(i);
+
+    customColors = Chk::CRGB{};
+    forces = Chk::FORC{};
+
+    for ( size_t i=0; i<Sc::Player::TotalSlots; ++i )
+    {
+        slotTypes[i] = Sc::Player::SlotType::GameOpen;
+        iownSlotTypes[i] = Sc::Player::SlotType::Inactive;
+    }
+    for ( size_t i=Sc::Player::TotalSlots; i<Sc::Player::Total; ++i )
+    {
+        slotTypes[i] = Sc::Player::SlotType::GameOpen;
+        iownSlotTypes[i] = Sc::Player::SlotType::Inactive;
+    }
+
+    sprites.clear();
+    doodads.clear();
+    units.clear();
+    locations.clear();
+
+    dimensions = Chk::DIM{0, 0};
+    tileset = Sc::Terrain::Tileset::Badlands;
+    tiles.clear();
+    editorTiles.clear();
+    tileFog.clear();
+    isomTiles.clear();
+
+    unitAvailability = Chk::PUNI{};
+    unitSettings = Chk::UNIx{};
+    upgradeCosts = Chk::UPGx{};
+    upgradeLeveling = Chk::PUPx{};
+    techCosts = Chk::TECx{};
+    techAvailability = Chk::PTEx{};
+
+    origUnitSettings = Chk::UNIS{};
+    origUpgradeCosts = Chk::UPGS{};
+    origUpgradeLeveling = Chk::UPGR{};
+    origTechnologyCosts = Chk::TECS{};
+    origTechnologyAvailability = Chk::PTEC{};
+
+    memset(&createUnitProperties, 0, sizeof(Chk::Cuwp)*Sc::Unit::MaxCuwps);
+    memset(&createUnitPropertiesUsed, 0, sizeof(Chk::CuwpUsed)*Sc::Unit::MaxCuwps);
+    triggers.clear();
+    briefingTriggers.clear();
+    memset(&switchNames, 0, sizeof(u32)*Chk::TotalSwitches);
+    memset(&soundPaths, 0, sizeof(u32)*Chk::TotalSounds);
+    triggerExtensions.clear();
+    triggerGroupings.clear();
+
+    saveSections.clear();
 
     for ( size_t i=0; i<tailData.size(); i++ )
         tailData[i] = u8(0);
 
     tailLength = 0;
     
-    jumpCompress = false;
     mapIsProtected = false;
+    jumpCompress = false;
+
+    strBytePaddedTo = 0;
+    initialStrTailDataOffset = 0;
+    strTailData.clear();
 }
 
 bool Scenario::empty() const
 {
-    return allSections.empty() && tailLength == 0 && versions.empty() && strings.empty() && players.empty() && layers.empty() && properties.empty() && triggers.empty();
+    return saveSections.empty() && tailLength == 0;
 }
 
 bool Scenario::isProtected() const
@@ -176,7 +258,7 @@ bool Scenario::isPassword(const std::string & password) const
 
 bool Scenario::setPassword(const std::string & oldPass, const std::string & newPass)
 {
-    if ( isPassword(oldPass) )
+    if ( !hasPassword() || isPassword(oldPass) )
     {
         if ( newPass == "" )
         {
@@ -216,9 +298,133 @@ bool Scenario::login(const std::string & password) const
     return false;
 }
 
+template <typename T>
+constexpr size_t size()
+{
+    if constexpr ( RareTs::is_static_array_v<T> )
+        return ::size<RareTs::element_type_t<T>>() * std::extent_v<T>;
+    else if constexpr ( RareTs::is_iterable_v<T> )
+        throw std::logic_error("Cannot get a static size for a non-static-array iterable type");
+    else if constexpr ( std::is_enum_v<T> )
+        return sizeof(std::underlying_type_t<T>);
+    else if constexpr ( RareTs::is_reflected_v<T> )
+    {
+        return RareTs::Members<T>::pack([](auto ... member) {
+            return (size<typename std::remove_reference_t<decltype(member)>::type>() + ...);
+        });
+    }
+    else
+        return sizeof(T);
+}
+
+template <typename T, typename Value>
+constexpr s32 size(const Value & value)
+{
+    if constexpr ( RareTs::has_begin_end_v<T> )
+        return s32(::size<RareTs::element_type_t<T>>() * value.size());
+    else
+        return s32(::size<T>());
+}
+
+template <typename T, typename Value>
+void read(std::istream & is, Value & value, std::streamsize sectionSize)
+{
+    if constexpr ( std::is_array_v<T> )
+    {
+        using Element = RareTs::element_type_t<T>;
+        for ( size_t i=0; i<std::extent_v<T>; i++ )
+            ::read<Element>(is, value[i], sectionSize);
+        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(std::extent_v<T>*sizeof(Element))); // Performs better, TODO: static check for safety then use
+    }
+    else if constexpr ( RareTs::has_begin_end_v<T> ) // e.g. vector
+    {
+        using Element = RareTs::element_type_t<T>;
+        size_t wholeElements = sectionSize/sizeof(Element) + (sectionSize%sizeof(Element) > 0 ? 1 : 0);
+        value = std::vector<Element>(wholeElements);
+        for ( size_t i=0; i<wholeElements; ++i )
+            ::read<Element>(is, value[i], sectionSize);
+        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(wholeElements*sizeof(Element))); // Performs better, TODO: static check for safety then use
+    }
+    else if constexpr ( RareTs::is_reflected_v<T> )
+    {
+        return RareTs::Members<T>::pack([&](auto ... member) {
+            (::read<typename std::remove_reference_t<decltype(member)>::type>(is, member.value(value), sectionSize), ...);
+        });
+    }
+    else if constexpr ( std::is_enum_v<T> )
+        is.read(reinterpret_cast<char*>(&value), sizeof(std::underlying_type_t<T>));
+    else
+        is.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+void Scenario::read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
+{
+    auto & section = addSection(Section{sectionName});
+    switch ( sectionName )
+    {
+        case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
+        {
+            size_t numLocations = size_t(sectionSize) / ::size<Chk::Location>();
+            locations.assign(numLocations+1, Chk::Location{});
+            for ( size_t i=1; i<=numLocations; ++i )
+                ::read<Chk::Location>(is, locations[i], std::streamsize(::size<Chk::Location>()));
+        }
+        break;
+        case SectionName::MTXM:
+        {
+            size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
+            this->tiles = std::vector<u16>(totalTiles);
+            is.read(reinterpret_cast<char*>(&this->tiles[0]), sectionSize);
+        }
+        break;
+        case SectionName::STR:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            if ( !hasSection(SectionName::STRx) )
+                syncBytesToStrings(bytes);
+        }
+        break;
+        case SectionName::STRx:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            syncRemasteredBytesToStrings(bytes);
+        }
+        break;
+        case SectionName::KSTR:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            syncBytesToKstrings(bytes);
+        }
+        break;
+        default:
+        {
+            auto memberIndex = sectionMemberIndex.find(sectionName);
+            if ( memberIndex != sectionMemberIndex.end() )
+            {
+                RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
+                    std::streamsize bytesRemaining = std::streamsize(sectionSize);
+                    ::read<typename decltype(member)::type>(is, value, bytesRemaining);
+                });
+            }
+            else
+            {
+                logger.info() << "Encountered unknown section: " << Chk::getNameString(sectionName) << std::endl;
+                section.sectionData = std::make_optional<std::vector<u8>>(size_t(sectionSize));
+                if ( sectionSize > 0 )
+                    is.read((char*)&section.sectionData.value()[0], std::streamsize(sectionSize));
+            }
+        }
+        break;
+    }
+}
+
 bool Scenario::read(std::istream & is)
 {
     clear();
+    bool hasLegacyKstr = false;
 
     // First read contents of "is" to "chk", this will allow jumping backwards when reading chks with jump sections
     std::stringstream chk(std::ios_base::binary|std::ios_base::in|std::ios_base::out);
@@ -230,7 +436,6 @@ bool Scenario::read(std::istream & is)
     }
 
     chk.seekg(std::ios_base::beg); // Move to start of chk
-    std::multimap<SectionName, Section> parsedSections;
     do
     {
         Chk::SectionHeader sectionHeader = {};
@@ -245,20 +450,12 @@ bool Scenario::read(std::istream & is)
         {
             if ( sectionHeader.sizeInBytes >= 0 ) // Regular section
             {
-                Chk::SectionSize sizeRead = 0;
-                Section section = nullptr;
-                try {
-                    section = ChkSection::read(parsedSections, sectionHeader, chk, sizeRead);
-                } catch ( std::exception & e ) {
-                    logger.error() << "Read of section " << ChkSection::getNameString(sectionHeader.name) << " failed with error: " << e.what() << std::endl;
-                    section = nullptr;
-                }
-                if ( section != nullptr && (chk.good() || chk.eof()) )
-                {
-                    parsedSections.insert(std::pair<SectionName, Section>(sectionHeader.name, section));
-                    allSections.push_back(section);
+                auto begin = chk.tellg();
+                read(chk, sectionHeader.name, sectionHeader.sizeInBytes);
 
-                    if ( sizeRead != sectionHeader.sizeInBytes ) // Undersized section
+                if ( chk.good() || chk.eof() )
+                {
+                    if ( Chk::SectionSize(chk.tellg() - begin) != sectionHeader.sizeInBytes ) // Undersized section
                         mapIsProtected = true;
                 }
                 else
@@ -286,84 +483,56 @@ bool Scenario::read(std::istream & is)
     }
     while ( chk.good() );
 
-    // For all sections that are actually used by scenario, get the instance of the section that will be used
-    std::unordered_map<SectionName, Section> finalSections;
-    const std::vector<SectionName> & sectionNames = ChkSection::getNames();
-    for ( const SectionName & sectionName : sectionNames )
-    {
-        LoadBehavior loadBehavior = ChkSection::getLoadBehavior(sectionName);
-        auto sectionInstances = parsedSections.equal_range(sectionName);
-        auto it = sectionInstances.first;
-        if ( it != parsedSections.end() )
-        {
-            if ( loadBehavior == LoadBehavior::Standard ) // Last instance of a section is used
-            {
-                Section section = nullptr;
-                for ( ; it != sectionInstances.second; ++it )
-                    section = it->second;
-                
-                if ( section != nullptr )
-                    finalSections.insert(std::pair<SectionName, Section>(sectionName, section));
-            }
-            else if ( loadBehavior == LoadBehavior::Append || loadBehavior == LoadBehavior::Override ) // First instance of a section is used
-                finalSections.insert(std::pair<SectionName, Section>(sectionName, sectionInstances.first->second));
-        }
-    }
-    
-    versions.set(finalSections);
-    strings.set(finalSections);
-    players.set(finalSections);
-    layers.set(finalSections);
-    properties.set(finalSections);
-    triggers.set(finalSections);
-
-    if ( versions.ver == nullptr )
+    if ( !hasSection(SectionName::VER) )
         return parsingFailed("Map was missing the VER section!");
+    else if ( this->version > Chk::Version::StarCraft_Remastered )
+    {
+        logger.error() << "Map has a newer CHK version than Chkdraft supports: " << this->version << std::endl;
+        mapIsProtected = true;
+    }
 
-    Chk::Version version = versions.ver->getVersion();
-
-    triggers.fixTriggerExtensions();
+    this->fixTerrainToDimensions();
+    this->fixTriggerExtensions();
     upgradeKstrToCurrent();
 
-    // TODO: More validation
     return true;
 }
 
-StrSynchronizerPtr Scenario::getStrSynchronizer()
+Scenario::Section & Scenario::addSection(Section section)
 {
-    return StrSynchronizerPtr(&strings, [](StrSynchronizer*){});
+    if ( hasSection(section.sectionName) )
+    {
+        for ( auto & existing : saveSections )
+        {
+            if ( section.sectionName == existing.sectionName )
+                return existing;
+        }
+        throw std::logic_error("An internal error occured");
+    }
+    else
+    {
+        saveSections.push_back(section);
+        return saveSections.back();
+    }
 }
 
-void Scenario::addSection(Section section)
+bool Scenario::hasSection(SectionName sectionName) const
 {
-    if ( section != nullptr )
+    for ( auto & section : saveSections )
     {
-        for ( auto & existing : allSections )
-        {
-            if ( section == existing )
-                return;
-        }
-        allSections.push_back(section);
+        if ( section.sectionName == sectionName )
+            return true;
     }
+    return false;
 }
 
 void Scenario::removeSection(const SectionName & sectionName)
 {
-    bool foundSection = false;
-    do
+    if ( hasSection(sectionName) )
     {
-        foundSection = false;
-        for ( auto it = allSections.begin(); it != allSections.end(); ++it )
-        {
-            if ( (*it)->getName() == sectionName )
-            {
-                allSections.erase(it);
-                foundSection = true;
-                break;
-            }
-        }
+        auto toRemove = std::remove_if(saveSections.begin(), saveSections.end(), [&](auto & section){ return section.sectionName == sectionName; });
+        saveSections.erase(toRemove);
     }
-    while ( foundSection );
 }
 
 bool Scenario::parsingFailed(const std::string & error)
@@ -373,12 +542,117 @@ bool Scenario::parsingFailed(const std::string & error)
     return false;
 }
 
+template <typename T, typename Value>
+void write(std::ostream & os, const Value & value)
+{
+    if constexpr ( std::is_array_v<T> )
+    {
+        using Element = RareTs::element_type_t<T>;
+        for ( size_t i=0; i<std::extent_v<T>; i++ )
+            write<Element>(os, value[i]);
+    }
+    else if constexpr ( RareTs::has_begin_end_v<T> )
+    {
+        using Element = RareTs::element_type_t<T>;
+        for ( const auto & element : value )
+            write<Element>(os, element);
+    }
+    else if constexpr ( RareTs::is_reflected_v<T> )
+    {
+        return RareTs::Members<T>::pack([&](auto ... member) {
+            (write<typename decltype(member)::type>(os, member.value(value)), ...);
+        });
+    }
+    else if constexpr ( std::is_enum_v<T> )
+        os.write(reinterpret_cast<const char*>(&value), sizeof(std::underlying_type_t<T>));
+    else
+        os.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template <typename Member, typename Value>
+void writeSection(std::ostream & os, const Value & value)
+{
+    s32 size = ::size<typename Member::type>(value);
+    os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    write<typename Member::type>(os, value);
+}
+
 void Scenario::write(std::ostream & os)
 {
     try
     {
-        for ( auto & section : allSections )
-            section->writeWithHeader(os, *this);
+        for ( auto & section : saveSections )
+        {
+            SectionName sectionName = section.sectionName;
+            os.write(reinterpret_cast<const char*>(&sectionName), sizeof(std::underlying_type_t<SectionName>));
+            switch ( sectionName )
+            {
+                case SectionName::MRGN: // Manual serialization to account for zeroth location being unused
+                {
+                    s32 size = s32((locations.size()-1) * ::size<Chk::Location>());
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                    for ( size_t i=1; i<locations.size(); ++i )
+                        ::write<Chk::Location>(os, locations[i]);
+                }
+                break;
+                case SectionName::STR:
+                {
+                    std::vector<u8> bytes;
+                    syncStringsToBytes(bytes);
+                    s32 size = s32(bytes.size());
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
+                }
+                break;
+                case SectionName::STRx:
+                {
+                    std::vector<u8> bytes;
+                    syncRemasteredStringsToBytes(bytes);
+                    s32 size = s32(bytes.size());
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
+                }
+                break;
+                case SectionName::KSTR:
+                {
+                    std::vector<u8> bytes;
+                    syncKstringsToBytes(bytes);
+                    s32 size = s32(bytes.size());
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(bytes.size()));
+                }
+                break;
+                default:
+                {
+                    auto memberIndex = sectionMemberIndex.find(sectionName);
+                    if ( memberIndex != sectionMemberIndex.end() ) // This is a section that can be auto-serialized using reflection
+                    {
+                        RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
+                            ::writeSection<decltype(member)>(os, value);
+                        });
+                    }
+                    else // This is an unknown/custom section
+                    {
+                        logger.info() << "[" << Chk::getNameString(sectionName) << "] unknown/custom" << std::endl;
+                        if ( section.sectionData )
+                        {
+                            s32 size = s32(section.sectionData->size());
+                            os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                            if ( size > 0 )
+                                os.write(reinterpret_cast<const char*>(&section.sectionData.value()[0]), std::streamsize(size));
+                        }
+                        else
+                        {
+                            s32 size = 0;
+                            os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        if ( tailLength > 0 )
+            os.write(reinterpret_cast<const char*>(&tailData[0]), std::streamsize(tailLength));
     }
     catch ( std::exception & e )
     {
@@ -417,1422 +691,1666 @@ bool Scenario::deserialize(Chk::SerializedChk* data)
 
 void Scenario::updateSaveSections()
 {
-    if ( strings.hasExtendedStrings() )
+    if ( this->hasExtendedStrings() )
     {
-        addSection(strings.ostr);
-        addSection(strings.kstr);
+        addSection(Section{SectionName::OSTR});
+        addSection(Section{SectionName::KSTR});
     }
 
-    if ( triggers.ktrg != nullptr && !triggers.ktrg->empty() )
-        addSection(triggers.ktrg);
+    if ( !this->triggerExtensions.empty() )
+        addSection(Section{SectionName::KTRG});
 
-    if ( triggers.ktgp != nullptr && !triggers.ktgp->empty() )
-        addSection(triggers.ktgp);
+    if ( !this->triggerGroupings.empty() )
+        addSection(Section{SectionName::KTGP});
 }
 
 bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
 {
-    if ( versions.changeTo(version, lockAnywhere, autoDefragmentLocations) )
+    auto oldVersion = this->version;
+
+    if ( version < Chk::Version::StarCraft_BroodWar ) // Original or Hybrid: include all original properties
     {
-        strings.deleteUnusedStrings(Chk::Scope::Both);
-        if ( version < Chk::Version::StarCraft_BroodWar ) // Original or Hybrid: No COLR, include all original properties
+        if ( version < Chk::Version::StarCraft_Hybrid ) // Original: No COLR, TYPE, IVE2, or expansion properties
         {
-            if ( version < Chk::Version::StarCraft_Hybrid ) // Original: No TYPE, IVE2, or expansion properties
+            if ( !this->trimLocationsToOriginal(lockAnywhere, autoDefragmentLocations) )
             {
-                removeSection(SectionName::TYPE);
-                removeSection(SectionName::PUPx);
-                removeSection(SectionName::PTEx);
-                removeSection(SectionName::UNIx);
-                removeSection(SectionName::TECx);
+                logger.error("Cannot save as original with over 64 locations in use!");
+                return false;
             }
+            this->type = Chk::Type::RAWS;
+            this->iVersion = Chk::IVersion::Current;
+            removeSection(SectionName::TYPE);
+            removeSection(SectionName::PUPx);
+            removeSection(SectionName::PTEx);
+            removeSection(SectionName::UNIx);
+            removeSection(SectionName::TECx);
             removeSection(SectionName::COLR);
-            addSection(versions.iver);
-            addSection(properties.upgr);
-            addSection(properties.ptec);
-            addSection(properties.unis);
-            addSection(properties.upgs);
-            addSection(properties.tecs);
         }
-        else // if ( version >= Chk::Version::StarCraft_BroodWar ) // Broodwar: No IVER or original properties, include COLR
+        else
         {
-            removeSection(SectionName::IVER);
-            removeSection(SectionName::UPGR);
-            removeSection(SectionName::PTEC);
-            removeSection(SectionName::UNIS);
-            removeSection(SectionName::UPGS);
-            removeSection(SectionName::TECS);
-            addSection(players.colr);
+            this->type = Chk::Type::RAWS;
+            this->iVersion = Chk::IVersion::Current;
+            this->i2Version = Chk::I2Version::StarCraft_1_04;
+            this->expandToScHybridOrExpansion();
+        }
+        addSection(Section{SectionName::IVER});
+        addSection(Section{SectionName::UPGR});
+        addSection(Section{SectionName::PTEC});
+        addSection(Section{SectionName::UNIS});
+        addSection(Section{SectionName::UPGS});
+        addSection(Section{SectionName::TECS});
+    }
+    else // if ( version >= Chk::Version::StarCraft_BroodWar ) // Broodwar: No IVER or original properties
+    {
+        this->type = Chk::Type::RAWB;
+        this->iVersion = Chk::IVersion::Current;
+        this->i2Version = Chk::I2Version::StarCraft_1_04;
+        this->expandToScHybridOrExpansion();
+
+        removeSection(SectionName::IVER);
+        removeSection(SectionName::UPGR);
+        removeSection(SectionName::PTEC);
+        removeSection(SectionName::UNIS);
+        removeSection(SectionName::UPGS);
+        removeSection(SectionName::TECS);
+    }
+        
+    if ( version >= Chk::Version::StarCraft_Hybrid ) // Hybrid or BroodWar: Include TYPE, IVE2, COLR, and all expansion properties
+    {
+        this->type = version >= Chk::Version::StarCraft_BroodWar ? Chk::Type::RAWB : Chk::Type::RAWS;
+        addSection(Section{SectionName::TYPE});
+        addSection(Section{SectionName::PUPx});
+        addSection(Section{SectionName::PTEx});
+        addSection(Section{SectionName::UNIx});
+        addSection(Section{SectionName::UPGx});
+        addSection(Section{SectionName::TECx});
+
+        if ( !hasSection(SectionName::COLR) )
+        {
+            addSection(Section{SectionName::COLR});
+            for ( size_t i=size_t(Chk::PlayerColor::Red); i<=Chk::PlayerColor::Yellow; ++i )
+                this->setPlayerColor(i, Chk::PlayerColor(i));
+        }
+    }
+    
+    this->version = version;
+    this->deleteUnusedStrings(Chk::StrScope::Both);
+    return true;
+}
+
+Chk::Version Scenario::getVersion() const
+{
+    return this->version;
+}
+
+bool Scenario::isVersion(Chk::Version version) const
+{
+    return version == this->version;
+}
+
+bool Scenario::isOriginal() const
+{
+    return this->version < Chk::Version::StarCraft_Hybrid;
+}
+
+bool Scenario::isHybrid() const
+{
+    return this->version >= Chk::Version::StarCraft_Hybrid && this->version < Chk::Version::StarCraft_BroodWar;
+}
+
+bool Scenario::isExpansion() const
+{
+    return this->version >= Chk::Version::StarCraft_BroodWar && this->version < Chk::Version::StarCraft_Remastered;
+}
+
+bool Scenario::isHybridOrAbove() const
+{
+    return this->version >= Chk::Version::StarCraft_Hybrid;
+}
+
+bool Scenario::isRemastered() const
+{
+    return this->version >= Chk::Version::StarCraft_Remastered;
+}
+
+bool Scenario::hasDefaultValidation() const
+{
+    Chk::VCOD vcod{};
+    for ( size_t i=0; i<Chk::TotalValidationSeeds; ++i )
+    {
+        if ( this->validation.seedValues[i] != vcod.seedValues[i] )
+            return false;
+    }
+    for ( size_t i=0; i<Chk::TotalValidationOpCodes; ++i )
+    {
+        if ( this->validation.opCodes[i] != vcod.opCodes[i] )
+            return false;
+    }
+    return true;
+}
+
+void Scenario::setToDefaultValidation()
+{
+    Chk::VCOD vcod = Chk::VCOD {};
+    for ( size_t i=0; i<Chk::TotalValidationSeeds; ++i )
+        this->validation.seedValues[i] = vcod.seedValues[i];
+    for ( size_t i=0; i<Chk::TotalValidationOpCodes; ++i )
+        this->validation.opCodes[i] = vcod.opCodes[i];
+}
+
+bool Scenario::hasExtendedStrings() const
+{
+    return !this->editorStrings.empty();
+}
+
+size_t Scenario::getCapacity(Chk::StrScope storageScope) const
+{
+    if ( storageScope == Chk::StrScope::Game )
+        return this->strings.size();
+    else if ( storageScope == Chk::StrScope::Editor )
+        return this->editorStrings.size();
+    else
+        return 0;
+}
+
+size_t Scenario::getBytesUsed(Chk::StrScope storageScope)
+{
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        std::vector<u8> bytes {};
+        if ( hasSection(SectionName::STRx) )
+            syncRemasteredStringsToBytes(bytes);
+        else
+            syncStringsToBytes(bytes);
+
+        return bytes.size();
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        std::vector<u8> bytes {};
+        syncKstringsToBytes(bytes);
+        return bytes.size();
+    }
+    else
+        return 0;
+}
+
+bool Scenario::stringStored(size_t stringId, Chk::StrScope storageScope) const
+{
+    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
+        return stringId < this->strings.size() && this->strings[stringId];
+    else if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor )
+        return stringId < this->editorStrings.size() && this->editorStrings[stringId];
+
+    return false;
+}
+
+void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
+{
+    if ( stringId == Chk::StringId::NoString )
+        return;
+
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
+        {
+            if ( (userMask & Chk::StringUserFlag::ScenarioProperties) != Chk::StringUserFlag::None )
+            {
+                if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId == (u16)stringId )
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioName));
+
+                if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId == (u16)stringId )
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioDescription));
+            }
+            if ( (userMask & Chk::StringUserFlag::Force) != Chk::StringUserFlag::None )
+            {
+                appendForceStrUsage(stringId, stringUsers, userMask);
+            }
+            if ( (userMask & Chk::StringUserFlag::BothUnitSettings) != Chk::StringUserFlag::None )
+            {
+                appendUnitStrUsage(stringId, stringUsers, userMask);
+            }
+            if ( (userMask & Chk::StringUserFlag::Location) != Chk::StringUserFlag::None )
+            {
+                appendLocationStrUsage(stringId, stringUsers, userMask);
+            }
+            if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
+            {
+                appendTriggerStrUsage(stringId, stringUsers, storageScope, userMask);
+            }
+        }
+        else if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None ) // stringId >= Chk::MaxStrings // 32-bit stringId
+        {
+            appendTriggerStrUsage(stringId, stringUsers, storageScope, userMask);
+        }
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        if ( this->editorStringOverrides.scenarioName == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioName));
+
+        if ( this->editorStringOverrides.scenarioDescription == stringId )
+            stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioDescription));
+
+        for ( size_t i=0; i<Chk::TotalForces; i++ )
+        {
+            if ( this->editorStringOverrides.forceName[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Force, i));
+        }
+
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->editorStringOverrides.unitName[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::OriginalUnitSettings, i));
+        }
+
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->editorStringOverrides.expUnitName[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExpansionUnitSettings, i));
+        }
+
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            if ( this->editorStringOverrides.soundPath[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Sound, i));
+        }
+
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            if ( this->editorStringOverrides.switchName[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Switch, i));
+        }
+
+        for ( size_t i=0; i<Chk::TotalLocations; i++ )
+        {
+            if ( this->editorStringOverrides.locationName[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Location, i));
+        }
+    }
+}
+
+bool Scenario::stringUsed(size_t stringId, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask, bool ensureStored) const
+{
+    if ( storageScope == Chk::StrScope::Game && ((stringId < this->strings.size() && this->strings[stringId]) || !ensureStored) )
+    {
+        if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
+        {
+            if ( usageScope == Chk::StrScope::Editor )
+                return locationStringUsed(stringId, storageScope, userMask) || triggerEditorStringUsed(stringId, storageScope, userMask);
+            else if ( usageScope == Chk::StrScope::Game )
+            {
+                return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId == (u16)stringId ) ||
+                    ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId == (u16)stringId ) ||
+                    forceStringUsed(stringId, userMask) || unitStringUsed(stringId, userMask) || triggerGameStringUsed(stringId, userMask);
+            }
+            else // if ( usageScope == Chk::StrScope::Either )
+            {
+                return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId == (u16)stringId ) ||
+                    ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId == (u16)stringId ) ||
+                    forceStringUsed(stringId, userMask) || unitStringUsed(stringId, userMask) ||
+                    locationStringUsed(stringId, storageScope, userMask) || triggerStringUsed(stringId, storageScope, userMask);
+            }
+        }
+        else // stringId >= Chk::MaxStrings // 32-bit stringId
+        {
+            return usageScope == Chk::StrScope::Either && triggerStringUsed(stringId, storageScope, userMask) ||
+                usageScope == Chk::StrScope::Game && triggerGameStringUsed(stringId, userMask) ||
+                usageScope == Chk::StrScope::Editor && triggerEditorStringUsed(stringId, storageScope, userMask);
+        }
+    }
+    else if ( storageScope == Chk::StrScope::Editor && ((stringId < this->editorStrings.size() && this->editorStrings[stringId]) || !ensureStored) )
+    {
+        if ( this->editorStringOverrides.scenarioName == stringId || this->editorStringOverrides.scenarioDescription == stringId )
+            return true;
+
+        for ( size_t i=0; i<Chk::TotalForces; i++ )
+        {
+            if ( this->editorStringOverrides.forceName[i] == stringId )
+                return true;
+        }
+
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->editorStringOverrides.unitName[i] == stringId )
+                return true;
+        }
+
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->editorStringOverrides.expUnitName[i] == stringId )
+                return true;
+        }
+
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            if ( this->editorStringOverrides.soundPath[i] == stringId )
+                return true;
+        }
+
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            if ( this->editorStringOverrides.switchName[i] == stringId )
+                return true;
+        }
+
+        for ( size_t i=0; i<Chk::TotalLocations; i++ )
+        {
+            if ( this->editorStringOverrides.locationName[i] == stringId )
+                return true;
+        }
+    }
+    return false;
+}
+
+void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask) const
+{
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        bool markGameStrings = (usageScope & Chk::StrScope::Game) == Chk::StrScope::Game;
+        bool markEditorStrings = (usageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor;
+
+        if ( markGameStrings )
+        {
+            // {SPRP, Game, u16}: Scenario Name and Scenario Description
+            if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId > 0 )
+                stringIdUsed[this->scenarioProperties.scenarioNameStringId] = true;
+
+            if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId > 0 )
+                stringIdUsed[this->scenarioProperties.scenarioDescriptionStringId] = true;
+
+            markUsedForceStrings(stringIdUsed, userMask); // {FORC, Game, u16}: Force Names
+            markUsedUnitStrings(stringIdUsed, userMask); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
+            if ( markEditorStrings ) // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, ...
+                markUsedTriggerStrings(stringIdUsed, storageScope, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
+            else
+                markUsedTriggerGameStrings(stringIdUsed, userMask); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
+        }
+
+        if ( markEditorStrings )
+        {
+            markUsedLocationStrings(stringIdUsed, userMask); // {MRGN, Editor, u16}: location name
+            if ( !markGameStrings )
+                markUsedTriggerEditorStrings(stringIdUsed, storageScope, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
+        }
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->editorStringOverrides.scenarioName != 0 )
+            stringIdUsed[this->editorStringOverrides.scenarioName] = true;
+
+        if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->editorStringOverrides.scenarioDescription != 0 )
+            stringIdUsed[this->editorStringOverrides.scenarioDescription] = true;
+
+        if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
+        {
+            for ( size_t i=0; i<Chk::TotalForces; i++ )
+            {
+                if ( this->editorStringOverrides.forceName[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.forceName[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
+        {
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( this->editorStringOverrides.unitName[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.unitName[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+        {
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( this->editorStringOverrides.expUnitName[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.expUnitName[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+        {
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( this->editorStringOverrides.soundPath[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.soundPath[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+        {
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->editorStringOverrides.switchName[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.switchName[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
+        {
+            for ( size_t i=0; i<Chk::TotalLocations; i++ )
+            {
+                if ( this->editorStringOverrides.locationName[i] != 0 )
+                    stringIdUsed[this->editorStringOverrides.locationName[i]] = true;
+            }
+        }
+        markUsedTriggerStrings(stringIdUsed, storageScope, userMask);
+    }
+}
+
+void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask) const
+{
+    markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
+    switch ( storageScope )
+    {
+        case Chk::StrScope::Game:
+        {
+            size_t limit = std::min((size_t)Chk::MaxStrings, this->strings.size());
+            size_t stringId = 1;
+            for ( ; stringId < limit; ++stringId )
+            {
+                if ( stringIdUsed[stringId] && !this->strings[stringId])
+                    stringIdUsed[stringId] = false;
+            }
+            for ( ; stringId < Chk::MaxStrings; stringId++ )
+            {
+                if ( stringIdUsed[stringId] )
+                    stringIdUsed[stringId] = false;
+            }
+        }
+        break;
+        case Chk::StrScope::Editor:
+        {
+            size_t limit = std::min((size_t)Chk::MaxKStrings, this->editorStrings.size());
+            size_t stringId = 1;
+            for ( ; stringId < limit; ++stringId )
+            {
+                if ( stringIdUsed[stringId] && !this->editorStrings[stringId] )
+                    stringIdUsed[stringId] = false;
+            }
+            for ( ; stringId < Chk::MaxStrings; stringId++ )
+            {
+                if ( stringIdUsed[stringId] )
+                    stringIdUsed[stringId] = false;
+            }
+        }
+        break;
+        case Chk::StrScope::Either:
+        {
+            size_t limit = std::min(std::min((size_t)Chk::MaxStrings, getCapacity(Chk::StrScope::Game)), getCapacity(Chk::StrScope::Editor));
+            size_t stringId = 1;
+            for ( ; stringId < limit; stringId++ )
+            {
+                if ( stringIdUsed[stringId] && !(stringId < this->strings.size() && this->strings[stringId]) && !(stringId < this->editorStrings.size() && this->editorStrings[stringId]) )
+                    stringIdUsed[stringId] = false;
+            }
+
+            if ( getCapacity(Chk::StrScope::Game) > getCapacity(Chk::StrScope::Editor) )
+            {
+                for ( ; stringId < getCapacity(Chk::StrScope::Game); stringId++ )
+                {
+                    if ( stringIdUsed[stringId] && !(stringId < this->strings.size() && this->strings[stringId]) )
+                        stringIdUsed[stringId] = false;
+                }
+            }
+            else if ( getCapacity(Chk::StrScope::Editor) > getCapacity(Chk::StrScope::Game) )
+            {
+                for ( ; stringId < getCapacity(Chk::StrScope::Editor); stringId++ )
+                {
+                    if ( stringIdUsed[stringId] && !(stringId < this->editorStrings.size() && this->editorStrings[stringId]) )
+                        stringIdUsed[stringId] = false;
+                }
+            }
+
+            for ( ; stringId < Chk::MaxStrings; stringId++ )
+            {
+                if ( stringIdUsed[stringId] )
+                    stringIdUsed[stringId] = false;
+            }
+        
+        }
+        break;
+    }
+}
+
+StrProp Scenario::getProperties(size_t editorStringId) const
+{
+    return hasSection(Chk::SectionName::KSTR) && editorStringId < editorStrings.size() ? editorStrings[editorStringId]->properties() : StrProp();
+}
+
+void Scenario::setProperties(size_t editorStringId, const StrProp & strProp)
+{
+    if ( hasSection(Chk::SectionName::KSTR) )
+    {
+        if ( editorStringId < editorStrings.size() && editorStrings[editorStringId] )
+            editorStrings[editorStringId]->properties() = strProp;
+    }
+}
+
+template <typename StringType>
+std::optional<StringType> Scenario::getString(size_t stringId, Chk::StrScope storageScope) const
+{
+    auto getGameString = [&](){
+        return stringId < this->strings.size() && this->strings[stringId] ?
+            std::optional<StringType>(this->strings[stringId]->toString<StringType>()) : std::nullopt;
+    };
+    auto getEditorString = [&](){
+        return stringId < editorStrings.size() && editorStrings[stringId] ?
+            std::optional<StringType>(editorStrings[stringId]->toString<StringType>()) : std::nullopt;
+    };
+    switch ( storageScope )
+    {
+        case Chk::StrScope::Either:
+        case Chk::StrScope::EditorOverGame:
+        {
+            auto editorResult = getEditorString();
+            return editorResult ? editorResult : getGameString();
+        }
+        case Chk::StrScope::Game: return getGameString();
+        case Chk::StrScope::Editor: return getEditorString();
+        case Chk::StrScope::GameOverEditor:
+        {
+            auto gameResult = getGameString();
+            return gameResult ? gameResult : getEditorString();
+        }
+        default: return std::nullopt;
+    }
+}
+template std::optional<RawString> Scenario::getString<RawString>(size_t stringId, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getString<EscString>(size_t stringId, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t stringId, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t stringId, Chk::StrScope storageScope) const;
+
+template <typename StringType>
+size_t Scenario::findString(const StringType & str, Chk::StrScope storageScope) const
+{
+    auto findGameString = [&](){
+        for ( size_t stringId=1; stringId<strings.size(); stringId++ )
+        {
+            if ( strings[stringId] && strings[stringId]->compare<StringType>(str) == 0 )
+                return stringId;
+        }
+        return size_t(Chk::StringId::NoString);
+    };
+    auto findEditorString = [&](){
+        for ( size_t stringId=1; stringId<editorStrings.size(); stringId++ )
+        {
+            if ( editorStrings[stringId] && editorStrings[stringId]->compare<StringType>(str) == 0 )
+                return stringId;
+        }
+        return size_t(Chk::StringId::NoString);
+    };
+    switch ( storageScope )
+    {
+        case Chk::StrScope::Game: return findGameString();
+        case Chk::StrScope::Editor: return findEditorString();
+        case Chk::StrScope::GameOverEditor:
+        case Chk::StrScope::Either:
+            {
+                size_t gameResult = findGameString();
+                return gameResult != Chk::StringId::NoString ? gameResult : findEditorString();
+            }
+        case Chk::StrScope::EditorOverGame:
+            {
+                size_t editorResult = findEditorString();
+                return editorResult != Chk::StringId::NoString ? editorResult : findGameString();
+            }
+    }
+    return size_t(Chk::StringId::NoString);
+}
+template size_t Scenario::findString<RawString>(const RawString & str, Chk::StrScope storageScope) const;
+template size_t Scenario::findString<EscString>(const EscString & str, Chk::StrScope storageScope) const;
+template size_t Scenario::findString<ChkdString>(const ChkdString & str, Chk::StrScope storageScope) const;
+template size_t Scenario::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::StrScope storageScope) const;
+
+bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bool autoDefragment)
+{
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        if ( stringCapacity > Chk::MaxStrings )
+            throw Chk::MaximumStringsExceeded();
+
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        size_t numValidUsedStrings = 0;
+        size_t highestValidUsedStringId = 0;
+        for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
+        {
+            if ( stringIdUsed[stringId] )
+            {
+                numValidUsedStrings ++;
+                highestValidUsedStringId = stringId;
+            }
+        }
+
+        if ( numValidUsedStrings > stringCapacity )
+            throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+        else if ( highestValidUsedStringId > stringCapacity )
+        {
+            if ( autoDefragment && numValidUsedStrings <= stringCapacity )
+                defragment(Chk::StrScope::Game, false);
+            else
+                throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
         }
         
-        if ( version >= Chk::Version::StarCraft_Hybrid ) // Hybrid or BroodWar: Include type, ive2, and all expansion properties
+        while ( strings.size() <= stringCapacity )
+            strings.push_back(std::nullopt);
+
+        while ( strings.size() > stringCapacity )
+            strings.pop_back();
+
+        return true;
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        if ( stringCapacity > Chk::MaxKStrings )
+            throw Chk::MaximumStringsExceeded();
+
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        size_t numValidUsedStrings = 0;
+        size_t highestValidUsedStringId = 0;
+        for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
         {
-            addSection(versions.type);
-            addSection(properties.pupx);
-            addSection(properties.ptex);
-            addSection(properties.unix);
-            addSection(properties.upgx);
-            addSection(properties.tecx);
+            if ( stringIdUsed[stringId] )
+            {
+                numValidUsedStrings ++;
+                highestValidUsedStringId = stringId;
+            }
         }
+
+        if ( numValidUsedStrings > stringCapacity )
+            throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+        else if ( highestValidUsedStringId > stringCapacity )
+        {
+            if ( autoDefragment && numValidUsedStrings <= stringCapacity )
+                defragment(Chk::StrScope::Editor, false);
+            else
+                throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
+        }
+        
+        while ( editorStrings.size() < stringCapacity )
+            editorStrings.push_back(std::nullopt);
+
+        while ( editorStrings.size() > stringCapacity )
+            editorStrings.pop_back();
+
         return true;
     }
     return false;
 }
 
-void Scenario::setTileset(Sc::Terrain::Tileset tileset)
+template <typename StringType>
+size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, bool autoDefragment)
 {
-    layers.setTileset(tileset);
-}
-
-void Scenario::upgradeKstrToCurrent()
-{
-    if ( 0 == strings.kstr->getVersion() || 2 == strings.kstr->getVersion() )
+    if ( storageScope == Chk::StrScope::Game )
     {
-        size_t strCapacity = strings.getCapacity(Chk::Scope::Game);
-        for ( auto & section : allSections )
+        RawString rawString;
+        convertStr<StringType, RawString>(str, rawString);
+
+        size_t stringId = findString<StringType>(str);
+        if ( stringId != (size_t)Chk::StringId::NoString )
+            return stringId; // String already exists, return the id
+
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        size_t nextUnusedStringId = Chk::MaxStrings;
+        size_t limit = Chk::MaxStrings;
+        for ( size_t i=1; i<limit; i++ )
         {
-            switch ( section->getName() )
+            if ( !stringIdUsed[i] )
             {
-                case Chk::SectionName::TRIG:
-                {
-                    auto trigSection = std::dynamic_pointer_cast<TrigSection>(section);
-                    size_t numTriggers = trigSection->numTriggers();
-                    for ( size_t triggerIndex=0; triggerIndex<numTriggers; triggerIndex++ )
-                    {
-                        auto trigger = trigSection->getTrigger(triggerIndex);
-                        if ( trigger != nullptr )
-                        {
-                            size_t extendedCommentStringId = triggers.getExtendedCommentStringId(triggerIndex);
-                            size_t extendedNotesStringId = triggers.getExtendedNotesStringId(triggerIndex);
-                            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
-                            {
-                                Chk::Action & action = trigger->actions[actionIndex];
-                                if ( action.actionType < Chk::Action::NumActionTypes )
-                                {
-                                    if ( Chk::Action::actionUsesStringArg[action.actionType] &&
-                                        action.stringId > strCapacity &&
-                                        action.stringId != Chk::StringId::NoString &&
-                                        action.stringId < 65536 &&
-                                        strings.stringStored(65536 - action.stringId, Chk::Scope::Editor) )
-                                    {
-                                        if ( action.actionType == Chk::Action::Type::Comment &&
-                                            (extendedCommentStringId == Chk::StringId::NoString ||
-                                             extendedNotesStringId == Chk::StringId::NoString) )
-                                        { // Move comment to extended comment or to notes
-                                            if ( extendedCommentStringId == Chk::StringId::NoString )
-                                            {
-                                                triggers.setExtendedCommentStringId(triggerIndex, 65536 - action.stringId);
-                                                extendedCommentStringId = triggers.getExtendedCommentStringId(triggerIndex);
-                                                action.stringId = 0;
-                                            }
-                                            else if ( extendedNotesStringId == Chk::StringId::NoString )
-                                            {
-                                                triggers.setExtendedNotesStringId(triggerIndex, 65536 - action.stringId);
-                                                extendedNotesStringId = triggers.getExtendedNotesStringId(triggerIndex);
-                                                action.stringId = 0;
-                                            }
-                                        }
-                                        else // Extended string is lost
-                                        {
-                                            auto actionString = strings.getString<ChkdString>(65536 - action.stringId);
-                                            logger.warn() << "Trigger #" << triggerIndex
-                                                << " action #" << actionIndex
-                                                << " lost extended string: \""
-                                                << (actionString != nullptr ? *actionString : "")
-                                                << "\"" << std::endl;
-
-                                            action.stringId = Chk::StringId::NoString;
-                                        }
-                                    }
-
-                                    if ( Chk::Action::actionUsesSoundArg[action.actionType] &&
-                                        action.soundStringId > strCapacity &&
-                                        action.soundStringId != Chk::StringId::NoString &&
-                                        action.soundStringId < 65536 &&
-                                        strings.stringStored(65536 - action.soundStringId, Chk::Scope::Editor) )
-                                    {
-                                        action.soundStringId = 65536 - action.soundStringId;
-                                        auto soundString = strings.getString<ChkdString>(65536 - action.soundStringId);
-                                        logger.warn() << "Trigger #" << triggerIndex
-                                            << " action #" << actionIndex
-                                            << " lost extended sound string: \""
-                                            << (soundString != nullptr ? *soundString : "")
-                                            << "\"" << std::endl;
-
-                                        action.soundStringId = Chk::StringId::NoString;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::MBRF:
-                {
-                    auto mbrfSection = std::dynamic_pointer_cast<MbrfSection>(section);
-                    size_t numBriefingTriggers = mbrfSection->numBriefingTriggers();
-                    for ( size_t briefingTriggerIndex=0; briefingTriggerIndex<numBriefingTriggers; briefingTriggerIndex++ )
-                    {
-                        auto briefingTrigger = mbrfSection->getBriefingTrigger(briefingTriggerIndex);
-                        if ( briefingTrigger != nullptr )
-                        {
-                            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
-                            {
-                                Chk::Action & briefingAction = briefingTrigger->actions[actionIndex];
-                                if ( briefingAction.actionType < Chk::Action::NumBriefingActionTypes )
-                                {
-                                    if ( Chk::Action::briefingActionUsesStringArg[briefingAction.actionType] &&
-                                        briefingAction.stringId > strCapacity &&
-                                        briefingAction.stringId != Chk::StringId::NoString &&
-                                        briefingAction.stringId < 65536 &&
-                                        strings.stringStored(65536 - briefingAction.stringId, Chk::Scope::Editor) )
-                                    {
-                                        auto briefingString = strings.getString<ChkdString>(65536 - briefingAction.stringId);
-                                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex
-                                            << " action #" << actionIndex
-                                            << " lost extended string: \""
-                                            << (briefingString != nullptr ? *briefingString : "")
-                                            << "\"" << std::endl;
-
-                                        briefingAction.stringId = Chk::StringId::NoString;
-                                    }
-
-                                    if ( Chk::Action::briefingActionUsesSoundArg[briefingAction.actionType] &&
-                                        briefingAction.soundStringId > strCapacity &&
-                                        briefingAction.soundStringId != Chk::StringId::NoString &&
-                                        briefingAction.soundStringId < 65536 &&
-                                        strings.stringStored(65536 - briefingAction.stringId, Chk::Scope::Editor) )
-                                    {
-                                        auto briefingSoundString = strings.getString<ChkdString>(65536 - briefingAction.soundStringId);
-                                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex
-                                            << " action #" << actionIndex
-                                            << " lost extended sound string: \""
-                                            << (briefingSoundString != nullptr ? *briefingSoundString : "")
-                                            << "\"" << std::endl;
-
-                                        briefingAction.soundStringId = Chk::StringId::NoString;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::MRGN:
-                {
-                    auto mrgnSection = std::dynamic_pointer_cast<MrgnSection>(section);
-                    size_t numLocations = mrgnSection->numLocations();
-                    for ( size_t i=0; i<numLocations; i++ )
-                    {
-                        auto location = mrgnSection->getLocation(i);
-                        if ( location != nullptr &&
-                            location->stringId > strCapacity &&
-                            location->stringId != Chk::StringId::NoString &&
-                            location->stringId < 65536 &&
-                            strings.stringStored(65536 - location->stringId, Chk::Scope::Editor) )
-                        {
-                            strings.setLocationNameStringId(i, 65536 - location->stringId, Chk::Scope::Editor);
-                            location->stringId = Chk::StringId::NoString;
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::SPRP:
-                {
-                    auto sprpSection = std::dynamic_pointer_cast<SprpSection>(section);
-                    u16 scenarioNameStringId = (u16)sprpSection->getScenarioNameStringId();
-                    if ( scenarioNameStringId > strCapacity &&
-                        scenarioNameStringId != Chk::StringId::NoString &&
-                        scenarioNameStringId < 65536 &&
-                        strings.stringStored(65536 - scenarioNameStringId, Chk::Scope::Editor) )
-                    {
-                        strings.setScenarioNameStringId(65536 - scenarioNameStringId, Chk::Scope::Editor);
-                        sprpSection->setScenarioNameStringId(Chk::StringId::NoString);
-                    }
-
-                    u16 scenarioDescriptionStringId = (u16)sprpSection->getScenarioDescriptionStringId();
-                    if ( scenarioDescriptionStringId > strCapacity &&
-                        scenarioDescriptionStringId != Chk::StringId::NoString &&
-                        scenarioDescriptionStringId < 65536 &&
-                        strings.stringStored(65536 - scenarioDescriptionStringId, Chk::Scope::Editor) )
-                    {
-                        strings.setScenarioDescriptionStringId(65536 - scenarioDescriptionStringId, Chk::Scope::Editor);
-                        sprpSection->setScenarioDescriptionStringId(Chk::StringId::NoString);
-                    }
-                }
-                break;
-                case Chk::SectionName::FORC:
-                {
-                    auto forcSection = std::dynamic_pointer_cast<ForcSection>(section);
-                    for ( Chk::Force i=Chk::Force::Force1; i<=Chk::Force::Force4; ((u8 &)i)++ )
-                    {
-                        u16 forcStringId = (u16)forcSection->getForceStringId((Chk::Force)i);
-                        if ( forcStringId > strCapacity &&
-                            forcStringId != Chk::StringId::NoString &&
-                            forcStringId < 65536 &&
-                            strings.stringStored(65536 - forcStringId, Chk::Scope::Editor) )
-                        {
-                            strings.setForceNameStringId(i, 65536 - forcStringId, Chk::Scope::Editor);
-                            forcSection->setForceStringId(i, Chk::StringId::NoString);
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::WAV:
-                {
-                    auto wavSection = std::dynamic_pointer_cast<WavSection>(section);
-                    for ( size_t i=0; i<Chk::TotalSounds; i++ )
-                    {
-                        u32 soundStringId = (u32)wavSection->getSoundStringId(i);
-                        if ( soundStringId > strCapacity &&
-                            soundStringId != Chk::StringId::NoString &&
-                            soundStringId < 65536 &&
-                            strings.stringStored(65536 - soundStringId, Chk::Scope::Editor) )
-                        {
-                            strings.setSoundPathStringId(i, 65536 - soundStringId, Chk::Scope::Editor);
-                            wavSection->setSoundStringId(i, Chk::StringId::NoString);
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::SWNM:
-                {
-                    auto swnmSection = std::dynamic_pointer_cast<SwnmSection>(section);
-                    for ( size_t i=0; i<Chk::TotalSwitches; i++ )
-                    {
-                        u32 switchStringId = (u32)swnmSection->getSwitchNameStringId(i);
-                        if ( switchStringId > strCapacity &&
-                            switchStringId != Chk::StringId::NoString &&
-                            switchStringId < 65536 &&
-                            strings.stringStored(65536 - switchStringId, Chk::Scope::Editor) )
-                        {
-                            strings.setSwitchNameStringId(i, 65536 - switchStringId, Chk::Scope::Editor);
-                            swnmSection->setSwitchNameStringId(i, Chk::StringId::NoString);
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::UNIS:
-                {
-                    auto unisSection = std::dynamic_pointer_cast<UnisSection>(section);
-                    for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
-                    {
-                        u16 unitNameStringId = (u16)unisSection->getUnitNameStringId(i);
-                        if ( unitNameStringId > strCapacity &&
-                            unitNameStringId != Chk::StringId::NoString &&
-                            unitNameStringId < 65536 &&
-                            strings.stringStored(65536 - unitNameStringId, Chk::Scope::Editor) )
-                        {
-                            strings.setUnitNameStringId(i, 65536 - unitNameStringId, Chk::UseExpSection::No, Chk::Scope::Editor);
-                            unisSection->setUnitNameStringId(i, Chk::StringId::NoString);
-                        }
-                    }
-                }
-                break;
-                case Chk::SectionName::UNIx:
-                {
-                    auto unixSection = std::dynamic_pointer_cast<UnixSection>(section);
-                    for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
-                    {
-                        u16 unitNameStringId = (u16)unixSection->getUnitNameStringId(i);
-                        if ( unitNameStringId > strCapacity &&
-                            unitNameStringId != Chk::StringId::NoString &&
-                            unitNameStringId < 65536 &&
-                            strings.stringStored(65536 - unitNameStringId, Chk::Scope::Editor) )
-                        {
-                            strings.setUnitNameStringId(i, 65536 - unitNameStringId, Chk::UseExpSection::Yes, Chk::Scope::Editor);
-                            unixSection->setUnitNameStringId(i, Chk::StringId::NoString);
-                        }
-                    }
-                }
+                nextUnusedStringId = i;
                 break;
             }
         }
-        strings.kstr->setVersion(Chk::KSTR::CurrentVersion);
-        strings.deleteUnusedStrings(Chk::Scope::Both);
-    }
-    else if ( 1 == strings.kstr->getVersion() )
-    {
-        *strings.kstr = *KstrSection::GetDefault();
-    }
-}
 
-Versions::Versions(bool useDefault) : layers(nullptr)
-{
-    if ( useDefault )
+        if ( nextUnusedStringId == Chk::MaxStrings )
+            throw Chk::MaximumStringsExceeded();
+        else if ( nextUnusedStringId >= strings.size() )
+            setCapacity(nextUnusedStringId+1, Chk::StrScope::Game, autoDefragment);
+
+        strings[nextUnusedStringId] = rawString;
+        return nextUnusedStringId;
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
     {
-        ver = VerSection::GetDefault(); // StarCraft version information
-        type = TypeSection::GetDefault(ver->getVersion()); // Redundant versioning
-        iver = IverSection::GetDefault(); // Redundant versioning
-        ive2 = Ive2Section::GetDefault(); // Redundant versioning
-        vcod = VcodSection::GetDefault(); // Validation
-        if ( vcod == nullptr || ive2 == nullptr || iver == nullptr || type == nullptr || ver == nullptr )
+        RawString rawString;
+        convertStr<StringType, RawString>(str, rawString);
+
+        size_t stringId = findString<StringType>(str);
+        if ( stringId != (size_t)Chk::StringId::NoString )
+            return stringId; // String already exists, return the id
+
+        std::bitset<Chk::MaxStrings> stringIdUsed;
+        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        size_t nextUnusedStringId = Chk::MaxKStrings;
+        size_t limit = Chk::MaxStrings;
+        for ( size_t i=1; i<limit; i++ )
         {
-            throw ScenarioAllocationFailure(
-                (vcod == nullptr ? ChkSection::getNameString(SectionName::VCOD) :
-                (ive2 == nullptr ? ChkSection::getNameString(SectionName::IVE2) :
-                (iver == nullptr ? ChkSection::getNameString(SectionName::IVER) :
-                (type == nullptr ? ChkSection::getNameString(SectionName::TYPE) :
-                    ChkSection::getNameString(SectionName::VER))))));
-        }
-    }
-}
-
-bool Versions::empty() const
-{
-    return ver == nullptr && type == nullptr && iver == nullptr && ive2 == nullptr && vcod == nullptr;
-}
-
-Chk::Version Versions::getVersion() const
-{
-    return ver->getVersion();
-}
-
-bool Versions::is(Chk::Version version) const
-{
-    return ver->getVersion() == version;
-}
-
-bool Versions::isOriginal() const
-{
-    return ver->isOriginal();
-}
-
-bool Versions::isHybrid() const
-{
-    return ver->isHybrid();
-}
-
-bool Versions::isExpansion() const
-{
-    return ver->isExpansion();
-}
-
-bool Versions::isHybridOrAbove() const
-{
-    return ver->isHybridOrAbove();
-}
-
-bool Versions::changeTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
-{
-    Chk::Version oldVersion = ver->getVersion();
-    ver->setVersion(version);
-    if ( version < Chk::Version::StarCraft_Hybrid )
-    {
-        if ( layers->trimLocationsToOriginal(lockAnywhere, autoDefragmentLocations) )
-        {
-            type->setType(Chk::Type::RAWS);
-            iver->setVersion(Chk::IVersion::Current);
-        }
-        else
-        {
-            logger.error("Cannot save as original with over 64 locations in use!");
-            return false;
-        }
-    }
-    else if ( version < Chk::Version::StarCraft_BroodWar )
-    {
-        type->setType(Chk::Type::RAWS);
-        iver->setVersion(Chk::IVersion::Current);
-        ive2->setVersion(Chk::I2Version::StarCraft_1_04);
-        layers->expandToScHybridOrExpansion();
-    }
-    else // version >= Chk::Version::StarCraft_Broodwar
-    {
-        type->setType(Chk::Type::RAWB);
-        iver->setVersion(Chk::IVersion::Current);
-        ive2->setVersion(Chk::I2Version::StarCraft_1_04);
-        layers->expandToScHybridOrExpansion();
-    }
-    return true;
-}
-
-bool Versions::hasDefaultValidation() const
-{
-    return vcod->isDefault();
-}
-
-void Versions::setToDefaultValidation()
-{
-    vcod->setToDefault();
-}
-
-void Versions::set(std::unordered_map<SectionName, Section> & sections)
-{
-    ver = GetSection<VerSection>(sections, SectionName::VER);
-    type = GetSection<TypeSection>(sections, SectionName::TYPE);
-    iver = GetSection<IverSection>(sections, SectionName::IVER);
-    ive2 = GetSection<Ive2Section>(sections, SectionName::IVE2);
-
-    vcod = GetSection<VcodSection>(sections, SectionName::VCOD);
-
-    if ( ver != nullptr )
-    {
-        if ( type == nullptr )
-            type = TypeSection::GetDefault(ver->getVersion());
-        if ( iver == nullptr )
-            iver = IverSection::GetDefault();
-        if ( ive2 == nullptr )
-            ive2 = Ive2Section::GetDefault();
-    }
-}
-
-void Versions::clear()
-{
-    ver = nullptr;
-    type = nullptr;
-    iver = nullptr;
-    ive2 = nullptr;
-
-    vcod = nullptr;
-}
-
-
-Strings::Strings(bool useDefault) : versions(nullptr), players(nullptr), layers(nullptr), properties(nullptr), triggers(nullptr),
-    StrSynchronizer(StrCompressFlag::DuplicateStringRecycling, StrCompressFlag::AllNonInterlacing)
-{
-    if ( useDefault )
-    {
-        sprp = SprpSection::GetDefault(); // Scenario name and description
-        str = StrSection::GetDefault(); // StarCraft string data
-        ostr = OstrSection::GetDefault(); // Overrides for all but trigger and briefing strings
-        kstr = KstrSection::GetDefault(); // Editor only string data
-        if ( str == nullptr || sprp == nullptr )
-        {
-            throw ScenarioAllocationFailure(
-                str == nullptr ? ChkSection::getNameString(SectionName::STR) :
-                ChkSection::getNameString(SectionName::SPRP));
-        }
-    }
-}
-
-bool Strings::empty() const
-{
-    return sprp == nullptr && str == nullptr && ostr == nullptr && kstr == nullptr;
-}
-
-bool Strings::hasExtendedStrings() const
-{
-    return ostr != nullptr && kstr != nullptr && !kstr->empty();
-}
-
-size_t Strings::getCapacity(Chk::Scope storageScope) const
-{
-    if ( storageScope == Chk::Scope::Game )
-        return str->getCapacity();
-    else if ( storageScope == Chk::Scope::Editor )
-        return kstr->getCapacity();
-    else
-        return 0;
-}
-
-size_t Strings::getBytesUsed(Chk::Scope storageScope)
-{
-    if ( storageScope == Chk::Scope::Game )
-        return str->getBytesUsed(std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
-    else if ( storageScope == Chk::Scope::Editor )
-        return kstr->getBytesUsed(std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
-    else
-        return 0;
-}
-
-bool Strings::stringStored(size_t stringId, Chk::Scope storageScope) const
-{
-    return (storageScope & Chk::Scope::Game) == Chk::Scope::Game && str->stringStored(stringId) ||
-        (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && kstr->stringStored(stringId); 
-}
-
-void Strings::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( storageScope == Chk::Scope::Game )
-    {
-        if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
-        {
-            if ( (userMask & Chk::StringUserFlag::ScenarioProperties) != Chk::StringUserFlag::None )
-                sprp->appendUsage(stringId, stringUsers, userMask);
-            if ( (userMask & Chk::StringUserFlag::Force) != Chk::StringUserFlag::None )
-                players->appendUsage(stringId, stringUsers, userMask);
-            if ( (userMask & Chk::StringUserFlag::BothUnitSettings) != Chk::StringUserFlag::None )
-                properties->appendUsage(stringId, stringUsers, userMask);
-            if ( (userMask & Chk::StringUserFlag::Location) != Chk::StringUserFlag::None )
-                layers->appendUsage(stringId, stringUsers, userMask);
-            if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
-                triggers->appendUsage(stringId, stringUsers, storageScope, userMask);
-        }
-        else if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None ) // stringId >= Chk::MaxStrings // 32-bit stringId
-            triggers->appendUsage(stringId, stringUsers, storageScope, userMask);
-    }
-    else if ( storageScope == Chk::Scope::Editor )
-        ostr->appendUsage(stringId, stringUsers, userMask);
-}
-
-bool Strings::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored) const
-{
-    if ( storageScope == Chk::Scope::Game && (str->stringStored(stringId) || !ensureStored) )
-    {
-        if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
-        {
-            if ( usageScope == Chk::Scope::Editor )
-                return layers->stringUsed(stringId, storageScope, userMask) || triggers->editorStringUsed(stringId, storageScope, userMask);
-            else if ( usageScope == Chk::Scope::Game )
+            if ( !stringIdUsed[i] )
             {
-                return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
-                    properties->stringUsed(stringId, userMask) || triggers->gameStringUsed(stringId, userMask);
-            }
-            else // if ( usageScope == Chk::Scope::Either )
-            {
-                return sprp->stringUsed(stringId, userMask) || players->stringUsed(stringId, userMask) ||
-                    properties->stringUsed(stringId, userMask) || layers->stringUsed(stringId, storageScope, userMask) ||
-                    triggers->stringUsed(stringId, storageScope, userMask);
+                nextUnusedStringId = i;
+                break;
             }
         }
-        else // stringId >= Chk::MaxStrings // 32-bit stringId
-        {
-            return usageScope == Chk::Scope::Either && triggers->stringUsed(stringId, storageScope, userMask) ||
-                usageScope == Chk::Scope::Game && triggers->gameStringUsed(stringId, userMask) ||
-                usageScope == Chk::Scope::Editor && triggers->editorStringUsed(stringId, storageScope, userMask);
-        }
-    }
-    else if ( storageScope == Chk::Scope::Editor && (kstr->stringStored(stringId) || !ensureStored) )
-        return ostr->stringUsed(stringId, userMask);
-
-    return false;
-}
-
-void Strings::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( storageScope == Chk::Scope::Game )
-    {
-        bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
-        bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
-
-        if ( markGameStrings )
-        {
-            sprp->markUsedStrings(stringIdUsed, userMask); // {SPRP, Game, u16}: Scenario Name and Scenario Description
-            players->markUsedStrings(stringIdUsed, userMask); // {FORC, Game, u16}: Force Names
-            properties->markUsedStrings(stringIdUsed, userMask); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
-            if ( markEditorStrings ) // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, ...
-                triggers->markUsedStrings(stringIdUsed, storageScope, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
-            else
-                triggers->markUsedGameStrings(stringIdUsed, userMask); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
-        }
-
-        if ( markEditorStrings )
-        {
-            layers->markUsedStrings(stringIdUsed, userMask); // {MRGN, Editor, u16}: location name
-            if ( !markGameStrings )
-                triggers->markUsedEditorStrings(stringIdUsed, storageScope, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
-        }
-    }
-    else if ( storageScope == Chk::Scope::Editor )
-    {
-        ostr->markUsedStrings(stringIdUsed, userMask);
-        triggers->markUsedStrings(stringIdUsed, storageScope, userMask);
-    }
-}
-
-void Strings::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
-{
-    markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
-    switch ( storageScope )
-    {
-        case Chk::Scope::Game:
-            str->unmarkUnstoredStrings(stringIdUsed);
-            break;
-        case Chk::Scope::Editor:
-            kstr->unmarkUnstoredStrings(stringIdUsed);
-            break;
-        case Chk::Scope::Either:
-            {
-                size_t limit = std::min(std::min((size_t)Chk::MaxStrings, str->getCapacity()), kstr->getCapacity());
-                size_t stringId = 1;
-                for ( ; stringId < limit; stringId++ )
-                {
-                    if ( stringIdUsed[stringId] && !str->stringStored(stringId) && !kstr->stringStored(stringId) )
-                        stringIdUsed[stringId] = false;
-                }
-
-                if ( str->getCapacity() > kstr->getCapacity() )
-                {
-                    for ( ; stringId < str->getCapacity(); stringId++ )
-                    {
-                        if ( stringIdUsed[stringId] && !str->stringStored(stringId) )
-                            stringIdUsed[stringId] = false;
-                    }
-                }
-                else if ( kstr->getCapacity() > str->getCapacity() )
-                {
-                    for ( ; stringId < kstr->getCapacity(); stringId++ )
-                    {
-                        if ( stringIdUsed[stringId] && !kstr->stringStored(stringId) )
-                            stringIdUsed[stringId] = false;
-                    }
-                }
-
-                for ( ; stringId < Chk::MaxStrings; stringId++ )
-                {
-                    if ( stringIdUsed[stringId] )
-                        stringIdUsed[stringId] = false;
-                }
         
-            }
-            break;
-    }
-}
+        if ( nextUnusedStringId == Chk::MaxKStrings )
+            throw Chk::MaximumStringsExceeded();
+        else if ( nextUnusedStringId >= editorStrings.size() )
+            setCapacity(nextUnusedStringId+1, Chk::StrScope::Editor, autoDefragment);
 
-StrProp Strings::getProperties(size_t editorStringId) const
-{
-    return kstr != nullptr ? kstr->getProperties(editorStringId) : StrProp();
-}
-
-void Strings::setProperties(size_t editorStringId, const StrProp & strProp)
-{
-    if ( kstr != nullptr )
-        kstr->setProperties(editorStringId, strProp);
-}
-
-template <typename StringType>
-std::shared_ptr<StringType> Strings::getString(size_t stringId, Chk::Scope storageScope) const
-{
-    switch ( storageScope )
-    {
-        case Chk::Scope::Either:
-        case Chk::Scope::EditorOverGame:
-        {
-            std::shared_ptr<StringType> editorResult = kstr->getString<StringType>(stringId);
-            return editorResult != nullptr ? editorResult : str->getString<StringType>(stringId) ;
-        }
-        case Chk::Scope::Game: return str->getString<StringType>(stringId);
-        case Chk::Scope::Editor: return kstr->getString<StringType>(stringId);
-        case Chk::Scope::GameOverEditor:
-        {
-            std::shared_ptr<StringType> gameResult = str->getString<StringType>(stringId);
-            return gameResult != nullptr ? gameResult : kstr->getString<StringType>(stringId) ;
-        }
-        default: return nullptr;
-    }
-}
-template std::shared_ptr<RawString> Strings::getString<RawString>(size_t stringId, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getString<EscString>(size_t stringId, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t stringId, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t stringId, Chk::Scope storageScope) const;
-
-template <typename StringType>
-size_t Strings::findString(const StringType & str, Chk::Scope storageScope) const
-{
-    switch ( storageScope )
-    {
-        case Chk::Scope::Game: return this->str->findString<StringType>(str);
-        case Chk::Scope::Editor: return kstr->findString<StringType>(str);
-        case Chk::Scope::GameOverEditor:
-        case Chk::Scope::Either:
-            {
-                size_t gameResult = this->str->findString<StringType>(str);
-                return gameResult != Chk::StringId::NoString ? gameResult : kstr->findString<StringType>(str);
-            }
-        case Chk::Scope::EditorOverGame:
-            {
-                size_t editorResult = kstr->findString<StringType>(str);
-                return editorResult != Chk::StringId::NoString ? editorResult : this->str->findString<StringType>(str);
-            }
+        editorStrings[nextUnusedStringId] = rawString;
+        return nextUnusedStringId;
     }
     return (size_t)Chk::StringId::NoString;
 }
-template size_t Strings::findString<RawString>(const RawString & str, Chk::Scope storageScope) const;
-template size_t Strings::findString<EscString>(const EscString & str, Chk::Scope storageScope) const;
-template size_t Strings::findString<ChkdString>(const ChkdString & str, Chk::Scope storageScope) const;
-template size_t Strings::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope) const;
-
-void Strings::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool autoDefragment)
-{
-    if ( storageScope == Chk::Scope::Game )
-        str->setCapacity(stringCapacity, *this, autoDefragment);
-    else if ( storageScope == Chk::Scope::Editor )
-        kstr->setCapacity(stringCapacity, *this, autoDefragment);
-}
+template size_t Scenario::addString<RawString>(const RawString & str, Chk::StrScope storageScope, bool autoDefragment);
+template size_t Scenario::addString<EscString>(const EscString & str, Chk::StrScope storageScope, bool autoDefragment);
+template size_t Scenario::addString<ChkdString>(const ChkdString & str, Chk::StrScope storageScope, bool autoDefragment);
+template size_t Scenario::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-size_t Strings::addString(const StringType & str, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::replaceString(size_t stringId, const StringType & str, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
-        return this->str->addString<StringType>(str, *this, autoDefragment);
-    else if ( storageScope == Chk::Scope::Editor )
-        return kstr->addString<StringType>(str, *this, autoDefragment);
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        RawString rawString;
+        convertStr<StringType, RawString>(str, rawString);
 
-    return (size_t)Chk::StringId::NoString;
+        if ( stringId < strings.size() )
+            strings[stringId] = rawString;
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        RawString rawString;
+        convertStr<StringType, RawString>(str, rawString);
+
+        if ( stringId < editorStrings.size() )
+            editorStrings[stringId] = rawString;
+    }
 }
-template size_t Strings::addString<RawString>(const RawString & str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<EscString>(const EscString & str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<ChkdString>(const ChkdString & str, Chk::Scope storageScope, bool autoDefragment);
-template size_t Strings::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::replaceString<RawString>(size_t stringId, const RawString & str, Chk::StrScope storageScope);
+template void Scenario::replaceString<EscString>(size_t stringId, const EscString & str, Chk::StrScope storageScope);
+template void Scenario::replaceString<ChkdString>(size_t stringId, const ChkdString & str, Chk::StrScope storageScope);
+template void Scenario::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str, Chk::StrScope storageScope);
 
-template <typename StringType>
-void Strings::replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope)
+void Scenario::deleteUnusedStrings(Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
-        this->str->replaceString<StringType>(stringId, str);
-    else if ( storageScope == Chk::Scope::Editor )
-        kstr->replaceString<StringType>(stringId, str);
-}
-template void Strings::replaceString<RawString>(size_t stringId, const RawString & str, Chk::Scope storageScope);
-template void Strings::replaceString<EscString>(size_t stringId, const EscString & str, Chk::Scope storageScope);
-template void Strings::replaceString<ChkdString>(size_t stringId, const ChkdString & str, Chk::Scope storageScope);
-template void Strings::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str, Chk::Scope storageScope);
-
-void Strings::deleteUnusedStrings(Chk::Scope storageScope)
-{
+    auto deleteUnusedGameStrings = [&]() {
+        std::bitset<65536> stringIdUsed;
+        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        for ( size_t i=0; i<strings.size(); i++ )
+        {
+            if ( !stringIdUsed[i] && strings[i] )
+                strings[i] = std::nullopt;
+        }
+    };
+    auto deleteUnusedEditorStrings = [&]() {
+        std::bitset<65536> stringIdUsed;
+        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        for ( size_t i=0; i<editorStrings.size(); i++ )
+        {
+            if ( !stringIdUsed[i] && editorStrings[i] )
+                editorStrings[i] = std::nullopt;
+        }
+    };
     switch ( storageScope )
     {
-        case Chk::Scope::Game: str->deleteUnusedStrings(*this); break;
-        case Chk::Scope::Editor: kstr->deleteUnusedStrings(*this); break;
-        case Chk::Scope::Both: str->deleteUnusedStrings(*this); kstr->deleteUnusedStrings(*this); break;
+        case Chk::StrScope::Game: deleteUnusedGameStrings(); break;
+        case Chk::StrScope::Editor: deleteUnusedEditorStrings(); break;
+        case Chk::StrScope::Both: deleteUnusedGameStrings(); deleteUnusedEditorStrings(); break;
     }
 }
 
-void Strings::deleteString(size_t stringId, Chk::Scope storageScope, bool deleteOnlyIfUnused)
+void Scenario::deleteString(size_t stringId, Chk::StrScope storageScope, bool deleteOnlyIfUnused)
 {
-    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
+    auto deleteGameString = [&](){
+        return false;
+    };
+    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
     {
-        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Game) )
+        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::StrScope::Game) )
         {
-            str->deleteString(stringId, deleteOnlyIfUnused, std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
+            if ( stringId < strings.size() )
+                strings[stringId] = std::nullopt;
 
-            sprp->deleteString(stringId);
-            players->deleteString(stringId);
-            properties->deleteString(stringId);
-            layers->deleteString(stringId);
-            triggers->deleteString(stringId, Chk::Scope::Game);
+            if ( this->scenarioProperties.scenarioNameStringId == stringId )
+                this->scenarioProperties.scenarioNameStringId = 0;
+
+            if ( this->scenarioProperties.scenarioDescriptionStringId == stringId )
+                this->scenarioProperties.scenarioDescriptionStringId = 0;
+
+            deleteForceString(stringId);
+            deleteUnitString(stringId);
+            deleteLocationString(stringId);
+            deleteTriggerString(stringId, Chk::StrScope::Game);
         }
     }
     
-    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
+    if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor )
     {
-        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
+        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Editor, Chk::StringUserFlag::All, true) )
         {
-            kstr->deleteString(stringId, deleteOnlyIfUnused, std::shared_ptr<StrSynchronizer>(this, [](StrSynchronizer*){}));
+            if ( stringId < editorStrings.size() )
+                editorStrings[stringId] = std::nullopt;
 
-            ostr->deleteString(stringId);
-            triggers->deleteString(stringId, Chk::Scope::Editor);
+            if ( this->editorStringOverrides.scenarioName == stringId )
+                this->editorStringOverrides.scenarioName = 0;
+    
+            if ( this->editorStringOverrides.scenarioDescription == stringId )
+                this->editorStringOverrides.scenarioDescription = 0;
+
+            for ( size_t i=0; i<Chk::TotalForces; i++ )
+            {
+                if ( this->editorStringOverrides.forceName[i] == stringId )
+                    this->editorStringOverrides.forceName[i] = 0;
+            }
+
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( this->editorStringOverrides.unitName[i] == stringId )
+                    this->editorStringOverrides.unitName[i] = 0;
+            }
+
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( this->editorStringOverrides.expUnitName[i] == stringId )
+                    this->editorStringOverrides.expUnitName[i] = 0;
+            }
+
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( this->editorStringOverrides.soundPath[i] == stringId )
+                    this->editorStringOverrides.soundPath[i] = 0;
+            }
+
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->editorStringOverrides.switchName[i] == stringId )
+                    this->editorStringOverrides.switchName[i] = 0;
+            }
+
+            for ( size_t i=0; i<Chk::TotalLocations; i++ )
+            {
+                if ( this->editorStringOverrides.locationName[i] == stringId )
+                    this->editorStringOverrides.locationName[i] = 0;
+            }
+            deleteTriggerString(stringId, Chk::StrScope::Editor);
         }
     }
 }
 
-void Strings::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope)
+void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
-        str->moveString(stringIdFrom, stringIdTo, *this);
-    else if ( storageScope == Chk::Scope::Editor )
-        kstr->moveString(stringIdFrom, stringIdTo, *this);
-}
-
-size_t Strings::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, bool autoDefragment)
-{
-    if ( changeStorageScopeTo == Chk::Scope::Editor && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, Chk::StringUserFlag::All, true) )
+    if ( storageScope == Chk::StrScope::Game )
     {
-        RawStringPtr toRescope = getString<RawString>(stringId, Chk::Scope::Game);
-        size_t newStringId = addString<RawString>(*toRescope, Chk::Scope::Editor, autoDefragment);
-        if ( newStringId != 0 )
+        size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
+        size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
+        if ( stringIdMin > 0 && stringIdMax <= strings.size() && stringIdFrom != stringIdTo )
         {
-            std::set<u32> stringIdsReplaced;
-            if ( stringId == sprp->getScenarioNameStringId() )
+            std::bitset<Chk::MaxStrings> stringIdUsed;
+            markUsedStrings(stringIdUsed, Chk::StrScope::Game);
+            auto selected = strings[stringIdFrom];
+            stringIdUsed[stringIdFrom] = false;
+            std::map<u32, u32> stringIdRemappings;
+            if ( stringIdTo < stringIdFrom ) // Move to a lower stringId, if there are strings in the way, cascade towards stringIdFrom
             {
-                stringIdsReplaced.insert(ostr->getScenarioNameStringId());
-                ostr->setScenarioNameStringId((u32)newStringId);
-            }
-            if ( stringId == sprp->getScenarioDescriptionStringId() )
-            {
-                stringIdsReplaced.insert(ostr->getScenarioDescriptionStringId());
-                ostr->setScenarioDescriptionStringId((u32)newStringId);
-            }
-            for ( size_t i=0; i<Chk::TotalForces; i++ )
-            {
-                if ( stringId == players->getForceStringId((Chk::Force)i) )
+                while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
                 {
-                    stringIdsReplaced.insert(ostr->getForceNameStringId((Chk::Force)i));
-                    ostr->setForceNameStringId((Chk::Force)i, (u32)newStringId);
+                    for ( size_t stringId = stringIdTo+1; stringId <= stringIdFrom; stringId ++ ) // Find the lowest available stringId past the block
+                    {
+                        if ( !stringIdUsed[stringId] ) // Move the highest stringId remaining in the block to the next available stringId
+                        {
+                            auto highestString = strings[stringId-1];
+                            strings[stringId-1] = std::nullopt;
+                            stringIdUsed[stringId-1] = false;
+                            strings[stringId] = highestString;
+                            stringIdUsed[stringId] = true;
+                            stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId-1), (u32)stringId));
+                            break;
+                        }
+                    }
+                }
+                stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+            }
+            else if ( stringIdTo > stringIdFrom ) // Move to a higher stringId, if there are strings in the way, cascade towards stringIdTo
+            {
+                while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+                {
+                    for ( size_t stringId = stringIdTo-1; stringId >= stringIdFrom; stringId -- ) // Find the highest available stringId past the block
+                    {
+                        if ( !stringIdUsed[stringId] ) // Move the lowest stringId in the block to the available stringId
+                        {
+                            auto lowestString = strings[stringId+1];
+                            strings[stringId+1] = std::nullopt;
+                            stringIdUsed[stringId+1] = false;
+                            strings[stringId] = lowestString;
+                            stringIdUsed[stringId] = true;
+                            stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId+1), (u32)stringId));
+                            break;
+                        }
+                    }
                 }
             }
-            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-            {
-                if ( stringId == properties->getUnitNameStringId((Sc::Unit::Type)i, Chk::UseExpSection::No) )
-                {
-                    stringIdsReplaced.insert(ostr->getUnitNameStringId((Sc::Unit::Type)i));
-                    ostr->setUnitNameStringId((Sc::Unit::Type)i, (u32)newStringId);
-                }
-            }
-            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-            {
-                if ( stringId == properties->getUnitNameStringId((Sc::Unit::Type)i, Chk::UseExpSection::Yes) )
-                {
-                    stringIdsReplaced.insert(ostr->getExpUnitNameStringId((Sc::Unit::Type)i));
-                    ostr->setExpUnitNameStringId((Sc::Unit::Type)i, (u32)newStringId);
-                }
-            }
-            for ( size_t i=0; i<Chk::TotalSounds; i++ )
-            {
-                if ( stringId == triggers->getSoundStringId(i) )
-                {
-                    stringIdsReplaced.insert(ostr->getSoundPathStringId(i));
-                    ostr->setSoundPathStringId(i, (u32)newStringId);
-                }
-            }
-            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
-            {
-                if ( stringId == triggers->getSwitchNameStringId(i) )
-                {
-                    stringIdsReplaced.insert(ostr->getSwitchNameStringId(i));
-                    ostr->setSwitchNameStringId(i, (u32)newStringId);
-                }
-            }
-            size_t numLocations = layers->numLocations();
-            for ( size_t i=1; i<=numLocations; i++ )
-            {
-                if ( stringId == layers->getLocation(i)->stringId )
-                {
-                    stringIdsReplaced.insert(ostr->getLocationNameStringId(i));
-                    ostr->setLocationNameStringId(i, (u32)newStringId);
-                }
-            }
-
-            deleteString(stringId, Chk::Scope::Game, false);
-            for ( auto stringIdReplaced : stringIdsReplaced )
-                deleteString(stringIdReplaced, Chk::Scope::Editor, true);
+            strings[stringIdTo] = selected;
+            stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+            remapStringIds(stringIdRemappings, Chk::StrScope::Game);
         }
     }
-    else if ( changeStorageScopeTo == Chk::Scope::Game && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
+    else if ( storageScope == Chk::StrScope::Editor )
     {
-        RawStringPtr toRescope = getString<RawString>(stringId, Chk::Scope::Editor);
-        size_t newStringId = addString<RawString>(*toRescope, Chk::Scope::Game, autoDefragment);
+        size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
+        size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
+        if ( stringIdMin > 0 && stringIdMax <= editorStrings.size() && stringIdFrom != stringIdTo )
+        {
+            std::bitset<Chk::MaxStrings> stringIdUsed;
+            markUsedStrings(stringIdUsed, Chk::StrScope::Editor);
+            auto selected = editorStrings[stringIdFrom];
+            stringIdUsed[stringIdFrom] = false;
+            std::map<u32, u32> stringIdRemappings;
+            if ( stringIdTo < stringIdFrom ) // Move to a lower stringId, if there are strings in the way, cascade towards stringIdFrom
+            {
+                while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+                {
+                    for ( size_t stringId = stringIdTo+1; stringId <= stringIdFrom; stringId ++ ) // Find the lowest available stringId past the block
+                    {
+                        if ( !stringIdUsed[stringId] ) // Move the highest stringId remaining in the block to the next available stringId
+                        {
+                            auto highestString = editorStrings[stringId-1];
+                            editorStrings[stringId-1] = std::nullopt;
+                            stringIdUsed[stringId-1] = false;
+                            editorStrings[stringId] = highestString;
+                            stringIdUsed[stringId] = true;
+                            stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId-1), (u32)stringId));
+                            break;
+                        }
+                    }
+                }
+                stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+            }
+            else if ( stringIdTo > stringIdFrom ) // Move to a higher stringId, if there are strings in the way, cascade towards stringIdTo
+            {
+                while ( stringIdUsed[stringIdTo] ) // There is a block of one or more strings where the selected string needs to go
+                {
+                    for ( size_t stringId = stringIdTo-1; stringId >= stringIdFrom; stringId -- ) // Find the highest available stringId past the block
+                    {
+                        if ( !stringIdUsed[stringId] ) // Move the lowest stringId in the block to the available stringId
+                        {
+                            auto lowestString = editorStrings[stringId+1];
+                            editorStrings[stringId+1] = std::nullopt;
+                            stringIdUsed[stringId+1] = false;
+                            editorStrings[stringId] = lowestString;
+                            stringIdUsed[stringId] = true;
+                            stringIdRemappings.insert(std::pair<u32, u32>(u32(stringId+1), (u32)stringId));
+                            break;
+                        }
+                    }
+                }
+            }
+            editorStrings[stringIdTo] = selected;
+            stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
+            remapStringIds(stringIdRemappings, Chk::StrScope::Editor);
+        }
+    }
+}
+
+size_t Scenario::rescopeString(size_t stringId, Chk::StrScope changeStorageScopeTo, bool autoDefragment)
+{
+    if ( changeStorageScopeTo == Chk::StrScope::Editor && stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Game, Chk::StringUserFlag::All, true) )
+    {
+        RawString toRescope = getString<RawString>(stringId, Chk::StrScope::Game).value();
+        size_t newStringId = addString<RawString>(toRescope, Chk::StrScope::Editor, autoDefragment);
         if ( newStringId != 0 )
         {
             std::set<u32> stringIdsReplaced;
-            if ( stringId == ostr->getScenarioNameStringId() )
+            if ( stringId == this->scenarioProperties.scenarioNameStringId )
             {
-                stringIdsReplaced.insert((u32)sprp->getScenarioNameStringId());
-                sprp->setScenarioNameStringId((u16)newStringId);
+                stringIdsReplaced.insert(this->editorStringOverrides.scenarioName);
+                this->editorStringOverrides.scenarioName = u32(newStringId);
             }
-            if ( stringId == ostr->getScenarioDescriptionStringId() )
+            if ( stringId == this->scenarioProperties.scenarioDescriptionStringId )
             {
-                stringIdsReplaced.insert((u32)sprp->getScenarioDescriptionStringId());
-                sprp->setScenarioDescriptionStringId((u16)newStringId);
+                stringIdsReplaced.insert(this->editorStringOverrides.scenarioDescription);
+                this->editorStringOverrides.scenarioDescription = u32(newStringId);
             }
             for ( size_t i=0; i<Chk::TotalForces; i++ )
             {
-                if ( stringId == ostr->getForceNameStringId((Chk::Force)i) )
+                if ( stringId == this->forces.forceString[i] )
                 {
-                    stringIdsReplaced.insert((u32)players->getForceStringId((Chk::Force)i));
-                    players->setForceStringId((Chk::Force)i, (u16)newStringId);
+                    stringIdsReplaced.insert(this->editorStringOverrides.forceName[i]);
+                    this->editorStringOverrides.forceName[i] = u32(newStringId);
                 }
             }
             for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
             {
-                if ( stringId == ostr->getUnitNameStringId((Sc::Unit::Type)i) )
+                if ( stringId == this->origUnitSettings.nameStringId[i] )
                 {
-                    stringIdsReplaced.insert((u32)properties->getUnitNameStringId((Sc::Unit::Type)i, Chk::UseExpSection::No));
-                    properties->setUnitNameStringId((Sc::Unit::Type)i, newStringId, Chk::UseExpSection::No);
+                    stringIdsReplaced.insert(this->editorStringOverrides.unitName[i]);
+                    this->editorStringOverrides.unitName[i] = u32(newStringId);
                 }
             }
             for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
             {
-                if ( stringId == ostr->getExpUnitNameStringId((Sc::Unit::Type)i) )
+                if ( stringId == this->unitSettings.nameStringId[i] )
                 {
-                    stringIdsReplaced.insert((u32)properties->getUnitNameStringId((Sc::Unit::Type)i, Chk::UseExpSection::Yes));
-                    properties->setUnitNameStringId((Sc::Unit::Type)i, newStringId, Chk::UseExpSection::Yes);
+                    stringIdsReplaced.insert(this->editorStringOverrides.expUnitName[i]);
+                    this->editorStringOverrides.expUnitName[i] = u32(newStringId);
                 }
             }
             for ( size_t i=0; i<Chk::TotalSounds; i++ )
             {
-                if ( stringId == ostr->getSoundPathStringId(i) )
+                if ( stringId == this->soundPaths[i] )
                 {
-                    stringIdsReplaced.insert((u32)triggers->getSoundStringId(i));
-                    triggers->setSoundStringId(i, newStringId);
+                    stringIdsReplaced.insert(this->editorStringOverrides.soundPath[i]);
+                    this->editorStringOverrides.soundPath[i] = u32(newStringId);
                 }
             }
             for ( size_t i=0; i<Chk::TotalSwitches; i++ )
             {
-                if ( stringId == ostr->getSwitchNameStringId(i) )
+                if ( stringId == this->switchNames[i] )
                 {
-                    stringIdsReplaced.insert((u32)triggers->getSwitchNameStringId(i));
-                    triggers->setSwitchNameStringId(i, newStringId);
+                    stringIdsReplaced.insert(this->editorStringOverrides.switchName[i]);
+                    this->editorStringOverrides.switchName[i] = u32(newStringId);
                 }
             }
-            size_t numLocations = layers->numLocations();
+            size_t numLocations = this->numLocations();
             for ( size_t i=1; i<=numLocations; i++ )
             {
-                if ( stringId == ostr->getLocationNameStringId(i) )
+                if ( stringId == this->locations[i].stringId )
                 {
-                    Chk::LocationPtr location = layers->getLocation(i);
-                    stringIdsReplaced.insert(location->stringId);
-                    location->stringId = (u16)newStringId;
+                    stringIdsReplaced.insert(this->editorStringOverrides.locationName[i]);
+                    this->editorStringOverrides.locationName[i] = u32(newStringId);
                 }
             }
 
-            deleteString(stringId, Chk::Scope::Editor, false);
+            deleteString(stringId, Chk::StrScope::Game, false);
             for ( auto stringIdReplaced : stringIdsReplaced )
-                deleteString(stringIdReplaced, Chk::Scope::Game, true);
+                deleteString(stringIdReplaced, Chk::StrScope::Editor, true);
+        }
+    }
+    else if ( changeStorageScopeTo == Chk::StrScope::Game && stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Editor, Chk::StringUserFlag::All, true) )
+    {
+        RawString toRescope = getString<RawString>(stringId, Chk::StrScope::Editor).value();
+        size_t newStringId = addString<RawString>(toRescope, Chk::StrScope::Game, autoDefragment);
+        if ( newStringId != 0 )
+        {
+            std::set<u32> stringIdsReplaced;
+            if ( stringId == this->editorStringOverrides.scenarioName )
+            {
+                stringIdsReplaced.insert((u32)this->scenarioProperties.scenarioNameStringId);
+                this->scenarioProperties.scenarioNameStringId = u16(newStringId);
+            }
+            if ( stringId == this->editorStringOverrides.scenarioDescription )
+            {
+                stringIdsReplaced.insert((u32)this->scenarioProperties.scenarioDescriptionStringId);
+                this->scenarioProperties.scenarioDescriptionStringId = u16(newStringId);
+            }
+            for ( size_t i=0; i<Chk::TotalForces; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.forceName[i] )
+                {
+                    stringIdsReplaced.insert(u32(this->forces.forceString[i]));
+                    this->forces.forceString[i] = u16(newStringId);
+                }
+            }
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.unitName[i] )
+                {
+                    stringIdsReplaced.insert(u32(this->origUnitSettings.nameStringId[i]));
+                    this->origUnitSettings.nameStringId[i] = u16(newStringId);
+                }
+            }
+            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.expUnitName[i] )
+                {
+                    stringIdsReplaced.insert(u32(this->unitSettings.nameStringId[i]));
+                    this->unitSettings.nameStringId[i] = u16(newStringId);
+                }
+            }
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.soundPath[i] )
+                {
+                    stringIdsReplaced.insert((u32)soundPaths[i]);
+                    this->soundPaths[i] = u32(newStringId);
+                }
+            }
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.switchName[i] )
+                {
+                    stringIdsReplaced.insert((u32)this->switchNames[i]);
+                    this->switchNames[i] = u32(newStringId);
+                }
+            }
+            size_t numLocations = this->numLocations();
+            for ( size_t i=1; i<=numLocations; i++ )
+            {
+                if ( stringId == this->editorStringOverrides.locationName[i] )
+                {
+                    Chk::Location & location = getLocation(i);
+                    stringIdsReplaced.insert(location.stringId);
+                    location.stringId = (u16)newStringId;
+                }
+            }
+
+            deleteString(stringId, Chk::StrScope::Editor, false);
+            for ( auto stringIdReplaced : stringIdsReplaced )
+                deleteString(stringIdReplaced, Chk::StrScope::Game, true);
         }
     }
     return 0;
 }
 
-std::vector<u8> & Strings::getTailData() const
+std::vector<u8> & Scenario::getStrTailData()
 {
-    return str->getTailData();
+    return strTailData;
 }
 
-size_t Strings::getTailDataOffset()
+size_t Scenario::getStrTailDataOffset()
 {
-    return str->getTailDataOffset(*this);
+    std::vector<u8> stringBytes {};
+    if ( hasSection(SectionName::STRx) )
+        syncRemasteredStringsToBytes(stringBytes);
+    else
+        syncStringsToBytes(stringBytes);
+
+    return stringBytes.size();
 }
 
-size_t Strings::getInitialTailDataOffset() const
+size_t Scenario::getInitialStrTailDataOffset() const
 {
-    return str->getInitialTailDataOffset();
+    return initialStrTailDataOffset;
 }
 
-size_t Strings::getBytePaddedTo() const
+size_t Scenario::getStrBytePaddedTo() const
 {
-    return str->getBytePaddedTo();
+    return strBytePaddedTo;
 }
 
-void Strings::setBytePaddedTo(size_t bytePaddedTo) const
+void Scenario::setStrBytePaddedTo(size_t bytePaddedTo)
 {
-    str->setBytePaddedTo(bytePaddedTo);
+    this->strBytePaddedTo = bytePaddedTo;
 }
 
-size_t Strings::getScenarioNameStringId(Chk::Scope storageScope) const
+size_t Scenario::getScenarioNameStringId(Chk::StrScope storageScope) const
 {
-    return storageScope == Chk::Scope::Editor ? ostr->getScenarioNameStringId() : sprp->getScenarioNameStringId();
+    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.scenarioName : this->scenarioProperties.scenarioNameStringId;
 }
 
-size_t Strings::getScenarioDescriptionStringId(Chk::Scope storageScope) const
+size_t Scenario::getScenarioDescriptionStringId(Chk::StrScope storageScope) const
 {
-    return storageScope == Chk::Scope::Editor ? ostr->getScenarioDescriptionStringId() : sprp->getScenarioDescriptionStringId();
+    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.scenarioDescription : this->scenarioProperties.scenarioDescriptionStringId;
 }
 
-size_t Strings::getForceNameStringId(Chk::Force force, Chk::Scope storageScope) const
+size_t Scenario::getForceNameStringId(Chk::Force force, Chk::StrScope storageScope) const
 {
-    return storageScope == Chk::Scope::Editor ? ostr->getForceNameStringId(force) : players->getForceStringId(force);
+    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.forceName[force] : this->forces.forceString[force];;
 }
 
-size_t Strings::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope) const
+size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::StrScope storageScope) const
 {
-    if ( storageScope == Chk::Scope::Game )
-        return properties->getUnitNameStringId(unitType, useExp);
-    else if ( storageScope == Chk::Scope::Editor )
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    if ( storageScope == Chk::StrScope::Game )
+        return useExpansionUnitSettings(useExp) ? unitSettings.nameStringId[unitType] : origUnitSettings.nameStringId[unitType];
+    else if ( storageScope == Chk::StrScope::Editor )
     {
         switch ( useExp )
         {
-            case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType);
-            case Chk::UseExpSection::Yes: return ostr->getExpUnitNameStringId(unitType);
-            case Chk::UseExpSection::No: return ostr->getUnitNameStringId(unitType);
-            case Chk::UseExpSection::YesIfAvailable: return ostr->getExpUnitNameStringId(unitType) != 0 ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType);
-            case Chk::UseExpSection::NoIfOrigAvailable: return ostr->getUnitNameStringId(unitType) != 0 ? ostr->getUnitNameStringId(unitType) : ostr->getExpUnitNameStringId(unitType);
+            case Chk::UseExpSection::Auto: return isHybridOrAbove() ? this->editorStringOverrides.expUnitName[unitType] : this->editorStringOverrides.unitName[unitType];
+            case Chk::UseExpSection::Yes: return this->editorStringOverrides.expUnitName[unitType];
+            case Chk::UseExpSection::No: return this->editorStringOverrides.unitName[unitType];
+            case Chk::UseExpSection::YesIfAvailable: return this->editorStringOverrides.expUnitName[unitType] != 0 ? this->editorStringOverrides.expUnitName[unitType] : this->editorStringOverrides.unitName[unitType];
+            case Chk::UseExpSection::NoIfOrigAvailable: return this->editorStringOverrides.unitName[unitType] != 0 ? this->editorStringOverrides.unitName[unitType] : this->editorStringOverrides.expUnitName[unitType];
         }
     }
     return 0;
 }
 
-size_t Strings::getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope) const
+size_t Scenario::getSoundPathStringId(size_t soundIndex, Chk::StrScope storageScope) const
 {
-    return storageScope == Chk::Scope::Editor ? ostr->getSoundPathStringId(soundIndex) : triggers->getSoundStringId(soundIndex);
+    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.soundPath[soundIndex] : this->soundPaths[soundIndex];
 }
 
-size_t Strings::getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope) const
+size_t Scenario::getSwitchNameStringId(size_t switchIndex, Chk::StrScope storageScope) const
 {
-    return storageScope == Chk::Scope::Editor ? ostr->getSwitchNameStringId(switchIndex) : triggers->getSwitchNameStringId(switchIndex);
-}
-
-size_t Strings::getLocationNameStringId(size_t locationId, Chk::Scope storageScope) const
-{
-    if ( storageScope == Chk::Scope::Editor )
-        return ostr->getLocationNameStringId(locationId);
-    else
+    if ( switchIndex < Chk::TotalSwitches )
     {
-        Chk::LocationPtr location = layers->getLocation(locationId);
-        return location != nullptr ? location->stringId : 0;
+        if ( storageScope == Chk::StrScope::Game )
+            return this->switchNames[switchIndex];
+        else
+            return this->editorStringOverrides.switchName[switchIndex];
     }
-}
-
-void Strings::setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope)
-{
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setScenarioNameStringId((u32)scenarioNameStringId);
     else
-        sprp->setScenarioNameStringId((u16)scenarioNameStringId);
+        throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
 }
 
-void Strings::setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope)
+size_t Scenario::getLocationNameStringId(size_t locationId, Chk::StrScope storageScope) const
 {
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setScenarioDescriptionStringId((u32)scenarioDescriptionStringId);
+    if ( storageScope == Chk::StrScope::Editor )
+        return this->editorStringOverrides.locationName[locationId];
+    else if ( locationId < numLocations() )
+        return locations[locationId].stringId;
     else
-        sprp->setScenarioDescriptionStringId((u16)scenarioDescriptionStringId);
+        return 0;
 }
 
-void Strings::setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::Scope storageScope)
+void Scenario::setScenarioNameStringId(size_t scenarioNameStringId, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setForceNameStringId(force, (u32)forceNameStringId);
+    if ( storageScope == Chk::StrScope::Editor )
+        this->editorStringOverrides.scenarioName = u32(scenarioNameStringId);
     else
-        players->setForceStringId(force, (u16)forceNameStringId);
+        this->scenarioProperties.scenarioNameStringId = u16(scenarioNameStringId);
 }
 
-void Strings::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp, Chk::Scope storageScope)
+void Scenario::setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
-        properties->setUnitNameStringId(unitType, unitNameStringId, useExp);
+    if ( storageScope == Chk::StrScope::Editor )
+        this->editorStringOverrides.scenarioDescription = u32(scenarioDescriptionStringId);
+    else
+        this->scenarioProperties.scenarioDescriptionStringId = u16(scenarioDescriptionStringId);
+}
+
+void Scenario::setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::StrScope storageScope)
+{
+    if ( storageScope == Chk::StrScope::Editor )
+        this->editorStringOverrides.forceName[force] = u32(forceNameStringId);
+    else
+        this->forces.forceString[force] = u16(forceNameStringId);
+}
+
+void Scenario::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp, Chk::StrScope storageScope)
+{
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        switch ( useExp )
+        {
+            case Chk::UseExpSection::Auto:
+            case Chk::UseExpSection::Both: unitSettings.nameStringId[unitType] = u16(unitNameStringId); origUnitSettings.nameStringId[unitType] = u16(unitNameStringId); break;
+            case Chk::UseExpSection::Yes: unitSettings.nameStringId[unitType] = u16(unitNameStringId); break;
+            case Chk::UseExpSection::No: origUnitSettings.nameStringId[unitType] = u16(unitNameStringId); break;
+            case Chk::UseExpSection::YesIfAvailable:
+                if ( this->hasSection(Chk::SectionName::UNIx) )
+                    unitSettings.nameStringId[unitType] = u16(unitNameStringId);
+                else
+                    origUnitSettings.nameStringId[unitType] = u16(unitNameStringId);
+                break;
+            case Chk::UseExpSection::NoIfOrigAvailable:
+                if ( this->hasSection(Chk::SectionName::UNIS) )
+                    origUnitSettings.nameStringId[unitType] = u16(unitNameStringId);
+                else
+                    unitSettings.nameStringId[unitType] = u16(unitNameStringId);
+                break;
+        }
+    }
     else
     {
         switch ( useExp )
         {
             case Chk::UseExpSection::Auto:
-            case Chk::UseExpSection::Both: ostr->setUnitNameStringId(unitType, (u32)unitNameStringId); ostr->setExpUnitNameStringId(unitType, (u32)unitNameStringId); break;
+            case Chk::UseExpSection::Both: editorStringOverrides.unitName[unitType] = u32(unitNameStringId); editorStringOverrides.expUnitName[unitType] = u32(unitNameStringId); break;
             case Chk::UseExpSection::YesIfAvailable:
-            case Chk::UseExpSection::Yes: ostr->setExpUnitNameStringId(unitType, (u32)unitNameStringId); break;
+            case Chk::UseExpSection::Yes: editorStringOverrides.expUnitName[unitType] = u32(unitNameStringId); break;
             case Chk::UseExpSection::NoIfOrigAvailable:
-            case Chk::UseExpSection::No: ostr->setUnitNameStringId(unitType, (u32)unitNameStringId); break;
+            case Chk::UseExpSection::No: editorStringOverrides.unitName[unitType] = u32(unitNameStringId); break;
         }
     }
 }
 
-void Strings::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::Scope storageScope)
+void Scenario::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setSoundPathStringId(soundIndex, (u32)soundPathStringId);
+    if ( storageScope == Chk::StrScope::Editor )
+        this->editorStringOverrides.soundPath[soundIndex] = u32(soundPathStringId);
     else
-        triggers->setSoundStringId(soundIndex, (u32)soundPathStringId);
+        this->soundPaths[soundIndex] = u32(soundPathStringId);
 }
 
-void Strings::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::Scope storageScope)
+void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setSwitchNameStringId(switchIndex, (u32)switchNameStringId);
-    else
-        triggers->setSwitchNameStringId(switchIndex, (u32)switchNameStringId);
-}
-
-void Strings::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope)
-{
-    if ( storageScope == Chk::Scope::Editor )
-        ostr->setLocationNameStringId(locationId, (u32)locationNameStringId);
-    else
+	if ( switchIndex < Chk::TotalSwitches )
     {
-        auto location = layers->getLocation(locationId);
-        if ( location != nullptr )
-            location->stringId = (u16)locationNameStringId;
+        if ( storageScope == Chk::StrScope::Game )
+		    this->switchNames[switchIndex] = u32(switchNameStringId);
+        else
+            this->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
     }
+    else
+		throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
+}
+
+void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::StrScope storageScope)
+{
+    if ( storageScope == Chk::StrScope::Editor )
+        this->editorStringOverrides.locationName[locationId] = u32(locationNameStringId);
+    else if ( locationId < numLocations() )
+        locations[locationId].stringId = u16(locationNameStringId);
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-std::shared_ptr<StringType> Strings::getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getString(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const
 {
     switch ( storageScope )
     {
-        case Chk::Scope::Game: return getString<StringType>(gameStringId, Chk::Scope::Game);
-        case Chk::Scope::Editor: return getString<StringType>(editorStringId, Chk::Scope::Editor);
-        case Chk::Scope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::Scope::Game) : getString<StringType>(editorStringId, Chk::Scope::Editor);
-        case Chk::Scope::Either:
-        case Chk::Scope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::Scope::Editor) : getString<StringType>(gameStringId, Chk::Scope::Game);
+        case Chk::StrScope::Game: return getString<StringType>(gameStringId, Chk::StrScope::Game);
+        case Chk::StrScope::Editor: return getString<StringType>(editorStringId, Chk::StrScope::Editor);
+        case Chk::StrScope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::StrScope::Game) : getString<StringType>(editorStringId, Chk::StrScope::Editor);
+        case Chk::StrScope::Either:
+        case Chk::StrScope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::StrScope::Editor) : getString<StringType>(gameStringId, Chk::StrScope::Game);
     }
-    return nullptr;
+    return std::nullopt;
 }
-template std::shared_ptr<RawString> Strings::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getScenarioName(Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getScenarioName(Chk::StrScope storageScope) const
 {
-    return getString<StringType>(sprp->getScenarioNameStringId(), ostr->getScenarioNameStringId(), storageScope);
+    return getString<StringType>(this->scenarioProperties.scenarioNameStringId, this->editorStringOverrides.scenarioName, storageScope);
 }
-template std::shared_ptr<RawString> Strings::getScenarioName<RawString>(Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getScenarioName<EscString>(Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getScenarioName<ChkdString>(Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getScenarioName<SingleLineChkdString>(Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getScenarioName<RawString>(Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getScenarioName<EscString>(Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getScenarioName<ChkdString>(Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getScenarioName<SingleLineChkdString>(Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getScenarioDescription(Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getScenarioDescription(Chk::StrScope storageScope) const
 {
-    return getString<StringType>(sprp->getScenarioDescriptionStringId(), ostr->getScenarioDescriptionStringId(), storageScope);
+    return getString<StringType>(this->scenarioProperties.scenarioDescriptionStringId, this->editorStringOverrides.scenarioDescription, storageScope);
 }
-template std::shared_ptr<RawString> Strings::getScenarioDescription<RawString>(Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getScenarioDescription<EscString>(Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getScenarioDescription<ChkdString>(Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getScenarioDescription<SingleLineChkdString>(Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getScenarioDescription<RawString>(Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getScenarioDescription<EscString>(Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getScenarioDescription<ChkdString>(Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getScenarioDescription<SingleLineChkdString>(Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getForceName(Chk::Force force, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getForceName(Chk::Force force, Chk::StrScope storageScope) const
 {
-    return getString<StringType>(players->getForceStringId(force), ostr->getForceNameStringId(force), storageScope);
+    return getString<StringType>(this->forces.forceString[force], this->editorStringOverrides.forceName[force], storageScope);
 }
-template std::shared_ptr<RawString> Strings::getForceName<RawString>(Chk::Force force, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getForceName<EscString>(Chk::Force force, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getForceName<ChkdString>(Chk::Force force, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getForceName<RawString>(Chk::Force force, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getForceName<EscString>(Chk::Force force, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getForceName<ChkdString>(Chk::Force force, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getForceName<SingleLineChkdString>(Chk::Force force, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const
 {
-    std::shared_ptr<StringType> mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
-        properties->getUnitNameStringId(unitType, useExp),
-        properties->useExpansionUnitSettings(useExp) ? ostr->getExpUnitNameStringId(unitType) : ostr->getUnitNameStringId(unitType),
-        storageScope) : nullptr;
+    auto mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
+        this->useExpansionUnitSettings(useExp) ? this->unitSettings.nameStringId[unitType] : this->origUnitSettings.nameStringId[unitType],
+        this->useExpansionUnitSettings(useExp) ? this->editorStringOverrides.expUnitName[unitType] : this->editorStringOverrides.unitName[unitType],
+        storageScope) : std::nullopt;
 
-    if ( mapUnitName != nullptr )
+    if ( mapUnitName )
         return mapUnitName;
     else if ( unitType < Sc::Unit::TotalTypes )
-        return std::shared_ptr<StringType>(new StringType(Sc::Unit::defaultDisplayNames[unitType]));
+        return std::optional<StringType>(Sc::Unit::defaultDisplayNames[unitType]);
     else
-        return std::shared_ptr<StringType>(new StringType("ID:" + std::to_string(unitType)));
+        return std::optional<StringType>("ID:" + std::to_string(unitType));
 }
-template std::shared_ptr<RawString> Strings::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getSoundPath(size_t soundIndex, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getSoundPath(size_t soundIndex, Chk::StrScope storageScope) const
 {
-    return getString<StringType>(triggers->getSoundStringId(soundIndex), ostr->getSoundPathStringId(soundIndex), storageScope);
+    return getString<StringType>(this->soundPaths[soundIndex], this->editorStringOverrides.soundPath[soundIndex], storageScope);
 }
-template std::shared_ptr<RawString> Strings::getSoundPath<RawString>(size_t soundIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getSoundPath<EscString>(size_t soundIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getSoundPath<ChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getSoundPath<RawString>(size_t soundIndex, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getSoundPath<EscString>(size_t soundIndex, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getSoundPath<ChkdString>(size_t soundIndex, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getSwitchName(size_t switchIndex, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getSwitchName(size_t switchIndex, Chk::StrScope storageScope) const
 {
-    return getString<StringType>(triggers->getSwitchNameStringId(switchIndex), ostr->getSwitchNameStringId(switchIndex), storageScope);
+    return getString<StringType>(this->switchNames[switchIndex], this->editorStringOverrides.switchName[switchIndex], storageScope);
 }
-template std::shared_ptr<RawString> Strings::getSwitchName<RawString>(size_t switchIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getSwitchName<EscString>(size_t switchIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getSwitchName<ChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getSwitchName<RawString>(size_t switchIndex, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getSwitchName<EscString>(size_t switchIndex, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getSwitchName<ChkdString>(size_t switchIndex, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getLocationName(size_t locationId, Chk::Scope storageScope) const
+std::optional<StringType> Scenario::getLocationName(size_t locationId, Chk::StrScope storageScope) const
 {
-    return getString<StringType>((locationId > 0 && locationId <= layers->numLocations() ? layers->getLocation(locationId)->stringId : 0), ostr->getLocationNameStringId(locationId), storageScope);
+    return getString<StringType>((locationId > 0 && locationId <= numLocations() ? getLocation(locationId).stringId : 0), this->editorStringOverrides.locationName[locationId], storageScope);
 }
-template std::shared_ptr<RawString> Strings::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope) const;
-template std::shared_ptr<EscString> Strings::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope) const;
-template std::shared_ptr<ChkdString> Strings::getLocationName<ChkdString>(size_t locationId, Chk::Scope storageScope) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope) const;
+template std::optional<RawString> Scenario::getLocationName<RawString>(size_t locationId, Chk::StrScope storageScope) const;
+template std::optional<EscString> Scenario::getLocationName<EscString>(size_t locationId, Chk::StrScope storageScope) const;
+template std::optional<ChkdString> Scenario::getLocationName<ChkdString>(size_t locationId, Chk::StrScope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getLocationName<SingleLineChkdString>(size_t locationId, Chk::StrScope storageScope) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getComment(size_t triggerIndex) const
+std::optional<StringType> Scenario::getComment(size_t triggerIndex) const
 {
-    return getString<StringType>(triggers->getCommentStringId(triggerIndex), Chk::Scope::Game);
+    return getString<StringType>(getCommentStringId(triggerIndex), Chk::StrScope::Game);
 }
-template std::shared_ptr<RawString> Strings::getComment<RawString>(size_t triggerIndex) const;
-template std::shared_ptr<EscString> Strings::getComment<EscString>(size_t triggerIndex) const;
-template std::shared_ptr<ChkdString> Strings::getComment<ChkdString>(size_t triggerIndex) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getComment<SingleLineChkdString>(size_t triggerIndex) const;
+template std::optional<RawString> Scenario::getComment<RawString>(size_t triggerIndex) const;
+template std::optional<EscString> Scenario::getComment<EscString>(size_t triggerIndex) const;
+template std::optional<ChkdString> Scenario::getComment<ChkdString>(size_t triggerIndex) const;
+template std::optional<SingleLineChkdString> Scenario::getComment<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getExtendedComment(size_t triggerIndex) const
+std::optional<StringType> Scenario::getExtendedComment(size_t triggerIndex) const
 {
-    return getString<StringType>(triggers->getExtendedCommentStringId(triggerIndex), Chk::Scope::Editor);
+    return getString<StringType>(getExtendedCommentStringId(triggerIndex), Chk::StrScope::Editor);
 }
-template std::shared_ptr<RawString> Strings::getExtendedComment<RawString>(size_t triggerIndex) const;
-template std::shared_ptr<EscString> Strings::getExtendedComment<EscString>(size_t triggerIndex) const;
-template std::shared_ptr<ChkdString> Strings::getExtendedComment<ChkdString>(size_t triggerIndex) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getExtendedComment<SingleLineChkdString>(size_t triggerIndex) const;
+template std::optional<RawString> Scenario::getExtendedComment<RawString>(size_t triggerIndex) const;
+template std::optional<EscString> Scenario::getExtendedComment<EscString>(size_t triggerIndex) const;
+template std::optional<ChkdString> Scenario::getExtendedComment<ChkdString>(size_t triggerIndex) const;
+template std::optional<SingleLineChkdString> Scenario::getExtendedComment<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-std::shared_ptr<StringType> Strings::getExtendedNotes(size_t triggerIndex) const
+std::optional<StringType> Scenario::getExtendedNotes(size_t triggerIndex) const
 {
-    return getString<StringType>(triggers->getExtendedNotesStringId(triggerIndex), Chk::Scope::Editor);
+    return getString<StringType>(getExtendedNotesStringId(triggerIndex), Chk::StrScope::Editor);
 }
-template std::shared_ptr<RawString> Strings::getExtendedNotes<RawString>(size_t triggerIndex) const;
-template std::shared_ptr<EscString> Strings::getExtendedNotes<EscString>(size_t triggerIndex) const;
-template std::shared_ptr<ChkdString> Strings::getExtendedNotes<ChkdString>(size_t triggerIndex) const;
-template std::shared_ptr<SingleLineChkdString> Strings::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex) const;
+template std::optional<RawString> Scenario::getExtendedNotes<RawString>(size_t triggerIndex) const;
+template std::optional<EscString> Scenario::getExtendedNotes<EscString>(size_t triggerIndex) const;
+template std::optional<ChkdString> Scenario::getExtendedNotes<ChkdString>(size_t triggerIndex) const;
+template std::optional<SingleLineChkdString> Scenario::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-void Strings::setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setScenarioName(const StringType & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
+    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor )
     {
         size_t newStringId = addString<StringType>(scenarioNameString, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                sprp->setScenarioNameStringId((u16)newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setScenarioNameStringId((u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                this->scenarioProperties.scenarioNameStringId = u16(newStringId);
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.scenarioName = u32(newStringId);
         }
     }
 }
-template void Strings::setScenarioName<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioName<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<RawString>(const RawString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<EscString>(const EscString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<ChkdString>(const ChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setScenarioDescription(const StringType & scenarioDescription, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setScenarioDescription(const StringType & scenarioDescription, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
+    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor )
     {
         size_t newStringId = addString<StringType>(scenarioDescription, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                sprp->setScenarioDescriptionStringId((u16)newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setScenarioDescriptionStringId((u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                this->scenarioProperties.scenarioDescriptionStringId = u16(newStringId);
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.scenarioDescription = u32(newStringId);
         }
     }
 }
-template void Strings::setScenarioDescription<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<RawString>(const RawString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<EscString>(const EscString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<ChkdString>(const ChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setForceName(Chk::Force force, const StringType & forceName, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setForceName(Chk::Force force, const StringType & forceName, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && (u32)force < Chk::TotalForces )
+    if ( (storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor) && (u32)force < Chk::TotalForces )
     {
         size_t newStringId = addString<StringType>(forceName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                players->setForceStringId(force, (u16)newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setForceNameStringId(force, (u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                this->forces.forceString[force] = u16(newStringId);
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.forceName[force] = u32(newStringId);
         }
     }
 }
-template void Strings::setForceName<RawString>(Chk::Force force, const RawString & forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<EscString>(Chk::Force force, const EscString & forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<ChkdString>(Chk::Force force, const ChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setForceName<RawString>(Chk::Force force, const RawString & forceName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setForceName<EscString>(Chk::Force force, const EscString & forceName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setForceName<ChkdString>(Chk::Force force, const ChkdString & forceName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString & forceName, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setUnitName(Sc::Unit::Type unitType, const StringType & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setUnitName(Sc::Unit::Type unitType, const StringType & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && unitType < Sc::Unit::TotalTypes )
+    if ( (storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor) && unitType < Sc::Unit::TotalTypes )
     {
         size_t newStringId = addString<StringType>(unitName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                properties->setUnitNameStringId(unitType, newStringId, useExp);
-            else if ( storageScope == Chk::Scope::Editor )
+            if ( storageScope == Chk::StrScope::Game )
+            {
+                if ( this->useExpansionUnitSettings(useExp) )
+                    this->unitSettings.nameStringId[unitType] = u16(newStringId);
+                else
+                    this->origUnitSettings.nameStringId[unitType] = u16(newStringId);
+            }
+            else if ( storageScope == Chk::StrScope::Editor )
             {
                 switch ( useExp )
                 {
-                    case Chk::UseExpSection::Auto: versions->isHybridOrAbove() ? ostr->setExpUnitNameStringId(unitType, (u32)newStringId) : ostr->setUnitNameStringId(unitType, (u32)newStringId); break;
-                    case Chk::UseExpSection::Yes: ostr->setExpUnitNameStringId(unitType, (u32)newStringId); break;
-                    case Chk::UseExpSection::No: ostr->setUnitNameStringId(unitType, (u32)newStringId); break;
-                    default: ostr->setUnitNameStringId(unitType, (u32)newStringId); ostr->setExpUnitNameStringId(unitType, (u32)newStringId); break;
+                    case Chk::UseExpSection::Auto:
+                        if ( this->isHybridOrAbove() )
+                            this->editorStringOverrides.expUnitName[unitType] = u32(newStringId);
+                        else
+                            this->editorStringOverrides.unitName[unitType] = u32(newStringId);
+                        break;
+                    case Chk::UseExpSection::Yes: this->editorStringOverrides.expUnitName[unitType] = u32(newStringId); break;
+                    case Chk::UseExpSection::No: this->editorStringOverrides.unitName[unitType] = u32(newStringId); break;
+                    default:
+                        this->editorStringOverrides.unitName[unitType] = u32(newStringId);
+                        this->editorStringOverrides.expUnitName[unitType] = u32(newStringId);
+                        break;
                 }
             }
         }
     }
 }
-template void Strings::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && soundIndex < Chk::TotalSounds )
+    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && soundIndex < Chk::TotalSounds )
     {
         size_t newStringId = addString<StringType>(soundPath, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                triggers->setSoundStringId(soundIndex, newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setSoundPathStringId(soundIndex, (u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                setSoundStringId(soundIndex, newStringId);
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.soundPath[soundIndex] = u32(newStringId);
         }
     }
 }
-template void Strings::setSoundPath<RawString>(size_t soundIndex, const RawString & soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<EscString>(size_t soundIndex, const EscString & soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<RawString>(size_t soundIndex, const RawString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<EscString>(size_t soundIndex, const EscString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && switchIndex < Chk::TotalSwitches )
+    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && switchIndex < Chk::TotalSwitches )
     {
         size_t newStringId = addString<StringType>(switchName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                triggers->setSwitchNameStringId(switchIndex, newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setSwitchNameStringId(switchIndex, (u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                this->switchNames[switchIndex] = u32(newStringId);
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }
-template void Strings::setSwitchName<RawString>(size_t switchIndex, const RawString & switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<EscString>(size_t switchIndex, const EscString & switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<RawString>(size_t switchIndex, const RawString & switchName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<EscString>(size_t switchIndex, const EscString & switchName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString & switchName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString & switchName, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope, bool autoDefragment)
+void Scenario::setLocationName(size_t locationId, const StringType & locationName, Chk::StrScope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && locationId > 0 && locationId <= layers->numLocations() )
+    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && locationId > 0 && locationId <= numLocations() )
     {
         size_t newStringId = addString<StringType>(locationName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
-                layers->getLocation(locationId)->stringId = (u16)newStringId;
-            else if ( storageScope == Chk::Scope::Editor )
-                ostr->setLocationNameStringId(locationId, (u32)newStringId);
+            if ( storageScope == Chk::StrScope::Game )
+                getLocation(locationId).stringId = (u16)newStringId;
+            else if ( storageScope == Chk::StrScope::Editor )
+                this->editorStringOverrides.locationName[locationId] = u32(newStringId);
         }
     }
 }
-template void Strings::setLocationName<RawString>(size_t locationId, const RawString & locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<EscString>(size_t locationId, const EscString & locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
-template void Strings::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<RawString>(size_t locationId, const RawString & locationName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<EscString>(size_t locationId, const EscString & locationName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::StrScope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment)
+void Scenario::setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment)
 {
-    Chk::ExtendedTrigDataPtr extension = triggers->getTriggerExtension(triggerIndex, true);
-    if ( extension != nullptr )
-    {
-        size_t newStringId = addString<StringType>(comment, Chk::Scope::Editor, autoDefragment);
-        if ( newStringId != (size_t)Chk::StringId::NoString )
-            extension->commentStringId = (u32)newStringId;
-    }
+    Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, true);
+    size_t newStringId = addString<StringType>(comment, Chk::StrScope::Editor, autoDefragment);
+    if ( newStringId != (size_t)Chk::StringId::NoString )
+        extension.commentStringId = (u32)newStringId;
 }
-template void Strings::setExtendedComment<RawString>(size_t triggerIndex, const RawString & comment, bool autoDefragment);
-template void Strings::setExtendedComment<EscString>(size_t triggerIndex, const EscString & comment, bool autoDefragment);
-template void Strings::setExtendedComment<ChkdString>(size_t triggerIndex, const ChkdString & comment, bool autoDefragment);
-template void Strings::setExtendedComment<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & comment, bool autoDefragment);
+template void Scenario::setExtendedComment<RawString>(size_t triggerIndex, const RawString & comment, bool autoDefragment);
+template void Scenario::setExtendedComment<EscString>(size_t triggerIndex, const EscString & comment, bool autoDefragment);
+template void Scenario::setExtendedComment<ChkdString>(size_t triggerIndex, const ChkdString & comment, bool autoDefragment);
+template void Scenario::setExtendedComment<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & comment, bool autoDefragment);
 
 template <typename StringType>
-void Strings::setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment)
+void Scenario::setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment)
 {
-    Chk::ExtendedTrigDataPtr extension = triggers->getTriggerExtension(triggerIndex, true);
-    if ( extension != nullptr )
-    {
-        size_t newStringId = addString<StringType>(notes, Chk::Scope::Editor, autoDefragment);
-        if ( newStringId != (size_t)Chk::StringId::NoString )
-            extension->notesStringId = (u32)newStringId;
-    }
+    Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, true);
+    size_t newStringId = addString<StringType>(notes, Chk::StrScope::Editor, autoDefragment);
+    if ( newStringId != (size_t)Chk::StringId::NoString )
+        extension.notesStringId = (u32)newStringId;
 }
-template void Strings::setExtendedNotes<RawString>(size_t triggerIndex, const RawString & notes, bool autoDefragment);
-template void Strings::setExtendedNotes<EscString>(size_t triggerIndex, const EscString & notes, bool autoDefragment);
-template void Strings::setExtendedNotes<ChkdString>(size_t triggerIndex, const ChkdString & notes, bool autoDefragment);
-template void Strings::setExtendedNotes<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & notes, bool autoDefragment);
+template void Scenario::setExtendedNotes<RawString>(size_t triggerIndex, const RawString & notes, bool autoDefragment);
+template void Scenario::setExtendedNotes<EscString>(size_t triggerIndex, const EscString & notes, bool autoDefragment);
+template void Scenario::setExtendedNotes<ChkdString>(size_t triggerIndex, const ChkdString & notes, bool autoDefragment);
+template void Scenario::setExtendedNotes<SingleLineChkdString>(size_t triggerIndex, const SingleLineChkdString & notes, bool autoDefragment);
 
-void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
-    StrCompressionElevatorPtr compressionElevator, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
+void Scenario::syncStringsToBytes(std::vector<u8> & stringBytes, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
 {
     /**
         Uses the basic, staredit standard, STR section format, and not allowing section sizes over 65536
@@ -1845,19 +2363,19 @@ void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8>
     constexpr size_t maxStrings = (size_t(u16_max) - sizeof(u16))/sizeof(u16);
     size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
     if ( numStrings > maxStrings )
-        throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::STR), numStrings, maxStrings);
+        throw Chk::MaximumStringsExceeded(Chk::getNameString(SectionName::STR), numStrings, maxStrings);
         
     size_t sizeAndOffsetSpaceAndNulSpace = sizeof(u16) + sizeof(u16)*numStrings + 1;
     size_t sectionSize = sizeAndOffsetSpaceAndNulSpace;
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        if ( strings[i] != nullptr )
+        if ( strings[i] )
             sectionSize += strings[i]->length();
     }
 
     constexpr size_t maxStandardSize = u16_max;
     if ( sectionSize > maxStandardSize )
-        throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::STR), sectionSize-sizeAndOffsetSpaceAndNulSpace, maxStandardSize);
+        throw Chk::MaximumCharactersExceeded(Chk::getNameString(SectionName::STR), sectionSize-sizeAndOffsetSpaceAndNulSpace, maxStandardSize);
 
     stringBytes.assign(sizeof(u16)+sizeof(u16)*numStrings, u8(0));
     (u16 &)stringBytes[0] = (u16)numStrings;
@@ -1865,7 +2383,7 @@ void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8>
     stringBytes.push_back(u8('\0')); // Add initial NUL character
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        if ( strings[i] == nullptr )
+        if ( !strings[i] )
             (u16 &)stringBytes[sizeof(u16)*i] = initialNulOffset;
         else
         {
@@ -1875,8 +2393,47 @@ void Strings::syncStringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8>
     }
 }
 
-void Strings::syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8> & stringBytes,
-    StrCompressionElevatorPtr compressionElevator, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
+void Scenario::syncRemasteredStringsToBytes(std::vector<u8> & stringBytes)
+{
+    /**
+        Uses the standard SC:R STRx section format
+
+        u32 numStrings;
+        u32 stringOffsets[numStrings]; // Offset of the start of the string within the section
+        void[] stringData; // Character data, first comes initial NUL character... then all strings, in order, each NUL terminated
+    */
+    constexpr size_t maxStrings = (size_t(u32_max) - sizeof(u32))/sizeof(u32);
+    size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
+    if ( numStrings > maxStrings )
+        throw Chk::MaximumStringsExceeded(Chk::getNameString(SectionName::STRx), numStrings, maxStrings);
+        
+    size_t sizeAndOffsetSpaceAndNulSpace = sizeof(u32) + sizeof(u32)*numStrings + 1;
+    size_t sectionSize = sizeAndOffsetSpaceAndNulSpace;
+    for ( size_t i=1; i<=numStrings; i++ )
+    {
+        if ( strings[i] )
+            sectionSize += strings[i]->length();
+    }
+    constexpr size_t maxStandardSize = u32_max;
+    if ( sectionSize > maxStandardSize )
+        throw Chk::MaximumCharactersExceeded(Chk::getNameString(SectionName::STRx), sectionSize-sizeAndOffsetSpaceAndNulSpace, maxStandardSize);
+    stringBytes.assign(sizeof(u32)+sizeof(u32)*numStrings, u8(0));
+    (u32 &)stringBytes[0] = (u32)numStrings;
+    u32 initialNulOffset = u32(stringBytes.size());
+    stringBytes.push_back(u8('\0')); // Add initial NUL character
+    for ( size_t i=1; i<=numStrings; i++ )
+    {
+        if ( strings[i] )
+        {
+            (u32 &)stringBytes[sizeof(u32)*i] = u32(stringBytes.size());
+            stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+(strings[i]->length()+1));
+        }
+        else
+            (u32 &)stringBytes[sizeof(u32)*i] = initialNulOffset;
+    }
+}
+
+void Scenario::syncKstringsToBytes(std::vector<u8> & stringBytes, u32 requestedCompressionFlags, u32 allowedCompressionFlags)
 {
     /**
         Uses the standard KSTR format
@@ -1889,22 +2446,22 @@ void Strings::syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8
     */
 
     constexpr size_t maxStrings = (size_t(s32_max) - 2*sizeof(u32))/sizeof(u32);
-    size_t numStrings = strings.size() > 0 ? strings.size()-1 : 0; // Exclude string at index 0
+    size_t numStrings = editorStrings.size() > 0 ? editorStrings.size()-1 : 0; // Exclude string at index 0
     if ( numStrings > maxStrings )
-        throw MaximumStringsExceeded(ChkSection::getNameString(SectionName::KSTR), numStrings, maxStrings);
+        throw Chk::MaximumStringsExceeded(Chk::getNameString(SectionName::KSTR), numStrings, maxStrings);
 
     size_t stringPropertiesStart = 2*sizeof(u32)+2*numStrings;
     size_t versionAndSizeAndOffsetAndStringPropertiesAndNulSpace = 2*sizeof(u32) + 2*sizeof(u32)*numStrings + 1;
     size_t sectionSize = versionAndSizeAndOffsetAndStringPropertiesAndNulSpace;
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        if ( strings[i] != nullptr )
-            sectionSize += strings[i]->length();
+        if ( editorStrings[i] )
+            sectionSize += editorStrings[i]->length();
     }
 
     constexpr size_t maxStandardSize = s32_max;
     if ( sectionSize > maxStandardSize )
-        throw MaximumCharactersExceeded(ChkSection::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
+        throw Chk::MaximumCharactersExceeded(Chk::getNameString(SectionName::KSTR), sectionSize-versionAndSizeAndOffsetAndStringPropertiesAndNulSpace, maxStandardSize);
 
     stringBytes.assign(2*sizeof(u32)+2*sizeof(u32)*numStrings, u8(0));
     (u32 &)stringBytes[0] = Chk::KSTR::CurrentVersion;
@@ -1913,19 +2470,435 @@ void Strings::syncKstringsToBytes(std::deque<ScStrPtr> & strings, std::vector<u8
     stringBytes.push_back(u8('\0')); // Add initial NUL character
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        if ( strings[i] == nullptr )
+        if ( !editorStrings[i] )
             (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = initialNulOffset;
         else
         {
-            auto prop = strings[i]->properties();
+            auto prop = editorStrings[i]->properties();
             (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32 &)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
             (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = u32(stringBytes.size());
-            stringBytes.insert(stringBytes.end(), strings[i]->str, strings[i]->str+strings[i]->length()+1);
+            stringBytes.insert(stringBytes.end(), editorStrings[i]->str, editorStrings[i]->str+editorStrings[i]->length()+1);
         }
     }
 }
 
-const std::vector<u32> Strings::compressionFlagsProgression = {
+void Scenario::syncBytesToStrings(const std::vector<u8> & stringBytes)
+{
+    size_t numBytes = stringBytes.size();
+    u16 rawNumStrings = numBytes >= 2 ? (u16 &)stringBytes[0] : numBytes == 1 ? (u16)stringBytes[0] : 0;
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 4 ? 0 : numBytes/2-1);
+    strings.clear();
+    strings.push_back(std::nullopt); // Fill the non-existant 0th stringId
+
+    size_t stringId = 1;
+    size_t sectionLastCharacter = 0;
+    for ( ; stringId <= highestStringWithValidOffset; ++stringId )
+    {
+        size_t offsetPos = sizeof(u16)*stringId;
+        size_t stringOffset = size_t((u16 &)stringBytes[offsetPos]);
+        size_t lastCharacter = loadString(stringBytes, stringOffset, numBytes);
+
+        if ( lastCharacter > sectionLastCharacter )
+            sectionLastCharacter = lastCharacter;
+    }
+    if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
+    {
+        if ( numBytes % 2 > 0 ) // Can read one byte of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t((u16)stringBytes[numBytes-1]);
+            loadString(stringBytes, stringOffset, numBytes);
+        }
+        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
+            strings.push_back(std::nullopt);
+    }
+
+    size_t offsetsEnd = sizeof(u16) + sizeof(u16)*rawNumStrings;
+    size_t charactersEnd = sectionLastCharacter+1;
+    size_t regularStrSectionEnd = std::max(offsetsEnd, charactersEnd);
+    if ( regularStrSectionEnd < numBytes ) // Tail data exists starting at regularStrSectionEnd
+    {
+        strBytePaddedTo = 0;
+        initialStrTailDataOffset = regularStrSectionEnd;
+        auto tailStart = std::next(stringBytes.begin(), regularStrSectionEnd);
+        auto tailEnd = stringBytes.end();
+        strTailData.assign(tailStart, tailEnd);
+        logger.info() << "Read " << tailData.size() << " bytes of tailData after the STR section" << std::endl;
+    }
+    else // No tail data exists
+    {
+        strBytePaddedTo = 4;
+        initialStrTailDataOffset = 0;
+        strTailData.clear();
+    }
+}
+
+void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes)
+{
+    size_t numBytes = stringBytes.size();
+    u32 rawNumStrings = numBytes >= 4 ? (u32 &)stringBytes[0] : numBytes == 1 ? u32((u8 &)stringBytes[0]) : 0;
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 4 ? 0 : numBytes/4-1);
+    strings.clear();
+    strings.push_back(std::nullopt); // Fill the non-existant 0th stringId
+    size_t stringId = 1;
+    size_t sectionLastCharacter = 0;
+    for ( ; stringId <= highestStringWithValidOffset; ++stringId )
+    {
+        size_t offsetPos = sizeof(u32)*stringId;
+        size_t stringOffset = size_t((u32 &)stringBytes[offsetPos]);
+        size_t lastCharacter = loadString(stringBytes, stringOffset, numBytes);
+        if ( lastCharacter > sectionLastCharacter )
+            sectionLastCharacter = lastCharacter;
+    }
+    if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
+    {
+        if ( numBytes % 4 > 0 ) // Can read one byte of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t((u32)stringBytes[numBytes-1]);
+            loadString(stringBytes, stringOffset, numBytes);
+        }
+        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
+            strings.push_back(std::nullopt);
+    }
+    size_t offsetsEnd = sizeof(u32) + sizeof(u32)*rawNumStrings;
+    size_t charactersEnd = sectionLastCharacter+1;
+    size_t regularStrxSectionEnd = std::max(offsetsEnd, charactersEnd);
+    if ( regularStrxSectionEnd < numBytes ) // Tail data exists starting at regularStrxSectionEnd
+    {
+        strBytePaddedTo = 0;
+        initialStrTailDataOffset = regularStrxSectionEnd;
+        auto tailStart = std::next(stringBytes.begin(), regularStrxSectionEnd);
+        auto tailEnd = stringBytes.end();
+        strTailData.assign(tailStart, tailEnd);
+        logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STRx section" << std::endl;
+    }
+    else // No tail data exists
+    {
+        strBytePaddedTo = 4;
+        initialStrTailDataOffset = 0;
+        strTailData.clear();
+    }
+}
+
+void Scenario::syncBytesToKstrings(const std::vector<u8> & stringBytes)
+{
+    size_t numBytes = stringBytes.size();
+    u32 version = 0;
+    if ( numBytes >= 4 )
+        version = (u32 &)stringBytes[0];
+    else
+        version = 0;
+
+    if ( version > Chk::KSTR::CurrentVersion )
+        throw Chk::SectionValidationException(Chk::SectionName::KSTR, "Unrecognized KSTR Version: " + std::to_string(version));
+
+    this->editorStringsVersion = Chk::KstrVersion(version);
+
+    u32 rawNumStrings = 0;
+    if ( numBytes >= 8 )
+        rawNumStrings = (u32 &)stringBytes[4];
+    else if ( numBytes == 7 )
+    {
+        u8 paddedTriplet[4] = { stringBytes[4], stringBytes[5], stringBytes[6], u8(0) };
+        rawNumStrings = (u32 &)paddedTriplet[0];
+    }
+    else if ( numBytes == 6 )
+        rawNumStrings = u32((u16 &)stringBytes[4]);
+    else if ( numBytes == 5 )
+        rawNumStrings = u32(stringBytes[4]);
+    
+    size_t highestStringWithValidOffset = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/4);
+    size_t highestStringWithValidProperties = std::min(size_t(rawNumStrings), numBytes < 12 ? 0 : (numBytes-8)/8);
+    size_t propertiesStartMinusFour = sizeof(u32)+sizeof(u32)*rawNumStrings;
+    editorStrings.clear();
+    editorStrings.push_back(std::nullopt); // Fill the non-existant 0th stringId
+
+    size_t stringId = 1;
+    for ( ; stringId <= highestStringWithValidOffset; ++stringId )
+    {
+        size_t offsetPos = sizeof(u32)+sizeof(u32)*stringId;
+        size_t stringOffset = size_t((u32 &)stringBytes[offsetPos]);
+        loadKstring(stringBytes, stringOffset, numBytes);
+        if ( stringId <= highestStringWithValidProperties && editorStrings[stringId] )
+        {
+            size_t propertiesPos = propertiesStartMinusFour + sizeof(u32)*stringId;
+            Chk::StringProperties properties = (Chk::StringProperties &)stringBytes[propertiesPos];
+            editorStrings[stringId]->properties() = StrProp(properties);
+        }
+    }
+    if ( highestStringWithValidOffset < size_t(rawNumStrings) ) // Some offsets aren't within bounds
+    {
+        if ( numBytes % 4 == 3 ) // Can read three bytes of an offset
+        {
+            stringId ++;
+            u8 paddedTriplet[4] = { stringBytes[numBytes-3], stringBytes[numBytes-2], stringBytes[numBytes-1], u8(0) };
+            size_t stringOffset = size_t((u32 &)paddedTriplet[0]);
+            loadKstring(stringBytes, stringOffset, numBytes);
+        }
+        else if ( numBytes % 4 == 2 ) // Can read two bytes of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t((u16 &)stringBytes[numBytes]);
+            loadKstring(stringBytes, stringOffset, numBytes);
+        }
+        else if ( numBytes % 4 == 1 ) // Can read one byte of an offset
+        {
+            stringId ++;
+            size_t stringOffset = size_t(stringBytes[sizeof(u32)*highestStringWithValidOffset]);
+            loadKstring(stringBytes, stringOffset, numBytes);
+        }
+        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining editorStrings are fully out of bounds
+            editorStrings.push_back(std::nullopt);
+    }
+}
+
+size_t Scenario::loadString(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize)
+{
+    if ( stringOffset < sectionSize )
+    {
+        auto nextNull = std::find(stringBytes.begin()+stringOffset, stringBytes.end(), u8('\0'));
+        if ( nextNull != stringBytes.end() )
+        {
+            auto nullIndex = std::distance(stringBytes.begin(), nextNull);
+            if ( size_t(nullIndex) >= stringOffset ) // Regular string
+            {
+                strings.push_back(&stringBytes[stringOffset]);
+                return nullIndex;
+            }
+            else // String ends where section ends
+            {
+                strings.push_back(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset));
+                return sectionSize-1;
+            }
+        }
+        else if ( sectionSize > stringOffset ) // String ends where section ends
+        {
+            strings.push_back(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset));
+            return sectionSize-1;
+        }
+        else // Character data would be out of bounds
+            strings.push_back(std::nullopt);
+    }
+    else // Offset is out of bounds
+        strings.push_back(std::nullopt);
+
+    return 0;
+}
+
+void Scenario::loadKstring(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize)
+{
+    if ( stringOffset < sectionSize )
+    {
+        auto nextNull = std::find(stringBytes.begin()+stringOffset, stringBytes.end(), u8('\0'));
+        if ( nextNull != stringBytes.end() )
+        {
+            auto nullIndex = std::distance(stringBytes.begin(), nextNull);
+            if ( size_t(nullIndex) >= stringOffset ) // Regular string
+                editorStrings.push_back(std::string((const char*)&stringBytes[stringOffset]));
+            else // String ends where section ends
+                editorStrings.push_back(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset));
+        }
+        else if ( sectionSize > stringOffset ) // String ends where section ends
+            editorStrings.push_back(std::string((const char*)&stringBytes[stringOffset], sectionSize-stringOffset));
+        else // Character data would be out of bounds
+            editorStrings.push_back(std::nullopt);
+    }
+    else // Offset is out of bounds
+        editorStrings.push_back(std::nullopt);
+}
+
+void Scenario::upgradeKstrToCurrent()
+{
+    if ( this->editorStringsVersion >= Chk::KstrVersion::Current )
+        return;
+
+    auto ver = this->editorStringsVersion;
+    if ( 0 == ver || 2 == ver )
+    {
+        size_t strCapacity = getCapacity(Chk::StrScope::Game);
+        for ( size_t triggerIndex=0; triggerIndex<triggers.size(); triggerIndex++ )
+        {
+            auto & trigger = triggers[triggerIndex];
+            size_t extendedCommentStringId = getExtendedCommentStringId(triggerIndex);
+            size_t extendedNotesStringId = getExtendedNotesStringId(triggerIndex);
+            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                Chk::Action & action = trigger.actions[actionIndex];
+                if ( action.actionType < Chk::Action::NumActionTypes )
+                {
+                    if ( Chk::Action::actionUsesStringArg[action.actionType] &&
+                        action.stringId > strCapacity &&
+                        action.stringId != Chk::StringId::NoString &&
+                        action.stringId < 65536 &&
+                        65536-action.stringId < editorStrings.size() )
+                    {
+                        if ( action.actionType == Chk::Action::Type::Comment &&
+                            (extendedCommentStringId == Chk::StringId::NoString ||
+                                extendedNotesStringId == Chk::StringId::NoString) )
+                        { // Move comment to extended comment or to notes
+                            if ( extendedCommentStringId == Chk::StringId::NoString )
+                            {
+                                setExtendedCommentStringId(triggerIndex, 65536-action.stringId);
+                                action.stringId = 0;
+                            }
+                            else if ( extendedNotesStringId == Chk::StringId::NoString )
+                            {
+                                setExtendedNotesStringId(triggerIndex, 65536-action.stringId);
+                                action.stringId = 0;
+                            }
+                        }
+                        else // Extended string is lost
+                        {
+                            auto actionString = getString<ChkdString>(65536-action.stringId, Chk::StrScope::Editor);
+                            logger.warn() << "Trigger #" << triggerIndex << " action #" << actionIndex << " lost extended string: \""
+                                << (actionString ? *actionString : "") << "\"" << std::endl;
+                            action.stringId = Chk::StringId::NoString;
+                        }
+                    }
+
+                    if ( Chk::Action::actionUsesSoundArg[action.actionType] &&
+                        action.soundStringId > strCapacity &&
+                        action.soundStringId != Chk::StringId::NoString &&
+                        action.soundStringId < 65536 &&
+                        65536-action.soundStringId < editorStrings.size() )
+                    {
+                        action.soundStringId = 65536 - action.soundStringId;
+                        auto soundString = getString<ChkdString>(65536 - action.soundStringId);
+                        logger.warn() << "Trigger #" << triggerIndex << " action #" << actionIndex << " lost extended sound string: \""
+                            << (soundString ? *soundString : "") << "\"" << std::endl;
+                        action.soundStringId = Chk::StringId::NoString;
+                    }
+                }
+            }
+        }
+        
+        for ( size_t briefingTriggerIndex=0; briefingTriggerIndex<briefingTriggers.size(); briefingTriggerIndex++ )
+        {
+            auto & briefingTrigger = briefingTriggers[briefingTriggerIndex];
+            for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+            {
+                Chk::Action & briefingAction = briefingTrigger.actions[actionIndex];
+                if ( briefingAction.actionType < Chk::Action::NumBriefingActionTypes )
+                {
+                    if ( Chk::Action::briefingActionUsesStringArg[briefingAction.actionType] &&
+                        briefingAction.stringId > strCapacity &&
+                        briefingAction.stringId != Chk::StringId::NoString &&
+                        briefingAction.stringId < 65536 &&
+                        65536-briefingAction.stringId < editorStrings.size() )
+                    {
+                        auto briefingString = getString<ChkdString>(65536 - briefingAction.stringId);
+                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex << " action #" << actionIndex << " lost extended string: \""
+                            << (briefingString ? *briefingString : "") << "\"" << std::endl;
+                        briefingAction.stringId = Chk::StringId::NoString;
+                    }
+
+                    if ( Chk::Action::briefingActionUsesSoundArg[briefingAction.actionType] &&
+                        briefingAction.soundStringId > strCapacity &&
+                        briefingAction.soundStringId != Chk::StringId::NoString &&
+                        briefingAction.soundStringId < 65536 &&
+                        65536-briefingAction.stringId < editorStrings.size() )
+                    {
+                        auto briefingSoundString = getString<ChkdString>(65536 - briefingAction.soundStringId);
+                        logger.warn() << "Briefing trigger #" << briefingTriggerIndex << " action #" << actionIndex << " lost extended sound string: \""
+                            << (briefingSoundString ? *briefingSoundString : "") << "\"" << std::endl;
+                        briefingAction.soundStringId = Chk::StringId::NoString;
+                    }
+                }
+            }
+        }
+
+        for ( size_t locationIndex=0; locationIndex<locations.size(); locationIndex++ )
+        {
+            auto & location = locations[locationIndex];
+            if ( location.stringId > strCapacity &&
+                 location.stringId != Chk::StringId::NoString &&
+                 location.stringId < 65536 &&
+                 65536-location.stringId < editorStrings.size() )
+            {
+                editorStringOverrides.locationName[locationIndex] = 65536-location.stringId;
+                location.stringId = Chk::StringId::NoString;
+            }
+        }
+
+        if ( scenarioProperties.scenarioNameStringId > strCapacity &&
+            scenarioProperties.scenarioNameStringId != Chk::StringId::NoString &&
+            scenarioProperties.scenarioNameStringId < 65536 &&
+            65536-scenarioProperties.scenarioNameStringId < editorStrings.size() )
+        {
+            setScenarioNameStringId(65536-scenarioProperties.scenarioNameStringId, Chk::StrScope::Editor);
+            scenarioProperties.scenarioNameStringId = Chk::StringId::NoString;
+        }
+
+        if ( scenarioProperties.scenarioDescriptionStringId > strCapacity &&
+            scenarioProperties.scenarioDescriptionStringId != Chk::StringId::NoString &&
+            scenarioProperties.scenarioDescriptionStringId < 65536 &&
+            65536-scenarioProperties.scenarioDescriptionStringId < editorStrings.size() )
+        {
+            setScenarioDescriptionStringId(65536-scenarioProperties.scenarioDescriptionStringId, Chk::StrScope::Editor);
+            scenarioProperties.scenarioDescriptionStringId = Chk::StringId::NoString;
+        }
+
+        for ( Chk::Force i=Chk::Force::Force1; i<=Chk::Force::Force4; ((u8 &)i)++ )
+        {
+            if ( forces.forceString[i] > strCapacity &&
+                forces.forceString[i] != Chk::StringId::NoString &&
+                forces.forceString[i] < 65536 &&
+                65536-forces.forceString[i] < editorStrings.size() )
+            {
+                setForceNameStringId(i, 65536-forces.forceString[i], Chk::StrScope::Editor);
+                forces.forceString[i] = Chk::StringId::NoString;
+            }
+        }
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            if ( soundPaths[i] > strCapacity &&
+                soundPaths[i] != Chk::StringId::NoString &&
+                soundPaths[i] < 65536 &&
+                65536-soundPaths[i] < editorStrings.size() )
+            {
+                setSoundPathStringId(i, 65536-soundPaths[i], Chk::StrScope::Editor);
+                soundPaths[i] = Chk::StringId::NoString;
+            }
+        }
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            if ( switchNames[i] > strCapacity &&
+                switchNames[i] != Chk::StringId::NoString &&
+                switchNames[i] < 65536 &&
+                65536-switchNames[i] < editorStrings.size() )
+            {
+                setSwitchNameStringId(i, 65536-switchNames[i], Chk::StrScope::Editor);
+                switchNames[i] = Chk::StringId::NoString;
+            }
+        }
+        for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
+        {
+            if ( origUnitSettings.nameStringId[i] > strCapacity &&
+                origUnitSettings.nameStringId[i] != Chk::StringId::NoString &&
+                origUnitSettings.nameStringId[i] < 65536 &&
+                65536-origUnitSettings.nameStringId[i] < editorStrings.size() )
+            {
+                setUnitNameStringId(i, 65536-origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::StrScope::Editor);
+                origUnitSettings.nameStringId[i] = Chk::StringId::NoString;
+            }
+        }
+        for ( Sc::Unit::Type i=Sc::Unit::Type::TerranMarine; i<Sc::Unit::TotalTypes; ((u16 &)i)++ )
+        {
+            if ( unitSettings.nameStringId[i] > strCapacity &&
+                unitSettings.nameStringId[i] != Chk::StringId::NoString &&
+                unitSettings.nameStringId[i] < 65536 &&
+                65536-unitSettings.nameStringId[i] < editorStrings.size() )
+            {
+                setUnitNameStringId(i, 65536-unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::StrScope::Editor);
+                unitSettings.nameStringId[i] = Chk::StringId::NoString;
+            }
+        }
+        this->editorStringsVersion = Chk::KstrVersion::Current;
+    }
+}
+
+const std::vector<u32> Scenario::compressionFlagsProgression = {
     StrCompressFlag::None,
     StrCompressFlag::DuplicateStringRecycling,
     StrCompressFlag::LastStringTrick,
@@ -1977,424 +2950,698 @@ const std::vector<u32> Strings::compressionFlagsProgression = {
         | StrCompressFlag::SizeBytesRecycling
 };
 
-
-Strings::StringBackup Strings::backup() const
+std::vector<std::optional<ScStr>> Scenario::copyStrings() const
 {
-    return { (str == nullptr ? nullptr : str->backup()) };
+    std::vector<std::optional<ScStr>> copy;
+    for ( auto & str : strings )
+        copy.push_back(str);
+
+    return copy;
 }
 
-void Strings::restore(StringBackup & backup)
+void Scenario::swapStrings(std::vector<std::optional<ScStr>> & strings)
 {
-    if ( str != nullptr )
-        str->restore(backup.strBackup);
+    this->strings.swap(strings);
 }
 
-void Strings::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
+bool Scenario::defragment(Chk::StrScope storageScope, bool matchCapacityToUsage)
 {
-    if ( storageScope == Chk::Scope::Game )
+    if ( storageScope & Chk::StrScope::Game )
     {
-        sprp->remapStringIds(stringIdRemappings);
-        players->remapStringIds(stringIdRemappings);
-        properties->remapStringIds(stringIdRemappings);
-        layers->remapStringIds(stringIdRemappings);
-        triggers->remapStringIds(stringIdRemappings, storageScope);
-    }
-    else if ( storageScope == Chk::Scope::Editor )
-    {
-        ostr->remapStringIds(stringIdRemappings);
-        triggers->remapStringIds(stringIdRemappings, storageScope);
-    }
-}
-
-void Strings::set(std::unordered_map<SectionName, Section> & sections)
-{
-    sprp = GetSection<SprpSection>(sections, SectionName::SPRP);
-    str = GetSection<StrSection>(sections, SectionName::STR);
-    ostr = GetSection<OstrSection>(sections, SectionName::OSTR);
-    kstr = GetSection<KstrSection>(sections, SectionName::KSTR);
-
-    if ( str == nullptr )
-        str = StrSection::GetDefault(true);
-    if ( ostr == nullptr )
-        ostr = OstrSection::GetDefault();
-    if ( kstr == nullptr )
-        kstr = KstrSection::GetDefault();
-}
-
-void Strings::clear()
-{
-    sprp = nullptr;
-    str = nullptr;
-    ostr = nullptr;
-    kstr = nullptr;
-}
-
-
-Players::Players(bool useDefault) : strings(nullptr)
-{
-    if ( useDefault )
-    {
-        side = SideSection::GetDefault(); // Races
-        colr = ColrSection::GetDefault(); // Player colors
-        forc = ForcSection::GetDefault(); // Forces
-        ownr = OwnrSection::GetDefault(); // Slot owners
-        iown = IownSection::GetDefault(); // Redundant slot owners
-        if ( iown == nullptr || ownr == nullptr || forc == nullptr || colr == nullptr || side == nullptr )
+        size_t nextCandidateStringId = 0;
+        size_t numStrings = strings.size();
+        std::map<u32, u32> stringIdRemappings;
+        for ( size_t i=0; i<numStrings; i++ )
         {
-            throw ScenarioAllocationFailure(
-                iown == nullptr ? ChkSection::getNameString(SectionName::IOWN) :
-                (ownr == nullptr ? ChkSection::getNameString(SectionName::OWNR) :
-                (forc == nullptr ? ChkSection::getNameString(SectionName::FORC) :
-                (colr == nullptr ? ChkSection::getNameString(SectionName::COLR) :
-                ChkSection::getNameString(SectionName::SIDE)))));
+            if ( !strings[i] )
+            {
+                for ( size_t j = std::max(i+1, nextCandidateStringId); j < numStrings; j++ )
+                {
+                    if ( strings[j] )
+                    {
+                        strings[i] = strings[j];
+                        stringIdRemappings.insert(std::pair<u32, u32>((u32)j, (u32)i));
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ( !stringIdRemappings.empty() )
+        {
+            remapStringIds(stringIdRemappings, Chk::StrScope::Game);
+            return true;
         }
     }
+    else if ( storageScope & Chk::StrScope::Editor )
+    {
+        size_t nextCandidateStringId = 0;
+        size_t numStrings = this->editorStrings.size();
+        std::map<u32, u32> stringIdRemappings;
+        for ( size_t i=0; i<numStrings; i++ )
+        {
+            if ( !this->editorStrings[i] )
+            {
+                for ( size_t j = std::max(i+1, nextCandidateStringId); j < numStrings; j++ )
+                {
+                    if ( this->editorStrings[j] )
+                    {
+                        this->editorStrings[i] = this->editorStrings[j];
+                        stringIdRemappings.insert(std::pair<u32, u32>((u32)j, (u32)i));
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ( !stringIdRemappings.empty() )
+        {
+            remapStringIds(stringIdRemappings, Chk::StrScope::Editor);
+            return true;
+        }
+    }
+    return false;
 }
 
-bool Players::empty() const
+void Scenario::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope)
 {
-    return side == nullptr && colr == nullptr && forc == nullptr && ownr == nullptr && iown == nullptr;
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        auto scenarioNameRemapping = stringIdRemappings.find(this->scenarioProperties.scenarioNameStringId);
+        auto scenarioDescriptionRemapping = stringIdRemappings.find(this->scenarioProperties.scenarioDescriptionStringId);
+
+        if ( scenarioNameRemapping != stringIdRemappings.end() )
+            this->scenarioProperties.scenarioNameStringId = scenarioNameRemapping->second;
+
+        if ( scenarioDescriptionRemapping != stringIdRemappings.end() )
+            this->scenarioProperties.scenarioDescriptionStringId = scenarioDescriptionRemapping->second;
+
+        remapForceStringIds(stringIdRemappings);
+        remapUnitStringIds(stringIdRemappings);
+        remapLocationStringIds(stringIdRemappings);
+        remapTriggerStringIds(stringIdRemappings, storageScope);
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        auto scenarioNameRemapping = stringIdRemappings.find(this->editorStringOverrides.scenarioName);
+        auto scenarioDescriptionRemapping= stringIdRemappings.find(this->editorStringOverrides.scenarioDescription);
+        auto forceOneRemapping = stringIdRemappings.find(this->editorStringOverrides.forceName[0]);
+        auto forceTwoRemapping = stringIdRemappings.find(this->editorStringOverrides.forceName[1]);
+        auto forceThreeRemapping = stringIdRemappings.find(this->editorStringOverrides.forceName[2]);
+        auto forceFourRemapping = stringIdRemappings.find(this->editorStringOverrides.forceName[3]);
+
+        if ( scenarioNameRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.scenarioName = scenarioNameRemapping->second;
+
+        if ( scenarioDescriptionRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.scenarioDescription = scenarioDescriptionRemapping->second;
+    
+        if ( forceOneRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.forceName[0] = forceOneRemapping->second;
+
+        if ( forceTwoRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.forceName[1] = forceTwoRemapping->second;
+
+        if ( forceThreeRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.forceName[2] = forceThreeRemapping->second;
+
+        if ( forceFourRemapping != stringIdRemappings.end() )
+            this->editorStringOverrides.forceName[3] = forceFourRemapping->second;
+    
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            auto found = stringIdRemappings.find(this->editorStringOverrides.unitName[i]);
+            if ( found != stringIdRemappings.end() )
+                this->editorStringOverrides.unitName[i] = found->second;
+        }
+
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            auto found = stringIdRemappings.find(this->editorStringOverrides.expUnitName[i]);
+            if ( found != stringIdRemappings.end() )
+                this->editorStringOverrides.expUnitName[i] = found->second;
+        }
+    
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            auto found = stringIdRemappings.find(this->editorStringOverrides.soundPath[i]);
+            if ( found != stringIdRemappings.end() )
+                this->editorStringOverrides.soundPath[i] = found->second;
+        }
+
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            auto found = stringIdRemappings.find(this->editorStringOverrides.switchName[i]);
+            if ( found != stringIdRemappings.end() )
+                this->editorStringOverrides.switchName[i] = found->second;
+        }
+
+        for ( size_t i=0; i<Chk::TotalLocations; i++ )
+        {
+            auto found = stringIdRemappings.find(this->editorStringOverrides.locationName[i]);
+            if ( found != stringIdRemappings.end() )
+                this->editorStringOverrides.locationName[i] = found->second;
+        }
+        remapTriggerStringIds(stringIdRemappings, storageScope);
+    }
 }
 
-Sc::Player::SlotType Players::getSlotType(size_t slotIndex, Chk::Scope scope) const
+Sc::Player::SlotType Scenario::getSlotType(size_t slotIndex, Chk::StrScope scope) const
 {
+    if ( slotIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR/IOWN sections!");
+
     switch ( scope )
     {
-        case Chk::Scope::Game: return ownr->getSlotType(slotIndex);
-        case Chk::Scope::Editor: return iown->getSlotType(slotIndex);
-        case Chk::Scope::EditorOverGame: return iown != nullptr ? iown->getSlotType(slotIndex) : ownr->getSlotType(slotIndex);
-        default: return ownr != nullptr ? ownr->getSlotType(slotIndex) : iown->getSlotType(slotIndex);
+        case Chk::StrScope::Game: return this->slotTypes[slotIndex];
+        case Chk::StrScope::Editor: return this->iownSlotTypes[slotIndex];
+        case Chk::StrScope::EditorOverGame: return this->hasSection(Chk::SectionName::IOWN) ? this->iownSlotTypes[slotIndex] : this->slotTypes[slotIndex];
+        default: return this->slotTypes[slotIndex];
     }
     return Sc::Player::SlotType::Inactive;
 }
 
-void Players::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope)
+void Scenario::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::StrScope scope)
 {
+    if ( slotIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR/IOWN sections!");
+
     switch ( scope )
     {
-        case Chk::Scope::Game: ownr->setSlotType(slotIndex, slotType); break;
-        case Chk::Scope::Editor: iown->setSlotType(slotIndex, slotType); break;
-        default: ownr->setSlotType(slotIndex, slotType); iown->setSlotType(slotIndex, slotType); break;
+        case Chk::StrScope::Game: this->slotTypes[slotIndex] = slotType; break;
+        case Chk::StrScope::Editor: this->iownSlotTypes[slotIndex] = slotType; break;
+        default: this->slotTypes[slotIndex] = slotType; this->iownSlotTypes[slotIndex] = slotType; break;
     }
 }
 
-Chk::Race Players::getPlayerRace(size_t playerIndex) const
+Chk::Race Scenario::getPlayerRace(size_t playerIndex) const
 {
-    return side->getPlayerRace(playerIndex);
+    if ( playerIndex < Sc::Player::Total )
+        return this->playerRaces[playerIndex];
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the SIDE section!");
 }
 
-void Players::setPlayerRace(size_t playerIndex, Chk::Race race)
+void Scenario::setPlayerRace(size_t playerIndex, Chk::Race race)
 {
-    side->setPlayerRace(playerIndex, race);
+    if ( playerIndex < Sc::Player::Total )
+        this->playerRaces[playerIndex] = race;
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the SIDE section!");
 }
 
-Chk::PlayerColor Players::getPlayerColor(size_t slotIndex) const
+Chk::PlayerColor Scenario::getPlayerColor(size_t slotIndex) const
 {
-    return colr->getPlayerColor(slotIndex);
+    if ( slotIndex < Sc::Player::TotalSlots )
+        return this->playerColors[slotIndex];
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the COLR section!");
 }
 
-void Players::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
+void Scenario::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
 {
-    colr->setPlayerColor(slotIndex, color);
-}
-
-Chk::Force Players::getPlayerForce(size_t slotIndex) const
-{
-    return forc->getPlayerForce(slotIndex);
-}
-
-size_t Players::getForceStringId(Chk::Force force) const
-{
-    return forc->getForceStringId(force);
-}
-
-u8 Players::getForceFlags(Chk::Force force) const
-{
-    return forc->getForceFlags(force);
-}
-
-void Players::setPlayerForce(size_t slotIndex, Chk::Force force)
-{
-    forc->setPlayerForce(slotIndex, force);
-}
-
-void Players::setForceStringId(Chk::Force force, u16 forceStringId)
-{
-    forc->setForceStringId(force, forceStringId);
-}
-
-void Players::setForceFlags(Chk::Force force, u8 forceFlags)
-{
-    forc->setForceFlags(force, forceFlags);
-}
-
-void Players::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
-{
-    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
-        forc->appendUsage(stringId, stringUsers);
-}
-
-bool Players::stringUsed(size_t stringId, u32 userMask) const
-{
-    return (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force && forc->stringUsed(stringId);
-}
-
-void Players::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
-{
-    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
-        forc->markUsedStrings(stringIdUsed);
-}
-
-void Players::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
-{
-    forc->remapStringIds(stringIdRemappings);
-}
-
-void Players::deleteString(size_t stringId)
-{
-    forc->deleteString(stringId);
-}
-
-void Players::set(std::unordered_map<SectionName, Section> & sections)
-{
-    side = GetSection<SideSection>(sections, SectionName::SIDE);
-    colr = GetSection<ColrSection>(sections, SectionName::COLR);
-    forc = GetSection<ForcSection>(sections, SectionName::FORC);
-    ownr = GetSection<OwnrSection>(sections, SectionName::OWNR);
-
-    iown = GetSection<IownSection>(sections, SectionName::IOWN);
-
-    if ( colr == nullptr )
-        colr = ColrSection::GetDefault();
-    if ( iown == nullptr )
-        iown = IownSection::GetDefault();
-}
-
-void Players::clear()
-{
-    side = nullptr;
-    colr = nullptr;
-    forc = nullptr;
-    ownr = nullptr;
-
-    iown = nullptr;
-}
-
-
-Terrain::Terrain()
-{
-
-}
-
-Terrain::Terrain(Sc::Terrain::Tileset tileset, u16 width, u16 height)
-{
-    era = EraSection::GetDefault(tileset); // Tileset
-    dim = DimSection::GetDefault(width, height); // Dimensions
-    mtxm = MtxmSection::GetDefault(width, height); // Real terrain data
-    tile = TileSection::GetDefault(width, height); // Intermediate terrain data
-    isom = IsomSection::GetDefault(width, height); // Isometric terrain data
-    if ( isom == nullptr || tile == nullptr || mtxm == nullptr || dim == nullptr || era == nullptr )
+    if ( slotIndex < Sc::Player::TotalSlots )
     {
-        throw ScenarioAllocationFailure(
-            isom == nullptr ? ChkSection::getNameString(SectionName::ISOM) :
-            (tile == nullptr ? ChkSection::getNameString(SectionName::TILE) :
-            (mtxm == nullptr ? ChkSection::getNameString(SectionName::MTXM) :
-            (dim == nullptr ? ChkSection::getNameString(SectionName::DIM) :
-            ChkSection::getNameString(SectionName::ERA)))));
+        if ( isUsingRemasteredColors() )
+        {
+            this->customColors.playerSetting[slotIndex] = Chk::PlayerColorSetting::UseId;
+            this->customColors.playerColor[slotIndex][0] = u8(0); // R
+            this->customColors.playerColor[slotIndex][1] = u8(0); // G
+            this->customColors.playerColor[slotIndex][2] = playerColors[slotIndex]; // B (or color index)
+        }
+        this->playerColors[slotIndex] = color;
+    }
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the COLR section!");
+}
+
+Chk::Force Scenario::getPlayerForce(size_t slotIndex) const
+{
+    if ( slotIndex < Sc::Player::TotalSlots )
+        return this->forces.playerForce[slotIndex];
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
+}
+
+size_t Scenario::getForceStringId(Chk::Force force) const
+{
+    if ( force < Chk::TotalForces )
+        return this->forces.forceString[(size_t)force];
+    else
+        throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
+}
+
+u8 Scenario::getForceFlags(Chk::Force force) const
+{
+    if ( force < Chk::TotalForces )
+        return this->forces.flags[force];
+    else
+        throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
+}
+
+void Scenario::setPlayerForce(size_t slotIndex, Chk::Force force)
+{
+    if ( slotIndex < Sc::Player::TotalSlots )
+        this->forces.playerForce[slotIndex] = force;
+    else
+        throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
+}
+
+void Scenario::setForceStringId(Chk::Force force, u16 forceStringId)
+{
+    if ( force < Chk::TotalForces )
+        this->forces.forceString[(size_t)force] = forceStringId;
+    else
+        throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
+}
+
+void Scenario::setForceFlags(Chk::Force force, u8 forceFlags)
+{
+    if ( force < Chk::TotalForces )
+        this->forces.flags[force] = Chk::ForceFlags(forceFlags);
+    else
+        throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
+}
+
+void Scenario::appendForceStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
+    {
+        for ( size_t i=0; i<Chk::TotalForces; i++ )
+        {
+            if ( this->forces.forceString[i] == stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Force, i));
+        }
     }
 }
 
-bool Terrain::empty() const
+bool Scenario::forceStringUsed(size_t stringId, u32 userMask) const
 {
-    return era == nullptr && dim == nullptr && mtxm == nullptr && tile == nullptr && isom == nullptr;
+    return (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force &&
+        this->forces.forceString[0] == (u16)stringId || this->forces.forceString[1] == (u16)stringId ||
+        this->forces.forceString[2] == (u16)stringId || this->forces.forceString[3] == (u16)stringId;
 }
 
-Sc::Terrain::Tileset Terrain::getTileset() const
+void Scenario::markUsedForceStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
-    return era->getTileset();
+    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
+    {
+        for ( size_t i=0; i<Chk::TotalForces; i++ )
+        {
+            if ( this->forces.forceString[i] != Chk::StringId::NoString )
+                stringIdUsed[this->forces.forceString[i]] = true;
+        }
+    }
 }
 
-void Terrain::setTileset(Sc::Terrain::Tileset tileset)
+void Scenario::remapForceStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
-    era->setTileset(tileset);
+    auto forceOneRemapping = stringIdRemappings.find(this->forces.forceString[0]);
+    auto forceTwoRemapping = stringIdRemappings.find(this->forces.forceString[1]);
+    auto forceThreeRemapping = stringIdRemappings.find(this->forces.forceString[2]);
+    auto forceFourRemapping = stringIdRemappings.find(this->forces.forceString[3]);
+
+    if ( forceOneRemapping != stringIdRemappings.end() )
+        this->forces.forceString[0] = forceOneRemapping->second;
+
+    if ( forceTwoRemapping != stringIdRemappings.end() )
+        this->forces.forceString[1] = forceTwoRemapping->second;
+
+    if ( forceThreeRemapping != stringIdRemappings.end() )
+        this->forces.forceString[2] = forceThreeRemapping->second;
+
+    if ( forceFourRemapping != stringIdRemappings.end() )
+        this->forces.forceString[3] = forceFourRemapping->second;
 }
 
-size_t Terrain::getTileWidth() const
+void Scenario::deleteForceString(size_t stringId)
 {
-    return dim->getTileWidth();
+    for ( size_t i=0; i<Chk::TotalForces; i++ )
+    {
+        if ( this->forces.forceString[i] == stringId )
+            this->forces.forceString[i] = 0;
+    }
 }
 
-size_t Terrain::getTileHeight() const
+bool Scenario::isUsingRemasteredColors()
 {
-    return dim->getTileHeight();
+    return hasSection(SectionName::CRGB);
 }
 
-size_t Terrain::getPixelWidth() const
+void Scenario::upgradeToRemasteredColors()
 {
-    return dim->getPixelWidth();
+    if ( !hasSection(SectionName::CRGB) )
+    {
+        addSection(Section{SectionName::CRGB});
+        for ( size_t i=0; i<Sc::Player::TotalSlots; ++i )
+        {
+            this->customColors.playerColor[i][0] = u8(0); // R
+            this->customColors.playerColor[i][1] = u8(0); // G
+            this->customColors.playerColor[i][2] = playerColors[i]; // B (or color index)
+            this->customColors.playerSetting[i] = Chk::PlayerColorSetting::UseId;
+        }
+    }
 }
 
-size_t Terrain::getPixelHeight() const
+Chk::PlayerColorSetting Scenario::getPlayerColorSetting(size_t playerIndex)
 {
-    return dim->getPixelHeight();
+    if ( playerIndex < Sc::Player::TotalSlots )
+        return customColors.playerSetting[playerIndex];
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the CRGB section!");
 }
 
-void Terrain::setTileWidth(u16 newTileWidth, s32 leftEdge)
+void Scenario::setPlayerColorSetting(size_t playerIndex, Chk::PlayerColorSetting setting)
 {
-    u16 tileWidth = (u16)dim->getTileWidth();
-    u16 tileHeight = (u16)dim->getTileHeight();
-    isom->setDimensions(newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
-    tile->setDimensions(newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
-    mtxm->setDimensions(newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
-    dim->setTileWidth(tileWidth);
+    if ( playerIndex < Sc::Player::TotalSlots )
+    {
+        upgradeToRemasteredColors();
+        customColors.playerSetting[playerIndex] = setting;
+    }
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the CRGB section!");
 }
 
-void Terrain::setTileHeight(u16 newTileHeight, s32 topEdge)
+Chk::Rgb Scenario::getPlayerCustomColor(size_t playerIndex)
 {
-    u16 tileWidth = (u16)dim->getTileWidth();
-    u16 tileHeight = (u16)dim->getTileHeight();
-    isom->setDimensions(tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
-    tile->setDimensions(tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
-    mtxm->setDimensions(tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
-    dim->setTileHeight(tileHeight);
+    if ( playerIndex < Sc::Player::TotalSlots )
+    {
+        return Chk::Rgb { customColors.playerColor[playerIndex][0], customColors.playerColor[playerIndex][1], customColors.playerColor[playerIndex][2] };
+    }
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the CRGB section!");
 }
 
-void Terrain::setDimensions(u16 newTileWidth, u16 newTileHeight, s32 leftEdge, s32 topEdge)
+void Scenario::setPlayerCustomColor(size_t playerIndex, Chk::Rgb rgb)
 {
-    u16 tileWidth = (u16)dim->getTileWidth();
-    u16 tileHeight = (u16)dim->getTileHeight();
-    isom->setDimensions(newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
-    tile->setDimensions(newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
-    mtxm->setDimensions(newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
-    dim->setDimensions(newTileWidth, newTileHeight);
+    if ( playerIndex < Sc::Player::TotalSlots )
+    {
+        upgradeToRemasteredColors();
+        customColors.playerColor[playerIndex][0] = rgb.red;
+        customColors.playerColor[playerIndex][1] = rgb.green;
+        customColors.playerColor[playerIndex][2] = rgb.blue;
+    }
+    else
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the CRGB section!");
 }
 
-u16 Terrain::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope) const
+Sc::Terrain::Tileset Scenario::getTileset() const
 {
-    size_t tileWidth = dim->getTileWidth();
+    return this->tileset;
+}
+
+void Scenario::setTileset(Sc::Terrain::Tileset tileset)
+{
+    this->tileset = tileset;
+}
+
+size_t Scenario::getTileWidth() const
+{
+    return this->dimensions.tileWidth;
+}
+
+size_t Scenario::getTileHeight() const
+{
+    return this->dimensions.tileHeight;
+}
+
+size_t Scenario::getPixelWidth() const
+{
+    return this->dimensions.tileWidth * Sc::Terrain::PixelsPerTile;
+}
+
+size_t Scenario::getPixelHeight() const
+{
+    return this->dimensions.tileHeight * Sc::Terrain::PixelsPerTile;
+}
+
+void setIsomDimensions(std::vector<Chk::IsomEntry> & tiles, u16 newTileWidth, u16 newTileHeight, u16 /*oldTileWidth*/, u16 /*oldTileHeight*/, s32 /*leftEdge*/, s32 /*topEdge*/)
+{
+    size_t oldNumIndices = tiles.size();
+    size_t newNumIndices = (size_t)newTileWidth * (size_t)newTileHeight;
+    if ( oldNumIndices < newNumIndices )
+    {
+        for ( size_t i=oldNumIndices; i<newNumIndices; i++ )
+            tiles.push_back(Chk::IsomEntry());
+    }
+    else if ( oldNumIndices > newNumIndices )
+    {
+        auto eraseStart = tiles.begin();
+        std::advance(eraseStart, newNumIndices);
+        tiles.erase(eraseStart, tiles.end());
+    }
+}
+
+void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+{
+    s64 oldLeft = 0, oldTop = 0, oldRight = oldTileWidth, oldBottom = oldTileHeight,
+        newLeft = leftEdge, newTop = topEdge, newRight = (s64)leftEdge+(s64)newTileWidth, newBottom = (s64)topEdge+(s64)newTileHeight,
+        currTileWidth = oldTileWidth, currTileHeight = oldTileHeight;
+
+    // Remove tiles as neccessary in order: bottom, top, right, left
+    if ( newBottom < oldBottom && currTileWidth > 0 && currTileHeight > 0 ) // Rows need to be removed from the bottom
+    {
+        s64 numRowsRemoved = oldBottom - newBottom;
+        s64 numTilesRemoved = numRowsRemoved*currTileWidth;
+        if ( numTilesRemoved >= (s64)tiles.size() )
+        {
+            tiles.clear();
+            currTileWidth = 0;
+            currTileHeight = 0;
+        }
+        else
+        {
+            tiles.erase(tiles.begin()+(tiles.size()-numTilesRemoved), tiles.end());
+            currTileHeight -= numRowsRemoved;
+        }
+    }
+
+    if ( newTop > oldTop && currTileWidth > 0 && currTileHeight > 0 ) // Rows need to be removed from the top
+    {
+        s64 numRowsRemoved = newTop - oldTop;
+        s64 numTilesRemoved = numRowsRemoved*currTileWidth;
+        if ( numTilesRemoved >= (s64)tiles.size() )
+        {
+            tiles.clear();
+            currTileWidth = 0;
+            currTileHeight = 0;
+        }
+        else
+        {
+            tiles.erase(tiles.begin(), tiles.begin()+numTilesRemoved);
+            currTileHeight -= numRowsRemoved;
+        }
+    }
+
+    if ( newRight < oldRight && currTileWidth > 0 && currTileHeight > 0 ) // Columns need to be removed from the right
+    {
+        s64 numColumnsRemoved = oldRight - newRight;
+        if ( numColumnsRemoved >= currTileWidth )
+        {
+            tiles.clear();
+            currTileWidth = 0;
+            currTileHeight = 0;
+        }
+        else
+        {
+            size_t firstRemovedColumn = currTileWidth - numColumnsRemoved;
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
+            {
+                size_t rowOffset = row*currTileWidth;
+                size_t removedColumnsOffset = rowOffset+firstRemovedColumn;
+                auto start = tiles.begin()+removedColumnsOffset;
+                tiles.erase(start, start+numColumnsRemoved);
+            }
+            currTileWidth -= numColumnsRemoved;
+        }
+    }
+
+    if ( newLeft > oldLeft && currTileWidth > 0 && currTileHeight > 0 ) // Columns need to be removed from the left
+    {
+        s64 numColumnsRemoved = newLeft - oldLeft;
+        if ( numColumnsRemoved >= currTileHeight )
+        {
+            tiles.clear();
+            currTileWidth = 0;
+            currTileHeight = 0;
+        }
+        else
+        {
+            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
+            {
+                size_t rowOffset = row*currTileWidth;
+                auto start = tiles.begin()+rowOffset;
+                tiles.erase(start, start+numColumnsRemoved);
+            }
+            currTileWidth -= numColumnsRemoved;
+        }
+    }
+
+    if ( tiles.size() > (size_t)newTileWidth * (size_t)newTileHeight ) // Remove out of bounds tiles
+        tiles.erase(tiles.begin() + (size_t)newTileWidth*(size_t)newTileHeight);
+
+    if ( currTileWidth == 0 || currTileHeight == 0 )
+        tiles.clear();
+    else // currTileWidth > 0 && currTileHeight > 0
+    {
+        // Add tiles as necessary in order: right, left, top, bottom
+
+        if ( newRight > oldRight ) // Columns need to be added to the right
+        {
+            s64 numColumnsAdded = newRight - oldRight;
+            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            {
+                s64 rowOffset = row*currTileWidth;
+                s64 start = rowOffset + numColumnsAdded;
+                tiles.insert(tiles.begin() + start, numColumnsAdded, u16(0));
+            }
+            currTileWidth += numColumnsAdded;
+        }
+
+        if ( newLeft < oldLeft ) // Columns need to be added to the left
+        {
+            s64 numColumnsAdded = oldLeft - newLeft;
+            for ( s64 row = currTileHeight-1; row >= 0; row-- )
+            {
+                s64 rowOffset = row*numColumnsAdded;
+                tiles.insert(tiles.begin() + rowOffset, numColumnsAdded, u16(0));
+            }
+            currTileWidth += numColumnsAdded;
+        }
+
+        if ( newTop < oldTop ) // Rows need to be added to the top
+        {
+            s64 numRowsAdded = oldTop - newTop;
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            tiles.insert(tiles.begin(), numTilesAdded, u16(0));
+            currTileHeight += numRowsAdded;
+        }
+
+        if ( newBottom > oldBottom ) // Rows need to be added to the bottom
+        {
+            s64 numRowsAdded = newBottom - oldBottom;
+            s64 numTilesAdded = currTileWidth*numRowsAdded;
+            tiles.insert(tiles.end(), numTilesAdded, u16(0));
+        }
+
+        if ( tiles.size() < (size_t)newTileWidth * (size_t)newTileHeight ) // Fill any missing tiles with nulls
+            tiles.insert(tiles.end(), (size_t)newTileWidth*(size_t)newTileHeight - tiles.size(), u16(0));
+    }
+}
+
+void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftEdge)
+{
+    u16 tileWidth = this->dimensions.tileWidth;
+    u16 tileHeight = this->dimensions.tileHeight;
+    ::setIsomDimensions(this->isomTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    ::setMtxmOrTileDimensions(this->tiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    this->dimensions.tileWidth = newTileWidth;
+    validateSizes(sizeValidationFlags, tileWidth, tileHeight);
+}
+
+void Scenario::setTileHeight(u16 newTileHeight, u16 sizeValidationFlags, s32 topEdge)
+{
+    u16 tileWidth = this->dimensions.tileWidth;
+    u16 tileHeight = this->dimensions.tileHeight;
+    ::setIsomDimensions(this->isomTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    ::setMtxmOrTileDimensions(this->tiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    ::setMtxmOrTileDimensions(this->editorTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    this->dimensions.tileHeight = newTileHeight;
+    validateSizes(sizeValidationFlags, tileWidth, tileHeight);
+}
+
+void Scenario::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge)
+{
+    u16 tileWidth = this->dimensions.tileWidth;
+    u16 tileHeight = this->dimensions.tileHeight;
+    ::setIsomDimensions(this->isomTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    ::setMtxmOrTileDimensions(this->tiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    this->dimensions.tileWidth = newTileWidth;
+    this->dimensions.tileHeight = newTileHeight;
+    validateSizes(sizeValidationFlags, tileWidth, tileHeight);
+}
+
+u16 Scenario::getTile(size_t tileXc, size_t tileYc, Chk::StrScope scope) const
+{
+    size_t tileWidth = this->dimensions.tileWidth;
     size_t tileIndex = tileYc*tileWidth + tileXc;
-    switch ( scope )
+    if ( scope == Chk::StrScope::EditorOverGame )
     {
-        case Chk::Scope::Game: return mtxm->getTile(tileIndex);
-        case Chk::Scope::Editor: return tile->getTile(tileIndex);
-        case Chk::Scope::EditorOverGame: return tile != nullptr ? tile->getTile(tileIndex) : mtxm->getTile(tileIndex);
-        default: return mtxm != nullptr ? mtxm->getTile(tileIndex) : tile->getTile(tileIndex);
+        if ( tileIndex < this->editorTiles.size() )
+            return this->editorTiles[tileIndex];
+        else if ( tileIndex < this->tiles.size() )
+            return this->tiles[tileIndex];
+    }
+    else if ( scope == Chk::StrScope::Editor )
+    {
+        if ( tileIndex < this->editorTiles.size() )
+            return this->editorTiles[tileIndex];
+        else
+            throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
+    }
+    else if ( scope == Chk::StrScope::Game )
+    {
+        if ( tileIndex < this->tiles.size() )
+            return this->tiles[tileIndex];
+        else
+            throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
     }
     return 0;
 }
 
-inline u16 Terrain::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope) const
+inline u16 Scenario::getTilePx(size_t pixelXc, size_t pixelYc, Chk::StrScope scope) const
 {
     return getTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, scope);
 }
 
-void Terrain::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope)
+void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope)
 {
-    size_t tileWidth = dim->getTileWidth();
+    size_t tileWidth = this->dimensions.tileWidth;
     size_t tileIndex = tileYc*tileWidth + tileXc;
-    switch ( scope )
+    if ( scope & Chk::StrScope::Game )
     {
-        case Chk::Scope::Game: mtxm->setTile(tileIndex, tileValue); break;
-        case Chk::Scope::Editor: tile->setTile(tileIndex, tileValue); break;
-        default: mtxm->setTile(tileIndex, tileValue); tile->setTile(tileIndex, tileValue); break;
+        if ( tileIndex < this->tiles.size() )
+            this->tiles[tileIndex] = tileValue;
+        else
+            throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
+    }
+    if ( scope & Chk::StrScope::Editor )
+    {
+        if ( tileIndex < this->editorTiles.size() )
+            this->editorTiles[tileIndex] = tileValue;
+        else
+            throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
     }
 }
 
-inline void Terrain::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope)
+inline void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope)
 {
     setTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, tileValue, scope);
 }
 
-Chk::IsomEntry & Terrain::getIsomEntry(size_t isomIndex)
+Chk::IsomEntry & Scenario::getIsomEntry(size_t isomIndex)
 {
-    return isom->getIsomEntry(isomIndex);
+    if ( isomIndex < this->isomTiles.size() )
+        return this->isomTiles[isomIndex];
+    else
+        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
 }
 
-const Chk::IsomEntry & Terrain::getIsomEntry(size_t isomIndex) const
+const Chk::IsomEntry & Scenario::getIsomEntry(size_t isomIndex) const
 {
-    return isom->getIsomEntry(isomIndex);
+    if ( isomIndex < this->isomTiles.size() )
+        return this->isomTiles[isomIndex];
+    else
+        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
 }
 
-void Terrain::set(std::unordered_map<SectionName, Section> & sections)
-{
-    era = GetSection<EraSection>(sections, SectionName::ERA);
-    dim = GetSection<DimSection>(sections, SectionName::DIM);
-    mtxm = GetSection<MtxmSection>(sections, SectionName::MTXM);
-    tile = GetSection<TileSection>(sections, SectionName::TILE);
-
-    isom = GetSection<IsomSection>(sections, SectionName::ISOM);
-
-    if ( dim != nullptr )
-    {
-        if ( tile == nullptr )
-            tile = TileSection::GetDefault((u16)dim->getTileWidth(), (u16)dim->getTileHeight());
-        if ( isom == nullptr )
-            isom = IsomSection::GetDefault((u16)dim->getTileWidth(), (u16)dim->getTileHeight());
-    }
-}
-
-void Terrain::clear()
-{
-    era = nullptr;
-    dim = nullptr;
-    mtxm = nullptr;
-    tile = nullptr;
-
-    isom = nullptr;
-}
-
-
-Layers::Layers() : Terrain(), strings(nullptr), triggers(nullptr)
-{
-
-}
-
-Layers::Layers(Sc::Terrain::Tileset tileset, u16 width, u16 height) : Terrain(tileset, width, height), strings(nullptr)
-{
-    mask = MaskSection::GetDefault(width, height); // Fog of war
-    thg2 = Thg2Section::GetDefault(); // Sprites
-    dd2 = Dd2Section::GetDefault(); // Doodads
-    unit = UnitSection::GetDefault(); // Units
-    mrgn = MrgnSection::GetDefault(width, height); // Locations
-    if ( mrgn == nullptr || unit == nullptr || dd2 == nullptr || thg2 == nullptr || mask == nullptr )
-    {
-        throw ScenarioAllocationFailure(
-            mrgn == nullptr ? ChkSection::getNameString(SectionName::MRGN) :
-            (unit == nullptr ? ChkSection::getNameString(SectionName::UNIT) :
-            (dd2 == nullptr ? ChkSection::getNameString(SectionName::DD2) :
-            (thg2 == nullptr ? ChkSection::getNameString(SectionName::THG2) :
-            ChkSection::getNameString(SectionName::MASK)))));
-    }
-}
-
-bool Layers::empty() const
-{
-    return Terrain::empty() && mask == nullptr && thg2 == nullptr && dd2 == nullptr && unit == nullptr & mrgn == nullptr;
-}
-
-void Layers::setTileWidth(u16 tileWidth, u16 sizeValidationFlags, s32 leftEdge)
-{
-    Terrain::setTileWidth(tileWidth, leftEdge);
-    validateSizes(sizeValidationFlags);
-}
-
-void Layers::setTileHeight(u16 tileHeight, u16 sizeValidationFlags, s32 topEdge)
-{
-    Terrain::setTileHeight(tileHeight, topEdge);
-    validateSizes(sizeValidationFlags);
-}
-
-void Layers::setDimensions(u16 tileWidth, u16 tileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge)
-{
-    Terrain::setDimensions(tileWidth, tileHeight, leftEdge, topEdge);
-    validateSizes(sizeValidationFlags);
-}
-
-void Layers::validateSizes(u16 sizeValidationFlags)
+void Scenario::validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight)
 {
     bool updateAnywhereIfAlreadyStandard = (sizeValidationFlags & SizeValidationFlag::UpdateAnywhereIfAlreadyStandard) == SizeValidationFlag::UpdateAnywhereIfAlreadyStandard;
     bool updateAnywhere = (sizeValidationFlags & SizeValidationFlag::UpdateAnywhere) == SizeValidationFlag::UpdateAnywhere;
-    if ( (!updateAnywhereIfAlreadyStandard && updateAnywhere) || (updateAnywhereIfAlreadyStandard && anywhereIsStandardDimensions()) )
+    if ( (!updateAnywhereIfAlreadyStandard && updateAnywhere) || (updateAnywhereIfAlreadyStandard && anywhereIsStandardDimensions(prevWidth, prevHeight)) )
         matchAnywhereToDimensions();
 
     if ( (sizeValidationFlags & SizeValidationFlag::UpdateOutOfBoundsLocations) == SizeValidationFlag::UpdateOutOfBoundsLocations )
@@ -2414,1960 +3661,3291 @@ void Layers::validateSizes(u16 sizeValidationFlags)
         removeOutOfBoundsSprites();
 }
 
-u8 Layers::getFog(size_t tileXc, size_t tileYc) const
+void Scenario::fixTerrainToDimensions()
 {
-    size_t tileWidth = dim->getTileWidth();
-    size_t tileIndex = tileWidth*tileYc + tileXc;
-    return mask->getFog(tileIndex);
+    auto tileWidth = this->dimensions.tileWidth;
+    auto tileHeight = this->dimensions.tileHeight;
+    if ( this->tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
+        setMtxmOrTileDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
 
-u8 Layers::getFogPx(size_t pixelXc, size_t pixelYc) const
+u8 Scenario::getFog(size_t tileXc, size_t tileYc) const
+{
+    size_t tileWidth = this->dimensions.tileWidth;
+    size_t tileIndex = tileWidth*tileYc + tileXc;
+    if ( tileIndex < this->tileFog.size() )
+        return this->tileFog[tileIndex];
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MASK section!");
+}
+
+u8 Scenario::getFogPx(size_t pixelXc, size_t pixelYc) const
 {
     return getFog(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile);
 }
 
-void Layers::setFog(size_t tileXc, size_t tileYc, u8 fogOfWarPlayers)
+void Scenario::setFog(size_t tileXc, size_t tileYc, u8 fogOfWarPlayers)
 {
-    size_t tileWidth = dim->getTileWidth();
+    size_t tileWidth = this->dimensions.tileWidth;
     size_t tileIndex = tileWidth*tileYc + tileXc;
-    mask->setFog(tileIndex, fogOfWarPlayers);
+    
+    if ( tileIndex < this->tileFog.size() )
+        this->tileFog[tileIndex] = fogOfWarPlayers;
+    else
+        throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MASK section!");
 }
 
-void Layers::setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers)
+void Scenario::setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers)
 {
     setFog(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, fogOfWarPlayers);
 }
 
-size_t Layers::numSprites() const
+size_t Scenario::numSprites() const
 {
-    return thg2->numSprites();
+    return this->sprites.size();
 }
 
-std::shared_ptr<Chk::Sprite> Layers::getSprite(size_t spriteIndex)
+Chk::Sprite & Scenario::getSprite(size_t spriteIndex)
 {
-    return thg2->getSprite(spriteIndex);
+    return this->sprites[spriteIndex];
 }
 
-const std::shared_ptr<Chk::Sprite> Layers::getSprite(size_t spriteIndex) const
+const Chk::Sprite & Scenario::getSprite(size_t spriteIndex) const
 {
-    return thg2->getSprite(spriteIndex);
+    return this->sprites[spriteIndex];
 }
 
-size_t Layers::addSprite(std::shared_ptr<Chk::Sprite> sprite)
+size_t Scenario::addSprite(const Chk::Sprite & sprite)
 {
-    return thg2->addSprite(sprite);
+    this->sprites.push_back(sprite);
+    return sprites.size()-1;
 }
 
-void Layers::insertSprite(size_t spriteIndex, std::shared_ptr<Chk::Sprite> sprite)
+void Scenario::insertSprite(size_t spriteIndex, const Chk::Sprite & sprite)
 {
-    thg2->insertSprite(spriteIndex, sprite);
+    if ( spriteIndex < sprites.size() )
+    {
+        auto position = std::next(sprites.begin(), spriteIndex);
+        sprites.insert(position, sprite);
+    }
+    else
+        sprites.push_back(sprite);
 }
 
-void Layers::deleteSprite(size_t spriteIndex)
+void Scenario::deleteSprite(size_t spriteIndex)
 {
-    thg2->deleteSprite(spriteIndex);
+    if ( spriteIndex < sprites.size() )
+    {
+        auto sprite = std::next(sprites.begin(), spriteIndex);
+        sprites.erase(sprite);
+    }
 }
 
-void Layers::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
+void Scenario::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
 {
-    thg2->moveSprite(spriteIndexFrom, spriteIndexTo);
+    size_t spriteIndexMin = std::min(spriteIndexFrom, spriteIndexTo);
+    size_t spriteIndexMax = std::max(spriteIndexFrom, spriteIndexTo);
+    if ( spriteIndexMax < sprites.size() && spriteIndexFrom != spriteIndexTo )
+    {
+        if ( spriteIndexMax-spriteIndexMin == 1 && spriteIndexMax < sprites.size() ) // Move up or down by 1 using swap
+            std::swap(sprites[spriteIndexMin], sprites[spriteIndexMax]);
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
+        {
+            auto sprite = sprites[spriteIndexFrom];
+            auto toErase = std::next(sprites.begin(), spriteIndexFrom);
+            sprites.erase(toErase);
+            auto insertPosition = std::next(sprites.begin(), spriteIndexTo-1);
+            sprites.insert(insertPosition, sprite);
+        }
+    }
 }
 
-void Layers::updateOutOfBoundsSprites()
+void Scenario::updateOutOfBoundsSprites()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numSprites = thg2->numSprites();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numSprites = this->numSprites();
     for ( size_t i=0; i<numSprites; i++ )
     {
-        std::shared_ptr<Chk::Sprite> sprite = thg2->getSprite(i);
+        Chk::Sprite & sprite = this->getSprite(i);
 
-        if ( sprite->xc >= pixelWidth )
-            sprite->xc = u16(pixelWidth-1);
+        if ( sprite.xc >= pixelWidth )
+            sprite.xc = u16(pixelWidth-1);
 
-        if ( sprite->yc >= pixelHeight )
-            sprite->yc = u16(pixelHeight-1);
+        if ( sprite.yc >= pixelHeight )
+            sprite.yc = u16(pixelHeight-1);
     }
 }
 
-void Layers::removeOutOfBoundsSprites()
+void Scenario::removeOutOfBoundsSprites()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numSprites = thg2->numSprites();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numSprites = this->numSprites();
     for ( size_t i = numSprites-1; i < numSprites; i-- )
     {
-        std::shared_ptr<Chk::Sprite> sprite = thg2->getSprite(i);
-        if ( sprite->xc >= pixelWidth || sprite->yc >= pixelHeight )
-            thg2->deleteSprite(i);
+        const Chk::Sprite & sprite = this->getSprite(i);
+        if ( sprite.xc >= pixelWidth || sprite.yc >= pixelHeight )
+            this->deleteSprite(i);
     }
 }
 
-size_t Layers::numDoodads() const
+size_t Scenario::numDoodads() const
 {
-    return dd2->numDoodads();
+    return this->doodads.size();
 }
 
-std::shared_ptr<Chk::Doodad> Layers::getDoodad(size_t doodadIndex)
+Chk::Doodad & Scenario::getDoodad(size_t doodadIndex)
 {
-    return dd2->getDoodad(doodadIndex);
+    return doodads[doodadIndex];
 }
 
-const std::shared_ptr<Chk::Doodad> Layers::getDoodad(size_t doodadIndex) const
+const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
 {
-    return dd2->getDoodad(doodadIndex);
+    return doodads[doodadIndex];
 }
 
-size_t Layers::addDoodad(std::shared_ptr<Chk::Doodad> doodad)
+size_t Scenario::addDoodad(const Chk::Doodad & doodad)
 {
-    return dd2->addDoodad(doodad);
+    doodads.push_back(doodad);
+    return doodads.size()-1;
 }
 
-void Layers::insertDoodad(size_t doodadIndex, std::shared_ptr<Chk::Doodad> doodad)
+void Scenario::insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad)
 {
-    return dd2->insertDoodad(doodadIndex, doodad);
+    if ( doodadIndex < doodads.size() )
+    {
+        auto position = std::next(doodads.begin(), doodadIndex);
+        doodads.insert(position, doodad);
+    }
+    else if ( doodadIndex == doodads.size() )
+        doodads.push_back(doodad);
 }
 
-void Layers::deleteDoodad(size_t doodadIndex)
+void Scenario::deleteDoodad(size_t doodadIndex)
 {
-    return dd2->deleteDoodad(doodadIndex);
+    if ( doodadIndex < doodads.size() )
+    {
+        auto doodad = std::next(doodads.begin(), doodadIndex);
+        doodads.erase(doodad);
+    }
 }
 
-void Layers::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
+void Scenario::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
 {
-    return dd2->moveDoodad(doodadIndexFrom, doodadIndexTo);
+    size_t doodadIndexMin = std::min(doodadIndexFrom, doodadIndexTo);
+    size_t doodadIndexMax = std::max(doodadIndexFrom, doodadIndexTo);
+    if ( doodadIndexMax < doodads.size() && doodadIndexFrom != doodadIndexTo )
+    {
+        if ( doodadIndexMax-doodadIndexMin == 1 && doodadIndexMax < doodads.size() ) // Move up or down by 1 using swap
+            std::swap(doodads[doodadIndexMin], doodads[doodadIndexMax]);
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
+        {
+            auto doodad = doodads[doodadIndexFrom];
+            auto toErase = std::next(doodads.begin(), doodadIndexFrom);
+            doodads.erase(toErase);
+            auto insertPosition = std::next(doodads.begin(), doodadIndexTo-1);
+            doodads.insert(insertPosition, doodad);
+        }
+    }
 }
 
-void Layers::removeOutOfBoundsDoodads()
+void Scenario::removeOutOfBoundsDoodads()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numDoodads = dd2->numDoodads();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numDoodads = this->numDoodads();
     for ( size_t i = numDoodads-1; i < numDoodads; i-- )
     {
-        std::shared_ptr<Chk::Doodad> doodad = dd2->getDoodad(i);
-        if ( doodad->xc >= pixelWidth || doodad->yc >= pixelHeight )
-            dd2->deleteDoodad(i);
+        const Chk::Doodad & doodad = this->getDoodad(i);
+        if ( doodad.xc >= pixelWidth || doodad.yc >= pixelHeight )
+            this->deleteDoodad(i);
     }
 }
 
-size_t Layers::numUnits() const
+size_t Scenario::numUnits() const
 {
-    return unit->numUnits();
+    return units.size();
 }
 
-std::shared_ptr<Chk::Unit> Layers::getUnit(size_t unitIndex)
+Chk::Unit & Scenario::getUnit(size_t unitIndex)
 {
-    return unit->getUnit(unitIndex);
+    return this->units[unitIndex];
 }
 
-const std::shared_ptr<Chk::Unit> Layers::getUnit(size_t unitIndex) const
+const Chk::Unit & Scenario::getUnit(size_t unitIndex) const
 {
-    return unit->getUnit(unitIndex);
+    return this->units[unitIndex];
 }
 
-size_t Layers::addUnit(std::shared_ptr<Chk::Unit> unit)
+size_t Scenario::addUnit(const Chk::Unit & unit)
 {
-    return this->unit->addUnit(unit);
+    units.push_back(unit);
+    return units.size()-1;
 }
 
-void Layers::insertUnit(size_t unitIndex, std::shared_ptr<Chk::Unit> unit)
+void Scenario::insertUnit(size_t unitIndex, const Chk::Unit & unit)
 {
-    return this->unit->insertUnit(unitIndex, unit);
+    if ( unitIndex < units.size() )
+    {
+        auto position = std::next(units.begin(), unitIndex);
+        units.insert(position, unit);
+    }
+    else if ( unitIndex == units.size() )
+        units.push_back(unit);
 }
 
-void Layers::deleteUnit(size_t unitIndex)
+void Scenario::deleteUnit(size_t unitIndex)
 {
-    return unit->deleteUnit(unitIndex);
+    if ( unitIndex < units.size() )
+    {
+        auto unit = std::next(units.begin(), unitIndex);
+        units.erase(unit);
+    }
 }
 
-void Layers::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
+void Scenario::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
 {
-    return unit->moveUnit(unitIndexFrom, unitIndexTo);
+    size_t unitIndexMin = std::min(unitIndexFrom, unitIndexTo);
+    size_t unitIndexMax = std::max(unitIndexFrom, unitIndexTo);
+    if ( unitIndexMax < units.size() && unitIndexFrom != unitIndexTo )
+    {
+        if ( unitIndexMax-unitIndexMin == 1 && unitIndexMax < units.size() ) // Move up or down by 1 using swap
+            std::swap(units[unitIndexMin], units[unitIndexMax]);
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
+        {
+            auto unit = units[unitIndexFrom];
+            auto toErase = std::next(units.begin(), unitIndexFrom);
+            units.erase(toErase);
+            auto insertPosition = std::next(units.begin(), unitIndexTo-1);
+            units.insert(insertPosition, unit);
+        }
+    }
 }
 
-void Layers::updateOutOfBoundsUnits()
+void Scenario::updateOutOfBoundsUnits()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numUnits = unit->numUnits();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numUnits = this->numUnits();
     for ( size_t i=0; i<numUnits; i++ )
     {
-        std::shared_ptr<Chk::Unit> currUnit = unit->getUnit(i);
+        Chk::Unit & currUnit = this->getUnit(i);
+        if ( currUnit.xc >= pixelWidth )
+            currUnit.xc = u16(pixelWidth-1);
 
-        if ( currUnit->xc >= pixelWidth )
-            currUnit->xc = u16(pixelWidth-1);
-
-        if ( currUnit->yc >= pixelHeight )
-            currUnit->yc = u16(pixelHeight-1);
+        if ( currUnit.yc >= pixelHeight )
+            currUnit.yc = u16(pixelHeight-1);
     }
 }
 
-void Layers::removeOutOfBoundsUnits()
+void Scenario::removeOutOfBoundsUnits()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numUnits = unit->numUnits();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numUnits = this->numUnits();
     for ( size_t i = numUnits-1; i < numUnits; i-- )
     {
-        std::shared_ptr<Chk::Unit> currUnit = unit->getUnit(i);
-        if ( currUnit->xc >= pixelWidth || currUnit->yc >= pixelHeight )
-            unit->deleteUnit(i);
+        const Chk::Unit & currUnit = this->getUnit(i);
+        if ( currUnit.xc >= pixelWidth || currUnit.yc >= pixelHeight )
+            this->deleteUnit(i);
     }
 }
 
-size_t Layers::numLocations() const
+size_t Scenario::numLocations() const
 {
-    return mrgn->numLocations();
+    return locations.size() > 0 ? locations.size()-1 : 0;
 }
 
-std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationId)
+Chk::Location & Scenario::getLocation(size_t locationId)
 {
-    return mrgn->getLocation(locationId);
+    return locations[locationId];
 }
 
-const std::shared_ptr<Chk::Location> Layers::getLocation(size_t locationId) const
+const Chk::Location & Scenario::getLocation(size_t locationId) const
 {
-    return mrgn->getLocation(locationId);
+    return locations[locationId];
 }
 
-size_t Layers::addLocation(std::shared_ptr<Chk::Location> location)
+size_t Scenario::addLocation(const Chk::Location & location)
 {
-    return mrgn->addLocation(location);
+    for ( size_t i=1; i<locations.size(); i++ )
+    {
+        if ( isBlank(i) )
+        {
+            locations[i] = location;
+            return i;
+        }
+    }
+    return Chk::LocationId::NoLocation;
 }
 
-void Layers::replaceLocation(size_t locationId, std::shared_ptr<Chk::Location> location)
+void Scenario::replaceLocation(size_t locationId, const Chk::Location & location)
 {
-    mrgn->replaceLocation(locationId, location);
+    if ( locationId > 0 && locationId < locations.size() )
+    {
+        if ( isBlank(locationId) )
+            locations[locationId] = location;
+    }
+    else
+        throw std::out_of_range(std::string("LocationId: ") + std::to_string((u32)locationId) + " is out of range for the MRGN section!");
 }
 
-void Layers::deleteLocation(size_t locationId, bool deleteOnlyIfUnused)
+void Scenario::deleteLocation(size_t locationId, bool deleteOnlyIfUnused)
 {
-    if ( !deleteOnlyIfUnused || !triggers->locationUsed(locationId) )
-        mrgn->deleteLocation(locationId);
+    if ( !deleteOnlyIfUnused || !this->triggerLocationUsed(locationId) )
+    {
+        if ( locationId > 0 && locationId < locations.size() )
+        {
+            auto location = std::next(locations.begin(), locationId);
+            location->stringId = 0;
+            location->left = 0;
+            location->right = 0;
+            location->top = 0;
+            location->bottom = 0;
+            location->elevationFlags = 0;
+        }
+    }
 }
 
-bool Layers::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere)
+bool Scenario::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere)
 {
-    return mrgn->moveLocation(locationIdFrom, locationIdTo, lockAnywhere);
+    size_t locationIdMin = std::min(locationIdFrom, locationIdTo);
+    size_t locationIdMax = std::max(locationIdFrom, locationIdTo);
+    if ( locationIdFrom > 0 && locationIdTo > 0 && locationIdMax < locations.size() && locationIdFrom != locationIdTo &&
+         (!lockAnywhere || (locationIdMin != Chk::LocationId::Anywhere && locationIdMax != Chk::LocationId::Anywhere)) )
+    {
+        if ( locationIdMax-locationIdMin == 1 && locationIdMax < locations.size() ) // Move up or down by 1 using swap
+        {
+            std::swap(locations[locationIdMin], locations[locationIdMax]);
+            return true;
+        }
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
+        {
+            auto location = locations[locationIdFrom];
+            auto toErase = std::next(locations.begin(), locationIdFrom);
+            locations.erase(toErase);
+            auto insertPosition = std::next(locations.begin(), locationIdTo-1);
+            locations.insert(insertPosition, location);
+
+            if ( lockAnywhere && locationIdMin < Chk::LocationId::Anywhere && locationIdMax > Chk::LocationId::Anywhere )
+            {
+                std::swap(*std::next(locations.begin(), Chk::LocationId::Anywhere-1), *std::next(locations.begin(), Chk::LocationId::Anywhere));
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
-bool Layers::isBlank(size_t locationId) const
+bool Scenario::isBlank(size_t locationId) const
 {
-    return mrgn->isBlank(locationId);
+    return locationId >= locations.size() || locations[locationId].isBlank();
 }
 
-void Layers::downsizeOutOfBoundsLocations()
+void Scenario::downsizeOutOfBoundsLocations()
 {
-    size_t pixelWidth = dim->getPixelWidth();
-    size_t pixelHeight = dim->getPixelHeight();
-    size_t numLocations = mrgn->numLocations();
+    size_t pixelWidth = this->getPixelWidth();
+    size_t pixelHeight = this->getPixelHeight();
+    size_t numLocations = this->numLocations();
     for ( size_t i=1; i<=numLocations; i++ )
     {
-        std::shared_ptr<Chk::Location> location = mrgn->getLocation(i);
+        Chk::Location & location = this->getLocation(i);
 
-        if ( location->left >= pixelWidth )
-            location->left = u32(pixelWidth-1);
+        if ( location.left >= pixelWidth )
+            location.left = u32(pixelWidth-1);
 
-        if ( location->right >= pixelWidth )
-            location->right = u32(pixelWidth-1);
+        if ( location.right >= pixelWidth )
+            location.right = u32(pixelWidth-1);
 
-        if ( location->top >= pixelHeight )
-            location->top = u32(pixelHeight-1);
+        if ( location.top >= pixelHeight )
+            location.top = u32(pixelHeight-1);
 
-        if ( location->bottom >= pixelHeight )
-            location->bottom = u32(pixelHeight-1);
+        if ( location.bottom >= pixelHeight )
+            location.bottom = u32(pixelHeight-1);
     }
 }
 
-bool Layers::locationsFitOriginal(bool lockAnywhere, bool autoDefragment)
+void Scenario::markNonZeroLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
 {
-    return mrgn->locationsFitOriginal(*triggers, lockAnywhere, autoDefragment);
-}
-
-bool Layers::trimLocationsToOriginal(bool lockAnywhere, bool autoDefragment)
-{
-    return mrgn->trimToOriginal(*triggers, lockAnywhere, autoDefragment);
-}
-
-void Layers::expandToScHybridOrExpansion()
-{
-    mrgn->expandToScHybridOrExpansion();
-}
-
-bool Layers::anywhereIsStandardDimensions() const
-{
-    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation(Chk::LocationId::Anywhere);
-    return anywhere != nullptr && anywhere->left == 0 && anywhere->top == 0 && anywhere->right == dim->getPixelWidth() && anywhere->bottom == dim->getPixelHeight();
-}
-
-void Layers::matchAnywhereToDimensions()
-{
-    std::shared_ptr<Chk::Location> anywhere = mrgn->getLocation(Chk::LocationId::Anywhere);
-    if ( anywhere != nullptr )
+    size_t limit = std::min(Chk::TotalLocations, locations.size());
+    for ( size_t i=1; i<limit; i++ )
     {
-        anywhere->left = 0;
-        anywhere->top = 0;
-        anywhere->right = (u32)dim->getPixelWidth();
-        anywhere->bottom = (u32)dim->getPixelHeight();
+        auto & location = locations[i];
+        if ( !location.isBlank() )
+            locationIdUsed[i] = true;
     }
 }
 
-void Layers::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+bool Scenario::locationsFitOriginal(bool lockAnywhere, bool autoDefragment)
 {
-    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
-        mrgn->appendUsage(stringId, stringUsers);
+    std::bitset<Chk::TotalLocations+1> locationIdUsed;
+    this->markUsedTriggerLocations(locationIdUsed);
+    markNonZeroLocations(locationIdUsed);
+
+    size_t countUsedOrCreated = 0;
+    for ( size_t i=1; i<=Chk::TotalLocations; i++ )
+    {
+        if ( locationIdUsed[i] || (i == Chk::LocationId::Anywhere && lockAnywhere) )
+            countUsedOrCreated++;
+    }
+
+    return countUsedOrCreated <= Chk::TotalOriginalLocations;
 }
 
-bool Layers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
+bool Scenario::trimLocationsToOriginal(bool lockAnywhere, bool autoDefragment)
+{
+    if ( locations.size() > Chk::TotalOriginalLocations )
+    {
+        std::bitset<Chk::TotalLocations+1> locationIdUsed;
+        this->markUsedTriggerLocations(locationIdUsed);
+        markNonZeroLocations(locationIdUsed);
+
+        size_t countUsedOrCreated = 0;
+        for ( size_t i=1; i<=Chk::TotalLocations; i++ )
+        {
+            if ( locationIdUsed[i] || (i == Chk::LocationId::Anywhere && lockAnywhere) )
+                countUsedOrCreated++;
+        }
+
+        if ( countUsedOrCreated <= Chk::TotalOriginalLocations )
+        {
+            std::map<u32, u32> locationIdRemappings;
+            for ( size_t firstUnused=1; firstUnused<=Chk::TotalLocations; firstUnused++ )
+            {
+                if ( !locationIdUsed[firstUnused] && (firstUnused != Chk::LocationId::Anywhere || !lockAnywhere) )
+                {
+                    for ( size_t i=firstUnused+1; i<=Chk::TotalLocations; i++ )
+                    {
+                        if ( locationIdUsed[i] && (i != Chk::LocationId::Anywhere || !lockAnywhere) )
+                        {
+                            locations[firstUnused] = locations[i];
+                            locationIdUsed[firstUnused] = true;
+                            locations[i] = Chk::Location{};
+                            locationIdUsed[i] = false;
+                            locationIdRemappings.insert(std::pair<u32, u32>(u32(i), u32(firstUnused)));
+                            break;
+                        }
+                    }
+                }
+            }
+            locations.erase(locations.begin()+Chk::TotalOriginalLocations+1, locations.end());
+            this->remapTriggerLocationIds(locationIdRemappings);
+            return true;
+        }
+    }
+    return locations.size() <= Chk::TotalOriginalLocations;
+}
+
+void Scenario::expandToScHybridOrExpansion()
+{
+    size_t numLocations = locations.size();
+    for ( size_t i=numLocations; i<=Chk::TotalLocations; i++ )
+        locations.push_back(Chk::Location{});
+}
+
+bool Scenario::anywhereIsStandardDimensions(u16 prevWidth, u16 prevHeight) const
+{
+    const Chk::Location & anywhere = this->getLocation(Chk::LocationId::Anywhere);
+    if ( prevWidth == 0 && prevHeight == 0 )
+        return anywhere.left == 0 && anywhere.top == 0 && anywhere.right == this->getPixelWidth() && anywhere.bottom == this->getPixelHeight();
+    else
+        return anywhere.left == 0 && anywhere.top == 0 && anywhere.right == prevWidth*Sc::Terrain::PixelsPerTile && anywhere.bottom == prevHeight*Sc::Terrain::PixelsPerTile;
+}
+
+void Scenario::matchAnywhereToDimensions()
+{
+    Chk::Location & anywhere = this->getLocation(Chk::LocationId::Anywhere);
+    anywhere.left = 0;
+    anywhere.top = 0;
+    anywhere.right = (u32)this->getPixelWidth();
+    anywhere.bottom = (u32)this->getPixelHeight();
+}
+
+void Scenario::appendLocationStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
+        u16 u16StringId = (u16)stringId;
+        for ( size_t i=0; i<locations.size(); i++ )
+        {
+            if ( stringId == locations[i].stringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Location, i));
+        }
+    }
+}
+
+bool Scenario::locationStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
+    {
+        auto usedByGame = [&](){
+            for ( const auto & location : this->locations )
+            {
+                if ( stringId == location.stringId )
+                    return true;
+            }
+            return false;
+        };
+        auto usedByEditor = [&](){
+            for ( size_t i=0; i<Chk::TotalLocations; ++i )
+            {
+                if ( stringId == this->editorStringOverrides.locationName[i] )
+                    return true;
+            }
+            return false;
+        };
         switch ( storageScope )
         {
-            case Chk::Scope::Either:
-            case Chk::Scope::EditorOverGame:
-            case Chk::Scope::GameOverEditor: return mrgn->stringUsed(stringId) || strings->ostr->stringUsed(stringId, Chk::StringUserFlag::Location);
-            case Chk::Scope::Game: return mrgn->stringUsed(stringId);
-            case Chk::Scope::Editor: return strings->ostr->stringUsed(stringId, Chk::StringUserFlag::Location);
+            case Chk::StrScope::Either:
+            case Chk::StrScope::EditorOverGame:
+            case Chk::StrScope::GameOverEditor: return usedByGame() || usedByEditor();
+            case Chk::StrScope::Game: return usedByGame();
+            case Chk::StrScope::Editor: return usedByEditor();
             default: return false;
         }
     }
     return false;
 }
 
-void Layers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+void Scenario::markUsedLocationStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
-        mrgn->markUsedStrings(stringIdUsed);
-}
-
-void Layers::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
-{
-    mrgn->remapStringIds(stringIdRemappings);
-}
-
-void Layers::deleteString(size_t stringId)
-{
-    mrgn->deleteString(stringId);
-}
-
-void Layers::set(std::unordered_map<SectionName, Section> & sections)
-{
-    Terrain::set(sections);
-    mask = GetSection<MaskSection>(sections, SectionName::MASK);
-    thg2 = GetSection<Thg2Section>(sections, SectionName::THG2);
-    dd2 = GetSection<Dd2Section>(sections, SectionName::DD2);
-    unit = GetSection<UnitSection>(sections, SectionName::UNIT);
-
-    mrgn = GetSection<MrgnSection>(sections, SectionName::MRGN);
-
-    if ( Terrain::dim != nullptr )
     {
-        if ( mask == nullptr )
-            mask = MaskSection::GetDefault((u16)dim->getTileWidth(), (u16)dim->getTileHeight());
-        if ( mrgn == nullptr )
-            mrgn = MrgnSection::GetDefault((u16)dim->getTileWidth(), (u16)dim->getTileHeight());
-    }
-    if ( dd2 == nullptr )
-        dd2 = Dd2Section::GetDefault();
-}
-
-void Layers::clear()
-{
-    Terrain::clear();
-    mask = nullptr;
-    thg2 = nullptr;
-    dd2 = nullptr;
-    unit = nullptr;
-
-    mrgn = nullptr;
-}
-
-
-Properties::Properties(bool useDefault) : versions(nullptr), strings(nullptr)
-{
-    if ( useDefault )
-    {
-        unis = UnisSection::GetDefault(); // Unit settings
-        unix = UnixSection::GetDefault(); // Expansion Unit Settings
-        puni = PuniSection::GetDefault(); // Unit availability
-        upgs = UpgsSection::GetDefault(); // Upgrade costs
-        upgx = UpgxSection::GetDefault(); // Expansion upgrade costs
-        upgr = UpgrSection::GetDefault(); // Upgrade leveling
-        pupx = PupxSection::GetDefault(); // Expansion upgrade leveling
-        tecs = TecsSection::GetDefault(); // Technology costs
-        tecx = TecxSection::GetDefault(); // Expansion technology costs
-        ptec = PtecSection::GetDefault(); // Technology availability
-        ptex = PtexSection::GetDefault(); // Expansion technology availability
-        if ( unis == nullptr || unix == nullptr || puni == nullptr || upgs == nullptr || upgx == nullptr || upgr == nullptr || pupx == nullptr ||
-            tecs == nullptr || tecx == nullptr || ptec == nullptr || ptex == nullptr )
+        for ( const auto & location : locations )
         {
-            throw ScenarioAllocationFailure(
-                unis == nullptr ? ChkSection::getNameString(SectionName::UNIS) :
-                (unix == nullptr ? ChkSection::getNameString(SectionName::UNIx) :
-                (puni == nullptr ? ChkSection::getNameString(SectionName::PUNI) :
-                (upgs == nullptr ? ChkSection::getNameString(SectionName::UPGS) :
-                (upgx == nullptr ? ChkSection::getNameString(SectionName::UPGx) :
-                (upgr == nullptr ? ChkSection::getNameString(SectionName::UPGR) :
-                (pupx == nullptr ? ChkSection::getNameString(SectionName::PUPx) :
-                (tecs == nullptr ? ChkSection::getNameString(SectionName::TECS) :
-                (tecx == nullptr ? ChkSection::getNameString(SectionName::TECx) :
-                (ptec == nullptr ? ChkSection::getNameString(SectionName::PTEC) :
-                ChkSection::getNameString(SectionName::PTEx)))))))))));
+            if ( location.stringId > 0 )
+                stringIdUsed[location.stringId] = true;
         }
     }
 }
 
-bool Properties::empty() const
+void Scenario::remapLocationStringIds(const std::map<u32, u32> & stringIdRemappings)
 {
-    return unis == nullptr && unix == nullptr && puni == nullptr && upgs == nullptr && upgx == nullptr &&
-        upgr == nullptr && pupx == nullptr && tecs == nullptr && tecx == nullptr & ptec == nullptr && ptex == nullptr;
+    for ( size_t i=1; i<locations.size(); i++ )
+    {
+        auto & location = locations[i];
+        auto found = stringIdRemappings.find(location.stringId);
+        if ( found != stringIdRemappings.end() )
+            location.stringId = found->second;
+    }
 }
 
-bool Properties::useExpansionUnitSettings(Chk::UseExpSection useExp) const
+void Scenario::deleteLocationString(size_t stringId)
+{
+    for ( size_t i=1; i<locations.size(); i++ )
+    {
+        auto & location = locations[i];
+        if ( location.stringId == stringId )
+            location.stringId = 0;
+    }
+}
+
+bool Scenario::useExpansionUnitSettings(Chk::UseExpSection useExp, Sc::Weapon::Type weaponType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
-        case Chk::UseExpSection::NoIfOrigAvailable: return unis != nullptr ? false : true;
+        case Chk::UseExpSection::Auto: return weaponType >= Sc::Weapon::Type::NeutronFlare || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
+        case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::UNIS);
         case Chk::UseExpSection::YesIfAvailable: 
-        default: return unix != nullptr ? true : false;
+        default: return this->hasSection(Chk::SectionName::UNIx);
     }
     return true;
 }
 
-bool Properties::unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+bool Scenario::unitUsesDefaultSettings(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->unitUsesDefaultSettings(unitType) : unis->unitUsesDefaultSettings(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ?
+        unitSettings.useDefault[unitType] != Chk::UseDefault::No : origUnitSettings.useDefault[unitType] != Chk::UseDefault::No;
 }
 
-u32 Properties::getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u32 Scenario::getUnitHitpoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitHitpoints(unitType) : unis->getUnitHitpoints(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.hitpoints[unitType] : origUnitSettings.hitpoints[unitType];
 }
 
-u16 Properties::getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u16 Scenario::getUnitShieldPoints(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitShieldPoints(unitType) : unis->getUnitShieldPoints(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.shieldPoints[unitType] : origUnitSettings.shieldPoints[unitType];
 }
 
-u8 Properties::getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u8 Scenario::getUnitArmorLevel(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitArmorLevel(unitType) : unis->getUnitArmorLevel(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.armorLevel[unitType] : origUnitSettings.armorLevel[unitType];
 }
 
-u16 Properties::getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u16 Scenario::getUnitBuildTime(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitBuildTime(unitType) : unis->getUnitBuildTime(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.buildTime[unitType] : origUnitSettings.buildTime[unitType];
 }
 
-u16 Properties::getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u16 Scenario::getUnitMineralCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitMineralCost(unitType) : unis->getUnitMineralCost(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.mineralCost[unitType] : origUnitSettings.mineralCost[unitType];
 }
 
-u16 Properties::getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u16 Scenario::getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitGasCost(unitType) : unis->getUnitGasCost(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    return useExpansionUnitSettings(useExp) ? unitSettings.gasCost[unitType] : origUnitSettings.gasCost[unitType];
 }
 
-size_t Properties::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp) const
+u16 Scenario::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUnitSettings(useExp) ? unix->getUnitNameStringId(unitType) : unis->getUnitNameStringId(unitType);
-}
-
-u16 Properties::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
-{
-    return useExpansionUnitSettings(useExp) ? unix->getWeaponBaseDamage(weaponType) : unis->getWeaponBaseDamage(weaponType);
-}
-
-u16 Properties::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
-{
-    return useExpansionUnitSettings(useExp) ? unix->getWeaponUpgradeDamage(weaponType) : unis->getWeaponUpgradeDamage(weaponType);
-}
-
-void Properties::setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
+    bool useExpansion = useExpansionUnitSettings(useExp, weaponType);
+    size_t limit = useExpansion ? Sc::Weapon::Total : Sc::Weapon::TotalOriginal;
+    if ( weaponType > limit )
     {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitUsesDefaultSettings(unitType, useDefault); unix->setUnitUsesDefaultSettings(unitType, useDefault); break;
-        case Chk::UseExpSection::Yes: unix->setUnitUsesDefaultSettings(unitType, useDefault); break;
-        case Chk::UseExpSection::No: unis->setUnitUsesDefaultSettings(unitType, useDefault); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitUsesDefaultSettings(unitType, useDefault) : unis->setUnitUsesDefaultSettings(unitType, useDefault); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitUsesDefaultSettings(unitType, useDefault) : unix->setUnitUsesDefaultSettings(unitType, useDefault); break;
+        throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
+            " is out of range for the " + (useExpansion ? "UNIx" : "UNIS") + " section!");
     }
+    return useExpansion ? unitSettings.baseDamage[weaponType] : origUnitSettings.baseDamage[weaponType];
 }
 
-void Properties::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints, Chk::UseExpSection useExp)
+u16 Scenario::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
-    switch ( useExp )
+    bool useExpansion = useExpansionUnitSettings(useExp, weaponType);
+    size_t limit = useExpansion ? Sc::Weapon::Total : Sc::Weapon::TotalOriginal;
+    if ( weaponType > limit )
     {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitHitpoints(unitType, hitpoints); unix->setUnitHitpoints(unitType, hitpoints); break;
-        case Chk::UseExpSection::Yes: unix->setUnitHitpoints(unitType, hitpoints); break;
-        case Chk::UseExpSection::No: unis->setUnitHitpoints(unitType, hitpoints); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitHitpoints(unitType, hitpoints) : unis->setUnitHitpoints(unitType, hitpoints); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitHitpoints(unitType, hitpoints) : unix->setUnitHitpoints(unitType, hitpoints); break;
+        throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
+            " is out of range for the " + (useExpansion ? "UNIx" : "UNIS") + " section!");
     }
+    return useExpansion ? unitSettings.upgradeDamage[weaponType] : origUnitSettings.upgradeDamage[weaponType];
 }
 
-void Properties::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints, Chk::UseExpSection useExp)
+void Scenario::setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefault, Chk::UseExpSection useExp)
 {
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitShieldPoints(unitType, shieldPoints); unix->setUnitShieldPoints(unitType, shieldPoints); break;
-        case Chk::UseExpSection::Yes: unix->setUnitShieldPoints(unitType, shieldPoints); break;
-        case Chk::UseExpSection::No: unis->setUnitShieldPoints(unitType, shieldPoints); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitShieldPoints(unitType, shieldPoints) : unis->setUnitShieldPoints(unitType, shieldPoints); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitShieldPoints(unitType, shieldPoints) : unix->setUnitShieldPoints(unitType, shieldPoints); break;
-    }
-}
-
-void Properties::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitArmorLevel(unitType, armorLevel); unix->setUnitArmorLevel(unitType, armorLevel); break;
-        case Chk::UseExpSection::Yes: unix->setUnitArmorLevel(unitType, armorLevel); break;
-        case Chk::UseExpSection::No: unis->setUnitArmorLevel(unitType, armorLevel); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitArmorLevel(unitType, armorLevel) : unis->setUnitArmorLevel(unitType, armorLevel); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitArmorLevel(unitType, armorLevel) : unix->setUnitArmorLevel(unitType, armorLevel); break;
-    }
-}
-
-void Properties::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitBuildTime(unitType, buildTime); unix->setUnitBuildTime(unitType, buildTime); break;
-        case Chk::UseExpSection::Yes: unix->setUnitBuildTime(unitType, buildTime); break;
-        case Chk::UseExpSection::No: unis->setUnitBuildTime(unitType, buildTime); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitBuildTime(unitType, buildTime) : unis->setUnitBuildTime(unitType, buildTime); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitBuildTime(unitType, buildTime) : unix->setUnitBuildTime(unitType, buildTime); break;
-    }
-}
-
-void Properties::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitMineralCost(unitType, mineralCost); unix->setUnitMineralCost(unitType, mineralCost); break;
-        case Chk::UseExpSection::Yes: unix->setUnitMineralCost(unitType, mineralCost); break;
-        case Chk::UseExpSection::No: unis->setUnitMineralCost(unitType, mineralCost); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitMineralCost(unitType, mineralCost) : unis->setUnitMineralCost(unitType, mineralCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitMineralCost(unitType, mineralCost) : unix->setUnitMineralCost(unitType, mineralCost); break;
-    }
-}
-
-void Properties::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitGasCost(unitType, gasCost); unix->setUnitGasCost(unitType, gasCost); break;
-        case Chk::UseExpSection::Yes: unix->setUnitGasCost(unitType, gasCost); break;
-        case Chk::UseExpSection::No: unis->setUnitGasCost(unitType, gasCost); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitGasCost(unitType, gasCost) : unis->setUnitGasCost(unitType, gasCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitGasCost(unitType, gasCost) : unix->setUnitGasCost(unitType, gasCost); break;
-    }
-}
-
-void Properties::setUnitNameStringId(Sc::Unit::Type unitType, size_t nameStringId, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-        case Chk::UseExpSection::Both: unis->setUnitNameStringId(unitType, (u16)nameStringId); unix->setUnitNameStringId(unitType, (u16)nameStringId); break;
-        case Chk::UseExpSection::Yes: unix->setUnitNameStringId(unitType, (u16)nameStringId); break;
-        case Chk::UseExpSection::No: unis->setUnitNameStringId(unitType, (u16)nameStringId); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setUnitNameStringId(unitType, (u16)nameStringId) : unis->setUnitNameStringId(unitType, (u16)nameStringId); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setUnitNameStringId(unitType, (u16)nameStringId) : unix->setUnitNameStringId(unitType, (u16)nameStringId); break;
-    }
-}
-
-void Properties::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( weaponType < Sc::Weapon::TotalOriginal && unis != nullptr )
-                unis->setWeaponBaseDamage(weaponType, baseDamage);
-            if ( unix != nullptr )
-                unix->setWeaponBaseDamage(weaponType, baseDamage);
+        case Chk::UseExpSection::Both: unitSettings.useDefault[unitType] = value; origUnitSettings.useDefault[unitType] = value; break;
+        case Chk::UseExpSection::Yes: unitSettings.useDefault[unitType] = value; break;
+        case Chk::UseExpSection::No: origUnitSettings.useDefault[unitType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.useDefault[unitType] = value;
+            else
+                origUnitSettings.useDefault[unitType] = value;
             break;
-        case Chk::UseExpSection::Both: unis->setWeaponBaseDamage(weaponType, baseDamage); unix->setWeaponBaseDamage(weaponType, baseDamage); break;
-        case Chk::UseExpSection::Yes: unix->setWeaponBaseDamage(weaponType, baseDamage); break;
-        case Chk::UseExpSection::No: unis->setWeaponBaseDamage(weaponType, baseDamage); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setWeaponBaseDamage(weaponType, baseDamage) : unis->setWeaponBaseDamage(weaponType, baseDamage); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setWeaponBaseDamage(weaponType, baseDamage) : unix->setWeaponBaseDamage(weaponType, baseDamage); break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.useDefault[unitType] = value;
+            else
+                unitSettings.useDefault[unitType] = value;
+            break;
     }
 }
 
-void Properties::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage, Chk::UseExpSection useExp)
+void Scenario::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints, Chk::UseExpSection useExp)
 {
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( weaponType < Sc::Weapon::TotalOriginal && unis != nullptr )
-                unis->setWeaponUpgradeDamage(weaponType, upgradeDamage);
-            if ( unix != nullptr )
-                unix->setWeaponUpgradeDamage(weaponType, upgradeDamage);
+        case Chk::UseExpSection::Both: unitSettings.hitpoints[unitType] = hitpoints; origUnitSettings.hitpoints[unitType] = hitpoints; break;
+        case Chk::UseExpSection::Yes: unitSettings.hitpoints[unitType] = hitpoints; break;
+        case Chk::UseExpSection::No: origUnitSettings.hitpoints[unitType] = hitpoints; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.hitpoints[unitType] = hitpoints;
+            else
+                origUnitSettings.hitpoints[unitType] = hitpoints;
             break;
-        case Chk::UseExpSection::Both: unis->setWeaponUpgradeDamage(weaponType, upgradeDamage); unix->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
-        case Chk::UseExpSection::Yes: unix->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
-        case Chk::UseExpSection::No: unis->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
-        case Chk::UseExpSection::YesIfAvailable: unix != nullptr ? unix->setWeaponUpgradeDamage(weaponType, upgradeDamage) : unis->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: unis != nullptr ? unis->setWeaponUpgradeDamage(weaponType, upgradeDamage) : unix->setWeaponUpgradeDamage(weaponType, upgradeDamage); break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.hitpoints[unitType] = hitpoints;
+            else
+                unitSettings.hitpoints[unitType] = hitpoints;
+            break;
     }
 }
 
-bool Properties::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const
+void Scenario::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints, Chk::UseExpSection useExp)
 {
-    return puni->isUnitBuildable(unitType, playerIndex);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+        case Chk::UseExpSection::Both: unitSettings.shieldPoints[unitType] = shieldPoints; origUnitSettings.shieldPoints[unitType] = shieldPoints; break;
+        case Chk::UseExpSection::Yes: unitSettings.shieldPoints[unitType] = shieldPoints; break;
+        case Chk::UseExpSection::No: origUnitSettings.shieldPoints[unitType] = shieldPoints; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.shieldPoints[unitType] = shieldPoints;
+            else
+                origUnitSettings.shieldPoints[unitType] = shieldPoints;
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.shieldPoints[unitType] = shieldPoints;
+            else
+                unitSettings.shieldPoints[unitType] = shieldPoints;
+            break;
+    }
 }
 
-bool Properties::isUnitDefaultBuildable(Sc::Unit::Type unitType) const
+void Scenario::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel, Chk::UseExpSection useExp)
 {
-    return puni->isUnitDefaultBuildable(unitType);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+        case Chk::UseExpSection::Both: unitSettings.armorLevel[unitType] = armorLevel; origUnitSettings.armorLevel[unitType] = armorLevel; break;
+        case Chk::UseExpSection::Yes: unitSettings.armorLevel[unitType] = armorLevel; break;
+        case Chk::UseExpSection::No: origUnitSettings.armorLevel[unitType] = armorLevel; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.armorLevel[unitType] = armorLevel;
+            else
+                origUnitSettings.armorLevel[unitType] = armorLevel;
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.armorLevel[unitType] = armorLevel;
+            else
+                unitSettings.armorLevel[unitType] = armorLevel;
+            break;
+    }
 }
 
-bool Properties::playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex) const
+void Scenario::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime, Chk::UseExpSection useExp)
 {
-    return puni->playerUsesDefault(unitType, playerIndex);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+        case Chk::UseExpSection::Both: unitSettings.buildTime[unitType] = buildTime; origUnitSettings.buildTime[unitType] = buildTime; break;
+        case Chk::UseExpSection::Yes: unitSettings.buildTime[unitType] = buildTime; break;
+        case Chk::UseExpSection::No: origUnitSettings.buildTime[unitType] = buildTime; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.buildTime[unitType] = buildTime;
+            else
+                origUnitSettings.buildTime[unitType] = buildTime;
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.buildTime[unitType] = buildTime;
+            else
+                unitSettings.buildTime[unitType] = buildTime;
+            break;
+    }
 }
 
-void Properties::setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, bool buildable)
+void Scenario::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost, Chk::UseExpSection useExp)
 {
-    puni->setUnitBuildable(unitType, playerIndex, buildable);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+        case Chk::UseExpSection::Both: unitSettings.mineralCost[unitType] = mineralCost; origUnitSettings.mineralCost[unitType] = mineralCost; break;
+        case Chk::UseExpSection::Yes: unitSettings.mineralCost[unitType] = mineralCost; break;
+        case Chk::UseExpSection::No: origUnitSettings.mineralCost[unitType] = mineralCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.mineralCost[unitType] = mineralCost;
+            else
+                origUnitSettings.mineralCost[unitType] = mineralCost;
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.mineralCost[unitType] = mineralCost;
+            else
+                unitSettings.mineralCost[unitType] = mineralCost;
+            break;
+    }
 }
 
-void Properties::setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable)
+void Scenario::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpSection useExp)
 {
-    puni->setUnitDefaultBuildable(unitType, buildable);
+    if ( unitType >= Sc::Unit::TotalTypes )
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+        case Chk::UseExpSection::Both: unitSettings.gasCost[unitType] = gasCost; origUnitSettings.gasCost[unitType] = gasCost; break;
+        case Chk::UseExpSection::Yes: unitSettings.gasCost[unitType] = gasCost; break;
+        case Chk::UseExpSection::No: origUnitSettings.gasCost[unitType] = gasCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIx) )
+                unitSettings.gasCost[unitType] = gasCost;
+            else
+                origUnitSettings.gasCost[unitType] = gasCost;
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( this->hasSection(Chk::SectionName::UNIS) )
+                origUnitSettings.gasCost[unitType] = gasCost;
+            else
+                unitSettings.gasCost[unitType] = gasCost;
+            break;
+    }
 }
 
-void Properties::setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault)
+void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, Chk::UseExpSection useExp)
 {
-    puni->setPlayerUsesDefault(unitType, playerIndex, useDefault);
+    auto checkLimit = [&weaponType](bool expansion){
+        if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
+            throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
+                " is out of range for the " + (expansion ? "UNIx" : "UNIS") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( weaponType >= 100 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
+                this->origUnitSettings.baseDamage[weaponType] = baseDamage;
+            checkLimit(true);
+            this->unitSettings.baseDamage[weaponType] = baseDamage;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUnitSettings.baseDamage[weaponType] = baseDamage; this->unitSettings.baseDamage[weaponType] = baseDamage; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->unitSettings.baseDamage[weaponType] = baseDamage; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUnitSettings.baseDamage[weaponType] = baseDamage; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->unitSettings.baseDamage[weaponType] = baseDamage;
+            } else {
+                checkLimit(false);
+                this->origUnitSettings.baseDamage[weaponType] = baseDamage;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUnitSettings.baseDamage[weaponType] = baseDamage;
+            } else {
+                checkLimit(true);
+                this->unitSettings.baseDamage[weaponType] = baseDamage;
+            }
+            break;
+    }
 }
 
-void Properties::setUnitsToDefault(Chk::UseExpSection useExp)
+void Scenario::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&weaponType](bool expansion){
+        if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
+            throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
+                " is out of range for the " + (expansion ? "UNIx" : "UNIS") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( weaponType >= 100 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
+                this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            checkLimit(true);
+            this->unitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage; this->unitSettings.upgradeDamage[weaponType] = upgradeDamage; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->unitSettings.upgradeDamage[weaponType] = upgradeDamage; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->unitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            } else {
+                checkLimit(false);
+                this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            } else {
+                checkLimit(true);
+                this->unitSettings.upgradeDamage[weaponType] = upgradeDamage;
+            }
+            break;
+    }
+}
+
+bool Scenario::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) const
+{
+    if ( unitType < Sc::Unit::TotalTypes )
+    {
+        if ( playerIndex < Sc::Player::Total )
+            return this->unitAvailability.playerUnitBuildable[playerIndex][unitType] != Chk::Available::No;
+        else
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
+    }
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+bool Scenario::isUnitDefaultBuildable(Sc::Unit::Type unitType) const
+{
+    if ( unitType < Sc::Unit::TotalTypes )
+        return this->unitAvailability.defaultUnitBuildable[unitType] != Chk::Available::No;
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+bool Scenario::playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex) const
+{
+    if ( unitType < Sc::Unit::TotalTypes )
+    {
+        if ( playerIndex < Sc::Player::Total )
+            return this->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] != Chk::UseDefault::No;
+        else
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
+    }
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+void Scenario::setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, bool buildable)
+{
+    Chk::Available unitBuildable = buildable ? Chk::Available::Yes : Chk::Available::No;
+    if ( unitType < Sc::Unit::TotalTypes )
+    {
+        if ( playerIndex < Sc::Player::Total )
+            this->unitAvailability.playerUnitBuildable[playerIndex][unitType] = unitBuildable;
+        else
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
+    }
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+void Scenario::setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable)
+{
+    Chk::Available unitDefaultBuildable = buildable ? Chk::Available::Yes : Chk::Available::No;
+    if ( unitType < Sc::Unit::TotalTypes )
+        this->unitAvailability.defaultUnitBuildable[unitType] = unitDefaultBuildable;
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+void Scenario::setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t playerIndex, bool useDefault)
+{
+    Chk::UseDefault playerUnitUsesDefault = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    if ( unitType < Sc::Unit::TotalTypes )
+    {
+        if ( playerIndex < Sc::Player::Total )
+            this->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] = playerUnitUsesDefault;
+        else
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
+    }
+    else
+        throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
+}
+
+void Scenario::setUnitsToDefault(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
         case Chk::UseExpSection::Both:
-            *unis = *UnisSection::GetDefault();
-            *unix = *UnixSection::GetDefault();
-            *puni = *PuniSection::GetDefault();
+            this->origUnitSettings = Chk::UNIS {};
+            this->unitSettings = Chk::UNIx {};
+            this->unitAvailability = Chk::PUNI {};
             break;
         case Chk::UseExpSection::Yes:
-            *unix = *UnixSection::GetDefault();
-            *puni = *PuniSection::GetDefault();
+            this->unitSettings = Chk::UNIx {};
+            this->unitAvailability = Chk::PUNI {};
             break;
         case Chk::UseExpSection::No:
-            *unis = *UnisSection::GetDefault();
-            *puni = *PuniSection::GetDefault();
+            this->origUnitSettings = Chk::UNIS {};
+            this->unitAvailability = Chk::PUNI {};
             break;
         case Chk::UseExpSection::YesIfAvailable:
-            if ( unix != nullptr )
-                *unix = *UnixSection::GetDefault();
+            if ( hasSection(Chk::SectionName::UNIx) )
+                this->unitSettings = Chk::UNIx {};
             else
-                *unis = *UnisSection::GetDefault();
+                this->origUnitSettings = Chk::UNIS {};
             
-            *puni = *PuniSection::GetDefault();
+            this->unitAvailability = Chk::PUNI {};
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            if ( unis != nullptr )
-                *unis = *UnisSection::GetDefault();
+            if ( hasSection(Chk::SectionName::UNIS) )
+                this->origUnitSettings = Chk::UNIS {};
             else
-                *unix = *UnixSection::GetDefault();
+                this->unitSettings = Chk::UNIx {};
             
-            *puni = *PuniSection::GetDefault();
+            this->unitAvailability = Chk::PUNI {};
             break;
     }
 }
 
-bool Properties::useExpansionUpgradeCosts(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionUpgradeCosts(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
-        case Chk::UseExpSection::NoIfOrigAvailable: return upgs != nullptr ? false : true;
+        case Chk::UseExpSection::Auto: return upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
+        case Chk::UseExpSection::NoIfOrigAvailable: return this->hasSection(Chk::SectionName::UPGS) ? false : true;
         case Chk::UseExpSection::YesIfAvailable:
-        default: return upgx != nullptr ? true : false;
+        default: return this->hasSection(Chk::SectionName::UPGx);
     }
 }
 
-bool Properties::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+bool Scenario::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->upgradeUsesDefaultCosts(upgradeType) : upgs->upgradeUsesDefaultCosts(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.useDefault[upgradeType] : this->origUpgradeCosts.useDefault[upgradeType];
 }
 
-u16 Properties::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getBaseMineralCost(upgradeType) : upgs->getBaseMineralCost(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.baseMineralCost[upgradeType] : this->origUpgradeCosts.baseMineralCost[upgradeType];
 }
 
-u16 Properties::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getMineralCostFactor(upgradeType) : upgs->getMineralCostFactor(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.mineralCostFactor[upgradeType] : this->origUpgradeCosts.mineralCostFactor[upgradeType];
 }
 
-u16 Properties::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getBaseGasCost(upgradeType) : upgs->getBaseGasCost(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.baseGasCost[upgradeType] : this->origUpgradeCosts.baseGasCost[upgradeType];
 }
 
-u16 Properties::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getGasCostFactor(upgradeType) : upgs->getGasCostFactor(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.gasCostFactor[upgradeType] : this->origUpgradeCosts.gasCostFactor[upgradeType];
 }
 
-u16 Properties::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getBaseResearchTime(upgradeType) : upgs->getBaseResearchTime(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.baseResearchTime[upgradeType] : this->origUpgradeCosts.baseResearchTime[upgradeType];
 }
 
-u16 Properties::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+u16 Scenario::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    return useExpansionUpgradeCosts(useExp) ? upgx->getResearchTimeFactor(upgradeType) : upgs->getResearchTimeFactor(upgradeType);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+            " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    }
+    return expansion ? this->upgradeCosts.researchTimeFactor[upgradeType] : this->origUpgradeCosts.researchTimeFactor[upgradeType];
 }
 
-void Properties::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault, Chk::UseExpSection useExp)
+void Scenario::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
+    Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault);
-            if ( upgx != nullptr )
-                upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault);
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.useDefault[upgradeType] = value;
+            checkLimit(true);
+            this->upgradeCosts.useDefault[upgradeType] = value;
             break;
-        case Chk::UseExpSection::Both: upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault); upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
-        case Chk::UseExpSection::Yes: upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
-        case Chk::UseExpSection::No: upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault) : upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setUpgradeUsesDefaultCosts(upgradeType, useDefault) : upgx->setUpgradeUsesDefaultCosts(upgradeType, useDefault); break;
-    }
-}
-
-void Properties::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setBaseMineralCost(upgradeType, baseMineralCost);
-            if ( upgx != nullptr )
-                upgx->setBaseMineralCost(upgradeType, baseMineralCost);
-            break;
-        case Chk::UseExpSection::Both: upgs->setBaseMineralCost(upgradeType, baseMineralCost); upgx->setBaseMineralCost(upgradeType, baseMineralCost); break;
-        case Chk::UseExpSection::Yes: upgx->setBaseMineralCost(upgradeType, baseMineralCost); break;
-        case Chk::UseExpSection::No: upgs->setBaseMineralCost(upgradeType, baseMineralCost); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setBaseMineralCost(upgradeType, baseMineralCost) : upgs->setBaseMineralCost(upgradeType, baseMineralCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setBaseMineralCost(upgradeType, baseMineralCost) : upgx->setBaseMineralCost(upgradeType, baseMineralCost); break;
-    }
-}
-
-void Properties::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setMineralCostFactor(upgradeType, mineralCostFactor);
-            if ( upgx != nullptr )
-                upgx->setMineralCostFactor(upgradeType, mineralCostFactor);
-            break;
-        case Chk::UseExpSection::Both: upgs->setMineralCostFactor(upgradeType, mineralCostFactor); upgx->setMineralCostFactor(upgradeType, mineralCostFactor); break;
-        case Chk::UseExpSection::Yes: upgx->setMineralCostFactor(upgradeType, mineralCostFactor); break;
-        case Chk::UseExpSection::No: upgs->setMineralCostFactor(upgradeType, mineralCostFactor); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setMineralCostFactor(upgradeType, mineralCostFactor) : upgs->setMineralCostFactor(upgradeType, mineralCostFactor); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setMineralCostFactor(upgradeType, mineralCostFactor) : upgx->setMineralCostFactor(upgradeType, mineralCostFactor); break;
-    }
-}
-
-void Properties::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setBaseGasCost(upgradeType, baseGasCost);
-            if ( upgx != nullptr )
-                upgx->setBaseGasCost(upgradeType, baseGasCost);
-            break;
-        case Chk::UseExpSection::Both: upgs->setBaseGasCost(upgradeType, baseGasCost); upgx->setBaseGasCost(upgradeType, baseGasCost); break;
-        case Chk::UseExpSection::Yes: upgx->setBaseGasCost(upgradeType, baseGasCost); break;
-        case Chk::UseExpSection::No: upgs->setBaseGasCost(upgradeType, baseGasCost); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setBaseGasCost(upgradeType, baseGasCost) : upgs->setBaseGasCost(upgradeType, baseGasCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setBaseGasCost(upgradeType, baseGasCost) : upgx->setBaseGasCost(upgradeType, baseGasCost); break;
-    }
-}
-
-void Properties::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCostFactor, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setGasCostFactor(upgradeType, gasCostFactor);
-            if ( upgx != nullptr )
-                upgx->setGasCostFactor(upgradeType, gasCostFactor);
-            break;
-        case Chk::UseExpSection::Both: upgs->setGasCostFactor(upgradeType, gasCostFactor); upgx->setGasCostFactor(upgradeType, gasCostFactor); break;
-        case Chk::UseExpSection::Yes: upgx->setGasCostFactor(upgradeType, gasCostFactor); break;
-        case Chk::UseExpSection::No: upgs->setGasCostFactor(upgradeType, gasCostFactor); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setGasCostFactor(upgradeType, gasCostFactor) : upgs->setGasCostFactor(upgradeType, gasCostFactor); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setGasCostFactor(upgradeType, gasCostFactor) : upgx->setGasCostFactor(upgradeType, gasCostFactor); break;
-    }
-}
-
-void Properties::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setBaseResearchTime(upgradeType, baseResearchTime);
-            if ( upgx != nullptr )
-                upgx->setBaseResearchTime(upgradeType, baseResearchTime);
-            break;
-        case Chk::UseExpSection::Both: upgs->setBaseResearchTime(upgradeType, baseResearchTime); upgx->setBaseResearchTime(upgradeType, baseResearchTime); break;
-        case Chk::UseExpSection::Yes: upgx->setBaseResearchTime(upgradeType, baseResearchTime); break;
-        case Chk::UseExpSection::No: upgs->setBaseResearchTime(upgradeType, baseResearchTime); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setBaseResearchTime(upgradeType, baseResearchTime) : upgs->setBaseResearchTime(upgradeType, baseResearchTime); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setBaseResearchTime(upgradeType, baseResearchTime) : upgx->setBaseResearchTime(upgradeType, baseResearchTime); break;
-    }
-}
-
-void Properties::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgs != nullptr )
-                upgs->setResearchTimeFactor(upgradeType, researchTimeFactor);
-            if ( upgx != nullptr )
-                upgx->setResearchTimeFactor(upgradeType, researchTimeFactor);
-            break;
-        case Chk::UseExpSection::Both: upgs->setResearchTimeFactor(upgradeType, researchTimeFactor); upgx->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
-        case Chk::UseExpSection::Yes: upgx->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
-        case Chk::UseExpSection::No: upgs->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
-        case Chk::UseExpSection::YesIfAvailable: upgx != nullptr ? upgx->setResearchTimeFactor(upgradeType, researchTimeFactor) : upgs->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgs != nullptr ? upgs->setResearchTimeFactor(upgradeType, researchTimeFactor) : upgx->setResearchTimeFactor(upgradeType, researchTimeFactor); break;
-    }
-}
-
-bool Properties::useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
-        case Chk::UseExpSection::NoIfOrigAvailable: return upgr != nullptr ? false : true;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.useDefault[upgradeType] = value; this->upgradeCosts.useDefault[upgradeType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.useDefault[upgradeType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.useDefault[upgradeType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
-        default: return pupx != nullptr ? true : false;
-    }
-}
-
-size_t Properties::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
-{
-    return useExpansionUpgradeLeveling(useExp) ? pupx->getMaxUpgradeLevel(upgradeType, playerIndex) : upgr->getMaxUpgradeLevel(upgradeType, playerIndex);
-}
-
-size_t Properties::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
-{
-    return useExpansionUpgradeLeveling(useExp) ? pupx->getStartUpgradeLevel(upgradeType, playerIndex) : upgr->getStartUpgradeLevel(upgradeType, playerIndex);
-}
-
-size_t Properties::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
-{
-    return useExpansionUpgradeLeveling(useExp) ? pupx->getDefaultMaxUpgradeLevel(upgradeType) : upgr->getDefaultMaxUpgradeLevel(upgradeType);
-}
-
-size_t Properties::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
-{
-    return useExpansionUpgradeLeveling(useExp) ? pupx->getDefaultStartUpgradeLevel(upgradeType) : upgr->getDefaultStartUpgradeLevel(upgradeType);
-}
-
-bool Properties::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
-{
-    return useExpansionUpgradeLeveling(useExp) ? pupx->playerUsesDefault(upgradeType, playerIndex) : upgr->playerUsesDefault(upgradeType, playerIndex);
-}
-
-void Properties::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
-                upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel);
-            if ( pupx != nullptr )
-                pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel);
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.useDefault[upgradeType] = value;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.useDefault[upgradeType] = value;
+            }
             break;
-        case Chk::UseExpSection::Both: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
-        case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel) : upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel) : pupx->setMaxUpgradeLevel(upgradeType, playerIndex, maxUpgradeLevel); break;
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.useDefault[upgradeType] = value;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.useDefault[upgradeType] = value;
+            }
+            break;
     }
 }
 
-void Properties::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel, Chk::UseExpSection useExp)
+void Scenario::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
-                upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel);
-            if ( pupx != nullptr )
-                pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel);
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
+            checkLimit(true);
+            this->upgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
             break;
-        case Chk::UseExpSection::Both: upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost; this->upgradeCosts.baseMineralCost[upgradeType] = baseMineralCost; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.baseMineralCost[upgradeType] = baseMineralCost; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost; break;
         case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel) : upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
+            }
+            break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel) : pupx->setStartUpgradeLevel(upgradeType, playerIndex, startUpgradeLevel); break;
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
+            }
+            break;
     }
 }
 
-void Properties::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
+void Scenario::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
-                upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel);
-            if ( pupx != nullptr )
-                pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel);
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
+            checkLimit(true);
+            this->upgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
             break;
-        case Chk::UseExpSection::Both: upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
-        case Chk::UseExpSection::YesIfAvailable: pupx != nullptr ? pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel) : upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgr != nullptr ? upgr->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel) : pupx->setDefaultMaxUpgradeLevel(upgradeType, maxUpgradeLevel); break;
-    }
-}
-
-void Properties::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
-                upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel);
-            if ( pupx != nullptr )
-                pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel);
-            break;
-        case Chk::UseExpSection::Both: upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
-        case Chk::UseExpSection::No: upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor; this->upgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor; break;
         case Chk::UseExpSection::YesIfAvailable:
-            pupx != nullptr ? pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel) : upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
+            }
+            break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            upgr != nullptr ? upgr->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel) : pupx->setDefaultStartUpgradeLevel(upgradeType, startUpgradeLevel); break;
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
+            }
+            break;
     }
 }
 
-void Properties::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
+void Scenario::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && upgr != nullptr )
-                upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault);
-            if ( pupx != nullptr )
-                pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault);
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost;
+            checkLimit(true);
+            this->upgradeCosts.baseGasCost[upgradeType] = baseGasCost;
             break;
-        case Chk::UseExpSection::Both: upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::Yes: pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::No: upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::YesIfAvailable: pupx != nullptr ? pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault) : upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: upgr != nullptr ? upgr->setPlayerUsesDefault(upgradeType, playerIndex, useDefault) : pupx->setPlayerUsesDefault(upgradeType, playerIndex, useDefault); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost; this->upgradeCosts.baseGasCost[upgradeType] = baseGasCost; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.baseGasCost[upgradeType] = baseGasCost; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.baseGasCost[upgradeType] = baseGasCost;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.baseGasCost[upgradeType] = baseGasCost;
+            }
+            break;
     }
 }
 
-void Properties::setUpgradesToDefault(Chk::UseExpSection useExp)
+void Scenario::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCostFactor, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            checkLimit(true);
+            this->upgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor; this->upgradeCosts.gasCostFactor[upgradeType] = gasCostFactor; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.gasCostFactor[upgradeType] = gasCostFactor; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
+            }
+            break;
+    }
+}
+
+void Scenario::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            checkLimit(true);
+            this->upgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime; this->upgradeCosts.baseResearchTime[upgradeType] = baseResearchTime; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.baseResearchTime[upgradeType] = baseResearchTime; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
+            }
+            break;
+    }
+}
+
+void Scenario::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
+                " is out of range for the " + (expansion ? "UPGx" : "UPGS") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
+                this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            checkLimit(true);
+            this->upgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor; this->upgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::UNIx) ) {
+                checkLimit(true);
+                this->upgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            } else {
+                checkLimit(false);
+                this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UNIS) ) {
+                checkLimit(false);
+                this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            } else {
+                checkLimit(true);
+                this->upgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
+            }
+            break;
+    }
+}
+
+bool Scenario::useExpansionUpgradeLeveling(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType) const
+{
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto: return upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
+        case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::UPGR);
+        case Chk::UseExpSection::YesIfAvailable:
+        default: return this->hasSection(Chk::SectionName::PUPx);
+    }
+}
+
+size_t Scenario::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+
+    return expansion ? this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] : this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType];
+}
+
+size_t Scenario::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+
+    return expansion ? this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] : this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType];
+}
+
+size_t Scenario::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+
+    return expansion ? this->upgradeLeveling.defaultMaxLevel[upgradeType] : this->origUpgradeLeveling.defaultMaxLevel[upgradeType];
+}
+
+size_t Scenario::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+
+    return expansion ? this->upgradeLeveling.defaultStartLevel[upgradeType] : this->origUpgradeLeveling.defaultStartLevel[upgradeType];
+}
+
+bool Scenario::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
+    if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+        throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+
+    return expansion ? this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] != Chk::UseDefault::No :
+        this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] != Chk::UseDefault::No;
+}
+
+void Scenario::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            checkLimit(true);
+            this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PUPx) ) {
+                checkLimit(true);
+                this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            } else {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UPGR) ) {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            } else {
+                checkLimit(true);
+                this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
+            }
+            break;
+    }
+}
+
+void Scenario::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            checkLimit(true);
+            this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PUPx) ) {
+                checkLimit(true);
+                this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            } else {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UPGR) ) {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            } else {
+                checkLimit(true);
+                this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
+            }
+            break;
+    }
+}
+
+void Scenario::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            checkLimit(true);
+            this->upgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel); this->upgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PUPx) ) {
+                checkLimit(true);
+                this->upgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            } else {
+                checkLimit(false);
+                this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UPGR) ) {
+                checkLimit(false);
+                this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            } else {
+                checkLimit(true);
+                this->upgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
+            }
+            break;
+    }
+}
+
+void Scenario::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    };
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            checkLimit(true);
+            this->upgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel); this->upgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PUPx) ) {
+                checkLimit(true);
+                this->upgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            } else {
+                checkLimit(false);
+                this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UPGR) ) {
+                checkLimit(false);
+                this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            } else {
+                checkLimit(true);
+                this->upgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
+            }
+            break;
+    }
+}
+
+void Scenario::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
+        if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
+    };
+    Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            checkLimit(true);
+            this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PUPx) ) {
+                checkLimit(true);
+                this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            } else {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::UPGR) ) {
+                checkLimit(false);
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            } else {
+                checkLimit(true);
+                this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setUpgradesToDefault(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
         case Chk::UseExpSection::Both:
-            *upgs = *UpgsSection::GetDefault();
-            *upgx = *UpgxSection::GetDefault();
-            *upgr = *UpgrSection::GetDefault();
-            *pupx = *PupxSection::GetDefault();
+            this->origUpgradeCosts = Chk::UPGS {};
+            this->upgradeCosts = Chk::UPGx {};
+            this->origUpgradeLeveling = Chk::UPGR {};
+            this->upgradeLeveling = Chk::PUPx {};
             break;
         case Chk::UseExpSection::Yes:
-            *upgx = *UpgxSection::GetDefault();
-            *pupx = *PupxSection::GetDefault();
+            this->upgradeCosts = Chk::UPGx {};
+            this->upgradeLeveling = Chk::PUPx {};
             break;
         case Chk::UseExpSection::No:
-            *upgs = *UpgsSection::GetDefault();
-            *upgr = *UpgrSection::GetDefault();
+            this->origUpgradeCosts = Chk::UPGS {};
+            this->origUpgradeLeveling = Chk::UPGR {};
             break;
         case Chk::UseExpSection::YesIfAvailable:
-            if ( upgx != nullptr )
-                *upgx = *UpgxSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::UPGx) )
+                this->upgradeCosts = Chk::UPGx {};
             else
-                *upgs = *UpgsSection::GetDefault();
+                this->origUpgradeCosts = Chk::UPGS {};
 
-            if ( pupx != nullptr )
-                *pupx = *PupxSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::PUPx) )
+                this->upgradeLeveling = Chk::PUPx {};
             else
-                *upgr = *UpgrSection::GetDefault();
+                this->origUpgradeLeveling = Chk::UPGR {};
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            if ( upgs != nullptr )
-                *upgs = *UpgsSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::UPGS) )
+                this->origUpgradeCosts = Chk::UPGS {};
             else
-                *upgx = *UpgxSection::GetDefault();
+                this->upgradeCosts = Chk::UPGx {};
 
-            if ( upgr != nullptr )
-                *upgr = *UpgrSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::UPGR) )
+                this->origUpgradeLeveling = Chk::UPGR {};
             else
-                *pupx = *PupxSection::GetDefault();
+                this->upgradeLeveling = Chk::PUPx {};
             break;
     }
 }
 
-bool Properties::useExpansionTechCosts(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionTechCosts(Chk::UseExpSection useExp, Sc::Tech::Type techType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
-        case Chk::UseExpSection::NoIfOrigAvailable: return tecs != nullptr ? false : true;
+        case Chk::UseExpSection::Auto: return techType >= Sc::Tech::Type::Restoration || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
+        case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::TECS);
         case Chk::UseExpSection::YesIfAvailable:
-        default: return tecx != nullptr ? true : false;
+        default: return this->hasSection(Chk::SectionName::TECx);
     }
 }
 
-bool Properties::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+bool Scenario::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    return useExpansionTechCosts(useExp) ? tecx->techUsesDefaultSettings(techType) : tecs->techUsesDefaultSettings(techType);
+    bool expansion = useExpansionTechCosts(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    }
+    return expansion ? this->techCosts.useDefault[techType] != Chk::UseDefault::No : this->techCosts.useDefault[techType] != Chk::UseDefault::No;
 }
 
-u16 Properties::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+u16 Scenario::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    return useExpansionTechCosts(useExp) ? tecx->getTechMineralCost(techType) : tecs->getTechMineralCost(techType);
+    bool expansion = useExpansionTechCosts(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    }
+    return expansion ? this->techCosts.mineralCost[techType] : this->techCosts.mineralCost[techType];
 }
 
-u16 Properties::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+u16 Scenario::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    return useExpansionTechCosts(useExp) ? tecx->getTechGasCost(techType) : tecs->getTechGasCost(techType);
+    bool expansion = useExpansionTechCosts(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    }
+    return expansion ? this->techCosts.gasCost[techType] : this->techCosts.gasCost[techType];
 }
 
-u16 Properties::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+u16 Scenario::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    return useExpansionTechCosts(useExp) ? tecx->getTechResearchTime(techType) : tecs->getTechResearchTime(techType);
+    bool expansion = useExpansionTechCosts(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    }
+    return expansion ? this->techCosts.researchTime[techType] : this->techCosts.researchTime[techType];
 }
 
-u16 Properties::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+u16 Scenario::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    return useExpansionTechCosts(useExp) ? tecx->getTechEnergyCost(techType) : tecs->getTechEnergyCost(techType);
+    bool expansion = useExpansionTechCosts(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    }
+    return expansion ? this->techCosts.energyCost[techType] : this->techCosts.energyCost[techType];
 }
 
-void Properties::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault, Chk::UseExpSection useExp)
+void Scenario::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    };
+    Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
-                tecs->setTechUsesDefaultSettings(techType, useDefault);
-            if ( tecx != nullptr )
-                tecx->setTechUsesDefaultSettings(techType, useDefault);
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts.useDefault[techType] = value;
+            checkLimit(true);
+            this->techCosts.useDefault[techType] = value;
             break;
-        case Chk::UseExpSection::Both: tecs->setTechUsesDefaultSettings(techType, useDefault); tecx->setTechUsesDefaultSettings(techType, useDefault); break;
-        case Chk::UseExpSection::Yes: tecx->setTechUsesDefaultSettings(techType, useDefault); break;
-        case Chk::UseExpSection::No: tecs->setTechUsesDefaultSettings(techType, useDefault); break;
-        case Chk::UseExpSection::YesIfAvailable: tecx != nullptr ? tecx->setTechUsesDefaultSettings(techType, useDefault) : tecs->setTechUsesDefaultSettings(techType, useDefault); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: tecs != nullptr ? tecs->setTechUsesDefaultSettings(techType, useDefault) : tecx->setTechUsesDefaultSettings(techType, useDefault); break;
-    }
-}
-
-void Properties::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
-                tecs->setTechMineralCost(techType, mineralCost);
-            if ( tecx != nullptr )
-                tecx->setTechMineralCost(techType, mineralCost);
-            break;
-        case Chk::UseExpSection::Both: tecs->setTechMineralCost(techType, mineralCost); tecx->setTechMineralCost(techType, mineralCost); break;
-        case Chk::UseExpSection::Yes: tecx->setTechMineralCost(techType, mineralCost); break;
-        case Chk::UseExpSection::No: tecs->setTechMineralCost(techType, mineralCost); break;
-        case Chk::UseExpSection::YesIfAvailable: tecx != nullptr ? tecx->setTechMineralCost(techType, mineralCost) : tecs->setTechMineralCost(techType, mineralCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: tecs != nullptr ? tecs->setTechMineralCost(techType, mineralCost) : tecx->setTechMineralCost(techType, mineralCost); break;
-    }
-}
-
-void Properties::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
-                tecs->setTechGasCost(techType, gasCost);
-            if ( tecx != nullptr )
-                tecx->setTechGasCost(techType, gasCost);
-            break;
-        case Chk::UseExpSection::Both: tecs->setTechGasCost(techType, gasCost); tecx->setTechGasCost(techType, gasCost); break;
-        case Chk::UseExpSection::Yes: tecx->setTechGasCost(techType, gasCost); break;
-        case Chk::UseExpSection::No: tecs->setTechGasCost(techType, gasCost); break;
-        case Chk::UseExpSection::YesIfAvailable: tecx != nullptr ? tecx->setTechGasCost(techType, gasCost) : tecs->setTechGasCost(techType, gasCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: tecs != nullptr ? tecs->setTechGasCost(techType, gasCost) : tecx->setTechGasCost(techType, gasCost); break;
-    }
-}
-
-void Properties::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
-                tecs->setTechResearchTime(techType, researchTime);
-            if ( tecx != nullptr )
-                tecx->setTechResearchTime(techType, researchTime);
-            break;
-        case Chk::UseExpSection::Both: tecs->setTechResearchTime(techType, researchTime); tecx->setTechResearchTime(techType, researchTime); break;
-        case Chk::UseExpSection::Yes: tecx->setTechResearchTime(techType, researchTime); break;
-        case Chk::UseExpSection::No: tecs->setTechResearchTime(techType, researchTime); break;
-        case Chk::UseExpSection::YesIfAvailable: tecx != nullptr ? tecx->setTechResearchTime(techType, researchTime) : tecs->setTechResearchTime(techType, researchTime); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: tecs != nullptr ? tecs->setTechResearchTime(techType, researchTime) : tecx->setTechResearchTime(techType, researchTime); break;
-    }
-}
-
-void Properties::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::UseExpSection useExp)
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && tecs != nullptr )
-                tecs->setTechEnergyCost(techType, energyCost);
-            if ( tecx != nullptr )
-                tecx->setTechEnergyCost(techType, energyCost);
-            break;
-        case Chk::UseExpSection::Both: tecs->setTechEnergyCost(techType, energyCost); tecx->setTechEnergyCost(techType, energyCost); break;
-        case Chk::UseExpSection::Yes: tecx->setTechEnergyCost(techType, energyCost); break;
-        case Chk::UseExpSection::No: tecs->setTechEnergyCost(techType, energyCost); break;
-        case Chk::UseExpSection::YesIfAvailable: tecx != nullptr ? tecx->setTechEnergyCost(techType, energyCost) : tecs->setTechEnergyCost(techType, energyCost); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: tecs != nullptr ? tecs->setTechEnergyCost(techType, energyCost) : tecx->setTechEnergyCost(techType, energyCost); break;
-    }
-}
-
-bool Properties::useExpansionTechAvailability(Chk::UseExpSection useExp) const
-{
-    switch ( useExp )
-    {
-        case Chk::UseExpSection::Auto: return versions->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
-        case Chk::UseExpSection::NoIfOrigAvailable: return ptec != nullptr ? false : true;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyCosts.useDefault[techType] = value; this->techCosts.useDefault[techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techCosts.useDefault[techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyCosts.useDefault[techType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
-        default: return ptex != nullptr ? true : false;
+            if ( hasSection(Chk::SectionName::TECx) ) {
+                checkLimit(true);
+                this->techCosts.useDefault[techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyCosts.useDefault[techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::TECS) ) {
+                checkLimit(false);
+                this->origTechnologyCosts.useDefault[techType] = value;
+            } else {
+                checkLimit(true);
+                this->techCosts.useDefault[techType] = value;
+            }
+            break;
     }
 }
 
-bool Properties::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
+void Scenario::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk::UseExpSection useExp)
 {
-    return useExpansionTechAvailability(useExp) ? ptex->techAvailable(techType, playerIndex) : ptec->techAvailable(techType, playerIndex);
-}
-
-bool Properties::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
-{
-    return useExpansionTechAvailability(useExp) ? ptex->techResearched(techType, playerIndex) : ptec->techResearched(techType, playerIndex);
-}
-
-bool Properties::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
-{
-    return useExpansionTechAvailability(useExp) ? ptex->techDefaultAvailable(techType) : ptec->techDefaultAvailable(techType);
-}
-
-bool Properties::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
-{
-    return useExpansionTechAvailability(useExp) ? ptex->techDefaultResearched(techType) : ptec->techDefaultResearched(techType);
-}
-
-bool Properties::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
-{
-    return useExpansionTechAvailability(useExp) ? ptex->playerUsesDefault(techType, playerIndex) : ptec->playerUsesDefault(techType, playerIndex);
-}
-
-void Properties::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp)
-{
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
-                ptec->setTechAvailable(techType, playerIndex, available);
-            if ( ptex != nullptr )
-                ptex->setTechAvailable(techType, playerIndex, available);
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts.mineralCost[techType] = mineralCost;
+            checkLimit(true);
+            this->techCosts.mineralCost[techType] = mineralCost;
             break;
-        case Chk::UseExpSection::Both: ptec->setTechAvailable(techType, playerIndex, available); ptex->setTechAvailable(techType, playerIndex, available); break;
-        case Chk::UseExpSection::Yes: ptex->setTechAvailable(techType, playerIndex, available); break;
-        case Chk::UseExpSection::No: ptec->setTechAvailable(techType, playerIndex, available); break;
-        case Chk::UseExpSection::YesIfAvailable: ptex != nullptr ? ptex->setTechAvailable(techType, playerIndex, available) : ptec->setTechAvailable(techType, playerIndex, available); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: ptec != nullptr ? ptec->setTechAvailable(techType, playerIndex, available) : ptex->setTechAvailable(techType, playerIndex, available); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyCosts.mineralCost[techType] = mineralCost; this->techCosts.mineralCost[techType] = mineralCost; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techCosts.mineralCost[techType] = mineralCost; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyCosts.mineralCost[techType] = mineralCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::TECx) ) {
+                checkLimit(true);
+                this->techCosts.mineralCost[techType] = mineralCost;
+            } else {
+                checkLimit(false);
+                this->origTechnologyCosts.mineralCost[techType] = mineralCost;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::TECS) ) {
+                checkLimit(false);
+                this->origTechnologyCosts.mineralCost[techType] = mineralCost;
+            } else {
+                checkLimit(true);
+                this->techCosts.mineralCost[techType] = mineralCost;
+            }
+            break;
     }
 }
 
-void Properties::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched, Chk::UseExpSection useExp)
+void Scenario::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
-                ptec->setTechResearched(techType, playerIndex, researched);
-            if ( ptex != nullptr )
-                ptex->setTechResearched(techType, playerIndex, researched);
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts.gasCost[techType] = gasCost;
+            checkLimit(true);
+            this->techCosts.gasCost[techType] = gasCost;
             break;
-        case Chk::UseExpSection::Both: ptec->setTechResearched(techType, playerIndex, researched); ptex->setTechResearched(techType, playerIndex, researched); break;
-        case Chk::UseExpSection::Yes: ptex->setTechResearched(techType, playerIndex, researched); break;
-        case Chk::UseExpSection::No: ptec->setTechResearched(techType, playerIndex, researched); break;
-        case Chk::UseExpSection::YesIfAvailable: ptex != nullptr ? ptex->setTechResearched(techType, playerIndex, researched) : ptec->setTechResearched(techType, playerIndex, researched); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: ptec != nullptr ? ptec->setTechResearched(techType, playerIndex, researched) : ptex->setTechResearched(techType, playerIndex, researched); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyCosts.gasCost[techType] = gasCost; this->techCosts.gasCost[techType] = gasCost; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techCosts.gasCost[techType] = gasCost; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyCosts.gasCost[techType] = gasCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::TECx) ) {
+                checkLimit(true);
+                this->techCosts.gasCost[techType] = gasCost;
+            } else {
+                checkLimit(false);
+                this->origTechnologyCosts.gasCost[techType] = gasCost;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::TECS) ) {
+                checkLimit(false);
+                this->origTechnologyCosts.gasCost[techType] = gasCost;
+            } else {
+                checkLimit(true);
+                this->techCosts.gasCost[techType] = gasCost;
+            }
+            break;
     }
 }
 
-void Properties::setDefaultTechAvailable(Sc::Tech::Type techType, bool available, Chk::UseExpSection useExp)
+void Scenario::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
-                ptec->setDefaultTechAvailable(techType, available);
-            if ( ptex != nullptr )
-                ptex->setDefaultTechAvailable(techType, available);
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts.researchTime[techType] = researchTime;
+            checkLimit(true);
+            this->techCosts.researchTime[techType] = researchTime;
             break;
-        case Chk::UseExpSection::Both: ptec->setDefaultTechAvailable(techType, available); ptex->setDefaultTechAvailable(techType, available); break;
-        case Chk::UseExpSection::Yes: ptex->setDefaultTechAvailable(techType, available); break;
-        case Chk::UseExpSection::No: ptec->setDefaultTechAvailable(techType, available); break;
-        case Chk::UseExpSection::YesIfAvailable: ptex != nullptr ? ptex->setDefaultTechAvailable(techType, available) : ptec->setDefaultTechAvailable(techType, available); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: ptec != nullptr ? ptec->setDefaultTechAvailable(techType, available) : ptex->setDefaultTechAvailable(techType, available); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyCosts.researchTime[techType] = researchTime; this->techCosts.researchTime[techType] = researchTime; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techCosts.researchTime[techType] = researchTime; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyCosts.researchTime[techType] = researchTime; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::TECx) ) {
+                checkLimit(true);
+                this->techCosts.researchTime[techType] = researchTime;
+            } else {
+                checkLimit(false);
+                this->origTechnologyCosts.researchTime[techType] = researchTime;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::TECS) ) {
+                checkLimit(false);
+                this->origTechnologyCosts.researchTime[techType] = researchTime;
+            } else {
+                checkLimit(true);
+                this->techCosts.researchTime[techType] = researchTime;
+            }
+            break;
     }
 }
 
-void Properties::setDefaultTechResearched(Sc::Tech::Type techType, bool researched, Chk::UseExpSection useExp)
+void Scenario::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::UseExpSection useExp)
 {
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
+    };
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
-                ptec->setDefaultTechResearched(techType, researched);
-            if ( ptex != nullptr )
-                ptex->setDefaultTechResearched(techType, researched);
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts.energyCost[techType] = energyCost;
+            checkLimit(true);
+            this->techCosts.energyCost[techType] = energyCost;
             break;
-        case Chk::UseExpSection::Both: ptec->setDefaultTechResearched(techType, researched); ptex->setDefaultTechResearched(techType, researched); break;
-        case Chk::UseExpSection::Yes: ptex->setDefaultTechResearched(techType, researched); break;
-        case Chk::UseExpSection::No: ptec->setDefaultTechResearched(techType, researched); break;
-        case Chk::UseExpSection::YesIfAvailable: ptex != nullptr ? ptex->setDefaultTechResearched(techType, researched) : ptec->setDefaultTechResearched(techType, researched); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: ptec != nullptr ? ptec->setDefaultTechResearched(techType, researched) : ptex->setDefaultTechResearched(techType, researched); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyCosts.energyCost[techType] = energyCost; this->techCosts.energyCost[techType] = energyCost; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techCosts.energyCost[techType] = energyCost; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyCosts.energyCost[techType] = energyCost; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::TECx) ) {
+                checkLimit(true);
+                this->techCosts.energyCost[techType] = energyCost;
+            } else {
+                checkLimit(false);
+                this->origTechnologyCosts.energyCost[techType] = energyCost;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::TECS) ) {
+                checkLimit(false);
+                this->origTechnologyCosts.energyCost[techType] = energyCost;
+            } else {
+                checkLimit(true);
+                this->techCosts.energyCost[techType] = energyCost;
+            }
+            break;
     }
 }
 
-void Properties::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
+bool Scenario::useExpansionTechAvailability(Chk::UseExpSection useExp, Sc::Tech::Type techType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto:
-            if ( techType < Sc::Tech::TotalOriginalTypes && ptec != nullptr )
-                ptec->setPlayerUsesDefault(techType, playerIndex, useDefault);
-            if ( ptex != nullptr )
-                ptex->setPlayerUsesDefault(techType, playerIndex, useDefault);
-            break;
-        case Chk::UseExpSection::Both: ptec->setPlayerUsesDefault(techType, playerIndex, useDefault); ptex->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::Yes: ptex->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::No: ptec->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::YesIfAvailable: ptex != nullptr ? ptex->setPlayerUsesDefault(techType, playerIndex, useDefault) : ptec->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
-        case Chk::UseExpSection::NoIfOrigAvailable: ptec != nullptr ? ptec->setPlayerUsesDefault(techType, playerIndex, useDefault) : ptex->setPlayerUsesDefault(techType, playerIndex, useDefault); break;
+        case Chk::UseExpSection::Auto: return techType >= Sc::Tech::Type::Restoration || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
+        case Chk::UseExpSection::NoIfOrigAvailable: return this->hasSection(Chk::SectionName::PTEC) ? false : true;
+        case Chk::UseExpSection::YesIfAvailable:
+        default: return this->hasSection(Chk::SectionName::PTEx) ? true : false;
     }
 }
 
-void Properties::setTechsToDefault(Chk::UseExpSection useExp)
+bool Scenario::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionTechAvailability(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    }
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+
+    return expansion ? this->techAvailability.techAvailableForPlayer[playerIndex][techType] : this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType];
+}
+
+bool Scenario::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionTechAvailability(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    }
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+
+    return expansion ? this->techAvailability.techResearchedForPlayer[playerIndex][techType] : this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType];
+}
+
+bool Scenario::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionTechAvailability(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    }
+    return expansion ? this->techAvailability.techAvailableByDefault[techType] : this->origTechnologyAvailability.techAvailableByDefault[techType];
+}
+
+bool Scenario::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionTechAvailability(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    }
+    return expansion ? this->techAvailability.techResearchedByDefault[techType] : this->origTechnologyAvailability.techResearchedByDefault[techType];
+}
+
+bool Scenario::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
+{
+    bool expansion = useExpansionTechAvailability(useExp, techType);
+    if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+    {
+        throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
+            " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    }
+    else if ( playerIndex >= Sc::Player::Total )
+        throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+
+    return expansion ? this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] : this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType];
+}
+
+void Scenario::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&techType, &playerIndex](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    };
+    Chk::Available value = available ? Chk::Available::Yes : Chk::Available::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            checkLimit(true);
+            this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value; this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PTEx) ) {
+                checkLimit(true);
+                this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::PTEC) ) {
+                checkLimit(false);
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            } else {
+                checkLimit(true);
+                this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&techType, &playerIndex](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    };
+    Chk::Researched value = researched ? Chk::Researched::Yes : Chk::Researched::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            checkLimit(true);
+            this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value; this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PTEx) ) {
+                checkLimit(true);
+                this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::PTEC) ) {
+                checkLimit(false);
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            } else {
+                checkLimit(true);
+                this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setDefaultTechAvailable(Sc::Tech::Type techType, bool available, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    };
+    Chk::Available value = available ? Chk::Available::Yes : Chk::Available::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability.techAvailableByDefault[techType] = value;
+            checkLimit(true);
+            this->techAvailability.techAvailableByDefault[techType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techAvailableByDefault[techType] = value; this->techAvailability.techAvailableByDefault[techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techAvailableByDefault[techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techAvailableByDefault[techType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PTEx) ) {
+                checkLimit(true);
+                this->techAvailability.techAvailableByDefault[techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyAvailability.techAvailableByDefault[techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::PTEC) ) {
+                checkLimit(false);
+                this->origTechnologyAvailability.techAvailableByDefault[techType] = value;
+            } else {
+                checkLimit(true);
+                this->techAvailability.techAvailableByDefault[techType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setDefaultTechResearched(Sc::Tech::Type techType, bool researched, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&techType](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    };
+    Chk::Researched value = researched ? Chk::Researched::Yes : Chk::Researched::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability.techResearchedByDefault[techType] = value;
+            checkLimit(true);
+            this->techAvailability.techResearchedByDefault[techType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techResearchedByDefault[techType] = value; this->techAvailability.techResearchedByDefault[techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techResearchedByDefault[techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techResearchedByDefault[techType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PTEx) ) {
+                checkLimit(true);
+                this->techAvailability.techResearchedByDefault[techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyAvailability.techResearchedByDefault[techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::PTEC) ) {
+                checkLimit(false);
+                this->origTechnologyAvailability.techResearchedByDefault[techType] = value;
+            } else {
+                checkLimit(true);
+                this->techAvailability.techResearchedByDefault[techType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
+{
+    auto checkLimit = [&techType, &playerIndex](bool expansion){
+        if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
+            throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+        else if ( playerIndex >= Sc::Player::Total )
+            throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
+    };
+    Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
+    switch ( useExp )
+    {
+        case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
+            if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            checkLimit(true);
+            this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::YesIfAvailable:
+            if ( hasSection(Chk::SectionName::PTEx) ) {
+                checkLimit(true);
+                this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            } else {
+                checkLimit(false);
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            }
+            break;
+        case Chk::UseExpSection::NoIfOrigAvailable:
+            if ( hasSection(Chk::SectionName::PTEC) ) {
+                checkLimit(false);
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            } else {
+                checkLimit(true);
+                this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
+            }
+            break;
+    }
+}
+
+void Scenario::setTechsToDefault(Chk::UseExpSection useExp)
 {
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
         case Chk::UseExpSection::Both:
-            *tecs = *TecsSection::GetDefault();
-            *tecx = *TecxSection::GetDefault();
-            *ptec = *PtecSection::GetDefault();
-            *ptex = *PtexSection::GetDefault();
+            this->origTechnologyCosts = Chk::TECS {};
+            this->techCosts = Chk::TECx {};
+            this->origTechnologyAvailability = Chk::PTEC {};
+            this->techAvailability = Chk::PTEx {};
             break;
         case Chk::UseExpSection::Yes:
-            *tecx = *TecxSection::GetDefault();
-            *ptex = *PtexSection::GetDefault();
+            this->techCosts = Chk::TECx {};
+            this->techAvailability = Chk::PTEx {};
             break;
         case Chk::UseExpSection::No:
-            *tecs = *TecsSection::GetDefault();
-            *ptec = *PtecSection::GetDefault();
+            this->origTechnologyCosts = Chk::TECS {};
+            this->origTechnologyAvailability = Chk::PTEC {};
             break;
         case Chk::UseExpSection::YesIfAvailable:
-            if ( tecx != nullptr )
-                *tecx = *TecxSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::TECx) )
+                this->techCosts = Chk::TECx {};
             else
-                *tecs = *TecsSection::GetDefault();
+                this->origTechnologyCosts = Chk::TECS {};
 
-            if ( ptex != nullptr )
-                *ptex = *PtexSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::PTEx) )
+                this->techAvailability = Chk::PTEx {};
             else
-                *ptec = *PtecSection::GetDefault();
+                this->origTechnologyAvailability = Chk::PTEC {};
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
-            if ( tecs != nullptr )
-                *tecs = *TecsSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::TECS) )
+                this->origTechnologyCosts = Chk::TECS {};
             else
-                *tecx = *TecxSection::GetDefault();
+                this->techCosts = Chk::TECx {};
 
-            if ( ptec != nullptr )
-                *ptec = *PtecSection::GetDefault();
+            if ( this->hasSection(Chk::SectionName::PTEC) )
+                this->origTechnologyAvailability = Chk::PTEC {};
             else
-                *ptex = *PtexSection::GetDefault();
+                this->techAvailability = Chk::PTEx {};
             break;
     }
 }
 
-void Properties::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
+void Scenario::appendUnitStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask) const
 {
+    u16 u16StringId = (u16)stringId;
     if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
-        unis->appendUsage(stringId, stringUsers);
-
-    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
-        unix->appendUsage(stringId, stringUsers);
-}
-
-bool Properties::stringUsed(size_t stringId, u32 userMask) const
-{
-    return ((userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings && unis->stringUsed(stringId)) ||
-        ((userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings && unix->stringUsed(stringId));
-}
-
-void Properties::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
-{
-    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
-        unis->markUsedStrings(stringIdUsed);
-    
-    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
-        unix->markUsedStrings(stringIdUsed);
-}
-
-void Properties::remapStringIds(const std::map<u32, u32> & stringIdRemappings)
-{
-    unis->remapStringIds(stringIdRemappings);
-    unix->remapStringIds(stringIdRemappings);
-}
-
-void Properties::deleteString(size_t stringId)
-{
-    unis->deleteString(stringId);
-    unix->deleteString(stringId);
-}
-
-void Properties::set(std::unordered_map<SectionName, Section> & sections)
-{
-    unis = GetSection<UnisSection>(sections, SectionName::UNIS);
-    unix = GetSection<UnixSection>(sections, SectionName::UNIx);
-    puni = GetSection<PuniSection>(sections, SectionName::PUNI);
-    upgs = GetSection<UpgsSection>(sections, SectionName::UPGS);
-    
-    upgx = GetSection<UpgxSection>(sections, SectionName::UPGx);
-    upgr = GetSection<UpgrSection>(sections, SectionName::UPGR);
-    pupx = GetSection<PupxSection>(sections, SectionName::PUPx);
-    tecs = GetSection<TecsSection>(sections, SectionName::TECS);
-    
-    tecx = GetSection<TecxSection>(sections, SectionName::TECx);
-    ptec = GetSection<PtecSection>(sections, SectionName::PTEC);
-    ptex = GetSection<PtexSection>(sections, SectionName::PTEx);
-
-    if ( unis == nullptr )
-        unis = UnisSection::GetDefault();
-    if ( unix == nullptr )
-        unix = UnixSection::GetDefault();
-    if ( puni == nullptr )
-        puni = PuniSection::GetDefault();
-    if ( upgs == nullptr )
-        upgs = UpgsSection::GetDefault();
-
-    if ( upgx == nullptr )
-        upgx = UpgxSection::GetDefault();
-    if ( upgr == nullptr )
-        upgr = UpgrSection::GetDefault();
-    if ( pupx == nullptr )
-        pupx = PupxSection::GetDefault();
-    if ( tecs == nullptr )
-        tecs = TecsSection::GetDefault();
-
-    if ( tecx == nullptr )
-        tecx = TecxSection::GetDefault();
-    if ( ptec == nullptr )
-        ptec = PtecSection::GetDefault();
-    if ( ptex == nullptr )
-        ptex = PtexSection::GetDefault();
-}
-
-void Properties::clear()
-{
-    unis = nullptr;
-    unix = nullptr;
-    puni = nullptr;
-    upgs = nullptr;
-
-    upgx = nullptr;
-    upgr = nullptr;
-    pupx = nullptr;
-    tecs = nullptr;
-
-    tecx = nullptr;
-    ptec = nullptr;
-    ptex = nullptr;
-}
-
-
-Triggers::Triggers(bool useDefault) : LocationSynchronizer(), strings(nullptr), layers(nullptr)
-{
-    if ( useDefault )
     {
-        uprp = UprpSection::GetDefault(); // CUWP - Create unit with properties properties
-        upus = UpusSection::GetDefault(); // CUWP usage
-        trig = TrigSection::GetDefault(); // Triggers
-        mbrf = MbrfSection::GetDefault(); // Mission briefing triggers
-        swnm = SwnmSection::GetDefault(); // Switch names
-        wav = WavSection::GetDefault(); // Sound names
-        ktrg = KtrgSection::GetDefault(); // Trigger extensions
-        ktgp = KtgpSection::GetDefault(); // Trigger groups
-        if ( wav == nullptr || swnm == nullptr || mbrf == nullptr || trig == nullptr || upus == nullptr || uprp == nullptr || ktrg == nullptr || ktgp == nullptr )
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
         {
-            throw ScenarioAllocationFailure(
-                wav == nullptr ? ChkSection::getNameString(SectionName::WAV) :
-                (swnm == nullptr ? ChkSection::getNameString(SectionName::SWNM) :
-                (mbrf == nullptr ? ChkSection::getNameString(SectionName::MBRF) :
-                (trig == nullptr ? ChkSection::getNameString(SectionName::TRIG) :
-                (upus == nullptr ? ChkSection::getNameString(SectionName::UPUS) :
-                (uprp == nullptr ? ChkSection::getNameString(SectionName::UPRP) :
-                (ktrg == nullptr ? ChkSection::getNameString(SectionName::KTRG) :
-                ChkSection::getNameString(SectionName::KTGP))))))));
+            if ( this->origUnitSettings.nameStringId[i] == u16StringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::OriginalUnitSettings, i));
+        }
+    }
+
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+    {
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->unitSettings.nameStringId[i] == u16StringId )
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExpansionUnitSettings, i));
         }
     }
 }
 
-bool Triggers::empty() const
+bool Scenario::unitStringUsed(size_t stringId, u32 userMask) const
 {
-    return uprp == nullptr && upus == nullptr && trig == nullptr && mbrf == nullptr && swnm == nullptr && wav == nullptr && ktrg == nullptr && ktgp == nullptr;
-}
-
-Chk::Cuwp Triggers::getCuwp(size_t cuwpIndex) const
-{
-    return uprp->getCuwp(cuwpIndex);
-}
-
-void Triggers::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
-{
-    return uprp->setCuwp(cuwpIndex, cuwp);
-}
-
-size_t Triggers::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding, size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
-{
-    size_t found = uprp->findCuwp(cuwp);
-    if ( found < Sc::Unit::MaxCuwps )
-        return found;
-    else
+    u16 u16StringId = (u16)stringId;
+    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
     {
-        if ( fixUsageBeforeAdding )
-            fixCuwpUsage(excludedTriggerIndex, excludedTriggerActionIndex);
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->origUnitSettings.nameStringId[i] == u16StringId )
+                return true;
+        }
+    }
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+    {
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->unitSettings.nameStringId[i] == u16StringId )
+                return true;
+        }
+    }
+    return false;
+}
 
-        size_t nextUnused = upus->getNextUnusedCuwpIndex();
-        if ( nextUnused < Sc::Unit::MaxCuwps )
-            uprp->setCuwp(nextUnused, cuwp);
-
-        return nextUnused;
+void Scenario::markUsedUnitStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
+    {
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->origUnitSettings.nameStringId[i] > 0 )
+                stringIdUsed[this->origUnitSettings.nameStringId[i]] = true;
+        }
+    }
+    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
+    {
+        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+        {
+            if ( this->unitSettings.nameStringId[i] > 0 )
+                stringIdUsed[this->unitSettings.nameStringId[i]] = true;
+        }
     }
 }
 
-void Triggers::fixCuwpUsage(size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
+void Scenario::remapUnitStringIds(const std::map<u32, u32> & stringIdRemappings)
+{
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        auto found = stringIdRemappings.find(this->origUnitSettings.nameStringId[i]);
+        if ( found != stringIdRemappings.end() )
+            this->origUnitSettings.nameStringId[i] = found->second;
+    }
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        auto found = stringIdRemappings.find(this->unitSettings.nameStringId[i]);
+        if ( found != stringIdRemappings.end() )
+            this->unitSettings.nameStringId[i] = found->second;
+    }
+}
+
+void Scenario::deleteUnitString(size_t stringId)
+{
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( this->origUnitSettings.nameStringId[i] == stringId )
+            this->origUnitSettings.nameStringId[i] = 0;
+    }
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
+    {
+        if ( this->unitSettings.nameStringId[i] == stringId )
+            this->unitSettings.nameStringId[i] = 0;
+    }
+}
+
+Chk::Cuwp Scenario::getCuwp(size_t cuwpIndex) const
+{
+    if ( cuwpIndex >= Sc::Unit::MaxCuwps )
+        throw std::out_of_range(std::string("CuwpIndex: ") + std::to_string(cuwpIndex) + " is out of range for the UPRP section!");
+
+    return this->createUnitProperties[cuwpIndex];
+}
+
+void Scenario::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
+{
+    if ( cuwpIndex < Sc::Unit::MaxCuwps )
+        this->createUnitProperties[cuwpIndex] = cuwp;
+}
+
+size_t Scenario::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding, size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
+{
+    for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
+    {
+        if ( memcmp(&cuwp, &this->createUnitProperties[i], sizeof(Chk::Cuwp)) == 0 )
+            return i; // Return existing CUWP index
+    }
+    if ( fixUsageBeforeAdding )
+        fixCuwpUsage(excludedTriggerIndex, excludedTriggerActionIndex);
+
+    size_t nextUnused = Sc::Unit::MaxCuwps;
+    for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
+    {
+        if ( this->createUnitPropertiesUsed[i] == Chk::CuwpUsed::No )
+        {
+            nextUnused = i;
+            break;
+        }
+    }
+    if ( nextUnused < Sc::Unit::MaxCuwps )
+        this->createUnitProperties[nextUnused] = cuwp;
+
+    return nextUnused;
+}
+
+void Scenario::fixCuwpUsage(size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
 {
     for ( size_t i=0; i<Sc::Unit::MaxCuwps; i++ )
-        upus->setCuwpUsed(i, false);
+        this->createUnitPropertiesUsed[i] = Chk::CuwpUsed::No;
 
-    size_t numTriggers = trig->numTriggers();
-    for ( size_t triggerIndex=0; triggerIndex<numTriggers; triggerIndex++ )
+    size_t numTriggers = this->numTriggers();
+    for ( size_t i=0; i<numTriggers; ++i )
     {
-        Chk::TriggerPtr trigger = trig->getTrigger(triggerIndex);
-        for ( size_t actionIndex=0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+        const auto & trigger = this->triggers[i];
+        for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; ++actionIndex )
         {
-            Chk::Action & action = trigger->action(actionIndex);
-            if ( action.actionType == Chk::Action::Type::CreateUnitWithProperties && action.number < Sc::Unit::MaxCuwps && !(triggerIndex == excludedTriggerIndex && actionIndex == excludedTriggerActionIndex) )
-                upus->setCuwpUsed(action.number, true);
+            const auto & action = trigger.actions[actionIndex];
+            if ( action.actionType == Chk::Action::Type::CreateUnitWithProperties && action.number < Sc::Unit::MaxCuwps && !(i == excludedTriggerIndex && actionIndex == excludedTriggerActionIndex) )
+                this->createUnitPropertiesUsed[action.number] = Chk::CuwpUsed::Yes;
         }
     }
 }
 
-bool Triggers::cuwpUsed(size_t cuwpIndex) const
+bool Scenario::cuwpUsed(size_t cuwpIndex) const
 {
-    return upus->cuwpUsed(cuwpIndex);
+    if ( cuwpIndex < Sc::Unit::MaxCuwps )
+        return this->createUnitPropertiesUsed[cuwpIndex] != Chk::CuwpUsed::No;
+    else
+        throw std::out_of_range(std::string("CuwpIndex: ") + std::to_string(cuwpIndex) + " is out of range for the UPUS section!");
 }
 
-void Triggers::setCuwpUsed(size_t cuwpIndex, bool cuwpUsed)
+void Scenario::setCuwpUsed(size_t cuwpIndex, bool cuwpUsed)
 {
-    upus->setCuwpUsed(cuwpIndex, cuwpUsed);
+    if ( cuwpIndex < Sc::Unit::MaxCuwps )
+        this->createUnitPropertiesUsed[cuwpIndex] = cuwpUsed ? Chk::CuwpUsed::Yes : Chk::CuwpUsed::No;
+    else
+        throw std::out_of_range(std::string("CuwpIndex: ") + std::to_string(cuwpIndex) + " is out of range for the UPUS section!");
 }
 
-size_t Triggers::numTriggers() const
+size_t Scenario::numTriggers() const
 {
-    return trig->numTriggers();
+    return this->triggers.size();
 }
 
-std::shared_ptr<Chk::Trigger> Triggers::getTrigger(size_t triggerIndex)
+Chk::Trigger & Scenario::getTrigger(size_t triggerIndex)
 {
-    return trig->getTrigger(triggerIndex);
+    if ( triggerIndex < this->triggers.size() )
+        return this->triggers[triggerIndex];
+    else
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
 }
 
-const std::shared_ptr<Chk::Trigger> Triggers::getTrigger(size_t triggerIndex) const
+const Chk::Trigger & Scenario::getTrigger(size_t triggerIndex) const
 {
-    return trig->getTrigger(triggerIndex);
+    if ( triggerIndex < this->triggers.size() )
+        return this->triggers[triggerIndex];
+    else
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
 }
 
-size_t Triggers::addTrigger(std::shared_ptr<Chk::Trigger> trigger)
+size_t Scenario::addTrigger(const Chk::Trigger & trigger)
 {
-    return trig->addTrigger(trigger);
+    this->triggers.push_back(trigger);
+    return this->triggers.size()-1;
 }
 
-void Triggers::insertTrigger(size_t triggerIndex, std::shared_ptr<Chk::Trigger> trigger)
+void Scenario::insertTrigger(size_t triggerIndex, const Chk::Trigger & trigger)
 {
-    trig->insertTrigger(triggerIndex, trigger);
-    fixTriggerExtensions();
-}
-
-void Triggers::deleteTrigger(size_t triggerIndex)
-{
-    trig->deleteTrigger(triggerIndex);
-    fixTriggerExtensions();
-}
-
-void Triggers::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
-{
-    trig->moveTrigger(triggerIndexFrom, triggerIndexTo);
-    fixTriggerExtensions();
-}
-
-std::deque<Chk::TriggerPtr> Triggers::replaceRange(size_t beginIndex, size_t endIndex, std::deque<Chk::TriggerPtr> & triggers)
-{
-    return trig->replaceRange(beginIndex, endIndex, triggers);
-    fixTriggerExtensions();
-}
-
-Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex, bool addIfNotFound)
-{
-    auto trigger = trig->getTrigger(triggerIndex);
-    if ( trigger != nullptr )
+    if ( triggerIndex < this->triggers.size() )
     {
-        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
-        auto extendedTrigger = ktrg->getExtendedTrigger(extendedTrigDataIndex);
-        if ( extendedTrigger != nullptr )
-            return extendedTrigger;
-        else if ( addIfNotFound )
+        auto position = std::next(this->triggers.begin(), triggerIndex);
+        this->triggers.insert(position, trigger);
+    }
+    else
+        this->triggers.push_back(trigger);
+
+    fixTriggerExtensions();
+}
+
+void Scenario::deleteTrigger(size_t triggerIndex)
+{
+    if ( triggerIndex < this->triggers.size() )
+    {
+        auto trigger = std::next(this->triggers.begin(), triggerIndex);
+        this->removeTriggersExtension(triggerIndex);
+        this->triggers.erase(trigger);
+    }
+    fixTriggerExtensions();
+}
+
+void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
+{
+    size_t triggerIndexMin = std::min(triggerIndexFrom, triggerIndexTo);
+    size_t triggerIndexMax = std::max(triggerIndexFrom, triggerIndexTo);
+    if ( triggerIndexMax < this->triggers.size() && triggerIndexFrom != triggerIndexTo )
+    {
+        if ( triggerIndexMax-triggerIndexMin == 1 && triggerIndexMax < this->triggers.size() ) // Move up or down by 1 using swap
+            std::swap(this->triggers[triggerIndexMin], this->triggers[triggerIndexMax]);
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
         {
-            auto newExtendedTrigData = Chk::ExtendedTrigDataPtr(new Chk::ExtendedTrigData());
-            size_t newExtendedTrigDataIndex = ktrg->addExtendedTrigger(newExtendedTrigData);
-            if ( newExtendedTrigDataIndex != 0 )
+            auto trigger = this->triggers[triggerIndexFrom];
+            auto toErase = std::next(this->triggers.begin(), triggerIndexFrom);
+            this->triggers.erase(toErase);
+            auto insertPosition = std::next(this->triggers.begin(), triggerIndexTo-1);
+            this->triggers.insert(insertPosition, trigger);
+        }
+    }
+    fixTriggerExtensions();
+}
+
+std::vector<Chk::Trigger> Scenario::replaceRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers)
+{
+    if ( beginIndex == 0 && endIndex == this->triggers.size() )
+    {
+        this->triggers.swap(triggers);
+        fixTriggerExtensions();
+        return triggers;
+    }
+    else if ( beginIndex < endIndex && endIndex <= this->triggers.size() )
+    {
+        auto begin = this->triggers.begin()+beginIndex;
+        auto end = this->triggers.begin()+endIndex;
+        std::vector<Chk::Trigger> replacedTriggers(this->triggers.begin()+beginIndex, this->triggers.begin()+endIndex);
+        this->triggers.erase(begin, end);
+        this->triggers.insert(this->triggers.begin()+beginIndex, triggers.begin(), triggers.end());
+        fixTriggerExtensions();
+        return replacedTriggers;
+    }
+    else
+        throw std::out_of_range(std::string("Range [") + std::to_string(beginIndex) + ", " + std::to_string(endIndex) +
+            ") is invalid for trigger list of size: " + std::to_string(triggers.size()));
+}
+
+bool Scenario::hasTriggerExtension(size_t triggerIndex) const
+{
+    auto & trigger = this->triggers[triggerIndex];
+    size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
+    return extendedTrigDataIndex < this->triggerExtensions.size();
+}
+
+Chk::ExtendedTrigData & Scenario::getTriggerExtension(size_t triggerIndex, bool addIfNotFound)
+{
+    if ( triggerIndex >= this->triggers.size() )
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
+
+    auto & trigger = this->triggers[triggerIndex];
+    size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
+    if ( extendedTrigDataIndex < this->triggerExtensions.size() )
+        return this->triggerExtensions[extendedTrigDataIndex];
+    else if ( addIfNotFound )
+    {
+        std::set<u32> usedExtensionIndexes {};
+        for ( const auto & trig : this->triggers )
+        {
+            u32 usedIndex = u32(trig.getExtendedDataIndex());
+            if ( (usedIndex & Chk::UnusedExtendedTrigDataIndexCheck) != 0 ) // Some usable index
+                usedExtensionIndexes.insert(usedIndex);
+        }
+        for ( size_t i=0; i<this->triggerExtensions.size(); i++ )
+        {
+            if ( (i & Chk::UnusedExtendedTrigDataIndexCheck) != 0 && usedExtensionIndexes.count(u32(i)) == 0 ) // If index is usable and unused
             {
-                trigger->setExtendedDataIndex(newExtendedTrigDataIndex);
-                return newExtendedTrigData;
+                this->triggerExtensions[i] = Chk::ExtendedTrigData{};
+                return this->triggerExtensions[i];
             }
         }
+
+        while ( (this->triggerExtensions.size() & Chk::UnusedExtendedTrigDataIndexCheck) == 0 ) // While next index is unusable
+            this->triggerExtensions.push_back(Chk::ExtendedTrigData{}); // Put a dummy value in this position
+
+        this->triggerExtensions.push_back(Chk::ExtendedTrigData{}); // Put real/usable extension data in this position
+        trigger.setExtendedDataIndex(this->triggerExtensions.size()-1);
+        return this->triggerExtensions[this->triggerExtensions.size()-1];
     }
-    return nullptr;
+    else
+        throw std::logic_error(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " did not have an extension and addIfNotFound was not set!");
 }
 
-const Chk::ExtendedTrigDataPtr Triggers::getTriggerExtension(size_t triggerIndex) const
+const Chk::ExtendedTrigData & Scenario::getTriggerExtension(size_t triggerIndex) const
 {
-    auto trigger = trig->getTrigger(triggerIndex);
-    if ( trigger != nullptr )
-    {
-        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
-        auto extendedTrigger = ktrg->getExtendedTrigger(extendedTrigDataIndex);
-        if ( extendedTrigger != nullptr )
-            return extendedTrigger;
-    }
-    return nullptr;
+    if ( triggerIndex >= this->triggers.size() )
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
+
+    auto & trigger = this->triggers[triggerIndex];
+    size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
+    if ( extendedTrigDataIndex < this->triggerExtensions.size() )
+        return this->triggerExtensions[extendedTrigDataIndex];
+    else
+        throw std::logic_error(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " did not have an extension!");
 }
 
-void Triggers::deleteTriggerExtension(size_t triggerIndex)
+void Scenario::removeTriggersExtension(size_t triggerIndex)
 {
-    auto trigger = trig->getTrigger(triggerIndex);
-    if ( trigger != nullptr )
+    if ( triggerIndex >= this->triggers.size() )
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
+
+    auto & trigger = this->triggers[triggerIndex];
+    size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
+    trigger.clearExtendedDataIndex();
+    deleteTriggerExtension(extendedTrigDataIndex);
+}
+
+void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
+{
+    if ( triggerExtensionIndex < this->triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
     {
-        size_t extendedTrigDataIndex = trigger->getExtendedDataIndex();
-        if ( extendedTrigDataIndex != 0 )
+        size_t i = this->triggerExtensions.size();
+        for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= this->triggerExtensions.size()); i-- );
+
+        if ( i == 0 )
+            this->triggerExtensions.clear();
+        else if ( i < this->triggerExtensions.size() )
         {
-            trigger->clearExtendedDataIndex();
-            ktrg->deleteExtendedTrigger(extendedTrigDataIndex);
+            auto firstErased = std::next(this->triggerExtensions.begin(), i);
+            this->triggerExtensions.erase(firstErased, this->triggerExtensions.end());
         }
     }
 }
 
-void Triggers::fixTriggerExtensions()
+void Scenario::fixTriggerExtensions()
 {
     std::set<size_t> usedExtendedTrigDataIndexes;
-    size_t numTriggers = trig->numTriggers();
+    size_t numTriggers = this->triggers.size();
     for ( size_t i=0; i<numTriggers; i++ )
     {
-        Chk::TriggerPtr trigger = trig->getTrigger(i);
-        if ( trigger != nullptr )
+        Chk::Trigger & trigger = this->triggers[i];
+        size_t extendedDataIndex = trigger.getExtendedDataIndex();
+        if ( extendedDataIndex != Chk::ExtendedTrigDataIndex::None )
         {
-            size_t extendedDataIndex = trigger->getExtendedDataIndex();
-            if ( extendedDataIndex != Chk::ExtendedTrigDataIndex::None )
+            if ( extendedDataIndex >= this->triggerExtensions.size() )
+                trigger.clearExtendedDataIndex();
+            else if ( usedExtendedTrigDataIndexes.find(extendedDataIndex) == usedExtendedTrigDataIndexes.end() ) // Valid extension
             {
-                Chk::ExtendedTrigDataPtr extension = ktrg->getExtendedTrigger(extendedDataIndex);
-                if ( extension == nullptr ) // Invalid extendedDataIndex
-                    trigger->clearExtendedDataIndex();
-                else if ( usedExtendedTrigDataIndexes.find(extendedDataIndex) == usedExtendedTrigDataIndexes.end() ) // Valid extension
-                {
-                    extension->trigNum = (u32)i; // Ensure the trigNum is correct
-                    usedExtendedTrigDataIndexes.insert(extendedDataIndex);
-                }
-                else // Same extension used by multiple triggers
-                    trigger->clearExtendedDataIndex();
+                this->triggerExtensions[extendedDataIndex].trigNum = (u32)i; // Ensure the trigNum is correct
+                usedExtendedTrigDataIndexes.insert(extendedDataIndex);
             }
+            else // Same extension used by multiple triggers
+                trigger.clearExtendedDataIndex();
         }
     }
 
-    size_t numTriggerExtensions = ktrg->numExtendedTriggers();
+    size_t numTriggerExtensions = this->triggerExtensions.size();
     for ( size_t i=0; i<numTriggerExtensions; i++ )
     {
-        Chk::ExtendedTrigDataPtr extension = ktrg->getExtendedTrigger(i);
-        if ( extension != nullptr && usedExtendedTrigDataIndexes.find(i) == usedExtendedTrigDataIndexes.end() ) // Extension exists, but no trigger uses it
+        const Chk::ExtendedTrigData & extension = this->triggerExtensions[i];
+        if ( usedExtendedTrigDataIndexes.find(i) == usedExtendedTrigDataIndexes.end() ) // Extension exists, but no trigger uses it
         {
-            if ( extension->trigNum != Chk::ExtendedTrigData::TrigNum::None ) // Refers to a trigger
+            if ( extension.trigNum != Chk::ExtendedTrigData::TrigNum::None ) // Refers to a trigger
             {
-                Chk::TriggerPtr trigger = trig->getTrigger(extension->trigNum);
-                if ( trigger != nullptr && trigger->getExtendedDataIndex() == Chk::ExtendedTrigDataIndex::None ) // This trigger exists without an extension
-                    trigger->setExtendedDataIndex(i); // Link up extension to the trigger
-                else if ( trigger == nullptr ) // Trigger does not exist
-                    ktrg->deleteExtendedTrigger(i); // Delete the extension
+                if ( extension.trigNum < this->triggers.size() && // this trigger exists without an extension
+                    this->triggers[extension.trigNum].getExtendedDataIndex() == Chk::ExtendedTrigDataIndex::None )
+                {
+                    this->triggers[extension.trigNum].setExtendedDataIndex(i); // Link up extension to the trigger
+                }
+                else // Trigger does not exist
+                    this->deleteTriggerExtension(i); // Delete the extension
             }
-            else if ( extension->trigNum == Chk::ExtendedTrigData::TrigNum::None ) // Does not refer to a trigger
-                ktrg->deleteExtendedTrigger(i); // Delete the extension
+            else if ( extension.trigNum == Chk::ExtendedTrigData::TrigNum::None ) // Does not refer to a trigger
+                this->deleteTriggerExtension(i); // Delete the extension
         }
     }
 }
 
-size_t Triggers::getCommentStringId(size_t triggerIndex) const
+size_t Scenario::getCommentStringId(size_t triggerIndex) const
 {
-    auto trigger = trig->getTrigger(triggerIndex);
-    if ( trigger != nullptr )
-        return trigger->getComment();
+    if ( triggerIndex >= this->triggers.size() )
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
+    else
+        return this->triggers[triggerIndex].getComment();
+}
+
+size_t Scenario::getExtendedCommentStringId(size_t triggerIndex) const
+{
+    if ( triggerIndex >= this->triggers.size() )
+        throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
+    else
+    {
+        const auto & trigger = this->triggers[triggerIndex];
+        size_t extendedDataIndex = trigger.getExtendedDataIndex();
+        if ( (extendedDataIndex & Chk::UnusedExtendedTrigDataIndexCheck) != 0 && extendedDataIndex < this->triggerExtensions.size() )
+            return this->triggerExtensions[extendedDataIndex].commentStringId;
+    }
+    return Chk::StringId::NoString;
+}
+
+void Scenario::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
+{
+    Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
+    extension.commentStringId = (u32)stringId;
+    if ( stringId == Chk::StringId::NoString && extension.isBlank() )
+        removeTriggersExtension(triggerIndex);
+}
+
+size_t Scenario::getExtendedNotesStringId(size_t triggerIndex) const
+{
+    if ( this->hasTriggerExtension(triggerIndex) )
+        return getTriggerExtension(triggerIndex).notesStringId;
     else
         return Chk::StringId::NoString;
 }
 
-size_t Triggers::getExtendedCommentStringId(size_t triggerIndex) const
+void Scenario::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
 {
-    const Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex);
-    if ( extension != nullptr )
-        return extension->commentStringId;
-
-    return Chk::StringId::NoString;
+    Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
+    extension.notesStringId = (u32)stringId;
+    if ( stringId == Chk::StringId::NoString && extension.isBlank() )
+        removeTriggersExtension(triggerIndex);
 }
 
-void Triggers::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
+size_t Scenario::numBriefingTriggers() const
 {
-    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
-    if ( extension != nullptr )
-    {
-        extension->commentStringId = (u32)stringId;
-        if ( stringId == Chk::StringId::NoString && extension->isBlank() )
-            deleteTriggerExtension(triggerIndex);
-    }
+    return this->briefingTriggers.size();
 }
 
-size_t Triggers::getExtendedNotesStringId(size_t triggerIndex) const
+Chk::Trigger & Scenario::getBriefingTrigger(size_t briefingTriggerIndex)
 {
-    const Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex);
-    if ( extension != nullptr )
-        return extension->notesStringId;
-
-    return Chk::StringId::NoString;
+    if ( briefingTriggerIndex < this->briefingTriggers.size() )
+        return this->briefingTriggers[briefingTriggerIndex];
+    else
+        throw std::out_of_range(std::string("BriefingTriggerIndex: ") + std::to_string(briefingTriggerIndex) + " is out of range for the MBRF section!");
 }
 
-void Triggers::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
+const Chk::Trigger & Scenario::getBriefingTrigger(size_t briefingTriggerIndex) const
+{
+    if ( briefingTriggerIndex < this->briefingTriggers.size() )
+        return this->briefingTriggers[briefingTriggerIndex];
+    else
+        throw std::out_of_range(std::string("BriefingTriggerIndex: ") + std::to_string(briefingTriggerIndex) + " is out of range for the MBRF section!");
+}
+
+size_t Scenario::addBriefingTrigger(const Chk::Trigger & briefingTrigger)
+{
+    this->briefingTriggers.push_back(briefingTrigger);
+    return this->briefingTriggers.size()-1;
+}
+
+void Scenario::insertBriefingTrigger(size_t briefingTriggerIndex, const Chk::Trigger & briefingTrigger)
 {
     
-    Chk::ExtendedTrigDataPtr extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
-    if ( extension != nullptr )
+    if ( briefingTriggerIndex < this->briefingTriggers.size() )
     {
-        extension->notesStringId = (u32)stringId;
-        if ( stringId == Chk::StringId::NoString && extension->isBlank() )
-            deleteTriggerExtension(triggerIndex);
+        auto position = std::next(briefingTriggers.begin(), briefingTriggerIndex);
+        briefingTriggers.insert(position, briefingTrigger);
+    }
+    else
+        this->briefingTriggers.push_back(briefingTrigger);
+}
+
+void Scenario::deleteBriefingTrigger(size_t briefingTriggerIndex)
+{
+    if ( briefingTriggerIndex < briefingTriggers.size() )
+    {
+        auto briefingTrigger = std::next(briefingTriggers.begin(), briefingTriggerIndex);
+        briefingTriggers.erase(briefingTrigger);
     }
 }
 
-size_t Triggers::numBriefingTriggers() const
+void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo)
 {
-    return mbrf->numBriefingTriggers();
+    size_t briefingTriggerIndexMin = std::min(briefingTriggerIndexFrom, briefingTriggerIndexTo);
+    size_t briefingTriggerIndexMax = std::max(briefingTriggerIndexFrom, briefingTriggerIndexTo);
+    if ( briefingTriggerIndexMax < briefingTriggers.size() && briefingTriggerIndexFrom != briefingTriggerIndexTo )
+    {
+        if ( briefingTriggerIndexMax-briefingTriggerIndexMin == 1 && briefingTriggerIndexMax < briefingTriggers.size() ) // Move up or down by 1 using swap
+            std::swap(briefingTriggers[briefingTriggerIndexMin], briefingTriggers[briefingTriggerIndexMax]);
+        else // Move up or down by more than one, remove from present location, insert in the list at destination
+        {
+            auto briefingTrigger = briefingTriggers[briefingTriggerIndexFrom];
+            auto toErase = std::next(briefingTriggers.begin(), briefingTriggerIndexFrom);
+            briefingTriggers.erase(toErase);
+            auto insertPosition = std::next(briefingTriggers.begin(), briefingTriggerIndexTo-1);
+            briefingTriggers.insert(insertPosition, briefingTrigger);
+        }
+    }
 }
 
-std::shared_ptr<Chk::Trigger> Triggers::getBriefingTrigger(size_t briefingTriggerIndex)
+size_t Scenario::addSound(size_t stringId)
 {
-    return mbrf->getBriefingTrigger(briefingTriggerIndex);
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( this->soundPaths[i] == Chk::StringId::UnusedSound )
+        {
+            this->soundPaths[i] = (u32)stringId;
+            return i;
+        }
+    }
+    return Chk::TotalSounds;
 }
 
-const std::shared_ptr<Chk::Trigger> Triggers::getBriefingTrigger(size_t briefingTriggerIndex) const
+bool Scenario::stringIsSound(size_t stringId) const
 {
-    return mbrf->getBriefingTrigger(briefingTriggerIndex);
+    u32 u32StringId = (u32)stringId;
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( this->soundPaths[i] == u32StringId )
+            return true;
+    }
+    return false;
 }
 
-size_t Triggers::addBriefingTrigger(std::shared_ptr<Chk::Trigger> briefingTrigger)
+size_t Scenario::getSoundStringId(size_t soundIndex) const
 {
-    return mbrf->addBriefingTrigger(briefingTrigger);
+    if ( soundIndex < Chk::TotalSounds )
+        return this->soundPaths[soundIndex];
+    else
+        throw std::out_of_range(std::string("SoundIndex: ") + std::to_string((u32)soundIndex) + " is out of range for the WAV section!");
 }
 
-void Triggers::insertBriefingTrigger(size_t briefingTriggerIndex, std::shared_ptr<Chk::Trigger> briefingTrigger)
+void Scenario::setSoundStringId(size_t soundIndex, size_t soundStringId)
 {
-    mbrf->insertBriefingTrigger(briefingTriggerIndex, briefingTrigger);
+    if ( soundIndex < Chk::TotalSounds )
+        this->soundPaths[soundIndex] = (u32)soundStringId;
 }
 
-void Triggers::deleteBriefingTrigger(size_t briefingTriggerIndex)
+bool Scenario::triggerLocationUsed(size_t locationId) const
 {
-    mbrf->deleteBriefingTrigger(briefingTriggerIndex);
+    for ( const auto & trigger : this->triggers )
+    {
+        if ( trigger.locationUsed(locationId) )
+            return true;
+    }
+    return false;
 }
 
-void Triggers::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo)
+void Scenario::appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
 {
-    mbrf->moveBriefingTrigger(briefingTriggerIndexFrom, briefingTriggerIndexTo);
-}
-
-size_t Triggers::getSwitchNameStringId(size_t switchIndex) const
-{
-    return swnm->getSwitchNameStringId(switchIndex);
-}
-
-void Triggers::setSwitchNameStringId(size_t switchIndex, size_t stringId)
-{
-    swnm->setSwitchNameStringId(switchIndex, stringId);
-}
-
-size_t Triggers::addSound(size_t stringId)
-{
-    return wav->addSound(stringId);
-}
-
-bool Triggers::stringIsSound(size_t stringId) const
-{
-    return wav->stringIsSound(stringId);
-}
-
-size_t Triggers::getSoundStringId(size_t soundIndex) const
-{
-    return wav->getSoundStringId(soundIndex);
-}
-
-void Triggers::setSoundStringId(size_t soundIndex, size_t soundStringId)
-{
-    wav->setSoundStringId(soundIndex, soundStringId);
-}
-
-bool Triggers::locationUsed(size_t locationId) const
-{
-    return trig->locationUsed(locationId);
-}
-
-void Triggers::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
+    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) != Chk::StringUserFlag::None )
-            wav->appendUsage(stringId, stringUsers);
+        {
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( this->soundPaths[i] == stringId )
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Sound, i));
+            }
+        }
         if ( (userMask & Chk::StringUserFlag::Switch) != Chk::StringUserFlag::None )
-            swnm->appendUsage(stringId, stringUsers);
+        {
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->switchNames[i] == stringId )
+                    stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Switch, i));
+            }
+        }
         if ( (userMask & Chk::StringUserFlag::AnyTrigger) != Chk::StringUserFlag::None )
-            trig->appendUsage(stringId, stringUsers, userMask);
+        {
+            size_t numTriggers = this->triggers.size();
+            for ( size_t trigIndex=0; trigIndex<numTriggers; trigIndex++ )
+            {
+                const auto & trigger = this->triggers[trigIndex];
+                for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+                {
+                    if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction &&
+                        trigger.actions[actionIndex].stringUsed(stringId, Chk::StringUserFlag::TriggerAction) )
+                    {
+                        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::TriggerAction, trigIndex, actionIndex));
+                    }
+                    if ( (userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound &&
+                        trigger.actions[actionIndex].stringUsed(stringId, Chk::StringUserFlag::TriggerActionSound) )
+                    {
+                        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::TriggerActionSound, trigIndex, actionIndex));
+                    }
+                }
+            }
+        }
         if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) != Chk::StringUserFlag::None )
-            mbrf->appendUsage(stringId, stringUsers, userMask);
+        {
+            size_t numBriefingTriggers = briefingTriggers.size();
+            for ( size_t briefingTrigIndex=0; briefingTrigIndex<numBriefingTriggers; briefingTrigIndex++ )
+            {
+                const auto & briefingTrigger = briefingTriggers[briefingTrigIndex];
+                for ( size_t actionIndex=0; actionIndex<Chk::Trigger::MaxActions; actionIndex++ )
+                {
+                    if ( (userMask & Chk::StringUserFlag::BriefingTriggerAction) == Chk::StringUserFlag::BriefingTriggerAction &&
+                        briefingTrigger.actions[actionIndex].briefingStringUsed(stringId, Chk::StringUserFlag::BriefingTriggerAction) )
+                    {
+                        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::BriefingTriggerAction, briefingTrigIndex, actionIndex));
+                    }
+                    if ( (userMask & Chk::StringUserFlag::BriefingTriggerActionSound) == Chk::StringUserFlag::BriefingTriggerActionSound &&
+                        briefingTrigger.actions[actionIndex].briefingStringUsed(stringId, Chk::StringUserFlag::BriefingTriggerActionSound) )
+                    {
+                        stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::BriefingTriggerActionSound, briefingTrigIndex, actionIndex));
+                    }
+                }
+            }
+        }
     }
-    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) != Chk::StringUserFlag::None )
-        ktrg->appendUsage(stringId, stringUsers, userMask);
-}
-
-bool Triggers::stringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( storageScope == Chk::Scope::Game )
+    if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) != Chk::StringUserFlag::None )
     {
-        return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
-            (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-            (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->stringUsed(stringId, userMask) ||
-            (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId, userMask);
+        for ( const auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                extendedTrig.commentStringId == stringId) )
+            {
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExtendedTriggerComment, extendedTrig.trigNum));
+            }
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                extendedTrig.notesStringId == stringId))
+            {
+                stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ExtendedTriggerNotes, extendedTrig.trigNum));
+            }
+        }
     }
-    else
-        return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
 }
 
-bool Triggers::gameStringUsed(size_t stringId, u32 userMask) const
+bool Scenario::triggerStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
 {
-    return (userMask & Chk::StringUserFlag::AnyTrigger) > 0 && trig->gameStringUsed(stringId, userMask) ||
-        (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 && mbrf->stringUsed(stringId);
-}
-
-bool Triggers::editorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( storageScope == Chk::Scope::Game )
+    if ( storageScope == Chk::StrScope::Game )
     {
-        return (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && wav->stringUsed(stringId) ||
-            (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch && swnm->stringUsed(stringId) ||
-            (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && trig->commentStringUsed(stringId) ||
-            (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
-    }
-    else
-        return storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 && ktrg->editorStringUsed(stringId, userMask);
-}
-
-void Triggers::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
-{
-    trig->markUsedLocations(locationIdUsed);
-}
-
-void Triggers::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
-{
-    if ( storageScope == Chk::Scope::Game )
-    {
-        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-            wav->markUsedStrings(stringIdUsed);
-
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && this->stringIsSound(stringId) )
+            return true;
         if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-            swnm->markUsedStrings(stringIdUsed);
-
+        {
+            u32 u32StringId = (u32)stringId;
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->switchNames[i] == u32StringId )
+                    return true;
+            }
+        }
         if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
-            trig->markUsedStrings(stringIdUsed, userMask);
-
+        {
+            for ( const auto & trigger : this->triggers )
+            {
+                if ( trigger.stringUsed(stringId, userMask) )
+                    return true;
+            }
+        }
         if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
-            mbrf->markUsedStrings(stringIdUsed, userMask);
+        {
+            for ( const auto & briefingTrigger : briefingTriggers )
+            {
+                if ( briefingTrigger.briefingStringUsed(stringId, userMask) )
+                    return true;
+            }
+        }
     }
-    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
-        ktrg->markUsedEditorStrings(stringIdUsed, userMask);
+    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    {
+        for ( const auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                    extendedTrig.commentStringId == stringId) ||
+                ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                    extendedTrig.notesStringId == stringId) )
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
-void Triggers::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+bool Scenario::triggerGameStringUsed(size_t stringId, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
-        trig->markUsedGameStrings(stringIdUsed);
-
+    {
+        for ( const auto & trigger : this->triggers )
+        {
+            if ( trigger.gameStringUsed(stringId, userMask) )
+                return true;
+        }
+    }
     if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
-        mbrf->markUsedStrings(stringIdUsed);
+    {
+        for ( auto briefingTrigger : briefingTriggers )
+        {
+            if ( briefingTrigger.briefingStringUsed(stringId, userMask) )
+                return true;
+        }
+    }
+    return false;
 }
 
-void Triggers::markUsedEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
+bool Scenario::triggerEditorStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::Scope::Game )
+    if ( storageScope == Chk::StrScope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-            wav->markUsedStrings(stringIdUsed);
+        {
+            return stringIsSound(stringId);
+        }
+        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+        {
+            u32 u32StringId = (u32)stringId;
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->switchNames[i] == u32StringId )
+                    return true;
+            }
+        }
+        if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
+        {
+            for ( const auto & trigger : this->triggers )
+            {
+                if ( trigger.commentStringUsed(stringId) )
+                    return true;
+            }
+        }
+        if ( (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+        {
+            for ( const auto & extendedTrig : this->triggerExtensions )
+            {
+                if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                        extendedTrig.commentStringId == stringId) ||
+                    ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                        extendedTrig.notesStringId == stringId) )
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    {
+        for ( const auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( ((userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment &&
+                    extendedTrig.commentStringId == stringId) ||
+                ((userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes &&
+                    extendedTrig.notesStringId == stringId) )
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void Scenario::markUsedTriggerLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
+{
+    for ( const auto & trigger : this->triggers )
+        trigger.markUsedLocations(locationIdUsed);
+}
+
+void Scenario::markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask) const
+{
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+        {
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( this->soundPaths[i] != Chk::StringId::UnusedSound && this->soundPaths[i] < Chk::MaxStrings )
+                    stringIdUsed[this->soundPaths[i]] = true;
+            }
+        }
 
         if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-            swnm->markUsedStrings(stringIdUsed);
+        {
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->switchNames[i] > 0 && this->switchNames[i] < Chk::MaxStrings )
+                    stringIdUsed[this->switchNames[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
+        {
+            for ( const auto & trigger : this->triggers )
+                trigger.markUsedStrings(stringIdUsed, userMask);
+        }
+
+        if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
+        {            
+            for ( const auto & briefingTrigger : this->briefingTriggers )
+                briefingTrigger.markUsedBriefingStrings(stringIdUsed, userMask);
+        }
+    }
+    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    {        
+        for ( const auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment && extendedTrig.commentStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig.commentStringId] = true;
+
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes && extendedTrig.notesStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig.notesStringId] = true;
+        }
+    }
+}
+
+void Scenario::markUsedTriggerGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+{
+    if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
+    {
+        for ( const auto & trigger : this->triggers )
+            trigger.markUsedGameStrings(stringIdUsed, userMask);
+    }
+    if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
+    {
+        for ( const auto & briefingTrigger : briefingTriggers )
+            briefingTrigger.markUsedBriefingStrings(stringIdUsed, userMask);
+    }
+}
+
+void Scenario::markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask) const
+{
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
+        {
+            for ( size_t i=0; i<Chk::TotalSounds; i++ )
+            {
+                if ( this->soundPaths[i] != Chk::StringId::UnusedSound && this->soundPaths[i] < Chk::MaxStrings )
+                    stringIdUsed[this->soundPaths[i]] = true;
+            }
+        }
+
+        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
+        {
+            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+            {
+                if ( this->switchNames[i] > 0 && this->switchNames[i] < Chk::MaxStrings )
+                    stringIdUsed[this->switchNames[i]] = true;
+            }
+        }
 
         if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
-            trig->markUsedCommentStrings(stringIdUsed);
+        {
+            for ( const auto & trigger : this->triggers )
+                trigger.markUsedCommentStrings(stringIdUsed);
+        }
     }
-    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
-        ktrg->markUsedEditorStrings(stringIdUsed, userMask);
-}
-
-void Triggers::remapLocationIds(const std::map<u32, u32> & locationIdRemappings)
-{
-    trig->remapLocationIds(locationIdRemappings);
-}
-
-void Triggers::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
-{
-    if ( storageScope == Chk::Scope::Game )
+    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
     {
-        wav->remapStringIds(stringIdRemappings);
-        swnm->remapStringIds(stringIdRemappings);
-        trig->remapStringIds(stringIdRemappings);
-        mbrf->remapStringIds(stringIdRemappings);
+        for ( const auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment && extendedTrig.commentStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig.commentStringId] = true;
+
+            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes && extendedTrig.notesStringId != Chk::StringId::NoString )
+                stringIdUsed[extendedTrig.notesStringId] = true;
+        }
     }
-    else if ( storageScope == Chk::Scope::Editor )
-        ktrg->remapEditorStringIds(stringIdRemappings);
 }
 
-void Triggers::deleteLocation(size_t locationId)
+void Scenario::remapTriggerLocationIds(const std::map<u32, u32> & locationIdRemappings)
 {
-    trig->deleteLocation(locationId);
+    for ( auto & trigger : this->triggers )
+        trigger.remapLocationIds(locationIdRemappings);
 }
 
-void Triggers::deleteString(size_t stringId, Chk::Scope storageScope)
+void Scenario::remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope)
 {
-    if ( storageScope == Chk::Scope::Game )
+    if ( storageScope == Chk::StrScope::Game )
     {
-        wav->deleteString(stringId);
-        swnm->deleteString(stringId);
-        trig->deleteString(stringId);
-        mbrf->deleteString(stringId);
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            auto found = stringIdRemappings.find(this->soundPaths[i]);
+            if ( found != stringIdRemappings.end() )
+                this->soundPaths[i] = found->second;
+        }
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            auto found = stringIdRemappings.find(this->switchNames[i]);
+            if ( found != stringIdRemappings.end() )
+                this->switchNames[i] = found->second;
+        }
+        for ( auto & trigger : this->triggers )
+            trigger.remapStringIds(stringIdRemappings);
+        for ( auto & briefingTrigger : this->briefingTriggers )
+            briefingTrigger.remapBriefingStringIds(stringIdRemappings);
     }
-    else if ( storageScope == Chk::Scope::Editor )
-        ktrg->deleteEditorString(stringId);
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        for ( auto & extendedTrig : this->triggerExtensions )
+        {
+            auto replacement = stringIdRemappings.find(extendedTrig.commentStringId);
+            if ( replacement != stringIdRemappings.end() )
+                extendedTrig.commentStringId = replacement->second;
+
+            replacement = stringIdRemappings.find(extendedTrig.notesStringId);
+            if ( replacement != stringIdRemappings.end() )
+                extendedTrig.notesStringId = replacement->second;
+        }
+    }
 }
 
-void Triggers::set(std::unordered_map<SectionName, Section> & sections)
+void Scenario::deleteTriggerLocation(size_t locationId)
 {
-    uprp = GetSection<UprpSection>(sections, SectionName::UPRP);
-    upus = GetSection<UpusSection>(sections, SectionName::UPUS);
-    trig = GetSection<TrigSection>(sections, SectionName::TRIG);
-    mbrf = GetSection<MbrfSection>(sections, SectionName::MBRF);
-    
-    swnm = GetSection<SwnmSection>(sections, SectionName::SWNM);
-    wav = GetSection<WavSection>(sections, SectionName::WAV);
-    ktrg = GetSection<KtrgSection>(sections, SectionName::KTRG);
-    ktgp = GetSection<KtgpSection>(sections, SectionName::KTGP);
-
-    if ( uprp == nullptr )
-        uprp = UprpSection::GetDefault();
-    if ( upus == nullptr )
-        upus = UpusSection::GetDefault();
-    if ( trig == nullptr )
-        trig = TrigSection::GetDefault();
-    if ( mbrf == nullptr )
-        mbrf = MbrfSection::GetDefault();
-    if ( swnm == nullptr )
-        swnm = SwnmSection::GetDefault();
-    if ( wav == nullptr )
-        wav = WavSection::GetDefault();
-    if ( ktrg == nullptr )
-        ktrg = KtrgSection::GetDefault();
-    if ( ktgp == nullptr )
-        ktgp = KtgpSection::GetDefault();
+    for ( auto & trigger : this->triggers )
+        trigger.deleteLocation(locationId);
 }
 
-void Triggers::clear()
+void Scenario::deleteTriggerString(size_t stringId, Chk::StrScope storageScope)
 {
-    uprp = nullptr;
-    upus = nullptr;
-    trig = nullptr;
-    mbrf = nullptr;
+    if ( storageScope == Chk::StrScope::Game )
+    {
+        for ( size_t i=0; i<Chk::TotalSounds; i++ )
+        {
+            if ( this->soundPaths[i] == stringId )
+                this->soundPaths[i] = 0;
+        }
+        for ( size_t i=0; i<Chk::TotalSwitches; i++ )
+        {
+            if ( this->switchNames[i] == stringId )
+                this->switchNames[i] = 0;
+        }
+        for ( auto & trigger : this->triggers )
+            trigger.deleteString(stringId);
+        for ( auto & briefingTrigger : briefingTriggers )
+            briefingTrigger.deleteString(stringId);
+    }
+    else if ( storageScope == Chk::StrScope::Editor )
+    {
+        for ( auto & extendedTrig : this->triggerExtensions )
+        {
+            if ( extendedTrig.commentStringId == stringId )
+                extendedTrig.commentStringId = Chk::StringId::NoString;
 
-    swnm = nullptr;
-    wav = nullptr;
-    
-    ktrg = nullptr;
-    ktgp = nullptr;
+            if ( extendedTrig.notesStringId == stringId )
+                extendedTrig.notesStringId = Chk::StringId::NoString;
+        }
+    }
 }

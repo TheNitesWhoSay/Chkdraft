@@ -15,6 +15,8 @@ class MapPropertiesWindow : public WinLib::ClassWindow
     protected:
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+        
+        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
 
     private:
         bool refreshing;
@@ -44,6 +46,8 @@ class MapPropertiesWindow : public WinLib::ClassWindow
         WinLib::DropdownControl dropPlayerRaces[12];
         WinLib::TextControl textPlayerColor[8];
         WinLib::DropdownControl dropPlayerColor[8];
+        Chk::Rgb lastCustomColor[8];
+        WinLib::ButtonControl buttonColorProperties[8];
 };
 
 #endif

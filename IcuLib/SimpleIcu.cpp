@@ -10,7 +10,7 @@ namespace icux {
         int32_t resultSize = 0;
         UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
         const UChar* src = (const UChar*)utf16Str;
-        std::unique_ptr<char> buffer(new char[bufferSize]);
+        std::unique_ptr<char[]> buffer(new char[bufferSize]);
         u_strToUTF8(buffer.get(), bufferSize, &resultSize, src, (int32_t)length, &errorCode);
         return std::string(buffer.get(), (size_t)resultSize);
     }

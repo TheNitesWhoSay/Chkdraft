@@ -1,7 +1,7 @@
 #include "TextTrigCompiler.h"
 #include "EscapeStrings.h"
 #include "Math.h"
-#include "StringBuffer.h"
+#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -11,7 +11,7 @@
 #include <chrono>
 #undef PlaySound
 
-using namespace BufferedStream;
+using RareBufferedStream::StringBuffer;
 
 TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset) : useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
 {
@@ -23,7 +23,7 @@ TextTrigCompiler::~TextTrigCompiler()
 
 }
 
-bool TextTrigCompiler::compileTriggers(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+bool TextTrigCompiler::compileTriggers(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -33,32 +33,32 @@ bool TextTrigCompiler::compileTriggers(std::string & text, ScenarioPtr chk, Sc::
     try
     {
         std::vector<RawString> stringContents;
-        cleanText(text, stringContents);
-
-        std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
-        std::stringstream buildError;
-
-        if ( parseTriggers(text, stringContents, triggers, compilerError) )
+        if ( cleanText(text, stringContents, compilerError) )
         {
-            if ( buildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
-            {
-                chk->triggers.trig->swap(triggers);
-                auto finish = std::chrono::high_resolution_clock::now();
-                logger.info() << "Trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                return true;
-            }
-            else
-                compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
-        }
+            std::vector<Chk::Trigger> triggers;
+            std::stringstream buildError;
 
+            if ( parseTriggers(text, stringContents, triggers, compilerError) )
+            {
+                if ( buildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
+                {
+                    auto finish = std::chrono::high_resolution_clock::now();
+                    logger.info() << "Trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                    return true;
+                }
+                else
+                    compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
+            }
+        }
         CHKD_ERR(compilerError.str());
+
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
 
-bool TextTrigCompiler::compileTrigger(std::string & text, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex)
+bool TextTrigCompiler::compileTrigger(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndex)
 {
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
@@ -66,26 +66,27 @@ bool TextTrigCompiler::compileTrigger(std::string & text, ScenarioPtr chk, Sc::D
     try
     {
         std::vector<RawString> stringContents;
-        cleanText(text, stringContents);
-        std::deque<std::shared_ptr<Chk::Trigger>> triggers;
         std::stringstream compilerError;
-        std::stringstream buildError;
-
-        if ( parseTriggers(text, stringContents, triggers, compilerError) )
+        if ( cleanText(text, stringContents, compilerError) )
         {
-            if ( triggers.size() == 1 )
+            std::vector<Chk::Trigger> triggers;
+            std::stringstream buildError;
+
+            if ( parseTriggers(text, stringContents, triggers, compilerError) )
             {
-
-                if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
-                    return true;
+                if ( triggers.size() == 1 )
+                {
+                    if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
+                        return true;
+                    else
+                        compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
+                }
                 else
-                    compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
+                    compilerError << "Expected 1 trigger but found " << triggers.size() << " triggers.";
             }
-            else
-                compilerError << "Expected 1 trigger but found " << triggers.size() << " triggers.";
         }
-
         CHKD_ERR(compilerError.str());
+
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
@@ -94,7 +95,10 @@ bool TextTrigCompiler::compileTrigger(std::string & text, ScenarioPtr chk, Sc::D
 bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
 {
     std::vector<RawString> stringContents;
-    cleanText(text, stringContents);
+    std::stringstream unused {};
+    if ( !cleanText(text, stringContents, unused) )
+        return false;
+
     Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
 
     if ( parseConditionName(text, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
@@ -122,7 +126,7 @@ bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
+bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -156,7 +160,10 @@ bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Cond
 bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
 {
     std::vector<RawString> stringContents;
-    cleanText(text, stringContents);
+    std::stringstream unused {};
+    if ( !cleanText(text, stringContents, unused) )
+        return false;
+
     Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
     if ( parseActionName(text, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
     {
@@ -183,7 +190,7 @@ bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, ScenarioPtr chk, Sc::Data & scData, size_t trigIndex, bool silent)
+bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -205,7 +212,7 @@ bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Ar
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError) )
+    if ( parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex) )
         return true;
     else
     {
@@ -219,7 +226,7 @@ bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Ar
 
 // protected
 
-bool TextTrigCompiler::loadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
+bool TextTrigCompiler::loadCompiler(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
 {
     clearCompiler();
     
@@ -237,8 +244,8 @@ bool TextTrigCompiler::loadCompiler(ScenarioPtr chk, Sc::Data & scData, size_t t
         (!prepSwitches || prepSwitchTable(chk)) &&
         (!prepGroups || prepGroupTable(chk)) &&
         (!prepScripts || prepScriptTable(scData)) &&
-        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
-        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
+        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::StrScope::Game)) &&
+        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::StrScope::Editor));
 }
 
 void TextTrigCompiler::clearCompiler()
@@ -255,7 +262,7 @@ void TextTrigCompiler::clearCompiler()
     newExtendedStringTable.clear();
 }
 
-void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents) const
+bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const
 {
     logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -301,6 +308,11 @@ void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
         {
             dest += '\"';
             size_t closeQuotePos = findStringEnd(text, pos);
+            if ( closeQuotePos == std::string::npos )
+            {
+                error << "Cleaning failed! An unterminated close quote was encountered at position: " << pos << std::endl;
+                return false;
+            }
             EscString escString = text.substr(pos, closeQuotePos-pos);
             RawString rawString;
             convertStr(escString, rawString);
@@ -326,9 +338,10 @@ void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
 
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Finished text trig cleaning in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+    return true;
 }
 
-bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::deque<Chk::TriggerPtr> & output, std::stringstream & error)
+bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
 {
     text.push_back('\0'); // Add a terminating null character
 
@@ -340,7 +353,8 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
         actionEnd = 0,
         flagsEnd = 0,
         argEnd = 0,
-        nextString = 0;
+        nextString = 0,
+        trigIndex = 0;
 
     Expecting expecting = Expecting::Trigger_EndOfText;
     u32 line = 1,
@@ -350,9 +364,9 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
 
     Chk::Condition::VirtualType conditionId;
     Chk::Action::VirtualType actionId;
-    std::shared_ptr<Chk::Trigger> currTrig = nullptr;
-    Chk::Condition* currCondition = nullptr;
-    Chk::Action* currAction = nullptr;
+    Chk::Trigger currTrig {};
+    Chk::Condition* currCondition = &currTrig.conditions[0];
+    Chk::Action* currAction = &currTrig.actions[0];
 
     while ( pos < text.size() )
     {
@@ -368,7 +382,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
             case Expecting::Trigger_EndOfText:
                 //      trigger
                 // or   %NULL
-                if ( !parsePartZero(text, currTrig, currCondition, currAction, error, pos, line, expecting) )
+                if ( !parsePartZero(text, error, pos, line, expecting) )
                     return false;
                 break;
 
@@ -378,7 +392,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 // or   %PlayerName:Value)
                 // or   %PlayerName)
                 // or   )
-                if ( !parsePartOne(text, stringContents, nextString, *currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
+                if ( !parsePartOne(text, stringContents, nextString, currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
                     return false;
                 break;
 
@@ -403,7 +417,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 // or   actions:
                 // or   flags:
                 // or   }
-                if ( !parsePartFour(text, *currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
+                if ( !parsePartFour(text, currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
                     flags, argIndex, numConditions, currCondition) )
                     return false;
                 break;
@@ -429,7 +443,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 // or   ;%ActionName(
                 // or   flags:
                 // or   }
-                if ( !parsePartSeven(text, *currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
+                if ( !parsePartSeven(text, currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
                     actionId, argIndex, numActions, currAction) )
                     return false;
                 break;
@@ -438,7 +452,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 //      );
                 // or   %ActionArg,
                 // or   %ActionArg);
-                if ( !parsePartEight(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId) )
+                if ( !parsePartEight(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId, trigIndex, numActions-1) )
                     return false;
                 break;
 
@@ -452,7 +466,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
             case Expecting::ExecutionFlags:
                 //     ;
                 // or  %32BitFlags;
-                if ( !parsePartTen(text, *currTrig, error, pos, line, expecting, flagsEnd) )
+                if ( !parsePartTen(text, currTrig, error, pos, line, expecting, flagsEnd) )
                     return false;
                 break;
 
@@ -468,6 +482,8 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 numActions = 0;
 
                 output.push_back(currTrig);
+                currTrig = Chk::Trigger {};
+                trigIndex++;
                 expecting = Expecting::Trigger_EndOfText;
                 if ( text[pos] == '\0' ) // End of Text
                 {
@@ -482,7 +498,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
     return true;
 }
 
-inline bool TextTrigCompiler::parsePartZero(std::string & text, Chk::TriggerPtr & currTrig, Chk::Condition* & currCondition, Chk::Action* & currAction, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
+inline bool TextTrigCompiler::parsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
 {
     //      trigger
     // or   %NULL
@@ -519,9 +535,6 @@ inline bool TextTrigCompiler::parsePartZero(std::string & text, Chk::TriggerPtr 
         error << "Line: " << line << std::endl << std::endl << "Expected: \"Trigger\" or End of Text";
         return false;
     }
-    currTrig = Chk::TriggerPtr(new Chk::Trigger());
-    currCondition = &currTrig->conditions[0];
-    currAction = &currTrig->actions[0];
     return true;
 }
 
@@ -1052,7 +1065,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
 }
 
 inline bool TextTrigCompiler::parsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
-    u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId)
+    u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId, size_t trigIndex, size_t actionIndex)
 {
     //      );
     // or   %ActionArg,
@@ -1096,7 +1109,7 @@ inline bool TextTrigCompiler::parsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos )
         {
             std::stringstream argumentError;
-            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
+            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError, trigIndex, actionIndex) )
             {
                 pos = argEnd;
                 argIndex ++;
@@ -1119,7 +1132,7 @@ inline bool TextTrigCompiler::parsePartEight(std::string & text, std::vector<Raw
         if ( argEnd != std::string::npos ) // Has argument
         {
             std::stringstream argumentError;
-            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError) )
+            if ( parseActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError, trigIndex, actionIndex) )
             {
                 pos = argEnd+1;
                 argIndex ++;
@@ -1897,7 +1910,7 @@ bool TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawStri
     return false;
 }
 
-bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error)
+bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error, size_t trigIndex, size_t actionIndex)
 {
     switch ( arg.type )
     {
@@ -1906,7 +1919,7 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
                 parseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Action::ArgType::String:
-            returnMsg( parseString(text, stringContents, nextString, currAction.stringId, pos, end) ||
+            returnMsg( parseString(text, stringContents, nextString, currAction.stringId, pos, end, trigIndex, actionIndex, false) ||
                 parseLong(text, currAction.stringId, pos, end),
                 "Expected: String or stringNum" );
         case Chk::Action::ArgType::Player:
@@ -1943,9 +1956,9 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Order or 1-byte number" );
         case Chk::Action::ArgType::Sound:
-            returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end) ||
+            returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end, trigIndex, actionIndex) ||
                 parseLong(text, currAction.soundStringId, pos, end),
-                "Expected: Wav name or 4-byte wavID" );
+                "Expected: Sound name or 4-byte soundID" );
         case Chk::Action::ArgType::Duration:
             returnMsg( parseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );
@@ -2032,7 +2045,7 @@ bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_
     return parseBinaryLong(arg, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex, bool isSound)
 {
     if ( text.compare(pos, end-pos, "NOSTRING") == 0 )
     {
@@ -2050,16 +2063,16 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
         {
             for ( auto it = matches.first; it != matches.second; ++it )
             {
-                StringTableNodePtr & node = it->second;
-                if ( node->scStr->compare<RawString>(str) == 0 )
+                auto & node = *it->second;
+                if ( node.scStr.compare<RawString>(str) == 0 )
                 {
-                    if ( node->unused )
-                        node->unused = false;
+                    if ( node.unused )
+                        node.unused = false;
 
-                    if ( node->stringId == Chk::StringId::NoString )
-                        node->assignees.push_back(&dest);
+                    if ( node.stringId == Chk::StringId::NoString )
+                        node.assignees.push_back(StringAssignee {trigIndex, actionIndex, isSound});
                     else
-                        dest = node->stringId;
+                        dest = node.stringId;
 
                     return true;
                 }
@@ -2067,13 +2080,13 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
         }
 
         // No matches
-        StringTableNodePtr node = StringTableNodePtr(new StringTableNode({}));
+        auto node = std::make_unique<StringTableNode>();
         node->unused = false;
-        node->scStr = ScStrPtr(new ScStr(str));
+        node->scStr = ScStr(str);
         node->stringId = 0;
-        node->assignees.push_back(&dest);
-        newStringTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(str), node));
-        unassignedStrings.push_back(node);
+        node->assignees.push_back(StringAssignee {trigIndex, actionIndex, isSound});
+        auto inserted = newStringTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(strHash(str), std::move(node)));
+        unassignedStrings.push_back(inserted->second.get());
         return true;
     }
     else
@@ -2718,7 +2731,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
     return success;
 }
 
-bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end)
+bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex)
 {
     if ( text.compare(pos, end-pos, "NOWAV") == 0  )
     {
@@ -2726,7 +2739,7 @@ bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString>
         return true;
     }
     else
-        return parseString(text, stringContents, nextString, dest, pos, end);
+        return parseString(text, stringContents, nextString, dest, pos, end, trigIndex, actionIndex, true);
 }
 
 bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
@@ -3528,18 +3541,15 @@ bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos
     return false;
 }
 
-// private
-
-bool TextTrigCompiler::prepLocationTable(ScenarioPtr map)
+bool TextTrigCompiler::prepLocationTable(const Scenario & map)
 {
     LocationTableNode locNode = {};
-    locationTable.reserve(map->layers.numLocations()+1);
+    locationTable.reserve(map.numLocations()+1);
     locNode.locationId = 0;
     locNode.locationName = "No Location";
     locationTable.insert(std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode));
-    for ( u32 i=1; i<=map->layers.numLocations(); i++ )
+    for ( u32 i=1; i<=map.numLocations(); i++ )
     {
-        Chk::LocationPtr loc = map->layers.getLocation(i);
         locNode.locationName = "";
 
         if ( i == Chk::LocationId::Anywhere )
@@ -3548,76 +3558,65 @@ bool TextTrigCompiler::prepLocationTable(ScenarioPtr map)
             locNode.locationName = "Anywhere";
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else
+        else if ( auto gameString = map.getLocationName<RawString>(i, Chk::StrScope::Game) )
         {
-            auto gameString = map->strings.getLocationName<RawString>(i, Chk::Scope::Game);
-            auto editorString = map->strings.getLocationName<RawString>(i, Chk::Scope::Editor);
-            if ( gameString != nullptr )
-            {
-                locNode.locationId = u8(i);
-                locNode.locationName = *gameString;
-                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
-            }
-            if ( editorString != nullptr )
-            {
-                locNode.locationId = u8(i);
-                locNode.locationName = *editorString;
-                locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
-            }
+            locNode.locationId = u8(i);
+            locNode.locationName = *gameString;
+            locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
+        }
+        else if ( auto editorString = map.getLocationName<RawString>(i, Chk::StrScope::Editor) )
+        {
+            locNode.locationId = u8(i);
+            locNode.locationName = *editorString;
+            locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
     }
     locationTable.reserve(locationTable.size());
     return true;
 }
 
-bool TextTrigCompiler::prepUnitTable(ScenarioPtr map)
+bool TextTrigCompiler::prepUnitTable(const Scenario & map)
 {
     UnitTableNode unitNode = {};
     u16 stringId = 0;
     for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        auto gameString = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
-        auto editorString = map->strings.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
+        auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Game);
+        auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Editor);
         
-        if ( gameString == nullptr && editorString == nullptr )
+        if ( auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Game) )
         {
-            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+            unitNode.unitName = *gameString;
+            unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
+        }
+        else if ( auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Editor) )
+        {
+            unitNode.unitName = *editorString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
         else
         {
-            if ( gameString != nullptr )
-            {
-                unitNode.unitName = *gameString;
-                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
-            }
-            if ( editorString != nullptr )
-            {
-                unitNode.unitName = *editorString;
-                unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
-            }
+            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+            unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
     }
     return true;
 }
 
-bool TextTrigCompiler::prepSwitchTable(ScenarioPtr map)
+bool TextTrigCompiler::prepSwitchTable(const Scenario & map)
 {
     SwitchTableNode switchNode = {};
     size_t stringId = 0;
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        auto gameString = map->strings.getSwitchName<RawString>(switchIndex, Chk::Scope::Game);
-        auto editorString = map->strings.getSwitchName<RawString>(switchIndex, Chk::Scope::Editor);
-        
-        if ( gameString != nullptr )
+        if ( auto gameString = map.getSwitchName<RawString>(switchIndex, Chk::StrScope::Game) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *gameString;
             switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
         }
-        if ( editorString != nullptr )
+        else if ( auto editorString = map.getSwitchName<RawString>(switchIndex, Chk::StrScope::Editor) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *editorString;
@@ -3627,21 +3626,18 @@ bool TextTrigCompiler::prepSwitchTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::prepGroupTable(ScenarioPtr map)
+bool TextTrigCompiler::prepGroupTable(const Scenario & map)
 {
     GroupTableNode groupNode = {};
     for ( u32 i=0; i<Chk::TotalForces; i++ )
     {
-        auto gameString = map->strings.getForceName<RawString>((Chk::Force)i, Chk::Scope::Game);
-        auto editorString = map->strings.getForceName<RawString>((Chk::Force)i, Chk::Scope::Editor);
-
-        if ( gameString != nullptr )
+        if ( auto gameString = map.getForceName<RawString>((Chk::Force)i, Chk::StrScope::Game) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *gameString;
             groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
         }
-        if ( editorString != nullptr )
+        else if ( auto editorString = map.getForceName<RawString>((Chk::Force)i, Chk::StrScope::Editor) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *editorString;
@@ -3651,47 +3647,45 @@ bool TextTrigCompiler::prepGroupTable(ScenarioPtr map)
     return true;
 }
 
-bool TextTrigCompiler::prepStringTable(ScenarioPtr map, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
+bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::StrScope & scope)
 {
     std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
-    u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
-    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, scope, userMask);
-    size_t stringCapacity = map->strings.getCapacity(scope);
+    u32 userMask = scope == Chk::StrScope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
+    map.markValidUsedStrings(stringUsed, Chk::StrScope::Either, scope, userMask);
+    size_t stringCapacity = map.getCapacity(scope);
     for ( size_t stringId=1; stringId<=stringCapacity; stringId++ )
     {
         if ( stringUsed[stringId] )
         {
-            RawStringPtr rawString = map->strings.getString<RawString>(stringId, scope);
-            if ( rawString != nullptr )
+            if ( auto rawString = map.getString<RawString>(stringId, scope) )
             {
-                StringTableNodePtr node = StringTableNodePtr(new StringTableNode({}));
+                auto node = std::make_unique<StringTableNode>();
                 node->unused = false;
-                node->scStr = ScStrPtr(new ScStr(*rawString));
+                node->scStr = ScStr(*rawString);
                 node->stringId = (u32)stringId;
-                stringHashTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(*rawString), node));
+                stringHashTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(strHash(*rawString), std::move(node)));
             }
         }
     }
 
-    if ( scope == Chk::Scope::Game )
+    if ( scope == Chk::StrScope::Game )
     {
-        auto & triggers = map->triggers;
-        size_t numTriggers = triggers.numTriggers();
+        size_t numTriggers = map.numTriggers();
         for ( size_t trigIndex = 0; trigIndex < numTriggers; trigIndex++ )
         {
             bool inReplacedRange = trigIndex >= trigIndexBegin && trigIndex < trigIndexEnd;
-            const Chk::TriggerPtr trigger = triggers.getTrigger(trigIndex);
+            const Chk::Trigger & trigger = map.getTrigger(trigIndex);
             for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
             {
-                const Chk::Action & action = trigger->actions[actionIndex];
+                const Chk::Action & action = trigger.actions[actionIndex];
                 const Chk::Action::Type & actionType = action.actionType;
                 if ( actionType < Chk::Action::NumActionTypes )
                 {
                     if ( Chk::Action::actionUsesStringArg[actionType] && action.stringId > 0 )
-                        prepTriggerString(*map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
+                        prepTriggerString(map, stringHashTable, action.stringId, inReplacedRange, Chk::StrScope::Game);
 
                     if ( Chk::Action::actionUsesSoundArg[actionType] && action.soundStringId > 0 )
-                        prepTriggerString(*map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
+                        prepTriggerString(map, stringHashTable, action.soundStringId, inReplacedRange, Chk::StrScope::Game);
                 }
             }
         }
@@ -3700,10 +3694,9 @@ bool TextTrigCompiler::prepStringTable(ScenarioPtr map, std::unordered_multimap<
     return true;
 }
 
-void TextTrigCompiler::prepTriggerString(Scenario & scenario, std::unordered_multimap<size_t, StringTableNodePtr> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
+void TextTrigCompiler::prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::StrScope & scope)
 {
-    RawStringPtr rawString = scenario.strings.getString<RawString>(stringId, scope);
-    if ( rawString != nullptr )
+    if ( auto rawString = scenario.getString<RawString>(stringId, scope) )
     {
         size_t hash = strHash(*rawString);
         bool exists = false;
@@ -3712,7 +3705,7 @@ void TextTrigCompiler::prepTriggerString(Scenario & scenario, std::unordered_mul
         {
             for ( auto it = matches.first; it != matches.second; ++it )
             {
-                if ( it->second->stringId == stringId && it->second->scStr->compare(*rawString) == 0 )
+                if ( it->second->stringId == stringId && it->second->scStr.compare(*rawString) == 0 )
                 {
                     exists = true;
                     if ( it->second->unused && !inReplacedRange )
@@ -3725,11 +3718,11 @@ void TextTrigCompiler::prepTriggerString(Scenario & scenario, std::unordered_mul
 
         if ( !exists )
         {
-            StringTableNodePtr node = StringTableNodePtr(new StringTableNode({}));
+            auto node = std::make_unique<StringTableNode>();
             node->unused = inReplacedRange;
-            node->scStr = ScStrPtr(new ScStr(*rawString));
+            node->scStr = ScStr(*rawString);
             node->stringId = stringId;
-            stringHashTable.insert(std::pair<size_t, StringTableNodePtr>(strHash(*rawString), node));
+            stringHashTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(strHash(*rawString), std::move(node)));
         }
     }
 }
@@ -3748,20 +3741,25 @@ bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
     return true;
 }
 
-bool TextTrigCompiler::buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::deque<Chk::TriggerPtr> triggers, std::stringstream & error) const
+bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const
 {
-    auto strBackup = scenario->strings.backup();
-    std::deque<Chk::TriggerPtr> replacedTriggers = scenario->triggers.replaceRange(trigIndexBegin, trigIndexEnd, triggers);
+    auto strBackup = scenario.copyStrings();
+    std::vector<Chk::Trigger> replacedTriggers = scenario.replaceRange(trigIndexBegin, trigIndexEnd, triggers);
     bool success = true;
     try {
-        scenario->strings.deleteUnusedStrings(Chk::Scope::Both);
+        scenario.deleteUnusedStrings(Chk::StrScope::Both);
         for ( auto str : unassignedStrings )
         {
-            str->stringId = (u32)scenario->strings.addString<RawString>(str->scStr->str, Chk::Scope::Game);
+            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::StrScope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
                 for ( auto assignee : str->assignees )
-                    *assignee = str->stringId;
+                {
+                    if ( assignee.isSound )
+                        scenario.triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
+                    else
+                        scenario.triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
+                }
             }
             else
             {
@@ -3777,8 +3775,8 @@ bool TextTrigCompiler::buildNewMap(ScenarioPtr scenario, size_t trigIndexBegin, 
     if ( !success )
     {
         size_t unreplaceEndIndex = trigIndexBegin + replacedTriggers.size();
-        auto unused = scenario->triggers.replaceRange(trigIndexBegin, unreplaceEndIndex, replacedTriggers);
-        scenario->strings.restore(strBackup);
+        auto unused = scenario.replaceRange(trigIndexBegin, unreplaceEndIndex, replacedTriggers);
+        scenario.swapStrings(strBackup);
     }
     return success;
 }

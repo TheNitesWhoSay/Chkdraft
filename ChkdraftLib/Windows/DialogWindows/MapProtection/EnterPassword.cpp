@@ -19,12 +19,11 @@ void EnterPasswordDialog::DestroyThis()
 
 void EnterPasswordDialog::ButtonLogin()
 {
-    std::string password;
-    if ( editPassword.GetWinText(password) )
+    if ( auto password = editPassword.GetWinText() )
     {
         editPassword.SetText("");
-        bool success = CM->login(password);
-        password.clear();
+        bool success = CM->login(*password);
+        password->clear();
         if ( success )
         {
             ClassDialog::DestroyDialog();
@@ -33,8 +32,6 @@ void EnterPasswordDialog::ButtonLogin()
         else
             mb("Login Failed!");
     }
-
-    password.clear();
 }
 
 BOOL EnterPasswordDialog::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)

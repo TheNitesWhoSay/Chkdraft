@@ -23,34 +23,7 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-    /*if ( maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\BroodWar\\Helms Deep AnnaModz 8.4.scx") )*/
-    //maps.NewMap(Sc::Terrain::Tileset::Installation, 64, 64);
-    /*{
-        //ShowWindow(getHandle(), SW_MAXIMIZE); // If a maximized window is desirable for testing
 
-        trigEditorWindow.CreateThis(getHandle());
-        trigEditorWindow.ChangeTab(3);
-
-        OpenMapSettings(LOWORD(ID_SCENARIO_SOUNDEDITOR));
-    }*/
-    
-    /*ChkdStringPtr gameString;
-    ChkdStringPtr editorString;
-    while ( true )
-    {
-        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::None, 0, 0);
-        std::string resultStr;
-        switch ( result )
-        {
-            case ChkdStringInputDialog::Result::BothStringsChanged: resultStr = "BothStringsChanged"; break;
-            case ChkdStringInputDialog::Result::GameStringChanged: resultStr = "GameStringChanged"; break;
-            case ChkdStringInputDialog::Result::EditorStringChanged: resultStr = "EditorStringChanged"; break;
-            default: resultStr = "NoStringChanged"; break;
-        }
-        logger.info() << "GetChkdString returned: " << resultStr << " with gameString: \""
-            << (gameString != nullptr ? *gameString : "(null)") << "\", and editorString: \""
-            << (editorString != nullptr ? *editorString : "(null)") << "\"" << std::endl;
-    }*/
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
@@ -68,8 +41,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     SetupLogging();
     if ( !CreateThis() )
         return 1;
-    
-    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+
     InitCommonControls();
     UpdateLogLevelCheckmarks(logger.getLogLevel());
     ShowWindow(getHandle(), nCmdShow);
@@ -79,6 +51,8 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 #endif
     mainPlot.loggerWindow.Refresh();
     UpdateWindow();
+
+    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
     this->OnLoadTest();
@@ -114,7 +88,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->layers.getTileset(), CM->getPalette()) )
+        if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset(), CM->getPalette()) )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
@@ -126,10 +100,9 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
 void Chkdraft::SetupLogging()
 {
-    std::string loggerPath;
-    if ( GetLoggerPath(loggerPath) )
+    if ( auto loggerPath = GetLoggerPath() )
     {
-        logFilePath = loggerPath + Logger::getTimestamp();
+        logFilePath = *loggerPath + Logger::getTimestamp() + ".log";
         std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger(logger.getLogLevel()));
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
@@ -527,9 +500,10 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_EDIT_REDO1: CM->redo(); break;
     case ID_EDIT_CUT1: maps.cut(); break;
     case ID_EDIT_COPY1: maps.copy(); break;
-    case ID_EDIT_PASTE1: maps.startPaste(true); break;
+    case ID_EDIT_PASTE1: maps.startPaste(false); break;
     case ID_EDIT_SELECTALL: CM->selectAll(); break;
     case ID_EDIT_DELETE: CM->deleteSelection(); break;
+    case ID_EDIT_CLEARSELECTIONS: CM->clearSelection(); break;
     case ID_EDIT_PROPERTIES: maps.properties(); break;
 
         // View
@@ -613,7 +587,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         // Help
     case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
-    case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
+    case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/TheNitesWhoSay/Chkdraft/"); break;
     case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;
 
     default:
@@ -749,7 +723,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
             case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
             case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
             case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::WavEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
         }
         ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     }

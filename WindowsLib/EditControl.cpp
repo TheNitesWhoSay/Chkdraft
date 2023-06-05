@@ -116,45 +116,6 @@ namespace WinLib {
         WindowsItem::DisableThis();
     }
 
-    template <typename numType>
-    bool EditControl::SetEditNum(numType num)
-    {
-        return SetText(std::to_string(num));
-    }
-    template bool EditControl::SetEditNum<u8>(u8 num);
-    template bool EditControl::SetEditNum<s8>(s8 num);
-    template bool EditControl::SetEditNum<u16>(u16 num);
-    template bool EditControl::SetEditNum<s16>(s16 num);
-    template bool EditControl::SetEditNum<u32>(u32 num);
-    template bool EditControl::SetEditNum<s32>(s32 num);
-    template bool EditControl::SetEditNum<int>(int num);
-    template bool EditControl::SetEditNum<size_t>(size_t num);
-
-    template <typename numType>
-    bool EditControl::SetEditBinaryNum(numType num)
-    {
-        char newText[36] = { };
-        u32 temp = (u32)num;
-        u8 numBits = (sizeof(numType)*8);
-        _itoa_s(temp, newText, 36, 2);
-        size_t length = std::strlen(newText);
-        if ( length > 0 && length < numBits && numBits < 36 )
-        {
-            std::memmove(&newText[numBits-length], newText, length);
-            std::memset(newText, '0', numBits-length);
-            newText[numBits] = '\0';
-        }
-        return SetText(newText);
-    }
-    template bool EditControl::SetEditBinaryNum<u8>(u8 num);
-    template bool EditControl::SetEditBinaryNum<s8>(s8 num);
-    template bool EditControl::SetEditBinaryNum<u16>(u16 num);
-    template bool EditControl::SetEditBinaryNum<s16>(s16 num);
-    template bool EditControl::SetEditBinaryNum<u32>(u32 num);
-    template bool EditControl::SetEditBinaryNum<s32>(s32 num);
-    template bool EditControl::SetEditBinaryNum<int>(int num);
-    template bool EditControl::SetEditBinaryNum<size_t>(size_t num);
-
     void EditControl::SetTextLimit(u32 newLimit)
     {
         SendMessage(getHandle(), EM_SETLIMITTEXT, (WPARAM)newLimit, 0);
@@ -168,12 +129,12 @@ namespace WinLib {
     void EditControl::ExpandToText()
     {
         HDC hDC = GetDC(getHandle());
-        std::string text;
-        if ( hDC != NULL && GetWinText(text) && text.length() > 0 )
+        auto text = GetWinText();
+        if ( hDC != NULL && text && text->length() > 0 )
         {
             SIZE strSize = { };
             RECT textRect = { };
-            if ( GetTextExtentPoint32(hDC, icux::toUistring(text).c_str(), GetTextLength(), &strSize) == TRUE &&
+            if ( GetTextExtentPoint32(hDC, icux::toUistring(*text).c_str(), GetTextLength(), &strSize) == TRUE &&
                  GetClientRect(getHandle(), &textRect) == TRUE &&
                  strSize.cx > (textRect.right-textRect.left) )
             {
@@ -194,18 +155,18 @@ namespace WinLib {
     bool EditControl::GetEditBinaryNum(u16 & dest)
     {
         u16 temp = 0;
-        std::string editText;
-        if ( GetWinText(editText) && editText.length() > 0 )
+        auto editText = GetWinText();
+        if ( editText && editText->length() > 0 )
         {
             const u16 u16BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                          0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
 
-            size_t length = editText.length();
+            size_t length = editText->length();
             for ( size_t i=length-1; i<length; i-- )
             {
-                if ( editText[i] == '1' )
+                if ( editText.value()[i] == '1' )
                     temp |= u16BitValues[(length-1)-i];
-                else if ( editText[i] != '0' )
+                else if ( editText.value()[i] != '0' )
                     return false;
             }
             dest = temp;
@@ -218,20 +179,20 @@ namespace WinLib {
     bool EditControl::GetEditBinaryNum(u32 & dest)
     {
         u32 temp = 0;
-        std::string editText;
-        if ( GetWinText(editText) && editText.length() > 0 )
+        auto editText = GetWinText();
+        if ( editText && editText->length() > 0 )
         {
             const u32 u32BitValues[] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
                                          0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
                                          0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
                                          0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 
-            size_t length = editText.length();
+            size_t length = editText->length();
             for ( size_t i=length-1; i<length; i-- )
             {
-                if ( editText[i] == '1' )
+                if ( editText.value()[i] == '1' )
                     temp |= u32BitValues[(length-1)-i];
-                else if ( editText[i] != '0' )
+                else if ( editText.value()[i] != '0' )
                     return false;
             }
             dest = temp;
@@ -243,13 +204,13 @@ namespace WinLib {
 
     bool EditControl::GetHexByteString(u8* dest, u32 destLength)
     {
-        std::string text;
-        if ( GetWinText(text) && text.length() > 0 )
+        auto text = GetWinText();
+        if ( text && text->length() > 0 )
         {
             char strChunk[9] = { };
             strChunk[8] = '\0';
 
-            size_t strLength = text.length();
+            size_t strLength = text->length();
             if ( strLength > size_t(destLength)*2 ) // Don't read past the number of requested bytes
                 strLength = size_t(destLength)*2;
 
@@ -260,7 +221,7 @@ namespace WinLib {
             for ( size_t chunk=0; chunk<numChunks; chunk++ ) // For all full chunks
             {
                 for ( size_t i=0; i<8; i++ )
-                    strChunk[i] = text[chunk*8+i];
+                    strChunk[i] = text.value()[chunk*8+i];
 
                 u32 result = strtoul(strChunk, nullptr, 16);
                 dest[chunk*4  ] = u8( (result&0xFF000000) >> 24 );
@@ -277,14 +238,14 @@ namespace WinLib {
                 {
                     strChunk[strRemainder] = '\0';
                     for ( size_t i=0; i<strRemainder; i++ )
-                        strChunk[i] = text[strRemainderStart+i];
+                        strChunk[i] = text.value()[strRemainderStart+i];
                 }
                 else // Half a byte given, pad with a zero
                 {
                     strChunk[strRemainder] = '0';
                     strChunk[strRemainder+1] = '\0';
                     for ( size_t i=0; i<strRemainder; i++ )
-                        strChunk[i] = text[strRemainderStart+i];
+                        strChunk[i] = text.value()[strRemainderStart+i];
                 }
             
                 u32 result = strtoul(strChunk, nullptr, 16);
@@ -376,36 +337,6 @@ namespace WinLib {
         SetText(byteString);
         return true;
     }
-
-    template <typename numType>
-    bool EditControl::GetEditNum(numType & dest)
-    {
-        std::string text;
-        if ( GetWinText(text) && text.length() > 0 )
-        {
-            errno = 0;
-            char* endPtr = nullptr;
-            long long temp = std::strtoll(text.c_str(), &endPtr, 0);
-            if ( temp != 0 )
-            {
-                dest = (numType)temp;
-                return true;
-            }
-            else if ( errno == 0 && endPtr == &text[text.size()] )
-            {
-                dest = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-    template bool EditControl::GetEditNum<u8>(u8 & dest);
-    template bool EditControl::GetEditNum<s8>(s8 & dest);
-    template bool EditControl::GetEditNum<u16>(u16 & dest);
-    template bool EditControl::GetEditNum<s16>(s16 & dest);
-    template bool EditControl::GetEditNum<u32>(u32 & dest);
-    template bool EditControl::GetEditNum<s32>(s32 & dest);
-    template bool EditControl::GetEditNum<int>(int & dest);
 
     LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {

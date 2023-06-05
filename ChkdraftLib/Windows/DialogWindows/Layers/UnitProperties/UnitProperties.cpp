@@ -126,11 +126,11 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        if ( unit->owner != newOwner ) // If the current and new owners are different
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        if ( unit.owner != newOwner ) // If the current and new owners are different
         {
-            u8 prevOwner = unit->owner;
-            unit->owner = newOwner;
+            u8 prevOwner = unit.owner;
+            unit.owner = newOwner;
             ChangeUnitsDisplayedOwner(unitIndex, newOwner);
             undoableChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, prevOwner));
         }
@@ -172,24 +172,24 @@ void UnitPropertiesWindow::SetListRedraw(bool allowRedraw)
         listUnits.SetRedraw(false);
 }
 
-bool UnitPropertiesWindow::AddUnitItem(u16 index, Chk::UnitPtr unit)
+bool UnitPropertiesWindow::AddUnitItem(u16 index, const Chk::Unit & unit)
 {
     char owner[32] = {}, padding[2] = { '\0', '\0' },
         xc[32] = {}, yc[32] = {}, cIndex[32] = {};
 
-    u16 unitId = (u16)unit->type;
+    u16 unitId = (u16)unit.type;
 
-    if ( unit->owner < 9 )
+    if ( unit.owner < 9 )
         padding[0] = '0';
     else
         padding[0] = '\0';
 
-    std::snprintf(owner, sizeof(owner), "Player %s%i", padding, unit->owner + 1);
-    std::strcpy(xc, std::to_string(unit->xc).c_str());
-    std::strcpy(yc, std::to_string(unit->yc).c_str());
+    std::snprintf(owner, sizeof(owner), "Player %s%i", padding, unit.owner + 1);
+    std::strcpy(xc, std::to_string(unit.xc).c_str());
+    std::strcpy(yc, std::to_string(unit.yc).c_str());
     std::strcpy(cIndex, std::to_string(index).c_str());
 
-    ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitId, true);
+    auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitId, true);
 
     listUnits.AddRow(4, index);
     listUnits.SetItemText(index, (int)UnitListColumn::Name, *unitName);
@@ -225,7 +225,7 @@ void UnitPropertiesWindow::UpdateEnabledState()
     if ( selections.hasUnits() )
     {
         EnableUnitEditing();
-        Chk::UnitPtr unit = CM->layers.getUnit(selections.getFirstUnit());
+        const Chk::Unit & unit = CM->getUnit(selections.getFirstUnit());
         SetUnitFieldText(unit);
     }
     else
@@ -242,10 +242,10 @@ void UnitPropertiesWindow::RepopulateList()
     {
         Selections & selections = CM->GetSelections();
 
-        size_t numUnits = CM->layers.numUnits();
+        size_t numUnits = CM->numUnits();
         for ( size_t i = 0; i < numUnits; i++ )
         {
-            Chk::UnitPtr unit = CM->layers.getUnit(i);
+            const Chk::Unit & unit = CM->getUnit(i);
             AddUnitItem((u16)i, unit);
         }
 
@@ -259,10 +259,10 @@ void UnitPropertiesWindow::RepopulateList()
                 listUnits.SelectRow(unitIndex);
 
             EnableUnitEditing();
-            Chk::UnitPtr unit = CM->layers.getUnit(selectedIndex);
+            const Chk::Unit & unit = CM->getUnit(selectedIndex);
             SetUnitFieldText(unit);
 
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type, true);
+            auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
             WindowsItem::SetWinText(*unitName);
 
             int row = listUnits.GetItemRow(selections.getHighestIndex());
@@ -299,7 +299,7 @@ void UnitPropertiesWindow::EnableUnitEditing()
         checkControls[i]->SetCheck(false);
     }
 
-    Chk::UnitPtr unit = CM->layers.getUnit(CM->GetSelections().getFirstUnit());
+    const Chk::Unit & unit = CM->getUnit(CM->GetSelections().getFirstUnit());
     SetUnitFieldText(unit);
 }
 
@@ -333,30 +333,30 @@ void UnitPropertiesWindow::DisableUnitEditing()
     }
 }
 
-void UnitPropertiesWindow::SetUnitFieldText(Chk::UnitPtr unit)
+void UnitPropertiesWindow::SetUnitFieldText(const Chk::Unit & unit)
 {
     initilizing = true;
 
-    if ( unit->owner < 12 )
-        dropPlayer.SetSel(unit->owner);
+    if ( unit.owner < 12 )
+        dropPlayer.SetSel(unit.owner);
     else
-        dropPlayer.SetWinText(std::to_string(unit->owner + 1));
+        dropPlayer.SetWinText(std::to_string(unit.owner + 1));
 
-    editLife.SetText(std::to_string(unit->hitpointPercent));
-    editMana.SetText(std::to_string(unit->energyPercent));
-    editShield.SetText(std::to_string(unit->shieldPercent));
-    editResources.SetText(std::to_string(unit->resourceAmount));
-    editHanger.SetText(std::to_string(unit->hangerAmount));
-    editUnitId.SetText(std::to_string((u16)unit->type));
-    editXc.SetText(std::to_string(unit->xc));
-    editYc.SetText(std::to_string(unit->yc));
+    editLife.SetText(std::to_string(unit.hitpointPercent));
+    editMana.SetText(std::to_string(unit.energyPercent));
+    editShield.SetText(std::to_string(unit.shieldPercent));
+    editResources.SetText(std::to_string(unit.resourceAmount));
+    editHanger.SetText(std::to_string(unit.hangerAmount));
+    editUnitId.SetText(std::to_string((u16)unit.type));
+    editXc.SetText(std::to_string(unit.xc));
+    editYc.SetText(std::to_string(unit.yc));
 
     
-    checkInvincible.SetCheck((unit->stateFlags&Chk::Unit::State::Invincible) == Chk::Unit::State::Invincible);
-    checkHallucinated.SetCheck((unit->stateFlags&Chk::Unit::State::Hallucinated) == Chk::Unit::State::Hallucinated);
-    checkBurrowed.SetCheck((unit->stateFlags&Chk::Unit::State::Burrow) == Chk::Unit::State::Burrow);
-    checkCloaked.SetCheck((unit->stateFlags&Chk::Unit::State::Cloak) == Chk::Unit::State::Cloak);
-    checkLifted.SetCheck((unit->stateFlags&Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit);
+    checkInvincible.SetCheck((unit.stateFlags&Chk::Unit::State::Invincible) == Chk::Unit::State::Invincible);
+    checkHallucinated.SetCheck((unit.stateFlags&Chk::Unit::State::Hallucinated) == Chk::Unit::State::Hallucinated);
+    checkBurrowed.SetCheck((unit.stateFlags&Chk::Unit::State::Burrow) == Chk::Unit::State::Burrow);
+    checkCloaked.SetCheck((unit.stateFlags&Chk::Unit::State::Cloak) == Chk::Unit::State::Cloak);
+    checkLifted.SetCheck((unit.stateFlags&Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit);
 
     initilizing = false;
 }
@@ -401,41 +401,41 @@ int UnitPropertiesWindow::CompareLvItems(LPARAM index1, LPARAM index2)
 
     if ( columnSortedBy != UnitListColumn::Index )
     {
-        Chk::UnitPtr firstUnit = CM->layers.getUnit((u16)index1),
-            secondUnit = CM->layers.getUnit((u16)index2);
+        const Chk::Unit & firstUnit = CM->getUnit((u16)index1);
+        const Chk::Unit & secondUnit = CM->getUnit((u16)index2);
 
         switch ( columnSortedBy )
         {
         case UnitListColumn::Name: // Sort by ID / type
-            if ( (u16)firstUnit->type < (u16)secondUnit->type )
+            if ( (u16)firstUnit.type < (u16)secondUnit.type )
                 sort = -1;
-            else if ( (u16)firstUnit->type > (u16)secondUnit->type )
+            else if ( (u16)firstUnit.type > (u16)secondUnit.type )
                 sort = 1;
             break;
         case UnitListColumn::Owner: // Sort by owner
-            if ( firstUnit->owner < secondUnit->owner )
+            if ( firstUnit.owner < secondUnit.owner )
                 sort = -1;
-            else if ( firstUnit->owner > secondUnit->owner )
+            else if ( firstUnit.owner > secondUnit.owner )
                 sort = 1;
             break;
         case UnitListColumn::Xc: // Sort by xc
-            if ( firstUnit->xc < secondUnit->xc )
+            if ( firstUnit.xc < secondUnit.xc )
                 sort = -1;
-            else if ( firstUnit->xc > secondUnit->xc )
+            else if ( firstUnit.xc > secondUnit.xc )
                 sort = 1;
-            else if ( firstUnit->yc < secondUnit->yc ) // Try to sort by yc if xc's are equal
+            else if ( firstUnit.yc < secondUnit.yc ) // Try to sort by yc if xc's are equal
                 sort = -1;
-            else if ( firstUnit->yc > secondUnit->yc )
+            else if ( firstUnit.yc > secondUnit.yc )
                 sort = 1;
             break;
         case UnitListColumn::Yc: // Sort by yc
-            if ( firstUnit->yc < secondUnit->yc )
+            if ( firstUnit.yc < secondUnit.yc )
                 sort = -1;
-            else if ( firstUnit->yc > secondUnit->yc )
+            else if ( firstUnit.yc > secondUnit.yc )
                 sort = 1;
-            else if ( firstUnit->xc < secondUnit->xc ) // Try to sort by xc if yc's are equal
+            else if ( firstUnit.xc < secondUnit.xc ) // Try to sort by xc if yc's are equal
                 sort = -1;
-            else if ( firstUnit->xc > secondUnit->xc )
+            else if ( firstUnit.xc > secondUnit.xc )
                 sort = 1;
             break;
         }
@@ -484,8 +484,8 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
             if ( firstSelected )
                 EnableUnitEditing();
 
-            Chk::UnitPtr unit = CM->layers.getUnit(index);
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>(unit->type, true);
+            const Chk::Unit & unit = CM->getUnit(index);
+            auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
             WindowsItem::SetWinText(*unitName);
             SetUnitFieldText(unit);
 
@@ -526,8 +526,6 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
 
     listUnits.SetRedraw(false);
 
-    Chk::UnitPtr preserve;
-
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
     u16 i = 0;
@@ -536,9 +534,9 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     {
         if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
         {
-            preserve = CM->layers.getUnit(unitIndex); // Preserve the unit info
-            CM->layers.deleteUnit(unitIndex);
-            CM->layers.insertUnit(i, preserve);
+            Chk::Unit preserve = CM->getUnit(unitIndex); // Preserve the unit info
+            CM->deleteUnit(unitIndex);
+            CM->insertUnit(i, preserve);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, i));
             if ( unitIndex == unitStackTopIndex )
                 unitStackTopIndex = i;
@@ -564,10 +562,8 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     selections.sortUnits(false); // Highest First
 
     listUnits.SetRedraw(false);
-    size_t numUnits = CM->layers.numUnits();
+    size_t numUnits = CM->numUnits();
     u16 numUnitsSelected = selections.numUnits();
-
-    Chk::UnitPtr preserve;
 
     u16 i = 1;
     auto unitChanges = ReversibleActions::Make();
@@ -577,9 +573,9 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     {
         if ( unitIndex != numUnits - 1 )
         {
-            preserve = CM->layers.getUnit(unitIndex);
-            CM->layers.deleteUnit(unitIndex);
-            CM->layers.insertUnit(numUnits - i, preserve);
+            Chk::Unit preserve = CM->getUnit(unitIndex);
+            CM->deleteUnit(unitIndex);
+            CM->insertUnit(numUnits - i, preserve);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, u16(numUnits - i)));
 
             if ( unitIndex == unitStackTopIndex )
@@ -613,7 +609,7 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
     {
         if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
         {
-            CM->layers.moveUnit(unitIndex, unitIndex-1);
+            CM->moveUnit(unitIndex, unitIndex-1);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex - 1));
             SwapIndexes(hUnitList, unitIndex, unitIndex - 1);
             unitIndex--;
@@ -646,9 +642,9 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
     auto & selUnits = selections.getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex < CM->layers.numUnits() && !selections.unitIsSelected(unitIndex + 1) )
+        if ( unitIndex+1 < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
         {
-            CM->layers.moveUnit(unitIndex, unitIndex+1);
+            CM->moveUnit(unitIndex, unitIndex+1);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));
             SwapIndexes(hUnitList, unitIndex, unitIndex + 1);
             unitIndex++;
@@ -670,13 +666,13 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
 void UnitPropertiesWindow::NotifyMoveToPressed()
 {
     u32 unitMoveTo = 0;
-    if ( MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->layers.numUnits()) )
+    if ( MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->numUnits()) )
     {
         if ( unitMoveTo == 0 )
         {
             NotifyMoveTopPressed();
         }
-        else if ( unitMoveTo + CM->GetSelections().numUnits() >= CM->layers.numUnits() )
+        else if ( unitMoveTo + CM->GetSelections().numUnits() >= CM->numUnits() )
         {
             NotifyMoveEndPressed();
         }
@@ -684,7 +680,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
         {
             Selections & selections = CM->GetSelections();
             u16 numUnitsSelected = selections.numUnits();
-            size_t limit = CM->layers.numUnits() - 1;
+            size_t limit = CM->numUnits() - 1;
 
             u16 unitStackTopIndex = selections.getFirstUnit();
             u16 numUnits = selections.numUnits(),
@@ -693,31 +689,23 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
             selections.sortUnits(false); // Highest First
             listUnits.SetRedraw(false);
 
-            Chk::UnitPtr* selectedUnits;
-            try {
-                selectedUnits = new Chk::UnitPtr[numUnits];
-            }
-            catch ( std::bad_alloc ) {
-                Error("'Move To' failed.\n\nCould not allocate temporary storage, you may have run out of memory");
-                return;
-            }
-
+            std::vector<Chk::Unit> selectedUnits{size_t(numUnitsSelected)};
             auto unitCreateDels = ReversibleActions::Make();
             u16 i = 0;
             auto & selUnits = selections.getUnits();
             for ( u16 & unitIndex : selUnits )
             { // Remove each selected unit from the map, store in selectedUnits
                 u32 loc = ((u32)unitIndex)*sizeof(Chk::Unit);
-                selectedUnits[shift - i] = CM->layers.getUnit(unitIndex);
-                CM->layers.deleteUnit(unitIndex);
-                unitCreateDels->Insert(UnitCreateDel::Make((u16)unitIndex, *selectedUnits[shift - i]));
+                selectedUnits[shift - i] = CM->getUnit(unitIndex);
+                CM->deleteUnit(unitIndex);
+                unitCreateDels->Insert(UnitCreateDel::Make((u16)unitIndex, selectedUnits[shift - i]));
                 unitIndex = u16(unitMoveTo + shift - i);
                 i++;
             }
 
             for ( int i = 0; i < numUnits; i++ )
             {
-                CM->layers.insertUnit(unitMoveTo + i, selectedUnits[i]);
+                CM->insertUnit(unitMoveTo + i, selectedUnits[i]);
                 unitCreateDels->Insert(UnitCreateDel::Make(unitMoveTo + i));
             }
 
@@ -743,12 +731,12 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 
         int row = listUnits.GetItemRow(index);
 
-        Chk::UnitPtr unit = CM->layers.getUnit(index);
-        unitDeletes->Insert(UnitCreateDel::Make(index, *unit));
+        const Chk::Unit & unit = CM->getUnit(index);
+        unitDeletes->Insert(UnitCreateDel::Make(index, unit));
 
-        CM->layers.deleteUnit(index);
+        CM->deleteUnit(index);
 
-        for ( size_t i = index + 1; i <= CM->layers.numUnits(); i++ )
+        for ( size_t i = index + 1; i <= CM->numUnits(); i++ )
             ChangeIndex(hUnitList, i, i - 1);
     }
     CM->AddUndo(unitDeletes);
@@ -762,13 +750,13 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkInvincible.isChecked() )
-            unit->stateFlags |= Chk::Unit::State::Invincible;
+            unit.stateFlags |= Chk::Unit::State::Invincible;
         else
-            unit->stateFlags &= ~Chk::Unit::State::Invincible;
+            unit.stateFlags &= ~Chk::Unit::State::Invincible;
     }
     CM->AddUndo(unitChanges);
 }
@@ -779,13 +767,13 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkHallucinated.isChecked() )
-            unit->stateFlags |= Chk::Unit::State::Hallucinated;
+            unit.stateFlags |= Chk::Unit::State::Hallucinated;
         else
-            unit->stateFlags &= ~Chk::Unit::State::Hallucinated;
+            unit.stateFlags &= ~Chk::Unit::State::Hallucinated;
     }
     CM->AddUndo(unitChanges);
 }
@@ -796,13 +784,13 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkBurrowed.isChecked() )
-            unit->stateFlags |= Chk::Unit::State::Burrow;
+            unit.stateFlags |= Chk::Unit::State::Burrow;
         else
-            unit->stateFlags &= ~Chk::Unit::State::Burrow;
+            unit.stateFlags &= ~Chk::Unit::State::Burrow;
     }
     CM->AddUndo(unitChanges);
 }
@@ -813,13 +801,13 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkCloaked.isChecked() )
-            unit->stateFlags |= Chk::Unit::State::Cloak;
+            unit.stateFlags |= Chk::Unit::State::Cloak;
         else
-            unit->stateFlags &= ~Chk::Unit::State::Cloak;
+            unit.stateFlags &= ~Chk::Unit::State::Cloak;
     }
     CM->AddUndo(unitChanges);
 }
@@ -830,13 +818,13 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
     auto & selUnits = CM->GetSelections().getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        Chk::UnitPtr unit = CM->layers.getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit->stateFlags));
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkLifted.isChecked() )
-            unit->stateFlags |= Chk::Unit::State::InTransit; // Check lifted state
+            unit.stateFlags |= Chk::Unit::State::InTransit; // Check lifted state
         else
-            unit->stateFlags &= ~Chk::Unit::State::InTransit; // Uncheck lifted state
+            unit.stateFlags &= ~Chk::Unit::State::InTransit; // Uncheck lifted state
     }
     CM->AddUndo(unitChanges);
 }
@@ -848,7 +836,7 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
     {
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
-            CM->layers.getUnit(unitIndex)->hitpointPercent = hpPercent;
+            CM->getUnit(unitIndex).hitpointPercent = hpPercent;
 
         CM->Redraw(false);
     }
@@ -861,7 +849,7 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
     {
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
-            CM->layers.getUnit(unitIndex)->energyPercent = mpPercent;
+            CM->getUnit(unitIndex).energyPercent = mpPercent;
 
         CM->Redraw(false);
     }
@@ -874,7 +862,7 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
     {
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
-            CM->layers.getUnit(unitIndex)->shieldPercent = shieldPercent;
+            CM->getUnit(unitIndex).shieldPercent = shieldPercent;
 
         CM->Redraw(false);
     }
@@ -887,7 +875,7 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
     {
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
-            CM->layers.getUnit(unitIndex)->resourceAmount = resources;
+            CM->getUnit(unitIndex).resourceAmount = resources;
 
         CM->Redraw(false);
     }
@@ -900,7 +888,7 @@ void UnitPropertiesWindow::NotifyHangerEditUpdated()
     {
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
-            CM->layers.getUnit(unitIndex)->hangerAmount = hanger;
+            CM->getUnit(unitIndex).hangerAmount = hanger;
 
         CM->Redraw(true);
     }
@@ -914,10 +902,10 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
         {
-            CM->layers.getUnit(unitIndex)->type = (Sc::Unit::Type)unitID;
+            CM->getUnit(unitIndex).type = (Sc::Unit::Type)unitID;
             int row = listUnits.GetItemRow(unitIndex);
 
-            ChkdStringPtr unitName = CM->strings.getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
+            auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
             listUnits.SetItemText(row, (int)UnitListColumn::Name, *unitName);
 
             if ( unitIndex == CM->GetSelections().getFirstUnit() )
@@ -936,7 +924,7 @@ void UnitPropertiesWindow::NotifyXcEditUpdated()
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
         {
-            CM->layers.getUnit(unitIndex)->xc = unitXC;
+            CM->getUnit(unitIndex).xc = unitXC;
             int row = listUnits.GetItemRow(unitIndex);
             listUnits.SetItemText(row, (int)UnitListColumn::Xc, unitXC);
         }
@@ -953,7 +941,7 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
         auto & selUnits = CM->GetSelections().getUnits();
         for ( u16 & unitIndex : selUnits )
         {
-            CM->layers.getUnit(unitIndex)->yc = unitYC;
+            CM->getUnit(unitIndex).yc = unitYC;
             int row = listUnits.GetItemRow(unitIndex);
             listUnits.SetItemText(row, (int)UnitListColumn::Yc, unitYC);
         }

@@ -265,14 +265,7 @@ namespace WinLib {
         return ::GetWindowTextLength(getHandle());
     }
 
-    std::string WindowsItem::GetWinText()
-    {
-        std::string text("");
-        WindowsItem::GetWinText(text);
-        return text;
-    }
-
-    bool WindowsItem::GetWinText(output_param std::string & text)
+    std::optional<std::string> WindowsItem::GetWinText()
     {
         int titleLength = ::GetWindowTextLength(getHandle()) + 1;
         if ( titleLength > 1 )
@@ -281,19 +274,16 @@ namespace WinLib {
             if ( ::GetWindowText(getHandle(), titleText.get(), titleLength) )
             {
                 titleText.get()[titleLength - 1] = '\0';
-                text = icux::toUtf8(icux::uistring(titleText.get(), size_t(titleLength)-1));
-                return true;
+                return icux::toUtf8(icux::uistring(titleText.get(), size_t(titleLength)-1));
             }
         }
         else if ( titleLength == 1 )
-        {
-            text = "";
-            return true;
-        }
-        return false;
+            return "";
+
+        return std::nullopt;
     }
 
-    bool WindowsItem::getWindowRect(output_param RECT & rect)
+    bool WindowsItem::getWindowRect(RECT & rect)
     {
         return ::GetWindowRect(getHandle(), &rect) != 0;
     }

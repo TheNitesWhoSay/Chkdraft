@@ -29,7 +29,7 @@ void LitWindow::ButtonLit()
 {
     if ( CM != nullptr )
     {
-        if ( RunLit(CM) )
+        if ( RunLit(*CM) )
         {
             CM->notifyChange(false);
             CM->refreshScenario();
@@ -43,7 +43,7 @@ void LitWindow::ButtonLitSave()
 {
     if ( CM != nullptr )
     {
-        if ( RunLit(CM) )
+        if ( RunLit(*CM) )
         {
             CM->refreshScenario();
             if ( !chkd.maps.SaveCurr(false) )
@@ -108,84 +108,79 @@ bool LitWindow::GetLitPaths(std::string & litDirectory, std::string & litPath)
     return false;
 }
 
-bool LitWindow::GetInputPaths(std::string & luaDirectory, std::string & luaName)
+std::optional<std::string> LitWindow::WriteLitBat(const std::string & inputFilePath, const std::string & litDirectory,
+    const std::string & textOutPath, const std::string & trigOutName)
 {
-    std::string luaPath;
-    if ( editPath.GetWinText(luaPath) )
-    {
-        auto lastBackslashPos = luaPath.find_last_of('\\');
-        if ( lastBackslashPos != std::string::npos && lastBackslashPos < luaPath.size() )
-        {
-            luaDirectory = luaPath.substr(0, lastBackslashPos + 1);
-            luaName = luaPath.substr(lastBackslashPos + 1);
-            return true;
-        }
-        else
-            Error("Couldn't find last backslash in edit text.");
-    }
-    else
-        Error("Empty path or failed to get edit text.");
+    auto inputDirectory = ::getSystemFileDirectory(inputFilePath);
+    auto inputFile = ::getSystemFileName(inputFilePath);
 
-    return false;
-}
-
-bool LitWindow::WriteLitBat(std::string & luaDirectory, std::string & luaName, std::string & litDirectory, std::string & litBatPath,
-    std::string & textOutPath, std::string & trigOutName)
-{
-    litBatPath = litDirectory + "chkd-LIT_LIT.bat";
+    std::string litBatPath = litDirectory + "chkd-LIT_LIT.bat";
     removeFile(litBatPath);
     std::ofstream litBat(litBatPath);
+    if ( !::findFile(litDirectory + "LIT.exe") )
+        logger.error("LIT.exe not found!");
+
     if ( litBat.is_open() )
     {
-        litBat << "LIT.exe " <<
-            "\"" << luaDirectory << "\\\" " <<
-            "\"" << luaName << "\" " <<
-            "\"" << litDirectory << "\\\" " <<
-            "\"" << trigOutName << "\" > " <<
-            "\"" << textOutPath << "\"";
+        litBat << "LIT.exe "
+            << inputDirectory << " "
+            << inputFile << " "
+            << litDirectory << " "
+            << trigOutName << " > "
+            << textOutPath;
         litBat.close();
-        return true;
+        return litBatPath;
     }
-    return false;
+    return std::nullopt;
 }
 
-bool LitWindow::RunLit(ScenarioPtr map)
+bool LitWindow::RunLit(Scenario & map)
 {
-    std::string litDirectory, litPath, luaDirectory, luaName, litBatPath, litText;
-    if ( GetLitPaths(litDirectory, litPath) && GetInputPaths(luaDirectory, luaName) )
+    if ( auto litDirectory = GetToolPath("LIT") )
     {
-        std::string textPath(litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(litDirectory + trigName);
-        if ( WriteLitBat(luaDirectory, luaName, litDirectory, litBatPath, textPath, trigName) )
+        auto inputPath = editPath.GetWinText();
+        if ( inputPath && ::findFile(*inputPath) )
         {
-            removeFiles(textPath, trigPath);
-            int resultCode = 0;
-            if ( WinLib::executeOpen(litBatPath, litDirectory, resultCode) )
+            std::string textPath(*litDirectory + "chkd-LIT_text.txt"), trigName("chkd-LIT_trigs.txt"), trigPath(*litDirectory + trigName);
+            if ( auto litBatPath = WriteLitBat(*inputPath, *litDirectory, textPath, trigName) )
             {
-                int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
-                std::string litTrigs;
-                bool foundLitText = patientFindFile(textPath, 4, waitTimes) && fileToString(textPath, litText);
-                bool foundLitTrigs = fileToString(trigPath, litTrigs);
-                removeFiles(textPath, trigPath, litBatPath);
-                if ( foundLitTrigs )
+                removeFiles(textPath, trigPath);
+                int resultCode = 0;
+                if ( WinLib::executeOpen(*litBatPath, *litDirectory, resultCode) )
                 {
-                    TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
-                    if ( compiler.compileTriggers(litTrigs, map, chkd.scData, 0, map->triggers.numTriggers()) )
+                    int waitTimes[] = { 30, 70, 900, 1000 }; // Try at 30ms, 100ms, 1000ms, 2000ms
+                    bool foundLitText = patientFindFile(textPath, 4, waitTimes);
+                    auto litText = ::fileToString(textPath);
+                    foundLitText = foundLitText && litText;
+                    auto litTrigs = ::fileToString(trigPath);
+                    removeFiles(textPath, trigPath, *litBatPath);
+                    if ( litTrigs )
                     {
-                        foundLitText ? WinLib::Message(litText, "LIT") : WinLib::Message("Success!", "Text Trigger Compiler");
-                        return true;
+                        TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
+                        if ( compiler.compileTriggers(*litTrigs, map, chkd.scData, 0, map.numTriggers()) )
+                        {
+                            foundLitText ? WinLib::Message(*litText, "LIT") : WinLib::Message("Success!", "Text Trigger Compiler");
+                            return true;
+                        }
+                        else
+                            Error("Trigger Compilation Failed!");
                     }
                     else
-                        Error("Trigger Compilation Failed!");
+                        foundLitText ? WinLib::Message(*litText, "LIT") : Error("LIT trigger output file was not found or could not be read.");
                 }
                 else
-                    foundLitText ? WinLib::Message(litText, "LIT") : Error("LIT trigger output file was not found or could not be read.");
+                {
+                    removeFile(*litBatPath);
+                    Error("ShellExecute on LIT.bat failed: " + std::to_string(resultCode));
+                }
             }
             else
-                Error("ShellExecute on LIT.bat failed: " + std::to_string(resultCode));
+                Error("Failed to write LIT.bat");
         }
         else
-            Error("Failed to write LIT.bat");
+            Error(std::string("Input file not found: ") + (inputPath ? *inputPath : "ERROR"));
     }
-    removeFile(litBatPath);
+    else
+        Error("Failed to determine LIT's directory");
     return false;
 }

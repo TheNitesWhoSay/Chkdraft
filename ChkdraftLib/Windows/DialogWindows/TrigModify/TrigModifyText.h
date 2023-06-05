@@ -11,6 +11,7 @@ class TrigModifyTextWindow : public WinLib::ClassWindow
         virtual ~TrigModifyTextWindow();
         bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
+        void SetTrigIndex(u32 trigIndex);
         void RefreshWindow(u32 trigIndex);
         void DoSize();
         void ParentHidden();

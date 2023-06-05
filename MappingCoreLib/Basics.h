@@ -3,19 +3,20 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <optional>
 #include <vector>
 #include <cstdarg>
 #include <stdexcept>
 #include <unordered_map>
 #include <map>
 #include "../CommanderLib/Logger.h"
+#include "../RareCpp/include/rarecpp/reflect.h"
 
 extern Logger logger;
 
 /**
     Basics contains several things...
         - Logging and debugging
-        - Syntactic Sugar (e.g. output_param, inout_param)
         - Definitions for useful data types (e.g. u8: unsigned 8-bit number, s8: signed 8-bit number) and their limits (e.g. s8_min, s8_max)
         - Definitions for useful generic constants (e.g. size_1kb, size_1mb)
         - Definitions for bit and xBit values (xBit being the inversion of the bit for a given data size) and arrays for enumerating the bit values
@@ -55,16 +56,6 @@ void IgnoreErr(const std::string & file, unsigned int line, const std::string ms
 #error Other compiler!
 #endif
 #endif
-
-#ifdef output_param
-#undef output_param
-#endif
-#define output_param /* Syntactic sugar denoting an output parameter - unless a function indicates that there has been an error it's obligated to set out params before returning */
-
-#ifdef inout_param
-#undef inout_param
-#endif
-#define inout_param /* Syntactic sugar denoting a parameter that may optionally be used for input, and unless a function indicates that there's been an error it's obligated to set inout params before returning */
 
 using u8 = std::uint8_t;
 using s8 = std::int8_t;
@@ -211,12 +202,18 @@ class NotImplemented : public std::logic_error
         NotImplemented(const std::string & str) : std::logic_error(str) { };
 };
 
-
 template <typename valueType>
-void ascendingOrder(valueType & low, valueType & high);
+void ascendingOrder(valueType & low, valueType & high)
+{
+    if ( low > high )
+        std::swap(low, high);
+}
 
 template <typename T>
-s32 round(T value);
+s32 round(T value)
+{    
+    return s32(std::floor(static_cast<double>(value) + 0.5));
+}
 
 template <typename T>
 inline std::string to_hex_string(const T & t)
@@ -225,15 +222,6 @@ inline std::string to_hex_string(const T & t)
     std::snprintf(buf, sizeof(buf)/sizeof(char), "0x%X", t);
     return std::string(buf);
 }
-
-// TODO: Delete this once including reflection
-template <typename T> struct promote_char { using type = T; };
-template <> struct promote_char<char> { using type = int; };
-template <> struct promote_char<signed char> { using type = int; };
-template <> struct promote_char<unsigned char> { using type = int; };
-template <> struct promote_char<const char> { using type = const int; };
-template <> struct promote_char<const signed char> { using type = const int; };
-template <> struct promote_char<const unsigned char> { using type = const int; };
 
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope
@@ -251,10 +239,5 @@ template <> struct promote_char<const unsigned char> { using type = const int; }
 
 /** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
-
-
-#define INCLUDE_TEMPLATES_ONLY
-#include "Basics.cpp"
-#undef INCLUDE_TEMPLATES_ONLY
 
 #endif

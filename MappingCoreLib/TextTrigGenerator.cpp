@@ -25,13 +25,11 @@ TextTrigGenerator::~TextTrigGenerator()
 
 }
 
-bool TextTrigGenerator::generateTextTrigs(ScenarioPtr map, std::string & trigString)
+bool TextTrigGenerator::generateTextTrigs(const Scenario & map, std::string & trigString)
 {
     logger.info() << "Starting text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( map != nullptr &&
-        loadScenario(map, true, false) &&
-        buildTextTrigs(map, trigString) )
+    if ( loadScenario(map, true, false) && buildTextTrigs(map, trigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -40,21 +38,14 @@ bool TextTrigGenerator::generateTextTrigs(ScenarioPtr map, std::string & trigStr
     return false;
 }
 
-bool TextTrigGenerator::generateTextTrigs(ScenarioPtr map, size_t trigIndex, std::string & trigString)
+bool TextTrigGenerator::generateTextTrigs(const Scenario & map, size_t trigIndex, std::string & trigString)
 {
-    if ( map != nullptr )
-    {
-        Chk::TriggerPtr trig = map->triggers.getTrigger(trigIndex);
-        if ( trig != nullptr )
-            return loadScenario(map, true, false) && buildTextTrig(*trig, trigString);
-    }
-    return false;
+    return trigIndex < map.numTriggers() && loadScenario(map, true, false) && buildTextTrig(map.getTrigger(trigIndex), trigString);
 }
 
-bool TextTrigGenerator::loadScenario(ScenarioPtr map)
+bool TextTrigGenerator::loadScenario(const Scenario & map)
 {
-    return map != nullptr &&
-           loadScenario(map, false, true);
+    return loadScenario(map, false, true);
 }
 
 void TextTrigGenerator::clearScenario()
@@ -75,14 +66,14 @@ std::string TextTrigGenerator::getConditionName(Chk::Condition::Type conditionTy
         return std::to_string((int)conditionType);
 }
 
-std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, size_t textArgumentIndex) const
+std::string TextTrigGenerator::getConditionArgument(const Chk::Condition & condition, size_t textArgumentIndex) const
 {
     StringBuffer output;
     appendConditionArgument(output, condition, Chk::Condition::getTextArg(condition.conditionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::getConditionArgument(Chk::Condition & condition, Chk::Condition::Argument argument) const
+std::string TextTrigGenerator::getConditionArgument(const Chk::Condition & condition, Chk::Condition::Argument argument) const
 {
     StringBuffer output;
     appendConditionArgument(output, condition, argument);
@@ -97,14 +88,14 @@ std::string TextTrigGenerator::getActionName(Chk::Action::Type actionType) const
         return std::to_string((int)actionType);
 }
 
-std::string TextTrigGenerator::getActionArgument(Chk::Action & action, size_t textArgumentIndex) const
+std::string TextTrigGenerator::getActionArgument(const Chk::Action & action, size_t textArgumentIndex) const
 {
     StringBuffer output;
     appendActionArgument(output, action, Chk::Action::getTextArg(action.actionType, textArgumentIndex));
     return output.str();
 }
 
-std::string TextTrigGenerator::getActionArgument(Chk::Action & action, Chk::Action::Argument argument) const
+std::string TextTrigGenerator::getActionArgument(const Chk::Action & action, Chk::Action::Argument argument) const
 {
     StringBuffer output;
     appendActionArgument(output, action, argument);
@@ -134,7 +125,7 @@ ChkdString TextTrigGenerator::getTrigString(size_t stringId) const
         return ChkdString(std::to_string(stringId));
 }
 
-ChkdString TextTrigGenerator::getTrigWav(size_t stringId) const
+ChkdString TextTrigGenerator::getTrigSound(size_t stringId) const
 {
     if ( stringId == 0 )
         return ChkdString("No WAV");
@@ -285,10 +276,9 @@ std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags) co
 
 // protected
 
-bool TextTrigGenerator::loadScenario(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames)
 {
-    return map != nullptr &&
-           prepConditionTable() &&
+    return prepConditionTable() &&
            prepActionTable() &&
            prepLocationTable(map, quoteArgs) &&
            prepUnitTable(map, quoteArgs, useCustomNames) &&
@@ -330,7 +320,7 @@ bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
     return true;
 }
 
-bool TextTrigGenerator::buildTextTrigs(ScenarioPtr scenario, std::string & trigString)
+bool TextTrigGenerator::buildTextTrigs(const Scenario & scenario, std::string & trigString)
 {
     StringBuffer output;
     appendTriggers(output, scenario);
@@ -340,7 +330,7 @@ bool TextTrigGenerator::buildTextTrigs(ScenarioPtr scenario, std::string & trigS
     return true;
 }
 
-bool TextTrigGenerator::buildTextTrig(Chk::Trigger & trigger, std::string & trigString)
+bool TextTrigGenerator::buildTextTrig(const Chk::Trigger & trigger, std::string & trigString)
 {
     StringBuffer output;
     appendTrigger(output, trigger);
@@ -350,19 +340,13 @@ bool TextTrigGenerator::buildTextTrig(Chk::Trigger & trigger, std::string & trig
     return true;
 }
 
-inline void TextTrigGenerator::appendTriggers(StringBuffer & output, ScenarioPtr scenario) const
+inline void TextTrigGenerator::appendTriggers(StringBuffer & output, const Scenario & scenario) const
 {
-    Triggers & triggers = scenario->triggers;
-    size_t numTrigs = triggers.numTriggers();
-    for ( size_t trigIndex=0; trigIndex<numTrigs; trigIndex++ )
-    {
-        std::shared_ptr<Chk::Trigger> trigger = triggers.getTrigger(trigIndex);
-        if ( trigger != nullptr )
-            appendTrigger(output, *trigger);
-    }
+    for ( const auto & trigger : scenario.triggers )
+        appendTrigger(output, trigger);
 }
 
-inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger & trigger) const
+inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::Trigger & trigger) const
 {
     output += "Trigger(";
 
@@ -398,7 +382,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     // Add conditions
     for ( size_t i=0; i<Chk::Trigger::MaxConditions; i++ )
     {
-        Chk::Condition & condition = trigger.condition(i);
+        const Chk::Condition & condition = trigger.condition(i);
         Chk::Condition::VirtualType conditionType = (Chk::Condition::VirtualType)condition.conditionType;
 
         if ( conditionType != Chk::Condition::VirtualType::NoCondition )
@@ -444,7 +428,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     // Add actions
     for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
     {
-        Chk::Action & action = trigger.action(i);
+        const Chk::Action & action = trigger.action(i);
         Chk::Action::VirtualType actionType = (Chk::Action::VirtualType)action.actionType;
 
         if ( actionType != Chk::Action::VirtualType::NoAction )
@@ -500,7 +484,7 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, Chk::Trigger
     output += "\n}\n\n//-----------------------------------------------------------------//\n\n";
 }
 
-inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Chk::Condition & condition, Chk::Condition::Argument argument) const
+inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, const Chk::Condition & condition, Chk::Condition::Argument argument) const
 {
     switch ( argument.type )
     {
@@ -522,7 +506,7 @@ inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, Ch
     }
 }
 
-inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, Chk::Action & action, Chk::Action::Argument argument) const
+inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const
 {
     switch ( argument.type )
     {
@@ -831,32 +815,28 @@ bool TextTrigGenerator::prepActionTable()
     return true;
 }
 
-bool TextTrigGenerator::prepLocationTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepLocationTable(const Scenario & map, bool quoteArgs)
 {
     locationTable.clear();
     locationTable.push_back(EscString("No Location"));
 
-    size_t numLocations = map->layers.numLocations();
+    size_t numLocations = map.numLocations();
     for ( size_t i=1; i<=numLocations; i++ )
     {
-        Chk::LocationPtr loc = map->layers.getLocation(i);
-        if ( loc != nullptr )
+        const Chk::Location & loc = map.getLocation(i);
+        if ( i == Chk::LocationId::Anywhere )
         {
-            if ( i == Chk::LocationId::Anywhere )
+            EscString locationName = quoteArgs ? "\"Anywhere\"" : "Anywhere";
+            locationTable.push_back(locationName);
+        }
+        else if ( loc.stringId > 0 )
+        {
+            if ( auto locationName = map.getLocationName<EscString>(i, Chk::StrScope::Game) )
             {
-                EscString locationName = quoteArgs ? "\"Anywhere\"" : "Anywhere";
-                locationTable.push_back(locationName);
-            }
-            else if ( loc->stringId > 0 )
-            {
-                std::shared_ptr<EscString> locationName = map->strings.getLocationName<EscString>(i, Chk::Scope::Game);
-                if ( locationName != nullptr )
-                {
-                    if ( quoteArgs )
-                        locationTable.push_back( "\"" + *locationName + "\"" );
-                    else
-                        locationTable.push_back(*locationName);
-                }
+                if ( quoteArgs )
+                    locationTable.push_back( "\"" + *locationName + "\"" );
+                else
+                    locationTable.push_back(*locationName);
             }
         }
 
@@ -867,29 +847,29 @@ bool TextTrigGenerator::prepLocationTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::prepUnitTable(ScenarioPtr map, bool quoteArgs, bool useCustomNames)
+bool TextTrigGenerator::prepUnitTable(const Scenario & map, bool quoteArgs, bool useCustomNames)
 {
     unitTable.clear();
 
     for ( size_t unitType=0; unitType<Sc::Unit::TotalReferenceTypes; unitType++ )
     {
-        EscStringPtr unitName = nullptr;
+        std::optional<EscString> unitName {};
         if ( quoteArgs )
         {
             if ( useCustomNames && unitType < 228 )
             {
-                EscStringPtr unquotedName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
-                unitName = EscStringPtr(new EscString("\"" + *unquotedName + "\""));
+                auto unquotedName = map.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+                unitName = EscString("\"" + *unquotedName + "\"");
             }
-            if ( unitName == nullptr )
-                unitName = EscStringPtr(new EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitType]) + "\""));
+            if ( !unitName )
+                unitName = EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitType]) + "\"");
         }
         else
         {
             if ( useCustomNames && unitType < 228 )
-                unitName = map->strings.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
-            if ( unitName == nullptr )
-                unitName = EscStringPtr(new EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]));
+                unitName = map.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+            if ( !unitName )
+                unitName = EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]);
         }
 
         unitTable.push_back(*unitName);
@@ -897,14 +877,13 @@ bool TextTrigGenerator::prepUnitTable(ScenarioPtr map, bool quoteArgs, bool useC
     return true;
 }
 
-bool TextTrigGenerator::prepSwitchTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepSwitchTable(const Scenario & map, bool quoteArgs)
 {
     switchTable.clear();
 
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        RawStringPtr switchName = map->strings.getSwitchName<RawString>(switchIndex);
-        if ( switchName != nullptr )
+        if ( auto switchName = map.getSwitchName<RawString>(switchIndex) )
         {
             if ( quoteArgs )
                 switchTable.push_back( "\"" + *switchName + "\"" );
@@ -922,7 +901,7 @@ bool TextTrigGenerator::prepSwitchTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepGroupTable(const Scenario & map, bool quoteArgs)
 {
     groupTable.clear();
 
@@ -967,8 +946,7 @@ bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
 
     for ( size_t i=0; i<4; i++ )
     {
-        EscStringPtr forceName = map->strings.getForceName<EscString>((Chk::Force)i);
-        if ( forceName != nullptr )
+        if ( auto forceName = map.getForceName<EscString>((Chk::Force)i) )
         {
             if ( quoteArgs )
                 groupTable.push_back("\"" + *forceName + "\"");
@@ -994,103 +972,100 @@ bool TextTrigGenerator::prepGroupTable(ScenarioPtr map, bool quoteArgs)
     return true;
 }
 
-bool TextTrigGenerator::prepScriptTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepScriptTable(const Scenario & map, bool quoteArgs)
 {
     scriptTable.clear();
 
     scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId::NoScript, "No Script"));
 
-    Chk::Trigger* trigPtr = nullptr;
-    size_t numTrigs = map->triggers.numTriggers();
-    for ( size_t i = 0; i < numTrigs; i++ )
+    for ( const auto & trigger : map.triggers )
     {
-        Chk::TriggerPtr trigPtr = map->triggers.getTrigger(i);
-        if ( trigPtr != nullptr )
+        for ( size_t actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
         {
-            for ( size_t actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
+            const Chk::Action & action = trigger.action(actionNum);
+            Chk::Action::Type actionId = action.actionType;
+            bool isScriptAction = (actionId == Chk::Action::Type::RunAiScript || actionId == Chk::Action::Type::RunAiScriptAtLocation);
+            if ( isScriptAction && action.number != 0 )
             {
-                Chk::Action & action = trigPtr->action(actionNum);
-                Chk::Action::Type actionId = action.actionType;
-                bool isScriptAction = (actionId == Chk::Action::Type::RunAiScript || actionId == Chk::Action::Type::RunAiScriptAtLocation);
-                if ( isScriptAction && action.number != 0 )
+                char numberString[5] = {};
+                (u32 &)numberString = action.number;
+                for ( size_t i = 0; i < 4; i++ )
                 {
-                    char numberString[5] = {};
-                    (u32 &)numberString = action.number;
-                    for ( size_t i = 0; i < 4; i++ )
-                    {
-                        if ( numberString[i] == '\0' )
-                            numberString[i] = ' ';
-                    }
-
-                    if ( quoteArgs )
-                    {
-                        scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number,
-                            std::string("\"" + std::string(numberString) + "\"")));
-                    }
-                    else
-                        scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number, std::string(numberString)));
+                    if ( numberString[i] == '\0' )
+                        numberString[i] = ' ';
                 }
+
+                if ( quoteArgs )
+                {
+                    scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number,
+                        std::string("\"" + std::string(numberString) + "\"")));
+                }
+                else
+                    scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number, std::string(numberString)));
             }
         }
     }
     return true;
 }
 
-bool TextTrigGenerator::prepStringTable(ScenarioPtr map, bool quoteArgs)
+bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
 {
     stringTable.clear();
     extendedStringTable.clear();
 
     std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
-    map->strings.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
-    map->strings.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
-    EscStringPtr str;
+    map.markValidUsedStrings(stringUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+    map.markValidUsedStrings(extendedStringUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
 
-    size_t numStrings = map->strings.getCapacity(Chk::Scope::Game);
+    size_t numStrings = map.getCapacity(Chk::StrScope::Game);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( stringUsed[i] )
-            str = map->strings.getString<EscString>(i, Chk::Scope::Game);
-
-        if ( str != nullptr )
         {
-            EscString newString;
-            for ( auto & character : *str )
-                newString.push_back(character);
+            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Game) )
+            {
+                EscString newString;
+                for ( auto & character : *str )
+                    newString.push_back(character);
 
-            if ( quoteArgs )
-                stringTable.push_back( "\"" + newString + "\"" );
+                if ( quoteArgs )
+                    stringTable.push_back( "\"" + newString + "\"" );
+                else
+                    stringTable.push_back(newString);
+            }
             else
-                stringTable.push_back(newString);
+                stringTable.push_back("");
         }
         else
             stringTable.push_back("");
     }
 
-    numStrings = map->strings.getCapacity(Chk::Scope::Editor);
+    numStrings = map.getCapacity(Chk::StrScope::Editor);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( extendedStringUsed[i] )
-            str = map->strings.getString<EscString>(i, Chk::Scope::Editor);
-        
-        if ( str != nullptr )
         {
-            EscString newString;
-            for ( auto & character : *str )
+            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Editor) )
             {
-                if ( character == '\"' )
+                EscString newString;
+                for ( auto & character : *str )
                 {
-                    newString.push_back('\\');
-                    newString.push_back('\"');
+                    if ( character == '\"' )
+                    {
+                        newString.push_back('\\');
+                        newString.push_back('\"');
+                    }
+                    else
+                        newString.push_back(character);
                 }
-                else
-                    newString.push_back(character);
-            }
 
-            if ( quoteArgs )
-                extendedStringTable.push_back( "\"" + newString + "\"" );
+                if ( quoteArgs )
+                    extendedStringTable.push_back( "\"" + newString + "\"" );
+                else
+                    extendedStringTable.push_back(newString);
+            }
             else
-                extendedStringTable.push_back(newString);
+                stringTable.push_back("");
         }
         else
             stringTable.push_back("");

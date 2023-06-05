@@ -43,14 +43,15 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
                     // Tiling Code
                     /*u16 tilenum = 0;
-                    u16 xSize = CM->XSize();
-                    for ( u32 xStart = 0; xStart<CM->XSize(); xStart += 16 )
+                    size_t xSize = CM->getTileWidth();
+                    size_t ySize = CM->getTileHeight();
+                    for ( size_t xStart = 0; xStart<xSize; xStart += 16 )
                     {
-                        for ( u16 yc = 0; yc<CM->YSize(); yc++ )
+                        for ( size_t yc = 0; yc<ySize; yc++ )
                         {
-                            for ( u16 xc = (u16)xStart; xc<xStart + 16; xc++ )
+                            for ( size_t xc = xStart; xc<xStart + 16; xc++ )
                             {
-                                CM->SetTile(xc, yc, tilenum);
+                                CM->SetTile(s32(xc), s32(yc), tilenum);
                                 tilenum++;
                             }
                         }

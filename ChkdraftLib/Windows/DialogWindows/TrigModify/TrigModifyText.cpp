@@ -53,12 +53,17 @@ bool TrigModifyTextWindow::DestroyThis()
     return false;
 }
 
+void TrigModifyTextWindow::SetTrigIndex(u32 trigIndex)
+{
+    this->trigIndex = trigIndex;
+}
+
 void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
     trigText.clear();
-    if ( textTrigs.generateTextTrigs(CM, trigIndex, trigText) )
+    if ( textTrigs.generateTextTrigs(*CM, trigIndex, trigText) )
         editText.SetText(trigText);
     else
         mb(trigIndex, "Failed to generate text triggers.");
@@ -101,9 +106,8 @@ void TrigModifyTextWindow::CreateSubWindows(HWND hWnd)
 
 bool TrigModifyTextWindow::unsavedChanges()
 {
-    std::string newText;
-    if ( editText.GetWinText(newText) )
-        return trigText.compare(newText) != 0;
+    if ( auto newText = editText.GetWinText() )
+        return trigText.compare(*newText) != 0;
     else
         return false;
 }
@@ -112,14 +116,13 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
 {
     if ( CM != nullptr )
     {
-        std::string newText;
-        if ( editText.GetWinText(newText) )
+        if ( auto newText = editText.GetWinText() )
         {
-            if ( trigText.compare(newText) != 0 )
+            if ( trigText.compare(*newText) != 0 )
             {
-                if ( CompileEditText(newText) )
+                if ( CompileEditText(*newText) )
                 {
-                    trigText = newText;
+                    trigText = *newText;
                     CM->notifyChange(false);
                     CM->refreshScenario();
                     if ( saveAfter )
@@ -156,10 +159,10 @@ bool TrigModifyTextWindow::CompileEditText(std::string & newText)
 {
     if ( CM != nullptr )
     {
-        if ( trigIndex < CM->triggers.numTriggers() )
+        if ( trigIndex < CM->numTriggers() )
         {
             TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.compileTrigger(newText, CM, chkd.scData, trigIndex) )
+            if ( compiler.compileTrigger(newText, *CM, chkd.scData, trigIndex) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

@@ -62,23 +62,20 @@ void TrigGeneralWindow::RefreshWindow(u32 trigIndex)
 {
     refreshing = true;
     this->trigIndex = trigIndex;
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        editRawFlags.SetEditBinaryNum<s32>(trigger->flags);
-        checkPreservedFlag.SetCheck(trigger->preserveTriggerFlagged());
-        checkDisabled.SetCheck(trigger->disabled());
-        checkIgnoreConditionsOnce.SetCheck(trigger->ignoreConditionsOnce());
-        checkIgnoreWaitSkipOnce.SetCheck(trigger->ignoreWaitSkipOnce());
-        checkIgnoreManyActions.SetCheck(trigger->ignoreMiscActionsOnce());
-        checkIgnoreDefeatDraw.SetCheck(trigger->ignoreDefeatDraw());
-        checkFlagPaused.SetCheck(trigger->pauseFlagged());
+    const Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    editRawFlags.SetEditBinaryNum<s32>(trigger.flags);
+    checkPreservedFlag.SetCheck(trigger.preserveTriggerFlagged());
+    checkDisabled.SetCheck(trigger.disabled());
+    checkIgnoreConditionsOnce.SetCheck(trigger.ignoreConditionsOnce());
+    checkIgnoreWaitSkipOnce.SetCheck(trigger.ignoreWaitSkipOnce());
+    checkIgnoreManyActions.SetCheck(trigger.ignoreMiscActionsOnce());
+    checkIgnoreDefeatDraw.SetCheck(trigger.ignoreDefeatDraw());
+    checkFlagPaused.SetCheck(trigger.pauseFlagged());
         
-        ChkdStringPtr extendedComment = CM->strings.getExtendedComment<ChkdString>(trigIndex);
-        ChkdStringPtr extendedNotes = CM->strings.getExtendedNotes<ChkdString>(trigIndex);
-        editComment.SetText(extendedComment == nullptr ? "" : *extendedComment);
-        editNotes.SetText(extendedNotes == nullptr ? "" : *extendedNotes);
-    }
+    auto extendedComment = CM->getExtendedComment<ChkdString>(trigIndex);
+    auto extendedNotes = CM->getExtendedNotes<ChkdString>(trigIndex);
+    editComment.SetText(extendedComment ? *extendedComment : "");
+    editNotes.SetText(extendedNotes ? *extendedNotes : "");
     refreshing = false;
 }
 
@@ -179,91 +176,67 @@ void TrigGeneralWindow::OnLeave()
 
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setPreserveTriggerFlagged(preserve);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setPreserveTriggerFlagged(preserve);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setDisabled(disabled);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setDisabled(disabled);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setIgnoreConditionsOnce(ignoreConditionsOnce);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setIgnoreConditionsOnce(ignoreConditionsOnce);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setIgnoreDefeatDraw(ignoreDefeatDraw);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setIgnoreDefeatDraw(ignoreDefeatDraw);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        trigger->setPauseFlagged(paused);
-        CM->notifyChange(false);
-        RefreshWindow(trigIndex);
-    }
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    trigger.setPauseFlagged(paused);
+    CM->notifyChange(false);
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::ParseRawFlagsText()
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
-    {
-        if ( editRawFlags.GetEditBinaryNum(trigger->flags) )
-            CM->notifyChange(false);
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    if ( editRawFlags.GetEditBinaryNum(trigger.flags) )
+        CM->notifyChange(false);
         
-        RefreshWindow(trigIndex);
-    }
+    RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::ToggleAdvancedMode()
@@ -295,92 +268,75 @@ void TrigGeneralWindow::ToggleAdvancedMode()
 
 void TrigGeneralWindow::EditCommentFocusLost()
 {
-    std::string newCommentText = editComment.GetWinText();
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
+    auto newCommentText = editComment.GetWinText();
+    bool addIfNotFound = newCommentText && !newCommentText->empty();
+    Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
+    size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
+    if ( newCommentStringId != Chk::StringId::NoString )
     {
-        bool addIfNotFound = !newCommentText.empty();
-        Chk::ExtendedTrigDataPtr extension = CM->triggers.getTriggerExtension(trigIndex, addIfNotFound);
-        if ( extension != nullptr )
-        {
-            size_t newCommentStringId = CM->strings.addString<ChkdString>(ChkdString(newCommentText), Chk::Scope::Editor);
-            if ( newCommentStringId != Chk::StringId::NoString )
-            {
-                extension->commentStringId = (u32)newCommentStringId;
-                CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
-                CM->refreshScenario();
-            }
-        }
+        extension.commentStringId = (u32)newCommentStringId;
+        CM->deleteUnusedStrings(Chk::StrScope::Editor);
+        CM->refreshScenario();
     }
 }
 
 void TrigGeneralWindow::EditNotesFocusLost()
 {
-    std::string newNotesText = editNotes.GetWinText();
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(trigIndex);
-    if ( trigger != nullptr )
+    auto newNotesText = editNotes.GetWinText();
+    bool addIfNotFound = newNotesText && !newNotesText->empty();
+    if ( CM->hasTriggerExtension(trigIndex) )
     {
-        bool addIfNotFound = !newNotesText.empty();
-        Chk::ExtendedTrigDataPtr extension = CM->triggers.getTriggerExtension(trigIndex, addIfNotFound);
-        if ( extension != nullptr )
+        Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
+        size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::StrScope::Editor);
+        if ( newNotesStringId != Chk::StringId::NoString )
         {
-            size_t newNotesStringId = CM->strings.addString<ChkdString>(ChkdString(newNotesText), Chk::Scope::Editor);
-            if ( newNotesStringId != Chk::StringId::NoString )
-            {
-                extension->notesStringId = (u32)newNotesStringId;
-                CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
-                CM->refreshScenario();
-            }
+            extension.notesStringId = (u32)newNotesStringId;
+            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->refreshScenario();
         }
     }
 }
 
 void TrigGeneralWindow::ButtonCommentProperties()
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(this->trigIndex);
-    if ( trigger != nullptr )
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    std::optional<ChkdString> unused {};
+    auto extendedComment = CM->getExtendedComment<ChkdString>(trigIndex);
+    ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedComment, Chk::StringUserFlag::ExtendedTriggerComment, this->trigIndex);
+
+    if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        ChkdStringPtr unused = nullptr;
-        ChkdStringPtr extendedComment = CM->strings.getExtendedComment<ChkdString>(trigIndex);
-        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedComment, Chk::StringUserFlag::ExtendedTriggerComment, this->trigIndex);
+        if ( extendedComment )
+            CM->setExtendedComment<ChkdString>(this->trigIndex, *extendedComment);
+        else
+            CM->setExtendedCommentStringId(this->trigIndex, 0);
 
-        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
-        {
-            if ( extendedComment != nullptr )
-                CM->strings.setExtendedComment<ChkdString>(this->trigIndex, *extendedComment);
-            else
-                CM->triggers.setExtendedCommentStringId(this->trigIndex, 0);
-
-            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
-        }
-
-        if ( result > 0 )
-            CM->refreshScenario();
+        CM->deleteUnusedStrings(Chk::StrScope::Editor);
     }
+
+    if ( result > 0 )
+        CM->refreshScenario();
 }
 
 void TrigGeneralWindow::ButtonNotesProperties()
 {
-    Chk::TriggerPtr trigger = CM->triggers.getTrigger(this->trigIndex);
-    if ( trigger != nullptr )
+    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+    std::optional<ChkdString> unused {};
+    auto extendedNotes = CM->getExtendedNotes<ChkdString>(trigIndex);
+    ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedNotes, Chk::StringUserFlag::ExtendedTriggerNotes, this->trigIndex);
+
+    if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        ChkdStringPtr unused = nullptr;
-        ChkdStringPtr extendedNotes = CM->strings.getExtendedNotes<ChkdString>(trigIndex);
-        ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), unused, extendedNotes, Chk::StringUserFlag::ExtendedTriggerNotes, this->trigIndex);
+        if ( extendedNotes )
+            CM->setExtendedNotes<ChkdString>(this->trigIndex, *extendedNotes);
+        else
+            CM->setExtendedNotesStringId(this->trigIndex, 0);
 
-        if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
-        {
-            if ( extendedNotes != nullptr )
-                CM->strings.setExtendedNotes<ChkdString>(this->trigIndex, *extendedNotes);
-            else
-                CM->triggers.setExtendedNotesStringId(this->trigIndex, 0);
-
-            CM->strings.deleteUnusedStrings(Chk::Scope::Editor);
-        }
-
-        if ( result > 0 )
-            CM->refreshScenario();
+        CM->deleteUnusedStrings(Chk::StrScope::Editor);
     }
+
+    if ( result > 0 )
+        CM->refreshScenario();
 }
 
 LRESULT TrigGeneralWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

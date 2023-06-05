@@ -14,17 +14,48 @@ namespace WinLib {
             void SetSel(int index);
             void ClearEditSel();
             int GetSel();
-            bool GetItemText(int index, output_param std::string & dest);
+            bool GetItemText(int index, std::string & dest);
+            int GetNumItems();
 
             void ClearItems();
-            bool AddItem(const std::string & item);
+            int AddItem(const std::string & item); // Returns 0-based index of new item, negative if there's an error
+            int RemoveItem(int index);
 
-            template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+            template <typename numType>
                 bool GetEditNum(numType & dest);
 
-            template <typename numType> // Allowed types: u8, s8, u16, s16, u32, s32/int
+            template <typename numType>
                 bool SetEditNum(numType num);
     };
+
+    template <typename numType>
+    bool DropdownControl::GetEditNum(numType & dest)
+    {
+        auto text = GetWinText();
+        if ( text && text->length() > 0 )
+        {
+            errno = 0;
+            char* endPtr = nullptr;
+            long long temp = std::strtoll(text->c_str(), &endPtr, 0);
+            if ( temp != 0 )
+            {
+                dest = (numType)temp;
+                return true;
+            }
+            else if ( errno == 0 && endPtr == &text.value()[text->size()] )
+            {
+                dest = 0;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template <typename numType>
+    bool DropdownControl::SetEditNum(numType num)
+    {
+        return WindowsItem::SetWinText(std::to_string(num));
+    }
 
 }
 

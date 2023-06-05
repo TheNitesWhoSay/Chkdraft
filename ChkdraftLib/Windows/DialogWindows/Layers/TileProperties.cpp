@@ -91,7 +91,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 u16 tile = 0;
                 editTileValue.GetEditNum<u16>(tile);
 
-                const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->layers.getTileset());
+                const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
 
                 HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));
                 FillRect(MemhDC, &rect, brush);

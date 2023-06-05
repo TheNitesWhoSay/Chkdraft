@@ -2,7 +2,8 @@
 #define TESTASSETS_H
 #include "../MappingCoreLib/MappingCore.h"
 
-extern bool getPreSavePath(std::string & outPreSavePath);
+extern std::optional<std::string> getPreSavePath();
+extern std::optional<std::string> getEmptyDirectory();
 
 struct TestAssets
 {

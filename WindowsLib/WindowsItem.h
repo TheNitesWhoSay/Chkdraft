@@ -1,6 +1,7 @@
 #ifndef WINDOWSITEM_H
 #define WINDOWSITEM_H
 #include <Windows.h>
+#include <optional>
 #include <string>
 #include <list>
 #include "DataTypes.h"
@@ -24,9 +25,8 @@ namespace WinLib {
             HWND getParent();
 
             int GetWinTextLen();
-            std::string GetWinText();
-            bool GetWinText(output_param std::string & text);
-            bool getWindowRect(output_param RECT & rect);
+            std::optional<std::string> GetWinText();
+            bool getWindowRect(RECT & rect);
             int Width();
             int Height();
             int Left();

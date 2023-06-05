@@ -7,6 +7,7 @@ std::string Settings::patchRtPath("");
 u32 Settings::logLevel(LogLevel::Info);
 u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
+bool Settings::isRemastered(false);
 
 bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
@@ -40,53 +41,64 @@ bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
     return false;
 }
 
-bool GetChkdPath(std::string & outChkdPath)
+std::optional<std::string> GetChkdPath()
 {
-    std::string moduleDirectory;
-    if ( getModuleDirectory(moduleDirectory) )
+    if ( auto moduleDirectory = getModuleDirectory() )
     {
-        makeDirectory(moduleDirectory + "\\chkd");
-        outChkdPath = moduleDirectory + std::string("\\chkd");
-        return true;
+        if ( makeDirectory(*moduleDirectory + "\\chkd") )
+            return *moduleDirectory + "\\chkd";
     }
-    return false;
+    return std::nullopt;
 }
 
-bool getPreSavePath(std::string & outPreSavePath)
+std::optional<std::string> getPreSavePath()
 {
-    std::string chkdPath;
-    if ( GetChkdPath(chkdPath) )
+    if ( auto chkdPath = GetChkdPath() )
     {
-        makeDirectory(chkdPath + "\\Pre-Save");
-        outPreSavePath = chkdPath + std::string("\\Pre-Save\\");
-        return true;
+        if ( makeDirectory(*chkdPath + "\\Pre-Save") )
+            return *chkdPath + "\\Pre-Save\\";
     }
-    return false;
+    return std::nullopt;
 }
 
-bool GetLoggerPath(std::string & outLoggerPath)
+std::optional<std::string> GetLoggerPath()
 {
-    std::string chkdPath;
-    if ( GetChkdPath(chkdPath) )
+    if ( auto chkdPath = GetChkdPath() )
     {
-        makeDirectory(chkdPath + "\\Logs");
-        outLoggerPath = chkdPath + std::string("\\Logs\\");
-        return true;
+        if ( makeDirectory(*chkdPath + "\\Logs") )
+            return *chkdPath + "\\Logs\\";
     }
-    return false;
+    return std::nullopt;
 }
 
-bool GetSettingsPath(std::string & outFilePath)
+std::optional<std::string> GetToolsPath()
 {
-    std::string moduleDirectory;
-    if ( getModuleDirectory(moduleDirectory) )
+    if ( auto chkdPath = GetChkdPath() )
     {
-        makeDirectory(moduleDirectory + "\\chkd");
-        makeDirectory(moduleDirectory + "\\chkd\\Settings");
-        outFilePath = moduleDirectory + std::string("\\chkd\\Settings\\");
-        return true;
+        if ( makeDirectory(*chkdPath + "\\Tools") )
+            return *chkdPath + "\\Tools\\";
     }
-    return false;
+    return std::nullopt;
+}
+
+std::optional<std::string> GetToolPath(const std::string & toolName)
+{
+    if ( auto toolsPath = GetToolsPath() )
+    {
+        if ( makeDirectory(*toolsPath + toolName) )
+            return *toolsPath + toolName + "\\";
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> GetSettingsPath()
+{
+    if ( auto moduleDirectory = getModuleDirectory() )
+    {
+        if ( makeDirectory(*moduleDirectory + "\\chkd") && makeDirectory(*moduleDirectory + "\\chkd\\Settings") )
+            return *moduleDirectory + "\\chkd\\Settings\\";
+    }
+    return std::nullopt;
 }
 
 u32 Settings::getLogLevel()
@@ -98,11 +110,10 @@ u32 Settings::getLogLevel()
 bool Settings::readSettingsFile()
 {
     bool success = false;
-    std::string settingsPath = "";
-    if ( GetSettingsPath(settingsPath) )
+    if ( auto settingsPath = GetSettingsPath() )
     {
         std::ifstream loadFile;
-        loadFile.open(settingsPath + "settings.ini");
+        loadFile.open(*settingsPath + "settings.ini");
 
         std::string line = "";
         while (std::getline(loadFile, line))
@@ -143,6 +154,15 @@ bool Settings::readSettingsFile()
                     else
                         useAddressesForMemory = true;
                 }
+                else if ( key == "isRemastered" )
+                {
+                    for ( auto & character : value )
+                        character = toupper(character);
+                    if ( value == "FALSE" || value == "0" )
+                        useAddressesForMemory = false;
+                    else
+                        useAddressesForMemory = true;
+                }
                 else
                     foundValue = false;
 
@@ -156,11 +176,10 @@ bool Settings::readSettingsFile()
 
 bool Settings::updateSettingsFile()
 {
-    std::string settingsPath = "";
-    if ( GetSettingsPath(settingsPath) )
+    if ( auto settingsPath = GetSettingsPath() )
     {
         std::ofstream loadFile;
-        loadFile.open(settingsPath + "settings.ini");
+        loadFile.open(*settingsPath + "settings.ini");
         loadFile
             << "starCraftPath=" << starCraftPath << std::endl
             << "starDatPath=" << starDatPath << std::endl
@@ -168,7 +187,8 @@ bool Settings::updateSettingsFile()
             << "patchRtPath=" << patchRtPath << std::endl
             << "logLevel=" << logLevel << std::endl
             << "deathTableStart=0x" << std::hex << std::uppercase << deathTableStart << std::dec << std::nouppercase << std::endl
-            << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl;
+            << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl
+            << "isRemastered=" << (isRemastered?"TRUE":"FALSE") << std::endl;
         loadFile.close();
         return true;
     }

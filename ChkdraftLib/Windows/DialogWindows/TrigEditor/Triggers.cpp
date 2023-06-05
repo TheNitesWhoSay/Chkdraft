@@ -155,8 +155,8 @@ void TriggersWindow::DeleteSelection()
 {
     if ( currTrigger != NO_TRIGGER )
     {
-        CM->triggers.deleteTrigger(currTrigger);
-        CM->strings.deleteUnusedStrings(Chk::Scope::Both);
+        CM->deleteTrigger(currTrigger);
+        CM->deleteUnusedStrings(Chk::StrScope::Both);
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -174,9 +174,7 @@ void TriggersWindow::CopySelection()
 {
     if ( currTrigger != NO_TRIGGER )
     {
-        CM->triggers.insertTrigger(currTrigger+1,
-            std::shared_ptr<Chk::Trigger>(new Chk::Trigger(*(CM->triggers.getTrigger(currTrigger)))));
-
+        CM->insertTrigger(currTrigger+1, CM->getTrigger(currTrigger));
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -198,7 +196,7 @@ void TriggersWindow::MoveUp()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->triggers.moveTrigger(currTrigger, prevTrigIndex);
+        CM->moveTrigger(currTrigger, prevTrigIndex);
         if ( MoveUpTrigListItem(sel, prevTrigIndex) )
         {
             SelectTrigListItem(sel-1);
@@ -220,7 +218,7 @@ void TriggersWindow::MoveDown()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->triggers.moveTrigger(currTrigger, nextTrigIndex);
+        CM->moveTrigger(currTrigger, nextTrigIndex);
         if ( MoveDownTrigListItem(sel, nextTrigIndex) )
         {
             SelectTrigListItem(sel+1);
@@ -240,11 +238,11 @@ void TriggersWindow::MoveTrigTo()
          MoveToDialog<u32>::GetIndex(targetTrigIndex, getHandle()) &&
          targetTrigIndex >= 0 &&
          targetTrigIndex != currTrigger &&
-         targetTrigIndex < CM->triggers.numTriggers() )
+         targetTrigIndex < CM->numTriggers() )
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->triggers.moveTrigger(currTrigger, targetTrigIndex);
+        CM->moveTrigger(currTrigger, targetTrigIndex);
         int listIndexMovedTo = -1;
         listTriggers.SetRedraw(false);
         if ( MoveTrigListItemTo(sel, currTrigger, targetTrigIndex, listIndexMovedTo) )
@@ -263,11 +261,11 @@ void TriggersWindow::MoveTrigTo()
 
 void TriggersWindow::ButtonNew()
 {
-    Chk::TriggerPtr trigger = Chk::TriggerPtr(new Chk::Trigger());
+    Chk::Trigger trigger {};
     for ( u8 i=Sc::Player::Id::Player1; i<=Sc::Player::Id::Player8; i++ )
     {
         if ( groupSelected[i] )
-            trigger->owners[i] = Chk::Trigger::Owned::Yes;
+            trigger.owners[i] = Chk::Trigger::Owned::Yes;
     }
 
     u32 newTrigId = 0;
@@ -277,13 +275,13 @@ void TriggersWindow::ButtonNew()
         if ( listTriggers.GetItemData(sel, newTrigId) )
         {
             newTrigId ++;
-            CM->triggers.insertTrigger(newTrigId, trigger);
+            CM->insertTrigger(newTrigId, trigger);
         }
     }
     else
     {
-        CM->triggers.addTrigger(trigger);
-        newTrigId = u32(CM->triggers.numTriggers()-1);
+        CM->addTrigger(trigger);
+        newTrigId = u32(CM->numTriggers()-1);
     }
 
     CM->notifyChange(false);
@@ -310,10 +308,10 @@ void TriggersWindow::ButtonModify()
     }
 }
 
-std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
+std::string TriggersWindow::GetConditionString(u8 conditionNum, const Chk::Trigger & trigger, TextTrigGenerator & tt)
 {
     std::stringstream ssCondition;
-    Chk::Condition & condition = trigger->condition(conditionNum);
+    const Chk::Condition & condition = trigger.condition(conditionNum);
     Chk::Condition::Type conditionType = condition.conditionType;
     if ( condition.isDisabled() )
         ssCondition << "(disabled) ";
@@ -422,10 +420,10 @@ std::string TriggersWindow::GetConditionString(u8 conditionNum, Chk::Trigger* tr
     return ssCondition.str();
 }
 
-std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
+std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & trigger, TextTrigGenerator & tt)
 {
     std::stringstream ssAction;
-    Chk::Action & action = trigger->action(actionNum);
+    const Chk::Action & action = trigger.action(actionNum);
     Chk::Action::Type actionType = action.actionType;
     if ( action.isDisabled() )
         ssAction << "(disabled) ";
@@ -577,8 +575,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
         case Chk::Action::Type::PauseTimer:
             ssAction << "Pause the countdown timer.";
             break;
-        case Chk::Action::Type::PlaySound: // Wav, Duration
-            ssAction << "Play \'\x08" << tt.getTrigWav(action.soundStringId) << "\x0C\'.";
+        case Chk::Action::Type::PlaySound: // Sound, Duration
+            ssAction << "Play \'\x08" << tt.getTrigSound(action.soundStringId) << "\x0C\'.";
             break;
         case Chk::Action::Type::PreserveTrigger:
             ssAction << "Preserve trigger.";
@@ -662,7 +660,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
             break;
         case Chk::Action::Type::Transmission: // Type, Location, Wav, Type2, Number, String
             ssAction << "Send transmission to current player from \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type) << "\x0C at \'\x08"
-                << tt.getTrigLocation(action.locationId) << "\x0C\'. Play '\x08" << tt.getTrigWav(action.soundStringId)
+                << tt.getTrigLocation(action.locationId) << "\x0C\'. Play '\x08" << tt.getTrigSound(action.soundStringId)
                 << "\x0C\'. Modify duration: \x08" << tt.getTrigNumericModifier((Chk::Trigger::ValueModifier)action.type2) << "\x0C \x08"
                 << tt.getTrigNumber(action.number) << "\x0C miliseconds. Display text:\x08"
                 << tt.getTrigString(action.stringId) << '\x0C';
@@ -681,8 +679,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
             break;
         case Chk::Action::Type::Wait: // Duration
             ssAction << "Wait for \x08" << tt.getTrigNumber(action.time) << "\x0C miliseconds.";
-            break;//*/
-        default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
+            break;
+        default: // Location, String, Sound, Duration, Player, Number, Type, Action, Type2, Flags, Internal
             ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
                 << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)
@@ -692,13 +690,13 @@ std::string TriggersWindow::GetActionString(u8 actionNum, Chk::Trigger* trigger,
     return ssAction.str();
 }
 
-std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger, TextTrigGenerator & tt)
+std::string TriggersWindow::GetTriggerString(u32 trigNum, const Chk::Trigger & trigger, TextTrigGenerator & tt)
 {
     bool more = false;
     std::stringstream ssTrigger;
     u8 remainingLines = 13;
-    size_t numConditions = trigger->numUsedConditions();
-    size_t numActions = trigger->numUsedActions();
+    size_t numConditions = trigger.numUsedConditions();
+    size_t numActions = trigger.numUsedActions();
     if ( numConditions == 0 && numActions == 0 )
         ssTrigger << "<EMPTY>" << TRIGGER_NUM_PREFACE << trigNum << "\x0C\r\n";
     else
@@ -709,7 +707,7 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger,
             u8 i=0;
             while ( numConditions > 0 && i < 16 )
             {
-                if ( trigger->condition(i).conditionType != Chk::Condition::Type::NoCondition )
+                if ( trigger.condition(i).conditionType != Chk::Condition::Type::NoCondition )
                 {
                     ssTrigger << ' ' << GetConditionString(i, trigger, textTrigGenerator) << "\r\n";
 
@@ -735,7 +733,7 @@ std::string TriggersWindow::GetTriggerString(u32 trigNum, Chk::Trigger* trigger,
             u8 i=0;
             while ( numActions > 0 && i < 64 )
             {
-                if ( trigger->action(i).actionType != Chk::Action::Type::NoAction )
+                if ( trigger.action(i).actionType != Chk::Action::Type::NoAction )
                 {
                     ssTrigger << ' ' << GetActionString(i, trigger, textTrigGenerator) << "\r\n";
 
@@ -788,20 +786,17 @@ void TriggersWindow::RefreshGroupList()
 
     if ( CM != nullptr )
     {
-        size_t numTriggers = CM->triggers.numTriggers();
+        size_t numTriggers = CM->numTriggers();
         for ( size_t i=0; i<numTriggers; i++ )
         {
-            const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
-            if ( trigger != nullptr )
+            const Chk::Trigger & trigger = CM->getTrigger(i);
+            for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
             {
-                for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
+                if ( !addedPlayer[player] && trigger.owners[player] == Chk::Trigger::Owned::Yes )
                 {
-                    if ( !addedPlayer[player] && trigger->owners[player] == Chk::Trigger::Owned::Yes )
-                    {
-                        addedPlayer[player] = true;
-                        if ( player == firstNotFound ) // Skip already-found players
-                            firstNotFound ++;
-                    }
+                    addedPlayer[player] = true;
+                    if ( player == firstNotFound ) // Skip already-found players
+                        firstNotFound ++;
                 }
             }
         }
@@ -854,14 +849,14 @@ void TriggersWindow::RefreshTrigList()
 
     if ( CM != nullptr )
     {
-        size_t numTriggers = CM->triggers.numTriggers();
+        size_t numTriggers = CM->numTriggers();
         for ( size_t i=0; i<numTriggers; i++ )
         {
-            const Chk::TriggerPtr trigger = CM->triggers.getTrigger(i);
-            if ( trigger != nullptr && ShowTrigger(&(*trigger)) )
+            const Chk::Trigger & trigger = CM->getTrigger(i);
+            if ( ShowTrigger(trigger) )
             {
                 int newListIndex = listTriggers.AddItem((u32)i);
-                if ( newListIndex != -1 ) // Only consider the trigger if it could be added to the ListBox
+                if ( newListIndex >= 0 ) // Only consider the trigger if it could be added to the ListBox
                 {
                     numVisibleTrigs ++;
                     if ( currTrigger == i ) // This trigger is the currTrigger
@@ -1083,14 +1078,14 @@ bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u
     }
 }
 
-bool TriggersWindow::ShowTrigger(Chk::Trigger* trigger)
+bool TriggersWindow::ShowTrigger(const Chk::Trigger & trigger)
 {
     if ( displayAll )
         return true;
 
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
     {
-        if ( groupSelected[i] && trigger->owners[i] != Chk::Trigger::Owned::No )
+        if ( groupSelected[i] && trigger.owners[i] != Chk::Trigger::Owned::No )
             return true;
     }
 
@@ -1103,13 +1098,13 @@ void TriggersWindow::ClearGroups()
         groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
+bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
-    RawStringPtr commentString = CM->strings.getExtendedComment<RawString>(triggerNum);
-    if ( commentString == nullptr )
-        commentString = CM->strings.getComment<RawString>(triggerNum);
+    auto commentString = CM->getExtendedComment<RawString>(triggerNum);
+    if ( !commentString )
+        commentString = CM->getComment<RawString>(triggerNum);
 
-    if ( commentString != nullptr )
+    if ( commentString )
     {
         size_t hash = strHash(*commentString);
         auto matches = commentSizeTable.equal_range(hash);
@@ -1205,7 +1200,7 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 group
     }
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, ScenarioPtr chk, u32 triggerNum, Chk::Trigger* trigger)
+void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
     HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
     if ( hBackground != NULL )
@@ -1236,13 +1231,13 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenar
     }
 
     LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
-    size_t commentStringId = trigger->getComment();
+    size_t commentStringId = trigger.getComment();
     
-    RawStringPtr commentString = CM->strings.getExtendedComment<RawString>(triggerNum);
-    if ( commentString == nullptr )
-        commentString = CM->strings.getComment<RawString>(triggerNum);
+    auto commentString = CM->getExtendedComment<RawString>(triggerNum);
+    if ( !commentString )
+        commentString = CM->getComment<RawString>(triggerNum);
 
-    if ( commentString != nullptr )
+    if ( commentString )
     {
         std::string num(std::to_string(triggerNum));
         size_t endOfLine = commentString->find("\r\n");
@@ -1356,7 +1351,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
             if ( this != nullptr )
             {
-                textTrigGenerator.loadScenario(CM);
+                textTrigGenerator.loadScenario(*CM);
                 trigListDC = listTriggers.getDC();
                 commentSizeTable.clear();
                 trigLineSizeTable.clear();
@@ -1369,9 +1364,8 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 u32 triggerNum = (u32)mis->itemData;
                 
-                const Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
-                if ( trigger != nullptr )
-                    GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, CM, triggerNum, &(*trigger));
+                const Chk::Trigger & trigger = CM->getTrigger(triggerNum);
+                GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
                 
                 return TRUE;
             }
@@ -1403,7 +1397,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
-            textTrigGenerator.loadScenario(CM);
+            textTrigGenerator.loadScenario(*CM);
             drawingAll = true;
             break;
 
@@ -1411,7 +1405,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             if ( wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
-                    textTrigGenerator.loadScenario(CM);
+                    textTrigGenerator.loadScenario(*CM);
 
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
@@ -1422,9 +1416,9 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 {
                     u32 triggerNum = (u32)pdis->itemData;
                     
-                    const Chk::TriggerPtr trigger = CM->triggers.getTrigger(triggerNum);
-                    if ( CM != nullptr && trigger != nullptr )
-                        DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, CM, triggerNum, &(*trigger));
+                    const Chk::Trigger & trigger = CM->getTrigger(triggerNum);
+                    if ( CM != nullptr )
+                        DrawTrigger(pdis->hDC, pdis->rcItem, isSelected, *CM, triggerNum, trigger);
                 }
 
                 if ( !drawingAll )

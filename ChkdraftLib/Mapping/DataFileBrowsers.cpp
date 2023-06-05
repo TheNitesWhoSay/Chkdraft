@@ -6,19 +6,22 @@ ChkdDataFileBrowser::ChkdDataFileBrowser() : updatedPaths(false)
 }
 
 
-std::vector<MpqFilePtr> ChkdDataFileBrowser::openScDataFiles(const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
+std::vector<ArchiveFilePtr> ChkdDataFileBrowser::openScDataFiles(const std::vector<Sc::DataFile::Descriptor> & dataFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     updatedPaths = false;
-    const std::vector<MpqFilePtr> & scDataFiles = Sc::DataFile::Browser::openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    const std::vector<ArchiveFilePtr> & scDataFiles = Sc::DataFile::Browser::openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( updatedPaths )
         Settings::updateSettingsFile();
 
     return scDataFiles;
 }
 
-bool ChkdDataFileBrowser::findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
+bool ChkdDataFileBrowser::findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedBrowse,
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
-    bool foundStarCraftDirectory = Sc::DataFile::Browser::findStarCraftDirectory(starCraftDirectory, declinedBrowse, expectedStarCraftDirectory, starCraftBrowser);
+    bool foundStarCraftDirectory = Sc::DataFile::Browser::findStarCraftDirectory(starCraftDirectory, isRemastered, declinedBrowse,
+        expectedStarCraftDirectory, starCraftBrowser);
+
     if ( foundStarCraftDirectory && Settings::starCraftPath != starCraftDirectory )
     {
         Settings::starCraftPath = starCraftDirectory;
@@ -27,43 +30,48 @@ bool ChkdDataFileBrowser::findStarCraftDirectory(output_param std::string & star
     return foundStarCraftDirectory;
 }
 
-MpqFilePtr ChkdDataFileBrowser::openDataFile(const std::string & dataFilePath, const Sc::DataFile::Descriptor & dataFileDescriptor)
+ArchiveFilePtr ChkdDataFileBrowser::openDataFile(const std::string & dataFilePath, const Sc::DataFile::Descriptor & dataFileDescriptor)
 {
-    MpqFilePtr mpqFile = Sc::DataFile::Browser::openDataFile(dataFilePath, dataFileDescriptor);
-    if ( mpqFile != nullptr )
+    ArchiveFilePtr archiveFile = Sc::DataFile::Browser::openDataFile(dataFilePath, dataFileDescriptor);
+    if ( archiveFile != nullptr )
     {
-        const std::string & mpqFilePath = mpqFile->getFilePath();
-        if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::StarDat && mpqFilePath != Settings::starDatPath )
+        const std::string & archiveFilePath = archiveFile->getFilePath();
+        if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::RemasteredCasc && Settings::isRemastered == false )
         {
-            Settings::starDatPath = mpqFilePath;
+            Settings::isRemastered = true;
             updatedPaths = true;
         }
-        else if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::BrooDat && mpqFilePath != Settings::brooDatPath )
+        else if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::StarDat && archiveFilePath != Settings::starDatPath )
         {
-            Settings::brooDatPath = mpqFilePath;
+            Settings::starDatPath = archiveFilePath;
             updatedPaths = true;
         }
-        else if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::PatchRt && mpqFilePath != Settings::patchRtPath )
+        else if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::BrooDat && archiveFilePath != Settings::brooDatPath )
         {
-            Settings::patchRtPath = mpqFilePath;
+            Settings::brooDatPath = archiveFilePath;
+            updatedPaths = true;
+        }
+        else if ( dataFileDescriptor.getPriority() == Sc::DataFile::Priority::PatchRt && archiveFilePath != Settings::patchRtPath )
+        {
+            Settings::patchRtPath = archiveFilePath;
             updatedPaths = true;
         }
     }
-    return mpqFile;
+    return archiveFile;
 }
 
-std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> ChkdDataFileBrowser::getDataFileDescriptors()
+std::vector<Sc::DataFile::Descriptor> ChkdDataFileBrowser::getDataFileDescriptors()
 {
     Settings::readSettingsFile();
-    std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> dataFiles = Sc::DataFile::getDefaultDataFiles();
+    std::vector<Sc::DataFile::Descriptor> dataFiles = Sc::DataFile::getDefaultDataFiles();
     for ( auto dataFile = dataFiles.begin(); dataFile != dataFiles.end(); ++dataFile )
     {
-        if ( dataFile->first == Sc::DataFile::Priority::StarDat && !Settings::starDatPath.empty() )
-            dataFile->second.setExpectedFilePath(Settings::starDatPath);
-        else if ( dataFile->first == Sc::DataFile::Priority::BrooDat && !Settings::brooDatPath.empty() )
-            dataFile->second.setExpectedFilePath(Settings::brooDatPath);
-        else if ( dataFile->first == Sc::DataFile::Priority::PatchRt && !Settings::patchRtPath.empty() )
-            dataFile->second.setExpectedFilePath(Settings::patchRtPath);
+        if ( dataFile->getPriority() == Sc::DataFile::Priority::StarDat && !Settings::starDatPath.empty() )
+            dataFile->setExpectedFilePath(Settings::starDatPath);
+        else if ( dataFile->getPriority() == Sc::DataFile::Priority::BrooDat && !Settings::brooDatPath.empty() )
+            dataFile->setExpectedFilePath(Settings::brooDatPath);
+        else if ( dataFile->getPriority() == Sc::DataFile::Priority::PatchRt && !Settings::patchRtPath.empty() )
+            dataFile->setExpectedFilePath(Settings::patchRtPath);
     }
     return dataFiles;
 }

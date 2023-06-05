@@ -266,7 +266,7 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\UpgradeSettings.h">
       <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClInclude>
-    <ClInclude Include="Windows\DialogWindows\MapSettings\WavEditor.h">
+    <ClInclude Include="Windows\DialogWindows\MapSettings\SoundEditor.h">
       <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClInclude>
     <ClInclude Include="Windows\DialogWindows\MapSettings\StringEditor\StringEditor.h">
@@ -346,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="Windows\MainWindows\LoggerWindow.h">
       <Filter>Header Files\Windows\Main Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\MapSettings\ColorProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -490,7 +493,7 @@
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
-    <ClCompile Include="Windows\DialogWindows\MapSettings\WavEditor.cpp">
+    <ClCompile Include="Windows\DialogWindows\MapSettings\SoundEditor.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp">
@@ -561,6 +564,9 @@
     </ClCompile>
     <ClCompile Include="Windows\MainWindows\LoggerWindow.cpp">
       <Filter>Source Files\Windows\Main Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\MapSettings\ColorProperties.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

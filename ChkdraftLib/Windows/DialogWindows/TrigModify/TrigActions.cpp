@@ -58,13 +58,13 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
 
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
-    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    const auto & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( trig != nullptr && ttg.loadScenario(CM) )
+    if ( ttg.loadScenario(*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
-            Chk::Action & action = trig->action(y);
+            const Chk::Action & action = trig.action(y);
             if ( action.actionType > Chk::Action::Type::NoAction && action.actionType <= Chk::Action::Type::LastAction )
             {
                 gridActions.item(1, y).SetText(ttg.getActionName(action.actionType));
@@ -153,10 +153,10 @@ void TrigActionsWindow::HideSuggestions()
 
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( actionNum >= 0 && actionNum < 64 && trig != nullptr )
+    auto & trig = CM->getTrigger(trigIndex);
+    if ( actionNum >= 0 && actionNum < 64 )
     {
-        Chk::Action & action = trig->action(actionNum);
+        Chk::Action & action = trig.action(actionNum);
         if ( action.actionType != Chk::Action::Type::NoAction )
         {
             action.toggleDisabled();
@@ -361,22 +361,19 @@ void TrigActionsWindow::RefreshActionAreas()
 
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    auto & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
     if ( ttc.parseActionName(newText, newType) || ttc.parseActionName(suggestions.Take(), newType) )
     {
-        if ( trig != nullptr )
-        {
-            Chk::Action & action = trig->action(actionNum);
-            TransformAction(action, newType, refreshImmediately);
-        }
+        Chk::Action & action = trig.action(actionNum);
+        TransformAction(action, newType, refreshImmediately);
     }
     else if ( newText.length() == 0 )
     {
-        if ( trig != nullptr && trig->action(actionNum).actionType != newType )
+        if ( trig.action(actionNum).actionType != newType )
         {
-            trig->deleteAction((u8)actionNum);
+            trig.deleteAction((u8)actionNum);
             if ( refreshImmediately )
                 RefreshActionAreas();
         }
@@ -389,87 +386,84 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     std::string suggestionString = suggestions.Take();
     bool hasSuggestion = !suggestionString.empty();
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr )
+    auto & trig = CM->getTrigger(trigIndex);
+    Chk::Action & action = trig.action(actionNum);
+    if ( action.actionType < Chk::Action::NumActionTypes )
     {
-        Chk::Action & action = trig->action(actionNum);
-        if ( action.actionType < Chk::Action::NumActionTypes )
+        Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
+        SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
+        SingleLineChkdString chkdNewText = ChkdString(newText);
+
+        bool madeChange = false;
+        if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
-            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
-            SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
-            SingleLineChkdString chkdNewText = ChkdString(newText);
+            size_t newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
+            if ( newStringId == Chk::StringId::NoString )
+                newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
 
-            bool madeChange = false;
-            if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
+            if ( newStringId != Chk::StringId::NoString )
             {
-                size_t newStringId = CM->strings.findString<SingleLineChkdString>(chkdSuggestText);
-                if ( newStringId == Chk::StringId::NoString )
-                    newStringId = CM->strings.findString<SingleLineChkdString>(chkdSuggestText);
-
-                if ( newStringId != Chk::StringId::NoString )
-                {
-                    if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = (u32)newStringId;
-                    else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = (u32)newStringId;
+                if ( argType == Chk::Action::ArgType::String )
+                    action.stringId = (u32)newStringId;
+                else if ( argType == Chk::Action::ArgType::Sound )
+                    action.soundStringId = (u32)newStringId;
                     
-                    CM->strings.deleteUnusedStrings(Chk::Scope::Both);
-                    madeChange = true;
-                }
+                CM->deleteUnusedStrings(Chk::StrScope::Both);
+                madeChange = true;
             }
-            else if ( argType == Chk::Action::ArgType::Script )
+        }
+        else if ( argType == Chk::Action::ArgType::Script )
+        {
+            u32 newScriptNum = 0;
+            size_t hash = strHash(suggestionString);
+            size_t numMatching = scriptTable.count(hash);
+            if ( numMatching == 1 )
             {
-                u32 newScriptNum = 0;
-                size_t hash = strHash(suggestionString);
-                size_t numMatching = scriptTable.count(hash);
-                if ( numMatching == 1 )
+                std::string & scriptDisplayString = scriptTable.find(hash)->second.second;
+                if ( scriptDisplayString.compare(suggestionString) == 0 )
+                    newScriptNum = scriptTable.find(hash)->second.first;
+            }
+            else if ( numMatching > 1 )
+            {
+                auto range = scriptTable.equal_range(hash);
+                for ( auto & pair = range.first; pair != range.second; ++pair )
                 {
-                    std::string & scriptDisplayString = scriptTable.find(hash)->second.second;
+                    std::string & scriptDisplayString = pair->second.second;
                     if ( scriptDisplayString.compare(suggestionString) == 0 )
-                        newScriptNum = scriptTable.find(hash)->second.first;
-                }
-                else if ( numMatching > 1 )
-                {
-                    auto range = scriptTable.equal_range(hash);
-                    for ( auto & pair = range.first; pair != range.second; ++pair )
                     {
-                        std::string & scriptDisplayString = pair->second.second;
-                        if ( scriptDisplayString.compare(suggestionString) == 0 )
-                        {
-                            newScriptNum = scriptTable.find(hash)->second.first;
-                            break;
-                        }
+                        newScriptNum = scriptTable.find(hash)->second.first;
+                        break;
                     }
-                }
-                else
-                {
-                    Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
-                    madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
-                        (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                            ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
-                }
-
-                if ( newScriptNum != 0 )
-                {
-                    action.number = newScriptNum;
-                    madeChange = true;
                 }
             }
             else
             {
-                Chk::Action::Argument argument = Chk::Action::getClassicArg(trig->action(actionNum).actionType, argNum);
+                Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
                 madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseActionArg(rawUpdateText, argument, action, CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                    ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, hasSuggestion)) ||
                     (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.parseActionArg(rawSuggestText, argument, action, CM, chkd.scData, trigIndex, false));
+                        ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, false));
             }
 
-            if ( madeChange )
+            if ( newScriptNum != 0 )
             {
-                if ( refreshImmediately )
-                    RefreshActionAreas();
+                action.number = newScriptNum;
+                madeChange = true;
             }
+        }
+        else
+        {
+            Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
+            madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
+                ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, hasSuggestion)) ||
+                (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
+                    ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, false));
+        }
+
+        if ( madeChange )
+        {
+            if ( refreshImmediately )
+                RefreshActionAreas();
         }
     }
 }
@@ -494,16 +488,15 @@ BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std
 
 BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    auto & trig = CM->getTrigger(trigIndex);
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
     {
         u8 actionNum = (u8)gridItemY;
 
         if ( gridItemX == 1 && // Action Name
-            trig != nullptr &&
-            trig->action(actionNum).actionType != Chk::Action::Type::NoAction )
+            trig.action(actionNum).actionType != Chk::Action::Type::NoAction )
         {
-            ChangeActionType(trig->action(actionNum), Chk::Action::Type::NoAction);
+            ChangeActionType(trig.action(actionNum), Chk::Action::Type::NoAction);
         }
         else if ( gridItemX > 1 ) // Action Arg
         {
@@ -518,34 +511,31 @@ void TrigActionsWindow::DrawSelectedAction()
     HDC hDC = GetDC(getHandle());
     if ( hDC != NULL )
     {
-        const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-        if ( trig != nullptr )
+        const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+        int focusedX = -1,
+            focusedY = -1;
+
+        if ( gridActions.GetFocusedItem(focusedX, focusedY) )
         {
-            int focusedX = -1,
-                focusedY = -1;
+            u8 actionNum = (u8)focusedY;
+            TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
+            ttg.loadScenario(*CM);
+            ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
+            ttg.clearScenario();
 
-            if ( gridActions.GetFocusedItem(focusedX, focusedY) )
-            {
-                u8 actionNum = (u8)focusedY;
-                TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart);
-                ttg.loadScenario(CM);
-                ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, &(*trig), ttg);
-                ttg.clearScenario();
+            UINT width = 0, height = 0;
+            GetStringDrawSize(hDC, width, height, str);
+            HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
+            RECT rect;
+            rect.left = gridActions.Left() + 5;
+            rect.right = gridActions.Right() - 5;
+            rect.top = gridActions.Top() - height - 1;
+            rect.bottom = gridActions.Top() - 1;
+            FillRect(hDC, &rect, hBackground);
+            DeleteBrush(hBackground);
 
-                UINT width = 0, height = 0;
-                GetStringDrawSize(hDC, width, height, str);
-                HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
-                RECT rect;
-                rect.left = gridActions.Left() + 5;
-                rect.right = gridActions.Right() - 5;
-                rect.top = gridActions.Top() - height - 1;
-                rect.bottom = gridActions.Top() - 1;
-                FillRect(hDC, &rect, hBackground);
-                DeleteBrush(hBackground);
-
-                SetBkMode(hDC, TRANSPARENT);
-                DrawString(hDC, gridActions.Left() + 6, gridActions.Top() - height - 1, 500, RGB(0, 0, 0), str);
-            }
+            SetBkMode(hDC, TRANSPARENT);
+            DrawString(hDC, gridActions.Left() + 6, gridActions.Top() - height - 1, 500, RGB(0, 0, 0), str);
         }
         ReleaseDC(hDC);
     }
@@ -681,14 +671,13 @@ void TrigActionsWindow::SuggestLocation()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No Location"));
-        size_t numLocations = (u16)CM->layers.numLocations();
+        size_t numLocations = (u16)CM->numLocations();
         for ( size_t i = 1; i <= numLocations; i++ )
         {
-            const Chk::LocationPtr loc = CM->layers.getLocation(i);
-            std::shared_ptr<SingleLineChkdString> locationName = loc != nullptr && loc->stringId > 0 ? CM->strings.getLocationName<SingleLineChkdString>(i) : nullptr;
-            if ( locationName != nullptr )
+            const Chk::Location & loc = CM->getLocation(i);
+            if ( auto locationName = loc.stringId > 0 ? CM->getLocationName<SingleLineChkdString>(i) : std::nullopt )
                 suggestions.AddString(*locationName);
-            else if ( !loc->isBlank() )
+            else if ( !loc.isBlank() )
             {
                 std::stringstream ssLoc;
                 ssLoc << i;
@@ -705,18 +694,10 @@ void TrigActionsWindow::SuggestString()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No String"));
-        size_t stringCapacity = CM->strings.getCapacity(Chk::Scope::Game);
+        size_t stringCapacity = CM->getCapacity(Chk::StrScope::Game);
         for ( size_t i = 1; i <= stringCapacity; i++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(i, Chk::Scope::Game);
-            if ( str != nullptr )
-                suggestions.AddString(*str);
-        }
-        stringCapacity = CM->strings.getCapacity(Chk::Scope::Editor);
-        for ( size_t i = 1; i <= stringCapacity; i++ )
-        {
-            SingleLineChkdStringPtr str = CM->strings.getString<SingleLineChkdString>(i, Chk::Scope::Editor);
-            if ( str != nullptr )
+            if ( auto str = CM->getString<SingleLineChkdString>(i, Chk::StrScope::Game) )
                 suggestions.AddString(*str);
         }
     }
@@ -736,7 +717,7 @@ void TrigActionsWindow::SuggestUnit()
         u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
+            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
             suggestions.AddString(*str);
             if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
                 suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));
@@ -756,7 +737,7 @@ void TrigActionsWindow::SuggestCUWP()
     bool hasCuwps = false;
     for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
-        if ( CM->triggers.cuwpUsed(i) )
+        if ( CM->cuwpUsed(i) )
         {
             hasCuwps = true;
             suggestions.AddString(std::to_string((int)i));
@@ -817,11 +798,10 @@ void TrigActionsWindow::SuggestSound()
 {
     for ( size_t i = 0; i < 512; i++ )
     {
-        size_t soundStringId = CM->triggers.getSoundStringId(i);
+        size_t soundStringId = CM->getSoundStringId(i);
         if ( soundStringId != Chk::StringId::UnusedSound )
         {
-            ChkdStringPtr soundStr = CM->strings.getString<ChkdString>(soundStringId);
-            if ( soundStr != nullptr )
+            if ( auto soundStr = CM->getString<ChkdString>(soundStringId) )
                 suggestions.AddString(*soundStr);
             else
                 suggestions.AddString(std::to_string(soundStringId));
@@ -873,8 +853,7 @@ void TrigActionsWindow::SuggestSwitch()
     {
         for ( u16 i = 0; i < 256; i++ )
         {
-            SingleLineChkdStringPtr str = CM->strings.getSwitchName<SingleLineChkdString>(i);
-            if ( str != nullptr )
+            if ( auto str = CM->getSwitchName<SingleLineChkdString>(i) )
                 suggestions.AddString(*str);
             else
             {
@@ -940,21 +919,21 @@ void TrigActionsWindow::DisableStringEdit()
 void TrigActionsWindow::ButtonEditString()
 {
     int focusedX, focusedY;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig->action((u8)focusedY);
+        Chk::Action & action = trig.action((u8)focusedY);
         if ( action.hasStringArgument() )
         {
-            ChkdStringPtr gameString, editorString;
+            std::optional<ChkdString> gameString, editorString;
             GetCurrentActionString(gameString, editorString);
             ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::TriggerAction, trigIndex, focusedY);
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                if ( gameString != nullptr )
+                if ( gameString )
                 {
-                    size_t stringId = CM->strings.addString<ChkdString>(*gameString);
+                    size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
                         action.stringId = (u32)stringId;
@@ -963,7 +942,7 @@ void TrigActionsWindow::ButtonEditString()
                 else
                     action.stringId = Chk::StringId::NoString;
 
-                CM->strings.deleteUnusedStrings(Chk::Scope::Game);
+                CM->deleteUnusedStrings(Chk::StrScope::Game);
             }
 
             if ( result > 0 )
@@ -989,21 +968,21 @@ void TrigActionsWindow::DisableSoundEdit()
 void TrigActionsWindow::ButtonEditSound()
 {
     int focusedX, focusedY;
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig->action((u8)focusedY);
+        Chk::Action & action = trig.action((u8)focusedY);
         if ( action.hasSoundArgument() )
         {
-            ChkdStringPtr gameString, editorString;
+            std::optional<ChkdString> gameString, editorString;
             GetCurrentActionSound(gameString, editorString);
             ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::TriggerActionSound, trigIndex, focusedY);
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                if ( gameString != nullptr )
+                if ( gameString )
                 {
-                    size_t stringId = CM->strings.addString<ChkdString>(*gameString);
+                    size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
                         action.soundStringId = (u32)stringId;
@@ -1012,7 +991,7 @@ void TrigActionsWindow::ButtonEditSound()
                 else
                     action.soundStringId = Chk::StringId::NoString;
 
-                CM->strings.deleteUnusedStrings(Chk::Scope::Game);
+                CM->deleteUnusedStrings(Chk::StrScope::Game);
             }
 
             if ( result > 0 )
@@ -1037,21 +1016,21 @@ void TrigActionsWindow::DisableUnitPropertiesEdit()
 
 void TrigActionsWindow::ButtonEditUnitProperties()
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
+    Chk::Trigger & trig = CM->getTrigger(trigIndex);
     int focusedX = 0, focusedY = 0;
-    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+    if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig->action((u8)focusedY);
+        Chk::Action & action = trig.action((u8)focusedY);
         u32 cuwpIndex = action.number;
-        Chk::Cuwp initialCuwp = CM->triggers.getCuwp(cuwpIndex);
+        Chk::Cuwp initialCuwp = CM->getCuwp(cuwpIndex);
         Chk::Cuwp newCuwp = {};
         if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
-            size_t newCuwpIndex = CM->triggers.addCuwp(newCuwp, trigIndex, (size_t)focusedY);
+            size_t newCuwpIndex = CM->addCuwp(newCuwp, true, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
             {
                 action.number = (u32)newCuwpIndex;
-                CM->triggers.setCuwpUsed(newCuwpIndex, true);
+                CM->setCuwpUsed(newCuwpIndex, true);
                 RefreshWindow(trigIndex);
             }
             else
@@ -1062,111 +1041,105 @@ void TrigActionsWindow::ButtonEditUnitProperties()
 
 void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
-    Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr )
+    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    Chk::Action & action = trig.action((u8)gridItemY);
+    Chk::Action::ArgType argType = Chk::Action::ArgType::NoType;
+    if ( gridItemX == 1 ) // Action Name
+        argType = Chk::Action::ArgType::ActionType;
+    else if ( gridItemX > 1 ) // Action Arg
     {
-        Chk::Action & action = trig->action((u8)gridItemY);
-        Chk::Action::ArgType argType = Chk::Action::ArgType::NoType;
-        if ( gridItemX == 1 ) // Action Name
-            argType = Chk::Action::ArgType::ActionType;
-        else if ( gridItemX > 1 ) // Action Arg
-        {
-            u8 actionArgNum = (u8)gridItemX - 2;
-            if ( action.actionType < Chk::Action::NumActionTypes  )
-                argType = Chk::Action::getClassicArgType(action.actionType, actionArgNum);
-        }
+        u8 actionArgNum = (u8)gridItemX - 2;
+        if ( action.actionType < Chk::Action::NumActionTypes  )
+            argType = Chk::Action::getClassicArgType(action.actionType, actionArgNum);
+    }
 
-        if ( argType != Chk::Action::ArgType::NoType )
-        {
-            POINT pt = gridActions.GetFocusedBottomRightScreenPt();
-            if ( pt.x != -1 || pt.y != -1 )
-                suggestions.MoveTo(pt.x, pt.y);
-        }
+    if ( argType != Chk::Action::ArgType::NoType )
+    {
+        POINT pt = gridActions.GetFocusedBottomRightScreenPt();
+        if ( pt.x != -1 || pt.y != -1 )
+            suggestions.MoveTo(pt.x, pt.y);
+    }
 
-        suggestions.ClearStrings();
-        switch ( argType )
-        {
-            case Chk::Action::ArgType::NoType: SuggestNothing(); break;
-            case Chk::Action::ArgType::Location: SuggestLocation(); break;
-            case Chk::Action::ArgType::String: SuggestString(); break;
-            case Chk::Action::ArgType::Player: SuggestPlayer(); break;
-            case Chk::Action::ArgType::Unit: SuggestUnit(); break;
-            case Chk::Action::ArgType::NumUnits: SuggestNumUnits(); break;
-            case Chk::Action::ArgType::CUWP: SuggestCUWP(); break;
-            case Chk::Action::ArgType::TextFlags: SuggestTextFlags(); break;
-            case Chk::Action::ArgType::Amount: SuggestAmount(); break;
-            case Chk::Action::ArgType::ScoreType: SuggestScoreType(); break;
-            case Chk::Action::ArgType::ResourceType: SuggestResourceType(); break;
-            case Chk::Action::ArgType::StateMod: SuggestStateMod(); break;
-            case Chk::Action::ArgType::Percent: SuggestPercent(); break;
-            case Chk::Action::ArgType::Order: SuggestOrder(); break;
-            case Chk::Action::ArgType::Sound: SuggestSound(); break;
-            case Chk::Action::ArgType::Duration: SuggestDuration(); break;
-            case Chk::Action::ArgType::Script: SuggestScript(); break;
-            case Chk::Action::ArgType::AllyState: SuggestAllyState(); break;
-            case Chk::Action::ArgType::NumericMod: SuggestNumericMod(); break;
-            case Chk::Action::ArgType::Switch: SuggestSwitch(); break;
-            case Chk::Action::ArgType::SwitchMod: SuggestSwitchMod(); break;
-            case Chk::Action::ArgType::ActionType: SuggestActionType(); break;
-            case Chk::Action::ArgType::Flags: SuggestFlags(); break;
-            case Chk::Action::ArgType::Number: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-            case Chk::Action::ArgType::TypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
-            case Chk::Action::ArgType::SecondaryTypeIndex: SuggestSecondaryTypeIndex(); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-            case Chk::Action::ArgType::Padding: SuggestInternalData(); break;
-            case Chk::Action::ArgType::MaskFlag: SuggestInternalData(); break;
-        }
+    suggestions.ClearStrings();
+    switch ( argType )
+    {
+        case Chk::Action::ArgType::NoType: SuggestNothing(); break;
+        case Chk::Action::ArgType::Location: SuggestLocation(); break;
+        case Chk::Action::ArgType::String: SuggestString(); break;
+        case Chk::Action::ArgType::Player: SuggestPlayer(); break;
+        case Chk::Action::ArgType::Unit: SuggestUnit(); break;
+        case Chk::Action::ArgType::NumUnits: SuggestNumUnits(); break;
+        case Chk::Action::ArgType::CUWP: SuggestCUWP(); break;
+        case Chk::Action::ArgType::TextFlags: SuggestTextFlags(); break;
+        case Chk::Action::ArgType::Amount: SuggestAmount(); break;
+        case Chk::Action::ArgType::ScoreType: SuggestScoreType(); break;
+        case Chk::Action::ArgType::ResourceType: SuggestResourceType(); break;
+        case Chk::Action::ArgType::StateMod: SuggestStateMod(); break;
+        case Chk::Action::ArgType::Percent: SuggestPercent(); break;
+        case Chk::Action::ArgType::Order: SuggestOrder(); break;
+        case Chk::Action::ArgType::Sound: SuggestSound(); break;
+        case Chk::Action::ArgType::Duration: SuggestDuration(); break;
+        case Chk::Action::ArgType::Script: SuggestScript(); break;
+        case Chk::Action::ArgType::AllyState: SuggestAllyState(); break;
+        case Chk::Action::ArgType::NumericMod: SuggestNumericMod(); break;
+        case Chk::Action::ArgType::Switch: SuggestSwitch(); break;
+        case Chk::Action::ArgType::SwitchMod: SuggestSwitchMod(); break;
+        case Chk::Action::ArgType::ActionType: SuggestActionType(); break;
+        case Chk::Action::ArgType::Flags: SuggestFlags(); break;
+        case Chk::Action::ArgType::Number: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+        case Chk::Action::ArgType::TypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
+        case Chk::Action::ArgType::SecondaryTypeIndex: SuggestSecondaryTypeIndex(); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+        case Chk::Action::ArgType::Padding: SuggestInternalData(); break;
+        case Chk::Action::ArgType::MaskFlag: SuggestInternalData(); break;
     }
 }
 
 void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 {
-    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr )
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Action & action = trig.action((u8)gridItemY);
+    Chk::Action::Type actionType = action.actionType;
+    if ( actionType < Chk::Action::NumActionTypes )
     {
-        const Chk::Action & action = trig->action((u8)gridItemY);
-        Chk::Action::Type actionType = action.actionType;
-        if ( actionType < Chk::Action::NumActionTypes )
+        bool includesString = false, includesSound = false;
+        bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
+        for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
-            bool includesString = false, includesSound = false;
-            bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
-            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
-            {
-                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
-                if ( argType == Chk::Action::ArgType::String )
-                    includesString = true;
-            }
-
-            for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
-            {
-                Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
-                if ( argType == Chk::Action::ArgType::Sound )
-                    includesSound = true;
-            }
-
-            if ( includesString )
-                EnableStringEdit();
-            else
-                DisableStringEdit();
-
-            if ( includesSound )
-                EnableSoundEdit();
-            else
-                DisableSoundEdit();
-
-            if ( isCUWP )
-                EnableUnitPropertiesEdit();
-            else
-                DisableUnitPropertiesEdit();
+            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
+            if ( argType == Chk::Action::ArgType::String )
+                includesString = true;
         }
 
-        if ( gridItemX == 1 ) // Action Name
+        for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
-
+            Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
+            if ( argType == Chk::Action::ArgType::Sound )
+                includesSound = true;
         }
-        else if ( gridItemX > 1 ) // Action Arg
-        {
 
-        }
+        if ( includesString )
+            EnableStringEdit();
+        else
+            DisableStringEdit();
+
+        if ( includesSound )
+            EnableSoundEdit();
+        else
+            DisableSoundEdit();
+
+        if ( isCUWP )
+            EnableUnitPropertiesEdit();
+        else
+            DisableUnitPropertiesEdit();
+    }
+
+    if ( gridItemX == 1 ) // Action Name
+    {
+
+    }
+    else if ( gridItemX > 1 ) // Action Arg
+    {
+
     }
     DoSize();
     chkd.trigEditorWindow.triggersWindow.trigModifyWindow.RedrawThis();
@@ -1177,41 +1150,41 @@ void TrigActionsWindow::NewSuggestion(std::string & str)
     gridActions.SetEditText(str);
 }
 
-void TrigActionsWindow::GetCurrentActionString(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
+void TrigActionsWindow::GetCurrentActionString(std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString)
 {
     int focusedX, focusedY;
-    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        const Chk::Action & action = trig->action((u8)focusedY);
+        const Chk::Action & action = trig.action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
             {
-                gameString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Game);
-                editorString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Editor);
+                gameString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Game);
+                editorString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Editor);
             }
         }
     }
 }
 
-void TrigActionsWindow::GetCurrentActionSound(ChkdStringPtr & gameString, ChkdStringPtr & editorString)
+void TrigActionsWindow::GetCurrentActionSound(std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString)
 {
     int focusedX, focusedY;
-    const Chk::TriggerPtr trig = CM->triggers.getTrigger(trigIndex);
-    if ( trig != nullptr && gridActions.GetFocusedItem(focusedX, focusedY) )
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        const Chk::Action & action = trig->action((u8)focusedY);
+        const Chk::Action & action = trig.action((u8)focusedY);
         Chk::Action::Type actionType = action.actionType;
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
             {
-                gameString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Game);
-                editorString = CM->strings.getString<ChkdString>(action.stringId, Chk::Scope::Editor);
+                gameString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Game);
+                editorString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Editor);
             }
         }
     }

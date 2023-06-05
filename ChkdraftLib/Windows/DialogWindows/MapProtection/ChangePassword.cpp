@@ -39,14 +39,13 @@ void ChangePasswordDialog::Hide()
 
 void ChangePasswordDialog::ButtonApply()
 {
-    std::string oldPass, newPass;
-    editOldPass.GetWinText(oldPass);
-    editNewPass.GetWinText(newPass);
+    auto oldPass = editOldPass.GetWinText();
+    auto newPass = editNewPass.GetWinText();
     editOldPass.SetText("");
     editNewPass.SetText("");
     if ( CM != nullptr )
     {
-        if ( CM->setPassword(oldPass, newPass) )
+        if ( CM->setPassword(*oldPass, *newPass) )
         {
             CM->notifyChange(false);
             mb("Password Set Successfully.");

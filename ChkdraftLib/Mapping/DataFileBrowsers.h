@@ -8,16 +8,16 @@ class ChkdDataFileBrowser : public Sc::DataFile::Browser
     public:
         ChkdDataFileBrowser();
 
-        virtual std::vector<MpqFilePtr> openScDataFiles(
-            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = getDataFileDescriptors(),
+        virtual std::vector<ArchiveFilePtr> openScDataFiles(
+            const std::vector<Sc::DataFile::Descriptor> & dataFiles = getDataFileDescriptors(),
             const std::string & expectedStarCraftDirectory = Settings::starCraftPath,
-            FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
+            FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser()) override;
 
-        virtual bool findStarCraftDirectory(output_param std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<> starCraftBrowser = nullptr);
+        virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<> starCraftBrowser = nullptr) override;
 
-        virtual MpqFilePtr openDataFile(const std::string & dataFilePath, const Sc::DataFile::Descriptor & dataFileDescriptor);
+        virtual ArchiveFilePtr openDataFile(const std::string & dataFilePath, const Sc::DataFile::Descriptor & dataFileDescriptor) override;
 
-        static std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> getDataFileDescriptors();
+        static std::vector<Sc::DataFile::Descriptor> getDataFileDescriptors();
 
         static std::string getExpectedStarCraftDirectory();
 

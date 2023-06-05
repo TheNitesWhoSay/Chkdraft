@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( textTrigs.generateTextTrigs(CM, trigString) )
+    if ( textTrigs.generateTextTrigs(*CM, trigString) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
@@ -60,7 +60,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case IDC_COMPSAVE:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(CM) )
+            if ( CompileEditText(*CM) )
             {
                 CM->refreshScenario();
                 RefreshWindow();
@@ -79,7 +79,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_COMPILE_TRIGS:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(CM) )
+            if ( CompileEditText(*CM) )
             {
                 CM->notifyChange(false);
                 CM->refreshScenario();
@@ -144,21 +144,18 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-bool TextTrigWindow::CompileEditText(ScenarioPtr map)
+bool TextTrigWindow::CompileEditText(Scenario & map)
 {
-    if ( map != nullptr )
+    if ( auto trigText = editControl.GetWinText() )
     {
-        std::string trigText;
-        if ( editControl.GetWinText(trigText) )
-        {
-            TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.compileTriggers(trigText, map, chkd.scData, 0, map->triggers.numTriggers()) )
-                return true;
-            else
-                WinLib::Message("Compilation failed.", "Error!");
-        }
+        TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
+        if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
+            return true;
         else
-            WinLib::Message("Compilation failed, couldn't get edit text.", "Error!");
+            WinLib::Message("Compilation failed.", "Error!");
     }
+    else
+        WinLib::Message("Compilation failed, couldn't get edit text.", "Error!");
+
     return false;
 }

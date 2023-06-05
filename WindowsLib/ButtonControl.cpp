@@ -1,5 +1,6 @@
 #include "ButtonControl.h"
 #include <SimpleIcu.h>
+#include <iostream>
 
 namespace WinLib {
 

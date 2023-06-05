@@ -2,6 +2,16 @@
 #include "../MappingCoreLib/MappingCore.h"
 #include <regex>
 
+void IgnoreErr(const std::string & file, unsigned int line, const std::string msg, ...)
+{
+
+}
+
+void PrintError(const std::string & file, unsigned int line, const std::string msg, ...)
+{
+
+}
+
 Logger logger; // An "extern Logger logger" may be declared in some of MappingCore, referencing Main.cpp in Chkdraft, instantiate it here as well
 
 /**
@@ -637,9 +647,5 @@ TEST(BasicsTest, ToHexString)
     EXPECT_STREQ("0xDEADBEEF", to_hex_string(0xDEADBEEF).c_str());
     EXPECT_STREQ("0xFF", to_hex_string<u8>(u8(255)).c_str());
 }
-
-// Don't test promote_char, tested by reflection library TODO: Delete this comment once including reflection
-
-// Don't test enum_t, tested by reflection library TODO: Delete this comment once including reflection
 
 #pragma warning(pop)

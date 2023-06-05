@@ -21,7 +21,7 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         void ChangeDropdownPlayer(u8 newPlayer);
         void ChangeUnitsDisplayedOwner(int index, u8 newPlayer);
         void SetListRedraw(bool redraw);
-        bool AddUnitItem(u16 index, Chk::UnitPtr unit);
+        bool AddUnitItem(u16 index, const Chk::Unit & unit);
         void FocusAndSelectIndex(u16 unitIndex);
         void DeselectIndex(u16 unitIndex);
         void UpdateEnabledState();
@@ -30,7 +30,7 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
     protected:
         void EnableUnitEditing();
         void DisableUnitEditing();
-        void SetUnitFieldText(Chk::UnitPtr unit);
+        void SetUnitFieldText(const Chk::Unit & unit);
         void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2);
         void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam);
         int CompareLvItems(LPARAM index1, LPARAM index2);

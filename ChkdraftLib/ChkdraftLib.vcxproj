@@ -78,6 +78,7 @@
     <ClInclude Include="Windows\DialogWindows\Layers\UnitProperties\UnitProperties.h" />
     <ClInclude Include="Windows\DialogWindows\MapProtection\ChangePassword.h" />
     <ClInclude Include="Windows\DialogWindows\MapProtection\EnterPassword.h" />
+    <ClInclude Include="Windows\DialogWindows\MapSettings\ColorProperties.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\Forces.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\MapProperties.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\MapSettings.h" />
@@ -87,7 +88,7 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\TechSettings.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\UnitSettings.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\UpgradeSettings.h" />
-    <ClInclude Include="Windows\DialogWindows\MapSettings\WavEditor.h" />
+    <ClInclude Include="Windows\DialogWindows\MapSettings\SoundEditor.h" />
     <ClInclude Include="Windows\DialogWindows\NewMap\NewMap.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\LIT.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\TextTrig.h" />
@@ -151,6 +152,7 @@
     <ClCompile Include="Windows\DialogWindows\Layers\UnitProperties\UnitProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapProtection\ChangePassword.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapProtection\EnterPassword.cpp" />
+    <ClCompile Include="Windows\DialogWindows\MapSettings\ColorProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\Forces.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\MapProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\MapSettings.cpp" />
@@ -160,7 +162,7 @@
     <ClCompile Include="Windows\DialogWindows\MapSettings\TechSettings.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\UnitSettings.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp" />
-    <ClCompile Include="Windows\DialogWindows\MapSettings\WavEditor.cpp" />
+    <ClCompile Include="Windows\DialogWindows\MapSettings\SoundEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\LIT.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\TextTrig.cpp" />

@@ -65,7 +65,7 @@ namespace WinLib {
             POINT GetItemTopLeft(int x, int y);
             POINT GetFocusedBottomRightScreenPt();
             bool GetEditItemRect(RECT & rect);
-            bool GetEditText(output_param std::string & str);
+            std::optional<std::string> GetEditText();
         
             // Checks where a point is in relation to the GridView items
             bool contentHitTest(int x, int y, bool & outsideLeft, bool & outsideTop, bool & outsideRight, bool & outsideBottom);
@@ -115,11 +115,6 @@ namespace WinLib {
             void TabKey();
             void EnterKey();
             void DrawItems(HWND hWnd);
-        
-        //protected:
-            //virtual LRESULT Notify(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-            //virtual LRESULT Command(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-            //virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     };
 
 }
