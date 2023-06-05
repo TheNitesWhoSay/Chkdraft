@@ -816,11 +816,11 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                 
                 for ( s64 yc = 0; yc < 8; yc++ )
                 {
-                    if ( yc + miniTileYc < bitHeight )
+                    if ( yc + miniTileYc >= 0 && yc + miniTileYc < bitHeight )
                     {
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
-                            if ( xc + miniTileXc < bitWidth )
+                            if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
                                 bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(0, 0, 0);
                         }
                     }
@@ -969,13 +969,13 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
     {
         const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
         const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
-        const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+        const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
         for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
             s64 yMiniOffset = yStart + yMiniTile*8;
             for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                const Sc::Terrain::TileGraphics::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
                 bool flipped = miniTileGraphics.isFlipped();
                 size_t vr4Index = size_t(miniTileGraphics.vr4Index());
                 
@@ -1090,13 +1090,13 @@ void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, 
 
         const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
         const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
-        const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+        const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
         for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
         {
             s64 yMiniOffset = yMiniTile*8;
             for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
             {
-                const Sc::Terrain::TileGraphics::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
                 bool flipped = miniTileGraphics.isFlipped();
                 size_t vr4Index = size_t(miniTileGraphics.vr4Index());
                 
@@ -1466,7 +1466,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
             {
                 const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
                 const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                const Sc::Terrain::TileGraphics & tileGraphics = tiles.tileGraphics[megaTileIndex];
+                const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
 
                 const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
                 const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];

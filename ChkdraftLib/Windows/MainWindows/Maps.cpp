@@ -175,38 +175,13 @@ bool Maps::OpenMap(const std::string & fileName)
 
 bool Maps::OpenMap(FileBrowserPtr<SaveType> fileBrowser)
 {
-    auto newMap = GuiMapPtr(new GuiMap(clipboard, fileBrowser));
-    if ( newMap != nullptr && !newMap->empty() )
-    {
-        try {
-            AddMap(newMap);
-            if ( newMap->CreateThis(getHandle(), newMap->getFilePath()) )
-            {
-                newMap->SetWinText(newMap->getFilePath());
-                EnableMapping();
-                Focus(newMap);
-
-                if ( newMap->isProtected() && newMap->hasPassword() )
-                    chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
-                else if ( newMap->isProtected() )
-                    mb("Map is protected and will be opened as view only");
-
-                SetFocus(chkd.getHandle());
-                currentlyActiveMap->Scroll(true, true, false);
-                currentlyActiveMap->Redraw(true);
-                currentlyActiveMap->refreshScenario();
-                logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
-                return true;
-            }
-            Error("Failed to create MDI Child Window!");
-        } catch ( AllMapIdsExausted & e ) {
-            Error(e.what());
-        }
-    }
+    std::string browseFilePath {};
+    SaveType saveType = SaveType::Unknown;
+    if ( fileBrowser->browseForOpenPath(browseFilePath, saveType) )
+        return OpenMap(browseFilePath);
     else
-        Error("Failed to open map!");
+        logger.info() << "Map selection cancelled" << std::endl;
 
-    RemoveMap(newMap);
     return false;
 }
 

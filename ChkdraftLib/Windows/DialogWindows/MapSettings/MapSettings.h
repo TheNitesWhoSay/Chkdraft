@@ -9,7 +9,7 @@
 #include "UpgradeSettings.h"
 #include "TechSettings.h"
 #include "StringEditor/StringEditor.h"
-#include "WavEditor.h"
+#include "SoundEditor.h"
 
 class MapSettingsWindow : public WinLib::ClassDialog
 {
@@ -21,7 +21,7 @@ class MapSettingsWindow : public WinLib::ClassDialog
             UpgradeSettings,
             TechSettings,
             StringEditor,
-            WavEditor
+            SoundEditor
         };
 
         MapSettingsWindow();
@@ -45,7 +45,7 @@ class MapSettingsWindow : public WinLib::ClassDialog
         UpgradeSettingsWindow upgradeSettingsWindow;
         TechSettingsWindow techSettingsWindow;
         StringEditorWindow stringEditorWindow;
-        WavEditorWindow wavEditorWindow;
+        SoundEditorWindow soundEditorWindow;
 };
 
 enum class MapSettings {
@@ -55,7 +55,7 @@ enum class MapSettings {
     TAB_UPGRADESETTINGS,
     TAB_TECHSETTINGS,
     TAB_STRINGEDITOR,
-    TAB_WAVEDITOR
+    TAB_SOUNDEDITOR
 };
 
 #endif

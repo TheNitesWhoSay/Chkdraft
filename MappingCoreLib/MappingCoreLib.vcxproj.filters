@@ -71,6 +71,9 @@
     <ClInclude Include="EscapeStrings.h">
       <Filter>Header Files\StarCraft</Filter>
     </ClInclude>
+    <ClInclude Include="CascArchive.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Basics.cpp">
@@ -110,6 +113,9 @@
       <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
     <ClCompile Include="TextTrigCompiler.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="CascArchive.cpp">
       <Filter>Source Files\StarCraft</Filter>
     </ClCompile>
   </ItemGroup>

@@ -33,25 +33,26 @@ bool TextTrigCompiler::compileTriggers(std::string & text, Scenario & chk, Sc::D
     try
     {
         std::vector<RawString> stringContents;
-        cleanText(text, stringContents);
-
-        std::vector<Chk::Trigger> triggers;
         std::stringstream compilerError;
-        std::stringstream buildError;
-
-        if ( parseTriggers(text, stringContents, triggers, compilerError) )
+        if ( cleanText(text, stringContents, compilerError) )
         {
-            if ( buildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
-            {
-                auto finish = std::chrono::high_resolution_clock::now();
-                logger.info() << "Trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                return true;
-            }
-            else
-                compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
-        }
+            std::vector<Chk::Trigger> triggers;
+            std::stringstream buildError;
 
+            if ( parseTriggers(text, stringContents, triggers, compilerError) )
+            {
+                if ( buildNewMap(chk, trigIndexBegin, trigIndexEnd, triggers, buildError) )
+                {
+                    auto finish = std::chrono::high_resolution_clock::now();
+                    logger.info() << "Trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                    return true;
+                }
+                else
+                    compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
+            }
+        }
         CHKD_ERR(compilerError.str());
+
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
@@ -65,25 +66,27 @@ bool TextTrigCompiler::compileTrigger(std::string & text, Scenario & chk, Sc::Da
     try
     {
         std::vector<RawString> stringContents;
-        cleanText(text, stringContents);
-        std::vector<Chk::Trigger> triggers;
         std::stringstream compilerError;
-        std::stringstream buildError;
-
-        if ( parseTriggers(text, stringContents, triggers, compilerError) )
+        if ( cleanText(text, stringContents, compilerError) )
         {
-            if ( triggers.size() == 1 )
-            {
-                if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
-                    return true;
-                else
-                    compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
-            }
-            else
-                compilerError << "Expected 1 trigger but found " << triggers.size() << " triggers.";
-        }
+            std::vector<Chk::Trigger> triggers;
+            std::stringstream buildError;
 
+            if ( parseTriggers(text, stringContents, triggers, compilerError) )
+            {
+                if ( triggers.size() == 1 )
+                {
+                    if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
+                        return true;
+                    else
+                        compilerError << "No text errors, but build of new TRIG/STR section failed." << std::endl << std::endl << buildError.str();
+                }
+                else
+                    compilerError << "Expected 1 trigger but found " << triggers.size() << " triggers.";
+            }
+        }
         CHKD_ERR(compilerError.str());
+
     }
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
@@ -92,7 +95,10 @@ bool TextTrigCompiler::compileTrigger(std::string & text, Scenario & chk, Sc::Da
 bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
 {
     std::vector<RawString> stringContents;
-    cleanText(text, stringContents);
+    std::stringstream unused {};
+    if ( !cleanText(text, stringContents, unused) )
+        return false;
+
     Chk::Condition::VirtualType newConditionType = Chk::Condition::VirtualType::NoCondition;
 
     if ( parseConditionName(text, newConditionType) && newConditionType != Chk::Condition::VirtualType::Custom )
@@ -154,7 +160,10 @@ bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Cond
 bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
 {
     std::vector<RawString> stringContents;
-    cleanText(text, stringContents);
+    std::stringstream unused {};
+    if ( !cleanText(text, stringContents, unused) )
+        return false;
+
     Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
     if ( parseActionName(text, newActionType) && newActionType != Chk::Action::VirtualType::Custom )
     {
@@ -253,7 +262,7 @@ void TextTrigCompiler::clearCompiler()
     newExtendedStringTable.clear();
 }
 
-void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents) const
+bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const
 {
     logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -299,6 +308,11 @@ void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
         {
             dest += '\"';
             size_t closeQuotePos = findStringEnd(text, pos);
+            if ( closeQuotePos == std::string::npos )
+            {
+                error << "Cleaning failed! An unterminated close quote was encountered at position: " << pos << std::endl;
+                return false;
+            }
             EscString escString = text.substr(pos, closeQuotePos-pos);
             RawString rawString;
             convertStr(escString, rawString);
@@ -324,6 +338,7 @@ void TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
 
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Finished text trig cleaning in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+    return true;
 }
 
 bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
@@ -1943,7 +1958,7 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
         case Chk::Action::ArgType::Sound:
             returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end, trigIndex, actionIndex) ||
                 parseLong(text, currAction.soundStringId, pos, end),
-                "Expected: Wav name or 4-byte wavID" );
+                "Expected: Sound name or 4-byte soundID" );
         case Chk::Action::ArgType::Duration:
             returnMsg( parseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );

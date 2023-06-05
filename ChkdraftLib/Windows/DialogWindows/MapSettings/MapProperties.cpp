@@ -416,24 +416,28 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 
 void MapPropertiesWindow::CheckReplaceMapTitle()
 {
-    ChkdString newMapTitle;
-    if ( possibleTitleUpdate == true && editMapTitle.GetWinText(newMapTitle) )
+    if ( possibleTitleUpdate == true )
     {
-        CM->setScenarioName(newMapTitle);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
-        CM->notifyChange(false);
-        possibleTitleUpdate = false;
+        if ( auto newMapTitle = editMapTitle.GetWinText() )
+        {
+            CM->setScenarioName<ChkdString>(*newMapTitle);
+            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->notifyChange(false);
+            possibleTitleUpdate = false;
+        }
     }
 }
 
 void MapPropertiesWindow::CheckReplaceMapDescription()
 {
-    ChkdString newMapDescription;
-    if ( possibleDescriptionUpdate == true && editMapDescription.GetWinText(newMapDescription) )
+    if ( possibleDescriptionUpdate == true )
     {
-        CM->setScenarioDescription(newMapDescription);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
-        CM->notifyChange(false);
-        possibleDescriptionUpdate = false;
+        if ( auto newMapDescription = editMapDescription.GetWinText() )
+        {
+            CM->setScenarioDescription<ChkdString>(*newMapDescription);
+            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->notifyChange(false);
+            possibleDescriptionUpdate = false;
+        }
     }
 }

@@ -100,10 +100,9 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
 void Chkdraft::SetupLogging()
 {
-    std::string loggerPath;
-    if ( GetLoggerPath(loggerPath) )
+    if ( auto loggerPath = GetLoggerPath() )
     {
-        logFilePath = loggerPath + Logger::getTimestamp() + ".log";
+        logFilePath = *loggerPath + Logger::getTimestamp() + ".log";
         std::shared_ptr<Logger> stdOut = std::shared_ptr<Logger>(new Logger(logger.getLogLevel()));
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
@@ -501,9 +500,10 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_EDIT_REDO1: CM->redo(); break;
     case ID_EDIT_CUT1: maps.cut(); break;
     case ID_EDIT_COPY1: maps.copy(); break;
-    case ID_EDIT_PASTE1: maps.startPaste(true); break;
+    case ID_EDIT_PASTE1: maps.startPaste(false); break;
     case ID_EDIT_SELECTALL: CM->selectAll(); break;
     case ID_EDIT_DELETE: CM->deleteSelection(); break;
+    case ID_EDIT_CLEARSELECTIONS: CM->clearSelection(); break;
     case ID_EDIT_PROPERTIES: maps.properties(); break;
 
         // View
@@ -587,7 +587,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         // Help
     case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
-    case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/jjf28/Chkdraft/"); break;
+    case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/TheNitesWhoSay/Chkdraft/"); break;
     case ID_HELP_CHKDRAFTTHREAD: OpenWebPage("http://www.staredit.net/topic/15514/"); break;
 
     default:
@@ -723,7 +723,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
             case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
             case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
             case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::WavEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
         }
         ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     }

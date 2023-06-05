@@ -78,7 +78,7 @@ void TechSettingsWindow::RefreshWindow()
             EnableTechCosts();
             editMineralCosts.SetEditNum<u16>(CM->getTechMineralCost((Sc::Tech::Type)tech));
             editGasCosts.SetEditNum<u16>(CM->getTechGasCost((Sc::Tech::Type)tech));
-            editTimeCosts.SetEditNum<u16>(CM->getTechResearchTime((Sc::Tech::Type)tech));
+            editTimeCosts.SetEditNum<u16>(CM->getTechResearchTime((Sc::Tech::Type)tech)/15);
             editEnergyCosts.SetEditNum<u16>(CM->getTechEnergyCost((Sc::Tech::Type)tech));
         }
 
@@ -378,7 +378,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     if ( 15 * (u32)newTimeCost > 65535 ) // Overflow
                         CM->setTechResearchTime((Sc::Tech::Type)selectedTech, 65535); // Set to max
                     else // Normal
-                        CM->setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost);
+                        CM->setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost * 15);
 
                     CM->notifyChange(false);
                 }

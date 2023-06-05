@@ -575,8 +575,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::PauseTimer:
             ssAction << "Pause the countdown timer.";
             break;
-        case Chk::Action::Type::PlaySound: // Wav, Duration
-            ssAction << "Play \'\x08" << tt.getTrigWav(action.soundStringId) << "\x0C\'.";
+        case Chk::Action::Type::PlaySound: // Sound, Duration
+            ssAction << "Play \'\x08" << tt.getTrigSound(action.soundStringId) << "\x0C\'.";
             break;
         case Chk::Action::Type::PreserveTrigger:
             ssAction << "Preserve trigger.";
@@ -660,7 +660,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
             break;
         case Chk::Action::Type::Transmission: // Type, Location, Wav, Type2, Number, String
             ssAction << "Send transmission to current player from \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type) << "\x0C at \'\x08"
-                << tt.getTrigLocation(action.locationId) << "\x0C\'. Play '\x08" << tt.getTrigWav(action.soundStringId)
+                << tt.getTrigLocation(action.locationId) << "\x0C\'. Play '\x08" << tt.getTrigSound(action.soundStringId)
                 << "\x0C\'. Modify duration: \x08" << tt.getTrigNumericModifier((Chk::Trigger::ValueModifier)action.type2) << "\x0C \x08"
                 << tt.getTrigNumber(action.number) << "\x0C miliseconds. Display text:\x08"
                 << tt.getTrigString(action.stringId) << '\x0C';
@@ -680,7 +680,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::Wait: // Duration
             ssAction << "Wait for \x08" << tt.getTrigNumber(action.time) << "\x0C miliseconds.";
             break;
-        default: // Location, String, Wav, Duration, Player, Number, Type, Action, Type2, Flags, Internal
+        default: // Location, String, Sound, Duration, Player, Number, Type, Action, Type2, Flags, Internal
             ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
                 << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)

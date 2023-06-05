@@ -1238,20 +1238,18 @@ bool GuiMap::changesLocked()
 
 void GuiMap::addAsterisk()
 {
-    std::string windowTitle;
-    if ( WindowsItem::GetWinText(windowTitle) )
-        WindowsItem::SetWinText(windowTitle + "*");
+    if ( auto windowTitle = WindowsItem::GetWinText() )
+        WindowsItem::SetWinText(*windowTitle + "*");
 }
 
 void GuiMap::removeAsterisk()
 {
-    std::string windowTitle;
-    if ( WindowsItem::GetWinText(windowTitle) )
+    if ( auto windowTitle = WindowsItem::GetWinText() )
     {
-        if ( windowTitle.back() == '*' )
+        if ( windowTitle->back() == '*' )
         {
-            windowTitle.pop_back();
-            WindowsItem::SetWinText(windowTitle);
+            windowTitle->pop_back();
+            WindowsItem::SetWinText(*windowTitle);
         }
     }
 }
@@ -1991,17 +1989,16 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 
 bool GuiMap::GetBackupPath(time_t currTime, std::string & outFilePath)
 {
-    std::string moduleDirectory;
-    if ( getModuleDirectory(moduleDirectory) )
+    if ( auto moduleDirectory = getModuleDirectory() )
     {
         tm* currTimes = localtime(&currTime);
         int year = currTimes->tm_year + 1900, month = currTimes->tm_mon + 1, day = currTimes->tm_mday,
             hour = currTimes->tm_hour, minute = currTimes->tm_min, seconds = currTimes->tm_sec;
 
-        makeDirectory(moduleDirectory + "\\chkd");
-        makeDirectory(moduleDirectory + "\\chkd\\Backups");
+        makeDirectory(*moduleDirectory + "\\chkd");
+        makeDirectory(*moduleDirectory + "\\chkd\\Backups");
 
-        outFilePath = moduleDirectory + std::string("\\chkd\\Backups\\") +
+        outFilePath = *moduleDirectory + "\\chkd\\Backups\\" +
             std::to_string(year) + std::string(month <= 9 ? "-0" : "-") + std::to_string(month) +
             std::string(day <= 9 ? "-0" : "-") + std::to_string(day) + std::string(hour <= 9 ? " 0" : " ") +
             std::to_string(hour) + std::string(minute <= 9 ? "h0" : "h") + std::to_string(minute) +

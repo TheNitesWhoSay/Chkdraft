@@ -543,6 +543,5 @@ TEST(SystemIoTest, MakeExtMpqFilePath)
 
 TEST(SystemIoTest, FindFile)
 {
-    std::string emptyDirectoryPath {};
-    EXPECT_TRUE(getEmptyDirectory(emptyDirectoryPath));
+    EXPECT_TRUE(getEmptyDirectory());
 }

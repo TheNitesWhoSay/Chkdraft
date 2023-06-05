@@ -205,10 +205,10 @@ void SwitchesWindow::EditSwitchNameFocusLost()
 {
     if ( !checkUseDefaultName.isChecked() )
     {
-        std::string editText = editSwitchName.GetWinText();
-        if ( editText.length() > 0 )
+        auto editText = editSwitchName.GetWinText();
+        if ( editText && editText->length() > 0 )
         {
-            ChkdString temp(editText);
+            ChkdString temp(*editText);
             CM->setSwitchName(selectedSwitch, temp);
             CM->deleteUnusedStrings(Chk::StrScope::Both);
             chkd.mapSettingsWindow.RefreshWindow();

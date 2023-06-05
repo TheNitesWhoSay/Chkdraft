@@ -7,6 +7,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -484,6 +485,11 @@ bool Scenario::read(std::istream & is)
 
     if ( !hasSection(SectionName::VER) )
         return parsingFailed("Map was missing the VER section!");
+    else if ( this->version > Chk::Version::StarCraft_Remastered )
+    {
+        logger.error() << "Map has a newer CHK version than Chkdraft supports: " << this->version << std::endl;
+        mapIsProtected = true;
+    }
 
     this->fixTerrainToDimensions();
     this->fixTriggerExtensions();
@@ -881,6 +887,9 @@ bool Scenario::stringStored(size_t stringId, Chk::StrScope storageScope) const
 
 void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
 {
+    if ( stringId == Chk::StringId::NoString )
+        return;
+
     if ( storageScope == Chk::StrScope::Game )
     {
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
@@ -2286,7 +2295,7 @@ void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, 
             if ( storageScope == Chk::StrScope::Game )
                 this->switchNames[switchIndex] = u32(newStringId);
             else if ( storageScope == Chk::StrScope::Editor )
-                this->editorStringOverrides.soundPath[switchIndex] = u32(newStringId);
+                this->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }
@@ -4232,13 +4241,13 @@ void Scenario::deleteLocationString(size_t stringId)
     }
 }
 
-bool Scenario::useExpansionUnitSettings(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionUnitSettings(Chk::UseExpSection useExp, Sc::Weapon::Type weaponType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return this->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
+        case Chk::UseExpSection::Auto: return weaponType >= Sc::Weapon::Type::NeutronFlare || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
         case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::UNIS);
         case Chk::UseExpSection::YesIfAvailable: 
         default: return this->hasSection(Chk::SectionName::UNIx);
@@ -4305,7 +4314,7 @@ u16 Scenario::getUnitGasCost(Sc::Unit::Type unitType, Chk::UseExpSection useExp)
 
 u16 Scenario::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
-    bool useExpansion = useExpansionUnitSettings(useExp);
+    bool useExpansion = useExpansionUnitSettings(useExp, weaponType);
     size_t limit = useExpansion ? Sc::Weapon::Total : Sc::Weapon::TotalOriginal;
     if ( weaponType > limit )
     {
@@ -4317,7 +4326,7 @@ u16 Scenario::getWeaponBaseDamage(Sc::Weapon::Type weaponType, Chk::UseExpSectio
 
 u16 Scenario::getWeaponUpgradeDamage(Sc::Weapon::Type weaponType, Chk::UseExpSection useExp) const
 {
-    bool useExpansion = useExpansionUnitSettings(useExp);
+    bool useExpansion = useExpansionUnitSettings(useExp, weaponType);
     size_t limit = useExpansion ? Sc::Weapon::Total : Sc::Weapon::TotalOriginal;
     if ( weaponType > limit )
     {
@@ -4520,6 +4529,8 @@ void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( weaponType >= 100 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
                 this->origUnitSettings.baseDamage[weaponType] = baseDamage;
             checkLimit(true);
@@ -4559,6 +4570,8 @@ void Scenario::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDa
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( weaponType >= 100 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
                 this->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage;
             checkLimit(true);
@@ -4593,7 +4606,7 @@ bool Scenario::isUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex) cons
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return this->unitAvailability.playerUnitBuildable[unitType][playerIndex] != Chk::Available::No;
+            return this->unitAvailability.playerUnitBuildable[playerIndex][unitType] != Chk::Available::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -4614,7 +4627,7 @@ bool Scenario::playerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, size_t
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            return this->unitAvailability.playerUnitUsesDefault[unitType][playerIndex] != Chk::UseDefault::No;
+            return this->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] != Chk::UseDefault::No;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -4628,7 +4641,7 @@ void Scenario::setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, boo
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            this->unitAvailability.playerUnitBuildable[unitType][playerIndex] = unitBuildable;
+            this->unitAvailability.playerUnitBuildable[playerIndex][unitType] = unitBuildable;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -4651,7 +4664,7 @@ void Scenario::setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, siz
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            this->unitAvailability.playerUnitUsesDefault[unitType][playerIndex] = playerUnitUsesDefault;
+            this->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] = playerUnitUsesDefault;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -4696,13 +4709,13 @@ void Scenario::setUnitsToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Scenario::useExpansionUpgradeCosts(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionUpgradeCosts(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return this->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
+        case Chk::UseExpSection::Auto: return upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
         case Chk::UseExpSection::NoIfOrigAvailable: return this->hasSection(Chk::SectionName::UPGS) ? false : true;
         case Chk::UseExpSection::YesIfAvailable:
         default: return this->hasSection(Chk::SectionName::UPGx);
@@ -4711,7 +4724,7 @@ bool Scenario::useExpansionUpgradeCosts(Chk::UseExpSection useExp) const
 
 bool Scenario::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4722,7 +4735,7 @@ bool Scenario::upgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, Chk::UseEx
 
 u16 Scenario::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4733,7 +4746,7 @@ u16 Scenario::getUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, Chk::UseE
 
 u16 Scenario::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4744,7 +4757,7 @@ u16 Scenario::getUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, Chk::Us
 
 u16 Scenario::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4755,7 +4768,7 @@ u16 Scenario::getUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, Chk::UseExpSe
 
 u16 Scenario::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4766,7 +4779,7 @@ u16 Scenario::getUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, Chk::UseExp
 
 u16 Scenario::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4777,7 +4790,7 @@ u16 Scenario::getUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, Chk::Use
 
 u16 Scenario::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeCosts(useExp);
+    bool expansion = useExpansionUpgradeCosts(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -4797,6 +4810,8 @@ void Scenario::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool us
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.useDefault[upgradeType] = value;
             checkLimit(true);
@@ -4836,6 +4851,8 @@ void Scenario::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 base
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.baseMineralCost[upgradeType] = baseMineralCost;
             checkLimit(true);
@@ -4875,6 +4892,8 @@ void Scenario::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mi
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.mineralCostFactor[upgradeType] = mineralCostFactor;
             checkLimit(true);
@@ -4914,6 +4933,8 @@ void Scenario::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasC
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.baseGasCost[upgradeType] = baseGasCost;
             checkLimit(true);
@@ -4953,6 +4974,8 @@ void Scenario::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCos
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.gasCostFactor[upgradeType] = gasCostFactor;
             checkLimit(true);
@@ -4992,6 +5015,8 @@ void Scenario::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 bas
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.baseResearchTime[upgradeType] = baseResearchTime;
             checkLimit(true);
@@ -5031,6 +5056,8 @@ void Scenario::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 r
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UNIS) )
                 this->origUpgradeCosts.researchTimeFactor[upgradeType] = researchTimeFactor;
             checkLimit(true);
@@ -5060,13 +5087,13 @@ void Scenario::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 r
     }
 }
 
-bool Scenario::useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionUpgradeLeveling(Chk::UseExpSection useExp, Sc::Upgrade::Type upgradeType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return this->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
+        case Chk::UseExpSection::Auto: return upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
         case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::UPGR);
         case Chk::UseExpSection::YesIfAvailable:
         default: return this->hasSection(Chk::SectionName::PUPx);
@@ -5075,29 +5102,29 @@ bool Scenario::useExpansionUpgradeLeveling(Chk::UseExpSection useExp) const
 
 size_t Scenario::getMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeLeveling(useExp);
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
 
-    return expansion ? this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] : this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex];
+    return expansion ? this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] : this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType];
 }
 
 size_t Scenario::getStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeLeveling(useExp);
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
 
-    return expansion ? this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] : this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex];
+    return expansion ? this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] : this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType];
 }
 
 size_t Scenario::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeLeveling(useExp);
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
 
@@ -5106,7 +5133,7 @@ size_t Scenario::getDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::U
 
 size_t Scenario::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionUpgradeLeveling(useExp);
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
 
@@ -5116,14 +5143,14 @@ size_t Scenario::getDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, Chk:
 bool Scenario::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
     
-    bool expansion = useExpansionUpgradeLeveling(useExp);
+    bool expansion = useExpansionUpgradeLeveling(useExp, upgradeType);
     if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
 
-    return expansion ? this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] != Chk::UseDefault::No :
-        this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] != Chk::UseDefault::No;
+    return expansion ? this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] != Chk::UseDefault::No :
+        this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] != Chk::UseDefault::No;
 }
 
 void Scenario::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
@@ -5137,30 +5164,32 @@ void Scenario::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIn
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
-                this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             checkLimit(true);
-            this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+            this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel); this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel); break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel); break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PUPx) ) {
                 checkLimit(true);
-                this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+                this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             } else {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::UPGR) ) {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+                this->origUpgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             } else {
                 checkLimit(true);
-                this->upgradeLeveling.playerMaxUpgradeLevel[upgradeType][playerIndex] = u8(maxUpgradeLevel);
+                this->upgradeLeveling.playerMaxUpgradeLevel[playerIndex][upgradeType] = u8(maxUpgradeLevel);
             }
             break;
     }
@@ -5177,30 +5206,32 @@ void Scenario::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t player
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
-                this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             checkLimit(true);
-            this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+            this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel); this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel); break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel); break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel); break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PUPx) ) {
                 checkLimit(true);
-                this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+                this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             } else {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::UPGR) ) {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+                this->origUpgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             } else {
                 checkLimit(true);
-                this->upgradeLeveling.playerStartUpgradeLevel[upgradeType][playerIndex] = u8(startUpgradeLevel);
+                this->upgradeLeveling.playerStartUpgradeLevel[playerIndex][upgradeType] = u8(startUpgradeLevel);
             }
             break;
     }
@@ -5215,6 +5246,8 @@ void Scenario::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t m
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
                 this->origUpgradeLeveling.defaultMaxLevel[upgradeType] = u8(maxUpgradeLevel);
             checkLimit(true);
@@ -5253,6 +5286,8 @@ void Scenario::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
                 this->origUpgradeLeveling.defaultStartLevel[upgradeType] = u8(startUpgradeLevel);
             checkLimit(true);
@@ -5294,30 +5329,32 @@ void Scenario::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( upgradeType >= Sc::Upgrade::Type::UnusedUpgrade_46 && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( upgradeType < Sc::Upgrade::TotalOriginalTypes && hasSection(Chk::SectionName::UPGR) )
-                this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             checkLimit(true);
-            this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+            this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value; this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value; break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value; break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value; break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PUPx) ) {
                 checkLimit(true);
-                this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+                this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             } else {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::UPGR) ) {
                 checkLimit(false);
-                this->origUpgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+                this->origUpgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             } else {
                 checkLimit(true);
-                this->upgradeLeveling.playerUpgradeUsesDefault[upgradeType][playerIndex] = value;
+                this->upgradeLeveling.playerUpgradeUsesDefault[playerIndex][upgradeType] = value;
             }
             break;
     }
@@ -5367,13 +5404,13 @@ void Scenario::setUpgradesToDefault(Chk::UseExpSection useExp)
     }
 }
 
-bool Scenario::useExpansionTechCosts(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionTechCosts(Chk::UseExpSection useExp, Sc::Tech::Type techType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return this->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
+        case Chk::UseExpSection::Auto: return techType >= Sc::Tech::Type::Restoration || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
         case Chk::UseExpSection::NoIfOrigAvailable: return !this->hasSection(Chk::SectionName::TECS);
         case Chk::UseExpSection::YesIfAvailable:
         default: return this->hasSection(Chk::SectionName::TECx);
@@ -5382,7 +5419,7 @@ bool Scenario::useExpansionTechCosts(Chk::UseExpSection useExp) const
 
 bool Scenario::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechCosts(useExp);
+    bool expansion = useExpansionTechCosts(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5393,7 +5430,7 @@ bool Scenario::techUsesDefaultSettings(Sc::Tech::Type techType, Chk::UseExpSecti
 
 u16 Scenario::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechCosts(useExp);
+    bool expansion = useExpansionTechCosts(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5404,7 +5441,7 @@ u16 Scenario::getTechMineralCost(Sc::Tech::Type techType, Chk::UseExpSection use
 
 u16 Scenario::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechCosts(useExp);
+    bool expansion = useExpansionTechCosts(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5415,7 +5452,7 @@ u16 Scenario::getTechGasCost(Sc::Tech::Type techType, Chk::UseExpSection useExp)
 
 u16 Scenario::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechCosts(useExp);
+    bool expansion = useExpansionTechCosts(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5426,7 +5463,7 @@ u16 Scenario::getTechResearchTime(Sc::Tech::Type techType, Chk::UseExpSection us
 
 u16 Scenario::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechCosts(useExp);
+    bool expansion = useExpansionTechCosts(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5445,6 +5482,8 @@ void Scenario::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefau
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
                 this->origTechnologyCosts.useDefault[techType] = value;
             checkLimit(true);
@@ -5483,6 +5522,8 @@ void Scenario::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk:
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
                 this->origTechnologyCosts.mineralCost[techType] = mineralCost;
             checkLimit(true);
@@ -5521,6 +5562,8 @@ void Scenario::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseExpS
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
                 this->origTechnologyCosts.gasCost[techType] = gasCost;
             checkLimit(true);
@@ -5559,6 +5602,8 @@ void Scenario::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Ch
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
                 this->origTechnologyCosts.researchTime[techType] = researchTime;
             checkLimit(true);
@@ -5597,6 +5642,8 @@ void Scenario::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::U
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::TECS) )
                 this->origTechnologyCosts.energyCost[techType] = energyCost;
             checkLimit(true);
@@ -5626,13 +5673,13 @@ void Scenario::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::U
     }
 }
 
-bool Scenario::useExpansionTechAvailability(Chk::UseExpSection useExp) const
+bool Scenario::useExpansionTechAvailability(Chk::UseExpSection useExp, Sc::Tech::Type techType) const
 {
     switch ( useExp )
     {
-        case Chk::UseExpSection::Auto: return this->isHybridOrAbove() ? true : false;
-        case Chk::UseExpSection::Yes: true;
-        case Chk::UseExpSection::No: false;
+        case Chk::UseExpSection::Auto: return techType >= Sc::Tech::Type::Restoration || this->isHybridOrAbove();
+        case Chk::UseExpSection::Yes: return true;
+        case Chk::UseExpSection::No: return false;
         case Chk::UseExpSection::NoIfOrigAvailable: return this->hasSection(Chk::SectionName::PTEC) ? false : true;
         case Chk::UseExpSection::YesIfAvailable:
         default: return this->hasSection(Chk::SectionName::PTEx) ? true : false;
@@ -5641,7 +5688,7 @@ bool Scenario::useExpansionTechAvailability(Chk::UseExpSection useExp) const
 
 bool Scenario::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechAvailability(useExp);
+    bool expansion = useExpansionTechAvailability(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5650,12 +5697,12 @@ bool Scenario::techAvailable(Sc::Tech::Type techType, size_t playerIndex, Chk::U
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
 
-    return expansion ? this->techAvailability.techAvailableForPlayer[techType][playerIndex] : this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex];
+    return expansion ? this->techAvailability.techAvailableForPlayer[playerIndex][techType] : this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType];
 }
 
 bool Scenario::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechAvailability(useExp);
+    bool expansion = useExpansionTechAvailability(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5664,12 +5711,12 @@ bool Scenario::techResearched(Sc::Tech::Type techType, size_t playerIndex, Chk::
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
 
-    return expansion ? this->techAvailability.techResearchedForPlayer[techType][playerIndex] : this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex];
+    return expansion ? this->techAvailability.techResearchedForPlayer[playerIndex][techType] : this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType];
 }
 
 bool Scenario::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechAvailability(useExp);
+    bool expansion = useExpansionTechAvailability(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5680,7 +5727,7 @@ bool Scenario::techDefaultAvailable(Sc::Tech::Type techType, Chk::UseExpSection 
 
 bool Scenario::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechAvailability(useExp);
+    bool expansion = useExpansionTechAvailability(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5691,7 +5738,7 @@ bool Scenario::techDefaultResearched(Sc::Tech::Type techType, Chk::UseExpSection
 
 bool Scenario::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, Chk::UseExpSection useExp) const
 {
-    bool expansion = useExpansionTechAvailability(useExp);
+    bool expansion = useExpansionTechAvailability(useExp, techType);
     if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
     {
         throw std::out_of_range(std::string("TechType: ") + std::to_string((size_t)techType) +
@@ -5700,7 +5747,7 @@ bool Scenario::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t pla
     else if ( playerIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
 
-    return expansion ? this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] : this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex];
+    return expansion ? this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] : this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType];
 }
 
 void Scenario::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp)
@@ -5715,30 +5762,32 @@ void Scenario::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, boo
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
-                this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             checkLimit(true);
-            this->techAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+            this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex] = value; this->techAvailability.techAvailableForPlayer[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techAvailableForPlayer[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex] = value; break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value; this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PTEx) ) {
                 checkLimit(true);
-                this->techAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+                this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             } else {
                 checkLimit(false);
-                this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::PTEC) ) {
                 checkLimit(false);
-                this->origTechnologyAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             } else {
                 checkLimit(true);
-                this->techAvailability.techAvailableForPlayer[techType][playerIndex] = value;
+                this->techAvailability.techAvailableForPlayer[playerIndex][techType] = value;
             }
             break;
     }
@@ -5756,30 +5805,32 @@ void Scenario::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bo
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
-                this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             checkLimit(true);
-            this->techAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+            this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex] = value; this->techAvailability.techResearchedForPlayer[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techResearchedForPlayer[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex] = value; break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value; this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PTEx) ) {
                 checkLimit(true);
-                this->techAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+                this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             } else {
                 checkLimit(false);
-                this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::PTEC) ) {
                 checkLimit(false);
-                this->origTechnologyAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+                this->origTechnologyAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             } else {
                 checkLimit(true);
-                this->techAvailability.techResearchedForPlayer[techType][playerIndex] = value;
+                this->techAvailability.techResearchedForPlayer[playerIndex][techType] = value;
             }
             break;
     }
@@ -5795,6 +5846,8 @@ void Scenario::setDefaultTechAvailable(Sc::Tech::Type techType, bool available, 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
                 this->origTechnologyAvailability.techAvailableByDefault[techType] = value;
             checkLimit(true);
@@ -5834,6 +5887,8 @@ void Scenario::setDefaultTechResearched(Sc::Tech::Type techType, bool researched
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
                 this->origTechnologyAvailability.techResearchedByDefault[techType] = value;
             checkLimit(true);
@@ -5875,30 +5930,32 @@ void Scenario::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
+            if ( techType >= Sc::Tech::Type::Restoration && this->version < Chk::Version::StarCraft_Hybrid )
+                changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( techType < Sc::Tech::TotalOriginalTypes && hasSection(Chk::SectionName::PTEC) )
-                this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             checkLimit(true);
-            this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+            this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             break;
-        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value; this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value; break;
-        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value; break;
+        case Chk::UseExpSection::Both: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::Yes: checkLimit(true); this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
+        case Chk::UseExpSection::No: checkLimit(false); this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value; break;
         case Chk::UseExpSection::YesIfAvailable:
             if ( hasSection(Chk::SectionName::PTEx) ) {
                 checkLimit(true);
-                this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+                this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             } else {
                 checkLimit(false);
-                this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             }
             break;
         case Chk::UseExpSection::NoIfOrigAvailable:
             if ( hasSection(Chk::SectionName::PTEC) ) {
                 checkLimit(false);
-                this->origTechnologyAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+                this->origTechnologyAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             } else {
                 checkLimit(true);
-                this->techAvailability.playerUsesDefaultsForTech[techType][playerIndex] = value;
+                this->techAvailability.playerUsesDefaultsForTech[playerIndex][techType] = value;
             }
             break;
     }
@@ -6160,6 +6217,7 @@ void Scenario::deleteTrigger(size_t triggerIndex)
     if ( triggerIndex < this->triggers.size() )
     {
         auto trigger = std::next(this->triggers.begin(), triggerIndex);
+        this->removeTriggersExtension(triggerIndex);
         this->triggers.erase(trigger);
     }
     fixTriggerExtensions();
@@ -6266,16 +6324,21 @@ const Chk::ExtendedTrigData & Scenario::getTriggerExtension(size_t triggerIndex)
         throw std::logic_error(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " did not have an extension!");
 }
 
-void Scenario::deleteTriggerExtension(size_t triggerIndex)
+void Scenario::removeTriggersExtension(size_t triggerIndex)
 {
     if ( triggerIndex >= this->triggers.size() )
         throw std::out_of_range(std::string("TriggerIndex: ") + std::to_string(triggerIndex) + " is out of range for the TRIG section!");
 
     auto & trigger = this->triggers[triggerIndex];
     size_t extendedTrigDataIndex = trigger.getExtendedDataIndex();
-    if ( extendedTrigDataIndex < this->triggerExtensions.size() && extendedTrigDataIndex != Chk::ExtendedTrigDataIndex::None )
+    trigger.clearExtendedDataIndex();
+    deleteTriggerExtension(extendedTrigDataIndex);
+}
+
+void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
+{
+    if ( triggerExtensionIndex < this->triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
     {
-        trigger.clearExtendedDataIndex();
         size_t i = this->triggerExtensions.size();
         for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= this->triggerExtensions.size()); i-- );
 
@@ -6360,7 +6423,7 @@ void Scenario::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     extension.commentStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && extension.isBlank() )
-        deleteTriggerExtension(triggerIndex);
+        removeTriggersExtension(triggerIndex);
 }
 
 size_t Scenario::getExtendedNotesStringId(size_t triggerIndex) const
@@ -6376,7 +6439,7 @@ void Scenario::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
     extension.notesStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && extension.isBlank() )
-        deleteTriggerExtension(triggerIndex);
+        removeTriggersExtension(triggerIndex);
 }
 
 size_t Scenario::numBriefingTriggers() const

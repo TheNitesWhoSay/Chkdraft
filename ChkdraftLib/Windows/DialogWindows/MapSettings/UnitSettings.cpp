@@ -397,16 +397,18 @@ void UnitSettingsWindow::CheckReplaceUnitName()
         possibleUnitNameUpdate = false;
 
     RawString rawUnitName;
-    ChkdString newUnitName;
-    if ( possibleUnitNameUpdate && selectedUnitType != Sc::Unit::Type::NoUnit && (u16)selectedUnitType < Sc::Unit::TotalTypes && editUnitName.GetWinText(newUnitName) )
+    if ( possibleUnitNameUpdate && selectedUnitType != Sc::Unit::Type::NoUnit && (u16)selectedUnitType < Sc::Unit::TotalTypes )
     {
-        CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, newUnitName);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
-        CM->notifyChange(false);
-        chkd.unitWindow.RepopulateList();
-        RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+        if ( auto newUnitName = editUnitName.GetWinText() )
+        {
+            CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
+            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->notifyChange(false);
+            chkd.unitWindow.RepopulateList();
+            RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 
-        possibleUnitNameUpdate = false;
+            possibleUnitNameUpdate = false;
+        }
     }
 }
 

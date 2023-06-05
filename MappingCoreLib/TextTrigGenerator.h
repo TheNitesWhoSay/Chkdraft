@@ -35,7 +35,7 @@ class TextTrigGenerator
 
         ChkdString getTrigLocation(size_t locationId) const;
         ChkdString getTrigString(size_t stringId) const;
-        ChkdString getTrigWav(size_t stringId) const;
+        ChkdString getTrigSound(size_t stringId) const;
         ChkdString getTrigPlayer(size_t playerIndex) const;
         ChkdString getTrigUnit(Sc::Unit::Type unitType) const;
         ChkdString getTrigSwitch(size_t switchIndex) const;

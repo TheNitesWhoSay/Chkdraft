@@ -1,7 +1,7 @@
 #ifndef SC_H
 #define SC_H
 #include "Basics.h"
-#include "MpqFile.h"
+#include "ArchiveFile.h"
 #include "SystemIO.h"
 #include "FileBrowser.h"
 #include <array>
@@ -16,15 +16,16 @@ namespace Sc {
 
     /**
         A data file typically from the StarCraft directory
-        e.g. StarDat.mpq, BrooDat.mpq, patch_rt.mpq
+        e.g. StarDat.mpq, BrooDat.mpq, patch_rt.mpq or SC:R casc (the "StarCraft/Data" folder in the SC:R installation folder)
     */
     class DataFile {
     public:
         enum class Priority : u32 {
             MaximumPriority = 0,
-            PatchRt = 100,
-            BrooDat = 200,
-            StarDat = 300,
+            RemasteredCasc = 100,
+            PatchRt = 200,
+            BrooDat = 300,
+            StarDat = 400,
             MinimumPriority = u32_max
         };
         
@@ -41,13 +42,16 @@ namespace Sc {
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
         public:
-            Descriptor(Priority priority, const std::string & fileName, const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
+            Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath = "",
+                FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
 
             Priority getPriority() const;
             const std::string & getFileName() const;
             const std::string & getExpectedFilePath() const;
             FileBrowserPtr<u32> getBrowser() const;
             bool isExpectedInScDirectory() const;
+            bool isCasc() const;
+            bool isOptionalIfCascFound() const;
 
             void setExpectedFilePath(const std::string & expectedFilePath);
 
@@ -57,21 +61,24 @@ namespace Sc {
             std::string expectedFilePath;
             FileBrowserPtr<u32> browser;
             bool expectedInScDirectory;
+            bool isCascDataFile;
+            bool optionalIfCascFound;
         };
         
-        static std::unordered_map<Priority, Descriptor> getDefaultDataFiles();
+        static std::vector<Descriptor> getDefaultDataFiles();
         
         class Browser // An extensible, system independent browser for retrieving a set of StarCraft data files given their descriptors and possibly a specialized browser for the StarCraft directory
         {
         public:
-            virtual std::vector<MpqFilePtr> openScDataFiles(
-                const std::unordered_map<Priority, Descriptor> & dataFiles = getDefaultDataFiles(),
+            virtual std::vector<ArchiveFilePtr> openScDataFiles(
+                const std::vector<Descriptor> & dataFileDescriptors = getDefaultDataFiles(),
                 const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-            virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
+            virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedBrowse,
+                const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<u32> starCraftBrowser = nullptr);
 
-            virtual MpqFilePtr openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor);
+            virtual ArchiveFilePtr openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor);
 
             static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
         };
@@ -454,6 +461,16 @@ namespace Sc {
                 From0To105 = 106,
                 From106To201 = 96
             });
+            __declspec(align(1)) struct Dimensions {
+                u16 width;
+                u16 height;
+            };
+            __declspec(align(1)) struct Extent {
+                u16 left;
+                u16 up;
+                u16 right;
+                u16 down;
+            };
 
             u8 graphics[TotalTypes];
             Sc::Unit::Type subunit1[TotalTypes];
@@ -491,14 +508,10 @@ namespace Sc {
             u16 pissSoundEnd[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundStart[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundEnd[IdRange::From0To105]; // Id 0-105 only
-            u16 starEditPlacementBoxWidth[TotalTypes];
-            u16 starEditPlacementBoxHeight[TotalTypes];
+            Dimensions starEditPlacementBox[TotalTypes];
             u16 addonHorizontal[IdRange::From106To201]; // Id 106-201 only
             u16 addonVertical[IdRange::From106To201]; // Id 106-201 only
-            u16 unitSizeLeft[TotalTypes];
-            u16 unitSizeUp[TotalTypes];
-            u16 unitSizeRight[TotalTypes];
-            u16 unitSizeDown[TotalTypes];
+            Extent unitExtent[TotalTypes];
             u16 portrait[TotalTypes];
             u16 mineralCost[TotalTypes];
             u16 vespeneCost[TotalTypes];
@@ -527,7 +540,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const DatEntry & getUnit(Type unitType) const;
         const FlingyDatEntry & getFlingy(size_t flingyIndex) const;
 
@@ -685,20 +698,20 @@ namespace Sc {
         {
         public:
             virtual ~Grp() {}
-            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+            bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
             void makeBlank();
             const GrpFile & get() const;
 
         private:
             std::vector<u8> grpData;
             
-            inline bool isValid(const std::string & mpqFileName) const;
-            inline bool fileHeaderIsValid(const std::string & mpqFileName) const;
-            inline bool frameHeadersAreValid(const std::string & mpqFileName) const;
-            inline bool framesAreValid(const std::string & mpqFileName) const;
+            inline bool isValid(const std::string & archiveFileName) const;
+            inline bool fileHeaderIsValid(const std::string & archiveFileName) const;
+            inline bool frameHeadersAreValid(const std::string & archiveFileName) const;
+            inline bool framesAreValid(const std::string & archiveFileName) const;
         };
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
@@ -830,7 +843,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const DatEntry & getUpgrade(Type upgradeType) const;
 
     private:
@@ -932,7 +945,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const DatEntry & getTech(Type techType) const;
 
     private:
@@ -942,7 +955,7 @@ namespace Sc {
     class TblFile
     {
     public:
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
         size_t numStrings() const;
         const std::string & getString(size_t stringIndex) const;
         bool getString(size_t stringIndex, std::string & outString) const;
@@ -1572,7 +1585,7 @@ namespace Sc {
 #pragma pack(pop)
 
         virtual ~Ai();
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, TblFilePtr statTxt = nullptr);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, TblFilePtr statTxt = nullptr);
         const Entry & getEntry(size_t aiIndex) const;
         const std::string & getName(size_t aiIndex) const;
         bool getName(size_t aiIndex, std::string & outAiName) const;
@@ -1703,6 +1716,48 @@ namespace Sc {
 
             MiniTileGraphics miniTileGraphics[4][4];
         };
+        __declspec(align(1)) struct TileGraphicsEx {
+            __declspec(align(1))struct MiniTileGraphics {
+                enum_t(Graphics, u32, {
+                    Flipped = BIT_0,
+                    Vr4Index = u32_max & x32BIT_0
+                });
+
+                Graphics graphics;
+
+                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
+                inline u32 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
+            };
+
+            MiniTileGraphics miniTileGraphics[4][4];
+
+            inline TileGraphicsEx(const TileGraphics & tileGraphics) : miniTileGraphics {
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][3].graphics)}
+                }
+            } {}
+        };
         __declspec(align(1)) struct MiniTilePixels {
             u8 wpeIndex[8][8];
         };
@@ -1728,9 +1783,9 @@ namespace Sc {
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
         };
         __declspec(align(1)) struct Vx4Dat {
-            TileGraphics tileGraphics[1];
+            TileGraphicsEx tileGraphics[1];
 
-            static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileGraphics); }
+            static inline size_t size(bool extended, size_t fileSize) { return extended ? fileSize/sizeof(TileGraphicsEx) : fileSize/sizeof(TileGraphics); }
         };
         __declspec(align(1)) struct Vr4Dat {
             MiniTilePixels miniTilePixels[1];
@@ -1748,17 +1803,17 @@ namespace Sc {
             std::vector<TileGroup> tileGroups;
             std::vector<Doodad> doodads;
             std::vector<TileFlags> tileFlags;
-            std::vector<TileGraphics> tileGraphics;
+            std::vector<TileGraphicsEx> tileGraphics;
             std::vector<MiniTilePixels> miniTilePixels;
             std::array<SystemColor, NumColors> systemColorPalette;
             
             static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
             static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
-            bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & tilesetName);
+            bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName);
         };
 
         const Tiles & get(const Tileset & tileset) const;
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
 
     private:
@@ -1961,7 +2016,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
         const DatEntry & get(Type weaponType) const;
 
     private:
@@ -2012,7 +2067,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & mpqFileName);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
         
         std::vector<Sc::SystemColor> palette;
     };
@@ -2035,21 +2090,23 @@ namespace Sc {
         Pcx tminimap;
 
         bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
-            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
         
-        static bool GetAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, std::vector<u8> & outAssetContents);
-        static bool GetAsset(const std::string & assetMpqPath, std::vector<u8> & outAssetContents,
+        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool & isFirst,
+            const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption);
+        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath);
+        static std::optional<std::vector<u8>> GetAsset(const std::string & assetArchivePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
-            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
 
-        static bool ExtractAsset(const std::vector<MpqFilePtr> & orderedSourceFiles, const std::string & assetMpqPath, const std::string & systemFilePath);
-        static bool ExtractAsset(const std::string & assetMpqPath, const std::string & systemFilePath,
+        static bool ExtractAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, const std::string & systemFilePath);
+        static bool ExtractAsset(const std::string & assetArchivePath, const std::string & systemFilePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
-            const std::unordered_map<Sc::DataFile::Priority, Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
+            const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
     };

@@ -1026,7 +1026,7 @@ void TrigActionsWindow::ButtonEditUnitProperties()
         Chk::Cuwp newCuwp = {};
         if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
-            size_t newCuwpIndex = CM->addCuwp(newCuwp, trigIndex, (size_t)focusedY);
+            size_t newCuwpIndex = CM->addCuwp(newCuwp, true, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
             {
                 action.number = (u32)newCuwpIndex;

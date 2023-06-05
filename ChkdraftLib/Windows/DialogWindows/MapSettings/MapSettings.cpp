@@ -8,7 +8,7 @@ enum_t(Id, u32, {
     WIN_UPGRADESETTINGS,
     WIN_TECHSETTINGS,
     WIN_STRINGEDITOR,
-    WIN_WAVEDITOR
+    WIN_SOUNDEDITOR
 });
 
 MapSettingsWindow::MapSettingsWindow() : currTab(Tab::MapProperties)
@@ -43,7 +43,7 @@ void MapSettingsWindow::ChangeTab(Tab tab)
     ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_UPGRADESETTINGS), SW_HIDE);
     ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_TECHSETTINGS), SW_HIDE);
     ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_STRINGEDITOR), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_WAVEDITOR), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_SOUNDEDITOR), SW_HIDE);
 
     switch ( tab )
     {
@@ -53,7 +53,7 @@ void MapSettingsWindow::ChangeTab(Tab tab)
         case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_UPGRADESETTINGS), SW_SHOW); break;
         case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_TECHSETTINGS), SW_SHOW); break;
         case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_STRINGEDITOR), SW_SHOW); break;
-        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_WAVEDITOR), SW_SHOW); break;
+        case Tab::SoundEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_SOUNDEDITOR), SW_SHOW); break;
     }
 
     currTab = tab;
@@ -67,7 +67,7 @@ void MapSettingsWindow::RefreshWindow()
     upgradeSettingsWindow.RefreshWindow();
     techSettingsWindow.RefreshWindow();
     stringEditorWindow.RefreshWindow();
-    wavEditorWindow.RefreshWindow();
+    soundEditorWindow.RefreshWindow();
 }
 
 BOOL MapSettingsWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
@@ -85,7 +85,7 @@ BOOL MapSettingsWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_UPGRADESETTINGS), SW_SHOW); break;
         case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_TECHSETTINGS), SW_SHOW); break;
         case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_STRINGEDITOR), SW_SHOW); break;
-        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_WAVEDITOR), SW_SHOW); break;
+        case Tab::SoundEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_SOUNDEDITOR), SW_SHOW); break;
         }
     }
     break;
@@ -101,7 +101,7 @@ BOOL MapSettingsWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         case Tab::UpgradeSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_UPGRADESETTINGS), SW_HIDE); break;
         case Tab::TechSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_TECHSETTINGS), SW_HIDE); break;
         case Tab::StringEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_STRINGEDITOR), SW_HIDE); break;
-        case Tab::WavEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_WAVEDITOR), SW_HIDE); break;
+        case Tab::SoundEditor: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_SOUNDEDITOR), SW_HIDE); break;
         }
     }
     break;
@@ -139,7 +139,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             {
                 const std::vector<std::string> tabTitles = {
                     "Map Properties", "Forces", "Unit Settings", "Upgrade Settings",
-                    "Tech Settings", "String Editor", "Wav Editor"
+                    "Tech Settings", "String Editor", "Sound Editor"
                 };
 
                 tabs.FindThis(getHandle(), IDC_MAPSETTINGSTABS);
@@ -160,7 +160,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 upgradeSettingsWindow.CreateThis(tabs.getHandle(), Id::WIN_UPGRADESETTINGS);
                 techSettingsWindow.CreateThis(tabs.getHandle(), Id::WIN_TECHSETTINGS);
                 stringEditorWindow.CreateThis(tabs.getHandle(), Id::WIN_STRINGEDITOR);
-                wavEditorWindow.CreateThis(tabs.getHandle(), Id::WIN_WAVEDITOR);
+                soundEditorWindow.CreateThis(tabs.getHandle(), Id::WIN_SOUNDEDITOR);
                 ReplaceChildFonts(defaultFont);
                 RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             }

@@ -125,7 +125,7 @@ ChkdString TextTrigGenerator::getTrigString(size_t stringId) const
         return ChkdString(std::to_string(stringId));
 }
 
-ChkdString TextTrigGenerator::getTrigWav(size_t stringId) const
+ChkdString TextTrigGenerator::getTrigSound(size_t stringId) const
 {
     if ( stringId == 0 )
         return ChkdString("No WAV");

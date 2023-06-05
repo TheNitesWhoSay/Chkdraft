@@ -3,11 +3,13 @@
 #include "../CommonFiles/CommonFiles.h"
 #include "../../MappingCoreLib/MappingCore.h"
 
-bool getPreSavePath(std::string & outPreSavePath); // Gets path holding assets to be written to the map file on save
+std::optional<std::string> getPreSavePath(); // Gets path holding assets to be written to the map file on save
 
-bool GetLoggerPath(std::string & outLoggerPath); // Gets the path at which logs are stored
+std::optional<std::string> GetLoggerPath(); // Gets the path at which logs are stored
 
-bool GetSettingsPath(std::string & outFilePath);
+std::optional<std::string> GetSettingsPath();
+
+std::optional<std::string> GetToolPath(const std::string & toolName);
 
 class Settings
 {
@@ -19,6 +21,7 @@ class Settings
         static u32 logLevel;
         static u32 deathTableStart;
         static bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
+        static bool isRemastered;
 
         static u32 getLogLevel();
 
