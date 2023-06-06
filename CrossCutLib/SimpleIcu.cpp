@@ -1,4 +1,6 @@
 #include "SimpleIcu.h"
+#include <cstdint>
+#include <memory>
 #include <unicode/unistr.h>
 #include <unicode/ustring.h>
 

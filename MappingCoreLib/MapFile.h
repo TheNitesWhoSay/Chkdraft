@@ -1,12 +1,9 @@
 #ifndef MAPFILE_H
 #define MAPFILE_H
 #include "Scenario.h"
-#include "SystemIO.h"
 #include "FileBrowser.h"
 #include "MpqFile.h"
-#include <memory>
-#include <cstdio>
-#include <time.h>
+#include <utility>
 #include <map>
 
 /**

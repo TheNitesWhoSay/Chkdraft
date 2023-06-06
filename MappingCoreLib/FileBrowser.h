@@ -1,9 +1,10 @@
 #ifndef FILEBROWSER_H
 #define FILEBROWSER_H
-#include "Basics.h"
 #include "SystemIO.h"
+#include "Basics.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 /**
     This file defines a standard, extensible interface for browsing for file paths, be they a location to save files at or open files from

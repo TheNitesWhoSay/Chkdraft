@@ -1,5 +1,6 @@
 #include "LoggerWindow.h"
 #include "../../Chkdraft.h"
+#include <WindowsX.h>
 
 enum_t(Id, u32, {
     LineNumbers = ID_FIRST,

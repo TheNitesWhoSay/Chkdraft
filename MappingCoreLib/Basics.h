@@ -1,18 +1,9 @@
 #ifndef BASICS_H
 #define BASICS_H
-#include <string>
-#include <cstring>
+#include <cmath>
 #include <cstdint>
-#include <optional>
-#include <vector>
-#include <cstdarg>
 #include <stdexcept>
-#include <unordered_map>
-#include <map>
-#include "../CrossCutLib/Logger.h"
-#include "../RareCpp/include/rarecpp/reflect.h"
-
-extern Logger logger;
+#include <string>
 
 /**
     Basics contains several things...

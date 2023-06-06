@@ -1,6 +1,6 @@
 #ifndef SIMPLEICU_H
 #define SIMPLEICU_H
-#include <memory>
+#include <cstddef>
 #include <string>
 
 /** Some simple extensions of ICU string handling */

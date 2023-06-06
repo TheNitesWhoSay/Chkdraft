@@ -3,10 +3,13 @@
 #include "Basics.h"
 #include "FileBrowser.h"
 #include "ArchiveFile.h"
-#include "../StormLib/src/StormLib.h"
-#include <algorithm>
 #include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <vector>
+
+typedef void* HANDLE;
 
 /**
     An MPQ file is an archive format (like .zip) specialized for StarCraft
@@ -18,10 +21,10 @@
 */
 
 enum_t(WavQuality, uint32_t, {
-    Low = MPQ_WAVE_QUALITY_LOW,
-    Med = MPQ_WAVE_QUALITY_MEDIUM,
-    High = MPQ_WAVE_QUALITY_HIGH,
-    Uncompressed = std::max(std::max(MPQ_WAVE_QUALITY_LOW, MPQ_WAVE_QUALITY_MEDIUM), MPQ_WAVE_QUALITY_HIGH)+1
+    Low = 2,
+    Med = 1,
+    High = 0,
+    Uncompressed = std::max(std::max(Low, Med), High)+1
 });
 
 class MpqFile;

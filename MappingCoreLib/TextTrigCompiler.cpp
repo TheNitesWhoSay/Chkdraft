@@ -1,7 +1,8 @@
 #include "TextTrigCompiler.h"
+#include "../RareCpp/include/rarecpp/string_buffer.h"
+#include "../CrossCutLib/Logger.h"
 #include "EscapeStrings.h"
 #include "Math.h"
-#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -10,6 +11,8 @@
 #include <vector>
 #include <chrono>
 #undef PlaySound
+
+extern Logger logger;
 
 using RareBufferedStream::StringBuffer;
 

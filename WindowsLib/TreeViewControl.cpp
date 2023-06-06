@@ -1,5 +1,6 @@
 #include "TreeViewControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 
 namespace WinLib {
 

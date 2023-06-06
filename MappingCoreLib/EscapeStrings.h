@@ -3,7 +3,6 @@
 #include "Basics.h"
 #include <string>
 #include <vector>
-#include <memory>
 
 /**
     This file defines several string types that extend basic strings in ways useful for mapping purposes

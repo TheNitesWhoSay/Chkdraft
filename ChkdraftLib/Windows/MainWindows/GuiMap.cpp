@@ -7,6 +7,7 @@
 #include "../../Mapping/Undos/ChkdUndos/LocationMove.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationChange.h"
 #include "../../../CrossCutLib/Logger.h"
+#include <WindowsX.h>
 
 bool GuiMap::doAutoBackups = false;
 

@@ -615,3 +615,21 @@ bool browseForSave(std::string & filePath, uint32_t & filterIndex, const std::ve
     return false;
 #endif
 }
+
+bool lastErrorIndicatedFileNotFound()
+{
+#ifdef _WIN32
+    return ::GetLastError() == ERROR_FILE_NOT_FOUND;
+#else
+    return false;
+#endif;
+}
+
+unsigned long getLastError()
+{
+#ifdef _WIN32
+    return ::GetLastError();
+#else
+    return 0;
+#endif;
+}

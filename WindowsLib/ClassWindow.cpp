@@ -1,4 +1,5 @@
 #include "ClassWindow.h"
+#include <CommCtrl.h>
 #include <SimpleIcu.h>
 #include <sstream>
 #include <iostream>

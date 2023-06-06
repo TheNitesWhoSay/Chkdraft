@@ -1,4 +1,5 @@
 #include "StatusControl.h"
+#include <CommCtrl.h>
 
 namespace WinLib {
 

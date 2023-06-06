@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 #include <numeric>
+#include <CommCtrl.h>
+#include <Windows.h>
 
 #define TOP_CONDITION_PADDING 50
 #define BOTTOM_CONDITION_PADDING 0
@@ -393,7 +395,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             rect.top = gridConditions.Top()-height-1;
             rect.bottom = gridConditions.Top()-1;
             FillRect(hDC, &rect, hBackground);
-            DeleteBrush(hBackground);
+            DeleteObject(hBackground);
 
             SetBkMode(hDC, TRANSPARENT);
             DrawString(hDC, gridConditions.Left()+6, gridConditions.Top()-height-1, 500, RGB(0, 0, 0), str);
@@ -509,14 +511,14 @@ void TrigConditionsWindow::DrawTouchups(HDC hDC)
         rect.right += 1;
         rect.bottom += 1;
         ::FrameRect(hDC, &rect, hHighlight);
-        DeleteBrush(hHighlight);
+        DeleteObject(hHighlight);
     }
     gridConditions.RedrawHeader();
 }
 
 void TrigConditionsWindow::PostDrawItems()
 {
-    DeleteBrush(hBlack);
+    DeleteObject(hBlack);
     hBlack = NULL;
 }
 

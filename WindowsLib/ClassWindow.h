@@ -4,7 +4,6 @@
 #include "WindowsItem.h"
 #include "WinUIEnums.h"
 #include "MdiClient.h"
-#include <CommCtrl.h>
 #include <Windows.h>
 #include <string>
 #include <list>

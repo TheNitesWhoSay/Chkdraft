@@ -1,5 +1,6 @@
 #include "Forces.h"
 #include "../../../Chkdraft.h"
+#include <CommCtrl.h>
 #include <string>
 
 enum_t(Id, u32, {

@@ -4,7 +4,10 @@
 #include "FileBrowser.h"
 #include "ArchiveFile.h"
 #include <memory>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <vector>
 
 typedef void* HANDLE;
 

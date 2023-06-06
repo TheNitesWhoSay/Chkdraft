@@ -1,7 +1,6 @@
 #ifndef TESTCOMMANDS_H
 #define TESTCOMMANDS_H
 #include "GenericCommand.h"
-#include "CommandTypes.h"
 
 class ExampleCommand;
 typedef std::shared_ptr<ExampleCommand> ExampleCommandPtr;

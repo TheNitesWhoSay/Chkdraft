@@ -1,7 +1,6 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 #include <cstdint>
-#include <string>
 
 namespace WinLib {
 

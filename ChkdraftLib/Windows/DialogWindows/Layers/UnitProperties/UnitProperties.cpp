@@ -4,6 +4,7 @@
 #include "../../../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitIndexMove.h"
+#include <CommCtrl.h>
 #include <string>
 
 enum class UnitListColumn { Name, Owner, Xc, Yc, Index };

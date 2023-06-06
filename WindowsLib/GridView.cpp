@@ -1,8 +1,10 @@
 #include "GridView.h"
+#include "../CrossCutLib/Logger.h"
 #include <iostream>
 #include <string>
 #include <SimpleIcu.h>
-#include "../CrossCutLib/Logger.h"
+#include <CommCtrl.h>
+#include <WindowsX.h>
 
 extern Logger logger;
 

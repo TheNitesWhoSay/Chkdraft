@@ -1,5 +1,7 @@
 #include "EditControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
+#include <windowsx.h>
 #include <type_traits>
 #include <memory>
 

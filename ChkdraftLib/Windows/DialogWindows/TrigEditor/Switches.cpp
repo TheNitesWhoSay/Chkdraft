@@ -1,6 +1,7 @@
 #include "Switches.h"
 #include "../../../Chkdraft.h"
 #include "../../ChkdControls/ChkdStringInput.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     TreeSwitches = ID_FIRST,

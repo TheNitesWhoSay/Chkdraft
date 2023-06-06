@@ -4,8 +4,6 @@
 #include "WinUIEnums.h"
 #include "WindowsItem.h"
 #include <Windows.h>
-#include <WindowsX.h>
-#include <CommCtrl.h>
 #include <string>
 #include <algorithm>
 #include <SimpleIcu.h>

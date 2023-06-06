@@ -1,19 +1,22 @@
 #include "Logger.h"
-#include <string>
 #include <ctime>
 
 #ifdef HAS_CONSOLE
-Console Console::console = Console();
+#include <Windows.h>
 
-Console::Console() : consoleIn(NULL), consoleOut(NULL)
+Console Console::console = Console();
+FILE* consoleIn = NULL;
+FILE* consoleOut = NULL;
+
+Console::Console()
 {
     if ( ::GetConsoleWindow() == NULL )
     {
         if ( ::AllocConsole() != 0 )
         {
-            if ( ::freopen_s(&consoleIn, "CONIN$", "r", stdin) == 0 )
+            if ( ::freopen_s(&::consoleIn, "CONIN$", "r", stdin) == 0 )
                 std::cin.clear();
-            if ( ::freopen_s(&consoleOut, "CONOUT$", "w", stdout) == 0 )
+            if ( ::freopen_s(&::consoleOut, "CONOUT$", "w", stdout) == 0 )
                 std::cout.clear();
         }
     }
@@ -30,21 +33,24 @@ Console::~Console()
     ::FreeConsole();
 }
 
-void Console::setVisible(bool visible, HWND handle)
+void Console::setVisible(bool visible)
 {
+    HWND handle = ::GetConsoleWindow();
     if ( handle != NULL )
-    {
-        if ( visible )
-            ::ShowWindow(handle, SW_SHOW);
-        else
-            ::ShowWindow(handle, SW_HIDE);
-    }
+        ::ShowWindow(::GetConsoleWindow(), visible ? SW_SHOW : SW_HIDE);
 }
 
 void Console::toggleVisible()
 {
     HWND handle = ::GetConsoleWindow();
     setVisible(!::IsWindowVisible(handle), handle);
+}
+
+void Console::setVisible(bool visible, void* voidHandle)
+{
+    HWND handle = (HWND)voidHandle;
+    if ( handle != NULL )
+        ::ShowWindow(handle, visible ? SW_SHOW : SW_HIDE);
 }
 #endif
 

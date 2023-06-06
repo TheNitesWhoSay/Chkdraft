@@ -1,4 +1,5 @@
 #include "TestCommands.h"
+#include "CommandTypes.h"
 #include <iostream>
 #include <string>
 

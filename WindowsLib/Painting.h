@@ -2,10 +2,10 @@
 #define PAINTING_H
 #include "../CrossCutLib/SimpleIcu.h"
 #include "DataTypes.h"
-#include <Windows.h>
-#include <unordered_map>
-#include <string>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <Windows.h>
 
 namespace WinLib {
 

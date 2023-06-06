@@ -1,10 +1,10 @@
 #ifndef WINDOWSITEM_H
 #define WINDOWSITEM_H
-#include <Windows.h>
+#include "DataTypes.h"
+#include <list>
 #include <optional>
 #include <string>
-#include <list>
-#include "DataTypes.h"
+#include <Windows.h>
 
 namespace WinLib {
 
