@@ -47,7 +47,7 @@ void LoggerWindow::Refresh()
 {
     std::string lineNumbers = "";
     size_t totalLines = lineStart.size();
-    size_t firstLine = lineNumber-totalLines;
+    size_t firstLine = size_t(lineNumber-totalLines);
     for ( size_t i=0; i<totalLines; i++ )
     {
         if ( i > 0 )
@@ -55,8 +55,8 @@ void LoggerWindow::Refresh()
 
         lineNumbers += std::to_string(firstLine+i);
     }
-    this->lineNumbers.SetText(icux::toUistring(lineNumbers));
-    richText.SetText(prevLines);
+    this->lineNumbers.SetUiText(icux::toUistring(lineNumbers));
+    richText.SetUiText(prevLines);
     richText.ScrollBottom();
 }
  
@@ -128,7 +128,7 @@ int LoggerWindow::overflow(int c)
         }
 
         size_t totalLines = lineStart.size();
-        size_t firstLine = lineNumber-totalLines;
+        size_t firstLine = size_t(lineNumber-totalLines);
         for ( size_t i=0; i<totalLines; i++ )
         {
             if ( i > 0 )
@@ -136,10 +136,10 @@ int LoggerWindow::overflow(int c)
 
             lineNumbers += std::to_string(firstLine+i);
         }
-        this->lineNumbers.SetText(icux::toUistring(lineNumbers));
+        this->lineNumbers.SetUiText(icux::toUistring(lineNumbers));
 
         currLine.clear();
-        richText.SetText(prevLines);
+        richText.SetUiText(prevLines);
         richText.ScrollBottom();
         currLine.push_back(char(c));
     }

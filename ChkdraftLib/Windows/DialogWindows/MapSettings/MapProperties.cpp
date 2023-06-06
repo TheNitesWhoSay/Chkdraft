@@ -211,7 +211,7 @@ void MapPropertiesWindow::RefreshWindow()
                         case Chk::PlayerColorSetting::Custom:
                         {
                             auto customColor = CM->getPlayerCustomColor(player);
-                            if ( dropPlayerColor[player].GetNumItems() > ::playerColors.size() + ::specialColors.size() )
+                            if ( size_t(dropPlayerColor[player].GetNumItems()) > ::playerColors.size() + ::specialColors.size() )
                                 dropPlayerColor[player].RemoveItem(dropPlayerColor[player].GetNumItems()-1); // Remove the custom color element
                             auto rgb = RGB(customColor.red, customColor.green, customColor.blue);
                             int customIndex = dropPlayerColor[player].AddItem(to_hex_string(rgb));

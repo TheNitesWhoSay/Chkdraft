@@ -798,7 +798,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
                             if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
-                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(red, green, blue);
+                                bitmap[size_t((yc + miniTileYc)*bitWidth + xc + miniTileXc)] = Sc::SystemColor(red, green, blue);
                         }
                     }
                 }
@@ -821,7 +821,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
                             if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
-                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(0, 0, 0);
+                                bitmap[size_t((yc + miniTileYc)*bitWidth + xc + miniTileXc)] = Sc::SystemColor(0, 0, 0);
                         }
                     }
                 }
@@ -865,8 +865,8 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
             size_t pixelLineOffset = 0;
             if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
             {
-                auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+rowStart : bitmap.begin()+currPixelIndex; // Start from the left-most pixel of this row of the frame
-                auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+rowLimit : bitmap.begin()+(currPixelIndex+frameWidth);
+                auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex); // Start from the left-most pixel of this row of the frame
+                auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+size_t(rowLimit) : bitmap.begin()+size_t(currPixelIndex+frameWidth);
                 while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
                 {
                     const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
@@ -887,7 +887,7 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                             if ( pixelLine.isSolidLine() )
                                 std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
                             
-                            currPixel += inBoundLength;
+                            currPixel += size_t(inBoundLength);
                         }
                     }
                     currPixelIndex += lineLength;
@@ -911,7 +911,7 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                         if ( pixelLine.isSolidLine() )
                             std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line'
 
-                        currPixel += lineLength;
+                        currPixel += size_t(lineLength);
                     }
                     pixelLineOffset += pixelLine.sizeInBytes();
                 }
@@ -988,7 +988,7 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
                     {
                         const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
                         const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                        bitmap[(yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel)] = palette[wpeIndex];
+                        bitmap[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = palette[wpeIndex];
                     }
                 }
             }
@@ -1001,7 +1001,7 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
         for ( s64 yc = std::max(s64(0), yStart); yc < yEnd; yc++ )
         {
             for ( s64 xc = std::max(s64(0), xStart); xc < xEnd; xc++ )
-                bitmap[yc*width + xc] = black;
+                bitmap[size_t(yc*width + xc)] = black;
         }
     }
 }
@@ -1028,7 +1028,7 @@ void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffse
         for ( s64 yc=0; yc<8; yc++ )
         {
             for ( s64 xc = 0; xc < 8; xc++ )
-                graphicBits[yc * 8 + xc] = Sc::SystemColor(red, green, blue);
+                graphicBits[size_t(yc * 8 + xc)] = Sc::SystemColor(red, green, blue);
         }
     }
     SetDIBitsToDevice(hDC, (int)xOffset, (int)yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
@@ -1107,7 +1107,7 @@ void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, 
                     {
                         const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
                         const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                        graphicBits[(yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel)] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
+                        graphicBits[size_t((yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel))] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
                     }
                 }
             }
@@ -1460,7 +1460,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
                     xMiniTile %= 4; // Correct for invalid x-minitiles
             }
 
-            u16 tileIndex = map.getTile(xTile, yTile);
+            u16 tileIndex = map.getTile(size_t(xTile), size_t(yTile));
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
             {
@@ -1472,7 +1472,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
                 const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
                 const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
                 
-                bitmap[(yc + yOffset) * 128 + xc + xOffset] = palette[wpeIndex];
+                bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)] = palette[wpeIndex];
             }
         }
     }

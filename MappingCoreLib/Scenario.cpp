@@ -339,7 +339,7 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
     else if constexpr ( RareTs::has_begin_end_v<T> ) // e.g. vector
     {
         using Element = RareTs::element_type_t<T>;
-        size_t wholeElements = sectionSize/sizeof(Element) + (sectionSize%sizeof(Element) > 0 ? 1 : 0);
+        size_t wholeElements = size_t(sectionSize)/sizeof(Element) + (size_t(sectionSize)%sizeof(Element) > 0 ? 1 : 0);
         value = std::vector<Element>(wholeElements);
         for ( size_t i=0; i<wholeElements; ++i )
             ::read<Element>(is, value[i], sectionSize);
@@ -473,8 +473,8 @@ bool Scenario::read(std::istream & is)
         else // if ( bytesRead < sizeof(Chk::SectionHeader) ) // Partial section header
         {
             for ( std::streamsize i=0; i<headerBytesRead; i++ )
-                tailData[i] = ((u8*)&sectionHeader)[i];
-            for ( size_t i=headerBytesRead; i<tailData.size(); i++ )
+                tailData[size_t(i)] = ((u8*)&sectionHeader)[size_t(i)];
+            for ( size_t i=size_t(headerBytesRead); i<tailData.size(); i++ )
                 tailData[i] = u8(0);
 
             tailLength = (u8)headerBytesRead;
@@ -2814,7 +2814,7 @@ void Scenario::upgradeKstrToCurrent()
             if ( location.stringId > strCapacity &&
                  location.stringId != Chk::StringId::NoString &&
                  location.stringId < 65536 &&
-                 65536-location.stringId < editorStrings.size() )
+                 size_t(65536-location.stringId) < editorStrings.size() )
             {
                 editorStringOverrides.locationName[locationIndex] = 65536-location.stringId;
                 location.stringId = Chk::StringId::NoString;
@@ -2824,7 +2824,7 @@ void Scenario::upgradeKstrToCurrent()
         if ( scenarioProperties.scenarioNameStringId > strCapacity &&
             scenarioProperties.scenarioNameStringId != Chk::StringId::NoString &&
             scenarioProperties.scenarioNameStringId < 65536 &&
-            65536-scenarioProperties.scenarioNameStringId < editorStrings.size() )
+            size_t(65536-scenarioProperties.scenarioNameStringId) < editorStrings.size() )
         {
             setScenarioNameStringId(65536-scenarioProperties.scenarioNameStringId, Chk::StrScope::Editor);
             scenarioProperties.scenarioNameStringId = Chk::StringId::NoString;
@@ -2833,7 +2833,7 @@ void Scenario::upgradeKstrToCurrent()
         if ( scenarioProperties.scenarioDescriptionStringId > strCapacity &&
             scenarioProperties.scenarioDescriptionStringId != Chk::StringId::NoString &&
             scenarioProperties.scenarioDescriptionStringId < 65536 &&
-            65536-scenarioProperties.scenarioDescriptionStringId < editorStrings.size() )
+            size_t(65536-scenarioProperties.scenarioDescriptionStringId) < editorStrings.size() )
         {
             setScenarioDescriptionStringId(65536-scenarioProperties.scenarioDescriptionStringId, Chk::StrScope::Editor);
             scenarioProperties.scenarioDescriptionStringId = Chk::StringId::NoString;
@@ -2844,7 +2844,7 @@ void Scenario::upgradeKstrToCurrent()
             if ( forces.forceString[i] > strCapacity &&
                 forces.forceString[i] != Chk::StringId::NoString &&
                 forces.forceString[i] < 65536 &&
-                65536-forces.forceString[i] < editorStrings.size() )
+                size_t(65536-forces.forceString[i]) < editorStrings.size() )
             {
                 setForceNameStringId(i, 65536-forces.forceString[i], Chk::StrScope::Editor);
                 forces.forceString[i] = Chk::StringId::NoString;
@@ -2877,7 +2877,7 @@ void Scenario::upgradeKstrToCurrent()
             if ( origUnitSettings.nameStringId[i] > strCapacity &&
                 origUnitSettings.nameStringId[i] != Chk::StringId::NoString &&
                 origUnitSettings.nameStringId[i] < 65536 &&
-                65536-origUnitSettings.nameStringId[i] < editorStrings.size() )
+                size_t(65536-origUnitSettings.nameStringId[i]) < editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::StrScope::Editor);
                 origUnitSettings.nameStringId[i] = Chk::StringId::NoString;
@@ -2888,7 +2888,7 @@ void Scenario::upgradeKstrToCurrent()
             if ( unitSettings.nameStringId[i] > strCapacity &&
                 unitSettings.nameStringId[i] != Chk::StringId::NoString &&
                 unitSettings.nameStringId[i] < 65536 &&
-                65536-unitSettings.nameStringId[i] < editorStrings.size() )
+                size_t(65536-unitSettings.nameStringId[i]) < editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::StrScope::Editor);
                 unitSettings.nameStringId[i] = Chk::StringId::NoString;
@@ -3411,7 +3411,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         }
         else
         {
-            tiles.erase(tiles.begin()+(tiles.size()-numTilesRemoved), tiles.end());
+            tiles.erase(tiles.begin()+(tiles.size()-size_t(numTilesRemoved)), tiles.end());
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -3428,7 +3428,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         }
         else
         {
-            tiles.erase(tiles.begin(), tiles.begin()+numTilesRemoved);
+            tiles.erase(tiles.begin(), tiles.begin()+size_t(numTilesRemoved));
             currTileHeight -= numRowsRemoved;
         }
     }
@@ -3444,13 +3444,13 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         }
         else
         {
-            size_t firstRemovedColumn = currTileWidth - numColumnsRemoved;
-            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
+            size_t firstRemovedColumn = size_t(currTileWidth - numColumnsRemoved);
+            for ( size_t row = size_t(currTileHeight-1); row < (size_t)currTileHeight; row-- )
             {
-                size_t rowOffset = row*currTileWidth;
+                size_t rowOffset = size_t(row*currTileWidth);
                 size_t removedColumnsOffset = rowOffset+firstRemovedColumn;
                 auto start = tiles.begin()+removedColumnsOffset;
-                tiles.erase(start, start+numColumnsRemoved);
+                tiles.erase(start, start+size_t(numColumnsRemoved));
             }
             currTileWidth -= numColumnsRemoved;
         }
@@ -3467,11 +3467,11 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         }
         else
         {
-            for ( size_t row = currTileHeight-1; row < (size_t)currTileHeight; row-- )
+            for ( size_t row = size_t(currTileHeight-1); row < (size_t)currTileHeight; row-- )
             {
-                size_t rowOffset = row*currTileWidth;
+                size_t rowOffset = size_t(row*currTileWidth);
                 auto start = tiles.begin()+rowOffset;
-                tiles.erase(start, start+numColumnsRemoved);
+                tiles.erase(start, start+size_t(numColumnsRemoved));
             }
             currTileWidth -= numColumnsRemoved;
         }
@@ -3493,7 +3493,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
             {
                 s64 rowOffset = row*currTileWidth;
                 s64 start = rowOffset + numColumnsAdded;
-                tiles.insert(tiles.begin() + start, numColumnsAdded, u16(0));
+                tiles.insert(tiles.begin() + size_t(start), size_t(numColumnsAdded), u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -3504,7 +3504,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
                 s64 rowOffset = row*numColumnsAdded;
-                tiles.insert(tiles.begin() + rowOffset, numColumnsAdded, u16(0));
+                tiles.insert(tiles.begin() + size_t(rowOffset), size_t(numColumnsAdded), u16(0));
             }
             currTileWidth += numColumnsAdded;
         }
@@ -3513,7 +3513,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         {
             s64 numRowsAdded = oldTop - newTop;
             s64 numTilesAdded = currTileWidth*numRowsAdded;
-            tiles.insert(tiles.begin(), numTilesAdded, u16(0));
+            tiles.insert(tiles.begin(), size_t(numTilesAdded), u16(0));
             currTileHeight += numRowsAdded;
         }
 
@@ -3521,7 +3521,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
         {
             s64 numRowsAdded = newBottom - oldBottom;
             s64 numTilesAdded = currTileWidth*numRowsAdded;
-            tiles.insert(tiles.end(), numTilesAdded, u16(0));
+            tiles.insert(tiles.end(), size_t(numTilesAdded), u16(0));
         }
 
         if ( tiles.size() < (size_t)newTileWidth * (size_t)newTileHeight ) // Fill any missing tiles with nulls

@@ -2176,7 +2176,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
     if ( size < 40 )
     {
         // Take an upper case copy of the name
-        for ( int i=0; i<size; i++ )
+        for ( size_t i=0; i<size; i++ )
         {
             char currChar = str[i];
             if ( currChar > 96 && currChar < 123 )

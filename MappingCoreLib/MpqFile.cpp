@@ -195,7 +195,7 @@ std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath) con
             auto fileData = std::make_optional<std::vector<u8>>(fileSize);
             bool success = SFileReadFile(openFile, (LPVOID)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
             SFileCloseFile(openFile);
-            return fileData;
+            return success ? fileData : std::nullopt;
         }
     }
     return std::nullopt;

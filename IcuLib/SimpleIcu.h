@@ -94,6 +94,12 @@ namespace icux {
 
     uistring toUistring(const filestring & filestring);
 
+#ifdef UTF8_UI
+    uistring toUistring(const wchar_t* utf16Str, size_t length);
+
+    uistring toUistring(const std::wstring & utf16Str);
+#endif
+
 }
 
 #endif

@@ -12,6 +12,7 @@
 #include <regex>
 #ifdef _WIN32
 #include <Windows.h>
+#include <direct.h>
 #endif
 
 constexpr u32 size_1kb = 0x400;

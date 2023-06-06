@@ -14,7 +14,7 @@ namespace WinLib {
             
             bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, bool scrollable, u64 id);
             void SetText(const std::string & text);
-            void SetText(const icux::uistring & text);
+            void SetUiText(const icux::uistring & text);
             void ScrollBottom();
             void SetScrollMatcher(RichEditControl* scrollMatcher);
             void AlignMatcher();
