@@ -8,7 +8,7 @@
 #include "Windows/MainWindows/MainPlot.h"
 #include "Windows/DialogWindows/NewMap/NewMap.h"
 #include "Windows/MainWindows/Maps.h"
-#include "../CommanderLib/Commander.h"
+#include "../CrossCutLib/Commander.h"
 
 class Chkdraft : public WinLib::ClassWindow
 {

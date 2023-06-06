@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <map>
-#include "../CommanderLib/Logger.h"
+#include "../CrossCutLib/Logger.h"
 #include "../RareCpp/include/rarecpp/reflect.h"
 
 extern Logger logger;

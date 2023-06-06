@@ -2,7 +2,7 @@
 #include <SimpleIcu.h>
 #include <sstream>
 #include <iostream>
-#include "../CommanderLib/Logger.h"
+#include "../CrossCutLib/Logger.h"
 
 extern Logger logger;
 

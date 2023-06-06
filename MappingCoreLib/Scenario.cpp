@@ -1,7 +1,7 @@
 #include "Scenario.h"
 #include "sha256.h"
 #include "Math.h"
-#include "../CommanderLib/Logger.h"
+#include "../CrossCutLib/Logger.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>

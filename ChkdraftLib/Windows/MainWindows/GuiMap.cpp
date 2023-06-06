@@ -6,7 +6,7 @@
 #include "../../Mapping/Undos/ChkdUndos/LocationCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationMove.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationChange.h"
-#include "../../../CommanderLib/Logger.h"
+#include "../../../CrossCutLib/Logger.h"
 
 bool GuiMap::doAutoBackups = false;
 

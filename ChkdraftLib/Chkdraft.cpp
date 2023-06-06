@@ -1,6 +1,6 @@
 #include "Chkdraft.h"
-#include "../CommanderLib/Logger.h"
-#include "../CommanderLib/TestCommands.h"
+#include "../CrossCutLib/Logger.h"
+#include "../CrossCutLib/TestCommands.h"
 #include "Mapping/DataFileBrowsers.h"
 #include "Mapping/Settings.h"
 #include <shellapi.h>

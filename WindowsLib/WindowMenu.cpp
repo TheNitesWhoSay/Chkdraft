@@ -1,5 +1,5 @@
 #include "WindowMenu.h"
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 
 namespace WinLib {
 

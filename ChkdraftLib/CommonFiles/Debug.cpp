@@ -1,7 +1,7 @@
 #include "Debug.h"
 #include "CommonFiles.h"
 #include "../../WindowsLib/WindowsUi.h"
-#include "../../CommanderLib/Logger.h"
+#include "../../CrossCutLib/Logger.h"
 #include <SimpleIcu.h>
 #include <crtdbg.h>
 #include <cstdarg>

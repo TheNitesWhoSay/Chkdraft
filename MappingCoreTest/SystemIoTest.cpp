@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "../MappingCoreLib/MappingCore.h"
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 #include "TestAssets.h"
 #include <filesystem>
 #include <regex>

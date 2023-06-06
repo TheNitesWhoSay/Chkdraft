@@ -1,6 +1,6 @@
 #include "SimpleIcu.h"
-#include "unicode/unistr.h"
-#include "unicode/ustring.h"
+#include <unicode/unistr.h>
+#include <unicode/ustring.h>
 
 namespace icux {
     

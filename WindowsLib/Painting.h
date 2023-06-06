@@ -1,6 +1,6 @@
 #ifndef PAINTING_H
 #define PAINTING_H
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 #include "DataTypes.h"
 #include <Windows.h>
 #include <unordered_map>
