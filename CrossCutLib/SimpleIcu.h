@@ -1,6 +1,6 @@
 #ifndef SIMPLEICU_H
 #define SIMPLEICU_H
-#include <memory>
+#include <cstddef>
 #include <string>
 
 /** Some simple extensions of ICU string handling */
@@ -93,6 +93,12 @@ namespace icux {
     uistring toUistring(const std::string & utf8Str);
 
     uistring toUistring(const filestring & filestring);
+
+#ifdef UTF8_UI
+    uistring toUistring(const wchar_t* utf16Str, size_t length);
+
+    uistring toUistring(const std::wstring & utf16Str);
+#endif
 
 }
 

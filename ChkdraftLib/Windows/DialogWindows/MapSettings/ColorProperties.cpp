@@ -16,7 +16,7 @@ std::optional<Chk::Rgb> ColorPropertiesDialog::GetCrgbColor(HWND hParent, Chk::R
     chooseColor.lCustData = NULL;
     chooseColor.lpfnHook = NULL;
     chooseColor.lpTemplateName = NULL;
-    if ( ChooseColorW(&chooseColor) != 0 )
+    if ( ChooseColor(&chooseColor) != 0 )
         return std::optional<Chk::Rgb>({GetRValue(chooseColor.rgbResult), GetGValue(chooseColor.rgbResult), GetBValue(chooseColor.rgbResult)});
 
     return std::nullopt;

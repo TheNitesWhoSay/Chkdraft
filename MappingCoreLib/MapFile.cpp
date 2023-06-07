@@ -1,11 +1,15 @@
+#include "../CrossCutLib/Logger.h"
+#include <SimpleIcu.h>
 #include "MapFile.h"
 #include "SystemIO.h"
 #include "EscapeStrings.h"
 #include <cstdio>
 #include <cstdarg>
-#include <SimpleIcu.h>
+#include <fstream>
 #include <sstream>
 #include <chrono>
+
+extern Logger logger;
 
 #undef PlaySound
 
@@ -305,10 +309,10 @@ bool MapFile::openMapFile(const std::string & filePath)
                 else
                     CHKD_ERR("Failed to get scenario file from MPQ.");
             }
-            else if ( GetLastError() == ERROR_FILE_NOT_FOUND )
+            else if ( ::lastErrorIndicatedFileNotFound() )
                 CHKD_ERR("File Not Found");
             else
-                CHKD_ERR("%d", GetLastError());
+                CHKD_ERR("%d", ::getLastError());
         }
         else if ( extension == ".chk" )
         {

@@ -1,5 +1,6 @@
 #include "LeftBar.h"
 #include "../../Chkdraft.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     IDR_MAIN_TREE,

@@ -1,7 +1,10 @@
 #include "TextTrigGenerator.h"
+#include "../CrossCutLib/Logger.h"
 #include "Math.h"
 #include <string>
 #include <chrono>
+
+extern Logger logger;
 
 std::vector<std::string> textFlags = { "Don't Always Display", "Always Display" };
 std::vector<std::string> scoreTypes = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };

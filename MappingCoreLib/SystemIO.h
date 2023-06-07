@@ -1,10 +1,9 @@
 #ifndef SYSTEMIO_H
 #define SYSTEMIO_H
-#include <fstream>
-#include <algorithm>
+#include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
-#include <map>
 
 /**
     SystemIO provides methods to interact directly with the system, all methods shall either use only C++ standard code
@@ -72,5 +71,9 @@ bool browseForFile(std::string & filePath, u32 & filterIndex, const std::vector<
 
 bool browseForSave(std::string & filePath, u32 & filterIndex, const std::vector<std::pair<std::string, std::string>> & filtersAndLabels,
     const std::string & initialDirectory, const std::string & title, bool pathMustExist, bool provideOverwritePrompt);
+
+bool lastErrorIndicatedFileNotFound();
+
+unsigned long getLastError();
 
 #endif

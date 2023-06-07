@@ -2,9 +2,9 @@
 #define SC_H
 #include "Basics.h"
 #include "ArchiveFile.h"
-#include "SystemIO.h"
 #include "FileBrowser.h"
 #include <array>
+#include <unordered_map>
 
 /**
     The Sc files defines static structures, constants, and enumerations general to StarCraft, there may be some limited overlap with Chk

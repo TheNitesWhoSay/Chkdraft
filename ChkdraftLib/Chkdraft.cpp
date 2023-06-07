@@ -1,14 +1,16 @@
 #include "Chkdraft.h"
-#include "../CommanderLib/Logger.h"
-#include "../CommanderLib/TestCommands.h"
+#include "../CrossCutLib/Logger.h"
+#include "../CrossCutLib/TestCommands.h"
 #include "Mapping/DataFileBrowsers.h"
 #include "Mapping/Settings.h"
 #include <shellapi.h>
+#include <fstream>
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <regex>
 #include "Windows/ChkdControls/ChkdStringInput.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     IDR_MAIN_TOOLBAR = ID_FIRST,

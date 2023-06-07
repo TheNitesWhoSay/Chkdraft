@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "../CrossCutLib/Logger.h"
 #include "../MappingCoreLib/MappingCore.h"
 #include <regex>
 

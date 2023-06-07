@@ -1,5 +1,7 @@
 #include "TextControl.h"
+#include <CommCtrl.h>
 #include <SimpleIcu.h>
+#include <WindowsX.h>
 
 namespace WinLib {
 

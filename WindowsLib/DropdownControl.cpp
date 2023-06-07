@@ -1,5 +1,6 @@
 #include "DropdownControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <memory>
 
 namespace WinLib {

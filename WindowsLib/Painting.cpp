@@ -1,6 +1,6 @@
 #include "Painting.h"
 #include <SimpleIcu.h>
-#include "../CommanderLib/Logger.h"
+#include "../CrossCutLib/Logger.h"
 #include <chrono>
 
 extern Logger logger;

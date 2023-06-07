@@ -300,7 +300,6 @@ void ChkdStringInputDialog::GameStringWindow::ButtonReset()
     parent.newGameString = parent.initialGameString;
     checkNoString.SetCheck(!parent.newGameString);
     editString.SetWinText(parent.newGameString ? *parent.newGameString : "");
-    logger.info() << "Game Button Reset" << std::endl;
 }
 
 void ChkdStringInputDialog::GameStringWindow::ButtonCancel()
@@ -412,7 +411,6 @@ void ChkdStringInputDialog::EditorStringWindow::ButtonReset()
     parent.newEditorString = parent.initialEditorString;
     checkNoString.SetCheck(!parent.newEditorString);
     editString.SetWinText(parent.newEditorString ? *parent.newEditorString : "");
-    logger.info() << "Editor Button Reset" << std::endl;
 }
 
 void ChkdStringInputDialog::EditorStringWindow::ButtonCancel()

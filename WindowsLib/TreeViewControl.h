@@ -1,6 +1,7 @@
 #ifndef TREEVIEWCONTROL_H
 #define TREEVIEWCONTROL_H
 #include "WindowControl.h"
+#include <CommCtrl.h>
 
 namespace WinLib {
 

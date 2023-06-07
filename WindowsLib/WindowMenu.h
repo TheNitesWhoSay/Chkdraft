@@ -3,6 +3,7 @@
 #include "DataTypes.h"
 #include "WinUIEnums.h"
 #include <Windows.h>
+#include <string>
 
 namespace WinLib {
 

@@ -1,6 +1,8 @@
 #include "SimpleIcu.h"
-#include "unicode/unistr.h"
-#include "unicode/ustring.h"
+#include <cstdint>
+#include <memory>
+#include <unicode/unistr.h>
+#include <unicode/ustring.h>
 
 namespace icux {
     
@@ -104,6 +106,18 @@ namespace icux {
             return uistring(utf8Str);
         #endif
     }
+
+#ifdef UTF8_UI
+    uistring toUistring(const wchar_t* utf16Str, size_t length)
+    {
+        return toUtf8(utf16Str, length);
+    }
+
+    uistring toUistring(const std::wstring & utf16Str)
+    {
+        return toUtf8(utf16Str);
+    }
+#endif
 
 #ifdef UTF16_UI
     uistring toUistring(const filestring & filestring)

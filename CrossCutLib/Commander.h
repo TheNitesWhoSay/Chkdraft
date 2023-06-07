@@ -3,7 +3,6 @@
 #include "GenericCommand.h"
 #include "ErrorHandler.h"
 #include <condition_variable>
-#include <initializer_list>
 #include <atomic>
 #include <vector>
 #include <thread>

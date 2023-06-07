@@ -1,4 +1,5 @@
 #include "MainToolbar.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     COMBOBOX_LAYER = ID_FIRST,

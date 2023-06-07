@@ -1,4 +1,5 @@
 #include "DragListControl.h"
+#include <CommCtrl.h>
 
 namespace WinLib {
 

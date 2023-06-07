@@ -1,6 +1,7 @@
 #ifndef GRIDITEM_H
 #define GRIDITEM_H
 #include "DataTypes.h"
+#include <string>
 
 namespace WinLib {
 

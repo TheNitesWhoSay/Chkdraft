@@ -1,6 +1,7 @@
 #include "ListViewControl.h"
-#include "../CommanderLib/Logger.h"
+#include "../CrossCutLib/Logger.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <iostream>
 
 namespace WinLib {

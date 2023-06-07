@@ -1,7 +1,11 @@
 #include "Sc.h"
+#include "../CrossCutLib/Logger.h"
 #include "MpqFile.h"
 #include "CascArchive.h"
+#include <algorithm>
 #include <chrono>
+
+extern Logger logger;
 
 const std::string Sc::DataFile::starCraftFileName = "StarCraft.exe";
 const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";

@@ -22,6 +22,11 @@ void Updater::SetUpdateInterval(int newUpdateInterval)
 	intervalBetweenUpdates = newUpdateInterval;
 }
 
+void LaunchPushUpdates(Updater* updater)
+{
+	updater->PushUpdates();
+}
+
 bool Updater::StartTimedUpdates(int interval)
 {
 	intervalBetweenUpdates = interval;
@@ -35,11 +40,6 @@ void Updater::StopTimedUpdates()
 	continueUpdating = false;
 	updateThread->join();
 	updateThread = nullptr;
-}
-
-void LaunchPushUpdates(Updater* updater)
-{
-	updater->PushUpdates();
 }
 
 void Updater::PushUpdates()

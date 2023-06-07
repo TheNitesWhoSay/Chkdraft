@@ -4,6 +4,7 @@
 #include "../../../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitIndexMove.h"
+#include <CommCtrl.h>
 #include <string>
 
 enum class UnitListColumn { Name, Owner, Xc, Yc, Index };
@@ -642,7 +643,7 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
     auto & selUnits = selections.getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex+1 < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
+        if ( size_t(unitIndex+1) < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
         {
             CM->moveUnit(unitIndex, unitIndex+1);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));

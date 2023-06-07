@@ -3,6 +3,7 @@
 #include "../../ChkdControls/ChkdStringInput.h"
 #include "../../ChkdControls/CuwpInput.h"
 #include "../../../Mapping/Settings.h"
+#include <CommCtrl.h>
 
 #define TOP_ACTION_PADDING 50
 #define BOTTOM_ACTION_PADDING 0
@@ -532,7 +533,7 @@ void TrigActionsWindow::DrawSelectedAction()
             rect.top = gridActions.Top() - height - 1;
             rect.bottom = gridActions.Top() - 1;
             FillRect(hDC, &rect, hBackground);
-            DeleteBrush(hBackground);
+            DeleteObject(hBackground);
 
             SetBkMode(hDC, TRANSPARENT);
             DrawString(hDC, gridActions.Left() + 6, gridActions.Top() - height - 1, 500, RGB(0, 0, 0), str);
@@ -649,14 +650,14 @@ void TrigActionsWindow::DrawTouchups(HDC hDC)
         rect.right += 1;
         rect.bottom += 1;
         ::FrameRect(hDC, &rect, hHighlight);
-        DeleteBrush(hHighlight);
+        DeleteObject(hHighlight);
     }
     gridActions.RedrawHeader();
 }
 
 void TrigActionsWindow::PostDrawItems()
 {
-    DeleteBrush(hBlack);
+    DeleteObject(hBlack);
     hBlack = NULL;
 }
 

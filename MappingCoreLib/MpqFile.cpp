@@ -1,8 +1,15 @@
 #include "MpqFile.h"
+#include "../StormLib/src/StormLib.h"
 #include "SystemIO.h"
 #include <SimpleIcu.h>
 #include <iterator>
 #include <vector>
+
+static_assert(WavQuality::Low == MPQ_WAVE_QUALITY_LOW, "WavQuality::Low has the wrong value!");
+static_assert(WavQuality::Med == MPQ_WAVE_QUALITY_MEDIUM, "WavQuality::Med has the wrong value!");
+static_assert(WavQuality::High == MPQ_WAVE_QUALITY_HIGH, "WavQuality::High has the wrong value!");
+static_assert(WavQuality::Uncompressed == std::max(std::max(MPQ_WAVE_QUALITY_LOW, MPQ_WAVE_QUALITY_MEDIUM), MPQ_WAVE_QUALITY_HIGH)+1,
+    "WavQuality::Uncompressed has the wrong value!");
 
 MpqFile::MpqFile(bool deleteOnClose, bool updateListFile) : ArchiveFile(deleteOnClose), updateListFile(updateListFile), madeChanges(false), filePath(""), hMpq(NULL)
 {

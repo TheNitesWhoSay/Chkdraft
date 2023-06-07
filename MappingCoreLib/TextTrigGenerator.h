@@ -1,8 +1,8 @@
 #ifndef TEXTTRIGGENERATOR_H
 #define TEXTTRIGGENERATOR_H
+#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include "Basics.h"
 #include "Scenario.h"
-#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include <vector>
 #include <string>
 #include <map>
