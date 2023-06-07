@@ -265,7 +265,9 @@ bool MpqFile::addFile(const std::string & mpqPath, const std::vector<u8> & fileD
         HANDLE hFile = NULL;
         if ( SFileCreateFile(hMpq, mpqPath.c_str(), 0, (DWORD)fileData.size(), 0, MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING, &hFile) )
         {
-            addedFile = SFileWriteFile(hFile, &fileData[0], (DWORD)fileData.size(), (DWORD)wavQuality);
+            DWORD compression = wavQuality == MPQ_WAVE_QUALITY_LOW || wavQuality == MPQ_WAVE_QUALITY_MEDIUM ?
+                (MPQ_COMPRESSION_ADPCM_STEREO | MPQ_COMPRESSION_HUFFMANN) : MPQ_COMPRESSION_PKWARE;
+            addedFile = SFileWriteFile(hFile, &fileData[0], (DWORD)fileData.size(), compression);
             SFileFinishFile(hFile);
         }
 
