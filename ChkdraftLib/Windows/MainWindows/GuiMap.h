@@ -141,6 +141,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void LButtonDown(int x, int y, WPARAM wParam);
                     void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
                     void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam);
                     void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
                     void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
