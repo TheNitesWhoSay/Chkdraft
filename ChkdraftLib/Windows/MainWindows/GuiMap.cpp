@@ -1673,15 +1673,14 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 
 void GuiMap::MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam)
 {
+    if ( GetKeyState(VK_CONTROL) & 0x8000 ) return;
     double scale = getZoom();
     u32 scaleIndex = -1;
-    for (u32 i = 0; i < defaultZooms.size(); i++)
+    for ( u32 i = 0; i < defaultZooms.size(); i++ )
     {
-        if (scale == defaultZooms[i]) {
-            if (z < 0 && i > 0)
-                scaleIndex = i - 1;
-            else if (z > 0 && i < defaultZooms.size() - 1)
-                scaleIndex = i + 1;
+        if ( scale == defaultZooms[i] ) {
+            if ( z > 0 && i > 0 ) scaleIndex = i - 1;
+            else if ( z < 0 && i < defaultZooms.size() - 1 ) scaleIndex = i + 1;
             break;
         }
     }
