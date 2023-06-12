@@ -1340,6 +1340,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_MOUSEMOVE: MouseMove(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MOUSEHOVER: MouseHover(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_LBUTTONUP: LButtonUp(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
+        case WM_MOUSEWHEEL: MouseWheel(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), GET_WHEEL_DELTA_WPARAM(wParam), wParam); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;
@@ -1668,6 +1669,23 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
             }
             break;
     }
+}
+
+void GuiMap::MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam)
+{
+    if ( !(GetKeyState(VK_CONTROL) & 0x8000) ) return;
+    double scale = getZoom();
+    u32 scaleIndex = -1;
+    for ( u32 i = 0; i < defaultZooms.size(); i++ )
+    {
+        if ( scale == defaultZooms[i] ) {
+            if ( z > 0 && i > 0 ) scaleIndex = i - 1;
+            else if ( z < 0 && i < defaultZooms.size() - 1 ) scaleIndex = i + 1;
+            break;
+        }
+    }
+    if ( scaleIndex == -1 ) return;
+    setZoom(defaultZooms[scaleIndex]);
 }
 
 void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
