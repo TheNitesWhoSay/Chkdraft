@@ -17,7 +17,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -31,7 +31,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -45,7 +45,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
 {
     graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -182,6 +182,42 @@ bool GuiMap::isDragging()
 void GuiMap::setDragging(bool bDragging)
 {
     dragging = bDragging;
+}
+
+int GuiMap::getPanStartX()
+{
+    return panStartX;
+}
+
+int GuiMap::getPanStartY()
+{
+    return panStartY;
+}
+
+void GuiMap::setPanStart(int x, int y)
+{
+    panStartX = x;
+    panStartY = y;
+}
+
+int GuiMap::getPanCurrentX()
+{
+    return panCurrentX;
+}
+
+int GuiMap::getPanCurrentY()
+{
+    return panCurrentY;
+}
+
+void GuiMap::clearPanStart() {
+    panStartX = -1;
+    panStartY = -1;
+}
+
+void GuiMap::setPanCurrent(int x, int y) {
+    panCurrentX = x;
+    panCurrentY = y;
 }
 
 void GuiMap::viewLocation(u16 locationId)
@@ -1337,10 +1373,13 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_RBUTTONUP: RButtonUp(); break;
         case WM_LBUTTONDBLCLK: LButtonDoubleClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
         case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
+        case WM_MBUTTONDOWN: MButtonDown(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
+        case WM_MBUTTONUP: MButtonUp(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MOUSEMOVE: MouseMove(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MOUSEHOVER: MouseHover(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_LBUTTONUP: LButtonUp(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MOUSEWHEEL: MouseWheel(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), GET_WHEEL_DELTA_WPARAM(wParam), wParam); break;
+        case WM_TIMER: PanTimerTimeout(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;
@@ -1511,6 +1550,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     if ( x < 0 ) x = 0;
     if ( y < 0 ) y = 0;
 
+    setPanCurrent(x, y);
     s32 mapHoverX = (s32(((double)x)/getZoom())) + screenLeft,
         mapHoverY = (s32(((double)y)/getZoom())) + screenTop;
 
@@ -1717,6 +1757,32 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 
     if ( !chkd.maps.clipboard.isPasting() )
         ClipCursor(NULL);
+}
+
+void GuiMap::MButtonDown(HWND hWnd, int x, int y, WPARAM wParam)
+{
+    if ( getPanStartX() == -1 && getPanStartY() == -1 ) {
+        setPanStart(x, y);
+        SetTimer(hWnd, panTimerID, 1000/30, NULL);
+    }
+    SetCapture(hWnd);
+}
+
+void GuiMap::MButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
+{
+    KillTimer(hWnd, panTimerID);
+    clearPanStart();
+    ReleaseCapture();
+}
+
+void GuiMap::PanTimerTimeout()
+{
+    if ( getPanStartX() == -1 || getPanStartY() == -1 ) return;    
+    int xDelta = std::min((getPanStartX() - getPanCurrentX()) / 4, 64);
+    int yDelta = std::min((getPanStartY() - getPanCurrentY()) / 4, 64);
+    SetScreenLeft(s32(screenLeft - xDelta));
+    SetScreenTop(s32(screenTop - yDelta));
+    Scroll(true, true, true);
 }
 
 void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
