@@ -17,7 +17,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -31,7 +31,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -45,7 +45,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
     dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
     snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(1)
+    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
 {
     graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -182,42 +182,6 @@ bool GuiMap::isDragging()
 void GuiMap::setDragging(bool bDragging)
 {
     dragging = bDragging;
-}
-
-int GuiMap::getPanStartX()
-{
-    return panStartX;
-}
-
-int GuiMap::getPanStartY()
-{
-    return panStartY;
-}
-
-void GuiMap::setPanStart(int x, int y)
-{
-    panStartX = x;
-    panStartY = y;
-}
-
-int GuiMap::getPanCurrentX()
-{
-    return panCurrentX;
-}
-
-int GuiMap::getPanCurrentY()
-{
-    return panCurrentY;
-}
-
-void GuiMap::clearPanStart() {
-    panStartX = -1;
-    panStartY = -1;
-}
-
-void GuiMap::setPanCurrent(int x, int y) {
-    panCurrentX = x;
-    panCurrentY = y;
 }
 
 void GuiMap::viewLocation(u16 locationId)
@@ -1465,6 +1429,10 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
+    if ( panTimerID != 0 ) {
+        KillTimer(hWnd, panTimerID);
+        panTimerID = 0;
+    }
     LRESULT destroyResult = ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
     chkd.maps.CloseMap(hWnd); // TODO: it's bad to close this map from here, should post a message to do it
     RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -1550,7 +1518,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     if ( x < 0 ) x = 0;
     if ( y < 0 ) y = 0;
 
-    setPanCurrent(x, y);
+    panCurrentX = x;
+    panCurrentY = y;
     s32 mapHoverX = (s32(((double)x)/getZoom())) + screenLeft,
         mapHoverY = (s32(((double)y)/getZoom())) + screenTop;
 
@@ -1761,25 +1730,29 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 
 void GuiMap::MButtonDown(HWND hWnd, int x, int y, WPARAM wParam)
 {
-    if ( getPanStartX() == -1 && getPanStartY() == -1 ) {
-        setPanStart(x, y);
-        SetTimer(hWnd, panTimerID, 1000/30, NULL);
+    if ( panStartX == -1 && panStartY == -1 ) {
+        panStartX = x;
+        panStartY = y;
+        panTimerID = SetTimer(hWnd, 1, 1000/30, NULL);
     }
     SetCapture(hWnd);
 }
 
 void GuiMap::MButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
-    KillTimer(hWnd, panTimerID);
-    clearPanStart();
+    if ( panTimerID != 0 ) {
+        KillTimer(hWnd, panTimerID);
+        panTimerID = 0;
+    }
+    panStartX = panStartY = -1;
     ReleaseCapture();
 }
 
 void GuiMap::PanTimerTimeout()
 {
-    if ( getPanStartX() == -1 || getPanStartY() == -1 ) return;    
-    int xDelta = std::min((getPanStartX() - getPanCurrentX()) / 4, 64);
-    int yDelta = std::min((getPanStartY() - getPanCurrentY()) / 4, 64);
+    if ( panStartX == -1 || panStartY == -1 ) return;    
+    int xDelta = std::min((panStartX - panCurrentX) / 4, 64);
+    int yDelta = std::min((panStartY - panCurrentY) / 4, 64);
     SetScreenLeft(s32(screenLeft - xDelta));
     SetScreenTop(s32(screenTop - yDelta));
     Scroll(true, true, true);

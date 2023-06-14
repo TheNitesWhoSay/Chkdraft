@@ -32,13 +32,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     bool setCurrPlayer(u8 newPlayer);
                     bool isDragging();
                     void setDragging(bool dragging);
-                    int getPanStartX();
-                    int getPanStartY();
-                    void setPanStart(int x, int y);
-                    int getPanCurrentX();
-                    int getPanCurrentY();
-                    void setPanCurrent(int x, int y);
-                    void clearPanStart();
 
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);
@@ -177,7 +170,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     double zoom;
 
                     bool dragging;
-                    int panTimerID;
+                    UINT_PTR panTimerID;
                     int panStartX;
                     int panStartY;
                     int panCurrentX;
