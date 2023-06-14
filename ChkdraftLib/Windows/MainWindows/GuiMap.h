@@ -143,6 +143,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
                     void MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam);
                     void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MButtonDown(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+                    void PanTimerTimeout();
                     void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
@@ -167,6 +170,11 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     double zoom;
 
                     bool dragging;
+                    UINT_PTR panTimerID;
+                    int panStartX;
+                    int panStartY;
+                    int panCurrentX;
+                    int panCurrentY;
                     bool snapUnits, stackUnits;
                     bool snapLocations, locSnapTileOverGrid, lockAnywhere;
 
