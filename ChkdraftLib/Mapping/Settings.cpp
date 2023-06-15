@@ -73,6 +73,16 @@ std::optional<std::string> GetLoggerPath()
     return std::nullopt;
 }
 
+std::optional<std::string> GetBackupsPath()
+{
+    if ( auto chkdPath = GetChkdPath() )
+    {
+        if ( makeDirectory(*chkdPath + "\\Backups") )
+            return *chkdPath + "\\Backups\\";
+    }
+    return std::nullopt;
+}
+
 std::optional<std::string> GetToolsPath()
 {
     if ( auto chkdPath = GetChkdPath() )
