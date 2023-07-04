@@ -47,6 +47,8 @@ class Clipboard
         bool hasTiles();
         bool hasUnits() { return copyUnits.size() > 0; }
         void copy(GuiMap & map, Layer layer);
+
+        void setQuickIsom(size_t terrainTypeIndex);
         
         void addQuickTile(u16 index, s32 xc, s32 yc);
         bool hasQuickTiles() { return quickTiles.size() > 0; }
@@ -57,7 +59,7 @@ class Clipboard
         void beginPasting(bool isQuickPaste);
         void endPasting();
 
-        void doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
+        void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
 
         void toggleFillSimilarTiles();
 
@@ -70,7 +72,7 @@ class Clipboard
 
     protected:
 
-        void pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
 
@@ -82,6 +84,7 @@ class Clipboard
                             as opposed to something saved on clipboard.     */
         bool fillSimilarTiles;
         RECT edges;
+        size_t terrainTypeIndex = 0;
         std::vector<PasteTileNode> copyTiles;
         std::vector<PasteTileNode> quickTiles;
         std::vector<PasteUnitNode> copyUnits;

@@ -4,11 +4,13 @@
 #include "../../../MappingCoreLib/MappingCore.h"
 #include "LocationTree.h"
 #include "UnitTree.h"
+#include "IsomTree.h"
 
 class MainTree : public WinLib::TreeViewControl
 {
     public:
         virtual ~MainTree();
+        IsomTree isomTree;
         UnitTree unitTree;
         LocationTree locTree;
 

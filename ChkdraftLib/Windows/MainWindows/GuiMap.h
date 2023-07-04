@@ -14,7 +14,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
     public:
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64);
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex);
 
 /*  Destructor  */  virtual ~GuiMap();
 
@@ -23,9 +23,13 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
 /*   Chk Accel  */  bool SetTile(s32 x, s32 y, u16 tileNum);
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
+                    void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
+                    bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
+                    TerrainSubLayer getSubLayer();
+                    void setSubLayer(TerrainSubLayer newTerrainSubLayer);
                     double getZoom();
                     void setZoom(double newScale);
                     u8 getCurrPlayer();
@@ -83,6 +87,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
                     void ToggleUnitSnap();
                     void ToggleUnitStack();
 
+                    void ToggleDisplayIsomValues();
                     void ToggleTileNumSource(bool MTXMoverTILE);
                     bool DisplayingTileNums();
 
@@ -153,31 +158,47 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
     private:
 
+                    struct GuiIsomCache : Chk::IsomCache { // Maintain an ISOM cache, invalidated if tileset or sizes change
+                        using Chk::IsomCache::IsomCache; // Use the base-class constructor
+                        inline void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final { /* TODO: Undos */ }
+                    };
+
 /*     Data     */  Clipboard & clipboard;
-                    Selections selections;
-                    Graphics graphics;
-                    Undos undos;
+                    Selections selections {*this};
+                    Graphics graphics {*this, selections};
+                    Undos undos {*this};
+                    GuiIsomCache isomCache;
 
-                    u16 mapId;
-                    bool changeLock, unsavedChanges;
+                    u16 mapId = 0;
+                    bool changeLock = false;
+                    bool unsavedChanges = false;
 
-                    Layer currLayer;
-                    u8 currPlayer;
-                    double zoom;
+                    Layer currLayer = Layer::Terrain;
+                    TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
+                    u8 currPlayer = 0;
+                    double zoom = 1.0;
 
-                    bool dragging;
-                    bool snapUnits, stackUnits;
-                    bool snapLocations, locSnapTileOverGrid, lockAnywhere;
+                    bool dragging = false;
+                    bool snapUnits = true;
+                    bool stackUnits = false;
+                    bool snapLocations = true;
+                    bool locSnapTileOverGrid = true;
+                    bool lockAnywhere = true;
 
-                    ChkdBitmap graphicBits;
-                    s32 screenLeft, screenTop;
-                    u32 bitmapWidth, bitmapHeight;
-                    bool RedrawMiniMap, RedrawMap;
-                    WinLib::PaintBuffer miniMapBuffer, mapBuffer, toolsBuffer;
+                    ChkdBitmap graphicBits {};
+                    s32 screenLeft = 0;
+                    s32 screenTop = 0;
+                    u32 bitmapWidth = 0;
+                    u32 bitmapHeight = 0;
+                    bool RedrawMiniMap = true;
+                    bool RedrawMap = true;
+                    WinLib::PaintBuffer miniMapBuffer {};
+                    WinLib::PaintBuffer mapBuffer {};
+                    WinLib::PaintBuffer toolsBuffer {};
 
                     static bool doAutoBackups;
-                    double minSecondsBetweenBackups; // The smallest interval between consecutive backups
-                    time_t lastBackupTime; // -1 if there are no previous backups
+                    double minSecondsBetweenBackups = 1800; // The smallest interval between consecutive backups
+                    time_t lastBackupTime = -1; // -1 if there are no previous backups
 
                     GuiMap();
 };

@@ -539,6 +539,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;
     case ID_TERRAIN_DISPLAYTILEVALUES: CM->ToggleTileNumSource(false); break;
     case ID_TERRAIN_DISPLAYTILEVALUESMTXM: CM->ToggleTileNumSource(true); break;
+    case ID_TERRAIN_DISPLAYISOMVALUES: CM->ToggleDisplayIsomValues(); break;
 
         // Editor
         // Units
@@ -761,10 +762,19 @@ void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
     }
     else if ( hCombo == mainToolbar.terrainBox.getHandle() )
     {
-        if ( itemIndex == 3 )
+        if ( itemIndex == 0 ) // Isometrical
+            maps.ChangeSubLayer(TerrainSubLayer::Isom);
+        else if ( itemIndex == 1 ) // Rectangular
+            maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
+        else if ( itemIndex == 2 ) // Subtile
+            maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
+        else if ( itemIndex == 3 ) // Tileset indexed
         {
             terrainPalWindow.CreateThis(getHandle());
             ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
+            maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
         }
+        else if ( itemIndex == 4 ) // Cut/Copy/Paste
+            maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
     }
 }

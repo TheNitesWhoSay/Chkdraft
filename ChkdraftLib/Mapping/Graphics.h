@@ -87,13 +87,16 @@ class Graphics
         void DrawUnits(ChkdBitmap & bitmap);
         void DrawSprites(ChkdBitmap & bitmap);
         void DrawLocationNames(HDC hDC);
+        void DrawIsomNumbers(HDC hDC);
         void DrawTileNumbers(HDC hDC);
 
         void AdjustSize(u32 newWidth, u32 newHeight); // Updates pane size and first and last sprite nodes
         void AdjustPosition(u32 newX, u32 newY); // Updates first and last sprite nodes
 
+        void ToggleDisplayIsomValues();
         void ToggleTileNumSource(bool MTXMoverTILE);
         bool mtxmOverTile();
+        bool DisplayingIsomNums();
         bool DisplayingTileNums();
         void ToggleLocationNameClip();
         bool ClippingLocationNames();
@@ -131,6 +134,7 @@ class Graphics
 
         MapGrid grids[2]; // The grids drawn over the map
         bool tileNumsFromMTXM; // When false, tile nums are from TILE
+        bool displayingIsomTypes; // Determine whether ISOM terrain types are showing
         bool displayingTileNums; // Determines whether tile numbers are showing
         bool displayingElevations; // Determines whether tile elevations are colored in
         bool clipLocationNames; // Determines whether the locationName can be drawn partly outside locations
@@ -164,7 +168,7 @@ void DrawTools( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u
 void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
 void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
-                        Clipboard & clipboard, GuiMap & map, Layer layer);
+                        Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer terrainSubLayer);
 
 void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 

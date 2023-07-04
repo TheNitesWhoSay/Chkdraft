@@ -350,6 +350,9 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\ColorProperties.h">
       <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\ChkdControls\IsomTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -567,6 +570,9 @@
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\ColorProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\ChkdControls\IsomTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

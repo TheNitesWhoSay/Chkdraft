@@ -47,6 +47,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
     if ( guiMap != nullptr && isInOpenMaps(guiMap) )
     {
         currentlyActiveMap = guiMap;
+        chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
         currentlyActiveMap->updateMenu();
         return true;
@@ -92,7 +93,7 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
+bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
 {
     if ( width == 0 || height == 0 )
     {
@@ -100,9 +101,8 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height)
         return false;
     }
 
-    logger.info("Creating new map...");
     auto start = std::chrono::high_resolution_clock::now();
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height));
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex));
     if ( newMap != nullptr )
     {
         try {
@@ -264,6 +264,15 @@ void Maps::ChangeLayer(Layer newLayer)
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
             chkd.statusBar.SetText(1, layerString);
+    }
+}
+
+void Maps::ChangeSubLayer(TerrainSubLayer newSubLayer)
+{
+    if ( currentlyActiveMap != nullptr && currentlyActiveMap->getSubLayer() != newSubLayer )
+    {
+        currentlyActiveMap->setSubLayer(newSubLayer);
+        ChangeLayer(Layer::Terrain);
     }
 }
 

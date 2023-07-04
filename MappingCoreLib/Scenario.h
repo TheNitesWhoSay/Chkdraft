@@ -51,7 +51,7 @@ struct Scenario
     std::vector<u16> tiles {};
     std::vector<u16> editorTiles {};
     std::vector<u8> tileFog {};
-    std::vector<Chk::IsomEntry> isomTiles {};
+    std::vector<Chk::IsomRect> isomRects {};
         
     Chk::PUNI unitAvailability {};
     Chk::UNIx unitSettings {};
@@ -77,7 +77,7 @@ struct Scenario
 
     REFLECT(Scenario, version, type, iVersion, i2Version, validation, strings, editorStrings, editorStringOverrides, scenarioProperties,
         playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
-        dimensions, tileset, tileFog, tiles, editorTiles, isomTiles,
+        dimensions, tileset, tileFog, tiles, editorTiles, isomRects,
         unitAvailability, unitSettings, upgradeCosts, upgradeLeveling, techCosts, techAvailability,
         origUnitSettings, origUpgradeCosts, origUpgradeLeveling, origTechnologyCosts, origTechnologyAvailability,
         createUnitProperties, createUnitPropertiesUsed, triggers, briefingTriggers, switchNames, soundPaths, triggerExtensions, triggerGroupings)
@@ -260,9 +260,11 @@ struct Scenario
 
     Sc::Terrain::Tileset getTileset() const;
     void setTileset(Sc::Terrain::Tileset tileset);
-
-    size_t getTileWidth() const;
-    size_t getTileHeight() const;
+    
+    constexpr size_t getTileWidth() const { return dimensions.tileWidth; }
+    constexpr size_t getTileHeight() const { return dimensions.tileHeight; }
+    constexpr size_t getIsomWidth() const { return size_t(dimensions.tileWidth)/2 + 1; }
+    constexpr size_t getIsomHeight() const { return size_t(dimensions.tileHeight) + 1; }
     size_t getPixelWidth() const;
     size_t getPixelHeight() const;
     void setTileWidth(u16 newTileWidth, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0);
@@ -274,8 +276,13 @@ struct Scenario
 	void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Both);
 	inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Both);
         
-    Chk::IsomEntry & getIsomEntry(size_t isomIndex);
-    const Chk::IsomEntry & getIsomEntry(size_t isomIndex) const;
+    Chk::IsomRect & getIsomRect(size_t isomRectIndex);
+    const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;
+    
+    bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
+    void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
+    void updateTilesFromIsom(Chk::IsomCache & cache);
+    bool resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMapWidth, size_t oldMapHeight, bool fixBorders, Chk::IsomCache & cache);
 
     // Layers API
     void validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight);
@@ -535,6 +542,63 @@ private:
     std::vector<u8> strTailData {}; // Any data that comes after the regular STR section data, and after any padding
         
     static const std::vector<u32> compressionFlagsProgression;
+
+
+    // ISOM helpers
+    inline uint16_t getTileValue(size_t tileX, size_t tileY) const { return editorTiles[tileY*getTileWidth() + tileX]; }
+    void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue);
+    inline uint16_t getCentralIsomValue(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].left >> 4; }
+    inline bool centralIsomValueModified(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].isLeftModified(); }
+    inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x]; }
+    inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
+    constexpr bool isInBounds(Chk::IsomRect::Point point) const { return point.x < getIsomWidth() && point.y < getIsomHeight(); }
+
+    void addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache);
+    bool diamondNeedsUpdate(Chk::IsomDiamond isomDiamond) const;
+    void setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, bool undoable, Chk::IsomCache & cache);
+    void setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, bool undoable, Chk::IsomCache & cache);
+
+    struct IsomNeighbors
+    {
+        struct BestMatch
+        {
+            uint16_t isomValue = 0;
+            uint16_t matchCount = 0;
+        };
+
+        struct NeighborQuadrant
+        {
+            Sc::Isom::LinkId linkId = Sc::Isom::LinkId::None;
+            uint16_t isomValue = 0;
+            bool modified = false;
+        };
+        
+        NeighborQuadrant upperLeft {};
+        NeighborQuadrant upperRight {};
+        NeighborQuadrant lowerRight {};
+        NeighborQuadrant lowerLeft {};
+
+        uint8_t maxModifiedOfFour = 0;
+        BestMatch bestMatch {};
+
+        constexpr NeighborQuadrant & operator[](Sc::Isom::Quadrant i) {
+            switch ( i ) {
+                case Sc::Isom::Quadrant::TopLeft: return upperLeft;
+                case Sc::Isom::Quadrant::TopRight: return upperRight;
+                case Sc::Isom::Quadrant::BottomRight: return lowerRight;
+                default: /*Quadrant::BottomLeft*/ return lowerLeft;
+            }
+        }
+
+        constexpr NeighborQuadrant & operator[](size_t i) { return (*this)[Sc::Isom::Quadrant(i)]; }
+    };
+    void loadNeighborInfo(Chk::IsomDiamond isomDiamond, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const;
+    uint16_t countNeighborMatches(const Sc::Isom::ShapeLinks & shapeLinks, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const;
+    void searchForBestMatch(uint16_t startingTerrainType, IsomNeighbors & neighbors, Chk::IsomCache & cache) const;
+    std::optional<uint16_t> findBestMatchIsomValue(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache) const;
+    void radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache);
+
+    void updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache);
 };
 
 #endif

@@ -30,7 +30,7 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
         {
             //case TREE_TYPE_ROOT: // Same as category
         case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break; // The layer was AND'd with the category
-        case TreeTypeIsom: if ( CM->getLayer() != Layer::Terrain ) chkd.maps.ChangeLayer(Layer::Terrain); break;
+        case TreeTypeIsom: chkd.maps.ChangeSubLayer(TerrainSubLayer::Isom); break;
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
         case TreeTypeLocation: if ( CM->getLayer() != Layer::Locations ) chkd.maps.ChangeLayer(Layer::Locations); break;
         case TreeTypeSprite: if ( CM->getLayer() != Layer::Sprites ) chkd.maps.ChangeLayer(Layer::Sprites); break;
@@ -39,6 +39,10 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
 
         switch ( itemType )
         {
+        case TreeTypeIsom: // itemData == terrainTypeIndex
+            chkd.maps.clipboard.setQuickIsom(itemData);
+            break;
+
         case TreeTypeUnit: // itemData == UnitID
         {
             CM->clearSelectedUnits();

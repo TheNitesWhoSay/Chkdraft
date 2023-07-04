@@ -11,13 +11,8 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
-    : MapFile(filePath), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath), clipboard(clipboard),
+    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -25,13 +20,8 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
         currLayer = (Layer)layerSel;
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
-    : MapFile(fileBrowser), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser), clipboard(clipboard),
+    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -39,14 +29,15 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
         currLayer = (Layer)layerSel;
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : MapFile(tileset, width, height), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1)
+GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
+    : MapFile(tileset, width, height), clipboard(clipboard),
+    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
 {
+    uint16_t val = ((isomCache.getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
+    Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
+    isomCache.setAllChanged();
+    Scenario::updateTilesFromIsom(isomCache);
+
     graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
@@ -125,6 +116,56 @@ void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
     graphics.updatePalette();
+    this->isomCache = {Scenario::tileset, Scenario::getIsomWidth(), Scenario::getIsomHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+}
+
+// From Scenario.cpp
+void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+
+void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
+{
+    Scenario destMap(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
+    GuiIsomCache destIsomCache(this->tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(this->tileset));
+
+    destMap.editorTiles = this->editorTiles;
+    destMap.tiles = this->tiles;
+    setMtxmOrTileDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    setMtxmOrTileDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    uint16_t isomValue = ((destIsomCache.getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
+
+    destMap.dimensions = {newTileWidth, newTileHeight};
+    destMap.isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
+    
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, destIsomCache);
+    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, destIsomCache);
+    destMap.updateTilesFromIsom(destIsomCache);
+
+    Sc::BoundingBox tileRect { this->getTileWidth(), this->getTileHeight(), newTileWidth, newTileHeight, leftEdge, topEdge };
+    size_t destStartX = leftEdge < 0 ? 0 : leftEdge;
+    size_t destStartY = topEdge < 0 ? 0 : topEdge;
+    size_t copyHeight = tileRect.bottom-tileRect.top;
+    size_t copyWidth = tileRect.right-tileRect.left;
+    for ( size_t y=0; y<copyHeight; ++y )
+    {
+        for ( size_t x=0; x<copyWidth; ++x )
+        {
+            destMap.editorTiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->editorTiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+            destMap.tiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->tiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+        }
+    }
+    
+    std::swap(this->dimensions, destMap.dimensions);
+    std::swap(this->isomRects, destMap.isomRects);
+    std::swap(this->editorTiles, destMap.editorTiles);
+    std::swap(this->tiles, destMap.tiles);
+    this->isomCache = {Scenario::tileset, Scenario::getIsomWidth(), Scenario::getIsomHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+}
+
+bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent)
+{
+    bool success = Scenario::placeIsomTerrain(isomDiamond, terrainType, brushExtent, isomCache);
+    Scenario::updateTilesFromIsom(isomCache);
+    return success;
 }
 
 Layer GuiMap::getLayer()
@@ -140,6 +181,16 @@ bool GuiMap::setLayer(Layer newLayer)
     selections.setDrags(-1, -1);
     currLayer = newLayer;
     return true;
+}
+
+TerrainSubLayer GuiMap::getSubLayer()
+{
+    return currTerrainSubLayer;
+}
+
+void GuiMap::setSubLayer(TerrainSubLayer newTerrainSubLayer)
+{
+    this->currTerrainSubLayer = newTerrainSubLayer;
 }
 
 double GuiMap::getZoom()
@@ -395,6 +446,7 @@ void GuiMap::refreshScenario()
 {
     selections.removeTiles();
     selections.removeUnits();
+    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
     if ( chkd.unitWindow.getHandle() != nullptr )
@@ -589,7 +641,7 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
     if ( currLayer == Layer::Units )
         this->snapUnitCoordinate(xc, yc);
 
-    clipboard.doPaste(currLayer, xc, yc, *this, undos, stackUnits);
+    clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, undos, stackUnits);
 
     Redraw(true);
 }
@@ -900,6 +952,13 @@ bool GuiMap::DisplayingElevations()
     return graphics.DisplayingElevations();
 }
 
+void GuiMap::ToggleDisplayIsomValues()
+{
+    graphics.ToggleDisplayIsomValues();
+    UpdateTerrainViewMenuItems();
+    Redraw(false);
+}
+
 void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 {
     graphics.ToggleTileNumSource(MTXMoverTILE);
@@ -1151,6 +1210,11 @@ void GuiMap::UpdateGridColorMenu()
 void GuiMap::UpdateTerrainViewMenuItems()
 {
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, graphics.DisplayingElevations());
+    
+    if ( graphics.DisplayingIsomNums() )
+        chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, true);
+    else
+        chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, false);
 
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, false);
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, false);

@@ -131,7 +131,7 @@ inline void BoundedAdjustPx(Sc::SystemColor & pixel, s16 redOffset, s16 greenOff
 Sc::SystemColor black = Sc::SystemColor();
 
 Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
-    displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
+    displayingIsomTypes(false), displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
     if ( !map.empty() )
         updatePalette();
@@ -186,6 +186,9 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
     if ( displayingTileNums )
         DrawTileNumbers(hDC);
+
+    if ( displayingIsomTypes )
+        DrawIsomNumbers(hDC);
 }
 
 void Graphics::DrawTerrain(ChkdBitmap & bitmap)
@@ -594,6 +597,70 @@ void Graphics::DrawLocationNames(HDC hDC)
     }
 }
 
+void Graphics::DrawIsomNumbers(HDC hDC)
+{
+    u32 maxRowX, maxRowY, yc;
+
+    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
+        maxRowY = mapHeight;
+    else
+        maxRowY = (screenTop+screenHeight)/32+1;
+
+    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
+        maxRowX = mapWidth;
+    else
+        maxRowX = (screenLeft+screenWidth)/32+1;
+
+    WinLib::PaintFont paintFont = WinLib::PaintFont(14, 4, "Microsoft Sans Serif");
+    HFONT numFont = paintFont.getFont();
+    SelectObject(hDC, numFont);
+    SetBkMode( hDC, TRANSPARENT );
+    SetTextColor(hDC, RGB(255, 255, 0));
+
+    HPEN pen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
+    SelectObject(hDC, pen);
+
+    RECT nullRect = { };
+    std::string TileHex;
+
+    for ( yc=screenTop/32; yc<maxRowY; yc++ )
+    {
+        u32 xc = screenLeft/32;
+        if ( xc%2 > 0 )
+            xc -= 1;
+        for ( ; xc<maxRowX; xc+=2 )
+        {
+            auto i = yc*(u32(mapWidth)/2)+xc/2;
+            auto isomRect = map.getIsomRect(yc*(u32(mapWidth)/2+1)+xc/2);
+
+            auto str = to_hex_string((isomRect.left & 0x7FF0) >> 4, false);
+            WinLib::drawText(hDC, str, xc * 32 - screenLeft + 2, yc * 32 - screenTop + 10, nullRect, false, true);
+            str = to_hex_string((isomRect.right & 0x7FF0) >> 4, false);
+            s32 width=0, height=0;
+            WinLib::getTextExtent(hDC, str, width, height);
+            WinLib::drawText(hDC, str, xc * 32 - screenLeft + 63 - width, yc*32-screenTop+10, nullRect, false, true);
+            str = to_hex_string((isomRect.top & 0x7FF0) >> 4, false);
+            WinLib::getTextExtent(hDC, str, width, height);
+            WinLib::drawText(hDC, str, xc * 32 - screenLeft + 32 - width/2, yc*32-screenTop+1, nullRect, false, true);
+            str = to_hex_string((isomRect.bottom & 0x7FF0) >> 4, false);
+
+            WinLib::getTextExtent(hDC, str, width, height);
+            WinLib::drawText(hDC, str, xc * 32 - screenLeft + 32 - width/2, yc*32-screenTop+20, nullRect, false, true);
+            if ( (xc/2 + yc) % 2 == 0 )
+            {
+                MoveToEx(hDC, xc*32-screenLeft+64, yc*32-screenTop, NULL);
+                LineTo(hDC, xc*32-screenLeft, yc*32-screenTop+32);
+            }
+            else
+            {
+                MoveToEx(hDC, xc*32-screenLeft, yc*32-screenTop, NULL);
+                LineTo(hDC, xc*32-screenLeft+64, yc*32-screenTop+32);
+            }
+        }
+    }
+    DeleteObject(pen);
+}
+
 void Graphics::DrawTileNumbers(HDC hDC)
 {
     u32 maxRowX, maxRowY,
@@ -631,6 +698,11 @@ void Graphics::DrawTileNumbers(HDC hDC)
     }
 }
 
+void Graphics::ToggleDisplayIsomValues()
+{
+    displayingIsomTypes = !displayingIsomTypes;
+}
+
 void Graphics::ToggleTileNumSource(bool MTXMoverTILE)
 {
     if ( !( displayingTileNums && tileNumsFromMTXM != MTXMoverTILE ) )
@@ -642,6 +714,11 @@ void Graphics::ToggleTileNumSource(bool MTXMoverTILE)
 bool Graphics::mtxmOverTile()
 {
     return tileNumsFromMTXM;
+}
+
+bool Graphics::DisplayingIsomNums()
+{
+    return displayingIsomTypes;
 }
 
 bool Graphics::DisplayingTileNums()
@@ -1125,7 +1202,7 @@ void DrawTools(HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 he
         DrawTempLocs(hDC, screenLeft, screenTop, selections, map);
 
     if ( pasting ) // Draw paste graphics
-        DrawPasteGraphics(hDC, bitmap, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
+        DrawPasteGraphics(hDC, bitmap, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
 }
 
 void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
@@ -1204,68 +1281,95 @@ void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 scre
 }
 
 void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-                        Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer )
+                        Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer subLayer)
 {
     if ( layer == Layer::Terrain )
     {
-        HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
-        SelectObject(hDC, pen);
-    
-        RECT rect, rcShade;
-        Sc::Terrain::Tileset tileset = map.getTileset();
-        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
-    
-        BITMAPINFO bmi = GetBMI(32, 32);
-        rcShade.left   = -32;
-        rcShade.right  = width  + 32;
-        rcShade.top    = -32;
-        rcShade.bottom = height + 32;
-    
-        POINT center;
-        center.x = selections.getEndDrag().x + 16;
-        center.y = selections.getEndDrag().y + 16;
-    
-        std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
-        for ( auto & tile : pasteTiles )
+        if ( subLayer == TerrainSubLayer::Isom )
         {
-            rect.left   = ( tile.xc + center.x      )/32*32 - screenLeft;
-            rect.top    = ( tile.yc + center.y      )/32*32 - screenTop;
-            rect.right  = ( tile.xc + 32 + center.x )/32*32 - screenLeft;
-            rect.bottom = ( tile.yc + 32 + center.y )/32*32 - screenTop;
+            HPEN pen = CreatePen(PS_SOLID, 0, RGB(255, 0, 0));
+            SelectObject(hDC, pen);
 
-            if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
-            // If tile is within current map border
-            {
-                // Draw tile with a blue haze
-                    DrawTile(hDC, palette, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
+            s32 mouseX = selections.getEndDrag().x;
+            s32 mouseY = selections.getEndDrag().y;
+            s32 calcX = mouseX - mouseY*2;
+            s32 calcY = mouseX/2 + mouseY;
+            calcX -= ((calcX-64) & 127);
+            calcY -= ((calcY-32) & 63);
+            s32 isomX = ((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2;
+            s32 isomY = ((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32;
 
-                if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
-                {
-                    if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                    {
-                        MoveToEx(hDC, rect.left , rect.top, NULL);
-                        LineTo  (hDC, rect.right, rect.top      );
-                    }
-                    if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                    {
-                        if ( rect.right >= width )
-                            rect.right --;
+            s32 diamondCenterX = isomX*64-screenLeft;
+            s32 diamondCenterY = isomY*32-screenTop;
+            MoveToEx(hDC, diamondCenterX-64, diamondCenterY, NULL); // Start from diamond left corner
+            LineTo(hDC, diamondCenterX, diamondCenterY-32); // Draw top-left
+            LineTo(hDC, diamondCenterX+64, diamondCenterY); // Draw top-right
+            LineTo(hDC, diamondCenterX, diamondCenterY+32); // Draw bottom-right
+            LineTo(hDC, diamondCenterX-64, diamondCenterY); // Draw bottom-left
+
+            DeleteObject(pen);
+        }
+        else if ( subLayer == TerrainSubLayer::Rectangular )
+        {
+            HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
+            SelectObject(hDC, pen);
     
-                        MoveToEx(hDC, rect.right, rect.top, NULL);
-                        LineTo  (hDC, rect.right, rect.bottom+1 );
-                    }
-                    if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                    {
-                        if ( rect.bottom >= height )
-                            rect.bottom --;
+            RECT rect, rcShade;
+            Sc::Terrain::Tileset tileset = map.getTileset();
+            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    
+            BITMAPINFO bmi = GetBMI(32, 32);
+            rcShade.left   = -32;
+            rcShade.right  = width  + 32;
+            rcShade.top    = -32;
+            rcShade.bottom = height + 32;
+    
+            POINT center;
+            center.x = selections.getEndDrag().x + 16;
+            center.y = selections.getEndDrag().y + 16;
+    
+            std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
+            for ( auto & tile : pasteTiles )
+            {
+                rect.left   = ( tile.xc + center.x      )/32*32 - screenLeft;
+                rect.top    = ( tile.yc + center.y      )/32*32 - screenTop;
+                rect.right  = ( tile.xc + 32 + center.x )/32*32 - screenLeft;
+                rect.bottom = ( tile.yc + 32 + center.y )/32*32 - screenTop;
 
-                        MoveToEx(hDC, rect.left , rect.bottom, NULL);
-                        LineTo  (hDC, rect.right, rect.bottom      );
-                    }
-                    if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
+                // If tile is within current map border
+                {
+                    // Draw tile with a blue haze
+                        DrawTile(hDC, palette, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
+
+                    if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
                     {
-                        MoveToEx(hDC, rect.left, rect.bottom, NULL);
-                        LineTo  (hDC, rect.left, rect.top-1       );
+                        if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            MoveToEx(hDC, rect.left , rect.top, NULL);
+                            LineTo  (hDC, rect.right, rect.top      );
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
+    
+                            MoveToEx(hDC, rect.right, rect.top, NULL);
+                            LineTo  (hDC, rect.right, rect.bottom+1 );
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            MoveToEx(hDC, rect.left , rect.bottom, NULL);
+                            LineTo  (hDC, rect.right, rect.bottom      );
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            MoveToEx(hDC, rect.left, rect.bottom, NULL);
+                            LineTo  (hDC, rect.left, rect.top-1       );
+                        }
                     }
                 }
             }

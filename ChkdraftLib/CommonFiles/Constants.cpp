@@ -21,7 +21,7 @@ const std::vector<u32> onOffMenuItems =
     ID_GRID_ULTRAFINE, ID_GRID_FINE, ID_GRID_NORMAL, ID_GRID_LARGE, ID_GRID_EXTRALARGE, ID_GRID_DISABLED,
     ID_COLOR_BLACK, ID_COLOR_GREY, ID_COLOR_WHITE, ID_COLOR_GREEN, ID_COLOR_RED, ID_COLOR_BLUE,
     ID_ZOOM_400, ID_ZOOM_300, ID_ZOOM_200, ID_ZOOM_150, ID_ZOOM_100, ID_ZOOM_66, ID_ZOOM_50, ID_ZOOM_33, ID_ZOOM_25, ID_ZOOM_10,
-    ID_TERRAIN_DISPLAYTILEELEVATIONS, ID_TERRAIN_DISPLAYTILEVALUES, ID_TERRAIN_DISPLAYTILEVALUESMTXM,
+    ID_TERRAIN_DISPLAYISOMVALUES, ID_TERRAIN_DISPLAYTILEELEVATIONS, ID_TERRAIN_DISPLAYTILEVALUES, ID_TERRAIN_DISPLAYTILEVALUESMTXM,
     ID_UNITS_UNITSSNAPTOGRID, ID_UNITS_ALLOWSTACK,
     ID_LOCATIONS_NOSNAP, ID_LOCATIONS_SNAPTOACTIVEGRID, ID_LOCATIONS_SNAPTOTILE, ID_LOCATIONS_LOCKANYWHERE, ID_LOCATIONS_CLIPNAMES,
     ID_CUTCOPYPASTE_FILLSIMILARTILES,
@@ -368,54 +368,4 @@ const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors =
 const std::vector<std::string> tilesetNames =
 {
     "Badlands", "Space Platform", "Installation", "Ash World", "Jungle World", "Desert World", "Ice World", "Twilight World"
-};
-
-const std::vector<std::string> badlandsInitTerrain =
-{
-    "Dirt", "Mud", "High Dirt", "Water", "Grass", "High Grass", "Structure", "Asphalt", "Rocky Ground", "Null Terrain"
-};
-const std::vector<std::string> spaceInitTerrain =
-{
-    "Space", "Low Platform", "Rusty Pit", "Platform", "Dark Platform", "Plating",
-    "Solar Array", "High Platform", "High Plating", "Elevated Catwalk", "Null Terrain"
-};
-const std::vector<std::string> installInitTerrain =
-{
-    "Substructure", "Floor", "Roof", "Substructure Plating", "Plating", "Substructure Panels", "Bottomless Pit", "Null Terrain"
-};
-const std::vector<std::string> ashInitTerrain =
-{
-    "Magma", "Dirt", "Lava", "Shale", "Broken Rock", "High Dirt", "High Lava", "High Shale", "Null Terrain"
-};
-const std::vector<std::string> jungInitTerrain =
-{
-    "Water", "Dirt", "Mud", "Jungle", "Rocky Ground", "Ruins", "Raised Jungle",
-    "Temple", "High Dirt", "High Jungle", "High Ruins", "High Raised Jungle", "High Temple", "Null Terrain"
-};
-const std::vector<std::string> desertInitTerrain =
-{
-    "Tar", "Dirt", "Dried Mud", "Sand Dunes", "Rocky Ground", "Crags", "Sandy Sunken Pit",
-    "Compound", "High Dirt", "High Sand Dunes", "High Crags", "High Sandy Sunken Pit", "High Compound", "Null Terrain"
-};
-const std::vector<std::string> iceInitTerrain =
-{
-    "Ice", "Snow", "Moguls", "Dirt", "Rocky Snow", "Grass", "Water", "Outpost",
-    "High Snow", "High Dirt", "High Grass", "High Water", "High Outpost", "Null Terrain"
-};
-const std::vector<std::string> twilightInitTerrain =
-{
-    "Water", "Dirt", "Mud", "Crushed Rock", "Crevices", "Flagstones", "Sunken Ground",
-    "Basilica", "High Dirt", "High Crushed Rock", "High Flagstones", "High Sunken Ground", "High Basilica", "Null Terrain"
-};
-
-const std::vector<std::vector<std::string>> initTerrains =
-{
-    badlandsInitTerrain,
-    spaceInitTerrain,
-    installInitTerrain,
-    ashInitTerrain,
-    jungInitTerrain,
-    desertInitTerrain,
-    iceInitTerrain,
-    twilightInitTerrain
 };

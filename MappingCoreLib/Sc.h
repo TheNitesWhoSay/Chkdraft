@@ -3,7 +3,10 @@
 #include "Basics.h"
 #include "ArchiveFile.h"
 #include "FileBrowser.h"
+#include <algorithm>
 #include <array>
+#include <cstdint>
+#include <deque>
 #include <unordered_map>
 
 /**
@@ -1618,208 +1621,6 @@ namespace Sc {
     };
 #pragma pack(pop)
 
-    class Terrain {
-    public:
-        static constexpr size_t NumTilesets = 8;
-        static constexpr size_t PixelsPerTile = 32;
-        static const std::vector<std::string> TilesetNames;
-
-        enum_t(Tileset, u16, { // u16
-            Badlands = 0,
-            SpacePlatform = 1,
-            Installation = 2,
-            Ashworld = 3,
-            Jungle = 4,
-            Desert = 5,
-            Arctic = 6,
-            Twilight = 7
-        });
-        
-        enum class TileElevation {
-            Low,
-            Mid,
-            High
-        };
-        
-#pragma pack(push, 1)
-        __declspec(align(1)) struct TileGroup {
-            u16 index;
-            u8 buildability;
-            u8 groundHeight;
-            u16 leftEdge;
-            u16 topEdge;
-            u16 rightEdge;
-            u16 bottomEdge;
-            u16 unknown1;
-            u16 unknown2; // Unknown: edge piece has rows above it (1 = Basic edge piece, 2 = Right edge piece, 3 = Left edge piece)
-            u16 unknown3;
-            u16 unknown4; // Unknown: edge piece has rows below it (1 = Basic edge piece, 2 = Right edge piece, 3 = Left edge piece)
-            u16 megaTileIndex[16]; // To VF4/VX4
-        };
-        __declspec(align(1)) struct Doodad {
-            enum_t(Type, u16, {
-                // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
-            });
-
-            u16 index; // Always 1 for doodads?
-            u8 buildability;
-            u8 flags; // 0x10 = sprite overlay, 0x20 = unit overlay, 0x40 = overlay flipped
-            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
-            u16 unknown1;
-            u16 doodadName; // stat_txt.tbl id
-            u16 unknown2;
-            u16 ddDataIndex; // dddata.bin index
-            u16 doodadWidth; // In tiles
-            u16 doodadHeight; // In tiles
-            u16 unknown3;
-            u16 megaTileRef[16]; // To VF4/VX4
-        };
-        __declspec(align(1)) struct TileFlags {
-            __declspec(align(1))struct MiniTileFlags {
-                enum_t(Flags, u16, {
-                    Walkable = BIT_0,
-                    MidElevation = BIT_1,
-                    HighElevation = BIT_2,
-                    BlocksView = BIT_3,
-                    Ramp = BIT_4
-                });
-
-                Flags flags;
-                
-                inline bool isWalkable() const { return (flags & Flags::Walkable) == Flags::Walkable; }
-                inline bool blocksView() const { return (flags & Flags::BlocksView) == Flags::BlocksView; }
-                inline bool isRamp() const { return (flags & Flags::Ramp) == Flags::Ramp; }
-                inline TileElevation getElevation() const {
-                    if ( (flags & Flags::HighElevation) == Flags::HighElevation )
-                        return TileElevation::High;
-                    else if ( (flags & Flags::MidElevation) == Flags::MidElevation )
-                        return TileElevation::Mid;
-                    else
-                        return TileElevation::Low;
-                }
-            };
-
-            MiniTileFlags miniTileFlags[4][4];
-        };
-        __declspec(align(1)) struct TileGraphics {
-            __declspec(align(1))struct MiniTileGraphics {
-                enum_t(Graphics, u16, {
-                    Flipped = BIT_0,
-                    Vr4Index = u16_max & x16BIT_0
-                });
-
-                Graphics graphics;
-
-                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
-                inline u16 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
-            };
-
-            MiniTileGraphics miniTileGraphics[4][4];
-        };
-        __declspec(align(1)) struct TileGraphicsEx {
-            __declspec(align(1))struct MiniTileGraphics {
-                enum_t(Graphics, u32, {
-                    Flipped = BIT_0,
-                    Vr4Index = u32_max & x32BIT_0
-                });
-
-                Graphics graphics;
-
-                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
-                inline u32 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
-            };
-
-            MiniTileGraphics miniTileGraphics[4][4];
-
-            inline TileGraphicsEx(const TileGraphics & tileGraphics) : miniTileGraphics {
-                {
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][0].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][1].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][2].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][3].graphics)}
-                },
-                {
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][0].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][1].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][2].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][3].graphics)}
-                },
-                {
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][0].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][1].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][2].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][3].graphics)}
-                },
-                {
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][0].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][1].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][2].graphics)},
-                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][3].graphics)}
-                }
-            } {}
-        };
-        __declspec(align(1)) struct MiniTilePixels {
-            u8 wpeIndex[8][8];
-        };
-        __declspec(align(1)) struct WpeColor {
-            u8 red;
-            u8 green;
-            u8 blue;
-            u8 null;
-        };
-        
-        __declspec(align(1)) struct Cv5Dat {
-            static constexpr size_t MaxTileGroups = 1024;
-
-            TileGroup tileGroups[MaxTileGroups];
-            Doodad doodads[1];
-
-            static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
-            static inline size_t doodadsSize(size_t cv5FileSize) { return cv5FileSize > MaxTileGroups*sizeof(TileGroup) ? cv5FileSize/sizeof(Doodad)-MaxTileGroups : 0; }
-        };
-        __declspec(align(1)) struct Vf4Dat {
-            TileFlags tileFlags[1];
-
-            static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
-        };
-        __declspec(align(1)) struct Vx4Dat {
-            TileGraphicsEx tileGraphics[1];
-
-            static inline size_t size(bool extended, size_t fileSize) { return extended ? fileSize/sizeof(TileGraphicsEx) : fileSize/sizeof(TileGraphics); }
-        };
-        __declspec(align(1)) struct Vr4Dat {
-            MiniTilePixels miniTilePixels[1];
-
-            static inline size_t size(size_t fileSize) { return fileSize/sizeof(MiniTilePixels); }
-        };
-        __declspec(align(1)) struct WpeDat {
-            WpeColor color[NumColors];
-        };
-        
-#pragma pack(pop)
-        
-        struct Tiles
-        {
-            std::vector<TileGroup> tileGroups;
-            std::vector<Doodad> doodads;
-            std::vector<TileFlags> tileFlags;
-            std::vector<TileGraphicsEx> tileGraphics;
-            std::vector<MiniTilePixels> miniTilePixels;
-            std::array<SystemColor, NumColors> systemColorPalette;
-            
-            static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
-            static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
-            bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName);
-        };
-
-        const Tiles & get(const Tileset & tileset) const;
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
-        const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
-
-    private:
-        Tiles tilesets[NumTilesets];
-    };
-
     class Weapon {
     public:
         static constexpr size_t TotalOriginal = 100;
@@ -2070,6 +1871,1174 @@ namespace Sc {
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
         
         std::vector<Sc::SystemColor> palette;
+    };
+
+    struct BoundingBox
+    {
+        size_t left = 0;
+        size_t top = 0;
+        size_t right = 0;
+        size_t bottom = 0;
+
+        constexpr BoundingBox() = default;
+        constexpr BoundingBox(size_t left, size_t top, size_t right, size_t bottom)
+            : left(left), top(top), right(right), bottom(bottom) {}
+        constexpr BoundingBox(size_t oldWidth, size_t oldHeight, size_t newWidth, size_t newHeight, long xOffset, long yOffset) :
+            left(xOffset > 0 ? 0 : -xOffset),
+            top(yOffset > 0 ? 0 : -yOffset),
+            right(oldWidth - left > newWidth ? left + newWidth : oldWidth),
+            bottom(oldHeight - top > newHeight ? top + newHeight : oldHeight) {}
+
+        constexpr void expandToInclude(size_t x, size_t y) {
+            left = std::min(left, x);
+            right = std::max(right, x);
+            top = std::min(top, y);
+            bottom = std::max(bottom, y);
+        }
+    };
+
+    namespace Isom
+    {
+        enum class Link : uint16_t {
+            None = 0, // No-link
+
+            // Soft-links range from 1 to 48
+            SoftLinks = 48,
+            HardLinks = 48,
+
+            // Anything over 48 is a hard link which is used in identifying shape quadrants and linking entries within the same terrain type
+
+            BL = 49, // Bottom-left link
+            TR = 50, // Top-right link
+            BR = 51, // Bottom-right link
+            TL = 52, // Top-left link
+            FR = 53, // Far-right link
+            FL = 54, // Far-left link
+            LH = 55, // Left-hand side link
+            RH = 56 // Right-hand side link
+        };
+
+        // LinkIds are a singular number for comparing values in the isomLink table (instead of the four directional links); some linkIds have special meaning
+        enum class LinkId : uint16_t {
+            None = 0, // In shapes a LinkId of "none" implies a linkId that needs to be populated (after calculating shapes and directional link values)
+
+            // LinkId values greater than 0 but less than 255 allow for matches with tiles outside of the same terrain type
+
+            // The special LinkId values (255 or higher) are only used for matches within the same terrain type
+
+            TRBL_NW = 255, // A hardcoded top-right and/or bottom-left linkId used on shapes found towards the north-west of terrain types
+            TRBL_SE = 256, // A hardcoded top-right and/or bottom-left linkId used on shapes found towards the south-east of terrain types
+            TLBR_NE = 257, // A hardcoded top-left and/or bottom-right linkId used on shapes found towards the north-east of terrain types
+            TLBR_SW = 258, // A hardcoded top-left and/or bottom-right linkId used on shapes found towards the south-west of terrain types
+
+            OnlyMatchSameType = TRBL_NW // One of the hardcoded values (255 or higher) implies a match can only be made within the same terrain type
+        };
+
+        #pragma pack(push, 1)
+        __declspec(align(1)) struct DirectionalLinks
+        {
+            Link left = Link::None;
+            Link top = Link::None;
+            Link right = Link::None;
+            Link bottom = Link::None;
+
+            constexpr bool hasNoHardLinks() const { // A CV5 entry that has no hard links does not participate in the creation of the isomLink table
+                return left <= Link::SoftLinks && top <= Link::SoftLinks && right <= Link::SoftLinks && bottom <= Link::SoftLinks;
+            }
+
+            constexpr bool isAllHardLinks() const { // A CV5 entry that is all hard links does not participate in the creation of the isomLink table
+                return left > Link::SoftLinks && top > Link::SoftLinks && right > Link::SoftLinks && bottom > Link::SoftLinks;
+            }
+
+            constexpr bool isShapeQuadrant() const { // A CV5 entry with no hard links or that is all hard links is excluded from the isomLink table
+                return !isAllHardLinks() && !hasNoHardLinks();
+            }
+        };
+        __declspec(align(1)) struct Rect {
+            uint16_t left;
+            uint16_t top;
+            uint16_t right;
+            uint16_t bottom;
+        };
+        __declspec(align(1)) struct TileGroup {
+            uint16_t terrainType;
+            uint8_t buildability;
+            uint8_t groundHeight;
+            DirectionalLinks links;
+            Rect stackConnections;
+            uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
+        };
+        __declspec(align(1)) struct Doodad {
+            enum_t(Type, u16, {
+                // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
+            });
+
+            u16 index; // Always 1 for doodads?
+            u8 buildability;
+            u8 flags; // 0x10 = sprite overlay, 0x20 = unit overlay, 0x40 = overlay flipped
+            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
+            u16 unknown1;
+            u16 doodadName; // stat_txt.tbl id
+            u16 unknown2;
+            u16 ddDataIndex; // dddata.bin index
+            u16 doodadWidth; // In tiles
+            u16 doodadHeight; // In tiles
+            u16 unknown3;
+            u16 megaTileRef[16]; // To VF4/VX4
+        };
+        #pragma pack(pop)
+
+        struct Side_ { // A side of a rectangle
+            enum uint16_t_ : uint16_t {
+                Left = 0,
+                Top = 1,
+                Right = 2,
+                Bottom = 3,
+
+                Total
+            };
+        };
+        using Side = Side_::uint16_t_;
+        static constexpr Side sides[Side::Total] { Side::Left, Side::Top, Side::Right, Side::Bottom };
+
+        enum class Quadrant
+        {
+            TopLeft,
+            TopRight,
+            BottomRight,
+            BottomLeft
+        };
+
+        static constexpr Quadrant quadrants[] { Quadrant::TopLeft, Quadrant::TopRight, Quadrant::BottomRight, Quadrant::BottomLeft };
+
+        static constexpr Quadrant OppositeQuadrant(size_t i) {
+            switch ( Quadrant(i) ) {
+                case Quadrant::TopLeft: return Quadrant::BottomRight;
+                case Quadrant::TopRight: return Quadrant::BottomLeft;
+                case Quadrant::BottomRight: return Quadrant::TopLeft;
+                default: /*Quadrant::BottomLeft*/ return Quadrant::TopRight;
+            }
+        }
+
+        struct EdgeFlags_ {
+            enum uint16_t_ : uint16_t {
+                TopLeft_Right    = 0x0, // Quadrant::TopLeft, isomRect.right
+                TopLeft_Bottom   = 0x2, // Quadrant::TopLeft, isomRect.bottom
+                TopRight_Left    = 0x4, // Quadrant::TopRight, isomRect.left
+                TopRight_Bottom  = 0x6, // Quadrant::TopRight, isomRect.bottom
+                BottomRight_Left = 0x8, // Quadrant::BottomRight, isomRect.top
+                BottomRight_Top  = 0xA, // Quadrant::BottomRight, isomRect.left
+                BottomLeft_Top   = 0xC, // Quadrant::BottomLeft, isomRect.top
+                BottomLeft_Right = 0xE, // Quadrant::BottomLeft, isomRect.right
+
+                Mask = 0xE
+            };
+        };
+        using EdgeFlags = EdgeFlags_::uint16_t_;
+
+        struct ProjectedQuadrant { // The 8x4 rectangle a diamond projects onto has four quadrants, each consisting of two sides of an IsomRect
+            Side firstSide; // An isom rect side; note: the first side should always be before second in rect-normal order: left, top, right, bottom
+            Side secondSide; // An isom rect side; note: the second side should always be after first in rect-normal order: left, top, right, bottom
+            EdgeFlags firstEdgeFlags; // The edge flags that get associated with the "firstSide" of the isom rect
+            EdgeFlags secondEdgeFlags; // The edge flags that get associated with the "secondSide" of the isom rect
+
+            constexpr ProjectedQuadrant(Side firstSide, Side secondSide, EdgeFlags firstEdgeFlags, EdgeFlags secondEdgeFlags)
+                : firstSide(firstSide), secondSide(secondSide), firstEdgeFlags(firstEdgeFlags), secondEdgeFlags(secondEdgeFlags) {}
+
+            static constexpr ProjectedQuadrant at(Quadrant quadrant) {
+                switch ( quadrant ) {
+                    case Quadrant::TopLeft: return { Side::Right, Side::Bottom, EdgeFlags::TopLeft_Right, EdgeFlags::TopLeft_Bottom };
+                    case Quadrant::TopRight: return { Side::Left, Side::Bottom, EdgeFlags::TopRight_Left, EdgeFlags::TopRight_Bottom };
+                    case Quadrant::BottomRight: return { Side::Left, Side::Top, EdgeFlags::BottomRight_Left, EdgeFlags::BottomRight_Top };
+                    default: /*Quadrant::BottomLeft*/ return { Side::Top, Side::Right, EdgeFlags::BottomLeft_Top, EdgeFlags::BottomLeft_Right };
+                }
+            }
+
+            constexpr ProjectedQuadrant(Quadrant quadrant) : ProjectedQuadrant(ProjectedQuadrant::at(quadrant)) {}
+        };
+
+        struct ShapeLinks
+        {
+            struct TopLeftQuadrant {
+                Link right = Link::None;
+                Link bottom = Link::None;
+                LinkId linkId = LinkId::None;
+            };
+
+            struct TopRightQuadrant {
+                Link left = Link::None;
+                Link bottom = Link::None;
+                LinkId linkId = LinkId::None;
+            };
+
+            struct BottomRightQuadrant {
+                Link left = Link::None;
+                Link top = Link::None;
+                LinkId linkId = LinkId::None;
+            };
+
+            struct BottomLeftQuadrant {
+                Link top = Link::None;
+                Link right = Link::None;
+                LinkId linkId = LinkId::None;
+            };
+
+            uint8_t terrainType = 0;
+            TopLeftQuadrant topLeft {};
+            TopRightQuadrant topRight {};
+            BottomRightQuadrant bottomRight {};
+            BottomLeftQuadrant bottomLeft {};
+
+            constexpr LinkId getLinkId(Quadrant quadrant) const {
+                switch ( quadrant )
+                {
+                    case Quadrant::TopLeft: return topLeft.linkId;
+                    case Quadrant::TopRight: return topRight.linkId;
+                    case Quadrant::BottomRight: return bottomRight.linkId;
+                    default: /*Quadrant::BottomLeft*/ return bottomLeft.linkId;
+                }
+            }
+
+            constexpr Link getEdgeLink(uint16_t isomValue) const {
+                switch ( isomValue & EdgeFlags::Mask ) {
+                    case EdgeFlags::TopLeft_Right: return topLeft.right;
+                    case EdgeFlags::TopLeft_Bottom: return topLeft.bottom;
+                    case EdgeFlags::TopRight_Left: return topRight.left;
+                    case EdgeFlags::TopRight_Bottom: return topRight.bottom;
+                    case EdgeFlags::BottomRight_Left: return bottomRight.left;
+                    case EdgeFlags::BottomRight_Top: return bottomRight.top;
+                    case EdgeFlags::BottomLeft_Top: return bottomLeft.top;
+                    default: /*EdgeFlags::BottomLeft_Right*/ return bottomLeft.right;
+                }
+            }
+        };
+
+        struct ShapeQuadrant
+        {
+            Link left = Link::None;
+            Link top = Link::None;
+            Link right = Link::None;
+            Link bottom = Link::None;
+            LinkId linkId = LinkId::None;
+            bool isStackTop = false;
+
+            constexpr bool matches(const DirectionalLinks & links, bool noStackAbove) const
+            {
+                return
+                    (links.left == left || (links.left <= Link::SoftLinks && left <= Link::SoftLinks)) && // If either is a hard link, the values must match
+                    (links.top == top || (links.top <= Link::SoftLinks && top <= Link::SoftLinks)) &&
+                    (links.right == right || (links.right <= Link::SoftLinks && right <= Link::SoftLinks)) &&
+                    (links.bottom == bottom || (links.bottom <= Link::SoftLinks && bottom <= Link::SoftLinks)) &&
+                    (noStackAbove || !isStackTop); // Either no groups are stacked above this one... or this shape quadrant isn't at stack top
+            }
+
+            constexpr ShapeQuadrant & setLeft(Link left) {
+                this->left = left;
+                return *this;
+            }
+            constexpr ShapeQuadrant & setTop(Link top) {
+                this->top = top;
+                return *this;
+            }
+            constexpr ShapeQuadrant & setRight(Link right) {
+                this->right = right;
+                return *this;
+            }
+            constexpr ShapeQuadrant & setBottom(Link bottom) {
+                this->bottom = bottom;
+                return *this;
+            }
+            constexpr ShapeQuadrant & setLinkId(LinkId linkId) {
+                this->linkId = linkId;
+                return *this;
+            }
+            constexpr ShapeQuadrant & setIsStackTop() {
+                this->isStackTop = true;
+                return *this;
+            }
+        };
+
+        struct Shape
+        {
+            enum Id : size_t {
+                EdgeNorthWest, EdgeNorthEast, EdgeSouthEast, EdgeSouthWest,
+                JutOutNorth, JutOutEast, JutOutSouth, JutOutWest,
+                JutInEast, JutInWest, JutInNorth, JutInSouth,
+                Horizontal, Vertical
+            };
+
+            ShapeQuadrant topLeft {};
+            ShapeQuadrant topRight {};
+            ShapeQuadrant bottomRight {};
+            ShapeQuadrant bottomLeft {};
+
+            constexpr bool matches(Quadrant quadrant, const DirectionalLinks & links, bool noStackAbove) const
+            {
+                switch ( quadrant )
+                {
+                    case Quadrant::TopLeft: return topLeft.matches(links, noStackAbove);
+                    case Quadrant::TopRight: return topRight.matches(links, noStackAbove);
+                    case Quadrant::BottomRight: return bottomRight.matches(links, noStackAbove);
+                    default: /*Quadrant::BottomLeft*/ return bottomLeft.matches(links, noStackAbove);
+                }
+            }
+
+            constexpr Shape & setTopLeft(ShapeQuadrant topLeft) {
+                this->topLeft = topLeft;
+                return *this;
+            }
+            constexpr Shape & setTopRight(ShapeQuadrant topRight) {
+                this->topRight = topRight;
+                return *this;
+            }
+            constexpr Shape & setBottomRight(ShapeQuadrant bottomRight) {
+                this->bottomRight = bottomRight;
+                return *this;
+            }
+            constexpr Shape & setBottomLeft(ShapeQuadrant bottomLeft) {
+                this->bottomLeft = bottomLeft;
+                return *this;
+            }
+        };
+
+        struct ShapeDefinitions
+        {
+            static constexpr Shape edgeNorthWest = Shape{} // 0
+                .setTopRight(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::BR).setLinkId(LinkId::TRBL_NW).setIsStackTop())
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BR).setTop(Link::BR))
+                .setBottomLeft(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::FR).setLinkId(LinkId::TRBL_NW).setIsStackTop());
+
+            static constexpr Shape edgeNorthEast = Shape{} // 1
+                .setTopLeft(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::BL).setLinkId(LinkId::TLBR_NE).setIsStackTop())
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::FL).setLinkId(LinkId::TLBR_NE).setIsStackTop())
+                .setBottomLeft(ShapeQuadrant{}.setTop(Link::BL).setRight(Link::BL));
+
+            static constexpr Shape edgeSouthEast = Shape{} // 2
+                .setTopLeft(ShapeQuadrant{}.setRight(Link::TL).setBottom(Link::TL))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::FL).setLinkId(LinkId::TRBL_SE))
+                .setBottomLeft(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::TL).setLinkId(LinkId::TRBL_SE));
+
+            static constexpr Shape edgeSouthWest = Shape{} // 3
+                .setTopLeft(ShapeQuadrant{}.setTop(Link::FR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TR).setBottom(Link::TR))
+                .setBottomRight(ShapeQuadrant{}.setTop(Link::TR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW));
+
+            static constexpr Shape jutOutNorth = Shape{} // 4
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::BL).setLinkId(LinkId::TLBR_NE).setIsStackTop())
+                .setBottomLeft(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::BR).setLinkId(LinkId::TRBL_NW).setIsStackTop());
+
+            static constexpr Shape jutOutEast = Shape{} // 5
+                .setTopLeft(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::FL).setLinkId(LinkId::TLBR_NE).setIsStackTop())
+                .setBottomLeft(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::FL).setLinkId(LinkId::TRBL_SE));
+
+            static constexpr Shape jutOutSouth = Shape{} // 6
+                .setTopLeft(ShapeQuadrant{}.setTop(Link::TR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::TL).setLinkId(LinkId::TRBL_SE));
+
+            static constexpr Shape jutOutWest = Shape{} // 7
+                .setTopRight(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::FR).setLinkId(LinkId::TRBL_NW).setIsStackTop())
+                .setBottomRight(ShapeQuadrant{}.setTop(Link::FR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW));
+
+            static constexpr Shape jutInEast = Shape{} // 8
+                .setTopLeft(ShapeQuadrant{}.setTop(Link::FR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::RH).setBottom(Link::RH))
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::RH).setTop(Link::RH))
+                .setBottomLeft(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::FR).setLinkId(LinkId::TRBL_NW));
+
+            static constexpr Shape jutInWest = Shape{} // 9
+                .setTopLeft(ShapeQuadrant{}.setRight(Link::LH).setBottom(Link::LH))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::FL).setLinkId(LinkId::TRBL_SE))
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::FL).setLinkId(LinkId::TLBR_NE))
+                .setBottomLeft(ShapeQuadrant{}.setTop(Link::LH).setRight(Link::LH));
+
+            static constexpr Shape jutInNorth = Shape{} // 10
+                .setTopLeft(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::BL).setLinkId(LinkId::TLBR_NE).setIsStackTop())
+                .setTopRight(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::BR).setLinkId(LinkId::TRBL_NW).setIsStackTop())
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BR).setTop(Link::BR))
+                .setBottomLeft(ShapeQuadrant{}.setTop(Link::BL).setRight(Link::BL));
+
+            static constexpr Shape jutInSouth = Shape{} // 11
+                .setTopLeft(ShapeQuadrant{}.setRight(Link::TL).setBottom(Link::TL))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TR).setBottom(Link::TR))
+                .setBottomRight(ShapeQuadrant{}.setTop(Link::TR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setBottomLeft(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::TL).setLinkId(LinkId::TRBL_SE));
+
+            static constexpr Shape horizontal = Shape{} // 12
+                .setTopLeft(ShapeQuadrant{}.setTop(Link::TR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setTopRight(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::TL).setLinkId(LinkId::TRBL_SE))
+                .setBottomRight(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::BL).setLinkId(LinkId::TLBR_NE))
+                .setBottomLeft(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::BR).setLinkId(LinkId::TRBL_NW));
+
+            static constexpr Shape vertical = Shape{} // 13
+                .setTopLeft(ShapeQuadrant{}.setLeft(Link::BL).setBottom(Link::FL).setLinkId(LinkId::TLBR_NE))
+                .setTopRight(ShapeQuadrant{}.setRight(Link::BR).setBottom(Link::FR).setLinkId(LinkId::TRBL_NW))
+                .setBottomRight(ShapeQuadrant{}.setTop(Link::FR).setRight(Link::TR).setLinkId(LinkId::TLBR_SW))
+                .setBottomLeft(ShapeQuadrant{}.setLeft(Link::TL).setTop(Link::FL).setLinkId(LinkId::TRBL_SE));
+
+            static constexpr Shape shapes[] {
+                edgeNorthWest, edgeNorthEast, edgeSouthEast, edgeSouthWest,
+                jutOutNorth, jutOutEast, jutOutSouth, jutOutWest,
+                jutInEast, jutInWest, jutInNorth, jutInSouth,
+                horizontal, vertical
+            };
+        };
+        static constexpr Span<Shape> shapes = ShapeDefinitions::shapes;
+
+        struct ShapeTileGroup { // Used to record the tileGroup indexes which are used to populate the quadrants in different shapes
+            uint16_t topLeft = std::numeric_limits<uint16_t>::max();
+            uint16_t topRight = std::numeric_limits<uint16_t>::max();
+            uint16_t bottomRight = std::numeric_limits<uint16_t>::max();
+            uint16_t bottomLeft = std::numeric_limits<uint16_t>::max();
+        };
+
+        struct TerrainTypeShapes // Every terrain type has 14 shapes associated with it
+        {
+            ShapeLinks edgeNorthWest;
+            ShapeLinks edgeNorthEast;
+            ShapeLinks edgeSouthEast;
+            ShapeLinks edgeSouthWest;
+            ShapeLinks jutOutNorth;
+            ShapeLinks jutOutEast;
+            ShapeLinks jutOutSouth;
+            ShapeLinks jutOutWest;
+            ShapeLinks jutInEast;
+            ShapeLinks jutInWest;
+            ShapeLinks jutInNorth;
+            ShapeLinks jutInSouth;
+            ShapeLinks horizontal;
+            ShapeLinks vertical;
+
+            constexpr ShapeLinks & operator[](size_t i) {
+                switch ( Shape::Id(i) )
+                {
+                    case Shape::Id::EdgeNorthWest: return edgeNorthWest;
+                    case Shape::Id::EdgeNorthEast: return edgeNorthEast;
+                    case Shape::Id::EdgeSouthEast: return edgeSouthEast;
+                    case Shape::Id::EdgeSouthWest: return edgeSouthWest;
+                    case Shape::Id::JutOutNorth: return jutOutNorth;
+                    case Shape::Id::JutOutEast: return jutOutEast;
+                    case Shape::Id::JutOutSouth: return jutOutSouth;
+                    case Shape::Id::JutOutWest: return jutOutWest;
+                    case Shape::Id::JutInEast: return jutInEast;
+                    case Shape::Id::JutInWest: return jutInWest;
+                    case Shape::Id::JutInNorth: return jutInNorth;
+                    case Shape::Id::JutInSouth: return jutInSouth;
+                    case Shape::Id::Horizontal: return horizontal;
+                    default: /*Shape::Id::Vertical*/ return vertical;
+                }
+            }
+
+            // Terrain types like rocky ground exclude JutInE/JutInW far right/left side CV5 entries, they are instead populated using nearby shapes
+            void populateJutInEastWest(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups);
+
+            // Populate the links in quadrants that are not part of the primary shape using adjacent link values
+            void populateEmptyQuadrantLinks();
+
+            // Fill in the hardcoded linkIds (which are always the same for the set of 14 shapes making up one terrain type)
+            void populateHardcodedLinkIds();
+
+            void fillOuterLinkIds(LinkId linkId);
+
+            void fillInnerLinkIds(LinkId linkId);
+
+            void populateLinkIdsToSolidBrushes(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups,
+                size_t totalSolidBrushEntries, const std::vector<ShapeLinks> & isomLinks);
+        };
+
+        struct TerrainTypeInfo
+        {
+            uint16_t index = 0;
+            uint16_t isomValue = 0; // This is both the value placed in the ISOM section and an index into the isomLink table
+            int16_t brushSortOrder = -1;
+            LinkId linkId = LinkId::None; // The linkId column in the isomLink table (not an index into the table)
+            std::string_view name = "";
+        };
+
+        struct Brush
+        {
+            struct Badlands
+            {
+                enum : size_t {
+                    Dirt = 2,
+                    Mud = 4,
+                    HighDirt = 3,
+                    Water = 5,
+                    Grass = 6,
+                    HighGrass = 7,
+                    Structure = 18,
+                    Asphalt = 14,
+                    RockyGround = 15,
+
+                    Default = Dirt
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] {
+                    { 0,           10                                }, {1},
+                    { Dirt,         1, 0, LinkId( 1), "Dirt"         },
+                    { HighDirt,     2, 2, LinkId( 2), "High Dirt"    },
+                    { Mud,          9, 1, LinkId( 4), "Mud"          },
+                    { Water,        3, 3, LinkId( 3), "Water"        },
+                    { Grass,        4, 4, LinkId( 5), "Grass"        },
+                    { HighGrass,    7, 5, LinkId( 6), "High Grass"   }, {8}, {9}, {10}, {11}, {12}, {13},
+                    { Asphalt,      5, 7, LinkId( 9), "Asphalt"      },
+                    { RockyGround,  6, 8, LinkId(10), "Rocky Ground" }, {16}, {17},
+                    { Structure,    8, 6, LinkId( 7), "Structure"    },
+
+                    { 19,   0 },
+                    { 20,  41 },
+                    { 21,  69 },
+                    { 22, 111 }, {23}, {24}, {25}, {26},
+                    { 27,  83 },
+                    { 28,  55 }, {29}, {30},
+                    { 31,  97 }, {32}, {33},
+                    { 34,  13 },
+                    { 35,  27 }
+                };
+
+                static constexpr uint16_t terrainTypeMap[] {
+                    5, 35, 0,
+                    35, 5, 2, 20, 27, 28, 34, 22, 0,
+                    2, 34, 35, 20, 27, 28, 22, 0,
+                    34, 2, 3, 20, 21, 27, 28, 35, 22, 0,
+                    3, 34, 21, 0,
+                    6, 20, 0,
+                    20, 6, 2, 35, 34, 27, 28, 22, 0,
+                    14, 27, 31, 0,
+                    27, 14, 20, 2, 35, 34, 28, 22, 0,
+                    15, 28, 0,
+                    28, 15, 2, 34, 35, 20, 27, 22, 0,
+                    7, 21, 0,
+                    21, 7, 3, 34, 0,
+                    18, 31, 0,
+                    31, 18, 14, 0,
+                    4, 22, 0,
+                    22, 4, 2, 34, 35, 20, 27, 28, 0,
+                    0
+                };
+            };
+
+            struct Space
+            {
+                enum : size_t {
+                    Space_ = 2,
+                    LowPlatform = 8,
+                    RustyPit = 9,
+                    Platform = 3,
+                    DarkPlatform = 11,
+                    Plating = 4,
+                    SolarArray = 7,
+                    HighPlatform = 5,
+                    HighPlating = 6,
+                    ElevatedCatwalk = 10,
+
+                    Default = Platform
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] {
+                    { 0,                3                                    }, {1},
+                    { Space_,           1, 0, LinkId( 1), "Space"            },
+                    { Platform,         2, 3, LinkId( 3), "Platform"         },
+                    { Plating,         11, 5, LinkId( 4), "Plating"          },
+                    { HighPlatform,     4, 7, LinkId( 5), "High Platform"    },
+                    { HighPlating,     12, 8, LinkId( 6), "High Plating"     },
+                    { SolarArray,       8, 6, LinkId( 7), "Solar Array"      },
+                    { LowPlatform,      9, 1, LinkId( 8), "Low Platform"     },
+                    { RustyPit,        10, 2, LinkId( 9), "Rusty Pit"        },
+                    { ElevatedCatwalk, 13, 9, LinkId(10), "Elevated Catwalk" },
+                    { DarkPlatform,    14, 4, LinkId( 2), "Dark Platform"    },
+
+                    { 12,   0 },
+                    { 13, 136 },
+                    { 14,  94 },
+                    { 15, 108 },
+                    { 16,  52 },
+                    { 17,  66 },
+                    { 18,  80 },
+                    { 19, 122 },
+                    { 20,  24 },
+                    { 21,  38 }
+                };
+
+                static constexpr uint16_t terrainTypeMap[] {
+                    2, 20, 0,
+                    20, 2, 3, 16, 14, 21, 13, 0,
+                    3, 20, 21, 16, 17, 18, 14, 19, 13, 0,
+                    21, 3, 5, 14, 16, 15, 19, 20, 17, 13, 0,
+                    5, 21, 15, 0,
+                    7, 16, 0,
+                    16, 7, 3, 20, 21, 17, 18, 14, 19, 13, 0,
+                    8, 17, 0,
+                    17, 8, 3, 16, 14, 21, 13, 0,
+                    9, 18, 0,
+                    18, 9, 3, 16, 14, 13, 0,
+                    4, 14, 0,
+                    14, 4, 3, 20, 21, 16, 17, 18, 19, 13, 0,
+                    6, 15, 0,
+                    15, 6, 5, 21, 0,
+                    10, 19, 0,
+                    19, 10, 3, 16, 14, 21, 13, 0,
+                    11, 13, 0,
+                    13, 11, 3, 20, 21, 16, 17, 18, 14, 19, 0,
+                    0
+                };
+            };
+
+            struct Installation
+            {
+                enum : size_t {
+                    Substructure = 2,
+                    Floor = 3,
+                    Roof = 6,
+                    SubstructurePlating = 4,
+                    Plating = 5,
+                    SubstructurePanels = 8,
+                    BottomlessPit = 7,
+
+                    Default = Floor
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] {
+                    { 0,                   8                                       }, {1},
+                    { Substructure,        1, 0, LinkId(1), "Substructure"         },
+                    { Floor,               2, 1, LinkId(2), "Floor"                },
+                    { SubstructurePlating, 4, 3, LinkId(4), "Substructure Plating" },
+                    { Plating,             5, 4, LinkId(5), "Plating"              },
+                    { Roof,                3, 2, LinkId(3), "Roof"                 },
+                    { BottomlessPit,       7, 6, LinkId(7), "Bottomless Pit"       },
+                    { SubstructurePanels,  6, 5, LinkId(6), "Substructure Panels"  },
+
+                    {  9,  0 },
+                    { 10, 50 },
+                    { 11, 64 },
+                    { 12, 22 },
+                    { 13, 36 },
+                    { 14, 78 },
+                    { 15, 92 }
+                };
+
+                static constexpr uint16_t terrainTypeMap[] {
+                    2, 12, 10, 14, 15, 0,
+                    12, 2, 3, 10, 11, 13, 14, 15, 0,
+                    3, 12, 13, 11, 0,
+                    13, 6, 3, 11, 12, 0,
+                    6, 13, 0,
+                    4, 10, 0,
+                    10, 4, 2, 12, 14, 15, 0,
+                    5, 11, 0,
+                    11, 5, 3, 12, 13, 0,
+                    8, 14, 0,
+                    14, 8, 2, 12, 10, 15, 0,
+                    7, 15, 0,
+                    15, 7, 2, 12, 10, 14, 0,
+                    0
+                };
+            };
+
+            struct Ashworld
+            {
+                enum : size_t {
+                    Magma = 8,
+                    Dirt = 2,
+                    Lava = 3,
+                    Shale = 6,
+                    BrokenRock = 9,
+                    HighDirt = 4,
+                    HighLava = 5,
+                    HighShale = 7,
+
+                    Default = Dirt
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] {
+                    { 0,          9                              }, {1},
+                    { Dirt,       2, 1, LinkId(2), "Dirt"        },
+                    { Lava,       3, 2, LinkId(3), "Lava"        },
+                    { HighDirt,   5, 5, LinkId(5), "High Dirt"   },
+                    { HighLava,   6, 6, LinkId(6), "High Lava"   },
+                    { Shale,      4, 3, LinkId(4), "Shale"       },
+                    { HighShale,  7, 7, LinkId(7), "High Shale"  },
+                    { Magma,      1, 0, LinkId(1), "Magma"       },
+                    { BrokenRock, 8, 4, LinkId(8), "Broken Rock" },
+
+                    { 10,   0 },
+                    { 11,  55 },
+                    { 12,  69 },
+                    { 13,  83 },
+                    { 14,  97 },
+                    { 15, 111 },
+                    { 16,  41 },
+                    { 17,  27 }
+                };
+                
+                static constexpr uint16_t terrainTypeMap[] {
+                    8, 17, 0,
+                    17, 8, 2, 11, 13, 16, 15, 0,
+                    2, 17, 16, 11, 13, 15, 0,
+                    3, 11, 0,
+                    11, 3, 2, 17, 16, 13, 15, 0,
+                    6, 13, 0,
+                    13, 6, 2, 17, 16, 11, 15, 0,
+                    9, 15, 0,
+                    15, 9, 13, 2, 17, 16, 11, 0,
+                    16, 2, 4, 11, 13, 12, 14, 17, 15, 0,
+                    4, 16, 12, 14, 0,
+                    5, 12, 0,
+                    12, 5, 4, 16, 14, 0,
+                    7, 14, 0,
+                    14, 7, 4, 16, 12, 0,
+                    0
+                };
+            };
+
+            struct Jungle
+            {
+                enum : size_t {
+                    Water = 5,
+                    Dirt = 2,
+                    Mud = 4,
+                    Jungle_ = 8,
+                    RockyGround = 15,
+                    Ruins = 11,
+                    RaisedJungle = 9,
+                    Temple = 16,
+                    HighDirt = 3,
+                    HighJungle = 10,
+                    HighRuins = 12,
+                    HighRaisedJungle = 13,
+                    HighTemple = 17,
+
+                    Default = Jungle_
+                };
+                
+                static constexpr TerrainTypeInfo terrainTypeInfo[] {
+                    { 0,                14                                       }, {1},
+                    { Dirt,              1,  1, LinkId( 1), "Dirt"               },
+                    { HighDirt,          2,  8, LinkId( 2), "High Dirt"          },
+                    { Mud,              13,  2, LinkId( 4), "Mud"                },
+                    { Water,             3,  0, LinkId( 3), "Water"              }, {6}, {7},
+                    { Jungle_,           4,  3, LinkId( 8), "Jungle"             },
+                    { RaisedJungle,      5,  6, LinkId(11), "Raised Jungle"      },
+                    { HighJungle,        9,  9, LinkId(14), "High Jungle"        },
+                    { Ruins,             7,  5, LinkId(12), "Ruins"              },
+                    { HighRuins,        10, 10, LinkId(15), "High Ruins"         },
+                    { HighRaisedJungle, 11, 11, LinkId(16), "High Raised Jungle" }, {14},
+                    { RockyGround,       6,  4, LinkId(10), "Rocky Ground"       },
+                    { Temple,            8,  7, LinkId(13), "Temple"             },
+                    { HighTemple,       12, 12, LinkId(17), "High Temple"        }, {18},
+
+                    { 19,   0 }, {20}, {21},
+                    { 22, 171 },
+                    { 23,  45 },
+                    { 24, 115 },
+                    { 25,  87 },
+                    { 26, 129 }, {27},
+                    { 28,  59 },
+                    { 29,  73 },
+                    { 30, 143 }, {31},
+                    { 32, 101 },
+                    { 33, 157 },
+                    { 34,  17 },
+                    { 35,  31 }
+                };
+
+                static constexpr uint16_t terrainTypeMap[] {
+                    5, 35, 0,
+                    35, 5, 2, 23, 28, 34, 22, 0,
+                    2, 34, 35, 23, 28, 22, 0,
+                    34, 2, 3, 24, 23, 28, 35, 22, 0,
+                    3, 34, 24, 0,
+                    8, 23, 29, 25, 32, 0,
+                    4, 22, 0,
+                    22, 4, 2, 34, 35, 23, 28, 0,
+                    23, 8, 2, 35, 34, 28, 25, 29, 22, 0,
+                    15, 28, 0,
+                    28, 15, 2, 34, 35, 23, 22, 0,
+                    9, 29, 0,
+                    29, 9, 8, 25, 32, 23, 0,
+                    11, 25, 0,
+                    25, 11, 8, 23, 29, 32, 0,
+                    16, 32, 0,
+                    32, 16, 8, 25, 29, 0,
+                    10, 24, 26, 30, 33, 0,
+                    24, 10, 3, 34, 26, 30, 0,
+                    12, 26, 0,
+                    26, 12, 10, 24, 30, 33, 0,
+                    13, 30, 0,
+                    30, 13, 10, 26, 24, 33, 0,
+                    17, 33, 0,
+                    33, 17, 10, 26, 30, 0,
+                    0
+                };
+            };
+
+            struct Desert
+            {
+                enum : size_t {
+                    Tar = 5,
+                    Dirt = 2,
+                    DriedMud = 4,
+                    SandDunes = 8,
+                    RockyGround = 15,
+                    Crags = 11,
+                    SandySunkenPit = 9,
+                    Compound = 16,
+                    HighDirt = 3,
+                    HighSandDunes = 10,
+                    HighCrags = 12,
+                    HighSandySunkenPit = 13,
+                    HighCompound = 17,
+
+                    Default = SandDunes
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] { // TODO: Copy jungle & update names?
+                    { 0,                  14                                          }, {1},
+                    { Dirt,                1,  1, LinkId( 1), "Dirt"                  },
+                    { HighDirt,            2,  8, LinkId( 2), "High Dirt"             },
+                    { DriedMud,           13,  2, LinkId( 4), "Dried Mud"             },
+                    { Tar,                 3,  0, LinkId( 3), "Tar"                   }, {6}, {7},
+                    { SandDunes,           4,  3, LinkId( 8), "Sand Dunes"            },
+                    { SandySunkenPit,      5,  6, LinkId(11), "Sandy Sunken Pit"      },
+                    { HighSandDunes,       9,  9, LinkId(14), "High Sand Dunes"       },
+                    { Crags,               7,  5, LinkId(12), "Crags"                 },
+                    { HighCrags,          10, 10, LinkId(15), "High Crags"            },
+                    { HighSandySunkenPit, 11, 11, LinkId(16), "High Sandy Sunken Pit" }, {14},
+                    { RockyGround,         6,  4, LinkId(10), "Rocky Ground"          },
+                    { Compound,            8,  7, LinkId(13), "Compound"              },
+                    { HighCompound,       12, 12, LinkId(17), "High Compound"         }, {18},
+
+                    { 19,   0 }, {20}, {21},
+                    { 22, 171 },
+                    { 23,  45 },
+                    { 24, 115 },
+                    { 25,  87 },
+                    { 26, 129 }, {27},
+                    { 28,  59 },
+                    { 29,  73 },
+                    { 30, 143 }, {31},
+                    { 32, 101 },
+                    { 33, 157 },
+                    { 34,  17 },
+                    { 35,  31 }
+                };
+
+                static constexpr Span<uint16_t> terrainTypeMap{Jungle::terrainTypeMap};
+            };
+
+            struct Arctic
+            {
+                enum : size_t {
+                    Ice = 5,
+                    Snow = 2,
+                    Moguls = 4,
+                    Dirt = 8,
+                    RockySnow = 15,
+                    Grass = 11,
+                    Water = 9,
+                    Outpost = 16,
+                    HighSnow = 3,
+                    HighDirt = 10,
+                    HighGrass = 12,
+                    HighWater = 13,
+                    HighOutpost = 17,
+
+                    Default = Snow
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] { // TODO: Copy jungle & update names?
+                    { 0,           14                                 }, {1},
+                    { Snow,         1,  1, LinkId( 1), "Snow"         },
+                    { HighSnow,     2,  8, LinkId( 2), "High Snow"    },
+                    { Moguls,      13,  2, LinkId( 4), "Moguls"       },
+                    { Ice,          3,  0, LinkId( 3), "Ice"          }, {6}, {7},
+                    { Dirt,         4,  3, LinkId( 8), "Dirt"         },
+                    { Water,        5,  6, LinkId(11), "Water"        },
+                    { HighDirt,     9,  9, LinkId(14), "High Dirt"    },
+                    { Grass,        7,  5, LinkId(12), "Grass"        },
+                    { HighGrass,   10, 10, LinkId(15), "High Grass"   },
+                    { HighWater,   11, 11, LinkId(16), "High Water"   }, {14},
+                    { RockySnow,    6,  4, LinkId(10), "Rocky Snow"   },
+                    { Outpost,      8,  7, LinkId(13), "Outpost"      },
+                    { HighOutpost, 12, 12, LinkId(17), "High Outpost" }, {18},
+
+                    { 19,   0 }, {20}, {21},
+                    { 22, 171 },
+                    { 23,  45 },
+                    { 24, 115 },
+                    { 25,  87 },
+                    { 26, 129 }, {27},
+                    { 28,  59 },
+                    { 29,  73 },
+                    { 30, 143 }, {31},
+                    { 32, 101 },
+                    { 33, 157 },
+                    { 34,  17 },
+                    { 35,  31 }
+                };
+
+                static constexpr Span<uint16_t> terrainTypeMap{Jungle::terrainTypeMap};
+            };
+
+            struct Twilight
+            {
+                enum : size_t {
+                    Water = 5,
+                    Dirt = 2,
+                    Mud = 4,
+                    CrushedRock = 8,
+                    Crevices = 15,
+                    Flagstones = 11,
+                    SunkenGround = 9,
+                    Basilica = 16,
+                    HighDirt = 3,
+                    HighCrushedRock = 10,
+                    HighFlagstones = 12,
+                    HighSunkenGround = 13,
+                    HighBasilica = 17,
+
+                    Default = Dirt
+                };
+
+                static constexpr TerrainTypeInfo terrainTypeInfo[] { // TODO: Copy jungle & update names?
+                    { 0,                14                                       }, {1},
+                    { Dirt,              1,  1, LinkId( 1), "Dirt"               },
+                    { HighDirt,          2,  8, LinkId( 2), "High Dirt"          },
+                    { Mud,              13,  2, LinkId( 4), "Mud"                },
+                    { Water,             3,  0, LinkId( 3), "Water"              }, {6}, {7},
+                    { CrushedRock,       4,  3, LinkId( 8), "Crushed Rock"       },
+                    { SunkenGround,      5,  6, LinkId(11), "Sunken Ground"      },
+                    { HighCrushedRock,   9,  9, LinkId(14), "High Crushed Rock"  },
+                    { Flagstones,        7,  5, LinkId(12), "Flagstones"         },
+                    { HighFlagstones,   10, 10, LinkId(15), "High Flagstones"    },
+                    { HighSunkenGround, 11, 11, LinkId(16), "High Sunken Ground" }, {14},
+                    { Crevices,          6,  4, LinkId(10), "Crevices"           },
+                    { Basilica,          8,  7, LinkId(13), "Basilica"           },
+                    { HighBasilica,     12, 12, LinkId(17), "High Basilica"      }, {18},
+
+                    { 19,   0 }, {20}, {21},
+                    { 22, 171 },
+                    { 23,  45 },
+                    { 24, 115 },
+                    { 25,  87 },
+                    { 26, 129 }, {27},
+                    { 28,  59 },
+                    { 29,  73 },
+                    { 30, 143 }, {31},
+                    { 32, 101 },
+                    { 33, 157 },
+                    { 34,  17 },
+                    { 35,  31 }
+                };
+
+                static constexpr Span<uint16_t> terrainTypeMap{Jungle::terrainTypeMap};
+            };
+
+            static constexpr size_t defaultBrushIndex[] {
+                Badlands::Default, Space::Default, Installation::Default, Ashworld::Default,
+                Jungle::Default, Desert::Default, Arctic::Default, Twilight::Default
+            };
+        };
+
+        static constexpr Span<TerrainTypeInfo> tilesetTerrainTypes[] {
+            Brush::Badlands::terrainTypeInfo, Brush::Space::terrainTypeInfo, Brush::Installation::terrainTypeInfo, Brush::Ashworld::terrainTypeInfo,
+            Brush::Jungle::terrainTypeInfo, Brush::Desert::terrainTypeInfo, Brush::Arctic::terrainTypeInfo, Brush::Twilight::terrainTypeInfo
+        };
+
+        static constexpr Span<uint16_t> compressedTerrainTypeMaps[] {
+            Brush::Badlands::terrainTypeMap, Brush::Space::terrainTypeMap, Brush::Installation::terrainTypeMap, Brush::Ashworld::terrainTypeMap,
+            Brush::Jungle::terrainTypeMap, Brush::Desert::terrainTypeMap, Brush::Arctic::terrainTypeMap, Brush::Twilight::terrainTypeMap
+        };
+
+        static constexpr Span<size_t> defaultBrushIndex { Brush::defaultBrushIndex };
+    };
+
+    struct Terrain {
+        static constexpr size_t NumTilesets = 8;
+        static constexpr size_t PixelsPerTile = 32;
+        static const std::vector<std::string> TilesetNames;
+
+        enum_t(Tileset, u16, { // u16
+            Badlands = 0,
+            SpacePlatform = 1,
+            Installation = 2,
+            Ashworld = 3,
+            Jungle = 4,
+            Desert = 5,
+            Arctic = 6,
+            Twilight = 7
+        });
+        
+        enum class TileElevation {
+            Low,
+            Mid,
+            High
+        };
+
+        using TileGroup = Isom::TileGroup;
+        using Doodad = Isom::Doodad;
+#pragma pack(push, 1)
+        __declspec(align(1)) struct TileFlags {
+            __declspec(align(1))struct MiniTileFlags {
+                enum_t(Flags, u16, {
+                    Walkable = BIT_0,
+                    MidElevation = BIT_1,
+                    HighElevation = BIT_2,
+                    BlocksView = BIT_3,
+                    Ramp = BIT_4
+                });
+
+                Flags flags;
+                
+                inline bool isWalkable() const { return (flags & Flags::Walkable) == Flags::Walkable; }
+                inline bool blocksView() const { return (flags & Flags::BlocksView) == Flags::BlocksView; }
+                inline bool isRamp() const { return (flags & Flags::Ramp) == Flags::Ramp; }
+                inline TileElevation getElevation() const {
+                    if ( (flags & Flags::HighElevation) == Flags::HighElevation )
+                        return TileElevation::High;
+                    else if ( (flags & Flags::MidElevation) == Flags::MidElevation )
+                        return TileElevation::Mid;
+                    else
+                        return TileElevation::Low;
+                }
+            };
+
+            MiniTileFlags miniTileFlags[4][4];
+        };
+        __declspec(align(1)) struct TileGraphics {
+            __declspec(align(1))struct MiniTileGraphics {
+                enum_t(Graphics, u16, {
+                    Flipped = BIT_0,
+                    Vr4Index = u16_max & x16BIT_0
+                });
+
+                Graphics graphics;
+
+                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
+                inline u16 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
+            };
+
+            MiniTileGraphics miniTileGraphics[4][4];
+        };
+        __declspec(align(1)) struct TileGraphicsEx {
+            __declspec(align(1))struct MiniTileGraphics {
+                enum_t(Graphics, u32, {
+                    Flipped = BIT_0,
+                    Vr4Index = u32_max & x32BIT_0
+                });
+
+                Graphics graphics;
+
+                inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
+                inline u32 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
+            };
+
+            MiniTileGraphics miniTileGraphics[4][4];
+
+            inline TileGraphicsEx(const TileGraphics & tileGraphics) : miniTileGraphics {
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[0][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[1][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[2][3].graphics)}
+                },
+                {
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][0].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][1].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][2].graphics)},
+                    {MiniTileGraphics::Graphics(tileGraphics.miniTileGraphics[3][3].graphics)}
+                }
+            } {}
+        };
+        __declspec(align(1)) struct MiniTilePixels {
+            u8 wpeIndex[8][8];
+        };
+        __declspec(align(1)) struct WpeColor {
+            u8 red;
+            u8 green;
+            u8 blue;
+            u8 null;
+        };
+        
+        __declspec(align(1)) struct Cv5Dat {
+            static constexpr size_t MaxTileGroups = 1024;
+
+            TileGroup tileGroups[MaxTileGroups];
+            Doodad doodads[1];
+
+            static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
+            static inline size_t doodadsSize(size_t cv5FileSize) { return cv5FileSize > MaxTileGroups*sizeof(TileGroup) ? cv5FileSize/sizeof(Doodad)-MaxTileGroups : 0; }
+        };
+        __declspec(align(1)) struct Vf4Dat {
+            TileFlags tileFlags[1];
+
+            static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
+        };
+        __declspec(align(1)) struct Vx4Dat {
+            TileGraphicsEx tileGraphics[1];
+
+            static inline size_t size(bool extended, size_t fileSize) { return extended ? fileSize/sizeof(TileGraphicsEx) : fileSize/sizeof(TileGraphics); }
+        };
+        __declspec(align(1)) struct Vr4Dat {
+            MiniTilePixels miniTilePixels[1];
+
+            static inline size_t size(size_t fileSize) { return fileSize/sizeof(MiniTilePixels); }
+        };
+        __declspec(align(1)) struct WpeDat {
+            WpeColor color[NumColors];
+        };
+#pragma pack(pop)
+
+        static constexpr uint16_t getTileGroup(uint16_t tileValue) { return tileValue / 16; }
+
+        static constexpr uint16_t getSubtileValue(uint16_t tileValue) { return tileValue % 16; }
+
+        struct Tiles
+        {
+            std::vector<TileGroup> tileGroups;
+            std::vector<Doodad> doodads;
+            std::vector<TileFlags> tileFlags;
+            std::vector<TileGraphicsEx> tileGraphics;
+            std::vector<MiniTilePixels> miniTilePixels;
+            std::array<SystemColor, NumColors> systemColorPalette;
+
+            std::vector<uint16_t> terrainTypeMap {};
+            std::unordered_map<uint32_t, std::vector<uint16_t>> hashToTileGroup {};
+            std::vector<Isom::ShapeLinks> isomLinks {};
+            Span<Isom::TerrainTypeInfo> terrainTypes {};
+            std::vector<Isom::TerrainTypeInfo> brushes {};
+            Isom::TerrainTypeInfo defaultBrush {};
+
+            void populateTerrainTypeMap(size_t tilesetIndex);
+
+            void generateIsomLinks();
+
+            void loadIsom(size_t tilesetIndex);
+
+            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName);
+
+            static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
+
+            static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
+        };
+
+        const Tiles & get(const Tileset & tileset) const;
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
+
+    private:
+        Tiles tilesets[NumTilesets];
     };
 
     /**

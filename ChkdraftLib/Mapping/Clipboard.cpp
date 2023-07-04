@@ -172,6 +172,13 @@ void Clipboard::copy(GuiMap & map, Layer layer)
     }
 }
 
+void Clipboard::setQuickIsom(size_t terrainTypeIndex)
+{
+    this->terrainTypeIndex = terrainTypeIndex;
+    quickPaste = true;
+    pasting = true;
+}
+
 void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 {
     quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, TileNeighbor::All));
@@ -207,12 +214,12 @@ void Clipboard::endPasting()
     }
 }
 
-void Clipboard::doPaste(Layer layer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
+void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
 {
     switch ( layer )
     {
         case Layer::Terrain:
-            pasteTerrain(mapClickX, mapClickY, map, undos);
+            pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos);
             break;
         case Layer::Units:
             pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
@@ -266,9 +273,19 @@ void Clipboard::toggleFillSimilarTiles()
     chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, fillSimilarTiles);
 }
 
-void Clipboard::pasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
-    if ( fillSimilarTiles && getTiles().size() == 1 )
+    if ( terrainSubLayer == TerrainSubLayer::Isom )
+    {
+        s32 calcX = mapClickX - mapClickY*2;
+        s32 calcY = mapClickX/2 + mapClickY;
+        calcX -= ((calcX-64) & 127);
+        calcY -= ((calcY-32) & 63);
+        s32 isomX = ((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2;
+        s32 isomY = ((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32;
+        map.placeIsomTerrain(Chk::IsomDiamond{size_t(isomX), size_t(isomY)}, terrainTypeIndex, 1);
+    }
+    else if ( fillSimilarTiles && getTiles().size() == 1 )
     {
         fillPasteTerrain(mapClickX, mapClickY, map, undos);
     }

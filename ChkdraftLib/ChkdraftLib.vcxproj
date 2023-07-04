@@ -61,6 +61,7 @@
     <ClInclude Include="Windows\ChkdControls\ChkdStringInput.h" />
     <ClInclude Include="Windows\ChkdControls\CndActGrid.h" />
     <ClInclude Include="Windows\ChkdControls\CuwpInput.h" />
+    <ClInclude Include="Windows\ChkdControls\IsomTree.h" />
     <ClInclude Include="Windows\ChkdControls\LocationTree.h" />
     <ClInclude Include="Windows\ChkdControls\MainTree.h" />
     <ClInclude Include="Windows\ChkdControls\MoveTo.h" />
@@ -136,6 +137,7 @@
     <ClCompile Include="Windows\ChkdControls\ChkdStringInput.cpp" />
     <ClCompile Include="Windows\ChkdControls\CndActGrid.cpp" />
     <ClCompile Include="Windows\ChkdControls\CuwpInput.cpp" />
+    <ClCompile Include="Windows\ChkdControls\IsomTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\LocationTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\MainTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\MoveTo.cpp" />

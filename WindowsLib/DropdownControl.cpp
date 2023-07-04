@@ -56,6 +56,15 @@ namespace WinLib {
         return (int)SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
     }
 
+    int DropdownControl::GetSelData()
+    {
+        LRESULT selIndex = SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
+        if ( selIndex != CB_ERR && selIndex != CB_ERRSPACE )
+            return int(SendMessage(getHandle(), CB_GETITEMDATA, (WPARAM)selIndex, NULL));
+        else
+            return int(selIndex);
+    }
+
     bool DropdownControl::GetItemText(int index, std::string & dest)
     {
         LRESULT textLength = SendMessage(getHandle(), CB_GETLBTEXTLEN, index, 0);
@@ -84,6 +93,15 @@ namespace WinLib {
     int DropdownControl::AddItem(const std::string & item)
     {
         LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
+        return int(result);// != CB_ERR && result != CB_ERRSPACE;
+    }
+
+    int DropdownControl::AddItem(const std::string & item, int data)
+    {
+        LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
+        if ( result != CB_ERR && result != CB_ERRSPACE )
+            SendMessage(getHandle(), CB_SETITEMDATA, result, data);
+        
         return int(result);// != CB_ERR && result != CB_ERRSPACE;
     }
     

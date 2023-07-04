@@ -10,7 +10,7 @@ void MainTree::BuildMainTree()
 {
     HWND hWnd = getHandle();
 
-    InsertTreeItem(NULL, "Terrain", (LPARAM)Layer::Terrain);
+    isomTree.AddThis(hWnd, InsertTreeItem(NULL, "Terrain", (LPARAM)Layer::Terrain));
     locTree.AddThis(hWnd, InsertTreeItem(NULL, "Locations", (LPARAM)Layer::Locations));
     unitTree.AddThis(hWnd, InsertTreeItem(NULL, "Units", (LPARAM)Layer::Units));
     

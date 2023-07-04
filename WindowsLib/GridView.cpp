@@ -20,7 +20,7 @@ namespace WinLib {
 
     GridViewControl::~GridViewControl()
     {
-
+        resize(0, 0);
     }
 
     GridControlItem & GridViewControl::item(int x, int y)

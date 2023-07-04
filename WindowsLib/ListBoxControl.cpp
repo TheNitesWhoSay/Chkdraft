@@ -241,6 +241,17 @@ namespace WinLib {
         return false;
     }
 
+    bool ListBoxControl::GetCurSelItem(int & itemData)
+    {
+        int selectedItem = -1;
+        if ( GetCurSel(selectedItem) )
+        {
+            itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(selectedItem), NULL));
+            return true;
+        }
+        return false;
+    }
+
     bool ListBoxControl::GetSelItem(int index, int & itemData)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
@@ -249,18 +260,15 @@ namespace WinLib {
             if ( index < numSel ) // Index must be within the amount of items selected
             {
                 int arraySize = index+1;
-                int* selections = nullptr;
-                try { selections = new int[arraySize]; } // Need space for this index and all items before
+                std::unique_ptr<int[]> selections = nullptr;
+                try { selections = std::make_unique<int[]>(arraySize); } // Need space for this index and all items before
                 catch ( std::bad_alloc ) { return false; }
-                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
+                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
                     itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0));
-                    delete[] selections;
                     return true;
                 }
-                else
-                    delete[] selections;
             }
         }
         return false;
