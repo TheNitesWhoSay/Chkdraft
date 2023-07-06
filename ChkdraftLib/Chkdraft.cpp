@@ -232,6 +232,14 @@ void Chkdraft::OpenLogFileDirectory()
     WinLib::executeOpen(getSystemFileDirectory(logFilePath, false), result);
 }
 
+void Chkdraft::OpenBackupsDirectory()
+{
+    if (auto backupsFolderPath = GetBackupsPath()) {
+        int result = 0;
+        WinLib::executeOpen(*backupsFolderPath, result);
+    }
+}
+
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 {
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, false);
@@ -492,6 +500,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         // File
     case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
     case ID_FILE_OPEN1: maps.OpenMap(); break;
+    case ID_ADVANCED_OPENBACKUPDATABASE: OpenBackupsDirectory(); break;
     case ID_FILE_CLOSE1: maps.CloseActive(); break;
     case ID_FILE_SAVE1: maps.SaveCurr(false); break;
     case ID_FILE_SAVEAS1: maps.SaveCurr(true); break;

@@ -146,7 +146,11 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void LButtonDown(int x, int y, WPARAM wParam);
                     void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
                     void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam);
                     void LButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MButtonDown(HWND hWnd, int x, int y, WPARAM wParam);
+                    void MButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
+                    void PanTimerTimeout();
                     void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
@@ -177,13 +181,19 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     std::shared_ptr<ReversibleActions> tileChanges = nullptr;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
-
+					
                     bool dragging = false;
                     bool snapUnits = true;
                     bool stackUnits = false;
                     bool snapLocations = true;
                     bool locSnapTileOverGrid = true;
                     bool lockAnywhere = true;
+					
+                    UINT_PTR panTimerID = 0;
+                    int panStartX = -1;
+                    int panStartY = -1;
+                    int panCurrentX = 0;
+                    int panCurrentY = 0;
 
                     ChkdBitmap graphicBits {};
                     s32 screenLeft = 0;

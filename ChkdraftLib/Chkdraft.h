@@ -53,6 +53,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void SizeSubWindows();
                     void OpenLogFile();
                     void OpenLogFileDirectory();
+                    void OpenBackupsDirectory();
                     void UpdateLogLevelCheckmarks(LogLevel logLevel);
                     void SetLogLevel(LogLevel newLogLevel);
 
