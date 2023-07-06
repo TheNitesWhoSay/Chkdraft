@@ -207,6 +207,19 @@ namespace Chk {
             }
             constexpr operator Point() const { return { x, y }; } // Conversion implies going to the bottom-right rectangle for the isom diamond
             constexpr bool isValid() const { return (x+y)%2 == 0; }
+
+            static constexpr IsomDiamond fromMapCoordinates(size_t x, size_t y)
+            {
+                s32 calcX = s32(x) - s32(y)*2;
+                s32 calcY = s32(x)/2 + s32(y);
+                calcX -= ((calcX-64) & 127);
+                calcY -= ((calcY-32) & 63);
+                return { size_t(((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2), size_t(((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32) };
+            }
+
+            static constexpr IsomDiamond none() { return {std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max()}; }
+
+            constexpr bool operator!=(const IsomDiamond & other) { return this->x != other.x || this->y != other.y; }
         };
 
         uint16_t left = 0;

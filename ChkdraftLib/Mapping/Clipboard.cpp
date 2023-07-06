@@ -175,6 +175,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
 void Clipboard::setQuickIsom(size_t terrainTypeIndex)
 {
     this->terrainTypeIndex = terrainTypeIndex;
+    this->prevIsomPaste = Chk::IsomDiamond::none();
     quickPaste = true;
     pasting = true;
 }
@@ -263,6 +264,8 @@ void Clipboard::ClearCopyUnits()
 
 void Clipboard::ClearQuickItems()
 {
+    this->terrainTypeIndex = 0;
+    this->prevIsomPaste = Chk::IsomDiamond::none();
     quickTiles.clear();
     quickUnits.clear();
 }
@@ -277,13 +280,12 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
 {
     if ( terrainSubLayer == TerrainSubLayer::Isom )
     {
-        s32 calcX = mapClickX - mapClickY*2;
-        s32 calcY = mapClickX/2 + mapClickY;
-        calcX -= ((calcX-64) & 127);
-        calcY -= ((calcY-32) & 63);
-        s32 isomX = ((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2;
-        s32 isomY = ((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32;
-        map.placeIsomTerrain(Chk::IsomDiamond{size_t(isomX), size_t(isomY)}, terrainTypeIndex, 1);
+        auto diamond = Chk::IsomDiamond::fromMapCoordinates(mapClickX, mapClickY);
+        if ( prevIsomPaste != diamond )
+        {
+            map.placeIsomTerrain(Chk::IsomDiamond::fromMapCoordinates(mapClickX, mapClickY), terrainTypeIndex, 1);
+            prevIsomPaste = diamond;
+        }
     }
     else if ( fillSimilarTiles && getTiles().size() == 1 )
     {

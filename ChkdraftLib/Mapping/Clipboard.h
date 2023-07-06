@@ -85,6 +85,7 @@ class Clipboard
         bool fillSimilarTiles;
         RECT edges;
         size_t terrainTypeIndex = 0;
+        Chk::IsomDiamond prevIsomPaste = Chk::IsomDiamond::none();
         std::vector<PasteTileNode> copyTiles;
         std::vector<PasteTileNode> quickTiles;
         std::vector<PasteUnitNode> copyUnits;

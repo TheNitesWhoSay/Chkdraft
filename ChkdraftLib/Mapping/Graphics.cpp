@@ -1289,18 +1289,10 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 widt
         {
             HPEN pen = CreatePen(PS_SOLID, 0, RGB(255, 0, 0));
             SelectObject(hDC, pen);
+            auto diamond = Chk::IsomDiamond::fromMapCoordinates(selections.getEndDrag().x, selections.getEndDrag().y);
 
-            s32 mouseX = selections.getEndDrag().x;
-            s32 mouseY = selections.getEndDrag().y;
-            s32 calcX = mouseX - mouseY*2;
-            s32 calcY = mouseX/2 + mouseY;
-            calcX -= ((calcX-64) & 127);
-            calcY -= ((calcY-32) & 63);
-            s32 isomX = ((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2;
-            s32 isomY = ((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32;
-
-            s32 diamondCenterX = isomX*64-screenLeft;
-            s32 diamondCenterY = isomY*32-screenTop;
+            s32 diamondCenterX = s32(diamond.x)*64-screenLeft;
+            s32 diamondCenterY = s32(diamond.y)*32-screenTop;
             MoveToEx(hDC, diamondCenterX-64, diamondCenterY, NULL); // Start from diamond left corner
             LineTo(hDC, diamondCenterX, diamondCenterY-32); // Draw top-left
             LineTo(hDC, diamondCenterX+64, diamondCenterY); // Draw top-right
