@@ -48,6 +48,7 @@
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationMove.h" />
@@ -125,6 +126,7 @@
     <ClCompile Include="Mapping\Graphics.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationMove.cpp" />

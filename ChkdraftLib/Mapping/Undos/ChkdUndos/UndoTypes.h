@@ -6,7 +6,8 @@
 enum_t(UndoTypes, int32_t, {
     TileChange = 1,
     UnitChange = 2,
-    LocationChange = 3
+    LocationChange = 3,
+    IsomChange = 4
 });
 
 #endif

@@ -1,5 +1,6 @@
 #include "GuiMap.h"
 #include "../../Chkdraft.h"
+#include "../../Mapping/Undos/ChkdUndos/IsomChange.h"
 #include "../../Mapping/Undos/ChkdUndos/TileChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
@@ -11,8 +12,9 @@
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath), clipboard(clipboard),
-    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
+GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -20,8 +22,9 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
         currLayer = (Layer)layerSel;
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser), clipboard(clipboard),
-    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
+GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -30,13 +33,14 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
-    : MapFile(tileset, width, height), clipboard(clipboard),
-    isomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset))
+    : MapFile(tileset, width, height),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
-    uint16_t val = ((isomCache.getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
+    uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
     Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
-    isomCache.setAllChanged();
-    Scenario::updateTilesFromIsom(isomCache);
+    Chk::IsomCache::setAllChanged();
+    Scenario::updateTilesFromIsom(*this);
 
     graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -116,7 +120,7 @@ void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
     graphics.updatePalette();
-    this->isomCache = {Scenario::tileset, Scenario::getIsomWidth(), Scenario::getIsomHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
 }
 
 // From Scenario.cpp
@@ -125,20 +129,20 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
     Scenario destMap(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
-    GuiIsomCache destIsomCache(this->tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(this->tileset));
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(Scenario::tileset)};
 
     destMap.editorTiles = this->editorTiles;
     destMap.tiles = this->tiles;
     setMtxmOrTileDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
     setMtxmOrTileDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
-    uint16_t isomValue = ((destIsomCache.getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
+    uint16_t isomValue = ((Chk::IsomCache::getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
 
     destMap.dimensions = {newTileWidth, newTileHeight};
     destMap.isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
     
-    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, destIsomCache);
-    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, destIsomCache);
-    destMap.updateTilesFromIsom(destIsomCache);
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, *this);
+    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, *this);
+    destMap.updateTilesFromIsom(*this);
 
     Sc::BoundingBox tileRect { this->getTileWidth(), this->getTileHeight(), newTileWidth, newTileHeight, leftEdge, topEdge };
     size_t destStartX = leftEdge < 0 ? 0 : leftEdge;
@@ -158,14 +162,17 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     std::swap(this->isomRects, destMap.isomRects);
     std::swap(this->editorTiles, destMap.editorTiles);
     std::swap(this->tiles, destMap.tiles);
-    this->isomCache = {Scenario::tileset, Scenario::getIsomWidth(), Scenario::getIsomHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
 }
 
 bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent)
 {
-    bool success = Scenario::placeIsomTerrain(isomDiamond, terrainType, brushExtent, isomCache);
-    Scenario::updateTilesFromIsom(isomCache);
-    return success;
+    if ( Scenario::placeIsomTerrain(isomDiamond, terrainType, brushExtent, *this) )
+    {
+        Scenario::updateTilesFromIsom(*this);
+        return true;
+    }
+    return false;
 }
 
 Layer GuiMap::getLayer()
@@ -1542,7 +1549,12 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
             {
                 chkd.tilePropWindow.DestroyThis();
                 if ( chkd.maps.clipboard.isPasting() )
+                {
+                    if ( currLayer == Layer::Terrain && currTerrainSubLayer == TerrainSubLayer::Isom )
+                        tileChanges = ReversibleActions::Make();
+
                     paste(mapClickX, mapClickY);
+                }
                 else
                 {
                     if ( selections.hasTiles() )
@@ -1736,6 +1748,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
+    finalizeTerrainOperation();
     ReleaseCapture();
     if ( isDragging() )
     {
@@ -2095,4 +2108,33 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
         }
     }
     return false;
+}
+
+void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
+{
+    if ( tileChanges != nullptr )
+        tileChanges->Insert(IsomChange::Make(isomUndo));
+}
+
+void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
+{
+    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
+    {
+        if ( tileChanges != nullptr )
+            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY)));
+
+        Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        // TODO: should check if doodads need to be deleted, then copy invalidated TILE area overlayed with doodads to form MTXM
+        Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+    }
+}
+
+void GuiMap::finalizeTerrainOperation()
+{
+    if ( tileChanges != nullptr )
+    {
+        undos.AddUndo(tileChanges);
+        tileChanges = nullptr;
+        Chk::IsomCache::finalizeUndoableOperation();
+    }
 }

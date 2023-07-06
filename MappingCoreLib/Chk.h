@@ -2078,6 +2078,8 @@ namespace Chk {
             return 16*tileGroup; // Default/fall-back to first tile in group
         }
 
+        virtual inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) {} // Does nothing unless overridden
+
         virtual inline void addIsomUndo(const IsomRectUndo & /*isomUndo*/) {} // Does nothing unless overridden
 
         // Call when one undoable operation is complete, e.g. resize a map, or mouse up after pasting/brushing some terrain

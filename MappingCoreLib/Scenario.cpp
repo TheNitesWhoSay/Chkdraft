@@ -7236,13 +7236,6 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::StrScope storageScope)
     }
 }
 
-void Scenario::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
-{
-    editorTiles[tileY*getTileWidth() + tileX] = tileValue;
-    // TODO: should check if doodads need to be deleted, then copy invalidated TILE area overlayed with doodads to form MTXM
-    tiles[tileY*getTileWidth() + tileX] = tileValue;
-}
-
 void Scenario::addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache)
 {
     if ( !cache.undoMap[point.y*cache.isomWidth + point.x] ) // if undoMap entry doesn't already exist at this position...
@@ -7430,8 +7423,8 @@ void Scenario::updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache &
         }
 
         uint16_t destSubTile = cache.getRandomSubtile(destTileGroup) % 16;
-        setTileValue(leftTileX, isomDiamond.y, 16*destTileGroup + destSubTile);
-        setTileValue(rightTileX, isomDiamond.y, 16*(destTileGroup+1) + destSubTile);
+        cache.setTileValue(leftTileX, isomDiamond.y, 16*destTileGroup + destSubTile);
+        cache.setTileValue(rightTileX, isomDiamond.y, 16*(destTileGroup+1) + destSubTile);
 
         // Find the top row of the tile-group stack (note: this is a tad performance sensitive, consider pre-linking stacks)
         size_t stackTopY = isomDiamond.y;
@@ -7445,8 +7438,8 @@ void Scenario::updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache &
             curr = above;
         }
 
-        setTileValue(leftTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(leftTileX, stackTopY)) + destSubTile);
-        setTileValue(rightTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(rightTileX, stackTopY)) + destSubTile);
+        cache.setTileValue(leftTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(leftTileX, stackTopY)) + destSubTile);
+        cache.setTileValue(rightTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(rightTileX, stackTopY)) + destSubTile);
 
         // Set tile values for the rest of the stack
         auto tileHeight = getTileHeight();
@@ -7484,13 +7477,13 @@ void Scenario::updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache &
                 }
             }
 
-            setTileValue(leftTileX, y, 16*leftTileGroup + destSubTile);
-            setTileValue(rightTileX, y, 16*rightTileGroup + destSubTile);
+            cache.setTileValue(leftTileX, y, 16*leftTileGroup + destSubTile);
+            cache.setTileValue(rightTileX, y, 16*rightTileGroup + destSubTile);
         }
     }
     else
     {
-        setTileValue(leftTileX, isomDiamond.y, 0);
-        setTileValue(rightTileX, isomDiamond.y, 0);
+        cache.setTileValue(leftTileX, isomDiamond.y, 0);
+        cache.setTileValue(rightTileX, isomDiamond.y, 0);
     }
 }

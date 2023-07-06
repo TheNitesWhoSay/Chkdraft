@@ -98,6 +98,8 @@ void Clipboard::copy(GuiMap & map, Layer layer)
     Selections & selections = map.GetSelections();
     if ( layer == Layer::Terrain )
     {
+        chkd.maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
+
         ClearCopyTiles(); // Clear whatever was previously copied
         if ( selections.hasTiles() )
         {

@@ -176,9 +176,6 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationMove.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
@@ -352,6 +349,12 @@
     </ClInclude>
     <ClInclude Include="Windows\ChkdControls\IsomTree.h">
       <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -573,6 +576,9 @@
     </ClCompile>
     <ClCompile Include="Windows\ChkdControls\IsomTree.cpp">
       <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

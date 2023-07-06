@@ -278,6 +278,8 @@ struct Scenario
         
     Chk::IsomRect & getIsomRect(size_t isomRectIndex);
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;
+    inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x]; }
+    inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
     
     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
     void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
@@ -546,11 +548,8 @@ private:
 
     // ISOM helpers
     inline uint16_t getTileValue(size_t tileX, size_t tileY) const { return editorTiles[tileY*getTileWidth() + tileX]; }
-    void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue);
     inline uint16_t getCentralIsomValue(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].left >> 4; }
     inline bool centralIsomValueModified(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].isLeftModified(); }
-    inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x]; }
-    inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
     constexpr bool isInBounds(Chk::IsomRect::Point point) const { return point.x < getIsomWidth() && point.y < getIsomHeight(); }
 
     void addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache);

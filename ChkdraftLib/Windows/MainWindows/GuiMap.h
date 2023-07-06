@@ -9,7 +9,7 @@
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
 
-class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
+class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
@@ -158,16 +158,15 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
     private:
 
-                    struct GuiIsomCache : Chk::IsomCache { // Maintain an ISOM cache, invalidated if tileset or sizes change
-                        using Chk::IsomCache::IsomCache; // Use the base-class constructor
-                        inline void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final { /* TODO: Undos */ }
-                    };
+
+                    void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
+                    void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final;
+                    void finalizeTerrainOperation();
 
 /*     Data     */  Clipboard & clipboard;
                     Selections selections {*this};
                     Graphics graphics {*this, selections};
                     Undos undos {*this};
-                    GuiIsomCache isomCache;
 
                     u16 mapId = 0;
                     bool changeLock = false;
@@ -175,6 +174,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
+                    std::shared_ptr<ReversibleActions> tileChanges = nullptr;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
 
