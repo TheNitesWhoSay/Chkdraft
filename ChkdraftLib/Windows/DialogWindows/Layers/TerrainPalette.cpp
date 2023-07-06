@@ -52,6 +52,9 @@ void TerrainPaletteWindow::DoPaint()
     if ( CM != nullptr && StartBufferedPaint() != NULL )
     {
         HDC paintDc = GetPaintDc();
+        SetPaintFont(14, 4, "Microsoft Sans Serif");
+        SetBkMode(paintDc, TRANSPARENT);
+        SetTextColor(paintDc, RGB(255, 255, 0));
         BITMAPINFO bmi = GetBMI(32, 32);
 
         const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
@@ -98,10 +101,6 @@ void TerrainPaletteWindow::DoPaint()
 
                     if ( CM->DisplayingTileNums() )
                     {
-                        SetPaintFont(14, 4, "Microsoft Sans Serif");
-                        SetBkMode(paintDc, TRANSPARENT);
-                        SetTextColor(paintDc, RGB(255, 255, 0));
-
                         char TileHex[8];
                         WinLib::rect nullRect = {};
                         std::snprintf(TileHex, 8, "%hu", tileValue);
@@ -127,6 +126,7 @@ void TerrainPaletteWindow::LButtonDown(WPARAM wParam, int xc, int yc)
             tileNum = yTileCoord*TILES_PER_ROW + xTileCoord;
 
         chkd.maps.clipboard.endPasting();
+        CM->setSubLayer(TerrainSubLayer::Rectangular);
         chkd.maps.clipboard.addQuickTile(tileNum, -16, -16);
         chkd.maps.startPaste(true);
 
