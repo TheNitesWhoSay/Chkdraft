@@ -52,6 +52,7 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationMove.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\MtxmChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UndoTypes.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitChange.h" />
@@ -130,6 +131,7 @@
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationMove.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\MtxmChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\TileChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitCreateDel.cpp" />

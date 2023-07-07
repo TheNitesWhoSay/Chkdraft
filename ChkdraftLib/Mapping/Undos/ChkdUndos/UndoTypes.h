@@ -4,10 +4,11 @@
 #include "../../../../MappingCoreLib/MappingCore.h"
 
 enum_t(UndoTypes, int32_t, {
-    TileChange = 1,
+    MtxmChange = 1,
     UnitChange = 2,
     LocationChange = 3,
-    IsomChange = 4
+    IsomChange = 4,
+    TileChange = 5
 });
 
 #endif

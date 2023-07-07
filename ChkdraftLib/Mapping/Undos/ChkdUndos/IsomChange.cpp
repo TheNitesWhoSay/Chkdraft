@@ -21,7 +21,7 @@ void IsomChange::Reverse(void *guiMap)
 
 int32_t IsomChange::GetType()
 {
-    return UndoTypes::TileChange;
+    return UndoTypes::MtxmChange;
 }
 
 IsomChange::IsomChange(const Chk::IsomRectUndo & isomRectUndo) : isomRectUndo(isomRectUndo)

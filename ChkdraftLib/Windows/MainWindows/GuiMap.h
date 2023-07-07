@@ -65,6 +65,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void redo();
                     virtual void ChangesMade();
                     virtual void ChangesReversed();
+                    inline std::shared_ptr<ReversibleActions> TileChanges() { return this->tileChanges; }
 
 /*   Graphics   */  void SetScreenLeft(s32 newScreenLeft);
                     void SetScreenTop(s32 newScreenTop);
@@ -151,9 +152,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void MButtonDown(HWND hWnd, int x, int y, WPARAM wParam);
                     void MButtonUp(HWND hWnd, int x, int y, WPARAM wParam);
                     void PanTimerTimeout();
-                    void TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
-                    void LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
-                    void UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
                     bool GetBackupPath(time_t currTime, std::string & outFilePath);

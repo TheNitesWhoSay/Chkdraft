@@ -273,8 +273,8 @@ struct Scenario
 
     u16 getTile(size_t tileXc, size_t tileYc, Chk::StrScope scope = Chk::StrScope::Game) const;
 	inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::StrScope scope = Chk::StrScope::Game) const;
-	void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Both);
-	inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Both);
+	void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Game);
+	inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Game);
         
     Chk::IsomRect & getIsomRect(size_t isomRectIndex);
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;

@@ -1,6 +1,6 @@
 #include "ClipBoard.h"
 #include "../Chkdraft.h"
-#include "../Mapping/Undos/ChkdUndos/TileChange.h"
+#include "../Mapping/Undos/ChkdUndos/MtxmChange.h"
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include <set>
 
@@ -305,7 +305,6 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
             u16 xSize = (u16)map.getTileWidth();
             u16 ySize = (u16)map.getTileHeight();
 
-            auto tileChanges = ReversibleActions::Make();
             auto & tiles = getTiles();
             for ( auto & tile : tiles )
             {
@@ -319,13 +318,12 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
                     {
                         if ( map.getTile(xc, yc) != tile.value )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc)));
                             map.setTile(xc, yc, tile.value);
                         }
                     }
                 }
             }
-            undos.AddUndo(tileChanges);
         }
     }
 }
@@ -369,7 +367,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
                         yc = tile.y;
                         if ( map.getTile(xc, yc) == filledTileValue )
                         {
-                            tileChanges->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc)));
+                            tileChanges->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc)));
                             map.setTile(xc, yc, pasteTileValue);
                             const points left = points(xc-1, yc);
                             const points right = points(xc+1, yc);

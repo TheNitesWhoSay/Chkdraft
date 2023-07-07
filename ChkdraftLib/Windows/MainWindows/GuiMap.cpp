@@ -2,6 +2,7 @@
 #include "../../Chkdraft.h"
 #include "../../Mapping/Undos/ChkdUndos/IsomChange.h"
 #include "../../Mapping/Undos/ChkdUndos/TileChange.h"
+#include "../../Mapping/Undos/ChkdUndos/MtxmChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationCreateDel.h"
@@ -100,7 +101,7 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
     if ( x > xSize || y > (u16)Scenario::getTileHeight() )
         return false;
 
-    undos.AddUndo(TileChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y)));
+    undos.AddUndo(MtxmChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y)));
 
     Scenario::setTile(x, y, tileNum);
 
@@ -397,6 +398,9 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 {
     if ( isDragging() )
     {
+        auto mapX = x + screenLeft;
+        auto mapY = y + screenTop;
+
         if ( x < 0 )
             x = 0;
         if ( y < 0 )
@@ -432,6 +436,9 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
             screenTop = selections.getEndDrag().y - rcMap.bottom;
         }
         Scroll(true, true, true);
+        if ( clipboard.isPasting() )
+            paste(mapX, mapY);
+
         Redraw(false);
     }
 }
@@ -574,7 +581,7 @@ void GuiMap::deleteSelection()
                     auto & selTiles = selections.getTiles();
                     for ( auto & tile : selTiles )
                     {
-                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc)));
+                        undos.AddUndo(MtxmChange::Make(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc)));
                         Scenario::setTile(tile.xc, tile.yc, 0);
                     }
 
@@ -691,7 +698,7 @@ void GuiMap::undo()
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doUndo(UndoTypes::TileChange, this);
+            undos.doUndo(UndoTypes::MtxmChange, this);
             //undoStacks.doUndo(UNDO_TERRAIN, scenario(), selections());
             break;
         case Layer::Units:
@@ -724,7 +731,7 @@ void GuiMap::redo()
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doRedo(UndoTypes::TileChange, this);
+            undos.doRedo(UndoTypes::MtxmChange, this);
             //undoStacks.doRedo(UNDO_TERRAIN, scenario(), selections());
             break;
         case Layer::Units:
@@ -1558,7 +1565,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                 chkd.tilePropWindow.DestroyThis();
                 if ( chkd.maps.clipboard.isPasting() )
                 {
-                    if ( currLayer == Layer::Terrain && currTerrainSubLayer == TerrainSubLayer::Isom )
+                    if ( currLayer == Layer::Terrain )
                         tileChanges = ReversibleActions::Make();
 
                     paste(mapClickX, mapClickY);
@@ -1578,12 +1585,12 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                             selections.setDrags(x1, y1);
                         selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
                     }
-
-                    SetCapture(getHandle());
-                    TrackMouse(defaultHoverTime);
-                    setDragging(true);
-                    Redraw(false);
                 }
+
+                SetCapture(getHandle());
+                TrackMouse(defaultHoverTime);
+                setDragging(true);
+                Redraw(false);
             }
             break;
     }
@@ -1785,15 +1792,15 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
         x = s16(x/getZoom() + screenLeft);
         y = s16(y/getZoom() + screenTop);
 
-        if ( chkd.maps.clipboard.isPasting() )
-            paste((s16)x, (s16)y);
-    
-        if ( currLayer == Layer::Terrain )
-            TerrainLButtonUp(hWnd, x, y, wParam);
-        else if ( currLayer == Layer::Locations )
-            LocationLButtonUp(hWnd, x, y, wParam);
-        else if ( currLayer == Layer::Units )
-            UnitLButtonUp(hWnd, x, y, wParam);
+        if ( !clipboard.isPasting() )
+        {
+            if ( currLayer == Layer::Terrain )
+                FinalizeTerrainSelection(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Locations )
+                FinalizeLocationDrag(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Units )
+                FinalizeUnitSelection(hWnd, x, y, wParam);
+        }
 
         selections.setStartDrag(-1, -1);
         selections.setEndDrag(-1, -1);
@@ -1835,7 +1842,7 @@ void GuiMap::PanTimerTimeout()
     Scroll(true, true, true);
 }
 
-void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
     selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
@@ -1875,7 +1882,7 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     }
 }
 
-void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     if ( selections.hasMoved() ) // attempt to move, resize, or create location
     {
@@ -2046,7 +2053,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     selections.setLocationFlags(LocSelFlags::None);
 }
 
-void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag(mapX, mapY);
     selections.sortDragPoints();
@@ -2178,7 +2185,10 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
     if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
     {
         if ( tileChanges != nullptr )
-            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY)));
+        {
+            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Editor)));
+            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Game)));
+        }
 
         Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
         // TODO: should check if doodads need to be deleted, then copy invalidated TILE area overlayed with doodads to form MTXM

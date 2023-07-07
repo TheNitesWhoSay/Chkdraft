@@ -13,8 +13,8 @@ std::shared_ptr<TileChange> TileChange::Make(u16 xc, u16 yc, u16 tileValue)
 
 void TileChange::Reverse(void *guiMap)
 {
-    u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc);
-    ((GuiMap*)guiMap)->setTile(xc, yc, tileValue);
+    u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc, Chk::StrScope::Editor);
+    ((GuiMap*)guiMap)->setTile(xc, yc, tileValue, Chk::StrScope::Editor);
     tileValue = replacedValue;
 }
 

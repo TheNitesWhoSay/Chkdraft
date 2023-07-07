@@ -269,15 +269,18 @@ void Maps::ChangeLayer(Layer newLayer)
 
 void Maps::ChangeSubLayer(TerrainSubLayer newSubLayer)
 {
-    if ( currentlyActiveMap != nullptr && currentlyActiveMap->getSubLayer() != newSubLayer )
+    if ( currentlyActiveMap != nullptr )
     {
-        currentlyActiveMap->setSubLayer(newSubLayer);
         ChangeLayer(Layer::Terrain);
+        if ( currentlyActiveMap->getSubLayer() != newSubLayer )
+        {
+            currentlyActiveMap->setSubLayer(newSubLayer);
 
-        if ( newSubLayer == TerrainSubLayer::Isom && chkd.mainToolbar.terrainBox.GetSel() != 0 )
-            chkd.mainToolbar.terrainBox.SetSel(0); // Isometrical
-        else if ( newSubLayer == TerrainSubLayer::Rectangular && chkd.mainToolbar.terrainBox.GetSel() != 1 )
-            chkd.mainToolbar.terrainBox.SetSel(1); // Rectangular
+            if ( newSubLayer == TerrainSubLayer::Isom && chkd.mainToolbar.terrainBox.GetSel() != 0 )
+                chkd.mainToolbar.terrainBox.SetSel(0); // Isometrical
+            else if ( newSubLayer == TerrainSubLayer::Rectangular && chkd.mainToolbar.terrainBox.GetSel() != 1 )
+                chkd.mainToolbar.terrainBox.SetSel(1); // Rectangular
+        }
     }
 }
 
