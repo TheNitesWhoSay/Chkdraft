@@ -3951,6 +3951,9 @@ void Scenario::fixTerrainToDimensions()
 {
     auto tileWidth = this->dimensions.tileWidth;
     auto tileHeight = this->dimensions.tileHeight;
+    auto expectedIsomSize = this->getIsomWidth()*this->getIsomHeight();
+    if ( this->isomRects.size() < expectedIsomSize )
+        isomRects.insert(this->isomRects.end(), expectedIsomSize-this->isomRects.size(), Chk::IsomRect{});
     if ( this->tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
         setMtxmOrTileDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
