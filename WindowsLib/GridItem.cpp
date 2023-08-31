@@ -15,13 +15,13 @@ namespace WinLib {
     void GridControlItem::SetText(const std::string & newText)
     {
         try { this->text = newText; }
-        catch ( std::exception ) { }
+        catch ( ... ) { }
     }
 
     void GridControlItem::SetText(int newNumber)
     {
         try { this->text = std::to_string(newNumber); }
-        catch ( std::exception ) { }
+        catch ( ... ) { }
     }
 
     void GridControlItem::SetData(u32 newData)
@@ -49,7 +49,7 @@ namespace WinLib {
     bool GridControlItem::getText(std::string & text)
     {
         try { text = this->text; return true; }
-        catch ( std::exception ) { return false; }
+        catch ( ... ) { return false; }
     }
 
     size_t GridControlItem::getTextLength()

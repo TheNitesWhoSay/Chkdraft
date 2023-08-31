@@ -47,7 +47,8 @@ bool CUWPsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool CUWPsWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void CUWPsWindow::RefreshWindow(bool includeTree)
@@ -183,7 +184,7 @@ LRESULT CUWPsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     return ClassWindow::Notify(hWnd, idFrom, nmhdr);
 }
 
-void CUWPsWindow::NotifyTreeSelChanged(LPARAM newValue)
+void CUWPsWindow::NotifyTreeItemSelected(LPARAM newValue)
 {
 
 }

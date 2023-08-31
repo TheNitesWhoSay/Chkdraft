@@ -52,7 +52,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         {
                             for ( size_t xc = xStart; xc<xStart + 16; xc++ )
                             {
-                                CM->SetTile(s32(xc), s32(yc), tilenum);
+                                CM->SetTile(s32(xc), s32(yc), tilenum, Chk::StrScope::Both);
                                 tilenum++;
                             }
                         }
@@ -116,13 +116,13 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 upperLeft.y = rcTriggersGroup.top;
                 ScreenToClient(hWnd, &upperLeft);
 
-                SetFont(defaultFont, false);
+                WindowsItem::setDefaultFont(false);
                 const std::vector<std::string> defaultTriggerTitles = {
                     "No triggers", "Default melee triggers", "Melee with observers (2 players)",
                     "Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
                     "Melee with observers (6 players)", "Melee with observers (7 players)"
                 };
-                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, Id::COMBO_TRIGS, defaultTriggerTitles, defaultFont);
+                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, Id::COMBO_TRIGS, defaultTriggerTitles);
                 dropDefaultTriggers.SetSel(0);
 
                 editWidth.FindThis(hWnd, IDC_EDIT_WIDTH);
@@ -136,7 +136,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 listInitialTileset.FindThis(hWnd, IDC_LIST_TILESET);
                 listInitialTileset.AddStrings(tilesetNames);
                 listInitialTileset.SetCurSel(0);
-                listInitialTileset.SetFont(defaultFont, false);
+                listInitialTileset.setDefaultFont(false);
 
                 listInitialTerrain.FindThis(hWnd, IDC_LIST_DEFAULTTERRAIN);
 
@@ -151,7 +151,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
 
                 listInitialTerrain.SetCurSel(tileset.defaultBrush.brushSortOrder);
-                listInitialTerrain.SetFont(defaultFont, false);
+                listInitialTerrain.setDefaultFont(false);
                 return TRUE;
             }
             break;

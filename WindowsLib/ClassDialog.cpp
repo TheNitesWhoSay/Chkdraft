@@ -1,4 +1,5 @@
 #include "ClassDialog.h"
+#include "WinUiEnums.h"
 #include <CommCtrl.h>
 #include <SimpleIcu.h>
 
@@ -27,13 +28,17 @@ namespace WinLib {
             setHandle(CreateDialogParam(GetModuleHandle(NULL), lpTemplateName, hWndParent, (DLGPROC)SetupDialogProc, (LPARAM)this));
 
         if ( getHandle() != NULL )
+        {
+            modeless = true;
             return true;
+        }
 
         return false;
     }
 
     INT_PTR ClassDialog::CreateDialogBox(LPCTSTR lpTemplateName, HWND hWndParent)
     {
+        modeless = false;
         return DialogBoxParam(GetModuleHandle(NULL), lpTemplateName, hWndParent, (DLGPROC)SetupDialogProc, (LPARAM)this);
     }
 
@@ -41,13 +46,15 @@ namespace WinLib {
     {
         if ( getHandle() != NULL && EndDialog(getHandle(), IDCLOSE) != 0 )
         {
-            setHandle(NULL);
-            allowEditNotify = true;
-            defaultProc = NULL;
-            return true;
+            if ( (modeless && ::DestroyWindow(getHandle()) != 0) || (!modeless && ::EndDialog(getHandle(), IDCLOSE) != 0) )
+            {
+                setHandle(NULL);
+                allowEditNotify = true;
+                defaultProc = NULL;
+                return true;
+            }
         }
-        else
-            return false;
+        return false;
     }
 
     BOOL ClassDialog::DlgNotify(HWND, WPARAM, NMHDR*)
@@ -55,7 +62,7 @@ namespace WinLib {
         return FALSE;
     }
 
-    void ClassDialog::NotifyTreeSelChanged(LPARAM)
+    void ClassDialog::NotifyTreeItemSelected(LPARAM)
     {
 
     }
@@ -178,11 +185,15 @@ namespace WinLib {
             {
                 switch ( ((NMHDR*)lParam)->code )
                 {
-                    case TVN_SELCHANGED: classDialog->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam); break;
+                    case TVN_SELCHANGED: classDialog->NotifyTreeItemSelected(((NMTREEVIEW*)lParam)->itemNew.lParam); break;
                 }
                 return classDialog->DlgNotify(hWnd, wParam, (NMHDR*)lParam);
             }
             break;
+
+            case TV::WM_SELTREEITEM:
+                classDialog->NotifyTreeItemSelected(lParam);
+                break;
 
             case WM_COMMAND:
             {

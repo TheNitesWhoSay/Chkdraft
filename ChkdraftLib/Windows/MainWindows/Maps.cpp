@@ -1,6 +1,7 @@
 #include "Maps.h"
 #include "../../Chkdraft.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitChange.h"
+#include "../../Mapping/Undos/ChkdUndos/DoodadChange.h"
 #include <memory>
 #include <string>
 #include <utility>
@@ -48,6 +49,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
     {
         currentlyActiveMap = guiMap;
         chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+        chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
         currentlyActiveMap->updateMenu();
         return true;
@@ -240,7 +242,7 @@ void Maps::ChangeLayer(Layer newLayer)
             chkd.mainToolbar.layerBox.SetSel((int)newLayer);
 
         if ( newLayer == Layer::FogEdit || newLayer == Layer::Units ||
-             newLayer == Layer::Sprites || newLayer == Layer::FogView )
+             newLayer == Layer::Sprites || newLayer == Layer::FogView || newLayer == Layer::Doodads )
             // Layers where player#'s are relevant
         {
             ChangePlayer(currentlyActiveMap->getCurrPlayer());
@@ -327,7 +329,46 @@ void Maps::ChangePlayer(u8 newPlayer)
                 pasteUnit.unit.owner = newPlayer;
         }
 
-        size_t numUnits = currentlyActiveMap->numUnits();
+        currentlyActiveMap->PlayerChanged(newPlayer);
+    }
+    else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
+    {
+        if ( clipboard.isPasting() )
+        {
+            auto & doodads = clipboard.getDoodads();
+            for ( auto & pasteDoodad : doodads )
+                pasteDoodad.owner = newPlayer;
+        }
+        else if ( currentlyActiveMap->GetSelections().hasDoodads() )
+        {
+            auto doodadPlayerChangeUndo = ReversibleActions::Make();
+            const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
+            auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
+            for ( auto doodadIndex : selDoodads )
+            {
+                auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
+                if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
+                {
+                    const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                    if ( selDoodad.owner != newPlayer )
+                    {
+                        doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
+                        selDoodad.owner = newPlayer;
+                        if ( !currentlyActiveMap->sprites.empty() )
+                        {
+                            for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                            {
+                                auto & sprite = currentlyActiveMap->sprites[i];
+                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
+                                    sprite.owner = newPlayer;
+                            }
+                        }
+                    }
+                }
+            }
+            currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
+        }
+
         currentlyActiveMap->PlayerChanged(newPlayer);
     }
 
@@ -392,6 +433,23 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
         {
             currentlyActiveMap->clearSelectedTiles();
+            clipboard.beginPasting(isQuickPaste);
+
+            RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
+
+            TRACKMOUSEEVENT tme;
+            tme.cbSize = sizeof(TRACKMOUSEEVENT);
+            tme.dwFlags = TME_HOVER;
+            tme.hwndTrack = currentlyActiveMap->getHandle();
+            tme.dwHoverTime = defaultHoverTime;
+            TrackMouseEvent(&tme);
+        }
+    }
+    else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
+    {
+        if ( clipboard.hasDoodads() )
+        {
+            currentlyActiveMap->clearSelectedDoodads();
             clipboard.beginPasting(isQuickPaste);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);

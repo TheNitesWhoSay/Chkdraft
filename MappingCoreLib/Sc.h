@@ -1968,24 +1968,6 @@ namespace Sc {
             Rect stackConnections;
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
         };
-        __declspec(align(1)) struct Doodad {
-            enum_t(Type, u16, {
-                // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
-            });
-
-            u16 index; // Always 1 for doodads?
-            u8 buildability;
-            u8 flags; // 0x10 = sprite overlay, 0x20 = unit overlay, 0x40 = overlay flipped
-            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
-            u16 unknown1;
-            u16 doodadName; // stat_txt.tbl id
-            u16 unknown2;
-            u16 ddDataIndex; // dddata.bin index
-            u16 doodadWidth; // In tiles
-            u16 doodadHeight; // In tiles
-            u16 unknown3;
-            u16 megaTileRef[16]; // To VF4/VX4
-        };
         #pragma pack(pop)
 
         struct Side_ { // A side of a rectangle
@@ -2875,8 +2857,23 @@ namespace Sc {
         };
 
         using TileGroup = Isom::TileGroup;
-        using Doodad = Isom::Doodad;
 #pragma pack(push, 1)
+        __declspec(align(1)) struct DoodadCv5 {
+            u16 index; // Always 1 for doodads
+            u16 flags; // 0x1000 = sprite overlay (in SC, receeding creep), 0x2000 = unit overlay, 0x4000 = overlay flipped (in SC, temporary creep)
+            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
+            u16 remasteredDoodad;
+            u16 doodadName; // stat_txt.tbl id
+            u16 unknown; // Always 0
+            u16 ddDataIndex; // dddata.bin index
+            u16 tileWidth; // Doodad tile width
+            u16 tileHeight; // Doodad tile height
+            u16 unknown2; // Always 0
+            u16 megaTileRef[16]; // To VF4/VX4
+        };
+        __declspec(align(1)) struct DoodadPlacibility {
+            u16 tileGroup[256]; // [y*doodadTileWidth+x] tileGroup/cv5 index, 0 for place anywhere
+        };
         __declspec(align(1)) struct TileFlags {
             __declspec(align(1))struct MiniTileFlags {
                 enum_t(Flags, u16, {
@@ -2970,15 +2967,13 @@ namespace Sc {
             u8 blue;
             u8 null;
         };
-        
+
         __declspec(align(1)) struct Cv5Dat {
             static constexpr size_t MaxTileGroups = 1024;
 
             TileGroup tileGroups[MaxTileGroups];
-            Doodad doodads[1];
 
             static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
-            static inline size_t doodadsSize(size_t cv5FileSize) { return cv5FileSize > MaxTileGroups*sizeof(TileGroup) ? cv5FileSize/sizeof(Doodad)-MaxTileGroups : 0; }
         };
         __declspec(align(1)) struct Vf4Dat {
             TileFlags tileFlags[1];
@@ -2998,7 +2993,49 @@ namespace Sc {
         __declspec(align(1)) struct WpeDat {
             WpeColor color[NumColors];
         };
+        __declspec(align(1)) struct DdData {
+            DoodadPlacibility placibility[512];
+            
+            static inline size_t size(size_t ddDataFileSize) { return ddDataFileSize/sizeof(DoodadPlacibility); }
+        };
 #pragma pack(pop)
+        struct Doodad {
+            enum_t(Type, u16, {
+                // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
+            });
+
+            enum_t(Flags, u16, {
+                BitZero = BIT_0,
+                // Bits 1-3 Unused
+                BitFour = BIT_4,
+                // Bits 5 & 6 Unused
+                BitSeven = BIT_7,
+                BitEight = BIT_8,
+                BitNine = BIT_9,
+                BitTen = BIT_10,
+                // Bit_11 Unused
+                SpriteOverlay = BIT_12, // in SC, receeding creep
+                UnitOverlay = BIT_13,
+                OverlayFlipped = BIT_14, // in SC, temporary creep
+            });
+
+            u16 index; // Always 1 for doodads, internally modified to the cv5 index by Chkdraft during data load
+            u16 flags; // If flags == 0, the doodad does not show up in staredit
+            u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
+            u16 remasteredDoodad;
+            u16 doodadName; // stat_txt.tbl id
+            u16 unknown; // Always 0
+            u16 ddDataIndex; // dddata.bin index
+            u16 tileWidth; // Doodad tile width
+            u16 tileHeight; // Doodad tile height
+            u16 unknown2; // Always 0
+        };
+
+        struct DoodadGroup {
+            u16 nameIndex = 0;
+            std::string name = "";
+            std::vector<u16> doodadStartTileGroup {};
+        };
 
         static constexpr uint16_t getTileGroup(uint16_t tileValue) { return tileValue / 16; }
 
@@ -3007,14 +3044,17 @@ namespace Sc {
         struct Tiles
         {
             std::vector<TileGroup> tileGroups;
-            std::vector<Doodad> doodads;
             std::vector<TileFlags> tileFlags;
             std::vector<TileGraphicsEx> tileGraphics;
             std::vector<MiniTilePixels> miniTilePixels;
             std::array<SystemColor, NumColors> systemColorPalette;
 
+            std::vector<DoodadGroup> doodadGroups {};
+            std::vector<DoodadPlacibility> doodadPlacibility {};
+
             std::vector<uint16_t> terrainTypeMap {};
             std::unordered_map<uint32_t, std::vector<uint16_t>> hashToTileGroup {};
+            std::unordered_map<uint16_t, uint16_t> doodadIdToTileGroup {};
             std::vector<Isom::ShapeLinks> isomLinks {};
             Span<Isom::TerrainTypeInfo> terrainTypes {};
             std::vector<Isom::TerrainTypeInfo> brushes {};
@@ -3026,15 +3066,17 @@ namespace Sc {
 
             void loadIsom(size_t tilesetIndex);
 
-            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName);
+            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt);
 
             static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
 
             static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
+
+            std::optional<uint16_t> getDoodadGroupIndex(uint16_t doodadId) const;
         };
 
         const Tiles & get(const Tileset & tileset) const;
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt);
         const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
 
     private:

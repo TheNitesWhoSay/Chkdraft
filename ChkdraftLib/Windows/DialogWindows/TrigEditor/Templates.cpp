@@ -26,7 +26,8 @@ bool TemplatesWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TemplatesWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TemplatesWindow::RefreshWindow()

@@ -69,6 +69,7 @@ bool UnitSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool UnitSettingsWindow::DestroyThis()
 {
+    ClassWindow::DestroyThis();
     return true;
 }
 
@@ -278,8 +279,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
         for ( int x=0; x<2; x++ )
         {
             int player = y*2+x;
-            dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, false,
-                Id::DROP_P1UNITAVAILABILITY+player, items, defaultFont );
+            dropPlayerAvailability[player].CreateThis(hParent, 304+188*x, 336+27*y, 84, 100, false, false, Id::DROP_P1UNITAVAILABILITY+player, items);
         }
     }
 

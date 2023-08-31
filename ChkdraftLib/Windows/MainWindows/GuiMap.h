@@ -21,7 +21,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 /*    File IO   */  bool CanExit(); // Returns true if there are no unsaved changes or user allows the exit
                     virtual bool SaveFile(bool saveAs);
 
-/*   Chk Accel  */  bool SetTile(s32 x, s32 y, u16 tileNum);
+/*   Chk Accel  */  bool SetTile(s32 x, s32 y, u16 tileNum, Chk::StrScope scope = Chk::StrScope::Both, bool undoable = true);
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
@@ -51,6 +51,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void refreshScenario();
 
 /*   Sel/Paste  */  void clearSelectedTiles();
+                    void clearSelectedDoodads();
                     void clearSelectedUnits();
                     void clearSelection();
                     void selectAll();
@@ -73,7 +74,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
                     void PaintMap(GuiMapPtr currMap, bool pasting);
-                    void PaintMiniMap(HDC miniMapDc, int miniMapWidth, int miniMapHeight);
+                    void PaintMiniMap(const WinLib::DeviceContext & dc);
                     void Redraw(bool includeMiniMap);
                     void ValidateBorder(s32 screenWidth, s32 screenHeight);
 
@@ -100,6 +101,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void ToggleLockAnywhere();
                     bool LockAnywhere();
 
+                    void ToggleAllowIllegalDoodadPlacement();
+                    bool AllowIllegalDoodadPlacement();
+
                     bool GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset);
 
                     enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
@@ -107,6 +111,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags);
 
                     void UpdateLocationMenuItems();
+                    void UpdateDoodadMenuItems();
                     void UpdateZoomMenuItems();
                     void UpdateGridSizesMenu();
                     void UpdateGridColorMenu();
@@ -143,7 +148,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     LRESULT DestroyWindow(HWND hWnd);
 
                     void RButtonUp();
-                    void LButtonDoubleClick(int x, int y);
+                    void LButtonDoubleClick(int x, int y, WPARAM wParam);
                     void LButtonDown(int x, int y, WPARAM wParam);
                     void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
                     void MouseHover(HWND hWnd, int x, int y, WPARAM wParam);
@@ -155,6 +160,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
                     bool GetBackupPath(time_t currTime, std::string & outFilePath);
@@ -167,6 +173,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
                     void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final;
                     void finalizeTerrainOperation();
+                    void refreshDoodadCache();
 
 /*     Data     */  Clipboard & clipboard;
                     Selections selections {*this};
@@ -180,6 +187,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
                     std::shared_ptr<ReversibleActions> tileChanges = nullptr;
+                    Chk::DoodadCache doodadCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
 					
@@ -189,6 +197,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool snapLocations = true;
                     bool locSnapTileOverGrid = true;
                     bool lockAnywhere = true;
+                    bool allowIllegalDoodads = false;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;
@@ -203,9 +212,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     u32 bitmapHeight = 0;
                     bool RedrawMiniMap = true;
                     bool RedrawMap = true;
-                    WinLib::PaintBuffer miniMapBuffer {};
-                    WinLib::PaintBuffer mapBuffer {};
-                    WinLib::PaintBuffer toolsBuffer {};
+                    WinLib::DeviceContext miniMapBuffer {};
+                    WinLib::DeviceContext mapBuffer {};
+                    WinLib::DeviceContext toolsBuffer {};
 
                     static bool doAutoBackups;
                     double minSecondsBetweenBackups = 1800; // The smallest interval between consecutive backups

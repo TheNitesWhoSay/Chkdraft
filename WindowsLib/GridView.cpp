@@ -461,7 +461,7 @@ namespace WinLib {
                 for ( int y=0; y<newNumRows; y++ )
                     newGridItems[y] = new GridControlItem[newNumColumns];
             }
-            catch ( std::bad_alloc ) { return false; }
+            catch ( ... ) { return false; }
 
             int maxCopyRow = std::min(newNumRows, this->numRows);
             int maxCopyColumn = std::min(newNumColumns, this->numColumns);
@@ -601,7 +601,7 @@ namespace WinLib {
         {
             editing = true;
 
-            editBox.SetFont(GetWindowFont(getHandle()), false);
+            editBox.setDefaultFont(false);
             bool startedByInput = false;
 
             int x = -1;
@@ -971,8 +971,8 @@ namespace WinLib {
     {
         HWND hWndParent = GetParent(hWnd);
         UINT ctrlId = (UINT)GetDlgCtrlID(hWnd);
-        PAINTSTRUCT ps = { };
-        DRAWITEMSTRUCT dis = { };
+        PAINTSTRUCT ps {};
+        DRAWITEMSTRUCT dis {};
         dis.CtlType = ODT_LISTVIEW;
         dis.CtlID = ctrlId;
         dis.itemID = 0; // Row number
@@ -988,48 +988,27 @@ namespace WinLib {
         LPARAM rectPointer = LPARAM(&dis.rcItem);
         LPARAM disPointer = LPARAM(&dis);
 
-        RECT rcCli = {};
-        HDC hDC = BeginPaint(hWnd, &ps);
-        if ( hDC != NULL && GetClientRect((HWND)hWnd, &rcCli) != 0 )
+        RECT rcCli {};
+        if ( getClientRect(rcCli) )
         {
-            LONG width = rcCli.right - rcCli.left;
-            LONG height = rcCli.bottom - rcCli.top;
-            dis.hDC = CreateCompatibleDC(hDC);
-            if ( dis.hDC != NULL )
-            {
-                HBITMAP memBitmap = CreateCompatibleBitmap(hDC, width, height);
-                if ( memBitmap != NULL )
-                {
-                    HGDIOBJ hGdiObj = SelectObject(dis.hDC, memBitmap);
-                    if ( hGdiObj != NULL && hGdiObj != HGDI_ERROR )
-                    {
-                        HBRUSH hBackgroundColor = CreateSolidBrush(GetBkColor(hDC));
-                        if ( hBackgroundColor != NULL )
-                        {
-                            FillRect(dis.hDC, &rcCli, hBackgroundColor);
-                            DeleteObject(hBackgroundColor);
-                        }
-                    
-                        for ( int y=0; y<numRows; y++ )
-                        {
-                            dis.itemID = (UINT)y;
-                            LPARAM state = SendMessage(hWnd, LVM_GETITEMSTATE, (WPARAM)y, LVIS_FOCUSED|LVIS_SELECTED);
-                            if ( state & LVIS_FOCUSED ) dis.itemState |= ODS_FOCUS;
-                            if ( state & LVIS_SELECTED ) dis.itemState |= ODS_SELECTED;
-                            dis.rcItem.left = LVIR_BOUNDS;
-                            if ( SendMessage(hWnd, LVM_GETITEMRECT, (WPARAM)y, rectPointer) == TRUE )
-                                SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
-                        }
+            WinLib::DeviceContext dc(getHandle(), rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
+            dc.fillRect(rcCli, dc.getBkColor());
 
-                        SendMessage(hWndParent, GV::WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
-                        BitBlt(hDC, rcCli.left, rcCli.top, width, height, dis.hDC, 0, 0, SRCCOPY);
-                    }
-                    DeleteObject(memBitmap);
-                }
-                DeleteDC(dis.hDC);
+            dis.hDC = dc.getDcHandle();
+            for ( int y=0; y<numRows; y++ )
+            {
+                dis.itemID = (UINT)y;
+                LPARAM state = SendMessage(hWnd, LVM_GETITEMSTATE, (WPARAM)y, LVIS_FOCUSED|LVIS_SELECTED);
+                if ( state & LVIS_FOCUSED ) dis.itemState |= ODS_FOCUS;
+                if ( state & LVIS_SELECTED ) dis.itemState |= ODS_SELECTED;
+                dis.rcItem.left = LVIR_BOUNDS;
+                if ( SendMessage(hWnd, LVM_GETITEMRECT, (WPARAM)y, rectPointer) == TRUE )
+                    SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
             }
+
+            SendMessage(hWndParent, GV::WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
+            dc.flushBuffer();
         }
-        ::EndPaint(hWnd, &ps);
     }
 
     void GridViewControl::Paint(HWND hWnd)

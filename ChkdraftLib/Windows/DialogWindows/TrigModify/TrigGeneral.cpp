@@ -55,7 +55,8 @@ bool TrigGeneralWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigGeneralWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TrigGeneralWindow::RefreshWindow(u32 trigIndex)
@@ -270,13 +271,16 @@ void TrigGeneralWindow::EditCommentFocusLost()
 {
     auto newCommentText = editComment.GetWinText();
     bool addIfNotFound = newCommentText && !newCommentText->empty();
-    Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
-    size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
-    if ( newCommentStringId != Chk::StringId::NoString )
+    if ( addIfNotFound || CM->hasTriggerExtension(trigIndex) )
     {
-        extension.commentStringId = (u32)newCommentStringId;
-        CM->deleteUnusedStrings(Chk::StrScope::Editor);
-        CM->refreshScenario();
+        Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
+        size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
+        if ( newCommentStringId != Chk::StringId::NoString )
+        {
+            extension.commentStringId = (u32)newCommentStringId;
+            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->refreshScenario();
+        }
     }
 }
 
@@ -284,7 +288,7 @@ void TrigGeneralWindow::EditNotesFocusLost()
 {
     auto newNotesText = editNotes.GetWinText();
     bool addIfNotFound = newNotesText && !newNotesText->empty();
-    if ( CM->hasTriggerExtension(trigIndex) )
+    if ( addIfNotFound ||  CM->hasTriggerExtension(trigIndex) )
     {
         Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::StrScope::Editor);

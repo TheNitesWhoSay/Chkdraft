@@ -11,7 +11,7 @@ namespace WinLib {
     }
 
     bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-        u64 id, const std::vector<std::string> & items, HFONT font)
+        u64 id, const std::vector<std::string> & items)
     {
         DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
 
@@ -33,7 +33,7 @@ namespace WinLib {
         if ( WindowControl::CreateControl(0, WC_COMBOBOX, "", style, x, y, width, height, hParent, (HMENU)id, false) )
         {
             HWND hWnd = getHandle();
-            SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
+            setDefaultFont();
             for ( size_t i = 0; i < items.size(); i++ )
                 SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(items[i]).c_str());
             return true;

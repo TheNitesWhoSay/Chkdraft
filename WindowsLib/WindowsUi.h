@@ -36,8 +36,9 @@
 #include "MdiClient.h"
 
 // Misc
-#include "Painting.h"
 #include "Popup.h"
 #include "FileSystem.h"
+#include "DeviceContext.h"
+#include "ResourceManager.h"
 
 #endif

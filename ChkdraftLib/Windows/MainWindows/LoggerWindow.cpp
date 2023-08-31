@@ -2,6 +2,8 @@
 #include "../../Chkdraft.h"
 #include <WindowsX.h>
 
+extern Logger logger;
+
 enum_t(Id, u32, {
     LineNumbers = ID_FIRST,
     RichText
@@ -19,7 +21,7 @@ LoggerWindow::~LoggerWindow()
 
 bool LoggerWindow::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool readOnly, u64 id)
 {
-    if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "NumberedEdit", NULL, false) &&
+    if ( ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), WinLib::ResourceManager::getSolidBrush(RGB(240, 240, 240)), NULL, "NumberedEdit", NULL, false) &&
         ClassWindow::CreateClassWindow(0, "", WS_CHILD|WS_THICKFRAME, x, y, width, height, hParent, (HMENU)id) )
     {
         s32 lineNumberTextWidth = 50;
@@ -113,7 +115,7 @@ int LoggerWindow::overflow(int c)
 {
     if ( c == '\n' )
     {
-        lineStart.push_back(prevLines.size()+1);
+        lineStart.push_back(lineStart.empty() ? 0 : prevLines.size()+1);
         prevLines += icux::toUistring(currLine);
         lineNumber++;
         std::string lineNumbers = "";
@@ -234,6 +236,11 @@ LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 int xBorder = GetSystemMetrics(SM_CXSIZEFRAME),
                     yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
+
+                RECT curr {};
+                this->getClientRect(curr);
+                auto currHeight = curr.bottom - curr.top;
+                auto currWidth = curr.right - curr.left;
 
                 // Fit logger to the area between the left bar and right edge without changing the height
                 SetWindowPos(chkd.mainPlot.loggerWindow.getHandle(), NULL, rcLeftBar.right - rcLeftBar.left - 3*xBorder,

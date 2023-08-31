@@ -15,6 +15,8 @@ namespace WinLib {
             bool SetItemText(HTREEITEM hItem, const std::string & newText);
             bool ExpandItem(HTREEITEM hItem);
             void EmptySubTree(HTREEITEM hRoot);
+            void SelectItem(HTREEITEM hItem);
+            std::optional<LPARAM> GetSelData();
 
         protected:
             LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

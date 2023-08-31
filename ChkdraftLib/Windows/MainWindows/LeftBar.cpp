@@ -15,11 +15,11 @@ LeftBar::~LeftBar()
 
 bool LeftBar::CreateThis(HWND hParent)
 {
-    return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
+    return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), WinLib::ResourceManager::getSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
            CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, 0, 0, 162, 50, hParent, (HMENU)Id::IDR_LEFT_BAR);
 }
 
-void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
+void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 {
     if ( CM != nullptr )
     {
@@ -41,6 +41,11 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
         {
         case TreeTypeIsom: // itemData == terrainTypeIndex
             chkd.maps.clipboard.setQuickIsom(itemData);
+            break;
+
+        case TreeTypeDoodad:
+            chkd.maps.clipboard.setQuickDoodad(u16(itemData));
+            CM->Redraw(false);
             break;
 
         case TreeTypeUnit: // itemData == UnitID
@@ -122,6 +127,17 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
     {
+        case WM_NCHITTEST:
+        {
+            auto result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
+            if ( result == HTLEFT || result == HTTOPLEFT || result == HTTOP || result == HTTOPRIGHT ||
+                 result == HTBOTTOMRIGHT || result == HTBOTTOM || result == HTBOTTOMLEFT )
+                return HTCLIENT; // Prevent use of any sizing border except right as a sizing border
+            else
+                return result;
+        }
+        break;
+
         case WM_SIZE:
             {
                 // Get the size of the client area, toolbar, status bar, and left bar
@@ -168,7 +184,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, Id::IDR_MAIN_TREE) )
                 {
-                    SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
+                    mainTree.setDefaultFont();
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     mainTree.BuildMainTree();
                 }

@@ -124,8 +124,18 @@ namespace WinLib {
         GV_LAST
     });
 
+    enum_t(TV, u32, {
+        /** Sent to the parent when a tree view item was selected (either in response to TVN_SELCHANGED, or WM_LBUTTONDOWN)
+            WPARAM: Unused
+            LPARAM: The lParam of the selected item
+            Return: Unused */
+        WM_SELTREEITEM = GV::GV_LAST,
+
+        TV_LAST
+    });
+
     // First user-message used by a given set of sub-windows
-    #define MSG_FIRST (GV_LAST+1)
+    #define MSG_FIRST (TV::TV_LAST+1)
 
     // First identifier used by a given set of sub-windows
     #define ID_FIRST 41001

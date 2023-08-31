@@ -182,7 +182,7 @@ bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscSt
         }
         return true;
     }
-    catch ( std::exception ) {} // Catch bad_alloc and length_error
+    catch ( ... ) {} // Catch bad_alloc and length_error
     outEscString.clear();
     return false;
 }
@@ -299,7 +299,7 @@ bool parseEscStr(const EscString & inEscString, RawString & outRawString)
         }
         return true;
     }
-    catch ( std::exception ) {} // catches length_error and bad_alloc
+    catch ( ... ) {} // catches length_error and bad_alloc
     outRawString.clear();
     return false;
 }
@@ -327,7 +327,7 @@ bool parseEscBytes(const EscString & inEscString, std::vector<u8> & outRawBytes)
         }
         return true;
     }
-    catch ( std::exception ) {} // catches length_error and bad_alloc
+    catch ( ... ) {} // catches length_error and bad_alloc
     outRawBytes.clear();
     return false;
 }
@@ -377,7 +377,7 @@ bool MakeOneLineChkdStr(const std::string & inRawString, size_t inRawStringLengt
         }
         return true;
     }
-    catch ( std::exception ) {} // Catch bad_alloc and length_error
+    catch ( ... ) {} // Catch bad_alloc and length_error
     outChkdString.clear();
     return false;
 }
@@ -421,7 +421,7 @@ bool makeChkdStr(const std::string & inRawString, size_t inRawStringLength, Chkd
         }
         return true;
     }
-    catch ( std::exception ) {} // Catch bad_alloc and length_error
+    catch ( ... ) {} // Catch bad_alloc and length_error
     outChkdString.clear();
     return false;
 }
@@ -507,7 +507,7 @@ bool parseChkdStr(const ChkdString & inChkdString, RawString & outRawString)
         }
         return true;
     }
-    catch ( std::exception ) {} // catches length_error and bad_alloc
+    catch ( ... ) {} // catches length_error and bad_alloc
     outRawString.clear();
     return false;
 }
@@ -541,7 +541,7 @@ bool parseChkdBytes(const ChkdString & inChkdString, std::vector<u8> & outRawByt
         }
         return true;
     }
-    catch ( std::exception ) {} // catches length_error and bad_alloc
+    catch ( ... ) {} // catches length_error and bad_alloc
     outRawBytes.clear();
     return false;
 }

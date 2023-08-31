@@ -1799,7 +1799,7 @@ void Sc::Terrain::Tiles::loadIsom(size_t tilesetIndex)
     defaultBrush = terrainTypeInfo[Isom::defaultBrushIndex[tilesetIndex]];
 }
 
-bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName)
+bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt)
 {
     const std::string tilesetMpqDirectory = "tileset";
     const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
@@ -1809,6 +1809,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
     const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
     const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
+    const std::string ddDataFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dddata"), "bin");
     
     auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
@@ -1816,8 +1817,9 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     bool isVx4ex = false;
     auto vx4Data = Sc::Data::GetAsset(orderedSourceFiles, isVx4ex, vx4exFilePath, vx4FilePath);
     auto wpeData = Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath);
+    auto ddData = Sc::Data::GetAsset(orderedSourceFiles, ddDataFilePath);
 
-    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData )
+    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData && ddData )
     {
         if ( cv5Data->size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
             vf4Data->size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
@@ -1826,10 +1828,10 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
             wpeData->size() == sizeof(Sc::Terrain::WpeDat) )
         {
             size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data->size());
-            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data->size());
             size_t numTileFlags = Vf4Dat::size(vf4Data->size());
             size_t numMiniTilePixels = Vr4Dat::size(vr4Data->size());
             size_t numTileGraphics = Vx4Dat::size(isVx4ex, vx4Data->size());
+            size_t totalDoodadDats = DdData::size(ddData->size());
 
             if ( numTileGroups > 0 )
             {
@@ -1838,14 +1840,6 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
             }
             else
                 tileGroups.clear();
-
-            if ( numDoodads > 0 )
-            {
-                Doodad* rawDoodads = (Doodad*)&cv5Data.value()[Cv5Dat::MaxTileGroups];
-                doodads.assign(&rawDoodads[0], &rawDoodads[numDoodads]);
-            }
-            else
-                doodads.clear();
 
             if ( numTileFlags > 0 )
             {
@@ -1898,6 +1892,47 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
                 throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
             }
 
+            if ( totalDoodadDats > 0 )
+            {
+                DoodadPlacibility* rawDoodadPlacibility = (DoodadPlacibility*)&ddData.value()[0];
+                doodadPlacibility.assign(&rawDoodadPlacibility[0], &rawDoodadPlacibility[totalDoodadDats]);
+            }
+            else
+                doodadPlacibility.clear();
+
+            for ( size_t tileGroupIndex=0; tileGroupIndex<tileGroups.size(); ++tileGroupIndex )
+            {
+                const auto & doodad = (const DoodadCv5 &)tileGroups[tileGroupIndex];
+                if ( doodad.index == 1 && doodad.doodadName != 0 )
+                {
+                    bool newGroup = true;
+                    for ( auto & existingGroup : doodadGroups )
+                    {
+                        if ( doodad.doodadName == existingGroup.nameIndex )
+                        {
+                            const auto & previousDoodad = (const DoodadCv5 &)tileGroups[existingGroup.doodadStartTileGroup.back()];
+                            if ( doodad.ddDataIndex != previousDoodad.ddDataIndex )
+                            {
+                                doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                                existingGroup.doodadStartTileGroup.push_back(u16(tileGroupIndex));
+                            }
+
+                            newGroup = false;
+                            break;
+                        }
+                    }
+
+                    if ( newGroup )
+                    {
+                        doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
+                    }
+                }
+            }
+            std::sort(doodadGroups.begin(), doodadGroups.end(), [&](auto & l, auto & r) {
+                return l.name < r.name;
+            });
+
             loadIsom(tilesetIndex);
 
             return true;
@@ -1911,6 +1946,15 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     return false;
 }
 
+std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadId) const
+{
+    auto found = doodadIdToTileGroup.find(doodadId);
+    if ( found != doodadIdToTileGroup.end() )
+        return found->second;
+    else
+        return std::nullopt;
+}
+
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 {
     if ( tileset < NumTilesets )
@@ -1919,12 +1963,12 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
         return tilesets[tileset % NumTilesets];
 }
 
-bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt)
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
     for ( size_t i=0; i<NumTilesets; i++ )
-        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i]);
+        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -3755,9 +3799,16 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
+
+    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+        CHKD_ERR("Failed to load stat_txt.tbl");
     
-    if ( !terrain.load(orderedSourceFiles) )
+    if ( !terrain.load(orderedSourceFiles, statTxt) )
         CHKD_ERR("Failed to load terrain");
+
+    if ( !ai.load(orderedSourceFiles, statTxt) )
+        CHKD_ERR("Failed to load AiScripts");
 
     if ( !upgrades.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load upgrades");
@@ -3782,13 +3833,6 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
-
-    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
-    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
-        CHKD_ERR("Failed to load stat_txt.tbl");
-
-    if ( !ai.load(orderedSourceFiles, statTxt) )
-        CHKD_ERR("Failed to load AiScripts");
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "StarCraft data loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;

@@ -34,7 +34,7 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
@@ -66,7 +66,8 @@ bool TriggersWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TriggersWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TriggersWindow::RefreshWindow(bool focus)
@@ -1098,7 +1099,7 @@ void TriggersWindow::ClearGroups()
         groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
+bool TriggersWindow::GetTriggerDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
     auto commentString = CM->getExtendedComment<RawString>(triggerNum);
     if ( !commentString )
@@ -1130,54 +1131,41 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Sc
         else
             commentString->append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
-        if ( GetStringDrawSize(hDC, width, height, *commentString) )
+        if ( GetStringDrawSize(dc, width, height, *commentString) )
         {
             width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
             height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
             commentSize.width = width;
             commentSize.height = height;
             commentSizeTable.insert(std::pair<size_t, CommentSize>(hash, commentSize));
+            return true;
         }
     }
     else
     {
         RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
-        HGDIOBJ sel = SelectObject(hDC, defaultFont);
-        if ( sel != NULL && sel != HGDI_ERROR )
+        width = 0;
+        height = TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+
+        UINT strWidth, strHeight;
+        if ( GetStringDrawSize(dc, strWidth, strHeight, str, trigLineSizeTable) )
         {
-            width = 0;
-            height = TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+            UINT newWidth = strWidth+TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
+            if ( newWidth > width )
+                width = newWidth;
 
-            UINT strWidth, strHeight;
-            if ( GetStringDrawSize(hDC, strWidth, strHeight, str, trigLineSizeTable) )
-            {
-                UINT newWidth = strWidth+TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
-                if ( newWidth > width )
-                    width = newWidth;
-
-                height += strHeight;
-                return true;
-            }
+            height += strHeight;
+            return true;
         }
     }
     return false;
 }
 
-void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum)
+void TriggersWindow::DrawGroup(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, u8 groupNum)
 {
-    HBRUSH hBackground = NULL;
-    if ( isSelected )
-        hBackground = CreateSolidBrush(RGB(51, 153, 255));
-    else
-        hBackground = CreateSolidBrush(RGB(255, 255, 255));
+    dc.fillRect(rcItem, isSelected ? RGB(51, 153, 255) : RGB(255, 255, 255));
 
-    if ( hBackground != NULL )
-    {
-        FillRect(hDC, &rcItem, hBackground);
-        DeleteObject(hBackground);
-    }
-
-    SetBkMode(hDC, TRANSPARENT);
+    dc.setBkMode(TRANSPARENT);
     if ( groupNum < 29 )
     {
         std::string groupNames[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
@@ -1188,47 +1176,31 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 group
                                      "22", "23", "24", "25",
                                      "Non AV Players (unused)", "Show All" };
 
-        DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
+        DrawString(dc, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
             rcItem.right-rcItem.left, RGB(0, 0, 0), groupNames[groupNum]);
     }
     else
     {
         std::stringstream ssGroup;
         ssGroup << "Group: " << u16(groupNum);
-        DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
+        DrawString(dc, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
             rcItem.right-rcItem.left, RGB(0, 0, 0), ssGroup.str());
     }
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
+void TriggersWindow::DrawTrigger(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
-    HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
-    if ( hBackground != NULL )
-    {
-        FillRect(hDC, &rcItem, hBackground); // Draw far background
-        DeleteObject(hBackground);
-        hBackground = NULL;
-    }
+    dc.fillRect(rcItem, RGB(171, 171, 171)); // Draw far background, same color as in WM_CTLCOLORLISTBOX
 
+    RECT rcNote;
+    rcNote.left = rcItem.left+TRIGGER_LEFT_PADDING;
+    rcNote.top = rcItem.top+TRIGGER_TOP_PADDING;
+    rcNote.right = rcItem.right-TRIGGER_RIGHT_PADDING;
+    rcNote.bottom = rcItem.bottom-TRIGGER_BOTTOM_PADDING;
+
+    dc.fillRect(rcNote, isSelected ? RGB(51, 153, 255) : RGB(253, 246, 208)); // Draw specific trigger's background
     if ( isSelected )
-        hBackground = CreateSolidBrush(RGB(51, 153, 255));
-    else
-        hBackground = CreateSolidBrush(RGB(253, 246, 208));
-    
-    if ( hBackground != NULL )
-    {
-        RECT rcNote;
-        rcNote.left = rcItem.left+TRIGGER_LEFT_PADDING;
-        rcNote.top = rcItem.top+TRIGGER_TOP_PADDING;
-        rcNote.right = rcItem.right-TRIGGER_RIGHT_PADDING;
-        rcNote.bottom = rcItem.bottom-TRIGGER_BOTTOM_PADDING;
-
-        FillRect(hDC, &rcNote, hBackground); // Draw specific trigger's background
-        if ( isSelected )
-            DrawFocusRect(hDC, &rcNote);
-
-        DeleteObject(hBackground);
-    }
+        dc.drawFocusRect(rcNote);
 
     LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
     size_t commentStringId = trigger.getComment();
@@ -1246,15 +1218,15 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenar
         else
             commentString->append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
 
-        SetBkMode(hDC, TRANSPARENT);
-        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+        dc.setBkMode(TRANSPARENT);
+        DrawString(dc, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
             rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), *commentString);
     }
     else
     {
         RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
-        SetBkMode(hDC, TRANSPARENT);
-        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+        dc.setBkMode(TRANSPARENT);
+        DrawString(dc, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
             rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), str);
     }
 }
@@ -1297,6 +1269,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             }
             RefreshTrigList();
         }
+        break;
     case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
         if ( LOWORD(wParam) == Id::LIST_TRIGGERS )
         {
@@ -1306,6 +1279,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
 
         }
+        break;
     case BN_CLICKED:
         if ( LOWORD(wParam) == Id::BUTTON_NEW )
             ButtonNew();
@@ -1349,13 +1323,11 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-            if ( this != nullptr )
-            {
-                textTrigGenerator.loadScenario(*CM);
-                trigListDC = listTriggers.getDC();
-                commentSizeTable.clear();
-                trigLineSizeTable.clear();
-            }
+            textTrigGenerator.loadScenario(*CM);
+            trigListDc.emplace(listTriggers.getHandle());
+            trigListDc->setDefaultFont();
+            commentSizeTable.clear();
+            trigLineSizeTable.clear();
             break;
 
         case WM_MEASUREITEM:
@@ -1365,8 +1337,14 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 u32 triggerNum = (u32)mis->itemData;
                 
                 const Chk::Trigger & trigger = CM->getTrigger(triggerNum);
-                GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
-                
+                if ( trigListDc )
+                    GetTriggerDrawSize(*trigListDc, mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
+                else
+                    GetTriggerDrawSize(listTriggers.getDeviceContext(), mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
+
+                if ( mis->itemHeight > 255 )
+                    mis->itemHeight = 255;
+
                 return TRUE;
             }
             else if ( wParam == Id::LIST_GROUPS )
@@ -1381,15 +1359,14 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
-            listTriggers.ReleaseDC(trigListDC);
-            trigListDC = NULL;
+            trigListDc = std::nullopt;
             textTrigGenerator.clearScenario();
             break;
 
         case WM_CTLCOLORLISTBOX:
             if ( listTriggers == (HWND)lParam )
             {
-                HBRUSH hBrush = CreateSolidBrush(RGB(171, 171, 171));
+                HBRUSH hBrush = WinLib::ResourceManager::getSolidBrush(RGB(171, 171, 171));
                 if ( hBrush != NULL )
                     return (LPARAM)hBrush;
             }

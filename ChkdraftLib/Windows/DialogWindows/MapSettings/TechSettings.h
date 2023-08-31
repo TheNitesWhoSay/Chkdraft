@@ -16,6 +16,7 @@ class TechSettingsWindow : public WinLib::ClassWindow
         TechSettingsWindow();
         virtual ~TechSettingsWindow();
         bool CreateThis(HWND hParent, u64 windowId);
+        bool DestroyThis();
         void RefreshWindow();
 
     protected:

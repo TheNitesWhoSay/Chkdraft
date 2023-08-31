@@ -103,11 +103,11 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         std::string sCurrHeight(std::to_string(currHeight));
 
         textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
-        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames, defaultFont);
+        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames);
         textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
 
         const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(currTileset));
-        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, {}, defaultFont);
+        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, {});
         for ( const auto & brushType : tileset.brushes )
             dropNewMapTerrain.AddItem(std::string(brushType.name), brushType.index);
 
@@ -136,9 +136,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
 
                 groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
                 textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
-                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners, defaultFont);
+                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners);
                 textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
-                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces, defaultFont);
+                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces);
 
                 if ( yBox < 2 )
                 {
@@ -150,7 +150,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
                     colorSelections.insert(colorSelections.end(), playerColors.begin(), playerColors.end());
 
                     textPlayerColor[player].CreateThis(hMapProperties, 13+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, colorSelections, defaultFont);
+                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, colorSelections);
                     buttonColorProperties[player].CreateThis(hMapProperties, dropPlayerColor[player].Left()-20, 307+95*yBox, 20, 19, "", Id::BUTTON_P1COLOR+player, true);
                     buttonColorProperties[player].SetImageFromResourceId(IDB_PROPERTIES);
                 }
@@ -161,6 +161,12 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
     }
     else
         return false;
+}
+
+bool MapPropertiesWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void MapPropertiesWindow::RefreshWindow()
@@ -297,7 +303,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 for ( const auto & brushType : tileset.brushes )
                     SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
 
-                SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
+                SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)WinLib::ResourceManager::getDefaultFont(), MAKELPARAM(TRUE, 0));
                 SendMessage(hMapNewTerrain, CB_SETCURSEL, (WPARAM)tileset.defaultBrush.brushSortOrder, NULL);
                 PostMessage(hMapNewTerrain, CB_SETEDITSEL, 0, MAKELPARAM(-1, 0));
             }

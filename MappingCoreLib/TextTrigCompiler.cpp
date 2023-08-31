@@ -3467,7 +3467,7 @@ bool TextTrigCompiler::parseLong(const std::string & text, u32 & dest, size_t po
                 dest = (u32)std::stoll(potentialLong, nullptr, 16);
                 return true;
             }
-            catch (std::exception e) {}
+            catch ( ... ) {}
         }
         else
         {
@@ -3499,7 +3499,7 @@ bool TextTrigCompiler::parseShort(const std::string & text, u16 & dest, size_t p
                 dest = (u32)std::stol(potentialShort, nullptr, 16);
                 return true;
             }
-            catch ( std::exception e ) { return false; }
+            catch ( ... ) { return false; }
         }
         else
         {
@@ -3531,7 +3531,7 @@ bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos
                 dest = (u32)std::stol(potentialByte, nullptr, 16);
                 return true;
             }
-            catch ( std::exception e ) { return false; }
+            catch ( ... ) { return false; }
         }
         else
         {

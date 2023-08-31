@@ -28,19 +28,26 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
     {
         ShowNormal();
         ChangeTab(currTab);
+        RefreshWindow();
         return true;
     }
     else
     {
         ChangeTab(currTab);
+        RefreshWindow();
         return false;
     }
-    RefreshWindow();
 }
 
 bool TrigEditorWindow::DestroyThis()
 {
-    triggersWindow.trigModifyWindow.Hide();
+    this->Hide();
+    triggersWindow.trigModifyWindow.DestroyThis();
+    triggersWindow.DestroyThis();
+    templatesWindow.DestroyThis();
+    countersWindow.DestroyThis();
+    cuwpsWindow.DestroyThis();
+    switchesWindow.DestroyThis();
     return ClassDialog::DestroyDialog();
 }
 
@@ -161,9 +168,9 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_INITDIALOG:
-            SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0));
+            SetSmallIcon(WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16));
             CreateSubWindows(hWnd);
-            ReplaceChildFonts(defaultFont);
+            defaultChildFonts();
             RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             break;
 
@@ -172,8 +179,7 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_CLOSE:
-            triggersWindow.trigModifyWindow.Hide();
-            ClassDialog::DestroyDialog();
+            DestroyThis();
             return FALSE;
             break;
 

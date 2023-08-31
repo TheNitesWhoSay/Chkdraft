@@ -20,7 +20,7 @@ void MtxmChange::Reverse(void *guiMap)
 
 int32_t MtxmChange::GetType()
 {
-    return UndoTypes::MtxmChange;
+    return UndoTypes::TerrainChange;
 }
 
 MtxmChange::MtxmChange(u16 xc, u16 yc, u16 tileValue) : xc(xc), yc(yc), tileValue(tileValue)

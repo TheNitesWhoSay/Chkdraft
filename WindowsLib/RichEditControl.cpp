@@ -84,7 +84,8 @@ namespace WinLib {
             ::GetScrollInfo(getHandle(), SB_VERT, &scrollInfo);
             scrollPoint.y = scrollInfo.nPos;
         }
-        PostMessage(scrollMatcher->getHandle(), EM_SETSCROLLPOS, 0, (LPARAM)&scrollPoint);
+        if ( scrollMatcher != nullptr )
+            PostMessage(scrollMatcher->getHandle(), EM_SETSCROLLPOS, 0, (LPARAM)&scrollPoint);
     }
 
     LRESULT RichEditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

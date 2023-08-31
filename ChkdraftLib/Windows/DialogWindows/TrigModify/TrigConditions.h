@@ -31,7 +31,6 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 
     private:
         CndActGrid gridConditions;
-        HBRUSH hBlack;
         u32 trigIndex;
         bool isPasting;
 
@@ -52,10 +51,10 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void CheckEnabledClicked(int conditionNum);
 
         void PreDrawItems();
-        void SysColorRect(HDC hDC, RECT & rect, DWORD color);
-        void DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart);
-        void DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart);
-        void DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart);
+        void SysColorRect(const WinLib::DeviceContext & dc, RECT & rect, DWORD color);
+        void DrawItemBackground(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart);
+        void DrawItemFrame(const WinLib::DeviceContext & dc, RECT & rcItem, int width, int & xStart);
+        void DrawGridViewItem(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int & xStart);
         void DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis);
         void DrawTouchups(HDC hDC);
         void PostDrawItems();

@@ -262,7 +262,7 @@ namespace WinLib {
                 int arraySize = index+1;
                 std::unique_ptr<int[]> selections = nullptr;
                 try { selections = std::make_unique<int[]>(arraySize); } // Need space for this index and all items before
-                catch ( std::bad_alloc ) { return false; }
+                catch ( ... ) { return false; }
                 LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
@@ -301,7 +301,7 @@ namespace WinLib {
                     try {
                         itemsToAdd.push((u32)lParam);
                         return itemsToAdd.size()-1;
-                    } catch ( std::exception ) { return -1; }
+                    } catch ( ... ) { return -1; }
                 }
                 break;
             case WM_SETREDRAW:

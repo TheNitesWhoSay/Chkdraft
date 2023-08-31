@@ -12,25 +12,30 @@ StringGuideWindow::~StringGuideWindow()
 
 bool StringGuideWindow::CreateThis(HWND hParent)
 {
-    if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, CreateSolidBrush(RGB(0, 0, 0)), NULL, "StringGuide", NULL, false) &&
+    if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, WinLib::ResourceManager::getSolidBrush(RGB(0, 0, 0)), NULL, "StringGuide", NULL, false) &&
          ClassWindow::CreateClassWindow(0, "", WS_OVERLAPPED|WS_CHILD|WS_VISIBLE, 463, 7, 125, 365, hParent, NULL) )
     {
-        HWND hStringGuide = getHandle();
-        HDC hDC = GetDC(hStringGuide);
-        SelectObject(hDC, defaultFont);
-        SIZE strSize = { };
-        for (size_t i = 0; i < strColors.size(); i++)
+        auto dc = this->getDeviceContext();
+        dc.setDefaultFont();
+        for ( size_t i=0; i<strColors.size(); ++i )
         {
-            auto Color = strColors.at(i);
-            GetTextExtentPoint32(hDC, icux::toUistring(std::get<2>(Color)).c_str(), (int)icux::toUistring(std::get<2>(Color)).length(), &strSize);
-            colorPrefix[i].CreateThis(hStringGuide, 2, (s32)i*13, strSize.cx, 13, std::get<2>(Color), 0);
-            color[i].CreateThis(hStringGuide, strSize.cx+3, (s32)i*13, 100, 13, std::get<1>(Color), Id::TEXT_COLOR_FIRST+i);
+            auto color = strColors.at(i);
+            if ( auto size = dc.getTextExtentPoint32(icux::toUistring(std::get<2>(color)).c_str()) )
+            {
+                colorPrefix[i].CreateThis(this->getHandle(), 2, (s32)i*13, size->cx, 13, std::get<2>(color), 0);
+                this->color[i].CreateThis(this->getHandle(), size->cx+3, (s32)i*13, 100, 13, std::get<1>(color), Id::TEXT_COLOR_FIRST+i);
+            }
         }
-        ReleaseDC(hDC);
         return true;
     }
     else
         return false;
+}
+
+bool StringGuideWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 LRESULT StringGuideWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -46,7 +51,7 @@ LRESULT StringGuideWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
                 else
                     SetTextColor((HDC)wParam, RGB(16, 252, 24));
 
-                return (LRESULT)CreateSolidBrush(RGB(0, 0, 0));
+                return (LRESULT)WinLib::ResourceManager::getSolidBrush(RGB(0, 0, 0));
             }
             break;
 

@@ -10,7 +10,7 @@ namespace WinLib {
         public:
             virtual ~DropdownControl();
             bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-                u64 id, const std::vector<std::string> & items, HFONT font);
+                u64 id, const std::vector<std::string> & items);
             void SetSel(int index);
             void ClearEditSel();
             int GetSel();

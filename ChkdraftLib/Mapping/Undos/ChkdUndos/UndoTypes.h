@@ -4,11 +4,9 @@
 #include "../../../../MappingCoreLib/MappingCore.h"
 
 enum_t(UndoTypes, int32_t, {
-    MtxmChange = 1,
+    TerrainChange = 1, // ISOM, TILE, MTXM, DD2, or doodad-linked sprite (specific THG2 entries) change
     UnitChange = 2,
-    LocationChange = 3,
-    IsomChange = 4,
-    TileChange = 5
+    LocationChange = 3
 });
 
 #endif

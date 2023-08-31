@@ -8,8 +8,7 @@ MiniMap::~MiniMap()
 
 bool MiniMap::CreateThis(HWND hParent, u64 id)
 {
-    return ClassWindow::RegisterWindowClass( 0, NULL, LoadCursor(NULL, IDC_ARROW),
-                                             CreateSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&
+    return ClassWindow::RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), WinLib::ResourceManager::getSolidBrush(RGB(166, 156, 132)), NULL, "MiniMap", NULL, false) &&
            ClassWindow::CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_VISIBLE|WS_CHILD, 6, 3, 132, 132, hParent, (HMENU)id);
 }
 
@@ -77,11 +76,7 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_PAINT:
-            if ( WindowsItem::StartBufferedPaint() )
-            {
-                CM->PaintMiniMap(WindowsItem::GetPaintDc(), WindowsItem::PaintWidth(), WindowsItem::PaintHeight());
-                WindowsItem::EndPaint();
-            }
+            CM->PaintMiniMap(WinLib::DeviceContext(WindowsItem::getHandle(), WindowsItem::cliWidth(), WindowsItem::cliHeight()));
             break;
 
         default:

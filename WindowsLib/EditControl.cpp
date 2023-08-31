@@ -130,22 +130,22 @@ namespace WinLib {
 
     void EditControl::ExpandToText()
     {
-        HDC hDC = GetDC(getHandle());
         auto text = GetWinText();
-        if ( hDC != NULL && text && text->length() > 0 )
-        {
-            SIZE strSize = { };
-            RECT textRect = { };
-            if ( GetTextExtentPoint32(hDC, icux::toUistring(*text).c_str(), GetTextLength(), &strSize) == TRUE &&
-                 GetClientRect(getHandle(), &textRect) == TRUE &&
-                 strSize.cx > (textRect.right-textRect.left) )
-            {
-                textRect.right = textRect.left + strSize.cx;
-                if ( AdjustWindowRect(&textRect, GetWindowStyle(getHandle()), FALSE) != 0 )
-                    SetWidth(textRect.right-textRect.left);
-            }
+        if ( !text || text->length() <= 0 )
+            return;
 
-            ReleaseDC(hDC);
+        if ( auto dc = this->getDeviceContext() )
+        {
+            if ( auto strSize = dc.getTextExtentPoint32(icux::toUistring(*text)) )
+            {
+                RECT textRect {};
+                if ( GetClientRect(getHandle(), &textRect) == TRUE && strSize->cx > (textRect.right-textRect.left) )
+                {
+                    textRect.right = textRect.left + strSize->cx;
+                    if ( AdjustWindowRect(&textRect, GetWindowStyle(getHandle()), FALSE) != 0 )
+                        SetWidth(textRect.right-textRect.left);
+                }
+            }
         }
     }
 

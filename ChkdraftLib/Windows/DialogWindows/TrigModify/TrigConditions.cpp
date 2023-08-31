@@ -16,7 +16,7 @@ enum_t(Id, u32, {
     GRID_CONDITIONS = ID_FIRST
 });
 
-TrigConditionsWindow::TrigConditionsWindow() : hBlack(NULL), trigIndex(0), gridConditions(*this, 16),
+TrigConditionsWindow::TrigConditionsWindow() : trigIndex(0), gridConditions(*this, 16),
     suggestions(gridConditions.GetSuggestions()), isPasting(false)
 {
 
@@ -49,7 +49,8 @@ bool TrigConditionsWindow::CreateThis(HWND hParent, u64 windowId)
 bool TrigConditionsWindow::DestroyThis()
 {
     suggestions.Hide();
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
@@ -370,8 +371,7 @@ BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 
 void TrigConditionsWindow::DrawSelectedCondition()
 {
-    HDC hDC = GetDC(getHandle());
-    if ( hDC != NULL )
+    if ( auto dc = this->getDeviceContext() )
     {
         Chk::Trigger & trig = CM->getTrigger(trigIndex);
         int focusedX = -1,
@@ -387,20 +387,17 @@ void TrigConditionsWindow::DrawSelectedCondition()
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
-            GetStringDrawSize(hDC, width, height, str);
-            HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
+            GetStringDrawSize(dc, width, height, str);
             RECT rect;
             rect.left = gridConditions.Left()+5;
             rect.right = gridConditions.Right()-5;
             rect.top = gridConditions.Top()-height-1;
             rect.bottom = gridConditions.Top()-1;
-            FillRect(hDC, &rect, hBackground);
-            DeleteObject(hBackground);
+            dc.fillSysRect(rect, COLOR_MENU);
 
-            SetBkMode(hDC, TRANSPARENT);
-            DrawString(hDC, gridConditions.Left()+6, gridConditions.Top()-height-1, 500, RGB(0, 0, 0), str);
+            dc.setBkMode(TRANSPARENT);
+            DrawString(dc, gridConditions.Left()+6, gridConditions.Top()-height-1, 500, RGB(0, 0, 0), str);
         }
-        ReleaseDC(hDC);
     }
 }
 
@@ -409,30 +406,29 @@ int TrigConditionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
     std::string text;
     if ( gridConditions.item(gridItemX, gridItemY).getText(text) )
     {
-        HDC hDC = GetDC(getHandle());
-        UINT width = 0, height = 0;
-        if ( GetStringDrawSize(hDC, width, height, text) )
-            return width+2;
-        ReleaseDC(hDC);
+        if ( auto dc = this->getDeviceContext() )
+        {
+            UINT width = 0, height = 0;
+            if ( GetStringDrawSize(dc, width, height, text) )
+                return width+2;
+        }
     }
     return 0;
 }
 
 void TrigConditionsWindow::PreDrawItems()
 {
-    HDC hDC = GetDC(getHandle());
-    EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
-    ReleaseDC(hDC);
-    hBlack = CreateSolidBrush(RGB(0, 0, 0));
+    if ( auto dc = this->getDeviceContext() )
+        EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)dc.getDcHandle(), 0);
 }
 
-void TrigConditionsWindow::SysColorRect(HDC hDC, RECT & rect, DWORD color)
+void TrigConditionsWindow::SysColorRect(const WinLib::DeviceContext & dc, RECT & rect, DWORD color)
 {
-    SetBkColor(hDC, GetSysColor(color));
-    FillRect(hDC, &rect, GetSysColorBrush(color));
+    dc.setBkColor(GetSysColor(color));
+    dc.fillSysRect(rect, color);
 }
 
-void TrigConditionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
+void TrigConditionsWindow::DrawItemBackground(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top;
@@ -441,14 +437,14 @@ void TrigConditionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridIt
     rcFill.right = xStart + width - 1;
 
     if ( gridConditions.isFocused(gridItemX, gridItemY) )
-        SysColorRect(hDC, rcFill, COLOR_ACTIVEBORDER);
+        SysColorRect(dc, rcFill, COLOR_ACTIVEBORDER);
     else if ( gridConditions.item(gridItemX, gridItemY).isSelected() )
-        SysColorRect(hDC, rcFill, COLOR_HIGHLIGHT);
+        SysColorRect(dc, rcFill, COLOR_HIGHLIGHT);
     else
-        SysColorRect(hDC, rcFill, COLOR_WINDOW);
+        SysColorRect(dc, rcFill, COLOR_WINDOW);
 }
 
-void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart)
+void TrigConditionsWindow::DrawItemFrame(const WinLib::DeviceContext & dc, RECT & rcItem, int width, int & xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top - 1;
@@ -456,23 +452,23 @@ void TrigConditionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int 
     rcFill.left = xStart - 1;
     rcFill.right = xStart + width;
 
-    ::FrameRect(hDC, &rcFill, hBlack);
+    dc.frameRect(rcFill, RGB(0, 0, 0));
 }
 
-void TrigConditionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
+void TrigConditionsWindow::DrawGridViewItem(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
 {
     if ( gridItemX == 0 && gridItemY >= 0 && gridItemY < Chk::Trigger::MaxConditions )
         gridConditions.checkEnabled[gridItemY].MoveTo(rcItem.left, rcItem.top);
 
     int width = ListView_GetColumnWidth(gridConditions.getHandle(), gridItemX);
-    DrawItemBackground(hDC, gridItemX, gridItemY, rcItem, width, xStart);
+    DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
     std::string text;
     if ( gridConditions.item(gridItemX, gridItemY).getText(text) && text.length() > 0 )
-        DrawString(hDC, xStart+1, rcItem.top, width-2, RGB(0, 0, 0), text);
+        DrawString(dc, xStart+1, rcItem.top, width-2, RGB(0, 0, 0), text);
 
     if ( !gridConditions.item(gridItemX, gridItemY).isDisabled() )
-        DrawItemFrame(hDC, rcItem, width, xStart);
+        DrawItemFrame(dc, rcItem, width, xStart);
 
     xStart += width;
 }
@@ -502,24 +498,22 @@ void TrigConditionsWindow::DrawTouchups(HDC hDC)
     RECT rect = { };
     if ( gridConditions.GetEditItemRect(rect) )
     {
+        WinLib::DeviceContext dc {hDC};
         rect.left -= 1;
         rect.top -= 1;
-        HBRUSH hHighlight = CreateSolidBrush(RGB(0, 0, 200));
-        ::FrameRect(hDC, &rect, hHighlight);
+        dc.frameRect(rect, RGB(0, 0, 200));
         rect.left -= 1;
         rect.top -= 1;
         rect.right += 1;
         rect.bottom += 1;
-        ::FrameRect(hDC, &rect, hHighlight);
-        DeleteObject(hHighlight);
+        dc.frameRect(rect, RGB(0, 0, 200));
     }
     gridConditions.RedrawHeader();
 }
 
 void TrigConditionsWindow::PostDrawItems()
 {
-    DeleteObject(hBlack);
-    hBlack = NULL;
+
 }
 
 void TrigConditionsWindow::SuggestNothing()

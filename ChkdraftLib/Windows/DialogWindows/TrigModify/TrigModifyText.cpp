@@ -50,7 +50,8 @@ bool TrigModifyTextWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigModifyTextWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TrigModifyTextWindow::SetTrigIndex(u32 trigIndex)

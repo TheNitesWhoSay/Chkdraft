@@ -12,13 +12,15 @@ bool LocationTree::AddThis(HWND hTree, HTREEITEM hParent)
     return TreeViewControl::SetHandle(hTree);
 }
 
-void LocationTree::InsertLocationItem(const std::string & text, u32 index)
+HTREEITEM LocationTree::InsertLocationItem(const std::string & text, u32 index)
 {
     if ( index <= TreeDataPortion )
-        InsertTreeItem(hLocationRoot, text, index|TreeTypeLocation);
+        return InsertTreeItem(hLocationRoot, text, index|TreeTypeLocation);
+    else
+        return NULL;
 }
 
-void LocationTree::RebuildLocationTree()
+void LocationTree::RebuildLocationTree(bool updateSelection)
 {
     EmptySubTree(hLocationRoot);
 
@@ -38,6 +40,9 @@ void LocationTree::RebuildLocationTree()
 
     if ( CM->getLayer() == Layer::Locations )
         ExpandItem(hLocationRoot);
+
+    if ( updateSelection )
+        TreeViewControl::SelectItem(hLocationRoot);
 
     RedrawThis();
 }

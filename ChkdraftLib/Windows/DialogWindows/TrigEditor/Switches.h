@@ -25,7 +25,7 @@ class SwitchesWindow : public WinLib::ClassWindow
         void EditSwitchNameFocusLost();
 
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
-        virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+        virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a new tree item is selected
         virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

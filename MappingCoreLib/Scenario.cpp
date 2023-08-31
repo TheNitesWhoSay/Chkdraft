@@ -3954,6 +3954,8 @@ void Scenario::fixTerrainToDimensions()
     auto expectedIsomSize = this->getIsomWidth()*this->getIsomHeight();
     if ( this->isomRects.size() < expectedIsomSize )
         isomRects.insert(this->isomRects.end(), expectedIsomSize-this->isomRects.size(), Chk::IsomRect{});
+    if ( this->editorTiles.size() != size_t(tileWidth)*size_t(tileHeight) )
+        setMtxmOrTileDimensions(this->editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
     if ( this->tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
         setMtxmOrTileDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
@@ -4043,7 +4045,7 @@ void Scenario::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
             auto sprite = sprites[spriteIndexFrom];
             auto toErase = std::next(sprites.begin(), spriteIndexFrom);
             sprites.erase(toErase);
-            auto insertPosition = std::next(sprites.begin(), spriteIndexTo-1);
+            auto insertPosition = spriteIndexTo == 0 ? sprites.begin() : std::next(sprites.begin(), spriteIndexTo-1);
             sprites.insert(insertPosition, sprite);
         }
     }
@@ -4094,6 +4096,33 @@ const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
     return doodads[doodadIndex];
 }
 
+Chk::DoodadCache Scenario::getDoodadCache(const Sc::Terrain::Tiles & tileset) const
+{
+    std::vector<bool> doodadPresence(size_t(dimensions.tileWidth)*size_t(dimensions.tileHeight), false);
+    for ( const auto & doodad : doodads )
+    {
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            const auto & placability = tileset.doodadPlacibility[doodad.type];
+            
+            bool evenWidth = doodadDat.tileWidth % 2 == 0;
+            bool evenHeight = doodadDat.tileHeight % 2 == 0;
+            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            for ( size_t y=0; y<size_t(doodadDat.tileHeight); ++y )
+            {
+                for ( size_t x=0; x<size_t(doodadDat.tileWidth); ++x )
+                {
+                    if ( placability.tileGroup[y*doodadDat.tileWidth+x] != 0 )
+                        doodadPresence[(top+y)*dimensions.tileWidth+(left+x)] = true;
+                }
+            }
+        }
+    }
+    return Chk::DoodadCache{doodadPresence};
+}
+
 size_t Scenario::addDoodad(const Chk::Doodad & doodad)
 {
     doodads.push_back(doodad);
@@ -4133,7 +4162,7 @@ void Scenario::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
             auto doodad = doodads[doodadIndexFrom];
             auto toErase = std::next(doodads.begin(), doodadIndexFrom);
             doodads.erase(toErase);
-            auto insertPosition = std::next(doodads.begin(), doodadIndexTo-1);
+            auto insertPosition = doodadIndexTo == 0 ? doodads.begin() : std::next(doodads.begin(), doodadIndexTo-1);
             doodads.insert(insertPosition, doodad);
         }
     }
@@ -4206,7 +4235,7 @@ void Scenario::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
             auto unit = units[unitIndexFrom];
             auto toErase = std::next(units.begin(), unitIndexFrom);
             units.erase(toErase);
-            auto insertPosition = std::next(units.begin(), unitIndexTo-1);
+            auto insertPosition = unitIndexTo == 0 ? units.begin() : std::next(units.begin(), unitIndexTo-1);
             units.insert(insertPosition, unit);
         }
     }
@@ -4314,7 +4343,7 @@ bool Scenario::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool loc
             auto location = locations[locationIdFrom];
             auto toErase = std::next(locations.begin(), locationIdFrom);
             locations.erase(toErase);
-            auto insertPosition = std::next(locations.begin(), locationIdTo-1);
+            auto insertPosition = locationIdTo == 0 ? locations.begin() : std::next(locations.begin(), locationIdTo-1);
             locations.insert(insertPosition, location);
 
             if ( lockAnywhere && locationIdMin < Chk::LocationId::Anywhere && locationIdMax > Chk::LocationId::Anywhere )
@@ -6525,7 +6554,7 @@ void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
             auto trigger = this->triggers[triggerIndexFrom];
             auto toErase = std::next(this->triggers.begin(), triggerIndexFrom);
             this->triggers.erase(toErase);
-            auto insertPosition = std::next(this->triggers.begin(), triggerIndexTo-1);
+            auto insertPosition = triggerIndexTo == 0 ? this->triggers.begin() : std::next(this->triggers.begin(), triggerIndexTo-1);
             this->triggers.insert(insertPosition, trigger);
         }
     }
@@ -6792,7 +6821,7 @@ void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t brief
             auto briefingTrigger = briefingTriggers[briefingTriggerIndexFrom];
             auto toErase = std::next(briefingTriggers.begin(), briefingTriggerIndexFrom);
             briefingTriggers.erase(toErase);
-            auto insertPosition = std::next(briefingTriggers.begin(), briefingTriggerIndexTo-1);
+            auto insertPosition = briefingTriggerIndexTo == 0 ? briefingTriggers.begin() : std::next(briefingTriggers.begin(), briefingTriggerIndexTo-1);
             briefingTriggers.insert(insertPosition, briefingTrigger);
         }
     }

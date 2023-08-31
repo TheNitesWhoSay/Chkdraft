@@ -308,6 +308,7 @@ struct Scenario
     size_t numDoodads() const;
     Chk::Doodad & getDoodad(size_t doodadIndex);
     const Chk::Doodad & getDoodad(size_t doodadIndex) const;
+    Chk::DoodadCache getDoodadCache(const Sc::Terrain::Tiles & tileset) const;
     size_t addDoodad(const Chk::Doodad & doodad);
     void insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad);
     void deleteDoodad(size_t doodadIndex);

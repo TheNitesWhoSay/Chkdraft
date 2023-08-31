@@ -69,8 +69,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
                 keepRunning = false;
             else
             {
+#ifndef _DEBUG
                 try
                 {
+#endif
                     bool isDlgKey = DlgKeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
                     if ( ::IsDialogMessage(currDialog, &msg) == FALSE )
                     {
@@ -79,14 +81,14 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
                             KeyListener(msg.hwnd, msg.message, msg.wParam, msg.lParam);
                         ::DispatchMessage(&msg);
                     }
+#ifndef _DEBUG
                 }
                 catch ( std::exception & e )
                 {
                     logger.fatal() << "Unhandled exception: " << e.what() << std::endl;
-#ifdef _DEBUG
-                    throw e;
-#endif
+                    throw;
                 }
+#endif
             }
         }
 
@@ -128,17 +130,13 @@ bool Chkdraft::CreateThis()
     if ( !ClassWindow::WindowClassIsRegistered("wcChkdraft") )
     {
         DWORD classStyle = 0;
-        HICON hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 32, 32, 0);
-        HICON hIconSmall = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0);
+        HICON hIcon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 32, 32);
+        HICON hIconSmall = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16);
         HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
         HBRUSH hBackground = (HBRUSH)(COLOR_APPWORKSPACE+1);
         std::string wcName = "wcChkdraft";
         if ( !ClassWindow::RegisterWindowClass(classStyle, hIcon, hCursor, hBackground, IDR_MAIN_MENU, wcName, hIconSmall, false) )
-        {
-            DestroyIcon(hIcon);
-            DestroyCursor(hCursor);
-            DestroyIcon(hIconSmall);
-        }
+            return false;
     }
 
     std::string windowName = "Chkdraft " + GetFullVersionString();
@@ -445,7 +443,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     if ( CM && editFocused == false && GetActiveWindow() == getHandle() )
     {
         Layer layer = CM->getLayer();
-        if ( layer == Layer::Units || layer == Layer::FogEdit || layer == Layer::Sprites )
+        if ( layer == Layer::Units || layer == Layer::FogEdit || layer == Layer::Sprites || layer == Layer::Doodads )
         {
             u8 newPlayer;
             switch ( wParam )
@@ -575,6 +573,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(GuiMap::LocationSnap::NoSnap); break;
     case ID_LOCATIONS_LOCKANYWHERE: CM->ToggleLockAnywhere(); break;
     case ID_LOCATIONS_CLIPNAMES: CM->ToggleLocationNameClip(); break;
+
+        // Doodads
+    case ID_DOODADS_ALLOWILLEGALPLACEMENT: CM->ToggleAllowIllegalDoodadPlacement(); break;
 
         // Cut Copy Paste
     case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;

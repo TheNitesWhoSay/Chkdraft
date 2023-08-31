@@ -52,8 +52,6 @@ constexpr DWORD defaultHoverTime = 10;
 
 constexpr u16 NO_LOCATION = 0xFFFF;
 
-extern const HFONT defaultFont;
-
 extern const std::vector<double> defaultZooms;
 
 extern const std::vector<u32> onOffMenuItems;

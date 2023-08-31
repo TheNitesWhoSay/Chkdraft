@@ -326,7 +326,15 @@ namespace Chk {
     __declspec(align(1)) struct Sprite
     {
         enum_t(SpriteFlags, u16, {
+            BitZero = BIT_0, // Used by at least one doodad-sprite
+            BitFour = BIT_4, // Used by at least one doodad-sprite
+            BitSeven = BIT_7, // Used by at least one doodad-sprite
+            BitEight = BIT_8, // Used by at least one doodad-sprite
+            BitNine = BIT_9, // Used by at least one doodad-sprite
+            BitTen = BIT_10, // Used by at least one doodad-sprite
             DrawAsSprite = BIT_12, // If deselected this is a SpriteUnit
+            BitThirteen = BIT_13, // Used by at least one doodad-sprite
+            OverlayFlipped = BIT_14,
             Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
         });
 
@@ -2088,6 +2096,29 @@ namespace Chk {
         inline void finalizeUndoableOperation()
         {
             undoMap.assign(isomWidth*isomHeight, std::nullopt); // Clears out the undoMap so new entries can be set
+        }
+    };
+
+    // When tiles change doodads may be invalidated and need to be removed (depending on editor configuration settings)
+    // It can be very expensive to check for doodads when performing a lot of tile operations at once (e.g. dragging around an ISOM brush or tile-paste)
+    // DoodadCache provides a constant-runtime means of checking whether a tile includes a doodad and potentially requires further operations
+    class DoodadCache
+    {
+        std::vector<bool> doodadPresence {};
+
+    public:
+        DoodadCache() = default;
+
+        DoodadCache(std::vector<bool> & doodadPresence) {
+            this->doodadPresence.swap(doodadPresence);
+        }
+
+        bool tileOccupied(size_t x, size_t y, size_t tileWidth) const {
+            return doodadPresence[tileWidth*y+x];
+        }
+
+        void swap(DoodadCache & other) {
+            this->doodadPresence.swap(other.doodadPresence);
         }
     };
 }

@@ -30,7 +30,7 @@ bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
                 dest = (u32)std::stoll(potentialLong, nullptr, 16);
                 return true;
             }
-            catch (std::exception e) {}
+            catch ( ... ) {}
         }
         else
         {

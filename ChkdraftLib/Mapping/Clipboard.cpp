@@ -1,7 +1,9 @@
 #include "ClipBoard.h"
 #include "../Chkdraft.h"
+#include "../Mapping/Undos/ChkdUndos/TileChange.h"
 #include "../Mapping/Undos/ChkdUndos/MtxmChange.h"
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
+#include "../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
 #include <set>
 
 extern Logger logger;
@@ -60,6 +62,95 @@ PasteTileNode::~PasteTileNode()
 
 }
 
+PasteDoodadNode::PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY)
+    : tileX(tileX), tileY(tileY)
+{
+    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[startTileGroup];
+    this->doodadId = doodad.ddDataIndex;
+    this->tileWidth = doodad.tileWidth;
+    this->tileHeight = doodad.tileHeight;
+    this->tileX = tileX;
+    this->tileY = tileY;
+    this->owner = CM->getCurrPlayer();
+
+    this->overlayIndex = doodad.overlayIndex;
+    this->spriteFlags = doodad.flags;
+    this->doodadPlacibility = &(tileset.doodadPlacibility[this->doodadId]);
+
+    for ( u16 y=0; y<tileHeight; ++y )
+    {
+        u16 tileGroupIndex = startTileGroup + y;
+        const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+        for ( u16 x=0; x<tileWidth; ++x )
+        {
+            if ( tileGroup.megaTileIndex[x] == 0 )
+                this->tileIndex[x][y] = 0;
+            else
+                this->tileIndex[x][y] = 16*tileGroupIndex + x;
+        }
+    }
+}
+
+PasteDoodadNode::PasteDoodadNode(const Chk::Doodad & doodad)
+{
+    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+    {
+        const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+        this->doodadId = doodadDat.ddDataIndex;
+        this->tileWidth = doodadDat.tileWidth;
+        this->tileHeight = doodadDat.tileHeight;
+        this->tileX = doodad.xc/32;
+        this->tileY = doodad.yc/32;
+        this->owner = doodad.owner;
+
+        this->overlayIndex = doodadDat.overlayIndex;
+        this->spriteFlags = doodadDat.flags;
+        this->doodadPlacibility = &(tileset.doodadPlacibility[this->doodadId]);
+
+        for ( u16 y=0; y<tileHeight; ++y )
+        {
+            u16 tileGroupIndex = (*doodadGroupIndex) + y;
+            const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+            for ( u16 x=0; x<tileWidth; ++x )
+            {
+                if ( tileGroup.megaTileIndex[x] == 0 )
+                    this->tileIndex[x][y] = 0;
+                else
+                    this->tileIndex[x][y] = 16*tileGroupIndex + x;
+            }
+        }
+    }
+}
+
+PasteDoodadNode::~PasteDoodadNode()
+{
+
+}
+
+bool PasteDoodadNode::isPlaceable(const Scenario & scenario, s32 xTileStart, s32 yTileStart) const
+{
+    s32 mapWidth = (s32)scenario.getTileWidth();
+    s32 mapHeight = (s32)scenario.getTileHeight();
+
+    if ( this->doodadPlacibility == nullptr || xTileStart < 0 || xTileStart+tileWidth > mapWidth || yTileStart < 0 || yTileStart+tileHeight > mapHeight )
+        return false;
+
+    for ( s32 y=0; y<this->tileHeight; ++y )
+    {
+        s32 tileYc = yTileStart + y;
+        for ( s32 x=0; x<this->tileWidth; ++x )
+        {
+            s32 tileXc = xTileStart + x;
+            auto existingTileGroup = scenario.getTile(tileXc, tileYc, Chk::StrScope::Game) / 16;
+            if ( doodadPlacibility->tileGroup[y*tileWidth+x] != 0 && existingTileGroup != doodadPlacibility->tileGroup[y*tileWidth+x] )
+                return false;
+        }
+    }
+    return true;
+}
+
 PasteUnitNode::PasteUnitNode(const Chk::Unit & unit)
 {
     this->unit = unit;
@@ -85,12 +176,18 @@ Clipboard::Clipboard() : pasting(false), quickPaste(false), fillSimilarTiles(fal
 Clipboard::~Clipboard()
 {
     ClearCopyTiles();
+    ClearCopyDoodads();
     ClearQuickItems();
 }
 
 bool Clipboard::hasTiles()
 {
     return copyTiles.size() > 0;
+}
+
+bool Clipboard::hasDoodads()
+{
+    return copyDoodads.size() > 0;
 }
 
 void Clipboard::copy(GuiMap & map, Layer layer)
@@ -131,6 +228,44 @@ void Clipboard::copy(GuiMap & map, Layer layer)
             {
                 tile.xc -= middle.x;
                 tile.yc -= middle.y;
+            }
+        }
+    }
+    else if ( layer == Layer::Doodads )
+    {
+        ClearCopyDoodads();
+        if ( selections.hasDoodads() )
+        {
+            u16 firstDoodadIndex = selections.getFirstDoodad();
+            const Chk::Doodad & currDoodad = map.getDoodad(firstDoodadIndex);
+            edges.left = currDoodad.xc/32;
+            edges.right = currDoodad.xc/32;
+            edges.top = currDoodad.yc/32;
+            edges.bottom = currDoodad.yc/32;
+
+            const auto & selectedDoodads = selections.getDoodads();
+            for ( size_t doodadIndex : selectedDoodads )
+            {
+                const Chk::Doodad & currDoodad = map.getDoodad(doodadIndex);
+                PasteDoodadNode add(currDoodad);
+
+                if      ( add.tileX < edges.left   ) edges.left   = add.tileX;
+                else if ( add.tileX > edges.right  ) edges.right  = add.tileX+add.tileWidth;
+                if      ( add.tileY < edges.top    ) edges.top    = add.tileY;
+                else if ( add.tileY > edges.bottom ) edges.bottom = add.tileY+add.tileHeight;
+
+                copyDoodads.push_back(add);
+            }
+
+            POINT middle; // Determine where the new middle of the paste is
+            middle.x = (edges.right-edges.left)/2;
+            middle.y = (edges.bottom-edges.top)/2;
+            
+            // Update doodad position relative to the cursor
+            for ( auto & doodad : copyDoodads )
+            {
+                doodad.tileX = doodad.tileX-edges.left-middle.x;
+                doodad.tileY = doodad.tileY-edges.top-middle.y;
             }
         }
     }
@@ -182,6 +317,16 @@ void Clipboard::setQuickIsom(size_t terrainTypeIndex)
     pasting = true;
 }
 
+void Clipboard::setQuickDoodad(u16 doodadStartTileGroup)
+{
+    this->quickDoodads.clear();
+    this->quickDoodads.push_back(PasteDoodadNode(doodadStartTileGroup, 0, 0));
+    prevPaste.x = -1;
+    prevPaste.y = -1;
+    quickPaste = true;
+    pasting = true;
+}
+
 void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 {
     quickTiles.insert(quickTiles.end(), PasteTileNode(index, xc, yc, TileNeighbor::All));
@@ -213,6 +358,7 @@ void Clipboard::endPasting()
 
         prevPaste.x = -1;
         prevPaste.y = -1;
+        prevIsomPaste = Chk::IsomDiamond::none();
         pasting = false;
     }
 }
@@ -223,6 +369,9 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
     {
         case Layer::Terrain:
             pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos);
+            break;
+        case Layer::Doodads:
+            pasteDoodads(mapClickX, mapClickY, map, undos);
             break;
         case Layer::Units:
             pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
@@ -238,6 +387,14 @@ std::vector<PasteTileNode> & Clipboard::getTiles()
         return copyTiles;
 }
 
+std::vector<PasteDoodadNode> & Clipboard::getDoodads()
+{
+    if ( quickPaste )
+        return quickDoodads;
+    else
+        return copyDoodads;
+}
+
 std::vector<PasteUnitNode> & Clipboard::getUnits()
 {
     if ( quickPaste )
@@ -249,6 +406,15 @@ std::vector<PasteUnitNode> & Clipboard::getUnits()
 void Clipboard::ClearCopyTiles()
 {
     copyTiles.clear();
+    edges.left = -1;
+    edges.top = -1;
+    edges.right = -1;
+    edges.bottom = -1;
+}
+
+void Clipboard::ClearCopyDoodads()
+{
+    copyDoodads.clear();
     edges.left = -1;
     edges.top = -1;
     edges.right = -1;
@@ -298,7 +464,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
         mapClickX += 16;
         mapClickY += 16;
 
-        if ( !( mapClickX/16 == prevPaste.x && mapClickY/16 == prevPaste.y ) )
+        if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
         {
             prevPaste.x = mapClickX/16;
             prevPaste.y = mapClickY/16;
@@ -318,12 +484,67 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
                     {
                         if ( map.getTile(xc, yc) != tile.value )
                         {
-                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc)));
-                            map.setTile(xc, yc, tile.value);
+                            map.TileChanges()->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Editor)));
+                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Game)));
+                            map.setTile(xc, yc, tile.value, Chk::StrScope::Both);
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+{
+    const auto & doodads = getDoodads();
+    if ( !doodads.empty() )
+    {
+        const auto & first = doodads[0];
+        bool firstEvenWidth = first.tileWidth%2 == 0;
+        bool firstEvenHeight = first.tileHeight%2 == 0;
+        auto firstXStart = firstEvenWidth ? (mapClickX+16)/32 - first.tileWidth/2 : mapClickX/32 - (first.tileWidth-1)/2;
+        auto secondYStart = firstEvenHeight ? (mapClickY+16)/32 - first.tileHeight/2 : mapClickY/32 - (first.tileHeight-1)/2;
+        auto firstCenterX = 32*firstXStart + 16*first.tileWidth;
+        auto firstCenterY = 32*secondYStart + 16*first.tileHeight;
+        if ( firstCenterX != prevPaste.x || firstCenterY != prevPaste.y )
+        {
+            prevPaste = {firstCenterX, firstCenterY};
+            auto doodadsUndo = ReversibleActions::Make();
+            for ( const auto & doodad : doodads )
+            {
+                auto tileWidth = doodad.tileWidth;
+                auto tileHeight = doodad.tileHeight;
+                bool evenWidth = tileWidth%2 == 0;
+                bool evenHeight = tileHeight%2 == 0;
+                auto xStart = evenWidth ? (mapClickX+16)/32 - doodad.tileWidth/2 + doodad.tileX : mapClickX/32 - (doodad.tileWidth-1)/2 + doodad.tileX;
+                auto yStart = evenHeight ? (mapClickY+16)/32 - doodad.tileHeight/2 + doodad.tileY : mapClickY/32 - (doodad.tileHeight-1)/2 + doodad.tileY;
+                auto centerX = 32*xStart + 16*tileWidth;
+                auto centerY = 32*yStart + 16*tileHeight;
+
+                if ( map.AllowIllegalDoodadPlacement() || doodad.isPlaceable(map, xStart, yStart) )
+                {
+                    if ( xStart >= 0 && yStart >= 0 && xStart+int(tileWidth) <= int(map.getTileWidth()) && yStart+int(tileHeight) <= int(map.getTileHeight()) )
+                    {
+                        doodadsUndo->Insert(DoodadCreateDel::Make(u16(map.numDoodads()), Sc::Terrain::Doodad::Type(doodad.doodadId), xStart, yStart, &map));
+                        map.addDoodad(Chk::Doodad{Sc::Terrain::Doodad::Type(doodad.doodadId), u16(centerX), u16(centerY), doodad.owner, Chk::Doodad::Enabled::Enabled});
+                        if ( doodad.overlayIndex != 0 )
+                        {
+                            map.addSprite(Chk::Sprite{Sc::Sprite::Type(doodad.overlayIndex), u16(centerX), u16(centerY), doodad.owner, 0,
+                                u16(doodad.isSprite() ? Chk::Sprite::SpriteFlags::DrawAsSprite : 0)});
+                        }
+                        for ( int y=0; y<tileHeight; ++y )
+                        {
+                            for ( int x=0; x<tileWidth; ++x )
+                            {
+                                if ( doodad.tileIndex[x][y] != 0 )
+                                    map.SetTile(xStart+x, yStart+y, doodad.tileIndex[x][y], Chk::StrScope::Game, false);
+                            }
+                        }
+                    }
+                }
+            }
+            map.AddUndo(doodadsUndo);
         }
     }
 }
@@ -367,8 +588,9 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
                         yc = tile.y;
                         if ( map.getTile(xc, yc) == filledTileValue )
                         {
-                            tileChanges->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc)));
-                            map.setTile(xc, yc, pasteTileValue);
+                            map.TileChanges()->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Editor)));
+                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Game)));
+                            map.setTile(xc, yc, pasteTileValue, Chk::StrScope::Both);
                             const points left = points(xc-1, yc);
                             const points right = points(xc+1, yc);
                             const points up = points(xc, yc-1);

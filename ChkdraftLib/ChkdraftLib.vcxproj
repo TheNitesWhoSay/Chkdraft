@@ -48,6 +48,8 @@
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationCreateDel.h" />
@@ -63,6 +65,7 @@
     <ClInclude Include="Windows\ChkdControls\ChkdStringInput.h" />
     <ClInclude Include="Windows\ChkdControls\CndActGrid.h" />
     <ClInclude Include="Windows\ChkdControls\CuwpInput.h" />
+    <ClInclude Include="Windows\ChkdControls\DoodadTree.h" />
     <ClInclude Include="Windows\ChkdControls\IsomTree.h" />
     <ClInclude Include="Windows\ChkdControls\LocationTree.h" />
     <ClInclude Include="Windows\ChkdControls\MainTree.h" />
@@ -127,6 +130,8 @@
     <ClCompile Include="Mapping\Graphics.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationCreateDel.cpp" />
@@ -141,6 +146,7 @@
     <ClCompile Include="Windows\ChkdControls\ChkdStringInput.cpp" />
     <ClCompile Include="Windows\ChkdControls\CndActGrid.cpp" />
     <ClCompile Include="Windows\ChkdControls\CuwpInput.cpp" />
+    <ClCompile Include="Windows\ChkdControls\DoodadTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\IsomTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\LocationTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\MainTree.cpp" />
