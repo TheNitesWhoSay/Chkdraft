@@ -84,7 +84,7 @@ void DoodadCreateDel::Reverse(void *guiMap)
                     if ( tileGroup.megaTileIndex[x] != 0 )
                     {
                         this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
-                        map.SetTile(xc, yc, 16*tileGroupIndex + x, Chk::StrScope::Game, false);
+                        map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
                     }
                 }
             }

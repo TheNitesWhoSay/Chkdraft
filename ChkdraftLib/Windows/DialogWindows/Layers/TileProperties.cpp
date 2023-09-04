@@ -42,7 +42,9 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
         TileNode tileNode = CM->GetSelections().getFirstTile();
         tileNode.value = tile;
-        CM->SetTile(tileNode.xc, tileNode.yc, tile);
+        CM->beginTerrainOperation();
+        CM->setTileValue(tileNode.xc, tileNode.yc, tile);
+        CM->finalizeTerrainOperation();
         EndDialog(hWnd, IDOK);
         break;
     }

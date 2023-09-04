@@ -52,7 +52,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         {
                             for ( size_t xc = xStart; xc<xStart + 16; xc++ )
                             {
-                                CM->SetTile(s32(xc), s32(yc), tilenum, Chk::StrScope::Both);
+                                CM->setTile(s32(xc), s32(yc), tilenum, Chk::StrScope::Both);
                                 tilenum++;
                             }
                         }

@@ -21,7 +21,11 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 /*    File IO   */  bool CanExit(); // Returns true if there are no unsaved changes or user allows the exit
                     virtual bool SaveFile(bool saveAs);
 
-/*   Chk Accel  */  bool SetTile(s32 x, s32 y, u16 tileNum, Chk::StrScope scope = Chk::StrScope::Both, bool undoable = true);
+/*   Chk Accel  */  bool setDoodadTile(size_t x, size_t y, u16 tileNum);
+                    void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final;
+                    void beginTerrainOperation();
+                    void finalizeTerrainOperation();
+                    void validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue);
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
@@ -169,10 +173,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
     private:
 
-
                     void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
-                    void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final;
-                    void finalizeTerrainOperation();
                     void refreshDoodadCache();
 
 /*     Data     */  Clipboard & clipboard;

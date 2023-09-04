@@ -98,32 +98,111 @@ bool GuiMap::SaveFile(bool saveAs)
         return false;
 }
 
-bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum, Chk::StrScope scope, bool undoable)
+bool GuiMap::setDoodadTile(size_t x, size_t y, u16 tileNum)
 {
-    u16 xSize = (u16)Scenario::getTileWidth();
-    if ( x > xSize || y > (u16)Scenario::getTileHeight() )
+    if ( x > Scenario::getTileWidth() || y > Scenario::getTileHeight() )
         return false;
-    
-    if ( undoable )
-    {
-        if ( (scope & Chk::StrScope::Game) == Chk::StrScope::Game )
-            undos.AddUndo(MtxmChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y)));
-        if ( (scope & Chk::StrScope::Editor) == Chk::StrScope::Editor )
-            undos.AddUndo(TileChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y, Chk::StrScope::Editor)));
-    }
 
-    Scenario::setTile(x, y, tileNum, scope);
+    Scenario::setTile(x, y, tileNum, Chk::StrScope::Game);
 
     RECT rcTile;
-    rcTile.left   = x*32-screenLeft;
+    rcTile.left   = s32(x)*32-screenLeft;
     rcTile.right  = rcTile.left+32;
-    rcTile.top    = y*32-screenTop;
+    rcTile.top    = s32(y)*32-screenTop;
     rcTile.bottom = rcTile.top+32;
 
     RedrawMap = true;
     RedrawMiniMap = true;
     InvalidateRect(getHandle(), &rcTile, true);
     return true;
+}
+
+void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
+{
+    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
+    {
+        if ( tileChanges != nullptr )
+        {
+            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Editor)));
+            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Game)));
+        }
+
+        Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        if ( !doodadCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
+            Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        else if ( !allowIllegalDoodads )
+            validateTileDoodads(tileX, tileY, tileValue);
+    }
+}
+
+void GuiMap::beginTerrainOperation()
+{
+    refreshDoodadCache();
+    if ( this->tileChanges == nullptr )
+        tileChanges = ReversibleActions::Make();
+}
+
+void GuiMap::finalizeTerrainOperation()
+{
+    clipboard.clearPreviousPasteLoc();
+    if ( tileChanges != nullptr )
+    {
+        undos.AddUndo(tileChanges);
+        tileChanges = nullptr;
+        Chk::IsomCache::finalizeUndoableOperation();
+    }
+}
+
+void GuiMap::validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue)
+{
+    const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+    for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
+    {
+        const auto & doodad = doodads[doodadIndex];
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            const auto & placability = tileset.doodadPlacibility[doodad.type];
+
+            bool evenWidth = doodadDat.tileWidth % 2 == 0;
+            bool evenHeight = doodadDat.tileHeight % 2 == 0;
+            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            size_t right = left + size_t(doodadDat.tileWidth);
+            size_t bottom = top + size_t(doodadDat.tileHeight);
+
+            if ( tileX >= left && tileX < right && tileY >= top && tileY < bottom ) // Tile within dimensions, though not necessarily part of the doodad
+            {
+                size_t y = tileY-top;
+                const auto & tileGroup = tileset.tileGroups[(*doodadGroupIndex)+y];
+                size_t x = tileX-left;
+                if ( tileset.tileGroups[(*doodadGroupIndex)+y].megaTileIndex[x] != 0 ) // Tile is part of the doodad
+                {
+                    auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
+                    if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This tile of this doodad is illegal given the new tileValue
+                    {
+                        tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
+                        if ( !sprites.empty() )
+                        {
+                            for ( int i=int(sprites.size())-1; i>=0; --i )
+                            {
+                                const auto & sprite = sprites[i];
+                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
+                                    Scenario::deleteSprite(i);
+                            }
+                        }
+                        for ( y=top; y<bottom; ++y )
+                        {
+                            for ( x=left; x<right; ++x )
+                                Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
+                        }
+                        Scenario::deleteDoodad(doodadIndex);
+                        refreshDoodadCache();
+                    }
+                }
+            }
+        }
+    }
 }
 
 void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
@@ -609,12 +688,10 @@ void GuiMap::deleteSelection()
 
                 u16 xSize = (u16)Scenario::getTileWidth();
 
+                beginTerrainOperation();
                 auto & selTiles = selections.getTiles();
                 for ( auto & tile : selTiles )
-                {
-                    tileChanges->Insert(MtxmChange::Make(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc)));
-                    Scenario::setTile(tile.xc, tile.yc, 0, Chk::StrScope::Both);
-                }
+                    setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::StrScope::Both));
 
                 selections.removeTiles();
                 finalizeTerrainOperation();
@@ -2335,90 +2412,6 @@ void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
 {
     if ( tileChanges != nullptr )
         tileChanges->Insert(IsomChange::Make(isomUndo));
-}
-
-void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
-{
-    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
-    {
-        if ( tileChanges != nullptr )
-        {
-            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Editor)));
-            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Game)));
-        }
-
-        Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-        if ( doodadCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
-        {
-            if ( !allowIllegalDoodads )
-            {
-                const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
-                for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
-                {
-                    const auto & doodad = doodads[doodadIndex];
-                    if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
-                    {
-                        const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-                        const auto & placability = tileset.doodadPlacibility[doodad.type];
-
-                        bool evenWidth = doodadDat.tileWidth % 2 == 0;
-                        bool evenHeight = doodadDat.tileHeight % 2 == 0;
-                        size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
-                        size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
-                        size_t right = left + size_t(doodadDat.tileWidth);
-                        size_t bottom = top + size_t(doodadDat.tileHeight);
-
-                        if ( tileX >= left && tileX < right && tileY >= top && tileY < bottom ) // Tile within dimensions, though not necessarily part of the doodad
-                        {
-                            size_t y = tileY-top;
-                            const auto & tileGroup = tileset.tileGroups[(*doodadGroupIndex)+y];
-                            size_t x = tileX-left;
-                            if ( tileset.tileGroups[(*doodadGroupIndex)+y].megaTileIndex[x] != 0 ) // Tile is part of the doodad
-                            {
-                                auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
-                                if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This tile of this doodad is illegal given the new tileValue
-                                {
-                                    tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
-                                    if ( !sprites.empty() )
-                                    {
-                                        for ( int i=int(sprites.size())-1; i>=0; --i )
-                                        {
-                                            const auto & sprite = sprites[i];
-                                            if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
-                                            {
-                                                Scenario::deleteSprite(i);
-                                            }
-                                        }
-                                    }
-                                    for ( y=top; y<bottom; ++y )
-                                    {
-                                        for ( x=left; x<right; ++x )
-                                            Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
-                                    }
-                                    Scenario::deleteDoodad(doodadIndex);
-                                    Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-                                    refreshDoodadCache();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else // Tile not occupied by a doodad
-            Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-    }
-}
-
-void GuiMap::finalizeTerrainOperation()
-{
-    clipboard.clearPreviousPasteLoc();
-    if ( tileChanges != nullptr )
-    {
-        undos.AddUndo(tileChanges);
-        tileChanges = nullptr;
-        Chk::IsomCache::finalizeUndoableOperation();
-    }
 }
 
 void GuiMap::refreshDoodadCache()

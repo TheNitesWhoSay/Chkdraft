@@ -471,6 +471,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
             u16 xSize = (u16)map.getTileWidth();
             u16 ySize = (u16)map.getTileHeight();
 
+            map.beginTerrainOperation();
             auto & tiles = getTiles();
             for ( auto & tile : tiles )
             {
@@ -483,14 +484,11 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
                     if ( yc >= 0 && yc < ySize )
                     {
                         if ( map.getTile(xc, yc) != tile.value )
-                        {
-                            map.TileChanges()->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Editor)));
-                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Game)));
-                            map.setTile(xc, yc, tile.value, Chk::StrScope::Both);
-                        }
+                            map.setTileValue(xc, yc, tile.value);
                     }
                 }
             }
+            map.finalizeTerrainOperation();
         }
     }
 }
@@ -538,7 +536,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
                             for ( int x=0; x<tileWidth; ++x )
                             {
                                 if ( doodad.tileIndex[x][y] != 0 )
-                                    map.SetTile(xStart+x, yStart+y, doodad.tileIndex[x][y], Chk::StrScope::Game, false);
+                                    map.setDoodadTile(xStart+x, yStart+y, doodad.tileIndex[x][y]);
                             }
                         }
                     }
@@ -561,7 +559,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
         u16 xSize = (u16)map.getTileWidth();
         u16 ySize = (u16)map.getTileHeight();
 
-        auto tileChanges = ReversibleActions::Make();
+        map.beginTerrainOperation();
         if ( getTiles().size() == 1 )
         {
             PasteTileNode pasteTile = getTiles().at(0);
@@ -588,9 +586,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
                         yc = tile.y;
                         if ( map.getTile(xc, yc) == filledTileValue )
                         {
-                            map.TileChanges()->Insert(TileChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Editor)));
-                            map.TileChanges()->Insert(MtxmChange::Make(xc, yc, map.getTile(xc, yc, Chk::StrScope::Game)));
-                            map.setTile(xc, yc, pasteTileValue, Chk::StrScope::Both);
+                            map.setTileValue(xc, yc, pasteTileValue);
                             const points left = points(xc-1, yc);
                             const points right = points(xc+1, yc);
                             const points up = points(xc, yc-1);
@@ -608,7 +604,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
                 }
             }
         }
-        undos.AddUndo(tileChanges);
+        map.finalizeTerrainOperation();
     }
 }
 
