@@ -14,7 +14,6 @@ NewMap::~NewMap()
 void NewMap::CreateThis(HWND hParent)
 {
     ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_NEW), hParent);
-    //SetFocus(chkdgetHandle());
 }
 
 BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)

@@ -189,10 +189,6 @@ BOOL ChkdStringInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         ChangeTab(currTab);
         defaultChildFonts();
         DoSize();
-
-        //editString.FindThis(hWnd, IDC_EDIT1);
-        //editString.SetText(initialString);
-        //SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
     }
     else if ( msg == WM_CLOSE )
         ExitDialog(ExitCode::Cancel);

@@ -514,7 +514,7 @@ struct Scenario
     void write(std::ostream & os); // Writes all sections to the supplied stream
 
     std::vector<u8> serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
-                                        includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
+                                     includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
     bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
 
     void updateSaveSections();

@@ -1,9 +1,6 @@
 #include "Selections.h"
 #include "../Windows/MainWindows/GuiMap.h"
 
-#include "../../CrossCutLib/Logger.h"
-extern Logger logger;
-
 TileNode::~TileNode()
 {
 
